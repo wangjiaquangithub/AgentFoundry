@@ -24,7 +24,7 @@ import type { FirstAgentGuideStep } from './components/FirstAgentGuide';
 import type { GovernanceHealthItem } from './components/GovernanceHealthPanel';
 import type { LaunchpadStep } from './components/LaunchpadPanel';
 import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
-import type { MonitoringStat } from './components/MonitoringSnapshotPanel';
+import type { MonitoringAgentTurn, MonitoringStat } from './components/MonitoringSnapshotPanel';
 import type { PlatformMemberTenantSummary } from './components/MembersPanel';
 import type { OrchestrationWorkbenchStep } from './components/OrchestrationWorkbenchPanel';
 import type { PlatformConsoleItem } from './components/PlatformConsolePanel';
@@ -1537,6 +1537,51 @@ export function dashboardRiskToolItemsForStatus(values: {
 }
 
 type MonitoringStatKey = 'agentRuns' | 'workflowRuns' | 'toolAudit' | 'pendingApprovals';
+
+export function monitoringActivitySummaryForStatus(values: {
+	agentConversations: Record<string, MonitoringAgentTurn[]>;
+	auditSummary?: EnterpriseAuditQueryResponse['summary'] | null;
+	auditEvents: EnterpriseAuditEvent[];
+	failedWorkflowRunCount: number;
+	pendingApprovalCount: number;
+	partialWorkflowRunCount: number;
+	workflowRunCount: number;
+	auditEventCount: number;
+	recentAgentTurnLimit?: number;
+}): {
+	recentAgentTurns: MonitoringAgentTurn[];
+	auditSuccessCount: number;
+	auditFailureCount: number;
+	healthState: HealthState;
+} {
+	const recentAgentTurns = Object.values(values.agentConversations)
+		.flat()
+		.sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
+		.slice(0, values.recentAgentTurnLimit ?? 3);
+	const auditSuccessCount =
+		values.auditSummary?.successes ??
+		values.auditEvents.filter((event) => event.success === true).length;
+	const auditFailureCount =
+		values.auditSummary?.failures ??
+		values.auditEvents.filter((event) => event.success === false).length;
+	const healthState: HealthState =
+		auditFailureCount > 0 || values.failedWorkflowRunCount > 0
+			? 'blocked'
+			: values.pendingApprovalCount > 0 || values.partialWorkflowRunCount > 0
+				? 'partial'
+				: recentAgentTurns.length > 0 ||
+					  values.workflowRunCount > 0 ||
+					  values.auditEventCount > 0
+					? 'ready'
+					: 'todo';
+
+	return {
+		recentAgentTurns,
+		auditSuccessCount,
+		auditFailureCount,
+		healthState,
+	};
+}
 
 export function monitoringStatsForSummary(
 	values: {

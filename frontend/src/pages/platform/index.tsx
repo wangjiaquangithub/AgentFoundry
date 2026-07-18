@@ -117,6 +117,7 @@ import {
 	nextAgentSetupStepForSteps,
 	normalizeWorkflowInputs,
 	governanceHealthItemsForSummary,
+	monitoringActivitySummaryForStatus,
 	monitoringStatsForSummary,
 	operationsHeadlineText,
 	orchestrationPrimaryStepForSteps,
@@ -3994,22 +3995,16 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	).length;
 	const orchestrationPrimaryStep =
 		orchestrationPrimaryStepForSteps(orchestrationWorkbenchSteps);
-	const recentAgentTurns = Object.values(agentConversations)
-		.flat()
-		.sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
-		.slice(0, 3);
-	const monitoringAuditSuccessCount =
-		auditSummary?.successes ?? auditEvents.filter((event) => event.success === true).length;
-	const monitoringAuditFailureCount =
-		auditSummary?.failures ?? auditEvents.filter((event) => event.success === false).length;
-	const monitoringHealthState: HealthState =
-		monitoringAuditFailureCount > 0 || failedWorkflowRunCount > 0
-			? 'blocked'
-			: pendingApprovals.length > 0 || partialWorkflowRunCount > 0
-				? 'partial'
-				: recentAgentTurns.length > 0 || workflowRunCount > 0 || auditEventCount > 0
-					? 'ready'
-					: 'todo';
+	const monitoringActivitySummary = monitoringActivitySummaryForStatus({
+		agentConversations,
+		auditSummary,
+		auditEvents,
+		failedWorkflowRunCount,
+		pendingApprovalCount: pendingApprovals.length,
+		partialWorkflowRunCount,
+		workflowRunCount,
+		auditEventCount,
+	});
 	const monitoringLoading =
 		platformLoading ||
 		agentRunsLoading ||
@@ -4019,14 +4014,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		governanceLoading;
 	const monitoringStats = monitoringStatsForSummary(
 		{
-			recentAgentTurnCount: recentAgentTurns.length,
+			recentAgentTurnCount: monitoringActivitySummary.recentAgentTurns.length,
 			workflowRunCount,
 			completedWorkflowRunCount,
 			partialWorkflowRunCount,
 			failedWorkflowRunCount,
 			auditEventCount,
-			auditSuccessCount: monitoringAuditSuccessCount,
-			auditFailureCount: monitoringAuditFailureCount,
+			auditSuccessCount: monitoringActivitySummary.auditSuccessCount,
+			auditFailureCount: monitoringActivitySummary.auditFailureCount,
 			pendingApprovalCount: pendingApprovals.length,
 		},
 		{
@@ -4188,10 +4183,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	if (view === 'runs') {
 		return (
 			<RunsViewPage
-				monitoringHealthState={monitoringHealthState}
+				monitoringHealthState={monitoringActivitySummary.healthState}
 				monitoringLoading={monitoringLoading}
 				monitoringStats={monitoringStats}
-				recentAgentTurns={recentAgentTurns}
+				recentAgentTurns={monitoringActivitySummary.recentAgentTurns}
 				recentWorkflowRuns={recentWorkflowRuns}
 				recentAuditEvents={recentAuditEvents}
 				auditFilters={auditFilters}
@@ -4526,7 +4521,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			memoryOperationsRef={memoryOperationsRef}
 			memoryOperationsRunCount={memoryOperationsRunCount}
 			memoryOperationsSavedCount={memoryOperationsSavedCount}
-			monitoringHealthState={monitoringHealthState}
+			monitoringHealthState={monitoringActivitySummary.healthState}
 			monitoringLoading={monitoringLoading}
 			monitoringStats={monitoringStats}
 			nextAgentSetupStep={nextAgentSetupStep}
@@ -4574,7 +4569,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			publishedPlatformAgents={publishedPlatformAgents}
 			publishingTemplateId={publishingTemplateId}
 			readyPlatformAgents={readyPlatformAgents}
-			recentAgentTurns={recentAgentTurns}
+			recentAgentTurns={monitoringActivitySummary.recentAgentTurns}
 			recentAuditEvents={recentAuditEvents}
 			recentSchedules={recentSchedules}
 			recentWorkflowRuns={recentWorkflowRuns}
