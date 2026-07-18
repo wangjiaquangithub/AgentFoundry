@@ -101,6 +101,7 @@ import {
 	auditStatsForSummary,
 	blockedOrPartialPlatformAgentsForReadiness,
 	capabilityStateForCount,
+	capabilityStatusForCount,
 	connectorDraftIssuesForDraft,
 	dashboardOperationsSummaryForOperations,
 	dashboardRiskToolItemsForStatus,
@@ -3467,7 +3468,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			description: t('platform.capabilities.model.description'),
 			metric: t('platform.capabilities.model.metric', { count: credentials.length }),
 			actionLabel: t('platform.capabilities.model.action'),
-			status: credentials.length > 0 ? t('platform.status.ready') : t('platform.status.toConfigure'),
+			status: capabilityStatusForCount(credentials.length, {
+				ready: t('platform.status.ready'),
+				empty: t('platform.status.toConfigure'),
+			}),
 			state: capabilityStateForCount(credentials.length),
 			icon: KeyRound,
 			onClick: () => navigate('/credential'),
@@ -3477,8 +3481,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			description: t('platform.capabilities.knowledge.description'),
 			metric: t('platform.capabilities.knowledge.metric', { count: knowledgeBases.length }),
 			actionLabel: t('platform.capabilities.knowledge.action'),
-			status:
-				knowledgeBases.length > 0 ? t('platform.status.ready') : t('platform.status.toConfigure'),
+			status: capabilityStatusForCount(knowledgeBases.length, {
+				ready: t('platform.status.ready'),
+				empty: t('platform.status.toConfigure'),
+			}),
 			state: capabilityStateForCount(knowledgeBases.length),
 			icon: Database,
 			onClick: () => navigate('/knowledge'),
@@ -3490,10 +3496,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				count: activePlatformAgents.length,
 			}),
 			actionLabel: t('platform.capabilities.agent.action'),
-			status:
-				activePlatformAgents.length > 0
-					? t('platform.status.ready')
-					: t('platform.status.toConfigure'),
+			status: capabilityStatusForCount(activePlatformAgents.length, {
+				ready: t('platform.status.ready'),
+				empty: t('platform.status.toConfigure'),
+			}),
 			state: capabilityStateForCount(activePlatformAgents.length, 'todo'),
 			icon: BotMessageSquare,
 			onClick: handleStartPublishing,
@@ -3503,10 +3509,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			description: t('platform.capabilities.tools.description'),
 			metric: t('platform.capabilities.tools.metric', { count: availableToolItems.length }),
 			actionLabel: t('platform.capabilities.tools.action'),
-			status:
-				availableToolItems.length > 0
-					? t('platform.status.demoReady')
-					: t('platform.status.toConfigure'),
+			status: capabilityStatusForCount(availableToolItems.length, {
+				ready: t('platform.status.demoReady'),
+				empty: t('platform.status.toConfigure'),
+			}),
 			state: capabilityStateForCount(availableToolItems.length),
 			icon: Boxes,
 			onClick: scrollToToolRunner,
@@ -3518,10 +3524,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				count: workflowTemplates.length || schedules.length,
 			}),
 			actionLabel: t('platform.capabilities.workflow.action'),
-			status:
-				workflowTemplates.length > 0 || schedules.length > 0
-					? t('platform.status.ready')
-					: t('platform.status.toConfigure'),
+			status: capabilityStatusForCount(workflowTemplates.length || schedules.length, {
+				ready: t('platform.status.ready'),
+				empty: t('platform.status.toConfigure'),
+			}),
 			state: capabilityStateForCount(workflowTemplates.length || schedules.length, 'todo'),
 			icon: Clock3,
 			onClick: scrollToWorkflowRunner,
@@ -3533,10 +3539,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				count: platformMemberTenantSummaries.length,
 			}),
 			actionLabel: t('platform.capabilities.tenant.action'),
-			status:
-				platformMemberTenantSummaries.length > 0
-					? t('platform.status.ready')
-					: t('platform.status.toConfigure'),
+			status: capabilityStatusForCount(platformMemberTenantSummaries.length, {
+				ready: t('platform.status.ready'),
+				empty: t('platform.status.toConfigure'),
+			}),
 			state: capabilityStateForCount(platformMemberTenantSummaries.length),
 			icon: ShieldCheck,
 			onClick: scrollToMembers,

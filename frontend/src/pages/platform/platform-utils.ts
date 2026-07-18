@@ -96,6 +96,13 @@ export function capabilityStateForCount(
 	return count > 0 ? 'ready' : emptyState;
 }
 
+export function capabilityStatusForCount(
+	count: number,
+	labels: { ready: string; empty: string },
+) {
+	return count > 0 ? labels.ready : labels.empty;
+}
+
 export function credentialLabel(credential: { id?: unknown; data?: { name?: unknown } }) {
 	const name = credential.data?.name;
 	return typeof name === 'string' && name.trim() ? name : String(credential.id ?? '');
