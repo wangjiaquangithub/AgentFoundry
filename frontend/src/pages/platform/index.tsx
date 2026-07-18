@@ -111,6 +111,7 @@ import {
 	knowledgeBaseLabels,
 	launchpadStepsForStatus,
 	memoryOperationsItemsForConversations,
+	memoryOperationsSummaryForItems,
 	modelCredentialLabel,
 	nextAgentSetupStepForSteps,
 	normalizeWorkflowInputs,
@@ -1057,18 +1058,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			agentConversations,
 		});
 	}, [activePlatformAgents, agentConversations]);
-	const memoryOperationsRunCount = memoryOperationsItems.reduce(
-		(total, item) => total + item.runCount,
-		0,
-	);
-	const memoryOperationsHitCount = memoryOperationsItems.reduce(
-		(total, item) => total + item.memoryHitCount,
-		0,
-	);
-	const memoryOperationsSavedCount = memoryOperationsItems.reduce(
-		(total, item) => total + item.memorySavedCount,
-		0,
-	);
+	const memoryOperationsSummary = memoryOperationsSummaryForItems(memoryOperationsItems);
+	const memoryOperationsRunCount = memoryOperationsSummary.runCount;
+	const memoryOperationsHitCount = memoryOperationsSummary.hitCount;
+	const memoryOperationsSavedCount = memoryOperationsSummary.savedCount;
 	const riskToolItems = dashboardRiskToolItemsForStatus({
 		dashboardRiskTools: dashboard?.risk_tools,
 		availableToolItems,

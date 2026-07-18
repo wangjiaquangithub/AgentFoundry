@@ -627,6 +627,21 @@ export function memoryOperationsItemsForConversations(values: {
 	});
 }
 
+export function memoryOperationsSummaryForItems(items: MemoryOperationsItem[]) {
+	return items.reduce(
+		(summary, item) => ({
+			runCount: summary.runCount + item.runCount,
+			hitCount: summary.hitCount + item.memoryHitCount,
+			savedCount: summary.savedCount + item.memorySavedCount,
+		}),
+		{
+			runCount: 0,
+			hitCount: 0,
+			savedCount: 0,
+		},
+	);
+}
+
 export function blockedOrPartialPlatformAgentsForReadiness(values: {
 	activePlatformAgents: EnterprisePublishedAgent[];
 	readyPlatformAgents: EnterprisePublishedAgent[];
