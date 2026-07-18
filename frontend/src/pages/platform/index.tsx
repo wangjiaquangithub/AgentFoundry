@@ -102,6 +102,7 @@ import { AgentRunnerConversation } from './components/AgentRunnerConversation';
 import { AgentRunnerResult } from './components/AgentRunnerResult';
 import { FirstAgentGuide, type FirstAgentGuideStep } from './components/FirstAgentGuide';
 import { PlatformDashboardOverview } from './components/PlatformDashboardOverview';
+import { RolloutPath, type RolloutPathStep } from './components/RolloutPath';
 import {
 	PlatformNotice,
 	StateBadge,
@@ -4718,15 +4719,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		description: t(`platform.workbench.rolloutPath.steps.${step.key}.description`),
 		actionLabel: t(`platform.workbench.rolloutPath.steps.${step.key}.action`),
 		state: step.state as HealthState,
-	})) satisfies Array<{
-		key: string;
-		title: string;
-		description: string;
-		actionLabel: string;
-		icon: ComponentType<{ className?: string }>;
-		state: HealthState;
-		onClick: () => void;
-	}>;
+	})) satisfies RolloutPathStep[];
 	const firstAgentGuideSteps = [
 		{
 			key: 'model',
@@ -7770,64 +7763,24 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 						}}
 					/>
 
-					<div className="grid gap-3 rounded-lg border bg-muted/10 p-3">
-						<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-							<div className="min-w-0">
-								<h3 className="text-sm font-medium">
-									{t('platform.workbench.rolloutPath.title')}
-								</h3>
-								<p className="mt-1 text-xs leading-5 text-muted-foreground">
-									{t('platform.workbench.rolloutPath.description')}
-								</p>
-							</div>
-							<Badge variant="outline">
-								{t('platform.launchpad.progress', {
-									ready: rolloutPathSteps.filter((step) => step.state === 'ready')
-										.length,
-									total: rolloutPathSteps.length,
-								})}
-							</Badge>
-						</div>
-						<div className="grid gap-2 md:grid-cols-2 xl:grid-cols-6">
-							{rolloutPathSteps.map((step, index) => {
-								const StepIcon = step.icon;
-
-								return (
-									<button
-										key={step.key}
-										type="button"
-										onClick={step.onClick}
-										className="group grid min-h-36 gap-3 rounded-lg border bg-background p-3 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-									>
-										<div className="flex items-start justify-between gap-3">
-											<div className="flex items-center gap-2">
-												<div className="grid size-8 place-items-center rounded-md border bg-muted/20">
-													<StepIcon className="size-4 text-muted-foreground" />
-												</div>
-												<span className="text-xs font-medium text-muted-foreground">
-													{index + 1}
-												</span>
-											</div>
-											<StateBadge
-												state={step.state}
-												label={t(`platform.launchpad.${step.state}`)}
-											/>
-										</div>
-										<div className="min-w-0">
-											<h4 className="text-xs font-medium">{step.title}</h4>
-											<p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
-												{step.description}
-											</p>
-										</div>
-										<div className="mt-auto flex items-center gap-1 text-xs font-medium text-primary">
-											<span>{step.actionLabel}</span>
-											<ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
-										</div>
-									</button>
-								);
-							})}
-						</div>
-					</div>
+					<RolloutPath
+						steps={rolloutPathSteps}
+						labels={{
+							title: t('platform.workbench.rolloutPath.title'),
+							description: t('platform.workbench.rolloutPath.description'),
+							progress: t('platform.launchpad.progress', {
+								ready: rolloutPathSteps.filter((step) => step.state === 'ready')
+									.length,
+								total: rolloutPathSteps.length,
+							}),
+							states: {
+								ready: t('platform.launchpad.ready'),
+								partial: t('platform.launchpad.partial'),
+								todo: t('platform.launchpad.todo'),
+								blocked: t('platform.launchpad.blocked'),
+							},
+						}}
+					/>
 
 					<div className="grid gap-3 rounded-lg border bg-muted/10 p-3 xl:grid-cols-[1.5fr_0.9fr]">
 						<div className="grid gap-3">
