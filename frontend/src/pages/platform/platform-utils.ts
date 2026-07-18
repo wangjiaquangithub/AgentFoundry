@@ -398,6 +398,141 @@ export function operationsHeadlineText(
 	return labels.ready;
 }
 
+export function agentReleasePipelineItems<TIcon>(
+	values: {
+		selectedTemplate?: { name: string } | null;
+		modelConfigId?: string | null;
+		credentialById: Map<string, { id?: unknown; data?: { name?: unknown } }>;
+		knowledgeBaseCount: number;
+		toolCount: number;
+		memoryEnabled: boolean;
+		workflowEnabled: boolean;
+		activeAgentCount: number;
+		pendingApprovalCount: number;
+		auditEventCount: number;
+		hasSelectedRunAgent: boolean;
+		stepStates: Array<{ state: HealthState }>;
+	},
+	labels: {
+		template: string;
+		templateDetail: string;
+		model: string;
+		modelDetail: string;
+		knowledge: string;
+		selectedKnowledge: (counts: { count: number }) => string;
+		knowledgeDetail: string;
+		tools: string;
+		toolsSelected: (counts: { count: number }) => string;
+		toolsDetail: string;
+		runtime: string;
+		runtimeDetail: (states: { memory: string; workflow: string }) => string;
+		enabled: string;
+		disabled: string;
+		publish: string;
+		publishDetailReady: (counts: { count: number }) => string;
+		publishDetail: string;
+		governance: string;
+		governanceDetailPending: (counts: { count: number }) => string;
+		governanceDetail: string;
+	},
+	icons: {
+		template: TIcon;
+		model: TIcon;
+		knowledge: TIcon;
+		tools: TIcon;
+		runtime: TIcon;
+		publish: TIcon;
+		governance: TIcon;
+	},
+): Array<{
+	key: string;
+	title: string;
+	detail: string;
+	state: HealthState;
+	icon: TIcon;
+}> {
+	return [
+		{
+			key: 'template',
+			title: labels.template,
+			detail: values.selectedTemplate ? values.selectedTemplate.name : labels.templateDetail,
+			state: values.stepStates[0].state,
+			icon: icons.template,
+		},
+		{
+			key: 'model',
+			title: labels.model,
+			detail: modelCredentialLabel(
+				values.modelConfigId,
+				values.credentialById,
+				labels.modelDetail,
+			),
+			state: values.stepStates[1].state,
+			icon: icons.model,
+		},
+		{
+			key: 'knowledge',
+			title: labels.knowledge,
+			detail:
+				values.knowledgeBaseCount > 0
+					? labels.selectedKnowledge({ count: values.knowledgeBaseCount })
+					: labels.knowledgeDetail,
+			state: values.stepStates[2].state,
+			icon: icons.knowledge,
+		},
+		{
+			key: 'tools',
+			title: labels.tools,
+			detail:
+				values.toolCount > 0
+					? labels.toolsSelected({ count: values.toolCount })
+					: labels.toolsDetail,
+			state: values.stepStates[3].state,
+			icon: icons.tools,
+		},
+		{
+			key: 'runtime',
+			title: labels.runtime,
+			detail: labels.runtimeDetail({
+				memory: values.memoryEnabled ? labels.enabled : labels.disabled,
+				workflow: values.workflowEnabled ? labels.enabled : labels.disabled,
+			}),
+			state: values.stepStates[4].state,
+			icon: icons.runtime,
+		},
+		{
+			key: 'publish',
+			title: labels.publish,
+			detail:
+				values.activeAgentCount > 0
+					? labels.publishDetailReady({ count: values.activeAgentCount })
+					: labels.publishDetail,
+			state:
+				values.activeAgentCount > 0
+					? 'ready'
+					: values.selectedTemplate
+						? 'todo'
+						: 'blocked',
+			icon: icons.publish,
+		},
+		{
+			key: 'governance',
+			title: labels.governance,
+			detail:
+				values.pendingApprovalCount > 0
+					? labels.governanceDetailPending({ count: values.pendingApprovalCount })
+					: labels.governanceDetail,
+			state:
+				values.auditEventCount > 0 || values.pendingApprovalCount > 0
+					? 'ready'
+					: values.hasSelectedRunAgent
+						? 'partial'
+						: 'todo',
+			icon: icons.governance,
+		},
+	];
+}
+
 export function templateDetailIssues(
 	hasCredentials: boolean,
 	hasKnowledgeBases: boolean,

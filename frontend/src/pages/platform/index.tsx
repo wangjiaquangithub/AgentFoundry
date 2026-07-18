@@ -110,6 +110,7 @@ import {
 	agentIsReady,
 	agentReadinessIssues,
 	agentReadinessState,
+	agentReleasePipelineItems,
 	agentOpsSummaryItems,
 	agentResourceSummary,
 	agentRunnerAccessLabelKey,
@@ -1416,96 +1417,58 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			ready: t('platform.operations.headlineReady'),
 		},
 	);
-	const agentReleasePipeline = [
+	const agentReleasePipeline = agentReleasePipelineItems(
 		{
-			key: 'template',
-			title: t('platform.agentManagement.pipeline.template'),
-			detail: selectedTemplate
-				? selectedTemplate.name
-				: t('platform.agentManagement.pipeline.templateDetail'),
-			state: agentSetupSteps[0].state,
-			icon: ListChecks,
+			selectedTemplate,
+			modelConfigId: publishForm.model_config_id,
+			credentialById,
+			knowledgeBaseCount: publishForm.knowledge_base_ids.length,
+			toolCount: publishForm.tools.length,
+			memoryEnabled: publishForm.memory_enabled,
+			workflowEnabled: publishForm.workflow_enabled,
+			activeAgentCount: activePlatformAgents.length,
+			pendingApprovalCount: pendingApprovals.length,
+			auditEventCount,
+			hasSelectedRunAgent: Boolean(selectedRunAgent),
+			stepStates: agentSetupSteps,
 		},
 		{
-			key: 'model',
-			title: t('platform.agentManagement.pipeline.model'),
-			detail: modelCredentialLabel(
-				publishForm.model_config_id,
-				credentialById,
-				t('platform.agentManagement.pipeline.modelDetail'),
-			),
-			state: agentSetupSteps[1].state,
-			icon: KeyRound,
+			template: t('platform.agentManagement.pipeline.template'),
+			templateDetail: t('platform.agentManagement.pipeline.templateDetail'),
+			model: t('platform.agentManagement.pipeline.model'),
+			modelDetail: t('platform.agentManagement.pipeline.modelDetail'),
+			knowledge: t('platform.agentManagement.pipeline.knowledge'),
+			selectedKnowledge: ({ count }) =>
+				t('platform.agentManagement.selectedKnowledge', { count }),
+			knowledgeDetail: t('platform.agentManagement.pipeline.knowledgeDetail'),
+			tools: t('platform.agentManagement.pipeline.tools'),
+			toolsSelected: ({ count }) =>
+				t('platform.agentManagement.wizard.toolsSelected', { count }),
+			toolsDetail: t('platform.agentManagement.pipeline.toolsDetail'),
+			runtime: t('platform.agentManagement.pipeline.runtime'),
+			runtimeDetail: ({ memory, workflow }) =>
+				t('platform.agentManagement.wizard.runtimeDetail', { memory, workflow }),
+			enabled: t('platform.agentManagement.enabled'),
+			disabled: t('platform.agentManagement.disabled'),
+			publish: t('platform.agentManagement.pipeline.publish'),
+			publishDetailReady: ({ count }) =>
+				t('platform.agentManagement.pipeline.publishDetailReady', { count }),
+			publishDetail: t('platform.agentManagement.pipeline.publishDetail'),
+			governance: t('platform.agentManagement.pipeline.governance'),
+			governanceDetailPending: ({ count }) =>
+				t('platform.agentManagement.pipeline.governanceDetailPending', { count }),
+			governanceDetail: t('platform.agentManagement.pipeline.governanceDetail'),
 		},
 		{
-			key: 'knowledge',
-			title: t('platform.agentManagement.pipeline.knowledge'),
-			detail:
-				publishForm.knowledge_base_ids.length > 0
-					? t('platform.agentManagement.selectedKnowledge', {
-							count: publishForm.knowledge_base_ids.length,
-						})
-					: t('platform.agentManagement.pipeline.knowledgeDetail'),
-			state: agentSetupSteps[2].state,
-			icon: LibraryBig,
+			template: ListChecks,
+			model: KeyRound,
+			knowledge: LibraryBig,
+			tools: Boxes,
+			runtime: Brain,
+			publish: BotMessageSquare,
+			governance: ShieldCheck,
 		},
-		{
-			key: 'tools',
-			title: t('platform.agentManagement.pipeline.tools'),
-			detail:
-				publishForm.tools.length > 0
-					? t('platform.agentManagement.wizard.toolsSelected', {
-							count: publishForm.tools.length,
-						})
-					: t('platform.agentManagement.pipeline.toolsDetail'),
-			state: agentSetupSteps[3].state,
-			icon: Boxes,
-		},
-		{
-			key: 'runtime',
-			title: t('platform.agentManagement.pipeline.runtime'),
-			detail: t('platform.agentManagement.wizard.runtimeDetail', {
-				memory: publishForm.memory_enabled
-					? t('platform.agentManagement.enabled')
-					: t('platform.agentManagement.disabled'),
-				workflow: publishForm.workflow_enabled
-					? t('platform.agentManagement.enabled')
-					: t('platform.agentManagement.disabled'),
-			}),
-			state: agentSetupSteps[4].state,
-			icon: Brain,
-		},
-		{
-			key: 'publish',
-			title: t('platform.agentManagement.pipeline.publish'),
-			detail:
-				activePlatformAgents.length > 0
-					? t('platform.agentManagement.pipeline.publishDetailReady', {
-							count: activePlatformAgents.length,
-						})
-					: t('platform.agentManagement.pipeline.publishDetail'),
-			state:
-				activePlatformAgents.length > 0 ? 'ready' : selectedTemplate ? 'todo' : 'blocked',
-			icon: BotMessageSquare,
-		},
-		{
-			key: 'governance',
-			title: t('platform.agentManagement.pipeline.governance'),
-			detail:
-				pendingApprovals.length > 0
-					? t('platform.agentManagement.pipeline.governanceDetailPending', {
-							count: pendingApprovals.length,
-						})
-					: t('platform.agentManagement.pipeline.governanceDetail'),
-			state:
-				auditEventCount > 0 || pendingApprovals.length > 0
-					? 'ready'
-					: selectedRunAgent
-						? 'partial'
-						: 'todo',
-			icon: ShieldCheck,
-		},
-	] satisfies Array<{
+	) satisfies Array<{
 		key: string;
 		title: string;
 		detail: string;
