@@ -1,24 +1,3 @@
-import {
-	AlertTriangle,
-	BotMessageSquare,
-	Boxes,
-	Brain,
-	Building2,
-	Clock3,
-	Database,
-	FileClock,
-	HardDrive,
-	KeyRound,
-	LibraryBig,
-	ListChecks,
-	Network,
-	Play,
-	Server,
-	ShieldCheck,
-	Upload,
-	UserRound,
-	Workflow,
-} from 'lucide-react';
 import type { ComponentType } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -98,6 +77,23 @@ import {
 	workbenchReadinessNavigationActions,
 	workbenchRiskNavigationActions,
 } from './platform-navigation-actions';
+import {
+	agentReleasePipelineIcons,
+	capabilityIcons,
+	firstAgentGuideIcons,
+	governanceHealthIcons,
+	launchpadStepIcons,
+	monitoringStatIcons,
+	orchestrationWorkbenchIcons,
+	platformConsoleIcons,
+	platformOverviewStatIcons,
+	rolloutPathIcons,
+	runtimeStatusIcons,
+	workbenchIndicatorIcons,
+	workbenchPrimaryActionIcons,
+	workbenchQuickActionIcons,
+	workbenchReadinessIcons,
+} from './platform-icons';
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
 	buildAgentConfigurationPayloadFromForm,
@@ -583,12 +579,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			},
 		},
 		{
-			icons: {
-				agents: BotMessageSquare,
-				credentials: KeyRound,
-				knowledgeBases: LibraryBig,
-				workflows: Workflow,
-			},
+			icons: platformOverviewStatIcons,
 			labels: {
 				label: (key) => t(`platform.stats.${key}`),
 				helper: (key) => t(`platform.stats.${key}Helper`),
@@ -602,14 +593,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			currentIdentityLabel,
 		},
 		{
-			icons: {
-				platform: Server,
-				userTenant: UserRound,
-				connector: Network,
-				dataDir: HardDrive,
-				auditPath: FileClock,
-				auditStatus: ShieldCheck,
-			},
+			icons: runtimeStatusIcons,
 			labels: {
 				label: (key) => t(`platform.runtime.${key}`),
 				unavailable: t('platform.runtime.unavailable'),
@@ -903,15 +887,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				t('platform.agentManagement.pipeline.governanceDetailPending', { count }),
 			governanceDetail: t('platform.agentManagement.pipeline.governanceDetail'),
 		},
-		{
-			template: ListChecks,
-			model: KeyRound,
-			knowledge: LibraryBig,
-			tools: Boxes,
-			runtime: Brain,
-			publish: BotMessageSquare,
-			governance: ShieldCheck,
-		},
+		agentReleasePipelineIcons,
 	) satisfies Array<{
 		key: string;
 		title: string;
@@ -955,12 +931,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			auditEventsFailedHelper: ({ count }) =>
 				t('platform.governanceHealth.auditEventsFailedHelper', { count }),
 		},
-		icons: {
-			tenants: Building2,
-			identities: UserRound,
-			pendingApprovals: AlertTriangle,
-			auditEvents: FileClock,
-		},
+		icons: governanceHealthIcons,
 	});
 	const identityAccessRows = governanceOperationsState.identityAccessRows;
 	const accessTenantSummaries = governanceOperationsState.accessTenantSummaries;
@@ -2947,16 +2918,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			configAgents: platformConfigExport?.counts.agents ?? 0,
 		},
 		hasConfigExport: Boolean(platformConfigExport),
-		icons: {
-			model: KeyRound,
-			knowledge: Database,
-			agent: BotMessageSquare,
-			tools: Boxes,
-			workflow: Clock3,
-			tenant: ShieldCheck,
-			audit: Network,
-			config: Upload,
-		},
+		icons: capabilityIcons,
 		actions: capabilityNavigationActions(platformNavigationHandlers),
 	});
 
@@ -2978,14 +2940,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			pendingApprovalCount: pendingApprovals.length,
 		},
 		{
-			icons: {
-				members: UserRound,
-				model: KeyRound,
-				knowledge: LibraryBig,
-				agent: BotMessageSquare,
-				run: Play,
-				governance: ShieldCheck,
-			},
+			icons: launchpadStepIcons,
 			actions: launchpadTargetActions,
 			fallbackAction: scrollToGovernance,
 			labels: {
@@ -3004,12 +2959,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const launchpadPrimaryStep = launchpadPrimaryStepForSteps(launchpadSteps);
 
 	const platformConsoleItems = platformConsoleItemsForDisplay({
-		icons: {
-			agents: BotMessageSquare,
-			resources: Network,
-			run: Play,
-			governance: ShieldCheck,
-		},
+		icons: platformConsoleIcons,
 		actions: platformConsoleNavigationActions(platformNavigationHandlers),
 		labels: {
 			title: (key) => t(`platform.console.${key}`),
@@ -3029,12 +2979,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			memoryOperationsItemCount: memoryOperationsItems.length,
 		},
 		{
-			icons: {
-				agents: BotMessageSquare,
-				approvals: ShieldCheck,
-				workflows: Workflow,
-				memory: Brain,
-			},
+			icons: workbenchIndicatorIcons,
 			actions: workbenchIndicatorNavigationActions(platformNavigationHandlers),
 			labels: {
 				readyAgents: t('platform.workbench.indicators.readyAgents'),
@@ -3059,12 +3004,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			memoryOperationsRunCount,
 		},
 		{
-			icons: {
-				run: Play,
-				workflow: Workflow,
-				governance: ShieldCheck,
-				memory: Brain,
-			},
+			icons: workbenchPrimaryActionIcons,
 			actions: workbenchPrimaryNavigationActions(platformNavigationHandlers),
 			labels: {
 				runTitle: t('platform.workbench.actions.run.title'),
@@ -3101,14 +3041,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			workflowTemplateCount: workflowTemplates.length,
 		},
 		{
-			icons: {
-				model: KeyRound,
-				knowledge: LibraryBig,
-				connectors: Network,
-				members: UserRound,
-				agents: BotMessageSquare,
-				workflows: Workflow,
-			},
+			icons: workbenchReadinessIcons,
 			actions: workbenchReadinessNavigationActions(platformNavigationHandlers),
 			labels: {
 				title: (key) => t(`platform.workbench.readiness.${key}.title`),
@@ -3149,14 +3082,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	);
 	const workbenchQuickActions = workbenchQuickActionsForStatus({
-		icons: {
-			connectors: Network,
-			publish: BotMessageSquare,
-			run: Play,
-			workflow: Workflow,
-			governance: ShieldCheck,
-			tools: Boxes,
-		},
+		icons: workbenchQuickActionIcons,
 		actions: workbenchQuickNavigationActions(platformNavigationHandlers),
 		labels: {
 			connectors: t('platform.workbench.quickActions.connectors'),
@@ -3180,14 +3106,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			hasPlatformConfigExport: Boolean(platformConfigExport),
 		},
 		{
-			icons: {
-				model: KeyRound,
-				knowledge: LibraryBig,
-				agent: BotMessageSquare,
-				run: Play,
-				governance: ShieldCheck,
-				config: Upload,
-			},
+			icons: rolloutPathIcons,
 			actions: rolloutPathNavigationActions(platformNavigationHandlers),
 			labels: {
 				title: (key) => t(`platform.workbench.rolloutPath.steps.${key}.title`),
@@ -3208,12 +3127,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			pendingApprovalCount: pendingApprovals.length,
 		},
 		{
-			icons: {
-				model: KeyRound,
-				agent: BotMessageSquare,
-				run: Play,
-				governance: ShieldCheck,
-			},
+			icons: firstAgentGuideIcons,
 			actions: firstAgentGuideNavigationActions(platformNavigationHandlers),
 			labels: {
 				title: (key) => t(`platform.workbench.firstAgentGuide.steps.${key}.title`),
@@ -3263,15 +3177,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			},
 		},
 		{
-			icons: {
-				template: ListChecks,
-				model: KeyRound,
-				knowledge: LibraryBig,
-				tools: Boxes,
-				policy: ShieldCheck,
-				publish: BotMessageSquare,
-				operate: Workflow,
-			},
+			icons: orchestrationWorkbenchIcons,
 			actions: orchestrationWorkbenchNavigationActions(platformNavigationHandlers, {
 				handleNextAgentSetupStep,
 				hasKnowledgeBases: knowledgeBases.length > 0,
@@ -3342,12 +3248,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			pendingApprovalCount: pendingApprovals.length,
 		},
 		{
-			icons: {
-				agentRuns: BotMessageSquare,
-				workflowRuns: Workflow,
-				toolAudit: ShieldCheck,
-				pendingApprovals: Clock3,
-			},
+			icons: monitoringStatIcons,
 			labels: {
 				agentRuns: t('platform.monitoring.agentRuns'),
 				agentRunsHelper: t('platform.monitoring.agentRunsHelper'),
