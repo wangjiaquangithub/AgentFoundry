@@ -106,6 +106,7 @@ import {
 	connectorOperationsLabels,
 	dashboardTodoLabels,
 	firstAgentGuideStepLabels,
+	monitoringStatLabels,
 	orchestrationWorkbenchStepLabels,
 	operationsHeadlineLabels,
 	launchpadStepLabels,
@@ -3030,18 +3031,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 		{
 			icons: monitoringStatIcons,
-			labels: {
-				agentRuns: t('platform.monitoring.agentRuns'),
-				agentRunsHelper: t('platform.monitoring.agentRunsHelper'),
-				workflowRuns: t('platform.monitoring.workflowRuns'),
-				workflowRunsHelper: (counts) =>
-					t('platform.monitoring.workflowRunsHelper', counts),
-				toolAudit: t('platform.monitoring.toolAudit'),
-				toolAuditHelper: (counts) =>
-					t('platform.monitoring.toolAuditHelper', counts),
-				pendingApprovals: t('platform.monitoring.pendingApprovals'),
-				pendingApprovalsHelper: t('platform.monitoring.pendingApprovalsHelper'),
-			},
+			labels: monitoringStatLabels(t),
 		},
 	);
 

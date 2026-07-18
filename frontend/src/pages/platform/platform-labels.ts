@@ -300,3 +300,16 @@ export const orchestrationWorkbenchStepLabels = (t: PlatformTranslate) => ({
 		t('platform.orchestration.operate.pending', { count }),
 	operateEmpty: t('platform.orchestration.operate.empty'),
 });
+
+export const monitoringStatLabels = (t: PlatformTranslate) => ({
+	agentRuns: t('platform.monitoring.agentRuns'),
+	agentRunsHelper: t('platform.monitoring.agentRunsHelper'),
+	workflowRuns: t('platform.monitoring.workflowRuns'),
+	workflowRunsHelper: (counts: { completed: number; partial: number; failed: number }) =>
+		t('platform.monitoring.workflowRunsHelper', counts),
+	toolAudit: t('platform.monitoring.toolAudit'),
+	toolAuditHelper: (counts: { success: number; failure: number }) =>
+		t('platform.monitoring.toolAuditHelper', counts),
+	pendingApprovals: t('platform.monitoring.pendingApprovals'),
+	pendingApprovalsHelper: t('platform.monitoring.pendingApprovalsHelper'),
+});
