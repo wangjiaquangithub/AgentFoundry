@@ -113,7 +113,6 @@ export function DashboardViewPage({
 	appCenterDetailResources,
 	appCenterDetailStatus,
 	appCenterPrimaryDisabled,
-	appCenterPrimaryLabel,
 	approvalError,
 	approvalFilters,
 	approvalForm,
@@ -471,6 +470,14 @@ export function DashboardViewPage({
 				: activeSavedConnectorConfig
 					? t('platform.connectors.draftChanged')
 					: t('platform.connectors.draftNew');
+	const appCenterPrimaryLabel =
+		credentials.length === 0
+			? t('platform.appCenter.configureModel')
+			: readyPlatformAgents.length > 0
+				? t('platform.appCenter.runReadyAgent')
+				: activePlatformAgents.length === 0
+					? t('platform.appCenter.quickPublish')
+					: t('platform.appCenter.fixAgents');
 
 	return (
 		<main className="h-full overflow-y-auto bg-background">

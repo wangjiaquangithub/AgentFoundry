@@ -1305,14 +1305,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const inspectedAppCenterTemplate =
 		selectedAppCenterTemplate ??
 		(!inspectedAppCenterAgent ? defaultAgentTemplate : null);
-	const appCenterPrimaryLabel =
-		credentials.length === 0
-			? t('platform.appCenter.configureModel')
-			: readyPlatformAgents.length > 0
-				? t('platform.appCenter.runReadyAgent')
-				: activePlatformAgents.length === 0
-					? t('platform.appCenter.quickPublish')
-					: t('platform.appCenter.fixAgents');
 	const appCenterPrimaryDisabled =
 		credentials.length > 0 &&
 		activePlatformAgents.length === 0 &&
@@ -5055,7 +5047,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			appCenterDetailResources={appCenterDetailResources}
 			appCenterDetailStatus={appCenterDetailStatus}
 			appCenterPrimaryDisabled={appCenterPrimaryDisabled}
-			appCenterPrimaryLabel={appCenterPrimaryLabel}
 			approvalError={approvalError}
 			approvalFilters={approvalFilters}
 			approvalForm={approvalForm}
