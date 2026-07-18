@@ -110,6 +110,7 @@ import {
 	agentIsReady,
 	agentReadinessIssues,
 	agentReadinessState,
+	agentOpsSummaryItems,
 	agentResourceSummary,
 	agentRunnerAccessLabelKey,
 	appCenterAgentsForDisplay,
@@ -1294,30 +1295,26 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const inspectedAppCenterAgent = appCenterSelection.inspectedAgent;
 	const inspectedAppCenterTemplate = appCenterSelection.inspectedTemplate;
 	const appCenterPrimaryDisabled = appCenterSelection.primaryDisabled;
-	const agentOpsSummary = [
+	const agentOpsSummary = agentOpsSummaryItems(
 		{
-			label: t('platform.agentManagement.ops.publishedTotal'),
-			value: publishedPlatformAgents.length,
-			helper: t('platform.agentManagement.ops.publishedTotalHelper'),
+			published: publishedPlatformAgents.length,
+			active: activePlatformAgents.length,
+			ready: readyPlatformAgents.length,
+			needsSetup: blockedOrPartialPlatformAgents.length,
+			archived: archivedPlatformAgents.length,
 		},
 		{
-			label: t('platform.agentManagement.ops.activeTotal'),
-			value: activePlatformAgents.length,
-			helper: t('platform.agentManagement.ops.activeTotalHelper'),
+			publishedTotal: t('platform.agentManagement.ops.publishedTotal'),
+			publishedTotalHelper: t('platform.agentManagement.ops.publishedTotalHelper'),
+			activeTotal: t('platform.agentManagement.ops.activeTotal'),
+			activeTotalHelper: t('platform.agentManagement.ops.activeTotalHelper'),
+			readyTotal: t('platform.agentManagement.ops.readyTotal'),
+			readyTotalHelper: t('platform.agentManagement.ops.readyTotalHelper'),
+			needsSetupTotal: t('platform.agentManagement.ops.needsSetupTotal'),
+			needsSetupTotalHelper: ({ count }) =>
+				t('platform.agentManagement.ops.needsSetupTotalHelper', { count }),
 		},
-		{
-			label: t('platform.agentManagement.ops.readyTotal'),
-			value: readyPlatformAgents.length,
-			helper: t('platform.agentManagement.ops.readyTotalHelper'),
-		},
-		{
-			label: t('platform.agentManagement.ops.needsSetupTotal'),
-			value: blockedOrPartialPlatformAgents.length,
-			helper: t('platform.agentManagement.ops.needsSetupTotalHelper', {
-				count: archivedPlatformAgents.length,
-			}),
-		},
-	];
+	);
 	const topOperationsAgents = [
 		...readyPlatformAgents,
 		...blockedOrPartialPlatformAgents,

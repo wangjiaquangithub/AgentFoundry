@@ -312,6 +312,49 @@ export function appCenterAgentsForDisplay<TAgent>(
 	return [...readyAgents, ...blockedOrPartialAgents].slice(0, limit);
 }
 
+export function agentOpsSummaryItems(
+	values: {
+		published: number;
+		active: number;
+		ready: number;
+		needsSetup: number;
+		archived: number;
+	},
+	labels: {
+		publishedTotal: string;
+		publishedTotalHelper: string;
+		activeTotal: string;
+		activeTotalHelper: string;
+		readyTotal: string;
+		readyTotalHelper: string;
+		needsSetupTotal: string;
+		needsSetupTotalHelper: (counts: { count: number }) => string;
+	},
+) {
+	return [
+		{
+			label: labels.publishedTotal,
+			value: values.published,
+			helper: labels.publishedTotalHelper,
+		},
+		{
+			label: labels.activeTotal,
+			value: values.active,
+			helper: labels.activeTotalHelper,
+		},
+		{
+			label: labels.readyTotal,
+			value: values.ready,
+			helper: labels.readyTotalHelper,
+		},
+		{
+			label: labels.needsSetupTotal,
+			value: values.needsSetup,
+			helper: labels.needsSetupTotalHelper({ count: values.archived }),
+		},
+	];
+}
+
 export function templateDetailIssues(
 	hasCredentials: boolean,
 	hasKnowledgeBases: boolean,
