@@ -23,6 +23,7 @@ import type { LaunchpadStep } from './components/LaunchpadPanel';
 import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
 import type { MonitoringStat } from './components/MonitoringSnapshotPanel';
 import type { PlatformMemberTenantSummary } from './components/MembersPanel';
+import type { PlatformConsoleItem } from './components/PlatformConsolePanel';
 import type { RolloutPathStep } from './components/RolloutPath';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
 import type { TenantOverviewItem } from './components/TenantWorkspacePanel';
@@ -476,6 +477,7 @@ type RolloutPathStepKey =
 	| 'governance'
 	| 'config';
 type FirstAgentGuideStepKey = 'model' | 'agent' | 'run' | 'governance';
+type PlatformConsoleItemKey = 'agents' | 'resources' | 'run' | 'governance';
 
 export function workbenchReadinessItemsForStatus(
 	values: {
@@ -864,6 +866,27 @@ export function firstAgentGuidePrimaryStepForSteps(steps: FirstAgentGuideStep[])
 		steps.find((step) => step.state === 'partial') ??
 		steps[steps.length - 1]
 	);
+}
+
+export function platformConsoleItemsForDisplay(options: {
+	icons: Record<PlatformConsoleItemKey, ComponentType<{ className?: string }>>;
+	actions: Record<PlatformConsoleItemKey, () => void>;
+	labels: {
+		title: (key: PlatformConsoleItemKey) => string;
+		description: (key: PlatformConsoleItemKey) => string;
+		action: (key: PlatformConsoleItemKey) => string;
+	};
+}): PlatformConsoleItem[] {
+	const keys: PlatformConsoleItemKey[] = ['agents', 'resources', 'run', 'governance'];
+
+	return keys.map((key) => ({
+		key,
+		title: options.labels.title(key),
+		description: options.labels.description(key),
+		actionLabel: options.labels.action(key),
+		icon: options.icons[key],
+		onClick: options.actions[key],
+	}));
 }
 
 export function workbenchIndicatorsForStatus(

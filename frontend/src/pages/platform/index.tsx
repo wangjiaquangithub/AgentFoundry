@@ -72,7 +72,6 @@ import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
 import { MemoryViewPage } from './components/MemoryViewPage';
 import type { MemberFormState } from './components/MembersPanel';
 import type { OrchestrationWorkbenchStep } from './components/OrchestrationWorkbenchPanel';
-import type { PlatformConsoleItem } from './components/PlatformConsolePanel';
 import { RunsViewPage } from './components/RunsViewPage';
 import type { RuntimeStatusItem } from './components/RuntimeStatusPanel';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
@@ -118,6 +117,7 @@ import {
 	operationsHeadlineText,
 	pendingWorkflowRunApprovals,
 	platformMemberTenantSummariesForMembers,
+	platformConsoleItemsForDisplay,
 	recentTriggerSchedules,
 	rolloutPathStepsForStatus,
 	topOperationsAgentsForDisplay,
@@ -3701,40 +3701,25 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		launchpadSteps.find((step) => step.state !== 'ready') ??
 		launchpadSteps[launchpadSteps.length - 1];
 
-	const platformConsoleItems = [
-		{
-			key: 'agents',
-			title: t('platform.console.agents'),
-			description: t('platform.console.agentsDescription'),
-			actionLabel: t('platform.console.agentsAction'),
-			icon: BotMessageSquare,
-			onClick: handleStartPublishing,
+	const platformConsoleItems = platformConsoleItemsForDisplay({
+		icons: {
+			agents: BotMessageSquare,
+			resources: Network,
+			run: Play,
+			governance: ShieldCheck,
 		},
-		{
-			key: 'resources',
-			title: t('platform.console.resources'),
-			description: t('platform.console.resourcesDescription'),
-			actionLabel: t('platform.console.resourcesAction'),
-			icon: Network,
-			onClick: scrollToConnectorCenter,
+		actions: {
+			agents: handleStartPublishing,
+			resources: scrollToConnectorCenter,
+			run: scrollToAgentRunner,
+			governance: scrollToGovernance,
 		},
-		{
-			key: 'run',
-			title: t('platform.console.run'),
-			description: t('platform.console.runDescription'),
-			actionLabel: t('platform.console.runAction'),
-			icon: Play,
-			onClick: scrollToAgentRunner,
+		labels: {
+			title: (key) => t(`platform.console.${key}`),
+			description: (key) => t(`platform.console.${key}Description`),
+			action: (key) => t(`platform.console.${key}Action`),
 		},
-		{
-			key: 'governance',
-			title: t('platform.console.governance'),
-			description: t('platform.console.governanceDescription'),
-			actionLabel: t('platform.console.governanceAction'),
-			icon: ShieldCheck,
-			onClick: scrollToGovernance,
-		},
-	] satisfies PlatformConsoleItem[];
+	});
 	const workbenchIndicators = workbenchIndicatorsForStatus(
 		{
 			activeAgentCount: activePlatformAgents.length,
