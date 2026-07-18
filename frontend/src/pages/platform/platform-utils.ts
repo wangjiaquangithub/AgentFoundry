@@ -89,6 +89,13 @@ export function shortResourceId(id: string) {
 	return id.length > 12 ? `${id.slice(0, 8)}...${id.slice(-4)}` : id;
 }
 
+export function capabilityStateForCount(
+	count: number,
+	emptyState: HealthState = 'partial',
+): HealthState {
+	return count > 0 ? 'ready' : emptyState;
+}
+
 export function credentialLabel(credential: { id?: unknown; data?: { name?: unknown } }) {
 	const name = credential.data?.name;
 	return typeof name === 'string' && name.trim() ? name : String(credential.id ?? '');

@@ -100,6 +100,7 @@ import {
 	appCenterTemplateDetailResourceValues,
 	auditStatsForSummary,
 	blockedOrPartialPlatformAgentsForReadiness,
+	capabilityStateForCount,
 	connectorDraftIssuesForDraft,
 	dashboardOperationsSummaryForOperations,
 	dashboardRiskToolItemsForStatus,
@@ -3467,7 +3468,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			metric: t('platform.capabilities.model.metric', { count: credentials.length }),
 			actionLabel: t('platform.capabilities.model.action'),
 			status: credentials.length > 0 ? t('platform.status.ready') : t('platform.status.toConfigure'),
-			state: credentials.length > 0 ? 'ready' : 'partial',
+			state: capabilityStateForCount(credentials.length),
 			icon: KeyRound,
 			onClick: () => navigate('/credential'),
 		},
@@ -3478,7 +3479,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			actionLabel: t('platform.capabilities.knowledge.action'),
 			status:
 				knowledgeBases.length > 0 ? t('platform.status.ready') : t('platform.status.toConfigure'),
-			state: knowledgeBases.length > 0 ? 'ready' : 'partial',
+			state: capabilityStateForCount(knowledgeBases.length),
 			icon: Database,
 			onClick: () => navigate('/knowledge'),
 		},
@@ -3493,7 +3494,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				activePlatformAgents.length > 0
 					? t('platform.status.ready')
 					: t('platform.status.toConfigure'),
-			state: activePlatformAgents.length > 0 ? 'ready' : 'todo',
+			state: capabilityStateForCount(activePlatformAgents.length, 'todo'),
 			icon: BotMessageSquare,
 			onClick: handleStartPublishing,
 		},
@@ -3506,7 +3507,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				availableToolItems.length > 0
 					? t('platform.status.demoReady')
 					: t('platform.status.toConfigure'),
-			state: availableToolItems.length > 0 ? 'ready' : 'partial',
+			state: capabilityStateForCount(availableToolItems.length),
 			icon: Boxes,
 			onClick: scrollToToolRunner,
 		},
@@ -3521,7 +3522,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				workflowTemplates.length > 0 || schedules.length > 0
 					? t('platform.status.ready')
 					: t('platform.status.toConfigure'),
-			state: workflowTemplates.length > 0 || schedules.length > 0 ? 'ready' : 'todo',
+			state: capabilityStateForCount(workflowTemplates.length || schedules.length, 'todo'),
 			icon: Clock3,
 			onClick: scrollToWorkflowRunner,
 		},
@@ -3536,7 +3537,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				platformMemberTenantSummaries.length > 0
 					? t('platform.status.ready')
 					: t('platform.status.toConfigure'),
-			state: platformMemberTenantSummaries.length > 0 ? 'ready' : 'partial',
+			state: capabilityStateForCount(platformMemberTenantSummaries.length),
 			icon: ShieldCheck,
 			onClick: scrollToMembers,
 		},
