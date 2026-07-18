@@ -132,6 +132,7 @@ import {
 	rolloutPathStepsForStatus,
 	runtimeStatusItemsForStatus,
 	selectedIdentityGovernanceActivityForIdentity,
+	selectedToolRunnerStateForStatus,
 	tenantWorkspaceByNameForEntries,
 	tenantWorkspaceEntriesForWorkspaces,
 	tenantWorkspaceStateForStatus,
@@ -839,27 +840,23 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					})),
 		[policyDecisions, toolCatalogItems],
 	);
-	const selectedToolCatalogItem =
-		availableToolItems.find((item) => item.name === selectedToolName) ?? null;
-	const selectedToolConfig = enterpriseToolInputConfig[selectedToolName];
-	const selectedToolDecision = policyDecisions.find(
-		(decision) => decision.name === selectedToolName,
-	);
-	const selectedToolConfigured =
-		selectedToolCatalogItem?.configured_for_agent !== false;
-	const selectedToolInputKey = selectedToolConfig?.inputKey ?? selectedToolCatalogItem?.input_key;
-	const selectedToolInputValue =
-		toolInputs[selectedToolName] ??
-		selectedToolConfig?.defaultValue ??
-		selectedToolCatalogItem?.default_input ??
-		'';
-	const selectedToolAllowed =
-		selectedToolConfigured &&
-		(selectedToolCatalogItem?.allowed ?? selectedToolDecision?.allowed ?? false);
-	const selectedToolReason =
-		selectedToolConfigured
-			? (selectedToolCatalogItem?.reason ?? selectedToolDecision?.reason ?? '')
-			: t('platform.toolRunner.notConfiguredForAgent');
+	const selectedToolRunnerState = selectedToolRunnerStateForStatus({
+		availableToolItems,
+		selectedToolName,
+		toolInputs,
+		toolInputConfig: enterpriseToolInputConfig,
+		policyDecisions,
+		labels: {
+			notConfiguredForAgent: t('platform.toolRunner.notConfiguredForAgent'),
+		},
+	});
+	const selectedToolCatalogItem = selectedToolRunnerState.selectedToolCatalogItem;
+	const selectedToolConfig = selectedToolRunnerState.selectedToolConfig;
+	const selectedToolDecision = selectedToolRunnerState.selectedToolDecision;
+	const selectedToolInputKey = selectedToolRunnerState.selectedToolInputKey;
+	const selectedToolInputValue = selectedToolRunnerState.selectedToolInputValue;
+	const selectedToolAllowed = selectedToolRunnerState.selectedToolAllowed;
+	const selectedToolReason = selectedToolRunnerState.selectedToolReason;
 	const agentRoutingLabel =
 		agentRunResult?.routing_mode ||
 		agentRunResult?.routing_source ||

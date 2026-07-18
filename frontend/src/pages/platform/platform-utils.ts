@@ -70,6 +70,11 @@ export interface AgentWizardStep {
 	ref: RefObject<HTMLDivElement | HTMLElement | null>;
 }
 
+export type EnterpriseToolInputConfigMap = Record<
+	string,
+	{ inputKey: string; labelKey: string; defaultValue: string }
+>;
+
 export function formatTimestamp(value?: string) {
 	if (!value) {
 		return '-';
@@ -3044,6 +3049,50 @@ export function toolPolicySummaryForGovernance(
 		draftDeny,
 		draftInherit,
 		pending,
+	};
+}
+
+export function selectedToolRunnerStateForStatus(values: {
+	availableToolItems: EnterpriseToolCatalogItem[];
+	selectedToolName: string;
+	toolInputs: Record<string, string>;
+	toolInputConfig: EnterpriseToolInputConfigMap;
+	policyDecisions: EnterprisePlatformStatusResponse['tool_policy']['decisions'];
+	labels: {
+		notConfiguredForAgent: string;
+	};
+}) {
+	const selectedToolCatalogItem =
+		values.availableToolItems.find((item) => item.name === values.selectedToolName) ?? null;
+	const selectedToolConfig = values.toolInputConfig[values.selectedToolName];
+	const selectedToolDecision = values.policyDecisions.find(
+		(decision) => decision.name === values.selectedToolName,
+	);
+	const selectedToolConfigured =
+		selectedToolCatalogItem?.configured_for_agent !== false;
+	const selectedToolInputKey =
+		selectedToolConfig?.inputKey ?? selectedToolCatalogItem?.input_key;
+	const selectedToolInputValue =
+		values.toolInputs[values.selectedToolName] ??
+		selectedToolConfig?.defaultValue ??
+		selectedToolCatalogItem?.default_input ??
+		'';
+	const selectedToolAllowed =
+		selectedToolConfigured &&
+		(selectedToolCatalogItem?.allowed ?? selectedToolDecision?.allowed ?? false);
+	const selectedToolReason = selectedToolConfigured
+		? (selectedToolCatalogItem?.reason ?? selectedToolDecision?.reason ?? '')
+		: values.labels.notConfiguredForAgent;
+
+	return {
+		selectedToolCatalogItem,
+		selectedToolConfig,
+		selectedToolDecision,
+		selectedToolConfigured,
+		selectedToolInputKey,
+		selectedToolInputValue,
+		selectedToolAllowed,
+		selectedToolReason,
 	};
 }
 
