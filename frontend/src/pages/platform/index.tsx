@@ -8,7 +8,6 @@ import {
 	Building2,
 	CheckCircle2,
 	Clock3,
-	Code2,
 	Database,
 	FileClock,
 	HardDrive,
@@ -158,6 +157,7 @@ import { SettingsViewPage } from './components/SettingsViewPage';
 import { TenantsViewPage } from './components/TenantsViewPage';
 import { ToolCatalogPanel } from './components/ToolCatalogPanel';
 import { ToolRunnerPanel } from './components/ToolRunnerPanel';
+import { ToolsViewPage } from './components/ToolsViewPage';
 import {
 	WorkbenchReadinessPanel,
 	type WorkbenchQuickAction,
@@ -4990,415 +4990,42 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	if (view === 'tools') {
 		return (
-			<main className="h-full overflow-y-auto bg-background">
-				<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 lg:px-8">
-					<section className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
-						<div className="min-w-0">
-							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-								<Boxes className="size-4" />
-								<span>{t('platform.toolCatalog.title')}</span>
-							</div>
-							<h1 className="text-2xl font-semibold tracking-normal">
-								{t('platform.toolCatalog.title')}
-							</h1>
-							<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-								{t('platform.toolCatalog.description')}
-							</p>
-						</div>
-						<div className="grid min-w-0 gap-2 rounded-lg border bg-muted/20 p-3 text-xs sm:min-w-80">
-							<div className="flex items-center justify-between gap-3">
-								<span className="text-muted-foreground">
-									{t('platform.connection.server')}
-								</span>
-								<span className="truncate font-mono" title={serverUrl}>
-									{serverUrl}
-								</span>
-							</div>
-							<div className="flex items-center justify-between gap-3">
-								<span className="text-muted-foreground">
-									{t('platform.connection.user')}
-								</span>
-								<span className="truncate font-mono" title={username}>
-									{username}
-								</span>
-							</div>
-							<div className="flex items-center justify-between gap-3">
-								<span className="text-muted-foreground">
-									{t('platform.connection.health')}
-								</span>
-								<StateBadge
-									state={hasErrors ? 'partial' : 'ready'}
-									label={
-										hasErrors
-											? t('platform.connection.partial')
-											: t('platform.connection.connected')
-									}
-								/>
-							</div>
-						</div>
-					</section>
-
-					<section ref={configManagementRef} className="flex flex-col gap-3">
-						<div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-							<div>
-								<h2 className="text-base font-semibold">
-									{t('platform.toolCatalog.title')}
-								</h2>
-								<p className="text-sm text-muted-foreground">
-									{t('platform.toolCatalog.description')}
-								</p>
-							</div>
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={() => void refetchToolCatalog()}
-								disabled={toolCatalogLoading}
-							>
-								<RefreshCcw className={cn(toolCatalogLoading && 'animate-spin')} />
-								{t('platform.audit.refresh')}
-							</Button>
-						</div>
-
-						{toolCatalogLoading ? (
-							<div className="grid gap-3 lg:grid-cols-3">
-								<Skeleton className="h-48 w-full" />
-								<Skeleton className="h-48 w-full" />
-								<Skeleton className="h-48 w-full" />
-							</div>
-						) : toolCatalogError ? (
-							<PlatformNotice>{toolCatalogError}</PlatformNotice>
-						) : availableToolItems.length === 0 ? (
-							<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-								{t('platform.toolCatalog.empty')}
-							</div>
-						) : (
-							<div className="grid gap-3 lg:grid-cols-3">
-								{availableToolItems.map((tool) => {
-									const statItems = [
-										{
-											label: t('platform.toolCatalog.calls'),
-											value: String(tool.stats.calls ?? 0),
-										},
-										{
-											label: t('platform.toolCatalog.successes'),
-											value: String(tool.stats.successes ?? 0),
-										},
-										{
-											label: t('platform.toolCatalog.failures'),
-											value: String(tool.stats.failures ?? 0),
-										},
-										{
-											label: t('platform.toolCatalog.avgDuration'),
-											value:
-												tool.stats.avg_duration_ms === null ||
-												tool.stats.avg_duration_ms === undefined
-													? '-'
-													: `${Math.round(tool.stats.avg_duration_ms)} ms`,
-										},
-										{
-											label: t('platform.toolCatalog.lastCalled'),
-											value: tool.stats.last_called_at
-												? formatTimestamp(tool.stats.last_called_at)
-												: t('platform.toolCatalog.neverCalled'),
-										},
-									];
-
-									return (
-										<Card
-											key={tool.name}
-											size="sm"
-											className="rounded-lg shadow-none"
-										>
-											<CardHeader className="grid-cols-[auto_1fr_auto] items-start gap-3">
-												<div className="flex size-8 items-center justify-center rounded-lg border bg-background">
-													<Boxes className="size-4 text-muted-foreground" />
-												</div>
-												<div className="min-w-0">
-													<CardTitle className="truncate font-mono text-sm">
-														{tool.name}
-													</CardTitle>
-													<p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
-														{tool.description}
-													</p>
-												</div>
-												<Badge
-													variant={tool.allowed ? 'outline' : 'destructive'}
-													className={cn(
-														tool.allowed &&
-															'border-emerald-500/30 bg-emerald-500/10 text-emerald-700',
-													)}
-												>
-													{tool.allowed ? (
-														<CheckCircle2 className="size-3" />
-													) : (
-														<XCircle className="size-3" />
-													)}
-													{tool.allowed
-														? t('platform.policy.allowed')
-														: t('platform.policy.denied')}
-												</Badge>
-											</CardHeader>
-											<CardContent className="grid gap-4 text-xs">
-												{tool.reason ? (
-													<p className="break-words text-muted-foreground">
-														{tool.reason}
-													</p>
-												) : null}
-												<div className="grid gap-2">
-													<div className="grid grid-cols-[6rem_1fr] gap-2">
-														<span className="text-muted-foreground">
-															{t('platform.toolCatalog.inputKey')}
-														</span>
-														<span className="min-w-0 truncate font-mono">
-															{tool.input_key}
-														</span>
-													</div>
-													<div className="grid grid-cols-[6rem_1fr] gap-2">
-														<span className="text-muted-foreground">
-															{t('platform.toolCatalog.defaultInput')}
-														</span>
-														<span className="min-w-0 truncate font-mono">
-															{tool.default_input || '-'}
-														</span>
-													</div>
-													<div className="grid grid-cols-[6rem_1fr] gap-2">
-														<span className="text-muted-foreground">
-															{t('platform.toolCatalog.configuredBy')}
-														</span>
-														{tool.configured_by_agents.length > 0 ? (
-															<div className="flex min-w-0 flex-wrap gap-1">
-																{tool.configured_by_agents.map(
-																	(agentId) => {
-																		const agent =
-																			publishedPlatformAgents.find(
-																				(item) =>
-																					item.id === agentId,
-																			);
-
-																		return (
-																			<Badge
-																				key={agentId}
-																				variant="outline"
-																				className="max-w-full truncate font-normal"
-																			>
-																				{agent?.name ?? agentId}
-																			</Badge>
-																		);
-																	},
-																)}
-															</div>
-														) : (
-															<span className="min-w-0 text-muted-foreground">
-																{t(
-																	'platform.toolCatalog.notConfigured',
-																)}
-															</span>
-														)}
-													</div>
-												</div>
-												<div className="grid gap-2 sm:grid-cols-2">
-													{statItems.map((item) => (
-														<div
-															key={item.label}
-															className="rounded-lg border bg-background p-2"
-														>
-															<div className="text-muted-foreground">
-																{item.label}
-															</div>
-															<div
-																className="mt-1 truncate font-mono font-medium"
-																title={item.value}
-															>
-																{item.value}
-															</div>
-														</div>
-													))}
-												</div>
-											</CardContent>
-										</Card>
-									);
-								})}
-							</div>
-						)}
-					</section>
-
-					<section
-						ref={toolRunnerRef}
-						className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(360px,1.05fr)]"
-					>
-						<div className="flex flex-col gap-3">
-							<div className="flex items-start gap-2">
-								<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/20">
-									<Code2 className="size-4 text-muted-foreground" />
-								</div>
-								<div className="min-w-0">
-									<h2 className="text-base font-semibold">
-										{t('platform.toolRunner.title')}
-									</h2>
-									<p className="text-sm text-muted-foreground">
-										{t('platform.toolRunner.description')}
-									</p>
-								</div>
-							</div>
-
-							<div className="grid gap-4 rounded-lg border bg-muted/10 p-4">
-								<div className="grid gap-2">
-									<label className="text-xs font-medium text-muted-foreground">
-										{t('platform.toolRunner.selectTool')}
-									</label>
-									<Select
-										value={selectedToolName}
-										onValueChange={(value) => {
-											setSelectedToolName(value);
-											setToolRunError(null);
-										}}
-										disabled={toolCatalogLoading || availableToolItems.length === 0}
-									>
-										<SelectTrigger className="w-full font-mono">
-											<SelectValue
-												placeholder={t('platform.toolRunner.selectTool')}
-											/>
-										</SelectTrigger>
-										<SelectContent>
-											{availableToolItems.map((tool) => (
-												<SelectItem key={tool.name} value={tool.name}>
-													{tool.name}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								</div>
-
-								<div className="grid gap-2">
-									<label className="text-xs font-medium text-muted-foreground">
-										{selectedToolConfig
-											? t(`platform.toolRunner.${selectedToolConfig.labelKey}`)
-											: (selectedToolCatalogItem?.input_key ??
-												t('platform.toolRunner.input'))}
-									</label>
-									<Input
-										value={selectedToolInputValue}
-										onChange={(event) =>
-											setToolInputs((current) => ({
-												...current,
-												[selectedToolName]: event.target.value,
-											}))
-										}
-										disabled={!selectedToolInputKey}
-									/>
-								</div>
-
-								<div className="grid gap-2">
-									<label className="text-xs font-medium text-muted-foreground">
-										{t('platform.toolRunner.approvalId')}
-									</label>
-									<Input
-										value={toolApprovalId}
-										onChange={(event) => setToolApprovalId(event.target.value)}
-										placeholder={t('platform.toolRunner.approvalIdPlaceholder')}
-										className="font-mono"
-									/>
-								</div>
-
-								<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-									<div className="min-w-0">
-										{selectedToolCatalogItem || selectedToolDecision ? (
-											<Badge
-												variant={
-													selectedToolAllowed ? 'outline' : 'destructive'
-												}
-												className={cn(
-													selectedToolAllowed &&
-														'border-emerald-500/30 bg-emerald-500/10 text-emerald-700',
-												)}
-											>
-												{selectedToolAllowed
-													? t('platform.policy.allowed')
-													: t('platform.policy.denied')}
-											</Badge>
-										) : null}
-										{selectedToolReason ? (
-											<p className="mt-2 text-xs text-muted-foreground">
-												{selectedToolReason}
-											</p>
-										) : null}
-										{(selectedToolCatalogItem || selectedToolDecision) &&
-										!selectedToolAllowed ? (
-											<p className="mt-2 text-xs text-destructive">
-												{t('platform.toolRunner.notAllowed')}
-											</p>
-										) : null}
-									</div>
-									<div className="flex flex-wrap justify-end gap-2">
-										<Button
-											variant="outline"
-											onClick={() => void handleCreateRunApproval('tool_run')}
-											disabled={
-												creatingRunApproval === 'tool_run' ||
-												Boolean(platformError) ||
-												!selectedToolInputKey ||
-												!selectedToolAllowed
-											}
-										>
-											<ListChecks
-												className={cn(
-													creatingRunApproval === 'tool_run' &&
-														'animate-pulse',
-												)}
-											/>
-											{creatingRunApproval === 'tool_run'
-												? t('platform.toolRunner.requestingApproval')
-												: t('platform.toolRunner.requestApproval')}
-										</Button>
-										<Button
-											onClick={handleRunEnterpriseTool}
-											disabled={
-												runningTool ||
-												Boolean(platformError) ||
-												!selectedToolInputKey ||
-												!selectedToolAllowed
-											}
-										>
-											<Play className={cn(runningTool && 'animate-pulse')} />
-											{runningTool
-												? t('platform.toolRunner.running')
-												: t('platform.toolRunner.run')}
-										</Button>
-									</div>
-								</div>
-
-								{toolRunError ? (
-									<div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-										{t('platform.toolRunner.error')} {toolRunError}
-									</div>
-								) : null}
-							</div>
-						</div>
-
-						<div className="flex flex-col gap-3">
-							<div className="flex items-center gap-2">
-								<Code2 className="size-4 text-muted-foreground" />
-								<h3 className="text-sm font-semibold">
-									{t('platform.toolRunner.result')}
-								</h3>
-							</div>
-							{toolRunResult ? (
-								<pre className="min-h-72 overflow-auto rounded-lg border bg-muted/20 p-4 text-xs leading-5">
-									{JSON.stringify(toolRunResult, null, 2)}
-								</pre>
-							) : (
-								<div className="flex min-h-72 items-center rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-									{t('platform.toolRunner.emptyResult')}
-								</div>
-							)}
-						</div>
-					</section>
-				</div>
-			</main>
+			<ToolsViewPage
+				serverUrl={serverUrl}
+				username={username}
+				hasErrors={hasErrors}
+				configManagementRef={configManagementRef}
+				toolRunnerRef={toolRunnerRef}
+				availableToolItems={availableToolItems}
+				publishedPlatformAgents={publishedPlatformAgents}
+				toolCatalogLoading={toolCatalogLoading}
+				toolCatalogError={toolCatalogError}
+				selectedToolName={selectedToolName}
+				selectedToolConfig={selectedToolConfig}
+				selectedToolCatalogItem={selectedToolCatalogItem}
+				selectedToolInputValue={selectedToolInputValue}
+				selectedToolInputKey={selectedToolInputKey}
+				toolApprovalId={toolApprovalId}
+				selectedToolDecision={selectedToolDecision}
+				selectedToolAllowed={selectedToolAllowed}
+				selectedToolReason={selectedToolReason}
+				creatingRunApproval={creatingRunApproval}
+				platformError={platformError}
+				runningTool={runningTool}
+				toolRunError={toolRunError}
+				toolRunResult={toolRunResult}
+				onRefetchToolCatalog={refetchToolCatalog}
+				onSelectedToolNameChange={setSelectedToolName}
+				onToolRunErrorChange={setToolRunError}
+				onToolInputsChange={setToolInputs}
+				onToolApprovalIdChange={setToolApprovalId}
+				onCreateRunApproval={handleCreateRunApproval}
+				onRunEnterpriseTool={handleRunEnterpriseTool}
+				formatTimestamp={formatTimestamp}
+				t={t}
+			/>
 		);
 	}
-
 	if (view === 'approvals') {
 		return (
 			<main className="h-full overflow-y-auto bg-background">
