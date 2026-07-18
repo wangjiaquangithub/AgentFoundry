@@ -120,6 +120,7 @@ import {
 	platformAgentInventoryStateForStatus,
 	platformConsoleItemsForDisplay,
 	platformResourceLookupStateForStatus,
+	platformRuntimeConfigStateForStatus,
 	readyLaunchpadStepCountForSteps,
 	readyOrchestrationWorkbenchStepCountForSteps,
 	rolloutPathStepsForStatus,
@@ -615,7 +616,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			notRouted: t('platform.agentRunner.notRouted'),
 		},
 	);
-	const enterpriseIdentities = governance?.identities ?? connectors?.identities ?? [];
+	const platformRuntimeConfigState = platformRuntimeConfigStateForStatus({
+		platformStatus,
+		governance,
+		connectors,
+		unavailableLabel: t('platform.runtime.unavailable'),
+	});
+	const enterpriseIdentities = platformRuntimeConfigState.enterpriseIdentities;
 	const {
 		publishTenant,
 		publishAccessMembers,
@@ -738,8 +745,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	);
 
-	const subagentTemplates = platformStatus?.subagent_templates ?? [];
-	const toolPolicyMode = platformStatus?.tool_policy.mode || t('platform.runtime.unavailable');
+	const subagentTemplates = platformRuntimeConfigState.subagentTemplates;
+	const toolPolicyMode = platformRuntimeConfigState.toolPolicyMode;
 	const {
 		policyDecisions,
 		availableToolItems,
