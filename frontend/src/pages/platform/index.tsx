@@ -74,7 +74,6 @@ import { MemoryViewPage } from './components/MemoryViewPage';
 import type { MemberFormState } from './components/MembersPanel';
 import type { OrchestrationWorkbenchStep } from './components/OrchestrationWorkbenchPanel';
 import type { PlatformConsoleItem } from './components/PlatformConsolePanel';
-import type { RolloutPathStep } from './components/RolloutPath';
 import { RunsViewPage } from './components/RunsViewPage';
 import type { RuntimeStatusItem } from './components/RuntimeStatusPanel';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
@@ -119,6 +118,7 @@ import {
 	pendingWorkflowRunApprovals,
 	platformMemberTenantSummariesForMembers,
 	recentTriggerSchedules,
+	rolloutPathStepsForStatus,
 	topOperationsAgentsForDisplay,
 	tenantOverviewItemsForWorkspace,
 	toolPolicySummaryForGovernance,
@@ -3914,65 +3914,43 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			tools: t('platform.workbench.quickActions.tools'),
 		},
 	});
-	const rolloutPathSteps = [
+	const rolloutPathSteps = rolloutPathStepsForStatus(
 		{
-			key: 'model',
-			icon: KeyRound,
-			state: credentials.length > 0 ? 'ready' : 'blocked',
-			onClick: () => navigate('/credential'),
+			credentialCount: credentials.length,
+			knowledgeBaseCount: knowledgeBases.length,
+			readyAgentCount: readyPlatformAgents.length,
+			activeAgentCount: activePlatformAgents.length,
+			hasAgentRunResult: Boolean(agentRunResult),
+			hasSelectedRunAgent: Boolean(selectedRunAgent),
+			auditEventCount,
+			pendingApprovalCount: pendingApprovals.length,
+			hasPlatformConfigExport: Boolean(platformConfigExport),
 		},
 		{
-			key: 'knowledge',
-			icon: LibraryBig,
-			state: knowledgeBases.length > 0 ? 'ready' : 'blocked',
-			onClick: () => navigate('/knowledge'),
+			icons: {
+				model: KeyRound,
+				knowledge: LibraryBig,
+				agent: BotMessageSquare,
+				run: Play,
+				governance: ShieldCheck,
+				config: Upload,
+			},
+			actions: {
+				model: () => navigate('/credential'),
+				knowledge: () => navigate('/knowledge'),
+				agent: handleStartPublishing,
+				run: scrollToAgentRunner,
+				governance: scrollToGovernance,
+				config: scrollToConfigManagement,
+			},
+			labels: {
+				title: (key) => t(`platform.workbench.rolloutPath.steps.${key}.title`),
+				description: (key) =>
+					t(`platform.workbench.rolloutPath.steps.${key}.description`),
+				action: (key) => t(`platform.workbench.rolloutPath.steps.${key}.action`),
+			},
 		},
-		{
-			key: 'agent',
-			icon: BotMessageSquare,
-			state:
-				readyPlatformAgents.length > 0
-					? 'ready'
-					: activePlatformAgents.length > 0
-						? 'partial'
-						: 'blocked',
-			onClick: handleStartPublishing,
-		},
-		{
-			key: 'run',
-			icon: Play,
-			state:
-				agentRunResult
-					? 'ready'
-					: selectedRunAgent || readyPlatformAgents.length > 0
-						? 'partial'
-						: 'todo',
-			onClick: scrollToAgentRunner,
-		},
-		{
-			key: 'governance',
-			icon: ShieldCheck,
-			state:
-				auditEventCount > 0
-					? 'ready'
-					: agentRunResult || pendingApprovals.length > 0
-						? 'partial'
-						: 'todo',
-			onClick: scrollToGovernance,
-		},
-		{
-			key: 'config',
-			icon: Upload,
-			state: platformConfigExport ? 'ready' : 'partial',
-			onClick: scrollToConfigManagement,
-		},
-	].map((step) => ({
-		...step,
-		title: t(`platform.workbench.rolloutPath.steps.${step.key}.title`),
-		description: t(`platform.workbench.rolloutPath.steps.${step.key}.description`),
-		actionLabel: t(`platform.workbench.rolloutPath.steps.${step.key}.action`),
-		state: step.state as HealthState,
-	})) satisfies RolloutPathStep[];
+	);
 	const firstAgentGuideSteps = [
 		{
 			key: 'model',

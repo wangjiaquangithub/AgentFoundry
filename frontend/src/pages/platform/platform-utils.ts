@@ -22,6 +22,7 @@ import type { LaunchpadStep } from './components/LaunchpadPanel';
 import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
 import type { MonitoringStat } from './components/MonitoringSnapshotPanel';
 import type { PlatformMemberTenantSummary } from './components/MembersPanel';
+import type { RolloutPathStep } from './components/RolloutPath';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
 import type { TenantOverviewItem } from './components/TenantWorkspacePanel';
 import type { TriggerOpsStat } from './components/TriggerOpsPanel';
@@ -466,6 +467,13 @@ type WorkbenchQuickActionKey =
 	| 'workflow'
 	| 'governance'
 	| 'tools';
+type RolloutPathStepKey =
+	| 'model'
+	| 'knowledge'
+	| 'agent'
+	| 'run'
+	| 'governance'
+	| 'config';
 
 export function workbenchReadinessItemsForStatus(
 	values: {
@@ -666,6 +674,84 @@ export function workbenchQuickActionsForStatus(options: {
 			onClick: options.actions.tools,
 		},
 	];
+}
+
+export function rolloutPathStepsForStatus(
+	values: {
+		credentialCount: number;
+		knowledgeBaseCount: number;
+		readyAgentCount: number;
+		activeAgentCount: number;
+		hasAgentRunResult: boolean;
+		hasSelectedRunAgent: boolean;
+		auditEventCount: number;
+		pendingApprovalCount: number;
+		hasPlatformConfigExport: boolean;
+	},
+	options: {
+		icons: Record<RolloutPathStepKey, ComponentType<{ className?: string }>>;
+		actions: Record<RolloutPathStepKey, () => void>;
+		labels: {
+			title: (key: RolloutPathStepKey) => string;
+			description: (key: RolloutPathStepKey) => string;
+			action: (key: RolloutPathStepKey) => string;
+		};
+	},
+): RolloutPathStep[] {
+	const steps: Array<{
+		key: RolloutPathStepKey;
+		state: HealthState;
+	}> = [
+		{
+			key: 'model',
+			state: values.credentialCount > 0 ? 'ready' : 'blocked',
+		},
+		{
+			key: 'knowledge',
+			state: values.knowledgeBaseCount > 0 ? 'ready' : 'blocked',
+		},
+		{
+			key: 'agent',
+			state:
+				values.readyAgentCount > 0
+					? 'ready'
+					: values.activeAgentCount > 0
+						? 'partial'
+						: 'blocked',
+		},
+		{
+			key: 'run',
+			state:
+				values.hasAgentRunResult
+					? 'ready'
+					: values.hasSelectedRunAgent || values.readyAgentCount > 0
+						? 'partial'
+						: 'todo',
+		},
+		{
+			key: 'governance',
+			state:
+				values.auditEventCount > 0
+					? 'ready'
+					: values.hasAgentRunResult || values.pendingApprovalCount > 0
+						? 'partial'
+						: 'todo',
+		},
+		{
+			key: 'config',
+			state: values.hasPlatformConfigExport ? 'ready' : 'partial',
+		},
+	];
+
+	return steps.map((step) => ({
+		key: step.key,
+		title: options.labels.title(step.key),
+		description: options.labels.description(step.key),
+		actionLabel: options.labels.action(step.key),
+		icon: options.icons[step.key],
+		state: step.state,
+		onClick: options.actions[step.key],
+	}));
 }
 
 export function workbenchIndicatorsForStatus(
