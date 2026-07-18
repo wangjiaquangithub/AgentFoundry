@@ -126,3 +126,26 @@ export function firstAgentGuideNavigationActions(
 		governance: handlers.scrollToGovernance,
 	};
 }
+
+export function orchestrationWorkbenchNavigationActions(
+	handlers: PlatformNavigationActionHandlers,
+	options: {
+		handleNextAgentSetupStep: NavigationHandler;
+		hasKnowledgeBases: boolean;
+		hasSelectedRunAgent: boolean;
+	},
+) {
+	return {
+		template: handlers.handleStartPublishing,
+		model: () => handlers.navigate('/credential'),
+		knowledge: options.hasKnowledgeBases
+			? options.handleNextAgentSetupStep
+			: () => handlers.navigate('/knowledge'),
+		tools: options.handleNextAgentSetupStep,
+		policy: options.handleNextAgentSetupStep,
+		publish: handlers.handleStartPublishing,
+		operate: options.hasSelectedRunAgent
+			? handlers.scrollToAgentRunner
+			: handlers.scrollToWorkflowRunner,
+	};
+}

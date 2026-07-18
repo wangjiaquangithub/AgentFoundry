@@ -88,6 +88,7 @@ import {
 import {
 	firstAgentGuideNavigationActions,
 	launchpadNavigationActions,
+	orchestrationWorkbenchNavigationActions,
 	platformConsoleNavigationActions,
 	rolloutPathNavigationActions,
 	workbenchIndicatorNavigationActions,
@@ -3279,18 +3280,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				publish: BotMessageSquare,
 				operate: Workflow,
 			},
-			actions: {
-				template: handleStartPublishing,
-				model: () => navigate('/credential'),
-				knowledge:
-					knowledgeBases.length === 0
-						? () => navigate('/knowledge')
-						: handleNextAgentSetupStep,
-				tools: handleNextAgentSetupStep,
-				policy: handleNextAgentSetupStep,
-				publish: handleStartPublishing,
-				operate: selectedRunAgent ? scrollToAgentRunner : scrollToWorkflowRunner,
-			},
+			actions: orchestrationWorkbenchNavigationActions(platformNavigationHandlers, {
+				handleNextAgentSetupStep,
+				hasKnowledgeBases: knowledgeBases.length > 0,
+				hasSelectedRunAgent: Boolean(selectedRunAgent),
+			}),
 			labels: {
 				title: (key) => t(`platform.orchestration.${key}.title`),
 				description: (key) => t(`platform.orchestration.${key}.description`),
