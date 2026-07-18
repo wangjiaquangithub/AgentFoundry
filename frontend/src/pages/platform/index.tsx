@@ -98,6 +98,7 @@ import {
 	agentReleasePipelineLabels,
 	agentRoutingLabels,
 	agentRunnerLabels,
+	agentRunnerRequestLabels,
 	agentSetupStepLabels,
 	appCenterAgentDisplayLabels,
 	appCenterDetailHealthLabels,
@@ -414,6 +415,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const auditRequestText = auditRequestLabels(t);
 	const configManagementRequestText = configManagementRequestLabels(t);
 	const connectorRequestText = connectorRequestLabels(t);
+	const agentRunnerRequestText = agentRunnerRequestLabels(t);
 	const memberRequestText = memberRequestLabels(t);
 	const tenantGovernanceRequestText = tenantGovernanceRequestLabels(t);
 	const toolCatalogRequestText = toolCatalogRequestLabels(t);
@@ -1400,7 +1402,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			});
 		} catch (error) {
 			setAgentRunsError(
-				error instanceof Error ? error.message : t('platform.agentRunner.historyLoadError'),
+				error instanceof Error ? error.message : agentRunnerRequestText.historyLoadError,
 			);
 		} finally {
 			setAgentRunsLoading(false);
@@ -1979,7 +1981,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setAgentRunResult(run.response);
 		} catch (error) {
 			setAgentRunsError(
-				error instanceof Error ? error.message : t('platform.agentRunner.historyLoadError'),
+				error instanceof Error ? error.message : agentRunnerRequestText.historyLoadError,
 			);
 			setAgentRunResult(turn.response);
 		} finally {
@@ -2010,7 +2012,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setAgentRunError(null);
 		} catch (error) {
 			setAgentRunsError(
-				error instanceof Error ? error.message : t('platform.agentRunner.historyClearError'),
+				error instanceof Error ? error.message : agentRunnerRequestText.historyClearError,
 			);
 		} finally {
 			setAgentRunsLoading(false);
@@ -2583,7 +2585,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			return;
 		}
 		if (targetAgent && !agentAccessAllowed(targetAgent, targetIdentity)) {
-			setAgentRunError(t('platform.agentRunner.accessDenied'));
+			setAgentRunError(agentRunnerRequestText.accessDenied);
 			return;
 		}
 
@@ -2610,7 +2612,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				(toolCall) => toolCall.approval_required,
 			);
 			if (approvalRequired) {
-				setAgentRunError(t('platform.agentRunner.approvalRequiredCreated'));
+				setAgentRunError(agentRunnerRequestText.approvalRequiredCreated);
 				await refetchApprovals();
 			}
 			await refetchAgentRuns(agentId, userId || username);

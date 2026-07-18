@@ -40,6 +40,13 @@ export const agentRunnerLabels = (t: PlatformTranslate) => ({
 	notRouted: t('platform.agentRunner.notRouted'),
 });
 
+export const agentRunnerRequestLabels = (t: PlatformTranslate) => ({
+	historyLoadError: t('platform.agentRunner.historyLoadError'),
+	historyClearError: t('platform.agentRunner.historyClearError'),
+	accessDenied: t('platform.agentRunner.accessDenied'),
+	approvalRequiredCreated: t('platform.agentRunner.approvalRequiredCreated'),
+});
+
 export const connectorOperationsLabels = (t: PlatformTranslate) => ({
 	baseUrlRequired: t('platform.connectors.validationBaseUrlRequired'),
 	baseUrlProtocol: t('platform.connectors.validationBaseUrlProtocol'),
