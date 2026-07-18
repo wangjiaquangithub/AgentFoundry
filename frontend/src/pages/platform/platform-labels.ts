@@ -20,3 +20,14 @@ export const agentRoutingLabels = (t: PlatformTranslate) => ({
 	model: t('platform.agentRunner.routingModel'),
 	rules: t('platform.agentRunner.routingRules'),
 });
+
+export const connectorOperationsLabels = (t: PlatformTranslate) => ({
+	baseUrlRequired: t('platform.connectors.validationBaseUrlRequired'),
+	baseUrlProtocol: t('platform.connectors.validationBaseUrlProtocol'),
+	timeout: t('platform.connectors.validationTimeout'),
+	policyPath: t('platform.connectors.validationPolicyPath'),
+	ticketPath: t('platform.connectors.validationTicketPath'),
+	metricsPath: t('platform.connectors.validationMetricsPath'),
+	runtimeSavedConfig: t('platform.connectors.runtimeSavedConfig'),
+	runtimeGlobal: t('platform.connectors.runtimeGlobal'),
+});
