@@ -96,7 +96,10 @@ import {
 } from './platform-icons';
 import {
 	agentRoutingLabels,
+	appCenterAgentDisplayLabels,
+	appCenterOperationsLabels,
 	connectorOperationsLabels,
+	dashboardTodoLabels,
 	platformOverviewStatLabels,
 	runtimeStatusLabels,
 	selectedToolRunnerLabels,
@@ -707,13 +710,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			pendingApprovalCount: pendingApprovals.length,
 			hasErrors,
 		},
-		{
-			model: t('platform.dashboard.todoModel'),
-			agent: t('platform.dashboard.todoAgent'),
-			agentReadiness: t('platform.dashboard.todoAgentReadiness'),
-			approval: (count) => t('platform.dashboard.todoApproval', { count }),
-			errors: t('platform.dashboard.todoErrors'),
-		},
+		dashboardTodoLabels(t),
 	);
 	const appCenterOperationsState = appCenterOperationsStateForStatus({
 		selectedItem: selectedAppCenterItem,
@@ -725,17 +722,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		defaultTemplate: defaultAgentTemplate,
 		hasCredentials: credentials.length > 0,
 		publishingTemplateId,
-		labels: {
-			publishedTotal: t('platform.agentManagement.ops.publishedTotal'),
-			publishedTotalHelper: t('platform.agentManagement.ops.publishedTotalHelper'),
-			activeTotal: t('platform.agentManagement.ops.activeTotal'),
-			activeTotalHelper: t('platform.agentManagement.ops.activeTotalHelper'),
-			readyTotal: t('platform.agentManagement.ops.readyTotal'),
-			readyTotalHelper: t('platform.agentManagement.ops.readyTotalHelper'),
-			needsSetupTotal: t('platform.agentManagement.ops.needsSetupTotal'),
-			needsSetupTotalHelper: ({ count }) =>
-				t('platform.agentManagement.ops.needsSetupTotalHelper', { count }),
-		},
+		labels: appCenterOperationsLabels(t),
 	});
 	const blockedOrPartialPlatformAgents = appCenterOperationsState.blockedOrPartialAgents;
 	const appCenterAgents = appCenterOperationsState.appCenterAgents;
@@ -746,13 +733,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const topOperationsAgents = appCenterOperationsState.topOperationsAgents;
 	const { operationsAgentIssueText, agentResourceText } = appCenterAgentDisplayStateForStatus({
 		credentialById,
-		labels: {
-			archivedIssue: t('platform.operations.archivedIssue'),
-			missingIssue: t('platform.operations.missingIssue'),
-			readyIssue: t('platform.operations.readyIssue'),
-			noModel: t('platform.appCenter.noModel'),
-			agentResources: (values) => t('platform.appCenter.agentResources', values),
-		},
+		labels: appCenterAgentDisplayLabels(t),
 	});
 	const inspectedAppCenterAgentReadiness = agentReadinessState(inspectedAppCenterAgent);
 	const inspectedAppCenterAgentIssues = agentReadinessIssues(inspectedAppCenterAgent);

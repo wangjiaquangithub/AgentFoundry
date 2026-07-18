@@ -31,3 +31,32 @@ export const connectorOperationsLabels = (t: PlatformTranslate) => ({
 	runtimeSavedConfig: t('platform.connectors.runtimeSavedConfig'),
 	runtimeGlobal: t('platform.connectors.runtimeGlobal'),
 });
+
+export const dashboardTodoLabels = (t: PlatformTranslate) => ({
+	model: t('platform.dashboard.todoModel'),
+	agent: t('platform.dashboard.todoAgent'),
+	agentReadiness: t('platform.dashboard.todoAgentReadiness'),
+	approval: (count: number) => t('platform.dashboard.todoApproval', { count }),
+	errors: t('platform.dashboard.todoErrors'),
+});
+
+export const appCenterOperationsLabels = (t: PlatformTranslate) => ({
+	publishedTotal: t('platform.agentManagement.ops.publishedTotal'),
+	publishedTotalHelper: t('platform.agentManagement.ops.publishedTotalHelper'),
+	activeTotal: t('platform.agentManagement.ops.activeTotal'),
+	activeTotalHelper: t('platform.agentManagement.ops.activeTotalHelper'),
+	readyTotal: t('platform.agentManagement.ops.readyTotal'),
+	readyTotalHelper: t('platform.agentManagement.ops.readyTotalHelper'),
+	needsSetupTotal: t('platform.agentManagement.ops.needsSetupTotal'),
+	needsSetupTotalHelper: ({ count }: { count: number }) =>
+		t('platform.agentManagement.ops.needsSetupTotalHelper', { count }),
+});
+
+export const appCenterAgentDisplayLabels = (t: PlatformTranslate) => ({
+	archivedIssue: t('platform.operations.archivedIssue'),
+	missingIssue: t('platform.operations.missingIssue'),
+	readyIssue: t('platform.operations.readyIssue'),
+	noModel: t('platform.appCenter.noModel'),
+	agentResources: (values: { model: string; knowledge: number; tools: number }) =>
+		t('platform.appCenter.agentResources', values),
+});
