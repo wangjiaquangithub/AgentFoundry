@@ -78,7 +78,6 @@ import { WorkflowsViewPage } from './components/WorkflowsViewPage';
 import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import {
-	activePlatformAgentsForAgents,
 	agentAccessAllowed,
 	agentRoutingDisplayStateForResult,
 	agentRunnerStateForStatus,
@@ -90,7 +89,6 @@ import {
 	agentReadinessIssues,
 	agentReadinessState,
 	agentReleasePipelineForStatus,
-	archivedPlatformAgentsForAgents,
 	agentSetupStepsForStatus,
 	appCenterDetailResourceValuesForSelection,
 	appCenterOperationsStateForStatus,
@@ -119,10 +117,10 @@ import {
 	publishAccessStateForStatus,
 	publishDraftStateForStatus,
 	platformOverviewStatsForSummary,
+	platformAgentInventoryStateForStatus,
 	platformConsoleItemsForDisplay,
 	readyLaunchpadStepCountForSteps,
 	readyOrchestrationWorkbenchStepCountForSteps,
-	readyPlatformAgentsForAgents,
 	rolloutPathStepsForStatus,
 	runtimeStatusItemsForStatus,
 	selectedIdentityGovernanceDisplayStateForStatus,
@@ -500,37 +498,36 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		agentRunsError,
 	);
 
-	const featuredAgents = useMemo(() => {
-		return [...agents]
-			.sort(
-				(a, b) =>
-					Number(b.data.name.includes('企业知识助手')) -
-					Number(a.data.name.includes('企业知识助手')),
-			)
-			.slice(0, 5);
-	}, [agents]);
 	const agentTemplates = platformAgents?.templates ?? [];
 	const publishedPlatformAgents = platformAgents?.agents ?? [];
-	const activePlatformAgents = useMemo(
-		() => activePlatformAgentsForAgents(publishedPlatformAgents),
-		[publishedPlatformAgents],
+	const platformAgentInventoryState = useMemo(
+		() =>
+			platformAgentInventoryStateForStatus({
+				agents,
+				agentTemplates,
+				publishedPlatformAgents,
+				selectedRunAgentId,
+				lastPublishedAgentId,
+				selectedTemplateId,
+			}),
+		[
+			agents,
+			agentTemplates,
+			publishedPlatformAgents,
+			selectedRunAgentId,
+			lastPublishedAgentId,
+			selectedTemplateId,
+		],
 	);
-	const archivedPlatformAgents = useMemo(
-		() => archivedPlatformAgentsForAgents(publishedPlatformAgents),
-		[publishedPlatformAgents],
-	);
-	const readyPlatformAgents = useMemo(
-		() => readyPlatformAgentsForAgents(activePlatformAgents),
-		[activePlatformAgents],
-	);
-	const selectedRunAgent =
-		activePlatformAgents.find((agent) => agent.id === selectedRunAgentId) ?? null;
-	const lastPublishedAgent =
-		activePlatformAgents.find((agent) => agent.id === lastPublishedAgentId) ?? null;
+	const featuredAgents = platformAgentInventoryState.featuredAgents;
+	const activePlatformAgents = platformAgentInventoryState.activePlatformAgents;
+	const archivedPlatformAgents = platformAgentInventoryState.archivedPlatformAgents;
+	const readyPlatformAgents = platformAgentInventoryState.readyPlatformAgents;
+	const selectedRunAgent = platformAgentInventoryState.selectedRunAgent;
+	const lastPublishedAgent = platformAgentInventoryState.lastPublishedAgent;
 	const selectedAgentConversation = agentConversations[selectedRunAgentId] ?? [];
-	const selectedTemplate =
-		agentTemplates.find((template) => template.id === selectedTemplateId) ?? null;
-	const defaultAgentTemplate = agentTemplates[0] ?? null;
+	const selectedTemplate = platformAgentInventoryState.selectedTemplate;
+	const defaultAgentTemplate = platformAgentInventoryState.defaultAgentTemplate;
 	const credentialById = useMemo(() => {
 		return new Map(credentials.map((credential) => [credential.id, credential]));
 	}, [credentials]);

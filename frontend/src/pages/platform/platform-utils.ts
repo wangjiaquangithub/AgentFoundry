@@ -3930,6 +3930,47 @@ export function readyPlatformAgentsForAgents(agents: EnterprisePublishedAgent[])
 	);
 }
 
+export function platformAgentInventoryStateForStatus(values: {
+	agents: AgentView[];
+	agentTemplates: EnterpriseAgentTemplate[];
+	publishedPlatformAgents: EnterprisePublishedAgent[];
+	selectedRunAgentId: string;
+	lastPublishedAgentId: string | null;
+	selectedTemplateId: string | null;
+}) {
+	const featuredAgents = [...values.agents]
+		.sort(
+			(a, b) =>
+				Number(b.data.name.includes('企业知识助手')) -
+				Number(a.data.name.includes('企业知识助手')),
+		)
+		.slice(0, 5);
+	const activePlatformAgents = activePlatformAgentsForAgents(values.publishedPlatformAgents);
+	const archivedPlatformAgents = archivedPlatformAgentsForAgents(
+		values.publishedPlatformAgents,
+	);
+	const readyPlatformAgents = readyPlatformAgentsForAgents(activePlatformAgents);
+	const selectedRunAgent =
+		activePlatformAgents.find((agent) => agent.id === values.selectedRunAgentId) ?? null;
+	const lastPublishedAgent =
+		activePlatformAgents.find((agent) => agent.id === values.lastPublishedAgentId) ?? null;
+	const selectedTemplate =
+		values.agentTemplates.find((template) => template.id === values.selectedTemplateId) ??
+		null;
+	const defaultAgentTemplate = values.agentTemplates[0] ?? null;
+
+	return {
+		featuredAgents,
+		activePlatformAgents,
+		archivedPlatformAgents,
+		readyPlatformAgents,
+		selectedRunAgent,
+		lastPublishedAgent,
+		selectedTemplate,
+		defaultAgentTemplate,
+	};
+}
+
 export function publishedAgentReadinessState(
 	agent: {
 		readiness?: EnterprisePublishedAgent['readiness'] | null;
