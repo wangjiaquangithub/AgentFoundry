@@ -74,6 +74,13 @@ export function knowledgeBaseLabels(
 	});
 }
 
+export function agentKnowledgeBaseLabels(
+	agent: Pick<EnterprisePublishedAgent, 'knowledge_base_ids'> | null | undefined,
+	knowledgeBaseById: Map<string, { id?: unknown; name?: unknown }>,
+) {
+	return knowledgeBaseLabels(agent?.knowledge_base_ids ?? [], knowledgeBaseById);
+}
+
 export function agentResourceSummary(
 	agent: Pick<EnterprisePublishedAgent, 'knowledge_base_ids' | 'model_config_id' | 'tools'>,
 	credentialById: Map<string, { id?: unknown; data?: { name?: unknown } }>,

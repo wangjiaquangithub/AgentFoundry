@@ -106,6 +106,7 @@ import {
 	agentAccessAllowed,
 	agentAccessRestricted,
 	agentIsReady,
+	agentKnowledgeBaseLabels,
 	agentModelLabel,
 	agentReadinessIssues,
 	agentReadinessState,
@@ -1344,8 +1345,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			tools: resources.tools,
 		});
 	};
-	const inspectedAppCenterAgentKnowledgeBaseIds =
-		inspectedAppCenterAgent?.knowledge_base_ids ?? [];
 	const inspectedAppCenterAgentTools = inspectedAppCenterAgent?.tools ?? [];
 	const inspectedAppCenterAgentAllowedUserIds =
 		inspectedAppCenterAgent?.allowed_user_ids ?? [];
@@ -1359,8 +1358,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		credentialById,
 		t('platform.appCenter.noModel'),
 	);
-	const inspectedAppCenterAgentKnowledge = knowledgeBaseLabels(
-		inspectedAppCenterAgentKnowledgeBaseIds,
+	const inspectedAppCenterAgentKnowledge = agentKnowledgeBaseLabels(
+		inspectedAppCenterAgent,
 		knowledgeBaseById,
 	);
 	const inspectedAppCenterAgentAccess = agentAccessRestricted({
