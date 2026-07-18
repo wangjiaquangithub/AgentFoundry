@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+import { formatTimestamp } from '../platform-utils';
 import { StateBadge, type HealthState } from './common';
 
 export interface MonitoringStat {
@@ -46,7 +47,6 @@ interface MonitoringSnapshotPanelProps {
 	onRunAgent: () => void;
 	onRunWorkflow: () => void;
 	onOpenGovernance: () => void;
-	formatTimestamp: (value?: string) => string;
 	workflowStatusLabelKey: (status?: string) => string;
 	workflowStatusClassName: (status?: string) => string;
 	labels: {
@@ -86,7 +86,6 @@ export function MonitoringSnapshotPanel({
 	onRunAgent,
 	onRunWorkflow,
 	onOpenGovernance,
-	formatTimestamp,
 	workflowStatusLabelKey,
 	workflowStatusClassName,
 	labels,

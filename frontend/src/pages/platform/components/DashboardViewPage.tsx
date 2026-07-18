@@ -728,7 +728,6 @@ export function DashboardViewPage({
 					onRunAgent={scrollToAgentRunner}
 					onRunWorkflow={scrollToWorkflowRunner}
 					onOpenGovernance={scrollToGovernance}
-					formatTimestamp={formatTimestamp}
 					workflowStatusLabelKey={workflowStatusLabelKey}
 					workflowStatusClassName={workflowStatusClassName}
 					labels={{
