@@ -105,6 +105,7 @@ import { DashboardViewPage } from './components/DashboardViewPage';
 import {
 	agentAccessAllowed,
 	agentReadinessState,
+	agentRunnerAccessLabelKey,
 	defaultEnterpriseWorkflowInputs,
 	knowledgeBaseLabels,
 	modelCredentialLabel,
@@ -790,13 +791,12 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const selectedRunAgentAccessAllowed = selectedRunAgent
 		? agentAccessAllowed(selectedRunAgent, selectedIdentity)
 		: true;
-	const selectedRunAgentAccessLabel = selectedRunAgent
-		? selectedRunAgentAccessAllowed
-			? (selectedRunAgent.allowed_user_ids?.length ?? 0) > 0 ||
-				(selectedRunAgent.allowed_roles?.length ?? 0) > 0
-				? t('platform.agentRunner.accessAllowed')
-				: t('platform.agentRunner.accessOpen')
-			: t('platform.agentRunner.accessDenied')
+	const selectedRunAgentAccessLabelKey = agentRunnerAccessLabelKey(
+		selectedRunAgent,
+		selectedRunAgentAccessAllowed,
+	);
+	const selectedRunAgentAccessLabel = selectedRunAgentAccessLabelKey
+		? t(selectedRunAgentAccessLabelKey)
 		: '';
 	const selectedIdentityAllowedTools = useMemo(
 		() => selectedIdentity?.tool_policy.decisions.filter((decision) => decision.allowed) ?? [],

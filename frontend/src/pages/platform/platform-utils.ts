@@ -92,6 +92,29 @@ export function agentAccessAllowed(
 	return allowedUsers.includes(identity.user_id) || allowedRoles.includes(identity.role);
 }
 
+export function agentAccessRestricted(
+	agent: Pick<EnterprisePublishedAgent, 'allowed_user_ids' | 'allowed_roles'>,
+) {
+	return (agent.allowed_user_ids?.length ?? 0) > 0 || (agent.allowed_roles?.length ?? 0) > 0;
+}
+
+export function agentRunnerAccessLabelKey(
+	agent: Pick<EnterprisePublishedAgent, 'allowed_user_ids' | 'allowed_roles'> | null | undefined,
+	allowed: boolean,
+) {
+	if (!agent) {
+		return '';
+	}
+
+	if (!allowed) {
+		return 'platform.agentRunner.accessDenied';
+	}
+
+	return agentAccessRestricted(agent)
+		? 'platform.agentRunner.accessAllowed'
+		: 'platform.agentRunner.accessOpen';
+}
+
 export function agentReadinessState(
 	agent?: Pick<EnterprisePublishedAgent, 'readiness'> | null,
 ): HealthState {
