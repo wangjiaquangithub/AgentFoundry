@@ -119,6 +119,7 @@ import {
 	platformOverviewStatsForSummary,
 	platformAgentInventoryStateForStatus,
 	platformConsoleItemsForDisplay,
+	platformResourceLookupStateForStatus,
 	readyLaunchpadStepCountForSteps,
 	readyOrchestrationWorkbenchStepCountForSteps,
 	rolloutPathStepsForStatus,
@@ -528,12 +529,12 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const selectedAgentConversation = agentConversations[selectedRunAgentId] ?? [];
 	const selectedTemplate = platformAgentInventoryState.selectedTemplate;
 	const defaultAgentTemplate = platformAgentInventoryState.defaultAgentTemplate;
-	const credentialById = useMemo(() => {
-		return new Map(credentials.map((credential) => [credential.id, credential]));
-	}, [credentials]);
-	const knowledgeBaseById = useMemo(() => {
-		return new Map(knowledgeBases.map((knowledgeBase) => [knowledgeBase.id, knowledgeBase]));
-	}, [knowledgeBases]);
+	const platformResourceLookupState = useMemo(
+		() => platformResourceLookupStateForStatus({ credentials, knowledgeBases }),
+		[credentials, knowledgeBases],
+	);
+	const credentialById = platformResourceLookupState.credentialById;
+	const knowledgeBaseById = platformResourceLookupState.knowledgeBaseById;
 	const agentSetupSteps: AgentWizardStep[] = agentSetupStepsForStatus(
 		{
 			selectedTemplateName: selectedTemplate?.name,

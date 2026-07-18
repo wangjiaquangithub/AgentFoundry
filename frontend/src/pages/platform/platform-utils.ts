@@ -1,5 +1,6 @@
 import type {
 	AgentView,
+	CredentialView,
 	EnterpriseAgentRunResponse,
 	EnterpriseAgentTemplate,
 	EnterpriseAgentToolCall,
@@ -20,6 +21,7 @@ import type {
 	EnterpriseToolCatalogItem,
 	EnterpriseWorkflowRunHistoryItem,
 	EnterpriseWorkflowTemplate,
+	KnowledgeBaseView,
 	ScheduleRecord,
 } from '@/api';
 import type { ComponentType, RefObject } from 'react';
@@ -336,6 +338,20 @@ export function knowledgeBaseLabels(
 		const knowledgeBase = knowledgeBaseById.get(knowledgeBaseId);
 		return knowledgeBase ? knowledgeBaseLabel(knowledgeBase) : knowledgeBaseId;
 	});
+}
+
+export function platformResourceLookupStateForStatus(values: {
+	credentials: CredentialView[];
+	knowledgeBases: KnowledgeBaseView[];
+}) {
+	return {
+		credentialById: new Map(
+			values.credentials.map((credential) => [credential.id, credential]),
+		),
+		knowledgeBaseById: new Map(
+			values.knowledgeBases.map((knowledgeBase) => [knowledgeBase.id, knowledgeBase]),
+		),
+	};
 }
 
 export type AgentRunnerNextStepMode = 'model' | 'publish' | 'configure' | 'governance' | 'run';
