@@ -19,6 +19,7 @@ import type {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { countArrayField } from '../platform-utils';
 
 export interface TenantOverviewItem {
 	tenant: string;
@@ -86,11 +87,6 @@ interface TenantWorkspacePanelProps {
 		openGovernance: string;
 		noIdentity: string;
 	};
-}
-
-function countArrayField(record: Record<string, unknown>, key: string) {
-	const value = record[key];
-	return Array.isArray(value) ? value.length : 0;
 }
 
 export function TenantWorkspacePanel({

@@ -58,15 +58,10 @@ import { WorkbenchStatusPanel } from './WorkbenchStatusPanel';
 import { WorkflowOpsPanel } from './WorkflowOpsPanel';
 import { WorkflowRunnerPanel } from './WorkflowRunnerPanel';
 import { PlatformNotice, StateBadge } from './common';
-import { formatTimestamp } from '../platform-utils';
+import { countArrayField, formatTimestamp } from '../platform-utils';
 
 interface DashboardViewPageProps {
 	[key: string]: any;
-}
-
-function countArrayField(record: Record<string, unknown>, key: string) {
-	const value = record[key];
-	return Array.isArray(value) ? value.length : 0;
 }
 
 export function DashboardViewPage({

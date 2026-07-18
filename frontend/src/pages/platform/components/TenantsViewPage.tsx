@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 
 import type { PlatformMemberTenantSummary } from './MembersPanel';
 import { PlatformNotice } from './common';
+import { countArrayField } from '../platform-utils';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 type TenantWorkspace = EnterprisePlatformConnectorsResponse['tenant_workspaces'][string];
@@ -41,11 +42,6 @@ interface TenantsViewPageProps {
 	onRefreshConnectors: () => void;
 	onNavigate: (to: string) => void;
 	t: Translate;
-}
-
-function countArrayField(record: Record<string, unknown>, key: string) {
-	const value = record[key];
-	return Array.isArray(value) ? value.length : 0;
 }
 
 export function TenantsViewPage({

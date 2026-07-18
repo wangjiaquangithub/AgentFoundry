@@ -27,6 +27,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { PlatformNotice, StateBadge } from './common';
+import { countArrayField } from '../platform-utils';
 
 export type ToolPolicyDraftValue = 'allow' | 'deny' | 'inherit';
 
@@ -103,11 +104,6 @@ interface TenantGovernancePanelProps {
 		useIdentity: string;
 		viewAudit: string;
 	};
-}
-
-function countArrayField(record: Record<string, unknown>, key: string) {
-	const value = record[key];
-	return Array.isArray(value) ? value.length : 0;
 }
 
 export function TenantGovernancePanel({

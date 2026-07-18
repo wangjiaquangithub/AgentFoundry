@@ -23,6 +23,11 @@ export function formatTimestamp(value?: string) {
 	return date.toLocaleString();
 }
 
+export function countArrayField(record: Record<string, unknown>, key: string) {
+	const value = record[key];
+	return Array.isArray(value) ? value.length : 0;
+}
+
 export function shortResourceId(id: string) {
 	return id.length > 12 ? `${id.slice(0, 8)}...${id.slice(-4)}` : id;
 }
