@@ -128,6 +128,15 @@ export function agentIsReady(agent?: Pick<EnterprisePublishedAgent, 'readiness'>
 	return agentReadinessState(agent) === 'ready';
 }
 
+export function publishedAgentReadinessState(
+	agent: {
+		readiness?: EnterprisePublishedAgent['readiness'] | null;
+		status?: string | null;
+	},
+): HealthState {
+	return agent.status !== 'published' ? 'todo' : agent.readiness?.status ?? 'partial';
+}
+
 export function formatScheduleAgentLabel(
 	schedule: { agent_id?: string | null },
 	activePlatformAgents: EnterprisePublishedAgent[],

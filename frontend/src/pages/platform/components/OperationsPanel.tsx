@@ -2,6 +2,7 @@ import { ArrowRight, BotMessageSquare, ListChecks, Pencil, Play } from 'lucide-r
 
 import type { EnterpriseApprovalRequestItem, EnterprisePublishedAgent } from '@/api';
 import { Button } from '@/components/ui/button';
+import { publishedAgentReadinessState } from '../platform-utils';
 import { StateBadge, type HealthState } from './common';
 
 interface OperationsPanelProps {
@@ -135,10 +136,7 @@ export function OperationsPanel({
 					) : (
 						<div className="grid gap-2">
 							{topAgents.map((agent) => {
-								const readinessState: HealthState =
-									agent.status !== 'published'
-										? 'todo'
-										: agent.readiness?.status ?? 'partial';
+								const readinessState = publishedAgentReadinessState(agent);
 								const isReady =
 									agent.status === 'published' && readinessState === 'ready';
 								const readinessLabel =

@@ -38,9 +38,10 @@ import {
 	credentialLabel,
 	formatTimestamp,
 	knowledgeBaseLabel,
+	publishedAgentReadinessState,
 	shortResourceId,
 } from '../platform-utils';
-import { PlatformNotice, StateBadge, type HealthState } from './common';
+import { PlatformNotice, StateBadge } from './common';
 
 type AgentManagementPanelProps = {
 	agentManagementRef: RefObject<HTMLElement | null>;
@@ -1186,11 +1187,11 @@ export function AgentManagementPanel(props: AgentManagementPanelProps) {
 								{publishedPlatformAgents.map((agent) => {
 									const agentKnowledgeBaseIds = agent.knowledge_base_ids ?? [];
 									const agentTools = agent.tools ?? [];
-										const agentAllowedUserIds = agent.allowed_user_ids ?? [];
-										const agentAllowedRoles = agent.allowed_roles ?? [];
-										const accessSummary = agent.access_summary;
-										const isAgentAccessRestricted =
-											agentAccessRestricted(agent);
+									const agentAllowedUserIds = agent.allowed_user_ids ?? [];
+									const agentAllowedRoles = agent.allowed_roles ?? [];
+									const accessSummary = agent.access_summary;
+									const isAgentAccessRestricted =
+										agentAccessRestricted(agent);
 									const isCurrentIdentityAllowedForAgent = agentAccessAllowed(
 										agent,
 										selectedIdentity,
@@ -1210,9 +1211,7 @@ export function AgentManagementPanel(props: AgentManagementPanelProps) {
 									);
 									const agentTemplateTools = agentTemplate?.tools ?? [];
 									const readiness = agent.readiness;
-									const readinessState: HealthState = isArchived
-										? 'todo'
-										: readiness?.status ?? 'partial';
+									const readinessState = publishedAgentReadinessState(agent);
 									const readinessLabel = isArchived
 										? t('platform.agentManagement.archived')
 										: t(
