@@ -16,6 +16,7 @@ import type {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { formatTimestamp } from '../platform-utils';
 import type {
 	MonitoringAgentTurn,
 	MonitoringStat,
@@ -63,7 +64,6 @@ interface RunsViewPageProps {
 	onOpenGovernance: () => void;
 	onAuditFiltersChange: Dispatch<SetStateAction<AuditFilters>>;
 	onRefetchAuditEvents: () => void | Promise<void>;
-	formatTimestamp: (value?: string) => string;
 	workflowStatusClassName: (status?: string) => string;
 	workflowStatusLabelKey: (status?: string) => string;
 	summarizeAuditObject: (value?: Record<string, unknown>) => string;
@@ -94,7 +94,6 @@ export function RunsViewPage({
 	onOpenGovernance,
 	onAuditFiltersChange,
 	onRefetchAuditEvents,
-	formatTimestamp,
 	workflowStatusClassName,
 	workflowStatusLabelKey,
 	summarizeAuditObject,

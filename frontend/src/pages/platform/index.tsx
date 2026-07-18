@@ -4927,7 +4927,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				onOpenGovernance={() => navigate('/platform/approvals')}
 				onAuditFiltersChange={setAuditFilters}
 				onRefetchAuditEvents={refetchAuditEvents}
-				formatTimestamp={formatTimestamp}
 				workflowStatusClassName={workflowStatusClassName}
 				workflowStatusLabelKey={workflowStatusLabelKey}
 				summarizeAuditObject={summarizeAuditObject}
