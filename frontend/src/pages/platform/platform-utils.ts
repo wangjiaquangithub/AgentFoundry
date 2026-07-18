@@ -86,6 +86,14 @@ export function agentResourceSummary(
 	};
 }
 
+export function agentModelLabel(
+	agent: Pick<EnterprisePublishedAgent, 'model_config_id'> | null | undefined,
+	credentialById: Map<string, { id?: unknown; data?: { name?: unknown } }>,
+	noModelLabel: string,
+) {
+	return modelCredentialLabel(agent?.model_config_id, credentialById, noModelLabel);
+}
+
 export function formatOperationsAgentIssueText(
 	agent: Pick<EnterprisePublishedAgent, 'readiness' | 'status'>,
 	labels: { archived: string; missing: string; ready: string },

@@ -106,6 +106,7 @@ import {
 	agentAccessAllowed,
 	agentAccessRestricted,
 	agentIsReady,
+	agentModelLabel,
 	agentReadinessIssues,
 	agentReadinessState,
 	agentResourceSummary,
@@ -1353,8 +1354,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const inspectedAppCenterTemplateTools = inspectedAppCenterTemplate?.tools ?? [];
 	const inspectedAppCenterAgentReadiness = agentReadinessState(inspectedAppCenterAgent);
 	const inspectedAppCenterAgentIssues = agentReadinessIssues(inspectedAppCenterAgent);
-	const inspectedAppCenterAgentModel = modelCredentialLabel(
-		inspectedAppCenterAgent?.model_config_id,
+	const inspectedAppCenterAgentModel = agentModelLabel(
+		inspectedAppCenterAgent,
 		credentialById,
 		t('platform.appCenter.noModel'),
 	);
