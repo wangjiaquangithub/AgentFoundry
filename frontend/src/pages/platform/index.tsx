@@ -101,6 +101,7 @@ import {
 	agentRunnerLabels,
 	agentRunnerRequestLabels,
 	agentSetupStepLabels,
+	approvalRequestLabels,
 	appCenterAgentDisplayLabels,
 	appCenterDetailHealthLabels,
 	appCenterDetailResourcesLabels,
@@ -422,6 +423,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const connectorRequestText = connectorRequestLabels(t);
 	const agentRunnerRequestText = agentRunnerRequestLabels(t);
 	const agentManagementRequestText = agentManagementRequestLabels(t);
+	const approvalRequestText = approvalRequestLabels(t);
 	const memberRequestText = memberRequestLabels(t);
 	const tenantGovernanceRequestText = tenantGovernanceRequestLabels(t);
 	const toolCatalogRequestText = toolCatalogRequestLabels(t);
@@ -1539,7 +1541,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setApprovalRequests(response.approvals);
 		} catch (error) {
 			setApprovalError(
-				error instanceof Error ? error.message : t('platform.approvals.loadError'),
+				error instanceof Error ? error.message : approvalRequestText.loadError,
 			);
 		} finally {
 			setApprovalLoading(false);
@@ -1581,7 +1583,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			}));
 		} catch (error) {
 			setApprovalError(
-				error instanceof Error ? error.message : t('platform.approvals.createError'),
+				error instanceof Error ? error.message : approvalRequestText.createError,
 			);
 		} finally {
 			setCreatingApproval(false);
@@ -1610,7 +1612,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				workflow_type:
 					requestType === 'workflow_run' ? selectedWorkflowType : undefined,
 				inputs,
-				reason: reason || t('platform.approvals.runApprovalReason'),
+				reason: reason || approvalRequestText.runApprovalReason,
 				user_id: selectedIdentityUserId || username || undefined,
 				agent_id: selectedRunAgentId || undefined,
 			});
@@ -1628,7 +1630,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			return true;
 		} catch (error) {
 			const message =
-				error instanceof Error ? error.message : t('platform.approvals.createError');
+				error instanceof Error ? error.message : approvalRequestText.createError;
 			if (requestType === 'tool_run') {
 				setToolRunError(message);
 			} else {
@@ -1651,8 +1653,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				decided_by: username,
 				decision_note:
 					decision === 'approved'
-						? t('platform.approvals.approved')
-						: t('platform.approvals.rejected'),
+						? approvalRequestText.approved
+						: approvalRequestText.rejected,
 			};
 			const response =
 				decision === 'approved'
@@ -1667,7 +1669,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			await refetchOpsTasks();
 		} catch (error) {
 			setApprovalError(
-				error instanceof Error ? error.message : t('platform.approvals.decisionError'),
+				error instanceof Error ? error.message : approvalRequestText.decisionError,
 			);
 		} finally {
 			setDecidingApprovalId(null);
@@ -1694,7 +1696,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		try {
 			const response = await platformApi.approveApproval(approval.approval_id, {
 				decided_by: username,
-				decision_note: t('platform.approvals.approved'),
+				decision_note: approvalRequestText.approved,
 			});
 			setApprovalRequests((current) =>
 				current.map((item) =>
@@ -1772,7 +1774,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			}
 		} catch (error) {
 			setApprovalError(
-				error instanceof Error ? error.message : t('platform.approvals.approveAndRunError'),
+				error instanceof Error ? error.message : approvalRequestText.approveAndRunError,
 			);
 		} finally {
 			setContinuingApprovalId(null);
@@ -1886,7 +1888,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			tool_name: toolName,
 			input_key: inputKey,
 			input_value: inputValue,
-			reason: t('platform.approvals.agentToolApprovalReason', {
+			reason: approvalRequestText.agentToolApprovalReason({
 				agent: agent.name,
 				tool: toolName,
 			}),

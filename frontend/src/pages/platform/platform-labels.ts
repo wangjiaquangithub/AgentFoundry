@@ -63,6 +63,18 @@ export const agentManagementRequestLabels = (t: PlatformTranslate) => ({
 	enableWorkflowError: t('platform.agentManagement.enableWorkflowError'),
 });
 
+export const approvalRequestLabels = (t: PlatformTranslate) => ({
+	loadError: t('platform.approvals.loadError'),
+	createError: t('platform.approvals.createError'),
+	runApprovalReason: t('platform.approvals.runApprovalReason'),
+	approved: t('platform.approvals.approved'),
+	rejected: t('platform.approvals.rejected'),
+	decisionError: t('platform.approvals.decisionError'),
+	approveAndRunError: t('platform.approvals.approveAndRunError'),
+	agentToolApprovalReason: (values: { agent: string; tool: string }) =>
+		t('platform.approvals.agentToolApprovalReason', values),
+});
+
 export const connectorOperationsLabels = (t: PlatformTranslate) => ({
 	baseUrlRequired: t('platform.connectors.validationBaseUrlRequired'),
 	baseUrlProtocol: t('platform.connectors.validationBaseUrlProtocol'),
