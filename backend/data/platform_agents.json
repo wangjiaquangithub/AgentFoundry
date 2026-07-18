@@ -1,0 +1,83 @@
+[
+  {
+    "id": "404ac37f-23e9-41f9-8dab-5844579931f0",
+    "template_id": "enterprise_knowledge_assistant",
+    "name": "企业知识助手 - 演示实例",
+    "description": "用于验证企业 Agent 平台的发布、工具授权和运行链路。",
+    "tenant": "acme",
+    "tools": [
+      "enterprise_lookup_policy",
+      "enterprise_get_ticket_status",
+      "enterprise_summarize_department_metrics"
+    ],
+    "knowledge_base_ids": [],
+    "model_config_id": null,
+    "memory_enabled": true,
+    "workflow_enabled": true,
+    "capabilities": [
+      "knowledge_qa",
+      "ticket_lookup",
+      "policy_lookup",
+      "metrics_summary"
+    ],
+    "status": "published",
+    "created_by": "acme:alice",
+    "created_at": "2026-07-15T19:42:17.104931+00:00",
+    "updated_at": "2026-07-15T19:42:17.104931+00:00"
+  },
+  {
+    "id": "f5c1fa43-6287-4b23-885d-6686c912a8e7",
+    "template_id": "enterprise_knowledge_assistant",
+    "name": "企业知识助手 - 平台发布验证",
+    "description": "从企业 Agent 平台模板发布，用于验证模型凭证、工具授权、长期记忆和运行链路。",
+    "tenant": "acme",
+    "tools": [
+      "enterprise_lookup_policy",
+      "enterprise_get_ticket_status",
+      "enterprise_summarize_department_metrics"
+    ],
+    "knowledge_base_ids": [],
+    "model_config_id": "b8de00f47a114db49fa4c8fdec2da615",
+    "memory_enabled": true,
+    "workflow_enabled": true,
+    "capabilities": [
+      "knowledge_qa",
+      "ticket_lookup",
+      "policy_lookup",
+      "metrics_summary"
+    ],
+    "status": "published",
+    "created_by": "acme:alice",
+    "created_at": "2026-07-17T01:57:23.008335+00:00",
+    "updated_at": "2026-07-17T01:57:23.008335+00:00"
+  },
+  {
+    "id": "504c0b83-5b5e-4ed2-a2a2-0a800b9b84fe",
+    "template_id": "enterprise_knowledge_assistant",
+    "name": "企业知识助手 - role smoke",
+    "description": "Smoke-test instance for role-based member access.",
+    "tenant": "acme",
+    "tools": [
+      "enterprise_lookup_policy",
+      "enterprise_get_ticket_status"
+    ],
+    "knowledge_base_ids": [],
+    "model_config_id": null,
+    "memory_enabled": true,
+    "workflow_enabled": true,
+    "allowed_user_ids": [],
+    "allowed_roles": [
+      "Finance reviewer"
+    ],
+    "capabilities": [
+      "knowledge_qa",
+      "ticket_lookup",
+      "policy_lookup",
+      "metrics_summary"
+    ],
+    "status": "published",
+    "created_by": "acme:alice",
+    "created_at": "2026-07-17T13:02:56.548959+00:00",
+    "updated_at": "2026-07-17T13:02:56.548959+00:00"
+  }
+]

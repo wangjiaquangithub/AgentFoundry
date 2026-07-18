@@ -1,0 +1,63 @@
+{
+  "tenants": {
+    "acme": {
+      "policies": {
+        "remote": "Acme 工程团队每周最多可远程办公 3 天，周三为统一到办公室协作日。跨城市远程需要直属经理审批。",
+        "expense": "Acme 员工入职 90 天内可报销最高 1500 美元的家庭办公设备，超过额度需要部门负责人审批。",
+        "security": "生产数据访问必须启用 MFA，获得经理审批，并关联到事故、项目或审计工单。"
+      },
+      "tickets": {
+        "INC-1001": {
+          "status": "investigating",
+          "owner": "platform-oncall",
+          "summary": "账单 API 出现间歇性延迟，平台值班团队正在排查。"
+        },
+        "REQ-2048": {
+          "status": "waiting_for_approval",
+          "owner": "finance-ops",
+          "summary": "季度 SaaS 续费审批，等待财务运营确认预算归属。"
+        }
+      },
+      "metrics": {
+        "engineering": {
+          "active_projects": 12,
+          "open_incidents": 1,
+          "sla": "99.94%",
+          "risk": "账单 API 延迟可能影响月末结算体验"
+        },
+        "support": {
+          "active_projects": 4,
+          "open_incidents": 0,
+          "sla": "98.70%",
+          "risk": "企业客户 onboarding 文档仍需补充"
+        }
+      }
+    },
+    "globex": {
+      "policies": {
+        "remote": "Globex 采用混合办公制度，各部门负责人定义固定到岗日和例外审批流程。",
+        "expense": "Globex 设备采购超过 500 美元需要采购团队预审批。",
+        "security": "客户数据导出必须先创建数据处理工单，并通过安全评审。"
+      },
+      "tickets": {
+        "CASE-7788": {
+          "status": "resolved",
+          "owner": "customer-success",
+          "summary": "企业客户 onboarding 升级问题已处理完成。"
+        }
+      },
+      "metrics": {
+        "sales": {
+          "active_projects": 7,
+          "open_incidents": 0,
+          "sla": "99.10%"
+        },
+        "support": {
+          "active_projects": 9,
+          "open_incidents": 2,
+          "sla": "97.85%"
+        }
+      }
+    }
+  }
+}

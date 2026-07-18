@@ -1,0 +1,103 @@
+[
+  {
+    "workflow_type": "daily_ops_brief",
+    "name": "每日运营简报",
+    "description": "按制度、工单和部门指标生成一份可审计的运营简报。",
+    "enabled": true,
+    "default_inputs": {
+      "policy_keyword": "remote",
+      "ticket_id": "INC-1001",
+      "department": "engineering"
+    },
+    "steps": [
+      {
+        "id": "policy",
+        "title": "查询制度",
+        "tool_name": "enterprise_lookup_policy",
+        "input_map": {
+          "keyword": "policy_keyword"
+        }
+      },
+      {
+        "id": "ticket",
+        "title": "查询工单",
+        "tool_name": "enterprise_get_ticket_status",
+        "input_map": {
+          "ticket_id": "ticket_id"
+        }
+      },
+      {
+        "id": "metrics",
+        "title": "汇总部门指标",
+        "tool_name": "enterprise_summarize_department_metrics",
+        "input_map": {
+          "department": "department"
+        }
+      }
+    ],
+    "updated_at": "2026-07-16T22:09:14.538928+00:00",
+    "updated_by": "system"
+  },
+  {
+    "workflow_type": "ticket_followup",
+    "name": "工单跟进",
+    "description": "查询指定工单，并补充关联制度依据。",
+    "enabled": true,
+    "default_inputs": {
+      "policy_keyword": "remote",
+      "ticket_id": "INC-1001",
+      "department": "engineering"
+    },
+    "steps": [
+      {
+        "id": "ticket",
+        "title": "查询工单",
+        "tool_name": "enterprise_get_ticket_status",
+        "input_map": {
+          "ticket_id": "ticket_id"
+        }
+      },
+      {
+        "id": "policy",
+        "title": "补充相关制度",
+        "tool_name": "enterprise_lookup_policy",
+        "input_map": {
+          "keyword": "policy_keyword"
+        }
+      }
+    ],
+    "updated_at": "2026-07-16T22:09:14.538928+00:00",
+    "updated_by": "system"
+  },
+  {
+    "workflow_type": "policy_review",
+    "name": "制度复核",
+    "description": "查询制度条款，并结合部门指标做复核。",
+    "enabled": true,
+    "default_inputs": {
+      "policy_keyword": "remote",
+      "ticket_id": "INC-1001",
+      "department": "engineering"
+    },
+    "steps": [
+      {
+        "id": "policy",
+        "title": "查询制度",
+        "tool_name": "enterprise_lookup_policy",
+        "input_map": {
+          "keyword": "policy_keyword"
+        }
+      },
+      {
+        "id": "metrics",
+        "title": "核对部门指标",
+        "tool_name": "enterprise_summarize_department_metrics",
+        "input_map": {
+          "department": "department"
+        }
+      }
+    ],
+    "updated_at": "2026-07-16T22:09:14.538928+00:00",
+    "updated_by": "system"
+  }
+]

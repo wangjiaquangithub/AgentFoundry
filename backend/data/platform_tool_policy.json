@@ -1,0 +1,41 @@
+{
+  "defaults": {
+    "allow": [
+      "enterprise_lookup_policy"
+    ]
+  },
+  "tenants": {
+    "acme": {
+      "allow": [
+        "enterprise_lookup_policy",
+        "enterprise_get_ticket_status",
+        "enterprise_summarize_department_metrics"
+      ],
+      "users": {
+        "acme:alice": {
+          "allow": [
+            "enterprise_lookup_policy",
+            "enterprise_get_ticket_status",
+            "enterprise_summarize_department_metrics"
+          ]
+        }
+      }
+    },
+    "globex": {
+      "allow": [
+        "enterprise_lookup_policy",
+        "enterprise_get_ticket_status",
+        "enterprise_summarize_department_metrics"
+      ],
+      "users": {
+        "globex:bob": {
+          "allow": [
+            "enterprise_lookup_policy",
+            "enterprise_get_ticket_status",
+            "enterprise_summarize_department_metrics"
+          ]
+        }
+      }
+    }
+  }
+}

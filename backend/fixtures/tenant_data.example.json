@@ -1,0 +1,61 @@
+{
+  "tenants": {
+    "acme": {
+      "policies": {
+        "remote": "Acme engineering may work remotely up to three days per week. Wednesday is the shared office day.",
+        "expense": "Acme employees can reimburse approved home-office equipment up to USD 1,500 within 90 days of onboarding.",
+        "security": "Production data access requires manager approval, MFA, and an audit ticket linked to the incident or project."
+      },
+      "tickets": {
+        "INC-1001": {
+          "status": "investigating",
+          "owner": "platform-oncall",
+          "summary": "Intermittent latency on the billing API."
+        },
+        "REQ-2048": {
+          "status": "waiting_for_approval",
+          "owner": "finance-ops",
+          "summary": "Quarterly SaaS renewal approval."
+        }
+      },
+      "metrics": {
+        "engineering": {
+          "active_projects": 12,
+          "open_incidents": 1,
+          "sla": "99.94%"
+        },
+        "support": {
+          "active_projects": 4,
+          "open_incidents": 0,
+          "sla": "98.70%"
+        }
+      }
+    },
+    "globex": {
+      "policies": {
+        "remote": "Globex staff use a hybrid schedule. Department heads define office days and exceptions.",
+        "expense": "Globex equipment purchases above USD 500 require procurement pre-approval.",
+        "security": "Customer exports require a data-processing ticket and security review before release."
+      },
+      "tickets": {
+        "CASE-7788": {
+          "status": "resolved",
+          "owner": "customer-success",
+          "summary": "Escalated enterprise onboarding question."
+        }
+      },
+      "metrics": {
+        "sales": {
+          "active_projects": 7,
+          "open_incidents": 0,
+          "sla": "99.10%"
+        },
+        "support": {
+          "active_projects": 9,
+          "open_incidents": 2,
+          "sla": "97.85%"
+        }
+      }
+    }
+  }
+}
