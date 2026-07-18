@@ -102,12 +102,16 @@ import {
 	appCenterDetailResourcesLabels,
 	appCenterDetailResourceValueLabels,
 	appCenterOperationsLabels,
+	auditStatsLabels,
 	connectorOperationsLabels,
 	dashboardTodoLabels,
 	operationsHeadlineLabels,
 	platformOverviewStatLabels,
 	runtimeStatusLabels,
 	selectedToolRunnerLabels,
+	triggerOperationsStatLabels,
+	triggerOperationsSummaryLabels,
+	workflowOperationsLabels,
 } from './platform-labels';
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
@@ -853,12 +857,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		recentWorkflowRuns,
 		workflowRunCount,
 		pendingApprovals,
-		labels: {
-			templates: t('platform.workflowOps.templates'),
-			enabled: t('platform.workflowOps.enabled'),
-			runs: t('platform.workflowOps.runs'),
-			approvals: t('platform.workflowOps.approvals'),
-		},
+		labels: workflowOperationsLabels(t),
 	});
 	const workflowPendingApprovals = workflowOperationsState.workflowPendingApprovals;
 	const selectedWorkflowName = workflowOperationsState.selectedWorkflowName;
@@ -867,17 +866,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const workflowOpsStats = workflowOperationsState.workflowOpsStats;
 	const triggerOperationsState = triggerOperationsStateForStatus({
 		schedules,
-		statLabels: {
-			schedules: t('platform.triggerOps.schedules'),
-			enabled: t('platform.triggerOps.enabled'),
-			agentSource: t('platform.triggerOps.agentSource'),
-			userSource: t('platform.triggerOps.userSource'),
-		},
-		summaryLabels: {
-			manual: t('platform.triggerOps.summaryManual'),
-			paused: t('platform.triggerOps.summaryPaused'),
-			active: ({ count }) => t('platform.triggerOps.summaryActive', { count }),
-		},
+		statLabels: triggerOperationsStatLabels(t),
+		summaryLabels: triggerOperationsSummaryLabels(t),
 	});
 	const recentSchedules = triggerOperationsState.recentSchedules;
 	const triggerOpsStats = triggerOperationsState.triggerOpsStats;
@@ -887,12 +877,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			auditSummary,
 			auditEvents,
 		},
-		{
-			returned: t('platform.audit.summaryReturned'),
-			successes: t('platform.audit.summarySuccesses'),
-			failures: t('platform.audit.summaryFailures'),
-			avgDuration: t('platform.audit.summaryAvgDuration'),
-		},
+		auditStatsLabels(t),
 	);
 	useEffect(() => {
 		void refetchConnectors();

@@ -131,3 +131,30 @@ export const agentReleasePipelineLabels = (t: PlatformTranslate) => ({
 		t('platform.agentManagement.pipeline.governanceDetailPending', { count }),
 	governanceDetail: t('platform.agentManagement.pipeline.governanceDetail'),
 });
+
+export const workflowOperationsLabels = (t: PlatformTranslate) => ({
+	templates: t('platform.workflowOps.templates'),
+	enabled: t('platform.workflowOps.enabled'),
+	runs: t('platform.workflowOps.runs'),
+	approvals: t('platform.workflowOps.approvals'),
+});
+
+export const triggerOperationsStatLabels = (t: PlatformTranslate) => ({
+	schedules: t('platform.triggerOps.schedules'),
+	enabled: t('platform.triggerOps.enabled'),
+	agentSource: t('platform.triggerOps.agentSource'),
+	userSource: t('platform.triggerOps.userSource'),
+});
+
+export const triggerOperationsSummaryLabels = (t: PlatformTranslate) => ({
+	manual: t('platform.triggerOps.summaryManual'),
+	paused: t('platform.triggerOps.summaryPaused'),
+	active: ({ count }: { count: number }) => t('platform.triggerOps.summaryActive', { count }),
+});
+
+export const auditStatsLabels = (t: PlatformTranslate) => ({
+	returned: t('platform.audit.summaryReturned'),
+	successes: t('platform.audit.summarySuccesses'),
+	failures: t('platform.audit.summaryFailures'),
+	avgDuration: t('platform.audit.summaryAvgDuration'),
+});
