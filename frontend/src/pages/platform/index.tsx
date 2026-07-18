@@ -1381,10 +1381,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				},
 				{
 					label: t('platform.appCenter.knowledgeBases'),
-					value:
-						inspectedAppCenterAgentKnowledge.length > 0
-							? inspectedAppCenterAgentKnowledge.join(', ')
-							: t('platform.appCenter.none'),
+					value: resourceListLabel(
+						inspectedAppCenterAgentKnowledge,
+						t('platform.appCenter.none'),
+					),
 					icon: LibraryBig,
 				},
 				{
