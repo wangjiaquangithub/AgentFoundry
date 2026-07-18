@@ -3052,6 +3052,33 @@ export function toolPolicySummaryForGovernance(
 	};
 }
 
+export function availableToolItemsForCatalog(values: {
+	toolCatalogItems: EnterpriseToolCatalogItem[];
+	policyDecisions: EnterprisePlatformStatusResponse['tool_policy']['decisions'];
+	toolInputConfig: EnterpriseToolInputConfigMap;
+}): EnterpriseToolCatalogItem[] {
+	if (values.toolCatalogItems.length > 0) {
+		return values.toolCatalogItems;
+	}
+
+	return values.policyDecisions.map((decision) => ({
+		name: decision.name,
+		description: decision.reason,
+		input_key: values.toolInputConfig[decision.name]?.inputKey ?? 'input',
+		default_input: values.toolInputConfig[decision.name]?.defaultValue ?? '',
+		allowed: decision.allowed,
+		reason: decision.reason,
+		configured_by_agents: [],
+		configured_for_agent: null,
+		configured_agent_id: null,
+		stats: {
+			calls: 0,
+			successes: 0,
+			failures: 0,
+		},
+	}));
+}
+
 export function selectedToolRunnerStateForStatus(values: {
 	availableToolItems: EnterpriseToolCatalogItem[];
 	selectedToolName: string;

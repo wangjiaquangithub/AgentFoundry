@@ -48,7 +48,6 @@ import {
 	type EnterprisePlatformOpsTask,
 	type EnterprisePlatformOpsTasksResponse,
 	type EnterprisePlatformScenario,
-	type EnterpriseToolCatalogItem,
 	type EnterpriseToolCatalogResponse,
 	type EnterpriseToolRunResponse,
 	type EnterpriseWorkflowRunHistoryItem,
@@ -95,6 +94,7 @@ import {
 	agentSetupStepsForStatus,
 	appCenterDetailResourceValuesForSelection,
 	appCenterOperationsStateForStatus,
+	availableToolItemsForCatalog,
 	auditStatsForSummary,
 	capabilityItemsForStatus,
 	connectorOperationsStateForStatus,
@@ -818,26 +818,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const subagentTemplates = platformStatus?.subagent_templates ?? [];
 	const toolPolicyMode = platformStatus?.tool_policy.mode || t('platform.runtime.unavailable');
 	const toolCatalogItems = useMemo(() => toolCatalog?.tools ?? [], [toolCatalog]);
-	const availableToolItems: EnterpriseToolCatalogItem[] = useMemo(
+	const availableToolItems = useMemo(
 		() =>
-			toolCatalogItems.length > 0
-				? toolCatalogItems
-				: policyDecisions.map((decision) => ({
-						name: decision.name,
-						description: decision.reason,
-						input_key: enterpriseToolInputConfig[decision.name]?.inputKey ?? 'input',
-						default_input: enterpriseToolInputConfig[decision.name]?.defaultValue ?? '',
-						allowed: decision.allowed,
-						reason: decision.reason,
-						configured_by_agents: [],
-						configured_for_agent: null,
-						configured_agent_id: null,
-						stats: {
-							calls: 0,
-							successes: 0,
-							failures: 0,
-						},
-					})),
+			availableToolItemsForCatalog({
+				toolCatalogItems,
+				policyDecisions,
+				toolInputConfig: enterpriseToolInputConfig,
+			}),
 		[policyDecisions, toolCatalogItems],
 	);
 	const selectedToolRunnerState = selectedToolRunnerStateForStatus({
