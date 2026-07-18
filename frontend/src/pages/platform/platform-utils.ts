@@ -6,6 +6,8 @@ import type {
 	EnterprisePlatformGovernanceResponse,
 	EnterprisePublishedAgent,
 } from '@/api';
+import type { AccessControlStat } from './components/AccessControlPanel';
+import type { GovernanceHealthItem } from './components/GovernanceHealthPanel';
 import type { HealthState } from './components/common';
 
 export const defaultEnterpriseWorkflowInputs: Record<string, string> = {
@@ -619,6 +621,108 @@ export function accessTenantSummariesForGovernance(
 				return summary;
 			}, {}),
 	);
+}
+
+export function accessControlStatsForGovernance(
+	values: {
+		identityCount: number;
+		tenantCount: number;
+		riskyIdentityCount: number;
+		selectedIdentityPendingApprovalCount: number;
+	},
+	labels: {
+		identities: string;
+		tenants: string;
+		riskyIdentities: string;
+		pendingApprovals: string;
+	},
+): AccessControlStat[] {
+	return [
+		{
+			label: labels.identities,
+			value: values.identityCount,
+		},
+		{
+			label: labels.tenants,
+			value: values.tenantCount,
+		},
+		{
+			label: labels.riskyIdentities,
+			value: values.riskyIdentityCount,
+		},
+		{
+			label: labels.pendingApprovals,
+			value: values.selectedIdentityPendingApprovalCount,
+		},
+	];
+}
+
+export function governanceHealthItemsForSummary(
+	values: {
+		governanceSummary?: EnterprisePlatformGovernanceResponse['summary'] | null;
+		tenantCount: number;
+		identityCount: number;
+		pendingApprovalCount: number;
+		auditEventCount: number;
+	},
+	labels: {
+		tenants: string;
+		tenantsHelper: string;
+		identities: string;
+		identitiesHelper: string;
+		pendingApprovals: string;
+		pendingApprovalsHelper: string;
+		auditEvents: string;
+		auditEventsHelper: string;
+		auditEventsFailedHelper: (values: { count: number }) => string;
+	},
+	icons: {
+		tenants: GovernanceHealthItem['icon'];
+		identities: GovernanceHealthItem['icon'];
+		pendingApprovals: GovernanceHealthItem['icon'];
+		auditEvents: GovernanceHealthItem['icon'];
+	},
+): GovernanceHealthItem[] {
+	const failedAuditEventCount = values.governanceSummary?.failed_audit_event_count ?? 0;
+
+	return [
+		{
+			label: labels.tenants,
+			value: values.governanceSummary?.tenant_count ?? values.tenantCount,
+			helper: labels.tenantsHelper,
+			state: values.tenantCount > 0 ? 'ready' : 'todo',
+			icon: icons.tenants,
+		},
+		{
+			label: labels.identities,
+			value: values.governanceSummary?.identity_count ?? values.identityCount,
+			helper: labels.identitiesHelper,
+			state: values.identityCount > 0 ? 'ready' : 'todo',
+			icon: icons.identities,
+		},
+		{
+			label: labels.pendingApprovals,
+			value: values.governanceSummary?.pending_approval_count ?? values.pendingApprovalCount,
+			helper: labels.pendingApprovalsHelper,
+			state: values.pendingApprovalCount > 0 ? 'partial' : 'ready',
+			icon: icons.pendingApprovals,
+		},
+		{
+			label: labels.auditEvents,
+			value: values.governanceSummary?.audit_event_count ?? values.auditEventCount,
+			helper:
+				failedAuditEventCount > 0
+					? labels.auditEventsFailedHelper({ count: failedAuditEventCount })
+					: labels.auditEventsHelper,
+			state:
+				failedAuditEventCount > 0
+					? 'partial'
+					: values.auditEventCount > 0
+						? 'ready'
+						: 'todo',
+			icon: icons.auditEvents,
+		},
+	] satisfies GovernanceHealthItem[];
 }
 
 export function templateDetailIssues(

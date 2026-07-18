@@ -69,7 +69,6 @@ import type { ApprovalFormState } from './components/ApprovalsPanel';
 import { ApprovalsViewPage } from './components/ApprovalsViewPage';
 import type { AppCenterSelection } from './components/AppCenterPanel';
 import type { FirstAgentGuideStep } from './components/FirstAgentGuide';
-import type { GovernanceHealthItem } from './components/GovernanceHealthPanel';
 import type { LaunchpadStep } from './components/LaunchpadPanel';
 import type {
 	MonitoringAgentTurn,
@@ -104,6 +103,7 @@ import { WorkflowsViewPage } from './components/WorkflowsViewPage';
 import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import {
+	accessControlStatsForGovernance,
 	accessTenantSummariesForGovernance,
 	agentAccessAllowed,
 	appCenterAgentDetailResourceValues,
@@ -124,6 +124,7 @@ import {
 	knowledgeBaseLabels,
 	modelCredentialLabel,
 	normalizeWorkflowInputs,
+	governanceHealthItemsForSummary,
 	operationsHeadlineText,
 	topOperationsAgentsForDisplay,
 } from './platform-utils';
@@ -1537,64 +1538,47 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const riskyIdentityCount =
 		governance?.summary.risky_identity_count ??
 		identityAccessRows.filter((row) => row.risk > 0).length;
-	const accessControlStats = [
+	const accessControlStats = accessControlStatsForGovernance(
 		{
-			label: t('platform.accessControl.identities'),
-			value: enterpriseIdentities.length,
+			identityCount: enterpriseIdentities.length,
+			tenantCount: accessTenantSummaries.length,
+			riskyIdentityCount,
+			selectedIdentityPendingApprovalCount: selectedIdentityPendingApprovals.length,
 		},
 		{
-			label: t('platform.accessControl.tenants'),
-			value: accessTenantSummaries.length,
+			identities: t('platform.accessControl.identities'),
+			tenants: t('platform.accessControl.tenants'),
+			riskyIdentities: t('platform.accessControl.riskyIdentities'),
+			pendingApprovals: t('platform.accessControl.pendingApprovals'),
+		},
+	);
+	const governanceHealthItems = governanceHealthItemsForSummary(
+		{
+			governanceSummary: governance?.summary,
+			tenantCount: accessTenantSummaries.length,
+			identityCount: enterpriseIdentities.length,
+			pendingApprovalCount: pendingApprovals.length,
+			auditEventCount,
 		},
 		{
-			label: t('platform.accessControl.riskyIdentities'),
-			value: riskyIdentityCount,
+			tenants: t('platform.governanceHealth.tenants'),
+			tenantsHelper: t('platform.governanceHealth.tenantsHelper'),
+			identities: t('platform.governanceHealth.identities'),
+			identitiesHelper: t('platform.governanceHealth.identitiesHelper'),
+			pendingApprovals: t('platform.governanceHealth.pendingApprovals'),
+			pendingApprovalsHelper: t('platform.governanceHealth.pendingApprovalsHelper'),
+			auditEvents: t('platform.governanceHealth.auditEvents'),
+			auditEventsHelper: t('platform.governanceHealth.auditEventsHelper'),
+			auditEventsFailedHelper: ({ count }) =>
+				t('platform.governanceHealth.auditEventsFailedHelper', { count }),
 		},
 		{
-			label: t('platform.accessControl.pendingApprovals'),
-			value: selectedIdentityPendingApprovals.length,
+			tenants: Building2,
+			identities: UserRound,
+			pendingApprovals: AlertTriangle,
+			auditEvents: FileClock,
 		},
-	];
-	const governanceHealthItems = [
-		{
-			label: t('platform.governanceHealth.tenants'),
-			value: governance?.summary.tenant_count ?? accessTenantSummaries.length,
-			helper: t('platform.governanceHealth.tenantsHelper'),
-			state: accessTenantSummaries.length > 0 ? 'ready' : 'todo',
-			icon: Building2,
-		},
-		{
-			label: t('platform.governanceHealth.identities'),
-			value: governance?.summary.identity_count ?? enterpriseIdentities.length,
-			helper: t('platform.governanceHealth.identitiesHelper'),
-			state: enterpriseIdentities.length > 0 ? 'ready' : 'todo',
-			icon: UserRound,
-		},
-		{
-			label: t('platform.governanceHealth.pendingApprovals'),
-			value: governance?.summary.pending_approval_count ?? pendingApprovals.length,
-			helper: t('platform.governanceHealth.pendingApprovalsHelper'),
-			state: pendingApprovals.length > 0 ? 'partial' : 'ready',
-			icon: AlertTriangle,
-		},
-		{
-			label: t('platform.governanceHealth.auditEvents'),
-			value: governance?.summary.audit_event_count ?? auditEventCount,
-			helper:
-				(governance?.summary.failed_audit_event_count ?? 0) > 0
-					? t('platform.governanceHealth.auditEventsFailedHelper', {
-							count: governance?.summary.failed_audit_event_count ?? 0,
-						})
-					: t('platform.governanceHealth.auditEventsHelper'),
-			state:
-				(governance?.summary.failed_audit_event_count ?? 0) > 0
-					? 'partial'
-					: auditEventCount > 0
-						? 'ready'
-						: 'todo',
-			icon: FileClock,
-		},
-	] satisfies GovernanceHealthItem[];
+	);
 	const workflowPendingApprovals = pendingApprovals.filter(
 		(approval) => approval.request_type === 'workflow_run',
 	);
