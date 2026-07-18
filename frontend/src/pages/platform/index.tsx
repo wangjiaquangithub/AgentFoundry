@@ -83,7 +83,6 @@ import { TenantsViewPage } from './components/TenantsViewPage';
 import { ToolsViewPage } from './components/ToolsViewPage';
 import type {
 	WorkbenchQuickAction,
-	WorkbenchRiskItem,
 } from './components/WorkbenchReadinessPanel';
 import { WorkflowsViewPage } from './components/WorkflowsViewPage';
 import type { HealthState } from './components/common';
@@ -132,6 +131,7 @@ import {
 	workbenchActionsForStatus,
 	workbenchIndicatorsForStatus,
 	workbenchReadinessItemsForStatus,
+	workbenchRiskItemsForStatus,
 	workflowOpsStatsForSummary,
 } from './platform-utils';
 
@@ -3864,54 +3864,32 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			},
 		},
 	);
-	const workbenchRiskItems = [
-		hasErrors
-			? {
-					key: 'errors',
-					label: t('platform.workbench.risks.errors'),
-					state: 'blocked' as HealthState,
-					onClick: scrollToGovernance,
-				}
-			: null,
-		connectorDraftIssues.length > 0
-			? {
-					key: 'connectorDraft',
-					label: t('platform.workbench.risks.connectorDraft', {
-						count: connectorDraftIssues.length,
-					}),
-					state: 'blocked' as HealthState,
-					onClick: scrollToConnectorCenter,
-				}
-			: null,
-		pendingApprovals.length > 0
-			? {
-					key: 'approvals',
-					label: t('platform.workbench.risks.approvals', {
-						count: pendingApprovals.length,
-					}),
-					state: 'partial' as HealthState,
-					onClick: scrollToGovernance,
-				}
-			: null,
-		failedWorkflowRunCount > 0
-			? {
-					key: 'workflowFailures',
-					label: t('platform.workbench.risks.workflowFailures', {
-						count: failedWorkflowRunCount,
-					}),
-					state: 'partial' as HealthState,
-					onClick: scrollToWorkflowRunner,
-				}
-			: null,
-		readyPlatformAgents.length === 0
-			? {
-					key: 'agents',
-					label: t('platform.workbench.risks.agents'),
-					state: 'blocked' as HealthState,
-					onClick: handleStartPublishing,
-				}
-			: null,
-	].filter(Boolean) as WorkbenchRiskItem[];
+	const workbenchRiskItems = workbenchRiskItemsForStatus(
+		{
+			hasErrors,
+			connectorDraftIssueCount: connectorDraftIssues.length,
+			pendingApprovalCount: pendingApprovals.length,
+			failedWorkflowRunCount,
+			readyAgentCount: readyPlatformAgents.length,
+		},
+		{
+			actions: {
+				governance: scrollToGovernance,
+				connectors: scrollToConnectorCenter,
+				workflows: scrollToWorkflowRunner,
+				agents: handleStartPublishing,
+			},
+			labels: {
+				errors: t('platform.workbench.risks.errors'),
+				connectorDraft: (count) =>
+					t('platform.workbench.risks.connectorDraft', { count }),
+				approvals: (count) => t('platform.workbench.risks.approvals', { count }),
+				workflowFailures: (count) =>
+					t('platform.workbench.risks.workflowFailures', { count }),
+				agents: t('platform.workbench.risks.agents'),
+			},
+		},
+	);
 	const workbenchQuickActions = [
 		{
 			key: 'connectors',

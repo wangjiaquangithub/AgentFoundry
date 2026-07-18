@@ -25,7 +25,10 @@ import type { PlatformMemberTenantSummary } from './components/MembersPanel';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
 import type { TenantOverviewItem } from './components/TenantWorkspacePanel';
 import type { TriggerOpsStat } from './components/TriggerOpsPanel';
-import type { WorkbenchReadinessItem } from './components/WorkbenchReadinessPanel';
+import type {
+	WorkbenchReadinessItem,
+	WorkbenchRiskItem,
+} from './components/WorkbenchReadinessPanel';
 import type {
 	WorkbenchActionCard,
 	WorkbenchIndicator,
@@ -454,6 +457,7 @@ type WorkbenchReadinessTarget =
 	| 'members'
 	| 'agents'
 	| 'workflows';
+type WorkbenchRiskTarget = 'governance' | 'connectors' | 'workflows' | 'agents';
 
 export function workbenchReadinessItemsForStatus(
 	values: {
@@ -544,6 +548,71 @@ export function workbenchReadinessItemsForStatus(
 			onClick: options.actions.workflows,
 		},
 	];
+}
+
+export function workbenchRiskItemsForStatus(
+	values: {
+		hasErrors: boolean;
+		connectorDraftIssueCount: number;
+		pendingApprovalCount: number;
+		failedWorkflowRunCount: number;
+		readyAgentCount: number;
+	},
+	options: {
+		actions: Record<WorkbenchRiskTarget, () => void>;
+		labels: {
+			errors: string;
+			connectorDraft: (count: number) => string;
+			approvals: (count: number) => string;
+			workflowFailures: (count: number) => string;
+			agents: string;
+		};
+	},
+): WorkbenchRiskItem[] {
+	const riskItems: Array<WorkbenchRiskItem | null> = [
+		values.hasErrors
+			? {
+					key: 'errors',
+					label: options.labels.errors,
+					state: 'blocked',
+					onClick: options.actions.governance,
+				}
+			: null,
+		values.connectorDraftIssueCount > 0
+			? {
+					key: 'connectorDraft',
+					label: options.labels.connectorDraft(values.connectorDraftIssueCount),
+					state: 'blocked',
+					onClick: options.actions.connectors,
+				}
+			: null,
+		values.pendingApprovalCount > 0
+			? {
+					key: 'approvals',
+					label: options.labels.approvals(values.pendingApprovalCount),
+					state: 'partial',
+					onClick: options.actions.governance,
+				}
+			: null,
+		values.failedWorkflowRunCount > 0
+			? {
+					key: 'workflowFailures',
+					label: options.labels.workflowFailures(values.failedWorkflowRunCount),
+					state: 'partial',
+					onClick: options.actions.workflows,
+				}
+			: null,
+		values.readyAgentCount === 0
+			? {
+					key: 'agents',
+					label: options.labels.agents,
+					state: 'blocked',
+					onClick: options.actions.agents,
+				}
+			: null,
+	];
+
+	return riskItems.filter((item): item is WorkbenchRiskItem => Boolean(item));
 }
 
 export function workbenchIndicatorsForStatus(
