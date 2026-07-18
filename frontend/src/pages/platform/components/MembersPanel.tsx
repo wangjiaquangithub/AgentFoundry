@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { formatTimestamp } from '../platform-utils';
 import { PlatformNotice } from './common';
 
 export interface MemberFormState {
@@ -63,7 +64,6 @@ interface MembersPanelProps {
 	onSaveMember: () => void;
 	onEditMember: (member: EnterprisePlatformMember) => void;
 	onToggleMemberStatus: (member: EnterprisePlatformMember) => void;
-	formatTimestamp: (value?: string) => string;
 	t: (key: string) => string;
 }
 
@@ -84,7 +84,6 @@ export function MembersPanel({
 	onSaveMember,
 	onEditMember,
 	onToggleMemberStatus,
-	formatTimestamp,
 	t,
 }: MembersPanelProps) {
 	return (

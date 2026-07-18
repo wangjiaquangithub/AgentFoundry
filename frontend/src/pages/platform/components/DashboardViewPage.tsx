@@ -2294,7 +2294,6 @@ export function DashboardViewPage({
 					onSaveMember={() => void handleSaveMember()}
 					onEditMember={handleEditMember}
 					onToggleMemberStatus={(member) => void handleToggleMemberStatus(member)}
-					formatTimestamp={formatTimestamp}
 					t={t}
 				/>
 				<AgentManagementPanel
