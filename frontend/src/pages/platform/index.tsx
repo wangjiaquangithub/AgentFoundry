@@ -109,7 +109,7 @@ import { DashboardViewPage } from './components/DashboardViewPage';
 import {
 	agentAccessAllowed,
 	appCenterAgentDetailLabels,
-	appCenterDetailStatusState,
+	appCenterDetailHealthState,
 	agentIsReady,
 	agentKnowledgeBaseLabels,
 	agentModelLabel,
@@ -122,7 +122,6 @@ import {
 	knowledgeBaseLabels,
 	modelCredentialLabel,
 	normalizeWorkflowInputs,
-	templateDetailIssues,
 } from './platform-utils';
 
 export type PlatformView =
@@ -1419,20 +1418,20 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					},
 				)
 			: [];
-	const appCenterDetailIssues = inspectedAppCenterAgent
-		? inspectedAppCenterAgentIssues
-		: inspectedAppCenterTemplate
-			? templateDetailIssues(credentials.length > 0, knowledgeBases.length > 0, {
-					missingModel: t('platform.dashboard.todoModel'),
-					missingKnowledge: t('platform.agentManagement.noKnowledge'),
-				})
-			: [];
-	const appCenterDetailStatus = appCenterDetailStatusState(
-		Boolean(inspectedAppCenterAgent),
-		inspectedAppCenterAgentReadiness,
-		appCenterDetailIssues,
-		credentials.length > 0,
-	);
+	const appCenterDetailHealth = appCenterDetailHealthState({
+		hasAgent: Boolean(inspectedAppCenterAgent),
+		agentReadiness: inspectedAppCenterAgentReadiness,
+		agentIssues: inspectedAppCenterAgentIssues,
+		hasTemplate: Boolean(inspectedAppCenterTemplate),
+		hasCredentials: credentials.length > 0,
+		hasKnowledgeBases: knowledgeBases.length > 0,
+		labels: {
+			missingModel: t('platform.dashboard.todoModel'),
+			missingKnowledge: t('platform.agentManagement.noKnowledge'),
+		},
+	});
+	const appCenterDetailIssues = appCenterDetailHealth.issues;
+	const appCenterDetailStatus = appCenterDetailHealth.status;
 	const operationsHeadline =
 		activePlatformAgents.length === 0
 			? t('platform.operations.headlineEmpty')

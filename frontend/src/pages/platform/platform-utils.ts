@@ -237,6 +237,32 @@ export function appCenterDetailStatusState(
 	return hasCredentials ? 'partial' : 'blocked';
 }
 
+export function appCenterDetailHealthState(values: {
+	hasAgent: boolean;
+	agentReadiness: HealthState;
+	agentIssues: string[];
+	hasTemplate: boolean;
+	hasCredentials: boolean;
+	hasKnowledgeBases: boolean;
+	labels: { missingModel: string; missingKnowledge: string };
+}) {
+	const issues = values.hasAgent
+		? values.agentIssues
+		: values.hasTemplate
+			? templateDetailIssues(values.hasCredentials, values.hasKnowledgeBases, values.labels)
+			: [];
+
+	return {
+		issues,
+		status: appCenterDetailStatusState(
+			values.hasAgent,
+			values.agentReadiness,
+			issues,
+			values.hasCredentials,
+		),
+	};
+}
+
 export function agentRunnerAccessLabelKey(
 	agent:
 		| { allowed_user_ids?: string[] | null; allowed_roles?: string[] | null }
