@@ -63,7 +63,10 @@ import { useKnowledgeBases } from '@/hooks/useKnowledgeBases';
 import { usePlatformStatus } from '@/hooks/usePlatformStatus';
 import { useSchedules } from '@/hooks/useSchedules';
 import { useTranslation } from '@/i18n/useI18n';
-import { agentAppCenterDetailResources } from './app-center-detail-resources';
+import {
+	agentAppCenterDetailResources,
+	templateAppCenterDetailResources,
+} from './app-center-detail-resources';
 import { AgentsViewPage } from './components/AgentsViewPage';
 import type { ApprovalFormState } from './components/ApprovalsPanel';
 import { ApprovalsViewPage } from './components/ApprovalsViewPage';
@@ -120,8 +123,6 @@ import {
 	knowledgeBaseLabels,
 	modelCredentialLabel,
 	normalizeWorkflowInputs,
-	resourceCountLabel,
-	resourceListLabel,
 	templateDetailIssues,
 } from './platform-utils';
 
@@ -1403,39 +1404,26 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				},
 			)
 		: inspectedAppCenterTemplate
-			? [
+			? templateAppCenterDetailResources(
 					{
-						label: t('platform.appCenter.model'),
-						value: resourceCountLabel(credentials.length, {
-							available: (count) =>
-								t('platform.appCenter.availableModels', { count }),
-							empty: t('platform.appCenter.noModel'),
-						}),
-						icon: KeyRound,
+						modelCount: credentials.length,
+						knowledgeBaseCount: knowledgeBases.length,
+						tools: inspectedAppCenterTemplateTools,
 					},
 					{
-						label: t('platform.appCenter.knowledgeBases'),
-						value: resourceCountLabel(knowledgeBases.length, {
-							available: (count) =>
-								t('platform.appCenter.availableKnowledgeBases', { count }),
-							empty: t('platform.appCenter.none'),
-						}),
-						icon: LibraryBig,
+						model: t('platform.appCenter.model'),
+						availableModels: (count) =>
+							t('platform.appCenter.availableModels', { count }),
+						noModel: t('platform.appCenter.noModel'),
+						knowledgeBases: t('platform.appCenter.knowledgeBases'),
+						availableKnowledgeBases: (count) =>
+							t('platform.appCenter.availableKnowledgeBases', { count }),
+						tools: t('platform.appCenter.tools'),
+						runtime: t('platform.appCenter.runtime'),
+						templateRuntime: t('platform.appCenter.templateRuntime'),
+						none: t('platform.appCenter.none'),
 					},
-					{
-						label: t('platform.appCenter.tools'),
-						value: resourceListLabel(
-							inspectedAppCenterTemplateTools,
-							t('platform.appCenter.none'),
-						),
-						icon: Boxes,
-					},
-					{
-						label: t('platform.appCenter.runtime'),
-						value: t('platform.appCenter.templateRuntime'),
-						icon: Brain,
-					},
-				]
+				)
 			: [];
 	const appCenterDetailIssues = inspectedAppCenterAgent
 		? inspectedAppCenterAgentIssues
