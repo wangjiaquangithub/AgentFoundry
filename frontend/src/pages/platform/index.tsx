@@ -119,6 +119,7 @@ import {
 	knowledgeBaseLabels,
 	modelCredentialLabel,
 	normalizeWorkflowInputs,
+	resourceCountLabel,
 	resourceListLabel,
 	templateDetailIssues,
 } from './platform-utils';
@@ -1420,22 +1421,20 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			? [
 					{
 						label: t('platform.appCenter.model'),
-						value:
-							credentials.length > 0
-								? t('platform.appCenter.availableModels', {
-										count: credentials.length,
-									})
-								: t('platform.appCenter.noModel'),
+						value: resourceCountLabel(credentials.length, {
+							available: (count) =>
+								t('platform.appCenter.availableModels', { count }),
+							empty: t('platform.appCenter.noModel'),
+						}),
 						icon: KeyRound,
 					},
 					{
 						label: t('platform.appCenter.knowledgeBases'),
-						value:
-							knowledgeBases.length > 0
-								? t('platform.appCenter.availableKnowledgeBases', {
-										count: knowledgeBases.length,
-									})
-								: t('platform.appCenter.none'),
+						value: resourceCountLabel(knowledgeBases.length, {
+							available: (count) =>
+								t('platform.appCenter.availableKnowledgeBases', { count }),
+							empty: t('platform.appCenter.none'),
+						}),
 						icon: LibraryBig,
 					},
 					{
