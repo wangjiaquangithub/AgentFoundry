@@ -15,8 +15,10 @@ import type {
 	EnterpriseWorkflowTemplate,
 	ScheduleRecord,
 } from '@/api';
+import type { ComponentType } from 'react';
 import type { AccessControlStat } from './components/AccessControlPanel';
 import type { GovernanceHealthItem } from './components/GovernanceHealthPanel';
+import type { LaunchpadStep } from './components/LaunchpadPanel';
 import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
 import type { PlatformMemberTenantSummary } from './components/MembersPanel';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
@@ -339,6 +341,95 @@ export function blockedOrPartialPlatformAgentsForReadiness(values: {
 	);
 
 	return values.activePlatformAgents.filter((agent) => !readyAgentIds.has(agent.id));
+}
+
+type LaunchpadStepKey = 'members' | 'model' | 'knowledge' | 'agent' | 'run' | 'governance';
+type LaunchpadTarget = 'members' | 'credentials' | 'knowledge' | 'agents' | 'run' | 'governance';
+
+export function launchpadStepsForStatus(
+	values: {
+		activeMemberCount: number;
+		credentialCount: number;
+		knowledgeBaseCount: number;
+		activeAgentCount: number;
+		readyAgentCount: number;
+		hasAgentRunResult: boolean;
+		hasSelectedRunAgent: boolean;
+		auditEventCount: number;
+		pendingApprovalCount: number;
+	},
+	options: {
+		icons: Record<LaunchpadStepKey, ComponentType<{ className?: string }>>;
+		actions: Record<LaunchpadTarget, () => void>;
+		fallbackAction: () => void;
+		labels: {
+			title: (key: LaunchpadStepKey) => string;
+			description: (key: LaunchpadStepKey) => string;
+			action: (key: LaunchpadStepKey) => string;
+		};
+	},
+): LaunchpadStep[] {
+	const fallbackSteps: {
+		key: LaunchpadStepKey;
+		target: LaunchpadTarget;
+		state: HealthState;
+	}[] = [
+		{
+			key: 'members',
+			target: 'members',
+			state: values.activeMemberCount > 0 ? 'ready' : 'blocked',
+		},
+		{
+			key: 'model',
+			target: 'credentials',
+			state: values.credentialCount > 0 ? 'ready' : 'blocked',
+		},
+		{
+			key: 'knowledge',
+			target: 'knowledge',
+			state: values.knowledgeBaseCount > 0 ? 'ready' : 'blocked',
+		},
+		{
+			key: 'agent',
+			target: 'agents',
+			state:
+				values.readyAgentCount > 0
+					? 'ready'
+					: values.activeAgentCount > 0
+						? 'partial'
+						: 'blocked',
+		},
+		{
+			key: 'run',
+			target: 'run',
+			state:
+				values.hasAgentRunResult || values.readyAgentCount > 0 || values.hasSelectedRunAgent
+					? values.hasAgentRunResult
+						? 'ready'
+						: 'partial'
+					: 'blocked',
+		},
+		{
+			key: 'governance',
+			target: 'governance',
+			state:
+				values.auditEventCount > 0
+					? 'ready'
+					: values.hasAgentRunResult || values.pendingApprovalCount > 0
+						? 'partial'
+						: 'blocked',
+		},
+	];
+
+	return fallbackSteps.map((step) => ({
+		key: step.key,
+		title: options.labels.title(step.key),
+		description: options.labels.description(step.key),
+		actionLabel: options.labels.action(step.key),
+		icon: options.icons[step.key],
+		state: step.state,
+		onClick: options.actions[step.target] ?? options.fallbackAction,
+	}));
 }
 
 export function dashboardTodoItemsForStatus(

@@ -68,7 +68,6 @@ import type { ApprovalFormState } from './components/ApprovalsPanel';
 import { ApprovalsViewPage } from './components/ApprovalsViewPage';
 import type { AppCenterSelection } from './components/AppCenterPanel';
 import type { FirstAgentGuideStep } from './components/FirstAgentGuide';
-import type { LaunchpadStep } from './components/LaunchpadPanel';
 import type {
 	MonitoringAgentTurn,
 	MonitoringStat,
@@ -122,6 +121,7 @@ import {
 	enabledTriggerSchedules,
 	formatOperationsAgentIssueText,
 	knowledgeBaseLabels,
+	launchpadStepsForStatus,
 	memoryOperationsItemsForConversations,
 	modelCredentialLabel,
 	normalizeWorkflowInputs,
@@ -3664,68 +3664,36 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	};
 	const activeMemberCount =
 		platformMembers?.members.filter((member) => member.status !== 'inactive').length ?? 0;
-	const launchpadFallbackSteps = [
+	const launchpadSteps = launchpadStepsForStatus(
 		{
-			key: 'members',
-			target: 'members',
-			icon: UserRound,
-			state: activeMemberCount > 0 ? 'ready' : 'blocked',
+			activeMemberCount,
+			credentialCount: credentials.length,
+			knowledgeBaseCount: knowledgeBases.length,
+			activeAgentCount: activePlatformAgents.length,
+			readyAgentCount: readyPlatformAgents.length,
+			hasAgentRunResult: Boolean(agentRunResult),
+			hasSelectedRunAgent: Boolean(selectedRunAgent),
+			auditEventCount,
+			pendingApprovalCount: pendingApprovals.length,
 		},
 		{
-			key: 'model',
-			target: 'credentials',
-			icon: KeyRound,
-			state: credentials.length > 0 ? 'ready' : 'blocked',
+			icons: {
+				members: UserRound,
+				model: KeyRound,
+				knowledge: LibraryBig,
+				agent: BotMessageSquare,
+				run: Play,
+				governance: ShieldCheck,
+			},
+			actions: launchpadTargetActions,
+			fallbackAction: scrollToGovernance,
+			labels: {
+				title: (key) => t(`platform.launchpad.${key}.title`),
+				description: (key) => t(`platform.launchpad.${key}.description`),
+				action: (key) => t(`platform.launchpad.${key}.action`),
+			},
 		},
-		{
-			key: 'knowledge',
-			target: 'knowledge',
-			icon: LibraryBig,
-			state: knowledgeBases.length > 0 ? 'ready' : 'blocked',
-		},
-		{
-			key: 'agent',
-			target: 'agents',
-			icon: BotMessageSquare,
-			state:
-				readyPlatformAgents.length > 0
-					? 'ready'
-					: activePlatformAgents.length > 0
-						? 'partial'
-						: 'blocked',
-		},
-		{
-			key: 'run',
-			target: 'run',
-			icon: Play,
-			state:
-				agentRunResult
-					? 'ready'
-					: selectedRunAgent || readyPlatformAgents.length > 0
-						? 'partial'
-						: 'blocked',
-		},
-		{
-			key: 'governance',
-			target: 'governance',
-			icon: ShieldCheck,
-			state:
-				auditEventCount > 0
-					? 'ready'
-					: agentRunResult || pendingApprovals.length > 0
-						? 'partial'
-						: 'blocked',
-		},
-	];
-	const launchpadSteps = launchpadFallbackSteps.map((step) => ({
-		key: step.key,
-		title: t(`platform.launchpad.${step.key}.title`),
-		description: t(`platform.launchpad.${step.key}.description`),
-		actionLabel: t(`platform.launchpad.${step.key}.action`),
-		icon: step.icon,
-		state: step.state as HealthState,
-		onClick: launchpadTargetActions[step.target] ?? scrollToGovernance,
-	})) satisfies LaunchpadStep[];
+	);
 	const launchpadReadyCount = launchpadSteps.filter((step) => step.state === 'ready').length;
 	const launchpadTotalCount = launchpadSteps.length;
 	const launchpadState: HealthState =
