@@ -370,6 +370,34 @@ export function topOperationsAgentsForDisplay<
 	].slice(0, limit);
 }
 
+export function operationsHeadlineText(
+	values: {
+		activeAgentCount: number;
+		blockedOrPartialAgentCount: number;
+		pendingApprovalCount: number;
+	},
+	labels: {
+		empty: string;
+		needsWork: (counts: { count: number }) => string;
+		approvals: (counts: { count: number }) => string;
+		ready: string;
+	},
+) {
+	if (values.activeAgentCount === 0) {
+		return labels.empty;
+	}
+
+	if (values.blockedOrPartialAgentCount > 0) {
+		return labels.needsWork({ count: values.blockedOrPartialAgentCount });
+	}
+
+	if (values.pendingApprovalCount > 0) {
+		return labels.approvals({ count: values.pendingApprovalCount });
+	}
+
+	return labels.ready;
+}
+
 export function templateDetailIssues(
 	hasCredentials: boolean,
 	hasKnowledgeBases: boolean,

@@ -121,6 +121,7 @@ import {
 	knowledgeBaseLabels,
 	modelCredentialLabel,
 	normalizeWorkflowInputs,
+	operationsHeadlineText,
 	topOperationsAgentsForDisplay,
 } from './platform-utils';
 
@@ -1402,18 +1403,19 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	});
 	const appCenterDetailIssues = appCenterDetailHealth.issues;
 	const appCenterDetailStatus = appCenterDetailHealth.status;
-	const operationsHeadline =
-		activePlatformAgents.length === 0
-			? t('platform.operations.headlineEmpty')
-			: blockedOrPartialPlatformAgents.length > 0
-				? t('platform.operations.headlineNeedsWork', {
-						count: blockedOrPartialPlatformAgents.length,
-					})
-				: pendingApprovals.length > 0
-					? t('platform.operations.headlineApprovals', {
-							count: pendingApprovals.length,
-						})
-					: t('platform.operations.headlineReady');
+	const operationsHeadline = operationsHeadlineText(
+		{
+			activeAgentCount: activePlatformAgents.length,
+			blockedOrPartialAgentCount: blockedOrPartialPlatformAgents.length,
+			pendingApprovalCount: pendingApprovals.length,
+		},
+		{
+			empty: t('platform.operations.headlineEmpty'),
+			needsWork: ({ count }) => t('platform.operations.headlineNeedsWork', { count }),
+			approvals: ({ count }) => t('platform.operations.headlineApprovals', { count }),
+			ready: t('platform.operations.headlineReady'),
+		},
+	);
 	const agentReleasePipeline = [
 		{
 			key: 'template',
