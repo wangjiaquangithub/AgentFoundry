@@ -135,6 +135,7 @@ import {
 	type PlatformConsoleItem,
 } from './components/PlatformConsolePanel';
 import { PlatformDashboardOverview } from './components/PlatformDashboardOverview';
+import { PolicySubagentsPanel } from './components/PolicySubagentsPanel';
 import { RolloutPath, type RolloutPathStep } from './components/RolloutPath';
 import {
 	RuntimeStatusPanel,
@@ -9533,127 +9534,30 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					}}
 				/>
 
-				<section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.9fr)]">
-					<div className="flex flex-col gap-3">
-						<div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-							<div>
-								<h2 className="text-base font-semibold">
-									{t('platform.policy.title')}
-								</h2>
-								<p className="text-sm text-muted-foreground">
-									{t('platform.policy.description')}
-								</p>
-							</div>
-							<Badge variant="outline" className="font-mono">
-								{t('platform.policy.mode')}: {toolPolicyMode}
-							</Badge>
-						</div>
-						{platformLoading && !platformStatus ? (
-							<div className="grid gap-3">
-								<Skeleton className="h-20 w-full" />
-								<Skeleton className="h-20 w-full" />
-							</div>
-						) : platformError ? (
-							<PlatformNotice>{t('platform.policy.error')}</PlatformNotice>
-						) : policyDecisions.length === 0 ? (
-							<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-								{t('platform.policy.empty')}
-							</div>
-						) : (
-							<div className="grid gap-3">
-								{policyDecisions.map((decision) => (
-									<Card
-										key={decision.name}
-										size="sm"
-										className="rounded-lg shadow-none"
-									>
-										<CardHeader className="grid-cols-[1fr_auto] gap-3">
-											<div className="min-w-0">
-												<CardTitle className="truncate font-mono text-sm">
-													{decision.name}
-												</CardTitle>
-												<p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
-													{decision.reason}
-												</p>
-											</div>
-											<Badge
-												variant={
-													decision.allowed ? 'outline' : 'destructive'
-												}
-												className={cn(
-													decision.allowed &&
-														'border-emerald-500/30 bg-emerald-500/10 text-emerald-700',
-												)}
-											>
-												{decision.allowed
-													? t('platform.policy.allowed')
-													: t('platform.policy.denied')}
-											</Badge>
-										</CardHeader>
-									</Card>
-								))}
-							</div>
-						)}
-					</div>
-
-					<div className="flex flex-col gap-3">
-						<div>
-							<h2 className="text-base font-semibold">
-								{t('platform.subagents.title')}
-							</h2>
-							<p className="text-sm text-muted-foreground">
-								{t('platform.subagents.description')}
-							</p>
-						</div>
-						{platformLoading && !platformStatus ? (
-							<div className="grid gap-3">
-								<Skeleton className="h-24 w-full" />
-								<Skeleton className="h-24 w-full" />
-							</div>
-						) : platformError ? (
-							<PlatformNotice>{t('platform.subagents.error')}</PlatformNotice>
-						) : subagentTemplates.length === 0 ? (
-							<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-								{t('platform.subagents.empty')}
-							</div>
-						) : (
-							<div className="grid gap-3">
-								{subagentTemplates.map((template) => (
-									<Card
-										key={template.type}
-										size="sm"
-										className="rounded-lg shadow-none"
-									>
-										<CardHeader>
-											<div className="flex items-start justify-between gap-3">
-												<div className="min-w-0">
-													<CardTitle className="truncate font-mono text-sm">
-														{template.type}
-													</CardTitle>
-													<p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
-														{template.description}
-													</p>
-												</div>
-												<ListChecks className="size-4 shrink-0 text-muted-foreground" />
-											</div>
-										</CardHeader>
-										<CardContent className="flex flex-wrap gap-2">
-											<Badge variant="outline" className="font-mono">
-												{t('platform.subagents.permission')}:{' '}
-												{template.permission_mode}
-											</Badge>
-											<Badge variant="outline">
-												{template.override_leader_mode
-													? t('platform.subagents.overrideEnabled')
-													: t('platform.subagents.overrideDisabled')}
-											</Badge>
-										</CardContent>
-									</Card>
-								))}
-							</div>
-						)}
-					</div>
-				</section>
+				<PolicySubagentsPanel
+					platformLoading={platformLoading}
+					hasPlatformStatus={Boolean(platformStatus)}
+					platformError={platformError}
+					toolPolicyMode={toolPolicyMode}
+					policyDecisions={policyDecisions}
+					subagentTemplates={subagentTemplates}
+					labels={{
+						policyTitle: t('platform.policy.title'),
+						policyDescription: t('platform.policy.description'),
+						policyMode: t('platform.policy.mode'),
+						policyError: t('platform.policy.error'),
+						policyEmpty: t('platform.policy.empty'),
+						policyAllowed: t('platform.policy.allowed'),
+						policyDenied: t('platform.policy.denied'),
+						subagentsTitle: t('platform.subagents.title'),
+						subagentsDescription: t('platform.subagents.description'),
+						subagentsError: t('platform.subagents.error'),
+						subagentsEmpty: t('platform.subagents.empty'),
+						subagentPermission: t('platform.subagents.permission'),
+						subagentOverrideEnabled: t('platform.subagents.overrideEnabled'),
+						subagentOverrideDisabled: t('platform.subagents.overrideDisabled'),
+					}}
+				/>
 
 				<section
 					ref={agentRunnerRef}
