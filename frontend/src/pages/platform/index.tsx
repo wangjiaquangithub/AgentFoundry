@@ -127,6 +127,7 @@ import {
 	platformOverviewStatsForSummary,
 	platformMemberTenantSummariesForMembers,
 	platformConsoleItemsForDisplay,
+	readyLaunchpadStepCountForSteps,
 	readyOrchestrationWorkbenchStepCountForSteps,
 	recentTriggerSchedules,
 	rolloutPathStepsForStatus,
@@ -3621,7 +3622,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			},
 		},
 	);
-	const launchpadReadyCount = launchpadSteps.filter((step) => step.state === 'ready').length;
+	const launchpadReadyCount = readyLaunchpadStepCountForSteps(launchpadSteps);
 	const launchpadTotalCount = launchpadSteps.length;
 	const launchpadState: HealthState =
 		launchpadReadyCount === launchpadTotalCount

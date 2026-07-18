@@ -757,6 +757,10 @@ export function launchpadStepsForStatus(
 	}));
 }
 
+export function readyLaunchpadStepCountForSteps(steps: LaunchpadStep[]) {
+	return steps.filter((step) => step.state === 'ready').length;
+}
+
 type WorkbenchIndicatorKey = 'agents' | 'approvals' | 'workflows' | 'memory';
 type WorkbenchActionKey = 'run' | 'workflow' | 'governance' | 'memory';
 type WorkbenchReadinessKey =
