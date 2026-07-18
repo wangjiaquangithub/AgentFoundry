@@ -63,6 +63,7 @@ import { useKnowledgeBases } from '@/hooks/useKnowledgeBases';
 import { usePlatformStatus } from '@/hooks/usePlatformStatus';
 import { useSchedules } from '@/hooks/useSchedules';
 import { useTranslation } from '@/i18n/useI18n';
+import { agentAppCenterDetailResources } from './app-center-detail-resources';
 import { AgentsViewPage } from './components/AgentsViewPage';
 import type { ApprovalFormState } from './components/ApprovalsPanel';
 import { ApprovalsViewPage } from './components/ApprovalsViewPage';
@@ -1379,44 +1380,28 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	);
 	const appCenterDetailResources = inspectedAppCenterAgent
-		? [
+		? agentAppCenterDetailResources(
 				{
-					label: t('platform.appCenter.model'),
-					value: inspectedAppCenterAgentModel,
-					icon: KeyRound,
-				},
-				{
-					label: t('platform.appCenter.knowledgeBases'),
-					value: resourceListLabel(
-						inspectedAppCenterAgentKnowledge,
-						t('platform.appCenter.none'),
-					),
-					icon: LibraryBig,
-				},
-				{
-					label: t('platform.appCenter.tools'),
-					value: resourceListLabel(
-						inspectedAppCenterAgentTools,
-						t('platform.appCenter.none'),
-					),
-					icon: Boxes,
-				},
-				{
-					label: t('platform.appCenter.runtime'),
-					value: formatAgentRuntimeLabel(inspectedAppCenterAgent, {
+					model: inspectedAppCenterAgentModel,
+					knowledge: inspectedAppCenterAgentKnowledge,
+					tools: inspectedAppCenterAgentTools,
+					runtime: formatAgentRuntimeLabel(inspectedAppCenterAgent, {
 						runtime: ({ memory, workflow }) =>
 							t('platform.appCenter.runtimeValue', { memory, workflow }),
 						enabled: t('platform.agentManagement.enabled'),
 						disabled: t('platform.agentManagement.disabled'),
 					}),
-					icon: Brain,
+					access: inspectedAppCenterAgentAccess,
 				},
 				{
-					label: t('platform.appCenter.access'),
-					value: inspectedAppCenterAgentAccess,
-					icon: UserRound,
+					model: t('platform.appCenter.model'),
+					knowledgeBases: t('platform.appCenter.knowledgeBases'),
+					tools: t('platform.appCenter.tools'),
+					runtime: t('platform.appCenter.runtime'),
+					access: t('platform.appCenter.access'),
+					none: t('platform.appCenter.none'),
 				},
-			]
+			)
 		: inspectedAppCenterTemplate
 			? [
 					{
