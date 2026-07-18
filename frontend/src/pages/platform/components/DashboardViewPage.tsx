@@ -58,6 +58,7 @@ import { WorkbenchStatusPanel } from './WorkbenchStatusPanel';
 import { WorkflowOpsPanel } from './WorkflowOpsPanel';
 import { WorkflowRunnerPanel } from './WorkflowRunnerPanel';
 import { PlatformNotice, StateBadge } from './common';
+import { getFrequencyLabel, parseCronExpression } from '../../schedule/schedule-utils';
 import {
 	countArrayField,
 	credentialLabel,
@@ -171,7 +172,6 @@ export function DashboardViewPage({
 	featuredAgents,
 	firstAgentGuidePrimaryStep,
 	firstAgentGuideSteps,
-	getFrequencyLabel,
 	governance,
 	governanceError,
 	governanceHealthItems,
@@ -273,7 +273,6 @@ export function DashboardViewPage({
 	orchestrationPrimaryStep,
 	orchestrationReadyCount,
 	orchestrationWorkbenchSteps,
-	parseCronExpression,
 	partialWorkflowRunCount,
 	pendingApprovals,
 	platformAgents,

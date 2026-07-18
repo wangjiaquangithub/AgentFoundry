@@ -63,7 +63,6 @@ import { useKnowledgeBases } from '@/hooks/useKnowledgeBases';
 import { usePlatformStatus } from '@/hooks/usePlatformStatus';
 import { useSchedules } from '@/hooks/useSchedules';
 import { useTranslation } from '@/i18n/useI18n';
-import { getFrequencyLabel, parseCronExpression } from '../schedule/schedule-utils';
 import { AgentsViewPage } from './components/AgentsViewPage';
 import type { ApprovalFormState } from './components/ApprovalsPanel';
 import { ApprovalsViewPage } from './components/ApprovalsViewPage';
@@ -5124,7 +5123,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			featuredAgents={featuredAgents}
 			firstAgentGuidePrimaryStep={firstAgentGuidePrimaryStep}
 			firstAgentGuideSteps={firstAgentGuideSteps}
-			getFrequencyLabel={getFrequencyLabel}
 			governance={governance}
 			governanceError={governanceError}
 			governanceHealthItems={governanceHealthItems}
@@ -5226,7 +5224,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			orchestrationPrimaryStep={orchestrationPrimaryStep}
 			orchestrationReadyCount={orchestrationReadyCount}
 			orchestrationWorkbenchSteps={orchestrationWorkbenchSteps}
-			parseCronExpression={parseCronExpression}
 			partialWorkflowRunCount={partialWorkflowRunCount}
 			pendingApprovals={pendingApprovals}
 			platformAgents={platformAgents}
