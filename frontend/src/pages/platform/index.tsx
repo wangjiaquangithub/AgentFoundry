@@ -869,12 +869,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const tenantOverviewItems = tenantWorkspaceOperationsState.tenantOverviewItems;
 	const platformMemberTenantSummaries =
 		tenantWorkspaceOperationsState.platformMemberTenantSummaries;
-	const memoryOperationsState = useMemo(() => {
-		return memoryOperationsStateForConversations({
-			activePlatformAgents,
-			agentConversations,
-		});
-	}, [activePlatformAgents, agentConversations]);
+	const memoryOperationsState = memoryOperationsStateForConversations({
+		activePlatformAgents,
+		agentConversations,
+	});
 	const memoryOperationsItems = memoryOperationsState.items;
 	const memoryOperationsRunCount = memoryOperationsState.runCount;
 	const memoryOperationsHitCount = memoryOperationsState.hitCount;
