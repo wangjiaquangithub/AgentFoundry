@@ -104,6 +104,7 @@ import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import {
 	agentAccessAllowed,
+	agentAccessRestricted,
 	agentIsReady,
 	agentReadinessState,
 	agentResourceSummary,
@@ -1363,13 +1364,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		inspectedAppCenterAgentKnowledgeBaseIds,
 		knowledgeBaseById,
 	);
-	const inspectedAppCenterAgentAccess =
-		inspectedAppCenterAgentAllowedUserIds.length > 0 ||
-		inspectedAppCenterAgentAllowedRoles.length > 0
-			? t('platform.appCenter.restrictedAccess', {
-					users: inspectedAppCenterAgentAllowedUserIds.length,
-					roles: inspectedAppCenterAgentAllowedRoles.length,
-				})
+	const inspectedAppCenterAgentAccess = agentAccessRestricted({
+		allowed_user_ids: inspectedAppCenterAgentAllowedUserIds,
+		allowed_roles: inspectedAppCenterAgentAllowedRoles,
+	})
+		? t('platform.appCenter.restrictedAccess', {
+				users: inspectedAppCenterAgentAllowedUserIds.length,
+				roles: inspectedAppCenterAgentAllowedRoles.length,
+			})
 			: t('platform.appCenter.tenantAccess');
 	const appCenterDetailResources = inspectedAppCenterAgent
 		? [
