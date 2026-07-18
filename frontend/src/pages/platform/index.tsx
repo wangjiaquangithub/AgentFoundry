@@ -110,6 +110,7 @@ import {
 	firstAgentGuideStepsForStatus,
 	formatOperationsAgentIssueText,
 	knowledgeBaseLabels,
+	launchpadStateForCounts,
 	launchpadStepsForStatus,
 	memoryOperationsItemsForConversations,
 	memoryOperationsSummaryForItems,
@@ -3624,12 +3625,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	);
 	const launchpadReadyCount = readyLaunchpadStepCountForSteps(launchpadSteps);
 	const launchpadTotalCount = launchpadSteps.length;
-	const launchpadState: HealthState =
-		launchpadReadyCount === launchpadTotalCount
-			? 'ready'
-			: launchpadReadyCount > 0
-				? 'partial'
-				: 'blocked';
+	const launchpadState = launchpadStateForCounts({
+		readyCount: launchpadReadyCount,
+		totalCount: launchpadTotalCount,
+	});
 	const launchpadPrimaryStep =
 		launchpadSteps.find((step) => step.state !== 'ready') ??
 		launchpadSteps[launchpadSteps.length - 1];
