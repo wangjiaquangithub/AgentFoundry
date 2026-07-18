@@ -75,6 +75,14 @@ import {
 	connectorTestPayloadFromForm,
 } from './platform-connector-helpers';
 import {
+	formatPlatformConfigExport,
+	parsePlatformConfigImportText,
+	platformConfigImportErrorMessage,
+	platformConfigImportSuccessMessage,
+	platformConfigImportTextForExport,
+	platformConfigLoadErrorMessage,
+} from './platform-config-management';
+import {
 	memberCreatePayloadFromForm,
 	memberFormFromMember,
 	memberShouldActivate,
@@ -1065,14 +1073,15 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		try {
 			const response = await platformApi.exportConfig();
 			setPlatformConfigExport(response);
-			if (!platformConfigImportText.trim()) {
-				setPlatformConfigImportText(JSON.stringify(response, null, 2));
-			}
+			setPlatformConfigImportText((current) =>
+				platformConfigImportTextForExport({
+					exportResponse: response,
+					currentImportText: current,
+				}),
+			);
 		} catch (error) {
 			setPlatformConfigError(
-				error instanceof Error
-					? error.message
-					: configManagementRequestText.loadError,
+				platformConfigLoadErrorMessage(error, configManagementRequestText),
 			);
 		} finally {
 			setPlatformConfigLoading(false);
@@ -1084,7 +1093,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			return;
 		}
 
-		const text = JSON.stringify(platformConfigExport, null, 2);
+		const text = formatPlatformConfigExport(platformConfigExport);
 		setPlatformConfigImportText(text);
 		if (navigator.clipboard) {
 			await navigator.clipboard.writeText(text);
@@ -1096,16 +1105,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setPlatformConfigError(null);
 		setPlatformConfigImportResult(null);
 		try {
-			const parsed = JSON.parse(platformConfigImportText);
+			const parsed = parsePlatformConfigImportText(platformConfigImportText);
 			const response = await platformApi.importConfig({
 				mode: platformConfigImportMode,
 				config: parsed,
 			});
 			setPlatformConfigImportResult(
-				configManagementRequestText.importSuccess({
-					members: response.counts.members,
-					agents: response.counts.agents,
-				}),
+				platformConfigImportSuccessMessage(response, configManagementRequestText),
 			);
 			await Promise.all([
 				refetchPlatform(),
@@ -1119,11 +1125,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			]);
 		} catch (error) {
 			setPlatformConfigError(
-				error instanceof SyntaxError
-					? configManagementRequestText.parseError
-					: error instanceof Error
-						? error.message
-						: configManagementRequestText.importError,
+				platformConfigImportErrorMessage(error, configManagementRequestText),
 			);
 		} finally {
 			setImportingPlatformConfig(false);
