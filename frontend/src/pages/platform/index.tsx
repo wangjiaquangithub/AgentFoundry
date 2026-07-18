@@ -19,7 +19,7 @@ import {
 	UserRound,
 	Workflow,
 } from 'lucide-react';
-import type { ComponentType, RefObject } from 'react';
+import type { ComponentType } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -93,6 +93,7 @@ import {
 	agentOpsSummaryItems,
 	agentResourceSummary,
 	agentRunnerAccessLabelKey,
+	agentSetupStepsForStatus,
 	appCenterAgentsForDisplay,
 	appCenterSelectionState,
 	appCenterTemplateDetailResourceValues,
@@ -111,6 +112,7 @@ import {
 	launchpadStepsForStatus,
 	memoryOperationsItemsForConversations,
 	modelCredentialLabel,
+	nextAgentSetupStepForSteps,
 	normalizeWorkflowInputs,
 	governanceHealthItemsForSummary,
 	monitoringStatsForSummary,
@@ -137,6 +139,7 @@ import {
 	workbenchReadinessItemsForStatus,
 	workbenchRiskItemsForStatus,
 	workflowOpsStatsForSummary,
+	type AgentWizardStep,
 } from './platform-utils';
 
 export type PlatformView =
@@ -188,14 +191,6 @@ function mapAgentRunToConversationTurn(
 		createdAt: run.created_at,
 		response: run.response,
 	};
-}
-
-interface AgentWizardStep {
-	key: string;
-	title: string;
-	detail: string;
-	state: HealthState;
-	ref: RefObject<HTMLDivElement | HTMLElement | null>;
 }
 
 interface PublishFormState {
@@ -580,83 +575,48 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const knowledgeBaseById = useMemo(() => {
 		return new Map(knowledgeBases.map((knowledgeBase) => [knowledgeBase.id, knowledgeBase]));
 	}, [knowledgeBases]);
-	const agentSetupSteps: AgentWizardStep[] = [
+	const agentSetupSteps: AgentWizardStep[] = agentSetupStepsForStatus(
 		{
-			key: 'template',
-			title: t('platform.agentManagement.wizard.template'),
-			detail: selectedTemplate
-				? selectedTemplate.name
-				: t('platform.agentManagement.wizard.templateMissing'),
-			state: selectedTemplate ? 'ready' : 'todo',
-			ref: agentTemplateStepRef,
+			selectedTemplateName: selectedTemplate?.name,
+			modelConfigId: publishForm.model_config_id,
+			credentialById,
+			credentialCount: credentials.length,
+			selectedKnowledgeBaseCount: publishForm.knowledge_base_ids.length,
+			knowledgeBaseCount: knowledgeBases.length,
+			selectedToolCount: publishForm.tools.length,
+			memoryEnabled: publishForm.memory_enabled,
+			workflowEnabled: publishForm.workflow_enabled,
+			refs: {
+				template: agentTemplateStepRef,
+				model: agentModelStepRef,
+				knowledge: agentKnowledgeStepRef,
+				tools: agentToolsStepRef,
+				runtime: agentRuntimeStepRef,
+			},
 		},
 		{
-			key: 'model',
-			title: t('platform.agentManagement.wizard.model'),
-			detail: modelCredentialLabel(
-				publishForm.model_config_id,
-				credentialById,
-				credentials.length > 0
-					? t('platform.agentManagement.wizard.modelMissing')
-					: t('platform.agentManagement.noModel'),
-			),
-			state: publishForm.model_config_id
-				? 'ready'
-				: credentials.length > 0
-					? 'todo'
-					: 'blocked',
-			ref: agentModelStepRef,
+			templateTitle: t('platform.agentManagement.wizard.template'),
+			templateMissing: t('platform.agentManagement.wizard.templateMissing'),
+			modelTitle: t('platform.agentManagement.wizard.model'),
+			modelMissing: t('platform.agentManagement.wizard.modelMissing'),
+			noModel: t('platform.agentManagement.noModel'),
+			knowledgeTitle: t('platform.agentManagement.wizard.knowledge'),
+			selectedKnowledge: (count) =>
+				t('platform.agentManagement.selectedKnowledge', { count }),
+			knowledgeMissing: t('platform.agentManagement.wizard.knowledgeMissing'),
+			noKnowledge: t('platform.agentManagement.noKnowledge'),
+			toolsTitle: t('platform.agentManagement.wizard.tools'),
+			toolsSelected: (count) =>
+				t('platform.agentManagement.wizard.toolsSelected', { count }),
+			toolsMissing: t('platform.agentManagement.wizard.toolsMissing'),
+			runtimeTitle: t('platform.agentManagement.wizard.runtime'),
+			runtimeDetail: (values) =>
+				t('platform.agentManagement.wizard.runtimeDetail', values),
+			enabled: t('platform.agentManagement.enabled'),
+			disabled: t('platform.agentManagement.disabled'),
 		},
-		{
-			key: 'knowledge',
-			title: t('platform.agentManagement.wizard.knowledge'),
-			detail:
-				publishForm.knowledge_base_ids.length > 0
-					? t('platform.agentManagement.selectedKnowledge', {
-							count: publishForm.knowledge_base_ids.length,
-						})
-					: knowledgeBases.length > 0
-						? t('platform.agentManagement.wizard.knowledgeMissing')
-						: t('platform.agentManagement.noKnowledge'),
-			state:
-				publishForm.knowledge_base_ids.length > 0
-					? 'ready'
-					: knowledgeBases.length > 0
-						? 'todo'
-						: 'partial',
-			ref: agentKnowledgeStepRef,
-		},
-		{
-			key: 'tools',
-			title: t('platform.agentManagement.wizard.tools'),
-			detail:
-				publishForm.tools.length > 0
-					? t('platform.agentManagement.wizard.toolsSelected', {
-							count: publishForm.tools.length,
-						})
-					: t('platform.agentManagement.wizard.toolsMissing'),
-			state: publishForm.tools.length > 0 ? 'ready' : 'todo',
-			ref: agentToolsStepRef,
-		},
-		{
-			key: 'runtime',
-			title: t('platform.agentManagement.wizard.runtime'),
-			detail: t('platform.agentManagement.wizard.runtimeDetail', {
-				memory: publishForm.memory_enabled
-					? t('platform.agentManagement.enabled')
-					: t('platform.agentManagement.disabled'),
-				workflow: publishForm.workflow_enabled
-					? t('platform.agentManagement.enabled')
-					: t('platform.agentManagement.disabled'),
-			}),
-			state: publishForm.memory_enabled || publishForm.workflow_enabled ? 'ready' : 'partial',
-			ref: agentRuntimeStepRef,
-		},
-	];
-	const nextAgentSetupStep =
-		agentSetupSteps.find((step) => step.state === 'blocked' || step.state === 'todo') ??
-		agentSetupSteps.find((step) => step.state === 'partial') ??
-		null;
+	);
+	const nextAgentSetupStep = nextAgentSetupStepForSteps(agentSetupSteps);
 	const selectedRunAgentModelLabel = modelCredentialLabel(
 		selectedRunAgent?.model_config_id,
 		credentialById,

@@ -17,7 +17,7 @@ import type {
 	EnterpriseWorkflowTemplate,
 	ScheduleRecord,
 } from '@/api';
-import type { ComponentType } from 'react';
+import type { ComponentType, RefObject } from 'react';
 import type { AccessControlStat } from './components/AccessControlPanel';
 import type { FirstAgentGuideStep } from './components/FirstAgentGuide';
 import type { GovernanceHealthItem } from './components/GovernanceHealthPanel';
@@ -55,6 +55,16 @@ export const workflowInputLabelKeys: Record<string, string> = {
 	ticket_id: 'ticketId',
 	department: 'department',
 };
+
+export type AgentSetupStepKey = 'template' | 'model' | 'knowledge' | 'tools' | 'runtime';
+
+export interface AgentWizardStep {
+	key: AgentSetupStepKey;
+	title: string;
+	detail: string;
+	state: HealthState;
+	ref: RefObject<HTMLDivElement | HTMLElement | null>;
+}
 
 export function formatTimestamp(value?: string) {
 	if (!value) {
@@ -175,6 +185,109 @@ export function connectorDraftIssuesForDraft(
 		!values.ticketPath.trim().startsWith('/') ? labels.ticketPath : null,
 		!values.metricsPath.trim().startsWith('/') ? labels.metricsPath : null,
 	].filter(Boolean) as string[];
+}
+
+export function agentSetupStepsForStatus(
+	values: {
+		selectedTemplateName?: string | null;
+		modelConfigId: string;
+		credentialById: Map<string, { id?: unknown; data?: { name?: unknown } }>;
+		credentialCount: number;
+		selectedKnowledgeBaseCount: number;
+		knowledgeBaseCount: number;
+		selectedToolCount: number;
+		memoryEnabled: boolean;
+		workflowEnabled: boolean;
+		refs: Record<AgentSetupStepKey, RefObject<HTMLDivElement | HTMLElement | null>>;
+	},
+	labels: {
+		templateTitle: string;
+		templateMissing: string;
+		modelTitle: string;
+		modelMissing: string;
+		noModel: string;
+		knowledgeTitle: string;
+		selectedKnowledge: (count: number) => string;
+		knowledgeMissing: string;
+		noKnowledge: string;
+		toolsTitle: string;
+		toolsSelected: (count: number) => string;
+		toolsMissing: string;
+		runtimeTitle: string;
+		runtimeDetail: (values: { memory: string; workflow: string }) => string;
+		enabled: string;
+		disabled: string;
+	},
+): AgentWizardStep[] {
+	return [
+		{
+			key: 'template',
+			title: labels.templateTitle,
+			detail: values.selectedTemplateName ?? labels.templateMissing,
+			state: values.selectedTemplateName ? 'ready' : 'todo',
+			ref: values.refs.template,
+		},
+		{
+			key: 'model',
+			title: labels.modelTitle,
+			detail: modelCredentialLabel(
+				values.modelConfigId,
+				values.credentialById,
+				values.credentialCount > 0 ? labels.modelMissing : labels.noModel,
+			),
+			state: values.modelConfigId
+				? 'ready'
+				: values.credentialCount > 0
+					? 'todo'
+					: 'blocked',
+			ref: values.refs.model,
+		},
+		{
+			key: 'knowledge',
+			title: labels.knowledgeTitle,
+			detail:
+				values.selectedKnowledgeBaseCount > 0
+					? labels.selectedKnowledge(values.selectedKnowledgeBaseCount)
+					: values.knowledgeBaseCount > 0
+						? labels.knowledgeMissing
+						: labels.noKnowledge,
+			state:
+				values.selectedKnowledgeBaseCount > 0
+					? 'ready'
+					: values.knowledgeBaseCount > 0
+						? 'todo'
+						: 'partial',
+			ref: values.refs.knowledge,
+		},
+		{
+			key: 'tools',
+			title: labels.toolsTitle,
+			detail:
+				values.selectedToolCount > 0
+					? labels.toolsSelected(values.selectedToolCount)
+					: labels.toolsMissing,
+			state: values.selectedToolCount > 0 ? 'ready' : 'todo',
+			ref: values.refs.tools,
+		},
+		{
+			key: 'runtime',
+			title: labels.runtimeTitle,
+			detail: labels.runtimeDetail({
+				memory: values.memoryEnabled ? labels.enabled : labels.disabled,
+				workflow: values.workflowEnabled ? labels.enabled : labels.disabled,
+			}),
+			state: values.memoryEnabled || values.workflowEnabled ? 'ready' : 'partial',
+			ref: values.refs.runtime,
+		},
+	];
+}
+
+export function nextAgentSetupStepForSteps(steps: AgentWizardStep[]) {
+	return (
+		steps.find((step) => step.state === 'blocked' || step.state === 'todo') ??
+		steps.find((step) => step.state === 'partial') ??
+		null
+	);
 }
 
 type PlatformOverviewStatKey = 'agents' | 'credentials' | 'knowledgeBases' | 'workflows';
