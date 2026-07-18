@@ -74,6 +74,10 @@ export function knowledgeBaseLabels(
 	});
 }
 
+export function resourceListLabel(values: string[], emptyLabel: string) {
+	return values.length > 0 ? values.join(', ') : emptyLabel;
+}
+
 export function agentKnowledgeBaseLabels(
 	agent: Pick<EnterprisePublishedAgent, 'knowledge_base_ids'> | null | undefined,
 	knowledgeBaseById: Map<string, { id?: unknown; name?: unknown }>,

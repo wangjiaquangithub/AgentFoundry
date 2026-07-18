@@ -117,6 +117,7 @@ import {
 	knowledgeBaseLabels,
 	modelCredentialLabel,
 	normalizeWorkflowInputs,
+	resourceListLabel,
 } from './platform-utils';
 
 export type PlatformView =
@@ -1388,10 +1389,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				},
 				{
 					label: t('platform.appCenter.tools'),
-					value:
-						inspectedAppCenterAgentTools.length > 0
-							? inspectedAppCenterAgentTools.join(', ')
-							: t('platform.appCenter.none'),
+					value: resourceListLabel(
+						inspectedAppCenterAgentTools,
+						t('platform.appCenter.none'),
+					),
 					icon: Boxes,
 				},
 				{
