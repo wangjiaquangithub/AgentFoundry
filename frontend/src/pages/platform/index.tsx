@@ -112,6 +112,7 @@ import {
 	agentReadinessState,
 	agentResourceSummary,
 	agentRunnerAccessLabelKey,
+	appCenterSelectionState,
 	appCenterTemplateDetailResourceValues,
 	defaultEnterpriseWorkflowInputs,
 	formatOperationsAgentIssueText,
@@ -1279,24 +1280,19 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		...readyPlatformAgents,
 		...blockedOrPartialPlatformAgents,
 	].slice(0, 3);
-	const selectedAppCenterAgent =
-		selectedAppCenterItem?.type === 'agent'
-			? activePlatformAgents.find((agent) => agent.id === selectedAppCenterItem.id) ?? null
-			: null;
-	const selectedAppCenterTemplate =
-		selectedAppCenterItem?.type === 'template'
-			? agentTemplates.find((template) => template.id === selectedAppCenterItem.id) ?? null
-			: null;
-	const inspectedAppCenterAgent =
-		selectedAppCenterAgent ??
-		(selectedAppCenterItem?.type ? null : readyPlatformAgents[0] ?? appCenterAgents[0] ?? null);
-	const inspectedAppCenterTemplate =
-		selectedAppCenterTemplate ??
-		(!inspectedAppCenterAgent ? defaultAgentTemplate : null);
-	const appCenterPrimaryDisabled =
-		credentials.length > 0 &&
-		activePlatformAgents.length === 0 &&
-		(!defaultAgentTemplate || Boolean(publishingTemplateId));
+	const appCenterSelection = appCenterSelectionState({
+		selectedItem: selectedAppCenterItem,
+		activeAgents: activePlatformAgents,
+		readyAgents: readyPlatformAgents,
+		appCenterAgents,
+		templates: agentTemplates,
+		defaultTemplate: defaultAgentTemplate,
+		hasCredentials: credentials.length > 0,
+		publishingTemplateId,
+	});
+	const inspectedAppCenterAgent = appCenterSelection.inspectedAgent;
+	const inspectedAppCenterTemplate = appCenterSelection.inspectedTemplate;
+	const appCenterPrimaryDisabled = appCenterSelection.primaryDisabled;
 	const agentOpsSummary = [
 		{
 			label: t('platform.agentManagement.ops.publishedTotal'),

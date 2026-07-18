@@ -265,6 +265,45 @@ export function appCenterTemplateDetailResourceValues(
 	};
 }
 
+export function appCenterSelectionState<
+	TAgent extends { id: string },
+	TTemplate extends { id: string },
+>(values: {
+	selectedItem?: { type: 'template' | 'agent'; id: string } | null;
+	activeAgents: TAgent[];
+	readyAgents: TAgent[];
+	appCenterAgents: TAgent[];
+	templates: TTemplate[];
+	defaultTemplate?: TTemplate | null;
+	hasCredentials: boolean;
+	publishingTemplateId?: string | null;
+}) {
+	const selectedAgent =
+		values.selectedItem?.type === 'agent'
+			? values.activeAgents.find((agent) => agent.id === values.selectedItem?.id) ?? null
+			: null;
+	const selectedTemplate =
+		values.selectedItem?.type === 'template'
+			? values.templates.find((template) => template.id === values.selectedItem?.id) ?? null
+			: null;
+	const inspectedAgent =
+		selectedAgent ??
+		(values.selectedItem?.type
+			? null
+			: values.readyAgents[0] ?? values.appCenterAgents[0] ?? null);
+	const inspectedTemplate =
+		selectedTemplate ?? (!inspectedAgent ? values.defaultTemplate ?? null : null);
+
+	return {
+		inspectedAgent,
+		inspectedTemplate,
+		primaryDisabled:
+			values.hasCredentials &&
+			values.activeAgents.length === 0 &&
+			(!values.defaultTemplate || Boolean(values.publishingTemplateId)),
+	};
+}
+
 export function templateDetailIssues(
 	hasCredentials: boolean,
 	hasKnowledgeBases: boolean,
