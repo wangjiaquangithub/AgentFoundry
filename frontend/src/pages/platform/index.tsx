@@ -145,6 +145,8 @@ import {
 	rolloutPathStepsForStatus,
 	runtimeStatusItemsForStatus,
 	selectedIdentityGovernanceActivityForIdentity,
+	tenantWorkspaceByNameForEntries,
+	tenantWorkspaceEntriesForWorkspaces,
 	topOperationsAgentsForDisplay,
 	tenantOverviewItemsForWorkspace,
 	toolPolicySummaryForGovernance,
@@ -156,6 +158,7 @@ import {
 	workbenchQuickActionsForStatus,
 	workbenchReadinessItemsForStatus,
 	workbenchRiskItemsForStatus,
+	workflowTemplateByTypeForTemplates,
 	workflowOpsStatsForSummary,
 	type AgentWizardStep,
 } from './platform-utils';
@@ -897,11 +900,12 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				? t('platform.agentRunner.routingRules')
 				: agentRoutingLabel;
 	const connectorState = connectorHealthState(connectors?.current.status);
-	const tenantWorkspaces = connectors
-		? Object.entries(connectors.tenant_workspaces)
-		: [];
+	const tenantWorkspaces = useMemo(
+		() => tenantWorkspaceEntriesForWorkspaces(connectors?.tenant_workspaces),
+		[connectors?.tenant_workspaces],
+	);
 	const tenantWorkspaceByName = useMemo(
-		() => new Map(tenantWorkspaces.map(([tenant, workspace]) => [tenant, workspace])),
+		() => tenantWorkspaceByNameForEntries(tenantWorkspaces),
 		[tenantWorkspaces],
 	);
 	const savedConnectorConfigs = connectors?.saved_configs ?? [];
@@ -951,9 +955,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		connectors?.runtime.source === 'saved_config'
 			? t('platform.connectors.runtimeSavedConfig')
 			: t('platform.connectors.runtimeGlobal');
-	const workflowTemplateByType = useMemo(() => {
-		return new Map(workflowTemplates.map((template) => [template.workflow_type, template]));
-	}, [workflowTemplates]);
+	const workflowTemplateByType = useMemo(
+		() => workflowTemplateByTypeForTemplates(workflowTemplates),
+		[workflowTemplates],
+	);
 	const selectedWorkflowTemplate = workflowTemplateByType.get(selectedWorkflowType) ?? null;
 	const workflowOptions = useMemo(() => {
 		if (workflowTemplates.length > 0) {

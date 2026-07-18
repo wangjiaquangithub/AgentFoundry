@@ -394,6 +394,22 @@ export function publishRoleOptionsForMembers(values: {
 	).sort();
 }
 
+export function tenantWorkspaceEntriesForWorkspaces(
+	workspaces?: Record<string, EnterpriseTenantWorkspace> | null,
+) {
+	return workspaces ? Object.entries(workspaces) : [];
+}
+
+export function tenantWorkspaceByNameForEntries(
+	tenantWorkspaces: Array<[string, EnterpriseTenantWorkspace]>,
+) {
+	return new Map(tenantWorkspaces);
+}
+
+export function workflowTemplateByTypeForTemplates(templates: EnterpriseWorkflowTemplate[]) {
+	return new Map(templates.map((template) => [template.workflow_type, template]));
+}
+
 export function publishReleaseIssuesForDraft(
 	values: {
 		modelConfigId?: string | null;
