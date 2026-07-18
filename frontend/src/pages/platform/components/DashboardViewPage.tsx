@@ -2368,7 +2368,6 @@ export function DashboardViewPage({
 					credentialLabel={credentialLabel}
 					shortResourceId={shortResourceId}
 					knowledgeBaseLabel={knowledgeBaseLabel}
-					formatTimestamp={formatTimestamp}
 					agentAccessAllowed={agentAccessAllowed}
 					t={t}
 					cn={cn}
