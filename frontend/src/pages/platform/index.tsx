@@ -120,6 +120,7 @@ import {
 	enabledTriggerSchedules,
 	formatOperationsAgentIssueText,
 	knowledgeBaseLabels,
+	memoryOperationsItemsForConversations,
 	modelCredentialLabel,
 	normalizeWorkflowInputs,
 	governanceHealthItemsForSummary,
@@ -1106,80 +1107,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			auditEvents,
 		});
 	}, [activePlatformAgents, auditEvents, pendingApprovals, platformMembers?.members]);
-	const memoryOperationsItems = useMemo<MemoryOperationsItem[]>(() => {
-		const grouped = new Map<string, MemoryOperationsItem>();
-		const agentNameById = new Map(
-			activePlatformAgents.map((agent) => [agent.id, agent.name || agent.id]),
-		);
-
-		Object.values(agentConversations)
-			.flat()
-			.forEach((turn) => {
-				const response = turn.response;
-				const tenant = response.memory_scope?.tenant || response.tenant || 'default';
-				const userId = response.memory_scope?.user_id || response.user_id || '';
-				const agentId = response.memory_scope?.agent_id || response.agent_id || turn.agentId;
-				const key = `${tenant}:${userId}:${agentId}`;
-				const hitCount =
-					response.evidence?.memory_hit_count ?? response.memory_hits?.length ?? 0;
-				const memorySaved =
-					response.evidence?.memory_saved ?? response.memory_saved ?? false;
-				const sources = Array.from(
-					new Set(
-						(response.memory_hits ?? [])
-							.map((hit) => hit.source)
-							.filter((source): source is string => Boolean(source)),
-					),
-				);
-				const current = grouped.get(key);
-				const latestAt = response.evidence?.created_at || turn.createdAt;
-				const agentName =
-					response.agent_name ||
-					agentNameById.get(agentId) ||
-					turn.response.agent_name ||
-					agentId;
-
-				if (!current) {
-					grouped.set(key, {
-						key,
-						tenant,
-						userId,
-						agentId,
-						agentName,
-						runCount: 1,
-						memoryHitCount: hitCount,
-						memorySavedCount: memorySaved ? 1 : 0,
-						latestAt,
-						latestQuestion: turn.question,
-						latestAnswer: turn.answer,
-						latestResponse: response,
-						sources,
-					});
-					return;
-				}
-
-				current.runCount += 1;
-				current.memoryHitCount += hitCount;
-				current.memorySavedCount += memorySaved ? 1 : 0;
-				current.sources = Array.from(new Set([...current.sources, ...sources]));
-
-				const currentLatest = Date.parse(current.latestAt);
-				const nextLatest = Date.parse(latestAt);
-				if (
-					Number.isNaN(currentLatest) ||
-					(!Number.isNaN(nextLatest) && nextLatest > currentLatest)
-				) {
-					current.latestAt = latestAt;
-					current.latestQuestion = turn.question;
-					current.latestAnswer = turn.answer;
-					current.latestResponse = response;
-				}
-			});
-
-		return Array.from(grouped.values()).sort((left, right) => {
-			const rightTime = Date.parse(right.latestAt);
-			const leftTime = Date.parse(left.latestAt);
-			return (Number.isNaN(rightTime) ? 0 : rightTime) - (Number.isNaN(leftTime) ? 0 : leftTime);
+	const memoryOperationsItems = useMemo(() => {
+		return memoryOperationsItemsForConversations({
+			activePlatformAgents,
+			agentConversations,
 		});
 	}, [activePlatformAgents, agentConversations]);
 	const memoryOperationsRunCount = memoryOperationsItems.reduce(
