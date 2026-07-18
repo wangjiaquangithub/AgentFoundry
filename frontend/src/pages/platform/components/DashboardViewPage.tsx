@@ -1160,7 +1160,6 @@ export function DashboardViewPage({
 						return `${getFrequencyLabel(parsed, t)} · ${parsed.time}`;
 					}}
 					scheduleAgentLabel={scheduleAgentLabel}
-					formatTimestamp={formatTimestamp}
 					labels={{
 						eyebrow: t('platform.triggerOps.eyebrow'),
 						title: t('platform.triggerOps.title'),

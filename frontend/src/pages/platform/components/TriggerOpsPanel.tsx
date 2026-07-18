@@ -4,6 +4,7 @@ import type { ScheduleRecord } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatTimestamp } from '../platform-utils';
 
 export interface TriggerOpsStat {
 	label: string;
@@ -27,7 +28,6 @@ interface TriggerOpsPanelProps {
 	onScrollToGovernance: () => void;
 	scheduleFrequencyLabel: (schedule: ScheduleRecord) => string;
 	scheduleAgentLabel: (schedule: ScheduleRecord) => string;
-	formatTimestamp: (value?: string) => string;
 	labels: {
 		eyebrow: string;
 		title: string;
@@ -68,7 +68,6 @@ export function TriggerOpsPanel({
 	onScrollToGovernance,
 	scheduleFrequencyLabel,
 	scheduleAgentLabel,
-	formatTimestamp,
 	labels,
 }: TriggerOpsPanelProps) {
 	return (
