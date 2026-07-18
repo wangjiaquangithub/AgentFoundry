@@ -114,6 +114,7 @@ import {
 	launchpadPrimaryStepForSteps,
 	launchpadStateForCounts,
 	launchpadStepsForStatus,
+	launchpadTargetActionsForNavigation,
 	memoryOperationsItemsForConversations,
 	memoryOperationsSummaryForItems,
 	modelCredentialLabel,
@@ -3497,7 +3498,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	});
 
-	const launchpadTargetActions: Record<string, () => void> = {
+	const launchpadTargetActions = launchpadTargetActionsForNavigation({
 		members: scrollToMembers,
 		credentials: () => navigate('/credential'),
 		agents: handleStartPublishing,
@@ -3508,8 +3509,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		connectors: scrollToConnectorCenter,
 		governance: scrollToGovernance,
 		workflows: scrollToWorkflowRunner,
-		audit: scrollToGovernance,
-	};
+	});
 	const activeMemberCount =
 		platformMembers?.members.filter((member) => member.status !== 'inactive').length ?? 0;
 	const launchpadSteps = launchpadStepsForStatus(

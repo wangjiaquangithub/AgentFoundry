@@ -257,6 +257,33 @@ export function capabilityItemsForStatus(options: {
 	];
 }
 
+export function launchpadTargetActionsForNavigation(actions: {
+	members: () => void;
+	credentials: () => void;
+	agents: () => void;
+	knowledge: () => void;
+	run: () => void;
+	tools: () => void;
+	memory: () => void;
+	connectors: () => void;
+	governance: () => void;
+	workflows: () => void;
+}): Record<string, () => void> {
+	return {
+		members: actions.members,
+		credentials: actions.credentials,
+		agents: actions.agents,
+		knowledge: actions.knowledge,
+		run: actions.run,
+		tools: actions.tools,
+		memory: actions.memory,
+		connectors: actions.connectors,
+		governance: actions.governance,
+		workflows: actions.workflows,
+		audit: actions.governance,
+	};
+}
+
 export function credentialLabel(credential: { id?: unknown; data?: { name?: unknown } }) {
 	const name = credential.data?.name;
 	return typeof name === 'string' && name.trim() ? name : String(credential.id ?? '');
