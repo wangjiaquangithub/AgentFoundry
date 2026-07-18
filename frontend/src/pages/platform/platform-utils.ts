@@ -1,4 +1,5 @@
-import type { AgentView, EnterprisePublishedAgent } from '@/api';
+import type { AgentView, EnterpriseIdentity, EnterprisePublishedAgent } from '@/api';
+import type { HealthState } from './components/common';
 
 export const defaultEnterpriseWorkflowInputs: Record<string, string> = {
 	policy_keyword: 'remote',
@@ -71,6 +72,30 @@ export function knowledgeBaseLabels(
 		const knowledgeBase = knowledgeBaseById.get(knowledgeBaseId);
 		return knowledgeBase ? knowledgeBaseLabel(knowledgeBase) : knowledgeBaseId;
 	});
+}
+
+export function agentAccessAllowed(
+	agent: EnterprisePublishedAgent,
+	identity?: EnterpriseIdentity | null,
+) {
+	const allowedUsers = agent.allowed_user_ids ?? [];
+	const allowedRoles = agent.allowed_roles ?? [];
+	if (!identity) {
+		return false;
+	}
+	if (agent.tenant && identity.tenant !== agent.tenant) {
+		return false;
+	}
+	if (allowedUsers.length === 0 && allowedRoles.length === 0) {
+		return true;
+	}
+	return allowedUsers.includes(identity.user_id) || allowedRoles.includes(identity.role);
+}
+
+export function agentReadinessState(
+	agent?: Pick<EnterprisePublishedAgent, 'readiness'> | null,
+): HealthState {
+	return agent ? agent.readiness?.status ?? 'partial' : 'todo';
 }
 
 export function formatScheduleAgentLabel(

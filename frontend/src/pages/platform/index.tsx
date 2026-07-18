@@ -103,6 +103,8 @@ import { WorkflowsViewPage } from './components/WorkflowsViewPage';
 import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import {
+	agentAccessAllowed,
+	agentReadinessState,
 	defaultEnterpriseWorkflowInputs,
 	knowledgeBaseLabels,
 	modelCredentialLabel,
@@ -215,24 +217,6 @@ const agentSampleQuestions = [
 	'远程办公制度怎么说？',
 	'总结 engineering 部门指标',
 ];
-
-function agentAccessAllowed(
-	agent: EnterprisePublishedAgent,
-	identity?: EnterpriseIdentity | null,
-) {
-	const allowedUsers = agent.allowed_user_ids ?? [];
-	const allowedRoles = agent.allowed_roles ?? [];
-	if (!identity) {
-		return false;
-	}
-	if (agent.tenant && identity.tenant !== agent.tenant) {
-		return false;
-	}
-	if (allowedUsers.length === 0 && allowedRoles.length === 0) {
-		return true;
-	}
-	return allowedUsers.includes(identity.user_id) || allowedRoles.includes(identity.role);
-}
 
 const defaultApprovalForm: ApprovalFormState = {
 	request_type: 'tool_run',
@@ -661,9 +645,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	);
 	const selectedRunAgentToolCount = selectedRunAgent?.tools?.length ?? 0;
 	const selectedRunAgentKnowledgeCount = selectedRunAgentKnowledgeLabels.length;
-	const selectedRunAgentReadinessState: HealthState = selectedRunAgent
-		? selectedRunAgent.readiness?.status ?? 'partial'
-		: 'todo';
+	const selectedRunAgentReadinessState = agentReadinessState(selectedRunAgent);
 	const selectedRunAgentReadinessLabel = selectedRunAgent
 		? t(`platform.agentManagement.readiness.${selectedRunAgentReadinessState}`)
 		: t('platform.agentManagement.noSelectedAgent');
