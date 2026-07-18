@@ -2,6 +2,7 @@ import type {
 	EnterpriseConnectorConfigSaveRequest,
 	EnterpriseConnectorSavedConfig,
 	EnterpriseConnectorTestRequest,
+	EnterprisePlatformConnectorsResponse,
 } from '@/api';
 import type { ConnectorTestFormState } from './platform-defaults';
 
@@ -33,6 +34,44 @@ export function connectorFormPatchFromSavedConfig(
 				? String(config.timeout_seconds)
 				: current.timeout_seconds,
 		enabled: config.enabled,
+	};
+}
+
+export function connectorFormWithPlatformDefaults(values: {
+	current: ConnectorTestFormState;
+	connectors: EnterprisePlatformConnectorsResponse;
+}): ConnectorTestFormState {
+	const { current, connectors } = values;
+	const savedConfig = connectors.saved_configs[0];
+
+	return {
+		...current,
+		base_url: savedConfig?.base_url || current.base_url,
+		token: '',
+		tenant:
+			savedConfig?.tenant ||
+			connectors.identities[0]?.tenant ||
+			current.tenant ||
+			'acme',
+		policy_path:
+			savedConfig?.policy_path ||
+			connectors.http_paths.policy ||
+			current.policy_path ||
+			defaultConnectorPolicyPath,
+		ticket_path:
+			savedConfig?.ticket_path ||
+			connectors.http_paths.ticket ||
+			current.ticket_path ||
+			defaultConnectorTicketPath,
+		metrics_path:
+			savedConfig?.metrics_path ||
+			connectors.http_paths.metrics ||
+			current.metrics_path ||
+			defaultConnectorMetricsPath,
+		timeout_seconds: savedConfig
+			? String(savedConfig.timeout_seconds)
+			: current.timeout_seconds,
+		enabled: savedConfig?.enabled ?? current.enabled,
 	};
 }
 

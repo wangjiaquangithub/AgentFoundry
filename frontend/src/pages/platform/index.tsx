@@ -76,6 +76,7 @@ import {
 } from './platform-approval-helpers';
 import {
 	connectorFormPatchFromSavedConfig,
+	connectorFormWithPlatformDefaults,
 	connectorSavePayloadFromForm,
 	connectorTestPayloadFromForm,
 } from './platform-connector-helpers';
@@ -965,36 +966,12 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		}
 
 		connectorDefaultsAppliedRef.current = true;
-		const savedConfig = connectors.saved_configs[0];
-		setConnectorTestForm((previous) => ({
-			...previous,
-			base_url: savedConfig?.base_url || previous.base_url,
-			token: '',
-			tenant:
-				savedConfig?.tenant ||
-				connectors.identities[0]?.tenant ||
-				previous.tenant ||
-				'acme',
-			policy_path:
-				savedConfig?.policy_path ||
-				connectors.http_paths.policy ||
-				previous.policy_path ||
-				'/tenants/{tenant}/policies/search',
-			ticket_path:
-				savedConfig?.ticket_path ||
-				connectors.http_paths.ticket ||
-				previous.ticket_path ||
-				'/tenants/{tenant}/tickets/{ticket_id}',
-			metrics_path:
-				savedConfig?.metrics_path ||
-				connectors.http_paths.metrics ||
-				previous.metrics_path ||
-				'/tenants/{tenant}/departments/{department}/metrics',
-			timeout_seconds: savedConfig
-				? String(savedConfig.timeout_seconds)
-				: previous.timeout_seconds,
-			enabled: savedConfig?.enabled ?? previous.enabled,
-		}));
+		setConnectorTestForm((previous) =>
+			connectorFormWithPlatformDefaults({
+				current: previous,
+				connectors,
+			}),
+		);
 	}, [connectors]);
 
 	useEffect(() => {
