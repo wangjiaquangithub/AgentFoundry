@@ -30,7 +30,6 @@ import {
 	type EnterpriseAgentTemplate,
 	type EnterpriseAgentRunHistoryItem,
 	type EnterpriseAgentRunResponse,
-	type EnterpriseAgentToolCall,
 	type EnterpriseApprovalRequiredDetail,
 	type EnterpriseApprovalRequestItem,
 	type EnterpriseApprovalRequestType,
@@ -81,6 +80,7 @@ import { DashboardViewPage } from './components/DashboardViewPage';
 import {
 	activePlatformAgentsForAgents,
 	agentAccessAllowed,
+	agentRunnerStateForStatus,
 	appCenterDetailHealthState,
 	activePlatformMemberCountForMembers,
 	activePlatformMembersForTenant,
@@ -106,7 +106,6 @@ import {
 	firstAgentGuideStepsForStatus,
 	formatOperationsAgentIssueText,
 	governanceOperationsStateForStatus,
-	knowledgeBaseLabels,
 	launchpadPrimaryStepForSteps,
 	launchpadStateForCounts,
 	launchpadStepsForStatus,
@@ -592,79 +591,44 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	);
 	const nextAgentSetupStep = nextAgentSetupStepForSteps(agentSetupSteps);
-	const selectedRunAgentModelLabel = modelCredentialLabel(
-		selectedRunAgent?.model_config_id,
-		credentialById,
-		t('platform.agentManagement.noneConfigured'),
-	);
-	const selectedRunAgentKnowledgeLabels = knowledgeBaseLabels(
-		selectedRunAgent?.knowledge_base_ids ?? [],
-		knowledgeBaseById,
-	);
-	const selectedRunAgentToolCount = selectedRunAgent?.tools?.length ?? 0;
-	const selectedRunAgentKnowledgeCount = selectedRunAgentKnowledgeLabels.length;
-	const selectedRunAgentReadinessState = agentReadinessState(selectedRunAgent);
-	const selectedRunAgentReadinessLabel = selectedRunAgent
-		? t(`platform.agentManagement.readiness.${selectedRunAgentReadinessState}`)
-		: t('platform.agentManagement.noSelectedAgent');
 	const primaryAgentSampleQuestion = agentSampleQuestions[0];
-	const nextStepMode =
-		credentials.length === 0
-			? 'model'
-			: activePlatformAgents.length === 0
-				? 'publish'
-				: readyPlatformAgents.length === 0
-					? 'configure'
-					: agentRunResult
-						? 'governance'
-						: 'run';
-	const nextStepPrimaryDisabled =
-		(nextStepMode === 'publish' &&
-			(!defaultAgentTemplate || Boolean(publishingTemplateId))) ||
-		(nextStepMode === 'run' && !selectedRunAgent);
-	const agentRunModelLabel = modelCredentialLabel(
-		agentRunResult?.model_config_id,
-		credentialById,
-		t('platform.agentManagement.noneConfigured'),
+	const {
+		selectedRunAgentModelLabel,
+		selectedRunAgentKnowledgeLabels,
+		selectedRunAgentToolCount,
+		selectedRunAgentKnowledgeCount,
+		selectedRunAgentReadinessState,
+		selectedRunAgentReadinessLabel,
+		nextStepMode,
+		nextStepPrimaryDisabled,
+		agentRunModelLabel,
+		agentRunKnowledgeLabels,
+		agentRunConnectorSourceText,
+		agentToolCalls,
+		agentToolCallBadgeText,
+		agentRunEvidence,
+	} = agentRunnerStateForStatus(
+		{
+			selectedRunAgent,
+			agentRunResult,
+			credentialById,
+			knowledgeBaseById,
+			credentialCount: credentials.length,
+			activePlatformAgentCount: activePlatformAgents.length,
+			readyPlatformAgentCount: readyPlatformAgents.length,
+			hasDefaultAgentTemplate: Boolean(defaultAgentTemplate),
+			publishingTemplate: Boolean(publishingTemplateId),
+		},
+		{
+			noneConfigured: t('platform.agentManagement.noneConfigured'),
+			noSelectedAgent: t('platform.agentManagement.noSelectedAgent'),
+			readiness: (state) => t(`platform.agentManagement.readiness.${state}`),
+			connectorSourceSaved: t('platform.agentRunner.connectorSourceSaved'),
+			connectorSourceGlobal: t('platform.agentRunner.connectorSourceGlobal'),
+			toolCallCount: (count) => t('platform.agentRunner.toolCallCount', { count }),
+			notRouted: t('platform.agentRunner.notRouted'),
+		},
 	);
-	const agentRunKnowledgeLabels = knowledgeBaseLabels(
-		agentRunResult?.knowledge_base_ids ?? [],
-		knowledgeBaseById,
-	);
-	const agentRunConnectorSourceText =
-		agentRunResult?.connector_source === 'saved_config'
-			? t('platform.agentRunner.connectorSourceSaved')
-			: agentRunResult?.connector_source === 'global'
-				? t('platform.agentRunner.connectorSourceGlobal')
-				: agentRunResult?.connector_source;
-	const agentToolCalls: EnterpriseAgentToolCall[] =
-		agentRunResult?.tool_calls && agentRunResult.tool_calls.length > 0
-			? agentRunResult.tool_calls
-			: agentRunResult
-				? [
-						{
-							tool_name: agentRunResult.tool_name || '',
-							inputs: agentRunResult.inputs,
-							allowed: agentRunResult.routed,
-							tenant: agentRunResult.tenant,
-							user_id: agentRunResult.user_id,
-							connector: agentRunResult.connector,
-							connector_source: agentRunResult.connector_source,
-							routing_source: agentRunResult.routing_source,
-							routing_reason: agentRunResult.routing_reason,
-							decision: agentRunResult.decision,
-							result: agentRunResult.result,
-							answer: agentRunResult.answer,
-						},
-					]
-				: [];
-	const agentToolCallBadgeText =
-		agentToolCalls.length > 1
-			? t('platform.agentRunner.toolCallCount', { count: agentToolCalls.length })
-			: agentRunResult?.routed
-				? agentRunResult.tool_name || t('platform.agentRunner.notRouted')
-				: t('platform.agentRunner.notRouted');
-	const agentRunEvidence = agentRunResult?.evidence;
 	const enterpriseIdentities = governance?.identities ?? connectors?.identities ?? [];
 	const publishTenant =
 		publishForm.tenant.trim() || platformStatus?.current_user.tenant || 'default';

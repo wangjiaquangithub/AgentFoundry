@@ -2,6 +2,7 @@ import type {
 	AgentView,
 	EnterpriseAgentRunResponse,
 	EnterpriseAgentTemplate,
+	EnterpriseAgentToolCall,
 	EnterpriseApprovalRequestItem,
 	EnterpriseAuditEvent,
 	EnterpriseAuditQueryResponse,
@@ -328,6 +329,131 @@ export function knowledgeBaseLabels(
 		const knowledgeBase = knowledgeBaseById.get(knowledgeBaseId);
 		return knowledgeBase ? knowledgeBaseLabel(knowledgeBase) : knowledgeBaseId;
 	});
+}
+
+export type AgentRunnerNextStepMode = 'model' | 'publish' | 'configure' | 'governance' | 'run';
+
+export function agentRunnerStateForStatus(
+	values: {
+		selectedRunAgent: EnterprisePublishedAgent | null;
+		agentRunResult: EnterpriseAgentRunResponse | null;
+		credentialById: Map<string, { id?: unknown; data?: { name?: unknown } }>;
+		knowledgeBaseById: Map<string, { id?: unknown; name?: unknown }>;
+		credentialCount: number;
+		activePlatformAgentCount: number;
+		readyPlatformAgentCount: number;
+		hasDefaultAgentTemplate: boolean;
+		publishingTemplate: boolean;
+	},
+	labels: {
+		noneConfigured: string;
+		noSelectedAgent: string;
+		readiness: (state: HealthState) => string;
+		connectorSourceSaved: string;
+		connectorSourceGlobal: string;
+		toolCallCount: (count: number) => string;
+		notRouted: string;
+	},
+) {
+	const {
+		activePlatformAgentCount,
+		agentRunResult,
+		credentialById,
+		credentialCount,
+		hasDefaultAgentTemplate,
+		knowledgeBaseById,
+		publishingTemplate,
+		readyPlatformAgentCount,
+		selectedRunAgent,
+	} = values;
+
+	const selectedRunAgentModelLabel = modelCredentialLabel(
+		selectedRunAgent?.model_config_id,
+		credentialById,
+		labels.noneConfigured,
+	);
+	const selectedRunAgentKnowledgeLabels = knowledgeBaseLabels(
+		selectedRunAgent?.knowledge_base_ids ?? [],
+		knowledgeBaseById,
+	);
+	const selectedRunAgentToolCount = selectedRunAgent?.tools?.length ?? 0;
+	const selectedRunAgentKnowledgeCount = selectedRunAgentKnowledgeLabels.length;
+	const selectedRunAgentReadinessState = agentReadinessState(selectedRunAgent);
+	const selectedRunAgentReadinessLabel = selectedRunAgent
+		? labels.readiness(selectedRunAgentReadinessState)
+		: labels.noSelectedAgent;
+	const nextStepMode: AgentRunnerNextStepMode =
+		credentialCount === 0
+			? 'model'
+			: activePlatformAgentCount === 0
+				? 'publish'
+				: readyPlatformAgentCount === 0
+					? 'configure'
+					: agentRunResult
+						? 'governance'
+						: 'run';
+	const nextStepPrimaryDisabled =
+		(nextStepMode === 'publish' && (!hasDefaultAgentTemplate || publishingTemplate)) ||
+		(nextStepMode === 'run' && !selectedRunAgent);
+	const agentRunModelLabel = modelCredentialLabel(
+		agentRunResult?.model_config_id,
+		credentialById,
+		labels.noneConfigured,
+	);
+	const agentRunKnowledgeLabels = knowledgeBaseLabels(
+		agentRunResult?.knowledge_base_ids ?? [],
+		knowledgeBaseById,
+	);
+	const agentRunConnectorSourceText =
+		agentRunResult?.connector_source === 'saved_config'
+			? labels.connectorSourceSaved
+			: agentRunResult?.connector_source === 'global'
+				? labels.connectorSourceGlobal
+				: agentRunResult?.connector_source;
+	const agentToolCalls: EnterpriseAgentToolCall[] =
+		agentRunResult?.tool_calls && agentRunResult.tool_calls.length > 0
+			? agentRunResult.tool_calls
+			: agentRunResult
+				? [
+						{
+							tool_name: agentRunResult.tool_name || '',
+							inputs: agentRunResult.inputs,
+							allowed: agentRunResult.routed,
+							tenant: agentRunResult.tenant,
+							user_id: agentRunResult.user_id,
+							connector: agentRunResult.connector,
+							connector_source: agentRunResult.connector_source,
+							routing_source: agentRunResult.routing_source,
+							routing_reason: agentRunResult.routing_reason,
+							decision: agentRunResult.decision,
+							result: agentRunResult.result,
+							answer: agentRunResult.answer,
+						},
+					]
+				: [];
+	const agentToolCallBadgeText =
+		agentToolCalls.length > 1
+			? labels.toolCallCount(agentToolCalls.length)
+			: agentRunResult?.routed
+				? agentRunResult.tool_name || labels.notRouted
+				: labels.notRouted;
+
+	return {
+		selectedRunAgentModelLabel,
+		selectedRunAgentKnowledgeLabels,
+		selectedRunAgentToolCount,
+		selectedRunAgentKnowledgeCount,
+		selectedRunAgentReadinessState,
+		selectedRunAgentReadinessLabel,
+		nextStepMode,
+		nextStepPrimaryDisabled,
+		agentRunModelLabel,
+		agentRunKnowledgeLabels,
+		agentRunConnectorSourceText,
+		agentToolCalls,
+		agentToolCallBadgeText,
+		agentRunEvidence: agentRunResult?.evidence,
+	};
 }
 
 export function resourceListLabel(values: string[], emptyLabel: string) {
