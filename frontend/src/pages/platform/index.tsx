@@ -56,6 +56,14 @@ import {
 	type AgentConversationMap,
 } from './platform-agent-runner';
 import {
+	approvalContinuationState,
+	approvalCreatePayloadFromForm,
+	approvalCreatePayloadFromRun,
+	approvalInputForTool,
+	approvalQueryFromFilters,
+	type PlatformApprovalRunType,
+} from './platform-approval-helpers';
+import {
 	approvalFiltersForIdentity,
 	approvalFiltersForTenant,
 	auditFiltersForAgentRunEvidence,
@@ -1530,14 +1538,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setApprovalError(null);
 		try {
 			const filters = { ...approvalFilters, ...overrides };
-			const limitValue = Number.parseInt(filters.limit, 10);
-			const response = await platformApi.approvals({
-				status: filters.status || undefined,
-				tenant: filters.tenant || undefined,
-				user_id: filters.user_id || undefined,
-				agent_id: filters.agent_id || undefined,
-				limit: Number.isFinite(limitValue) ? limitValue : 20,
-			});
+			const response = await platformApi.approvals(approvalQueryFromFilters(filters));
 			setApprovalRequests(response.approvals);
 		} catch (error) {
 			setApprovalError(
@@ -1549,29 +1550,16 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleCreateApproval() {
-		const inputKey = approvalForm.input_key.trim();
-		const inputValue = approvalForm.input_value.trim();
-		const inputs = inputKey ? { [inputKey]: inputValue } : {};
-
 		setCreatingApproval(true);
 		setApprovalError(null);
 		try {
-			const response = await platformApi.createApproval({
-				request_type: approvalForm.request_type,
-				tool_name:
-					approvalForm.request_type === 'tool_run'
-						? approvalForm.tool_name.trim()
-						: undefined,
-				workflow_type:
-					approvalForm.request_type === 'workflow_run'
-						? approvalForm.workflow_type.trim()
-						: undefined,
-				inputs,
-				reason: approvalForm.reason.trim() || undefined,
-				user_id:
-					approvalForm.user_id.trim() || selectedIdentityUserId || username || undefined,
-				agent_id: approvalForm.agent_id.trim() || selectedRunAgentId || undefined,
-			});
+			const response = await platformApi.createApproval(
+				approvalCreatePayloadFromForm(approvalForm, {
+					selectedIdentityUserId,
+					selectedRunAgentId,
+					username,
+				}),
+			);
 			if (response.approval) {
 				setApprovalRequests((current) => [response.approval!, ...current]);
 			}
@@ -1591,7 +1579,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleCreateRunApproval(
-		requestType: 'tool_run' | 'workflow_run',
+		requestType: PlatformApprovalRunType,
 		reason?: string,
 	): Promise<boolean> {
 		if (requestType === 'tool_run' && !selectedToolInputKey) {
@@ -1606,16 +1594,17 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setCreatingRunApproval(requestType);
 		setApprovalError(null);
 		try {
-			const response = await platformApi.createApproval({
-				request_type: requestType,
-				tool_name: requestType === 'tool_run' ? selectedToolName : undefined,
-				workflow_type:
-					requestType === 'workflow_run' ? selectedWorkflowType : undefined,
-				inputs,
-				reason: reason || approvalRequestText.runApprovalReason,
-				user_id: selectedIdentityUserId || username || undefined,
-				agent_id: selectedRunAgentId || undefined,
-			});
+			const response = await platformApi.createApproval(
+				approvalCreatePayloadFromRun(requestType, {
+					inputs,
+					reason: reason || approvalRequestText.runApprovalReason,
+					selectedIdentityUserId,
+					selectedRunAgentId,
+					selectedToolName,
+					selectedWorkflowType,
+					username,
+				}),
+			);
 			if (response.approval) {
 				setApprovalRequests((current) => [response.approval!, ...current]);
 			}
@@ -1677,17 +1666,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleApproveAndRun(approval: EnterpriseApprovalRequestItem) {
-		const canContinueAgentRun =
-			approval.request_type === 'tool_run' &&
-			Boolean(approval.tool_name) &&
-			Boolean(approval.agent_id) &&
-			approval.agent_id !== 'platform-console';
-		const canContinueToolRun =
-			approval.request_type === 'tool_run' && Boolean(approval.tool_name);
-		const canContinueWorkflowRun =
-			approval.request_type === 'workflow_run' && Boolean(approval.workflow_type);
+		const { canContinue, canContinueAgentRun, canContinueToolRun, canContinueWorkflowRun } =
+			approvalContinuationState(approval);
 
-		if (!canContinueToolRun && !canContinueWorkflowRun) {
+		if (!canContinue) {
 			return;
 		}
 
@@ -1729,12 +1711,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 			if (canContinueToolRun && approval.tool_name) {
 				const toolConfig = enterpriseToolInputConfig[approval.tool_name];
-				const inputEntries = Object.entries(approval.inputs ?? {});
-				const inputKey = toolConfig?.inputKey ?? inputEntries[0]?.[0];
-				const inputValue =
-					inputKey && approval.inputs?.[inputKey] != null
-						? approval.inputs[inputKey]
-						: inputEntries[0]?.[1];
+				const { inputValue } = approvalInputForTool(
+					approval.inputs,
+					toolConfig?.inputKey,
+				);
 
 				setSelectedIdentityUserId(approval.user_id);
 				setSelectedRunAgentId(approval.agent_id);
@@ -1930,12 +1910,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			}
 
 			const toolConfig = enterpriseToolInputConfig[approval.tool_name];
-			const inputEntries = Object.entries(approval.inputs ?? {});
-			const inputKey = toolConfig?.inputKey ?? inputEntries[0]?.[0];
-			const inputValue =
-				inputKey && approval.inputs?.[inputKey] != null
-					? approval.inputs[inputKey]
-					: inputEntries[0]?.[1];
+			const { inputValue } = approvalInputForTool(
+				approval.inputs,
+				toolConfig?.inputKey,
+			);
 
 			setSelectedToolName(approval.tool_name);
 			setToolInputs((current) => ({
