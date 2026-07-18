@@ -100,10 +100,10 @@ import {
 } from './components/AgentManagementOverview';
 import { AgentRunnerConversation } from './components/AgentRunnerConversation';
 import { AgentRunnerResult } from './components/AgentRunnerResult';
+import { PlatformDashboardOverview } from './components/PlatformDashboardOverview';
 import {
 	PlatformNotice,
 	StateBadge,
-	StatCard,
 	type HealthState,
 } from './components/common';
 import { WorkflowRunnerPanel } from './components/WorkflowRunnerPanel';
@@ -7687,103 +7687,37 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	return (
 		<main className="h-full overflow-y-auto bg-background">
 			<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 lg:px-8">
-				<section className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
-					<div className="min-w-0">
-						<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-							<Building2 className="size-4" />
-							<span>{t('platform.eyebrow')}</span>
-						</div>
-						<h1 className="text-2xl font-semibold tracking-normal">
-							{t('platform.title')}
-						</h1>
-						<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-							{t('platform.subtitle')}
-						</p>
-					</div>
-					<div className="grid min-w-0 gap-2 rounded-lg border bg-muted/20 p-3 text-xs sm:min-w-80">
-						<div className="flex items-center justify-between gap-3">
-							<span className="text-muted-foreground">
-								{t('platform.connection.server')}
-							</span>
-							<span className="truncate font-mono" title={serverUrl}>
-								{serverUrl}
-							</span>
-						</div>
-						<div className="flex items-center justify-between gap-3">
-							<span className="text-muted-foreground">
-								{t('platform.connection.user')}
-							</span>
-							<span className="truncate font-mono" title={username}>
-								{username}
-							</span>
-						</div>
-						<div className="flex items-center justify-between gap-3">
-							<span className="text-muted-foreground">
-								{t('platform.connection.health')}
-							</span>
-							<StateBadge
-								state={hasErrors ? 'partial' : 'ready'}
-								label={
-									hasErrors
-										? t('platform.connection.partial')
-										: t('platform.connection.connected')
-								}
-							/>
-						</div>
-					</div>
-				</section>
-
-				<section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-					{stats.map((stat) => (
-						<StatCard key={stat.label} {...stat} />
-					))}
-				</section>
-
-				<section className="grid gap-4 rounded-lg border bg-muted/10 p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-					<div className="min-w-0">
-						<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-							<ListChecks className="size-4" />
-							<span>{t('platform.nextStep.eyebrow')}</span>
-						</div>
-						<h2 className="text-base font-semibold">
-							{t(`platform.nextStep.${nextStepMode}.title`)}
-						</h2>
-						<p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-							{t(`platform.nextStep.${nextStepMode}.description`)}
-						</p>
-					</div>
-					<div className="flex flex-wrap gap-2 lg:justify-end">
-						{nextStepMode === 'publish' ? (
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={handleStartPublishing}
-							>
-								<ListChecks className="size-4" />
-								{t('platform.nextStep.publish.manual')}
-							</Button>
-						) : null}
-						<Button
-							type="button"
-							size="sm"
-							onClick={handleNextStepPrimaryAction}
-							disabled={nextStepPrimaryDisabled}
-						>
-							<NextStepIcon
-								className={cn(
-									'size-4',
-									nextStepMode === 'publish' &&
-										publishingTemplateId &&
-										'animate-pulse',
-								)}
-							/>
-							{nextStepMode === 'publish' && publishingTemplateId
-								? t('platform.agentManagement.publishing')
-								: t(`platform.nextStep.${nextStepMode}.action`)}
-						</Button>
-					</div>
-				</section>
+				<PlatformDashboardOverview
+					serverUrl={serverUrl}
+					username={username}
+					connectionState={hasErrors ? 'partial' : 'ready'}
+					stats={stats}
+					nextStepMode={nextStepMode}
+					nextStepIcon={NextStepIcon}
+					nextStepPrimaryDisabled={nextStepPrimaryDisabled}
+					publishingTemplateId={publishingTemplateId}
+					labels={{
+						eyebrow: t('platform.eyebrow'),
+						title: t('platform.title'),
+						subtitle: t('platform.subtitle'),
+						server: t('platform.connection.server'),
+						user: t('platform.connection.user'),
+						health: t('platform.connection.health'),
+						connectionState: hasErrors
+							? t('platform.connection.partial')
+							: t('platform.connection.connected'),
+						nextStepEyebrow: t('platform.nextStep.eyebrow'),
+						nextStepTitle: t(`platform.nextStep.${nextStepMode}.title`),
+						nextStepDescription: t(
+							`platform.nextStep.${nextStepMode}.description`,
+						),
+						nextStepManual: t('platform.nextStep.publish.manual'),
+						nextStepAction: t(`platform.nextStep.${nextStepMode}.action`),
+						publishing: t('platform.agentManagement.publishing'),
+					}}
+					onStartPublishing={handleStartPublishing}
+					onPrimaryAction={handleNextStepPrimaryAction}
+				/>
 
 				<section className="grid gap-4 rounded-lg border bg-background p-4">
 					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
