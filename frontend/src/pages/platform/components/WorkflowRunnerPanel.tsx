@@ -18,7 +18,11 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
-import { formatTimestamp } from '../platform-utils';
+import {
+	formatTimestamp,
+	workflowStatusClassName,
+	workflowStatusLabelKey,
+} from '../platform-utils';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -59,8 +63,6 @@ interface WorkflowRunnerPanelProps {
 		checked: boolean,
 	) => void;
 	workflowInputLabel: (key: string) => string;
-	workflowStatusLabelKey: (status?: string) => string;
-	workflowStatusClassName: (status?: string) => string;
 	summarizeAuditObject: (value?: Record<string, unknown>) => string;
 	t: Translate;
 }
@@ -92,8 +94,6 @@ export function WorkflowRunnerPanel({
 	onRunWorkflow,
 	onToggleWorkflowTemplate,
 	workflowInputLabel,
-	workflowStatusLabelKey,
-	workflowStatusClassName,
 	summarizeAuditObject,
 	t,
 }: WorkflowRunnerPanelProps) {

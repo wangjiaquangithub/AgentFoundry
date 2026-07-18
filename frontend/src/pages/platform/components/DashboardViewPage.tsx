@@ -467,8 +467,6 @@ export function DashboardViewPage({
 	workflowRuns,
 	workflowRunsError,
 	workflowRunsLoading,
-	workflowStatusClassName,
-	workflowStatusLabelKey,
 	workflowTemplates,
 	workflowTemplatesError,
 	workflowTemplatesLoading,
@@ -2519,8 +2517,6 @@ export function DashboardViewPage({
 							void handleToggleWorkflowTemplate(template, checked)
 						}
 						workflowInputLabel={workflowInputLabel}
-						workflowStatusLabelKey={workflowStatusLabelKey}
-						workflowStatusClassName={workflowStatusClassName}
 						summarizeAuditObject={summarizeAuditObject}
 						t={t}
 					/>

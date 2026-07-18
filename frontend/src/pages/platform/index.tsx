@@ -111,8 +111,6 @@ import {
 	shortResourceId,
 	workflowInputLabel,
 	workflowInputLabelKeys,
-	workflowStatusClassName,
-	workflowStatusLabelKey,
 } from './platform-utils';
 
 export type PlatformView =
@@ -4976,8 +4974,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					void handleToggleWorkflowTemplate(template, checked)
 				}
 				workflowInputLabel={workflowInputLabel}
-				workflowStatusLabelKey={workflowStatusLabelKey}
-				workflowStatusClassName={workflowStatusClassName}
 				summarizeAuditObject={summarizeAuditObject}
 				t={t}
 			/>

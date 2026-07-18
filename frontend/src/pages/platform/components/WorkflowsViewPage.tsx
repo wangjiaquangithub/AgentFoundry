@@ -53,8 +53,6 @@ interface WorkflowsViewPageProps {
 		checked: boolean,
 	) => void;
 	workflowInputLabel: (key: string) => string;
-	workflowStatusLabelKey: (status?: string) => string;
-	workflowStatusClassName: (status?: string) => string;
 	summarizeAuditObject: (value?: Record<string, unknown>) => string;
 	t: Translate;
 }
@@ -90,8 +88,6 @@ export function WorkflowsViewPage({
 	onRunWorkflow,
 	onToggleWorkflowTemplate,
 	workflowInputLabel,
-	workflowStatusLabelKey,
-	workflowStatusClassName,
 	summarizeAuditObject,
 	t,
 }: WorkflowsViewPageProps) {
@@ -172,8 +168,6 @@ export function WorkflowsViewPage({
 						onRunWorkflow={onRunWorkflow}
 						onToggleWorkflowTemplate={onToggleWorkflowTemplate}
 						workflowInputLabel={workflowInputLabel}
-						workflowStatusLabelKey={workflowStatusLabelKey}
-						workflowStatusClassName={workflowStatusClassName}
 						summarizeAuditObject={summarizeAuditObject}
 						t={t}
 					/>
