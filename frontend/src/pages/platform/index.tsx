@@ -128,9 +128,7 @@ import {
 	selectedIdentityGovernanceActivityForIdentity,
 	selectedIdentityStateForStatus,
 	selectedToolRunnerStateForStatus,
-	tenantWorkspaceByNameForEntries,
-	tenantWorkspaceEntriesForWorkspaces,
-	tenantWorkspaceStateForStatus,
+	tenantWorkspaceOperationsStateForStatus,
 	toolCatalogStateForStatus,
 	toolPolicySummaryForGovernance,
 	triggerOperationsStateForStatus,
@@ -785,14 +783,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			: agentRoutingLabel === 'rules'
 				? t('platform.agentRunner.routingRules')
 				: agentRoutingLabel;
-	const tenantWorkspaces = useMemo(
-		() => tenantWorkspaceEntriesForWorkspaces(connectors?.tenant_workspaces),
-		[connectors?.tenant_workspaces],
-	);
-	const tenantWorkspaceByName = useMemo(
-		() => tenantWorkspaceByNameForEntries(tenantWorkspaces),
-		[tenantWorkspaces],
-	);
 	const connectorOperationsState = connectorOperationsStateForStatus({
 		connectors,
 		form: connectorTestForm,
@@ -845,35 +835,37 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		workflowRuns,
 		auditEvents,
 	});
-	const tenantWorkspaceState = useMemo(() => {
-		return tenantWorkspaceStateForStatus(
-			{
-				tenantWorkspaces,
-				tenantWorkspaceByName,
-				enterpriseIdentities,
-				activePlatformAgents,
-				pendingApprovals,
-				auditEvents,
-				workflowRuns,
-				members: platformMembers?.members ?? [],
-			},
-			{
-				localSource: t('platform.tenantWorkspace.localSource'),
-			},
-		);
-	}, [
-		activePlatformAgents,
-		auditEvents,
-		enterpriseIdentities,
-		pendingApprovals,
-		t,
-		tenantWorkspaceByName,
-		tenantWorkspaces,
-		workflowRuns,
-		platformMembers?.members,
-	]);
-	const tenantOverviewItems = tenantWorkspaceState.tenantOverviewItems;
-	const platformMemberTenantSummaries = tenantWorkspaceState.platformMemberTenantSummaries;
+	const tenantWorkspaceOperationsState = useMemo(
+		() =>
+			tenantWorkspaceOperationsStateForStatus(
+				{
+					connectors,
+					enterpriseIdentities,
+					activePlatformAgents,
+					pendingApprovals,
+					auditEvents,
+					workflowRuns,
+					members: platformMembers?.members ?? [],
+				},
+				{
+					localSource: t('platform.tenantWorkspace.localSource'),
+				},
+			),
+		[
+			activePlatformAgents,
+			auditEvents,
+			connectors,
+			enterpriseIdentities,
+			pendingApprovals,
+			t,
+			workflowRuns,
+			platformMembers?.members,
+		],
+	);
+	const tenantWorkspaces = tenantWorkspaceOperationsState.tenantWorkspaces;
+	const tenantOverviewItems = tenantWorkspaceOperationsState.tenantOverviewItems;
+	const platformMemberTenantSummaries =
+		tenantWorkspaceOperationsState.platformMemberTenantSummaries;
 	const memoryOperationsState = useMemo(() => {
 		return memoryOperationsStateForConversations({
 			activePlatformAgents,

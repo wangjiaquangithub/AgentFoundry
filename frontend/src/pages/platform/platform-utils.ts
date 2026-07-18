@@ -578,6 +578,46 @@ export function tenantWorkspaceByNameForEntries(
 	return new Map(tenantWorkspaces);
 }
 
+export function tenantWorkspaceOperationsStateForStatus(
+	values: {
+		connectors?: EnterprisePlatformConnectorsResponse | null;
+		enterpriseIdentities: EnterpriseIdentity[];
+		activePlatformAgents: EnterprisePublishedAgent[];
+		pendingApprovals: EnterpriseApprovalRequestItem[];
+		auditEvents: EnterpriseAuditEvent[];
+		workflowRuns: EnterpriseWorkflowRunHistoryItem[];
+		members: EnterprisePlatformMember[];
+	},
+	labels: {
+		localSource: string;
+	},
+) {
+	const tenantWorkspaces = tenantWorkspaceEntriesForWorkspaces(
+		values.connectors?.tenant_workspaces,
+	);
+	const tenantWorkspaceByName = tenantWorkspaceByNameForEntries(tenantWorkspaces);
+	const tenantWorkspaceState = tenantWorkspaceStateForStatus(
+		{
+			tenantWorkspaces,
+			tenantWorkspaceByName,
+			enterpriseIdentities: values.enterpriseIdentities,
+			activePlatformAgents: values.activePlatformAgents,
+			pendingApprovals: values.pendingApprovals,
+			auditEvents: values.auditEvents,
+			workflowRuns: values.workflowRuns,
+			members: values.members,
+		},
+		labels,
+	);
+
+	return {
+		tenantWorkspaces,
+		tenantWorkspaceByName,
+		tenantOverviewItems: tenantWorkspaceState.tenantOverviewItems,
+		platformMemberTenantSummaries: tenantWorkspaceState.platformMemberTenantSummaries,
+	};
+}
+
 export function workflowTemplateByTypeForTemplates(templates: EnterpriseWorkflowTemplate[]) {
 	return new Map(templates.map((template) => [template.workflow_type, template]));
 }
