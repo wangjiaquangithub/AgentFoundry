@@ -135,6 +135,10 @@ import {
 } from './components/PlatformConsolePanel';
 import { PlatformDashboardOverview } from './components/PlatformDashboardOverview';
 import { RolloutPath, type RolloutPathStep } from './components/RolloutPath';
+import {
+	RuntimeStatusPanel,
+	type RuntimeStatusItem,
+} from './components/RuntimeStatusPanel';
 import { ScenariosPanel } from './components/ScenariosPanel';
 import {
 	TenantWorkspacePanel,
@@ -199,12 +203,6 @@ interface Capability {
 	state: HealthState;
 	icon: ComponentType<{ className?: string }>;
 	onClick: () => void;
-}
-
-interface RuntimeItem {
-	label: string;
-	value: string;
-	icon: ComponentType<{ className?: string }>;
 }
 
 interface EnterpriseAgentConversationTurn extends MonitoringAgentTurn {}
@@ -1058,7 +1056,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	];
 
-	const runtimeItems: RuntimeItem[] = [
+	const runtimeItems: RuntimeStatusItem[] = [
 		{
 			label: t('platform.runtime.platform'),
 			value: platformStatus
@@ -9497,65 +9495,20 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					cn={cn}
 				/>
 
-				<section ref={governanceRef} className="flex flex-col gap-3">
-					<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-						<div>
-							<h2 className="text-base font-semibold">
-								{t('platform.runtime.title')}
-							</h2>
-							<p className="text-sm text-muted-foreground">
-								{t('platform.runtime.description')}
-							</p>
-						</div>
-						<Button
-							size="sm"
-							variant="outline"
-							onClick={refetchPlatform}
-							disabled={platformLoading}
-						>
-							<RefreshCcw className={cn(platformLoading && 'animate-spin')} />
-							{t('platform.actions.refreshStatus')}
-						</Button>
-					</div>
-					{platformError ? (
-						<PlatformNotice>{t('platform.runtime.error')}</PlatformNotice>
-					) : null}
-					{platformLoading && !platformStatus ? (
-						<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-							<Skeleton className="h-20 w-full" />
-							<Skeleton className="h-20 w-full" />
-							<Skeleton className="h-20 w-full" />
-						</div>
-					) : (
-						<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-							{runtimeItems.map((item) => {
-								const Icon = item.icon;
-
-								return (
-									<div
-										key={item.label}
-										className="grid grid-cols-[auto_1fr] gap-3 rounded-lg border bg-muted/10 p-3"
-									>
-										<div className="flex size-8 items-center justify-center rounded-lg border bg-background">
-											<Icon className="size-4 text-muted-foreground" />
-										</div>
-										<div className="min-w-0">
-											<div className="text-xs text-muted-foreground">
-												{item.label}
-											</div>
-											<div
-												className="mt-1 truncate font-mono text-xs"
-												title={item.value}
-											>
-												{item.value}
-											</div>
-										</div>
-									</div>
-								);
-							})}
-						</div>
-					)}
-				</section>
+				<RuntimeStatusPanel
+					governanceRef={governanceRef}
+					platformLoading={platformLoading}
+					hasPlatformStatus={Boolean(platformStatus)}
+					platformError={platformError}
+					runtimeItems={runtimeItems}
+					onRefreshPlatform={refetchPlatform}
+					labels={{
+						title: t('platform.runtime.title'),
+						description: t('platform.runtime.description'),
+						refreshStatus: t('platform.actions.refreshStatus'),
+						error: t('platform.runtime.error'),
+					}}
+				/>
 
 				<section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
 					<div className="flex flex-col gap-3">
