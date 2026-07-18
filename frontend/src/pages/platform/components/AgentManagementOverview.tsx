@@ -19,8 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-
-type HealthState = 'ready' | 'partial' | 'todo' | 'blocked';
+import { StateBadge, type HealthState } from './common';
 
 interface AgentOpsSummaryItem {
 	label: string;
@@ -71,21 +70,6 @@ interface AgentManagementOverviewProps {
 	onRunWorkflow: (agent: EnterprisePublishedAgent) => void;
 	onEditAgent: (agent: EnterprisePublishedAgent) => void;
 	onOpenGovernance: () => void;
-}
-
-function StateBadge({ state, label }: { state: HealthState; label: string }) {
-	return (
-		<Badge
-			variant={state === 'ready' ? 'default' : state === 'blocked' ? 'destructive' : 'outline'}
-			className={cn(
-				'capitalize',
-				state === 'partial' && 'border-amber-500 text-amber-600',
-				state === 'todo' && 'border-muted-foreground/40 text-muted-foreground',
-			)}
-		>
-			{label}
-		</Badge>
-	);
 }
 
 export function AgentManagementOverview({
