@@ -26,7 +26,6 @@ import { useNavigate } from 'react-router-dom';
 import {
 	platformApi,
 	type EnterpriseIdentity,
-	type EnterpriseAgentPublishRequest,
 	type EnterpriseAgentTemplate,
 	type EnterpriseAgentRunResponse,
 	type EnterpriseApprovalRequestItem,
@@ -73,6 +72,10 @@ import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import { usePlatformPageRefs } from './platform-page-refs';
 import { runPlatformOperationAction } from './platform-operation-actions';
+import {
+	buildAgentConfigurationPayloadFromForm,
+	createDefaultPublishForm,
+} from './platform-publish-form';
 import {
 	agentSampleQuestions,
 	defaultAgentQuestion,
@@ -1927,18 +1930,12 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function buildDefaultPublishForm(template: EnterpriseAgentTemplate): PublishFormState {
-		return {
-			name: template.name,
-			description: template.description,
+		return createDefaultPublishForm({
+			template,
 			tenant: platformStatus?.current_user.tenant ?? '',
-			model_config_id: credentials[0]?.id ?? '',
-			knowledge_base_ids: knowledgeBases.map((knowledgeBase) => knowledgeBase.id),
-			tools: [...template.tools],
-			allowed_user_ids: [],
-			allowed_roles: [],
-			memory_enabled: true,
-			workflow_enabled: false,
-		};
+			modelConfigId: credentials[0]?.id ?? '',
+			knowledgeBaseIds: knowledgeBases.map((knowledgeBase) => knowledgeBase.id),
+		});
 	}
 
 	function handleConfigureTemplate(template: EnterpriseAgentTemplate) {
@@ -2335,23 +2332,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			behavior: 'smooth',
 			block: 'center',
 		});
-	}
-
-	function buildAgentConfigurationPayloadFromForm(
-		form: PublishFormState,
-	): Omit<EnterpriseAgentPublishRequest, 'template_id'> {
-		return {
-			name: form.name.trim() || undefined,
-			description: form.description.trim() || undefined,
-			tenant: form.tenant.trim() || undefined,
-			model_config_id: form.model_config_id || undefined,
-			knowledge_base_ids: form.knowledge_base_ids,
-			tools: form.tools,
-			allowed_user_ids: form.allowed_user_ids,
-			allowed_roles: form.allowed_roles,
-			memory_enabled: form.memory_enabled,
-			workflow_enabled: form.workflow_enabled,
-		};
 	}
 
 	function buildAgentConfigurationPayload() {
