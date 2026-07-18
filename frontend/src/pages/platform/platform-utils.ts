@@ -2315,6 +2315,57 @@ export function agentOpsSummaryItems(
 	];
 }
 
+export function appCenterOperationsStateForStatus(values: {
+	selectedItem?: { type: 'template' | 'agent'; id: string } | null;
+	activeAgents: EnterprisePublishedAgent[];
+	readyAgents: EnterprisePublishedAgent[];
+	publishedAgents: EnterprisePublishedAgent[];
+	archivedAgents: EnterprisePublishedAgent[];
+	templates: EnterpriseAgentTemplate[];
+	defaultTemplate?: EnterpriseAgentTemplate | null;
+	hasCredentials: boolean;
+	publishingTemplateId?: string | null;
+	labels: Parameters<typeof agentOpsSummaryItems>[1];
+}) {
+	const derivedState = appCenterDerivedStateForStatus({
+		selectedItem: values.selectedItem,
+		activeAgents: values.activeAgents,
+		readyAgents: values.readyAgents,
+		templates: values.templates,
+		defaultTemplate: values.defaultTemplate,
+		hasCredentials: values.hasCredentials,
+		publishingTemplateId: values.publishingTemplateId,
+	});
+	const selection = derivedState.selection;
+	const agentOpsSummary = agentOpsSummaryItems(
+		{
+			published: values.publishedAgents.length,
+			active: values.activeAgents.length,
+			ready: values.readyAgents.length,
+			needsSetup: derivedState.blockedOrPartialAgents.length,
+			archived: values.archivedAgents.length,
+		},
+		values.labels,
+	);
+	const topOperationsAgents = topOperationsAgentsForDisplay(
+		values.readyAgents,
+		derivedState.blockedOrPartialAgents,
+		values.publishedAgents,
+	);
+
+	return {
+		derivedState,
+		blockedOrPartialAgents: derivedState.blockedOrPartialAgents,
+		appCenterAgents: derivedState.appCenterAgents,
+		selection,
+		inspectedAgent: selection.inspectedAgent,
+		inspectedTemplate: selection.inspectedTemplate,
+		primaryDisabled: selection.primaryDisabled,
+		agentOpsSummary,
+		topOperationsAgents,
+	};
+}
+
 export function topOperationsAgentsForDisplay<
 	TAgent extends { status?: string | null },
 >(

@@ -93,12 +93,11 @@ import {
 	agentReleasePipelineForStatus,
 	archivedPlatformAgentsForAgents,
 	identityAccessRowsForGovernance,
-	agentOpsSummaryItems,
 	agentResourceSummary,
 	agentRunnerAccessLabelKey,
 	agentSetupStepsForStatus,
 	appCenterDetailResourceValuesForSelection,
-	appCenterDerivedStateForStatus,
+	appCenterOperationsStateForStatus,
 	auditStatsForSummary,
 	capabilityItemsForStatus,
 	connectorDraftIssuesForDraft,
@@ -142,7 +141,6 @@ import {
 	selectedIdentityGovernanceActivityForIdentity,
 	tenantWorkspaceByNameForEntries,
 	tenantWorkspaceEntriesForWorkspaces,
-	topOperationsAgentsForDisplay,
 	tenantWorkspaceStateForStatus,
 	toolPolicySummaryForGovernance,
 	triggerOpsStatsForSummary,
@@ -1058,30 +1056,17 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			errors: t('platform.dashboard.todoErrors'),
 		},
 	);
-	const appCenterDerivedState = appCenterDerivedStateForStatus({
+	const appCenterOperationsState = appCenterOperationsStateForStatus({
 		selectedItem: selectedAppCenterItem,
 		activeAgents: activePlatformAgents,
 		readyAgents: readyPlatformAgents,
+		publishedAgents: publishedPlatformAgents,
+		archivedAgents: archivedPlatformAgents,
 		templates: agentTemplates,
 		defaultTemplate: defaultAgentTemplate,
 		hasCredentials: credentials.length > 0,
 		publishingTemplateId,
-	});
-	const blockedOrPartialPlatformAgents = appCenterDerivedState.blockedOrPartialAgents;
-	const appCenterAgents = appCenterDerivedState.appCenterAgents;
-	const appCenterSelection = appCenterDerivedState.selection;
-	const inspectedAppCenterAgent = appCenterSelection.inspectedAgent;
-	const inspectedAppCenterTemplate = appCenterSelection.inspectedTemplate;
-	const appCenterPrimaryDisabled = appCenterSelection.primaryDisabled;
-	const agentOpsSummary = agentOpsSummaryItems(
-		{
-			published: publishedPlatformAgents.length,
-			active: activePlatformAgents.length,
-			ready: readyPlatformAgents.length,
-			needsSetup: blockedOrPartialPlatformAgents.length,
-			archived: archivedPlatformAgents.length,
-		},
-		{
+		labels: {
 			publishedTotal: t('platform.agentManagement.ops.publishedTotal'),
 			publishedTotalHelper: t('platform.agentManagement.ops.publishedTotalHelper'),
 			activeTotal: t('platform.agentManagement.ops.activeTotal'),
@@ -1092,12 +1077,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			needsSetupTotalHelper: ({ count }) =>
 				t('platform.agentManagement.ops.needsSetupTotalHelper', { count }),
 		},
-	);
-	const topOperationsAgents = topOperationsAgentsForDisplay(
-		readyPlatformAgents,
-		blockedOrPartialPlatformAgents,
-		publishedPlatformAgents,
-	);
+	});
+	const blockedOrPartialPlatformAgents = appCenterOperationsState.blockedOrPartialAgents;
+	const appCenterAgents = appCenterOperationsState.appCenterAgents;
+	const inspectedAppCenterAgent = appCenterOperationsState.inspectedAgent;
+	const inspectedAppCenterTemplate = appCenterOperationsState.inspectedTemplate;
+	const appCenterPrimaryDisabled = appCenterOperationsState.primaryDisabled;
+	const agentOpsSummary = appCenterOperationsState.agentOpsSummary;
+	const topOperationsAgents = appCenterOperationsState.topOperationsAgents;
 	const operationsAgentIssueText = (agent: EnterprisePublishedAgent) => {
 		return formatOperationsAgentIssueText(agent, {
 			archived: t('platform.operations.archivedIssue'),
