@@ -772,6 +772,10 @@ export function launchpadStateForCounts(values: {
 	return values.readyCount > 0 ? 'partial' : 'blocked';
 }
 
+export function launchpadPrimaryStepForSteps(steps: LaunchpadStep[]) {
+	return steps.find((step) => step.state !== 'ready') ?? steps[steps.length - 1];
+}
+
 type WorkbenchIndicatorKey = 'agents' | 'approvals' | 'workflows' | 'memory';
 type WorkbenchActionKey = 'run' | 'workflow' | 'governance' | 'memory';
 type WorkbenchReadinessKey =

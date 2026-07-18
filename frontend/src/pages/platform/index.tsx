@@ -110,6 +110,7 @@ import {
 	firstAgentGuideStepsForStatus,
 	formatOperationsAgentIssueText,
 	knowledgeBaseLabels,
+	launchpadPrimaryStepForSteps,
 	launchpadStateForCounts,
 	launchpadStepsForStatus,
 	memoryOperationsItemsForConversations,
@@ -3629,9 +3630,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		readyCount: launchpadReadyCount,
 		totalCount: launchpadTotalCount,
 	});
-	const launchpadPrimaryStep =
-		launchpadSteps.find((step) => step.state !== 'ready') ??
-		launchpadSteps[launchpadSteps.length - 1];
+	const launchpadPrimaryStep = launchpadPrimaryStepForSteps(launchpadSteps);
 
 	const platformConsoleItems = platformConsoleItemsForDisplay({
 		icons: {
