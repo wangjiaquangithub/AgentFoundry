@@ -88,6 +88,16 @@ export function buildAgentConfigurationPayloadFromForm(
 	};
 }
 
+export function agentPublishPayloadFromForm(values: {
+	templateId: string;
+	form: PublishFormState;
+}): EnterpriseAgentPublishRequest {
+	return {
+		template_id: values.templateId,
+		...buildAgentConfigurationPayloadFromForm(values.form),
+	};
+}
+
 export function publishFormForTenantChange(values: {
 	current: PublishFormState;
 	tenant: string;

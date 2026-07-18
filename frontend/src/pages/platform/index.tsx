@@ -195,6 +195,7 @@ import {
 	agentDefaultModelPatch,
 	agentKnowledgeBasesPatch,
 	agentMemoryEnabledPatch,
+	agentPublishPayloadFromForm,
 	agentTemplateToolsPatch,
 	agentWorkflowEnabledPatch,
 	buildAgentConfigurationPayloadFromForm,
@@ -2135,10 +2136,12 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			const payload = buildAgentConfigurationPayload();
 			const response = editingAgentId
 				? await platformApi.updateAgent(editingAgentId, payload)
-				: await platformApi.publishAgent({
-						template_id: selectedTemplateId,
-						...payload,
-					});
+				: await platformApi.publishAgent(
+						agentPublishPayloadFromForm({
+							templateId: selectedTemplateId,
+							form: publishForm,
+						}),
+					);
 			if (response.agent.status === 'published') {
 				setLastPublishedAgentId(response.agent.id);
 				handlePrimePublishedAgent(response.agent.id);
@@ -2181,10 +2184,12 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setPlatformAgentsError(null);
 
 		try {
-			const response = await platformApi.publishAgent({
-				template_id: template.id,
-				...buildAgentConfigurationPayloadFromForm(defaultForm),
-			});
+			const response = await platformApi.publishAgent(
+				agentPublishPayloadFromForm({
+					templateId: template.id,
+					form: defaultForm,
+				}),
+			);
 			if (response.agent.status === 'published') {
 				setLastPublishedAgentId(response.agent.id);
 				handlePrimePublishedAgent(response.agent.id);
