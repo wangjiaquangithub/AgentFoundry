@@ -22,6 +22,10 @@ import type {
 } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+	workflowStatusClassName,
+	workflowStatusLabelKey,
+} from '../platform-utils';
 
 type DashboardRiskTool =
 	| EnterprisePlatformDashboardRiskTool
@@ -53,8 +57,6 @@ interface DashboardOpsPanelProps {
 	onScrollToWorkflowRunner: () => void;
 	onScrollToToolRunner: () => void;
 	operationSeverityClassName: (severity?: string) => string;
-	workflowStatusClassName: (status?: string) => string;
-	workflowStatusLabelKey: (status?: string) => string;
 	labels: {
 		eyebrow: string;
 		title: string;
@@ -130,8 +132,6 @@ export function DashboardOpsPanel({
 	onScrollToWorkflowRunner,
 	onScrollToToolRunner,
 	operationSeverityClassName,
-	workflowStatusClassName,
-	workflowStatusLabelKey,
 	labels,
 }: DashboardOpsPanelProps) {
 	return (

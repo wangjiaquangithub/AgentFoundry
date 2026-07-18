@@ -1204,8 +1204,6 @@ export function DashboardViewPage({
 					onScrollToWorkflowRunner={scrollToWorkflowRunner}
 					onScrollToToolRunner={scrollToToolRunner}
 					operationSeverityClassName={operationSeverityClassName}
-					workflowStatusClassName={workflowStatusClassName}
-					workflowStatusLabelKey={workflowStatusLabelKey}
 					labels={{
 						eyebrow: t('platform.dashboard.eyebrow'),
 						title: t('platform.dashboard.title'),
