@@ -2091,6 +2091,44 @@ export function appCenterTemplateDetailResourceValues(
 	};
 }
 
+export function appCenterDetailResourceValuesForSelection(values: {
+	agent?: EnterprisePublishedAgent | null;
+	template?: EnterpriseAgentTemplate | null;
+	credentialById: Map<string, { id?: unknown; data?: { name?: unknown } }>;
+	knowledgeBaseById: Map<string, { id?: unknown; name?: unknown }>;
+	modelCount: number;
+	knowledgeBaseCount: number;
+	labels: {
+		noModel: string;
+		access: {
+			restricted: (counts: { users: number; roles: number }) => string;
+			open: string;
+		};
+		runtime: {
+			value: (states: { memory: string; workflow: string }) => string;
+			enabled: string;
+			disabled: string;
+		};
+	};
+}) {
+	return {
+		agent: values.agent
+			? appCenterAgentDetailResourceValues(
+					values.agent,
+					values.credentialById,
+					values.knowledgeBaseById,
+					values.labels,
+				)
+			: null,
+		template: values.template
+			? appCenterTemplateDetailResourceValues(values.template, {
+					modelCount: values.modelCount,
+					knowledgeBaseCount: values.knowledgeBaseCount,
+				})
+			: null,
+	};
+}
+
 export function appCenterSelectionState<
 	TAgent extends { id: string },
 	TTemplate extends { id: string },
