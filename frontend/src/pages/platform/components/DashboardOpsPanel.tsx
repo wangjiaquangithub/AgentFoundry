@@ -23,6 +23,7 @@ import type {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
+	operationSeverityClassName,
 	workflowStatusClassName,
 	workflowStatusLabelKey,
 } from '../platform-utils';
@@ -56,7 +57,6 @@ interface DashboardOpsPanelProps {
 	onScrollToAgentRunner: () => void;
 	onScrollToWorkflowRunner: () => void;
 	onScrollToToolRunner: () => void;
-	operationSeverityClassName: (severity?: string) => string;
 	labels: {
 		eyebrow: string;
 		title: string;
@@ -131,7 +131,6 @@ export function DashboardOpsPanel({
 	onScrollToAgentRunner,
 	onScrollToWorkflowRunner,
 	onScrollToToolRunner,
-	operationSeverityClassName,
 	labels,
 }: DashboardOpsPanelProps) {
 	return (

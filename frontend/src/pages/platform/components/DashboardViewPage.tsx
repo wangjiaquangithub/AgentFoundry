@@ -69,18 +69,6 @@ function countArrayField(record: Record<string, unknown>, key: string) {
 	return Array.isArray(value) ? value.length : 0;
 }
 
-function operationSeverityClassName(severity?: string) {
-	if (severity === 'error') {
-		return 'border-red-500/30 bg-red-500/10 text-red-700';
-	}
-
-	if (severity === 'warning') {
-		return 'border-amber-500/30 bg-amber-500/10 text-amber-700';
-	}
-
-	return 'border-sky-500/30 bg-sky-500/10 text-sky-700';
-}
-
 export function DashboardViewPage({
 	accessControlStats,
 	accessTenantSummaries,
@@ -1199,7 +1187,6 @@ export function DashboardViewPage({
 					onScrollToAgentRunner={scrollToAgentRunner}
 					onScrollToWorkflowRunner={scrollToWorkflowRunner}
 					onScrollToToolRunner={scrollToToolRunner}
-					operationSeverityClassName={operationSeverityClassName}
 					labels={{
 						eyebrow: t('platform.dashboard.eyebrow'),
 						title: t('platform.dashboard.title'),
