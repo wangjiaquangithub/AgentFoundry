@@ -87,7 +87,10 @@ import {
 	platformConfigImportTextForExport,
 	platformConfigLoadErrorMessage,
 } from './platform-config-management';
-import { toolPolicyPayloadFromDraft } from './platform-tool-policy-helpers';
+import {
+	toolPolicyDraftFromDecisions,
+	toolPolicyPayloadFromDraft,
+} from './platform-tool-policy-helpers';
 import {
 	memberCreatePayloadFromForm,
 	memberFormFromMember,
@@ -939,21 +942,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}, [selectedRunAgentId, selectedIdentityUserId]);
 
 	useEffect(() => {
-		const nextDraft: Record<string, ToolPolicyDraftValue> = {};
-		const allowed = new Set(selectedIdentityAllowedTools.map((decision) => decision.name));
-		const denied = new Set(selectedIdentityDeniedTools.map((decision) => decision.name));
-
-		availableToolItems.forEach((tool) => {
-			if (denied.has(tool.name)) {
-				nextDraft[tool.name] = 'deny';
-			} else if (allowed.has(tool.name)) {
-				nextDraft[tool.name] = 'allow';
-			} else {
-				nextDraft[tool.name] = 'inherit';
-			}
-		});
-
-		setToolPolicyDraft(nextDraft);
+		setToolPolicyDraft(
+			toolPolicyDraftFromDecisions({
+				tools: availableToolItems,
+				allowedTools: selectedIdentityAllowedTools,
+				deniedTools: selectedIdentityDeniedTools,
+			}),
+		);
 		setToolPolicySaveError(null);
 		setToolPolicySaveSuccess(null);
 	}, [availableToolItems, selectedIdentityAllowedTools, selectedIdentityDeniedTools]);

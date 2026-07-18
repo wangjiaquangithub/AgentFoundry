@@ -1,4 +1,8 @@
-import type { EnterpriseToolPolicyUpdateRequest } from '@/api';
+import type {
+	EnterpriseToolCatalogItem,
+	EnterpriseToolDecision,
+	EnterpriseToolPolicyUpdateRequest,
+} from '@/api';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
 
 export function toolPolicyPayloadFromDraft(values: {
@@ -16,4 +20,26 @@ export function toolPolicyPayloadFromDraft(values: {
 			.filter(([, value]) => value === 'deny')
 			.map(([name]) => name),
 	};
+}
+
+export function toolPolicyDraftFromDecisions(values: {
+	tools: EnterpriseToolCatalogItem[];
+	allowedTools: EnterpriseToolDecision[];
+	deniedTools: EnterpriseToolDecision[];
+}): Record<string, ToolPolicyDraftValue> {
+	const allowed = new Set(values.allowedTools.map((decision) => decision.name));
+	const denied = new Set(values.deniedTools.map((decision) => decision.name));
+	const draft: Record<string, ToolPolicyDraftValue> = {};
+
+	values.tools.forEach((tool) => {
+		if (denied.has(tool.name)) {
+			draft[tool.name] = 'deny';
+		} else if (allowed.has(tool.name)) {
+			draft[tool.name] = 'allow';
+		} else {
+			draft[tool.name] = 'inherit';
+		}
+	});
+
+	return draft;
 }
