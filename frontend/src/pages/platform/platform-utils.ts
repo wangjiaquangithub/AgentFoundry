@@ -24,7 +24,10 @@ import type { PlatformMemberTenantSummary } from './components/MembersPanel';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
 import type { TenantOverviewItem } from './components/TenantWorkspacePanel';
 import type { TriggerOpsStat } from './components/TriggerOpsPanel';
-import type { WorkbenchIndicator } from './components/WorkbenchStatusPanel';
+import type {
+	WorkbenchActionCard,
+	WorkbenchIndicator,
+} from './components/WorkbenchStatusPanel';
 import type { WorkflowOpsStat } from './components/WorkflowOpsPanel';
 import type { HealthState } from './components/common';
 
@@ -434,6 +437,7 @@ export function launchpadStepsForStatus(
 }
 
 type WorkbenchIndicatorKey = 'agents' | 'approvals' | 'workflows' | 'memory';
+type WorkbenchActionKey = 'run' | 'workflow' | 'governance' | 'memory';
 
 export function workbenchIndicatorsForStatus(
 	values: {
@@ -506,6 +510,80 @@ export function workbenchIndicatorsForStatus(
 			helper: options.labels.memoryHelper,
 			icon: options.icons.memory,
 			state: values.memoryOperationsItemCount > 0 ? 'ready' : 'todo',
+			onClick: options.actions.memory,
+		},
+	];
+}
+
+export function workbenchActionsForStatus(
+	values: {
+		selectedRunAgentName?: string;
+		workflowTemplateCount: number;
+		pendingApprovalCount: number;
+		memoryOperationsRunCount: number;
+	},
+	options: {
+		icons: Record<WorkbenchActionKey, ComponentType<{ className?: string }>>;
+		actions: Record<WorkbenchActionKey | 'publish', () => void>;
+		labels: {
+			runTitle: string;
+			runDescriptionReady: (agent: string) => string;
+			runDescriptionEmpty: string;
+			runAction: string;
+			runPublishAction: string;
+			workflowTitle: string;
+			workflowDescription: (count: number) => string;
+			workflowAction: string;
+			governanceTitle: string;
+			governanceDescription: (count: number) => string;
+			governanceAction: string;
+			memoryTitle: string;
+			memoryDescription: (count: number) => string;
+			memoryAction: string;
+		};
+	},
+): WorkbenchActionCard[] {
+	const hasSelectedRunAgent = Boolean(values.selectedRunAgentName);
+
+	return [
+		{
+			key: 'run',
+			title: options.labels.runTitle,
+			description: values.selectedRunAgentName
+				? options.labels.runDescriptionReady(values.selectedRunAgentName)
+				: options.labels.runDescriptionEmpty,
+			actionLabel: hasSelectedRunAgent
+				? options.labels.runAction
+				: options.labels.runPublishAction,
+			icon: options.icons.run,
+			primary: true,
+			onClick: hasSelectedRunAgent ? options.actions.run : options.actions.publish,
+		},
+		{
+			key: 'workflow',
+			title: options.labels.workflowTitle,
+			description: options.labels.workflowDescription(values.workflowTemplateCount),
+			actionLabel: options.labels.workflowAction,
+			icon: options.icons.workflow,
+			primary: false,
+			onClick: options.actions.workflow,
+		},
+		{
+			key: 'governance',
+			title: options.labels.governanceTitle,
+			description: options.labels.governanceDescription(values.pendingApprovalCount),
+			actionLabel: options.labels.governanceAction,
+			icon: options.icons.governance,
+			primary: false,
+			onClick: options.actions.governance,
+		},
+		{
+			key: 'memory',
+			title: options.labels.memoryTitle,
+			description: options.labels.memoryDescription(values.memoryOperationsRunCount),
+			actionLabel: options.labels.memoryAction,
+			icon: options.icons.memory,
+			primary: false,
 			onClick: options.actions.memory,
 		},
 	];

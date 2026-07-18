@@ -89,9 +89,6 @@ import type {
 	WorkbenchReadinessItem,
 	WorkbenchRiskItem,
 } from './components/WorkbenchReadinessPanel';
-import type {
-	WorkbenchActionCard,
-} from './components/WorkbenchStatusPanel';
 import { WorkflowsViewPage } from './components/WorkflowsViewPage';
 import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
@@ -135,6 +132,7 @@ import {
 	triggerOpsStatsForSummary,
 	triggerOpsSummaryText,
 	triggerSchedulesBySource,
+	workbenchActionsForStatus,
 	workbenchIndicatorsForStatus,
 	workflowOpsStatsForSummary,
 } from './platform-utils';
@@ -3779,56 +3777,49 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			},
 		},
 	);
-	const workbenchActions = [
+	const workbenchActions = workbenchActionsForStatus(
 		{
-			key: 'run',
-			title: t('platform.workbench.actions.run.title'),
-			description: selectedRunAgent
-				? t('platform.workbench.actions.run.descriptionReady', {
-						agent: selectedRunAgent.name,
-					})
-				: t('platform.workbench.actions.run.descriptionEmpty'),
-			actionLabel: selectedRunAgent
-				? t('platform.workbench.actions.run.action')
-				: t('platform.workbench.actions.run.publishAction'),
-			icon: Play,
-			primary: true,
-			onClick: selectedRunAgent ? scrollToAgentRunner : handleStartPublishing,
+			selectedRunAgentName: selectedRunAgent?.name,
+			workflowTemplateCount: workflowTemplates.length,
+			pendingApprovalCount: pendingApprovals.length,
+			memoryOperationsRunCount,
 		},
 		{
-			key: 'workflow',
-			title: t('platform.workbench.actions.workflow.title'),
-			description: t('platform.workbench.actions.workflow.description', {
-				count: workflowTemplates.length,
-			}),
-			actionLabel: t('platform.workbench.actions.workflow.action'),
-			icon: Workflow,
-			primary: false,
-			onClick: scrollToWorkflowRunner,
+			icons: {
+				run: Play,
+				workflow: Workflow,
+				governance: ShieldCheck,
+				memory: Brain,
+			},
+			actions: {
+				run: scrollToAgentRunner,
+				publish: handleStartPublishing,
+				workflow: scrollToWorkflowRunner,
+				governance: scrollToGovernance,
+				memory: scrollToMemoryOperations,
+			},
+			labels: {
+				runTitle: t('platform.workbench.actions.run.title'),
+				runDescriptionReady: (agent) =>
+					t('platform.workbench.actions.run.descriptionReady', { agent }),
+				runDescriptionEmpty: t('platform.workbench.actions.run.descriptionEmpty'),
+				runAction: t('platform.workbench.actions.run.action'),
+				runPublishAction: t('platform.workbench.actions.run.publishAction'),
+				workflowTitle: t('platform.workbench.actions.workflow.title'),
+				workflowDescription: (count) =>
+					t('platform.workbench.actions.workflow.description', { count }),
+				workflowAction: t('platform.workbench.actions.workflow.action'),
+				governanceTitle: t('platform.workbench.actions.governance.title'),
+				governanceDescription: (count) =>
+					t('platform.workbench.actions.governance.description', { count }),
+				governanceAction: t('platform.workbench.actions.governance.action'),
+				memoryTitle: t('platform.workbench.actions.memory.title'),
+				memoryDescription: (count) =>
+					t('platform.workbench.actions.memory.description', { count }),
+				memoryAction: t('platform.workbench.actions.memory.action'),
+			},
 		},
-		{
-			key: 'governance',
-			title: t('platform.workbench.actions.governance.title'),
-			description: t('platform.workbench.actions.governance.description', {
-				count: pendingApprovals.length,
-			}),
-			actionLabel: t('platform.workbench.actions.governance.action'),
-			icon: ShieldCheck,
-			primary: false,
-			onClick: scrollToGovernance,
-		},
-		{
-			key: 'memory',
-			title: t('platform.workbench.actions.memory.title'),
-			description: t('platform.workbench.actions.memory.description', {
-				count: memoryOperationsRunCount,
-			}),
-			actionLabel: t('platform.workbench.actions.memory.action'),
-			icon: Brain,
-			primary: false,
-			onClick: scrollToMemoryOperations,
-		},
-	] satisfies WorkbenchActionCard[];
+	);
 	const workbenchReadinessItems = [
 		{
 			key: 'model',
