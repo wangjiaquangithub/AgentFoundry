@@ -51,6 +51,17 @@ export const connectorOperationsLabels = (t: PlatformTranslate) => ({
 	runtimeGlobal: t('platform.connectors.runtimeGlobal'),
 });
 
+export const connectorRequestLabels = (t: PlatformTranslate) => ({
+	loadError: t('platform.connectors.loadError'),
+	saveBaseUrlRequired: t('platform.connectors.saveBaseUrlRequired'),
+	saveSuccessWithTenant: (tenant: string) =>
+		t('platform.connectors.saveSuccessWithTenant', { tenant }),
+	saveError: t('platform.connectors.saveError'),
+	testBaseUrlRequired: t('platform.connectors.testBaseUrlRequired'),
+	testError: t('platform.connectors.testError'),
+	testBeforeSaveRequired: t('platform.connectors.testBeforeSaveRequired'),
+});
+
 export const dashboardTodoLabels = (t: PlatformTranslate) => ({
 	model: t('platform.dashboard.todoModel'),
 	agent: t('platform.dashboard.todoAgent'),

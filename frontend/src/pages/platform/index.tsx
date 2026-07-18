@@ -106,6 +106,7 @@ import {
 	appCenterOperationsLabels,
 	auditStatsLabels,
 	connectorOperationsLabels,
+	connectorRequestLabels,
 	dashboardTodoLabels,
 	firstAgentGuideStepLabels,
 	governanceAccessLabels,
@@ -405,6 +406,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	});
 	const serverUrl = platformConnectionState.serverUrl;
 	const username = platformConnectionState.username;
+	const connectorRequestText = connectorRequestLabels(t);
 	const hasErrors = Boolean(
 		agentsError ||
 		credentialsError ||
@@ -983,7 +985,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setConnectors(response);
 		} catch (error) {
 			setConnectorsError(
-				error instanceof Error ? error.message : t('platform.connectors.loadError'),
+				error instanceof Error ? error.message : connectorRequestText.loadError,
 			);
 		} finally {
 			setConnectorsLoading(false);
@@ -1181,7 +1183,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	async function handleSaveConnectorConfig() {
 		const baseUrl = connectorTestForm.base_url.trim();
 		if (!baseUrl) {
-			setConnectorSaveError(t('platform.connectors.saveBaseUrlRequired'));
+			setConnectorSaveError(connectorRequestText.saveBaseUrlRequired);
 			setConnectorSaveSuccess(null);
 			return;
 		}
@@ -1225,16 +1227,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				token: '',
 			}));
 			setConnectorSaveSuccess(
-				t('platform.connectors.saveSuccessWithTenant', {
-					tenant: response.config.tenant,
-				}),
+				connectorRequestText.saveSuccessWithTenant(response.config.tenant),
 			);
 			await refetchConnectors();
 			await refetchGovernance();
 			await refetchOpsTasks();
 		} catch (error) {
 			setConnectorSaveError(
-				error instanceof Error ? error.message : t('platform.connectors.saveError'),
+				error instanceof Error ? error.message : connectorRequestText.saveError,
 			);
 		} finally {
 			setSavingConnectorConfig(false);
@@ -1244,7 +1244,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	async function handleTestConnector() {
 		const baseUrl = connectorTestForm.base_url.trim();
 		if (!baseUrl) {
-			setConnectorTestError(t('platform.connectors.testBaseUrlRequired'));
+			setConnectorTestError(connectorRequestText.testBaseUrlRequired);
 			return null;
 		}
 		if (connectorDraftIssues.length > 0) {
@@ -1278,7 +1278,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			return response;
 		} catch (error) {
 			setConnectorTestError(
-				error instanceof Error ? error.message : t('platform.connectors.testError'),
+				error instanceof Error ? error.message : connectorRequestText.testError,
 			);
 			return null;
 		} finally {
@@ -1293,7 +1293,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		}
 		if (response.status !== 'success') {
 			setConnectorSaveSuccess(null);
-			setConnectorSaveError(t('platform.connectors.testBeforeSaveRequired'));
+			setConnectorSaveError(connectorRequestText.testBeforeSaveRequired);
 			return;
 		}
 		await handleSaveConnectorConfig();
