@@ -182,6 +182,33 @@ export function formatAgentRuntimeLabel(
 	});
 }
 
+export function appCenterAgentDetailLabels(
+	agent: Pick<
+		EnterprisePublishedAgent,
+		'allowed_roles' | 'allowed_user_ids' | 'memory_enabled' | 'workflow_enabled'
+	>,
+	labels: {
+		access: {
+			restricted: (counts: { users: number; roles: number }) => string;
+			open: string;
+		};
+		runtime: {
+			value: (states: { memory: string; workflow: string }) => string;
+			enabled: string;
+			disabled: string;
+		};
+	},
+) {
+	return {
+		access: formatAgentAccessLabel(agent, labels.access),
+		runtime: formatAgentRuntimeLabel(agent, {
+			runtime: labels.runtime.value,
+			enabled: labels.runtime.enabled,
+			disabled: labels.runtime.disabled,
+		}),
+	};
+}
+
 export function templateDetailIssues(
 	hasCredentials: boolean,
 	hasKnowledgeBases: boolean,

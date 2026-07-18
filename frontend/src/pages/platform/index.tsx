@@ -108,6 +108,7 @@ import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import {
 	agentAccessAllowed,
+	appCenterAgentDetailLabels,
 	appCenterDetailStatusState,
 	agentIsReady,
 	agentKnowledgeBaseLabels,
@@ -117,8 +118,6 @@ import {
 	agentResourceSummary,
 	agentRunnerAccessLabelKey,
 	defaultEnterpriseWorkflowInputs,
-	formatAgentAccessLabel,
-	formatAgentRuntimeLabel,
 	formatOperationsAgentIssueText,
 	knowledgeBaseLabels,
 	modelCredentialLabel,
@@ -1353,10 +1352,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		});
 	};
 	const inspectedAppCenterAgentTools = inspectedAppCenterAgent?.tools ?? [];
-	const inspectedAppCenterAgentAllowedUserIds =
-		inspectedAppCenterAgent?.allowed_user_ids ?? [];
-	const inspectedAppCenterAgentAllowedRoles =
-		inspectedAppCenterAgent?.allowed_roles ?? [];
 	const inspectedAppCenterTemplateTools = inspectedAppCenterTemplate?.tools ?? [];
 	const inspectedAppCenterAgentReadiness = agentReadinessState(inspectedAppCenterAgent);
 	const inspectedAppCenterAgentIssues = agentReadinessIssues(inspectedAppCenterAgent);
@@ -1369,30 +1364,29 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		inspectedAppCenterAgent,
 		knowledgeBaseById,
 	);
-	const inspectedAppCenterAgentAccess = formatAgentAccessLabel(
-		{
-			allowed_user_ids: inspectedAppCenterAgentAllowedUserIds,
-			allowed_roles: inspectedAppCenterAgentAllowedRoles,
-		},
-		{
-			restricted: ({ users, roles }) =>
-				t('platform.appCenter.restrictedAccess', { users, roles }),
-			open: t('platform.appCenter.tenantAccess'),
-		},
-	);
+	const inspectedAppCenterAgentDetailLabels = inspectedAppCenterAgent
+		? appCenterAgentDetailLabels(inspectedAppCenterAgent, {
+				access: {
+					restricted: ({ users, roles }) =>
+						t('platform.appCenter.restrictedAccess', { users, roles }),
+					open: t('platform.appCenter.tenantAccess'),
+				},
+				runtime: {
+					value: ({ memory, workflow }) =>
+						t('platform.appCenter.runtimeValue', { memory, workflow }),
+					enabled: t('platform.agentManagement.enabled'),
+					disabled: t('platform.agentManagement.disabled'),
+				},
+			})
+		: null;
 	const appCenterDetailResources = inspectedAppCenterAgent
 		? agentAppCenterDetailResources(
 				{
 					model: inspectedAppCenterAgentModel,
 					knowledge: inspectedAppCenterAgentKnowledge,
 					tools: inspectedAppCenterAgentTools,
-					runtime: formatAgentRuntimeLabel(inspectedAppCenterAgent, {
-						runtime: ({ memory, workflow }) =>
-							t('platform.appCenter.runtimeValue', { memory, workflow }),
-						enabled: t('platform.agentManagement.enabled'),
-						disabled: t('platform.agentManagement.disabled'),
-					}),
-					access: inspectedAppCenterAgentAccess,
+					runtime: inspectedAppCenterAgentDetailLabels?.runtime ?? '',
+					access: inspectedAppCenterAgentDetailLabels?.access ?? '',
 				},
 				{
 					model: t('platform.appCenter.model'),
