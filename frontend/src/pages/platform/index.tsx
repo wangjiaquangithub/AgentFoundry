@@ -102,6 +102,10 @@ import { AgentRunnerConversation } from './components/AgentRunnerConversation';
 import { AgentRunnerResult } from './components/AgentRunnerResult';
 import { FirstAgentGuide, type FirstAgentGuideStep } from './components/FirstAgentGuide';
 import { LaunchpadPanel, type LaunchpadStep } from './components/LaunchpadPanel';
+import {
+	OrchestrationWorkbenchPanel,
+	type OrchestrationWorkbenchStep,
+} from './components/OrchestrationWorkbenchPanel';
 import { PlatformDashboardOverview } from './components/PlatformDashboardOverview';
 import { RolloutPath, type RolloutPathStep } from './components/RolloutPath';
 import {
@@ -4889,16 +4893,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			onClick: selectedRunAgent ? scrollToAgentRunner : scrollToWorkflowRunner,
 			actionLabel: t('platform.orchestration.operate.action'),
 		},
-	] satisfies Array<{
-		key: string;
-		title: string;
-		description: string;
-		detail: string;
-		state: HealthState;
-		icon: ComponentType<{ className?: string }>;
-		onClick: () => void;
-		actionLabel: string;
-	}>;
+	] satisfies OrchestrationWorkbenchStep[];
 	const orchestrationReadyCount = orchestrationWorkbenchSteps.filter(
 		(step) => step.state === 'ready',
 	).length;
@@ -7831,100 +7826,36 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					}}
 				/>
 
-				<section
-					ref={memoryOperationsRef}
-					className="grid gap-4 rounded-lg border bg-background p-4"
-				>
-					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-						<div className="min-w-0">
-							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-								<Workflow className="size-4" />
-								<span>{t('platform.orchestration.eyebrow')}</span>
-							</div>
-							<h2 className="text-base font-semibold">
-								{t('platform.orchestration.title')}
-							</h2>
-							<p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-								{t('platform.orchestration.description')}
-							</p>
-						</div>
-						<div className="flex flex-wrap gap-2 lg:justify-end">
-							<Badge variant="outline">
-								{t('platform.orchestration.progress', {
-									ready: orchestrationReadyCount,
-									total: orchestrationWorkbenchSteps.length,
-								})}
-							</Badge>
-							<Badge variant="outline">
-								{t('platform.orchestration.agents', {
-									count: activePlatformAgents.length,
-								})}
-							</Badge>
-							<Badge variant="outline">
-								{t('platform.orchestration.approvals', {
-									count: pendingApprovals.length,
-								})}
-							</Badge>
-							<Button
-								type="button"
-								size="sm"
-								onClick={orchestrationPrimaryStep.onClick}
-								className="w-full sm:w-auto"
-							>
-								{t('platform.orchestration.primaryAction', {
-									action: orchestrationPrimaryStep.actionLabel,
-								})}
-								<ArrowRight className="size-4" />
-							</Button>
-						</div>
-					</div>
-					<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-						{orchestrationWorkbenchSteps.map((step, index) => {
-							const StepIcon = step.icon;
-							return (
-								<button
-									key={step.key}
-									type="button"
-									onClick={step.onClick}
-									className="grid min-h-40 gap-3 rounded-lg border bg-muted/10 p-3 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-								>
-									<div className="flex items-start justify-between gap-3">
-										<div className="flex min-w-0 items-center gap-2">
-											<div className="grid size-8 shrink-0 place-items-center rounded-md border bg-background">
-												<StepIcon className="size-4" />
-											</div>
-											<div className="text-xs font-medium text-muted-foreground">
-												{t('platform.orchestration.step', { index: index + 1 })}
-											</div>
-										</div>
-										<StateBadge
-											state={step.state}
-											label={t(
-												`platform.agentManagement.wizard.states.${step.state}`,
-											)}
-										/>
-									</div>
-									<div className="min-w-0">
-										<h3 className="text-sm font-medium">{step.title}</h3>
-										<p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
-											{step.description}
-										</p>
-									</div>
-									<div
-										className="line-clamp-2 rounded-md bg-background px-2 py-1.5 text-xs leading-5 text-muted-foreground"
-										title={step.detail}
-									>
-										{step.detail}
-									</div>
-									<div className="mt-auto flex items-center justify-between gap-2 text-xs font-medium">
-										<span>{step.actionLabel}</span>
-										<ArrowRight className="size-4 shrink-0" />
-									</div>
-								</button>
-							);
-						})}
-					</div>
-				</section>
+				<OrchestrationWorkbenchPanel
+					sectionRef={memoryOperationsRef}
+					steps={orchestrationWorkbenchSteps}
+					primaryStep={orchestrationPrimaryStep}
+					labels={{
+						eyebrow: t('platform.orchestration.eyebrow'),
+						title: t('platform.orchestration.title'),
+						description: t('platform.orchestration.description'),
+						progress: t('platform.orchestration.progress', {
+							ready: orchestrationReadyCount,
+							total: orchestrationWorkbenchSteps.length,
+						}),
+						agents: t('platform.orchestration.agents', {
+							count: activePlatformAgents.length,
+						}),
+						approvals: t('platform.orchestration.approvals', {
+							count: pendingApprovals.length,
+						}),
+						primaryAction: t('platform.orchestration.primaryAction', {
+							action: orchestrationPrimaryStep.actionLabel,
+						}),
+						step: (index) => t('platform.orchestration.step', { index }),
+						states: {
+							ready: t('platform.agentManagement.wizard.states.ready'),
+							partial: t('platform.agentManagement.wizard.states.partial'),
+							todo: t('platform.agentManagement.wizard.states.todo'),
+							blocked: t('platform.agentManagement.wizard.states.blocked'),
+						},
+					}}
+				/>
 
 				<section className="grid gap-4 rounded-lg border bg-background p-4">
 					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
