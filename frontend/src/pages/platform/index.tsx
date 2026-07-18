@@ -341,11 +341,6 @@ function connectorHealthState(status?: string): HealthState {
 	return 'partial';
 }
 
-function countArrayField(record: Record<string, unknown>, key: string) {
-	const value = record[key];
-	return Array.isArray(value) ? value.length : 0;
-}
-
 function normalizeWorkflowInputs(inputs?: Record<string, unknown>): Record<string, string> {
 	const source = inputs && Object.keys(inputs).length > 0 ? inputs : defaultEnterpriseWorkflowInputs;
 
@@ -5222,7 +5217,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			connectorsError={connectorsError}
 			connectorsLoading={connectorsLoading}
 			continuingApprovalId={continuingApprovalId}
-			countArrayField={countArrayField}
 			creatingApproval={creatingApproval}
 			creatingRunApproval={creatingRunApproval}
 			credentialById={credentialById}

@@ -63,6 +63,11 @@ interface DashboardViewPageProps {
 	[key: string]: any;
 }
 
+function countArrayField(record: Record<string, unknown>, key: string) {
+	const value = record[key];
+	return Array.isArray(value) ? value.length : 0;
+}
+
 export function DashboardViewPage({
 	accessControlStats,
 	accessTenantSummaries,
@@ -144,7 +149,6 @@ export function DashboardViewPage({
 	connectorsError,
 	connectorsLoading,
 	continuingApprovalId,
-	countArrayField,
 	creatingApproval,
 	creatingRunApproval,
 	credentialById,
