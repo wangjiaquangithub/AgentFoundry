@@ -112,6 +112,7 @@ import {
 	agentReadinessState,
 	agentResourceSummary,
 	agentRunnerAccessLabelKey,
+	appCenterTemplateDetailResourceValues,
 	defaultEnterpriseWorkflowInputs,
 	formatOperationsAgentIssueText,
 	knowledgeBaseLabels,
@@ -1345,7 +1346,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			tools: resources.tools,
 		});
 	};
-	const inspectedAppCenterTemplateTools = inspectedAppCenterTemplate?.tools ?? [];
 	const inspectedAppCenterAgentReadiness = agentReadinessState(inspectedAppCenterAgent);
 	const inspectedAppCenterAgentIssues = agentReadinessIssues(inspectedAppCenterAgent);
 	const inspectedAppCenterAgentResourceValues = inspectedAppCenterAgent
@@ -1373,11 +1373,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		{
 			agent: inspectedAppCenterAgentResourceValues,
 			template: inspectedAppCenterTemplate
-				? {
+				? appCenterTemplateDetailResourceValues(inspectedAppCenterTemplate, {
 						modelCount: credentials.length,
 						knowledgeBaseCount: knowledgeBases.length,
-						tools: inspectedAppCenterTemplateTools,
-					}
+					})
 				: null,
 		},
 		{

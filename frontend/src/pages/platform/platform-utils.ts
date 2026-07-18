@@ -1,4 +1,9 @@
-import type { AgentView, EnterpriseIdentity, EnterprisePublishedAgent } from '@/api';
+import type {
+	AgentView,
+	EnterpriseAgentTemplate,
+	EnterpriseIdentity,
+	EnterprisePublishedAgent,
+} from '@/api';
 import type { HealthState } from './components/common';
 
 export const defaultEnterpriseWorkflowInputs: Record<string, string> = {
@@ -246,6 +251,17 @@ export function appCenterAgentDetailResourceValues(
 		tools: agent.tools ?? [],
 		runtime: detailLabels.runtime,
 		access: detailLabels.access,
+	};
+}
+
+export function appCenterTemplateDetailResourceValues(
+	template: Pick<EnterpriseAgentTemplate, 'tools'>,
+	resources: { modelCount: number; knowledgeBaseCount: number },
+) {
+	return {
+		modelCount: resources.modelCount,
+		knowledgeBaseCount: resources.knowledgeBaseCount,
+		tools: template.tools ?? [],
 	};
 }
 
