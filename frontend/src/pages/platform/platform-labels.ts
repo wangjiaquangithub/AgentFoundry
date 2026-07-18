@@ -271,3 +271,32 @@ export const firstAgentGuideStepLabels = (t: PlatformTranslate) => ({
 		t('platform.workbench.firstAgentGuide.steps.governance.pending', { count }),
 	governanceEmpty: t('platform.workbench.firstAgentGuide.steps.governance.empty'),
 });
+
+export const orchestrationWorkbenchStepLabels = (t: PlatformTranslate) => ({
+	title: (key: string) => t(`platform.orchestration.${key}.title`),
+	description: (key: string) => t(`platform.orchestration.${key}.description`),
+	action: (key: string) => t(`platform.orchestration.${key}.action`),
+	templateEmpty: t('platform.orchestration.template.empty'),
+	modelReady: (count: number) => t('platform.orchestration.model.ready', { count }),
+	modelEmpty: t('platform.orchestration.model.empty'),
+	selectedKnowledge: (count: number) =>
+		t('platform.agentManagement.selectedKnowledge', { count }),
+	knowledgeReady: (count: number) =>
+		t('platform.orchestration.knowledge.ready', { count }),
+	toolsSelected: (count: number) =>
+		t('platform.agentManagement.wizard.toolsSelected', { count }),
+	toolsReady: (count: number) => t('platform.orchestration.tools.ready', { count }),
+	policyDetail: (counts: { users: number; roles: number }) =>
+		t('platform.orchestration.policy.detail', {
+			users: counts.users,
+			roles: counts.roles,
+		}),
+	publishReady: (count: number) =>
+		t('platform.orchestration.publish.ready', { count }),
+	publishEmpty: t('platform.orchestration.publish.empty'),
+	operateReady: (count: number) =>
+		t('platform.orchestration.operate.ready', { count }),
+	operatePending: (count: number) =>
+		t('platform.orchestration.operate.pending', { count }),
+	operateEmpty: t('platform.orchestration.operate.empty'),
+});

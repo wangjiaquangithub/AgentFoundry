@@ -106,6 +106,7 @@ import {
 	connectorOperationsLabels,
 	dashboardTodoLabels,
 	firstAgentGuideStepLabels,
+	orchestrationWorkbenchStepLabels,
 	operationsHeadlineLabels,
 	launchpadStepLabels,
 	platformConsoleItemLabels,
@@ -2990,34 +2991,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				hasKnowledgeBases: knowledgeBases.length > 0,
 				hasSelectedRunAgent: Boolean(selectedRunAgent),
 			}),
-			labels: {
-				title: (key) => t(`platform.orchestration.${key}.title`),
-				description: (key) => t(`platform.orchestration.${key}.description`),
-				action: (key) => t(`platform.orchestration.${key}.action`),
-				templateEmpty: t('platform.orchestration.template.empty'),
-				modelReady: (count) => t('platform.orchestration.model.ready', { count }),
-				modelEmpty: t('platform.orchestration.model.empty'),
-				selectedKnowledge: (count) =>
-					t('platform.agentManagement.selectedKnowledge', { count }),
-				knowledgeReady: (count) =>
-					t('platform.orchestration.knowledge.ready', { count }),
-				toolsSelected: (count) =>
-					t('platform.agentManagement.wizard.toolsSelected', { count }),
-				toolsReady: (count) => t('platform.orchestration.tools.ready', { count }),
-				policyDetail: (counts) =>
-					t('platform.orchestration.policy.detail', {
-						users: counts.users,
-						roles: counts.roles,
-					}),
-				publishReady: (count) =>
-					t('platform.orchestration.publish.ready', { count }),
-				publishEmpty: t('platform.orchestration.publish.empty'),
-				operateReady: (count) =>
-					t('platform.orchestration.operate.ready', { count }),
-				operatePending: (count) =>
-					t('platform.orchestration.operate.pending', { count }),
-				operateEmpty: t('platform.orchestration.operate.empty'),
-			},
+			labels: orchestrationWorkbenchStepLabels(t),
 		},
 	);
 	const orchestrationReadyCount = readyOrchestrationWorkbenchStepCountForSteps(
