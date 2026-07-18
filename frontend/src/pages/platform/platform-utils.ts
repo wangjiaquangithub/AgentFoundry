@@ -3632,6 +3632,55 @@ export function agentRunnerAccessLabelKey(
 		: 'platform.agentRunner.accessOpen';
 }
 
+export function selectedIdentityStateForStatus(values: {
+	enterpriseIdentities: EnterpriseIdentity[];
+	selectedIdentityUserId: string;
+	selectedRunAgent?: EnterprisePublishedAgent | null;
+	governanceWorkspaces?: Record<string, EnterpriseTenantWorkspace> | null;
+	connectorWorkspaces?: Record<string, EnterpriseTenantWorkspace> | null;
+	username: string;
+	accessLabel: (key: string) => string;
+}) {
+	const selectedIdentity =
+		values.enterpriseIdentities.find(
+			(identity) => identity.user_id === values.selectedIdentityUserId,
+		) ??
+		values.enterpriseIdentities[0] ??
+		null;
+	const selectedRunAgentAccessAllowed = values.selectedRunAgent
+		? agentAccessAllowed(values.selectedRunAgent, selectedIdentity)
+		: true;
+	const selectedRunAgentAccessLabelKey = agentRunnerAccessLabelKey(
+		values.selectedRunAgent,
+		selectedRunAgentAccessAllowed,
+	);
+	const selectedRunAgentAccessLabel = selectedRunAgentAccessLabelKey
+		? values.accessLabel(selectedRunAgentAccessLabelKey)
+		: '';
+	const selectedIdentityAllowedTools =
+		selectedIdentity?.tool_policy.decisions.filter((decision) => decision.allowed) ?? [];
+	const selectedIdentityDeniedTools =
+		selectedIdentity?.tool_policy.decisions.filter((decision) => !decision.allowed) ?? [];
+	const selectedIdentityWorkspace = selectedIdentity
+		? (values.governanceWorkspaces?.[selectedIdentity.tenant] ??
+			values.connectorWorkspaces?.[selectedIdentity.tenant] ??
+			null)
+		: null;
+	const currentIdentityLabel = selectedIdentity
+		? `${selectedIdentity.display_name} / ${selectedIdentity.tenant}`
+		: values.username;
+
+	return {
+		selectedIdentity,
+		selectedRunAgentAccessAllowed,
+		selectedRunAgentAccessLabel,
+		selectedIdentityAllowedTools,
+		selectedIdentityDeniedTools,
+		selectedIdentityWorkspace,
+		currentIdentityLabel,
+	};
+}
+
 export function agentReadinessState(
 	agent?: Pick<EnterprisePublishedAgent, 'readiness'> | null,
 ): HealthState {

@@ -90,7 +90,6 @@ import {
 	agentReleasePipelineForStatus,
 	archivedPlatformAgentsForAgents,
 	agentResourceSummary,
-	agentRunnerAccessLabelKey,
 	agentSetupStepsForStatus,
 	appCenterDetailResourceValuesForSelection,
 	appCenterOperationsStateForStatus,
@@ -130,6 +129,7 @@ import {
 	rolloutPathStepsForStatus,
 	runtimeStatusItemsForStatus,
 	selectedIdentityGovernanceActivityForIdentity,
+	selectedIdentityStateForStatus,
 	selectedToolRunnerStateForStatus,
 	tenantWorkspaceByNameForEntries,
 	tenantWorkspaceEntriesForWorkspaces,
@@ -688,37 +688,22 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			noKnowledge: t('platform.agentManagement.releaseNoKnowledge'),
 		},
 	);
-	const selectedIdentity =
-		enterpriseIdentities.find((identity) => identity.user_id === selectedIdentityUserId) ??
-		enterpriseIdentities[0] ??
-		null;
-	const selectedRunAgentAccessAllowed = selectedRunAgent
-		? agentAccessAllowed(selectedRunAgent, selectedIdentity)
-		: true;
-	const selectedRunAgentAccessLabelKey = agentRunnerAccessLabelKey(
+	const selectedIdentityState = selectedIdentityStateForStatus({
+		enterpriseIdentities,
+		selectedIdentityUserId,
 		selectedRunAgent,
-		selectedRunAgentAccessAllowed,
-	);
-	const selectedRunAgentAccessLabel = selectedRunAgentAccessLabelKey
-		? t(selectedRunAgentAccessLabelKey)
-		: '';
-	const selectedIdentityAllowedTools = useMemo(
-		() => selectedIdentity?.tool_policy.decisions.filter((decision) => decision.allowed) ?? [],
-		[selectedIdentity],
-	);
-	const selectedIdentityDeniedTools = useMemo(
-		() =>
-			selectedIdentity?.tool_policy.decisions.filter((decision) => !decision.allowed) ?? [],
-		[selectedIdentity],
-	);
-	const selectedIdentityWorkspace = selectedIdentity
-		? (governance?.tenant_workspaces[selectedIdentity.tenant] ??
-			connectors?.tenant_workspaces[selectedIdentity.tenant] ??
-			null)
-		: null;
-	const currentIdentityLabel = selectedIdentity
-		? `${selectedIdentity.display_name} / ${selectedIdentity.tenant}`
-		: username;
+		governanceWorkspaces: governance?.tenant_workspaces,
+		connectorWorkspaces: connectors?.tenant_workspaces,
+		username,
+		accessLabel: (key) => t(key),
+	});
+	const selectedIdentity = selectedIdentityState.selectedIdentity;
+	const selectedRunAgentAccessAllowed = selectedIdentityState.selectedRunAgentAccessAllowed;
+	const selectedRunAgentAccessLabel = selectedIdentityState.selectedRunAgentAccessLabel;
+	const selectedIdentityAllowedTools = selectedIdentityState.selectedIdentityAllowedTools;
+	const selectedIdentityDeniedTools = selectedIdentityState.selectedIdentityDeniedTools;
+	const selectedIdentityWorkspace = selectedIdentityState.selectedIdentityWorkspace;
+	const currentIdentityLabel = selectedIdentityState.currentIdentityLabel;
 
 	const stats = platformOverviewStatsForSummary(
 		{
