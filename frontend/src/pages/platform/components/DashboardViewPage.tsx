@@ -826,7 +826,6 @@ export function DashboardViewPage({
 					runningWorkflow={runningWorkflow}
 					onRefresh={() => void refetchScenarios()}
 					onRunScenario={(scenario) => void handleRunScenario(scenario)}
-					formatTimestamp={formatTimestamp}
 					labels={{
 						eyebrow: t('platform.scenarios.eyebrow'),
 						title: t('platform.scenarios.title'),

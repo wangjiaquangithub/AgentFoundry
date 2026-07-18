@@ -4,6 +4,7 @@ import type { EnterprisePlatformScenario } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatTimestamp } from '../platform-utils';
 import { PlatformNotice, StateBadge } from './common';
 
 interface ScenariosPanelProps {
@@ -13,7 +14,6 @@ interface ScenariosPanelProps {
 	runningWorkflow: boolean;
 	onRefresh: () => void;
 	onRunScenario: (scenario: EnterprisePlatformScenario) => void;
-	formatTimestamp: (value?: string) => string;
 	labels: {
 		eyebrow: string;
 		title: string;
@@ -44,7 +44,6 @@ export function ScenariosPanel({
 	runningWorkflow,
 	onRefresh,
 	onRunScenario,
-	formatTimestamp,
 	labels,
 }: ScenariosPanelProps) {
 	const readyCount = scenarios.filter((item) => item.status === 'ready').length;
