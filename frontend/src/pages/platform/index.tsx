@@ -175,6 +175,7 @@ import { runPlatformOperationAction } from './platform-operation-actions';
 import {
 	buildAgentConfigurationPayloadFromForm,
 	createDefaultPublishForm,
+	publishFormForTenantChange,
 } from './platform-publish-form';
 import {
 	agentSampleQuestions,
@@ -205,7 +206,6 @@ import {
 	appCenterDetailHealthState,
 	appCenterAgentDisplayStateForStatus,
 	activePlatformMemberCountForMembers,
-	activePlatformMembersForTenant,
 	agentIsReady,
 	agentReadinessIssues,
 	agentReadinessState,
@@ -1764,20 +1764,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handlePublishTenantChange(value: string) {
-		const nextTenant = value.trim() || platformStatus?.current_user.tenant || 'default';
-		const activeMembersForTenant = activePlatformMembersForTenant(
-			platformMembers?.members ?? [],
-			nextTenant,
+		setPublishForm((current) =>
+			publishFormForTenantChange({
+				current,
+				tenant: value,
+				currentUserTenant: platformStatus?.current_user.tenant,
+				members: platformMembers?.members ?? [],
+			}),
 		);
-		const validUserIds = new Set(activeMembersForTenant.map((member) => member.user_id));
-		const validRoles = new Set(activeMembersForTenant.map((member) => member.role).filter(Boolean));
-
-		setPublishForm((current) => ({
-			...current,
-			tenant: value,
-			allowed_user_ids: current.allowed_user_ids.filter((userId) => validUserIds.has(userId)),
-			allowed_roles: current.allowed_roles.filter((role) => validRoles.has(role)),
-		}));
 	}
 
 	function handleOperationAction(target?: string) {

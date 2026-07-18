@@ -1,8 +1,10 @@
 import type {
 	EnterpriseAgentPublishRequest,
 	EnterpriseAgentTemplate,
+	EnterprisePlatformMember,
 } from '@/api';
 import type { PublishFormState } from './platform-defaults';
+import { activePlatformMembersForTenant } from './platform-utils';
 
 export type DefaultPublishFormOptions = {
 	template: EnterpriseAgentTemplate;
@@ -45,5 +47,28 @@ export function buildAgentConfigurationPayloadFromForm(
 		allowed_roles: form.allowed_roles,
 		memory_enabled: form.memory_enabled,
 		workflow_enabled: form.workflow_enabled,
+	};
+}
+
+export function publishFormForTenantChange(values: {
+	current: PublishFormState;
+	tenant: string;
+	currentUserTenant?: string;
+	members: EnterprisePlatformMember[];
+}): PublishFormState {
+	const nextTenant = values.tenant.trim() || values.currentUserTenant || 'default';
+	const activeMembersForTenant = activePlatformMembersForTenant(values.members, nextTenant);
+	const validUserIds = new Set(activeMembersForTenant.map((member) => member.user_id));
+	const validRoles = new Set(
+		activeMembersForTenant.map((member) => member.role).filter(Boolean),
+	);
+
+	return {
+		...values.current,
+		tenant: values.tenant,
+		allowed_user_ids: values.current.allowed_user_ids.filter((userId) =>
+			validUserIds.has(userId),
+		),
+		allowed_roles: values.current.allowed_roles.filter((role) => validRoles.has(role)),
 	};
 }
