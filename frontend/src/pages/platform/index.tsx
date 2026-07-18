@@ -176,7 +176,9 @@ import {
 	buildAgentConfigurationPayloadFromForm,
 	createDefaultPublishForm,
 	publishFormFromPublishedAgent,
+	publishFormForListToggle,
 	publishFormForTenantChange,
+	type PublishListFormKey,
 } from './platform-publish-form';
 import {
 	agentSampleQuestions,
@@ -2131,21 +2133,18 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleTogglePublishList(
-		key: 'knowledge_base_ids' | 'tools' | 'allowed_user_ids' | 'allowed_roles',
+		key: PublishListFormKey,
 		value: string,
 		checked: boolean,
 	) {
-		setPublishForm((current) => {
-			const currentValues = current[key];
-			const nextValues = checked
-				? Array.from(new Set([...currentValues, value]))
-				: currentValues.filter((item) => item !== value);
-
-			return {
-				...current,
-				[key]: nextValues,
-			};
-		});
+		setPublishForm((current) =>
+			publishFormForListToggle({
+				current,
+				key,
+				value,
+				checked,
+			}),
+		);
 	}
 
 	async function handlePublishAgent() {

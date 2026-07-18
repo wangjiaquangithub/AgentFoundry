@@ -7,6 +7,12 @@ import type {
 import type { PublishFormState } from './platform-defaults';
 import { activePlatformMembersForTenant } from './platform-utils';
 
+export type PublishListFormKey =
+	| 'knowledge_base_ids'
+	| 'tools'
+	| 'allowed_user_ids'
+	| 'allowed_roles';
+
 export type DefaultPublishFormOptions = {
 	template: EnterpriseAgentTemplate;
 	tenant: string;
@@ -88,5 +94,22 @@ export function publishFormFromPublishedAgent(
 		allowed_roles: agent.allowed_roles ?? [],
 		memory_enabled: agent.memory_enabled,
 		workflow_enabled: agent.workflow_enabled,
+	};
+}
+
+export function publishFormForListToggle(values: {
+	current: PublishFormState;
+	key: PublishListFormKey;
+	value: string;
+	checked: boolean;
+}): PublishFormState {
+	const currentValues = values.current[values.key];
+	const nextValues = values.checked
+		? Array.from(new Set([...currentValues, values.value]))
+		: currentValues.filter((item) => item !== values.value);
+
+	return {
+		...values.current,
+		[values.key]: nextValues,
 	};
 }
