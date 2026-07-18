@@ -76,6 +76,12 @@ export const memberRequestLabels = (t: PlatformTranslate) => ({
 	saveError: t('platform.members.saveError'),
 });
 
+export const tenantGovernanceRequestLabels = (t: PlatformTranslate) => ({
+	noIdentity: t('platform.tenantGovernance.noIdentity'),
+	policySaved: t('platform.tenantGovernance.policySaved'),
+	policySaveError: t('platform.tenantGovernance.policySaveError'),
+});
+
 export const dashboardTodoLabels = (t: PlatformTranslate) => ({
 	model: t('platform.dashboard.todoModel'),
 	agent: t('platform.dashboard.todoAgent'),

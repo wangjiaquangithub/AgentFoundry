@@ -127,6 +127,7 @@ import {
 	runtimeStatusLabels,
 	selectedIdentityLabels,
 	selectedToolRunnerLabels,
+	tenantGovernanceRequestLabels,
 	tenantWorkspaceOperationsLabels,
 	triggerOperationsStatLabels,
 	triggerOperationsSummaryLabels,
@@ -413,6 +414,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const configManagementRequestText = configManagementRequestLabels(t);
 	const connectorRequestText = connectorRequestLabels(t);
 	const memberRequestText = memberRequestLabels(t);
+	const tenantGovernanceRequestText = tenantGovernanceRequestLabels(t);
 	const hasErrors = Boolean(
 		agentsError ||
 		credentialsError ||
@@ -1325,7 +1327,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	async function handleSaveToolPolicy() {
 		if (!selectedIdentity) {
-			setToolPolicySaveError(t('platform.tenantGovernance.noIdentity'));
+			setToolPolicySaveError(tenantGovernanceRequestText.noIdentity);
 			setToolPolicySaveSuccess(null);
 			return;
 		}
@@ -1348,14 +1350,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				deny,
 			});
 
-			setToolPolicySaveSuccess(t('platform.tenantGovernance.policySaved'));
+			setToolPolicySaveSuccess(tenantGovernanceRequestText.policySaved);
 			await Promise.all([refetchPlatform(), refetchGovernance(), refetchToolCatalog()]);
 			await refetchOpsTasks();
 		} catch (error) {
 			setToolPolicySaveError(
 				error instanceof Error
 					? error.message
-					: t('platform.tenantGovernance.policySaveError'),
+					: tenantGovernanceRequestText.policySaveError,
 			);
 		} finally {
 			setSavingToolPolicy(false);
