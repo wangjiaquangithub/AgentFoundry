@@ -182,6 +182,10 @@ export const workflowSelectionLabels = (t: PlatformTranslate) => ({
 	fallbackLabel: (labelKey: string) => t(`platform.workflowRunner.${labelKey}`),
 });
 
+export const tenantWorkspaceOperationsLabels = (t: PlatformTranslate) => ({
+	localSource: t('platform.tenantWorkspace.localSource'),
+});
+
 export const triggerOperationsStatLabels = (t: PlatformTranslate) => ({
 	schedules: t('platform.triggerOps.schedules'),
 	enabled: t('platform.triggerOps.enabled'),

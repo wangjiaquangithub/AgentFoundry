@@ -120,6 +120,7 @@ import {
 	runtimeStatusLabels,
 	selectedIdentityLabels,
 	selectedToolRunnerLabels,
+	tenantWorkspaceOperationsLabels,
 	triggerOperationsStatLabels,
 	triggerOperationsSummaryLabels,
 	workbenchIndicatorLabels,
@@ -670,9 +671,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			workflowRuns,
 			members: platformMembers?.members ?? [],
 		},
-		{
-			localSource: t('platform.tenantWorkspace.localSource'),
-		},
+		tenantWorkspaceOperationsLabels(t),
 	);
 	const tenantWorkspaces = tenantWorkspaceOperationsState.tenantWorkspaces;
 	const tenantOverviewItems = tenantWorkspaceOperationsState.tenantOverviewItems;
