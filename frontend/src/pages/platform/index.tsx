@@ -9,7 +9,6 @@ import {
 	CheckCircle2,
 	Clock3,
 	Code2,
-	Copy,
 	Database,
 	FileClock,
 	HardDrive,
@@ -155,6 +154,7 @@ import {
 	TenantGovernancePanel,
 	type ToolPolicyDraftValue,
 } from './components/TenantGovernancePanel';
+import { SettingsViewPage } from './components/SettingsViewPage';
 import { TenantsViewPage } from './components/TenantsViewPage';
 import { ToolCatalogPanel } from './components/ToolCatalogPanel';
 import { ToolRunnerPanel } from './components/ToolRunnerPanel';
@@ -4962,266 +4962,29 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	if (view === 'settings') {
 		return (
-			<main className="h-full overflow-y-auto bg-background">
-				<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 lg:px-8">
-					<section className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
-						<div className="min-w-0">
-							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-								<Server className="size-4" />
-								<span>{t('platform.configManagement.title')}</span>
-							</div>
-							<h1 className="text-2xl font-semibold tracking-normal">
-								平台设置
-							</h1>
-							<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-								查看运行时连接状态，导出或导入平台配置，后续模型、租户策略和运行参数都收敛到这里。
-							</p>
-						</div>
-						<div className="flex flex-wrap gap-2 lg:justify-end">
-							<Button
-								size="sm"
-								variant="outline"
-								onClick={() => void refetchPlatform()}
-								disabled={platformLoading}
-							>
-								<RefreshCcw className={cn(platformLoading && 'animate-spin')} />
-								{t('platform.actions.refreshStatus')}
-							</Button>
-							<Button
-								size="sm"
-								variant="outline"
-								onClick={refetchPlatformConfigExport}
-								disabled={platformConfigLoading}
-							>
-								<Upload />
-								{t('platform.configManagement.refresh')}
-							</Button>
-						</div>
-					</section>
-
-					{platformError ? (
-						<PlatformNotice>{t('platform.runtime.error')}</PlatformNotice>
-					) : null}
-					{platformConfigError ? (
-						<PlatformNotice className="border-destructive/30 bg-destructive/10 text-destructive">
-							{platformConfigError}
-						</PlatformNotice>
-					) : null}
-					{platformConfigImportResult ? (
-						<div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-800">
-							{platformConfigImportResult}
-						</div>
-					) : null}
-
-					<section className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-						<Card className="rounded-lg shadow-none">
-							<CardHeader>
-								<CardTitle className="text-base">
-									{t('platform.connection.title')}
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="grid gap-3">
-								<div className="grid gap-2 rounded-lg border bg-muted/10 p-3 text-xs">
-									<div className="flex items-center justify-between gap-3">
-										<span className="text-muted-foreground">
-											{t('platform.connection.server')}
-										</span>
-										<span className="truncate font-mono" title={serverUrl}>
-											{serverUrl}
-										</span>
-									</div>
-									<div className="flex items-center justify-between gap-3">
-										<span className="text-muted-foreground">
-											{t('platform.connection.user')}
-										</span>
-										<span className="truncate font-mono" title={username}>
-											{username}
-										</span>
-									</div>
-									<div className="flex items-center justify-between gap-3">
-										<span className="text-muted-foreground">
-											{t('platform.connection.health')}
-										</span>
-										<StateBadge
-											state={hasErrors ? 'partial' : 'ready'}
-											label={
-												hasErrors
-													? t('platform.status.toConfigure')
-													: t('platform.status.ready')
-											}
-										/>
-									</div>
-								</div>
-								<div className="grid gap-2">
-									{runtimeItems.map((item) => {
-										const Icon = item.icon;
-										return (
-											<div
-												key={item.label}
-												className="grid grid-cols-[auto_7rem_1fr] items-center gap-3 rounded-lg border bg-muted/10 p-3 text-sm"
-											>
-												<Icon className="size-4 text-muted-foreground" />
-												<span className="text-xs text-muted-foreground">
-													{item.label}
-												</span>
-												<span className="min-w-0 truncate font-mono text-xs">
-													{item.value}
-												</span>
-											</div>
-										);
-									})}
-								</div>
-							</CardContent>
-						</Card>
-
-						<Card className="rounded-lg shadow-none">
-							<CardHeader className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-								<div>
-									<CardTitle className="text-base">
-										{t('platform.configManagement.title')}
-									</CardTitle>
-									<p className="mt-1 text-sm text-muted-foreground">
-										{t('platform.configManagement.description')}
-									</p>
-								</div>
-								<div className="flex flex-wrap gap-2">
-									<Button
-										size="sm"
-										variant="outline"
-										onClick={handleCopyPlatformConfig}
-										disabled={!platformConfigExport}
-									>
-										<Copy />
-										{t('platform.configManagement.copyExport')}
-									</Button>
-								</div>
-							</CardHeader>
-							<CardContent className="grid gap-4">
-								<PlatformNotice>
-									{t('platform.configManagement.redactedNotice')}
-								</PlatformNotice>
-								<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-									{platformConfigLoading
-										? Array.from({ length: 6 }).map((_, index) => (
-												<Skeleton key={index} className="h-20 rounded-lg" />
-											))
-										: platformConfigExport
-											? [
-													{
-														label: t('platform.configManagement.members'),
-														value: platformConfigExport.counts.members,
-													},
-													{
-														label: t('platform.configManagement.connectors'),
-														value:
-															platformConfigExport.counts.connector_configs,
-													},
-													{
-														label: t('platform.configManagement.agents'),
-														value: platformConfigExport.counts.agents,
-													},
-													{
-														label: t('platform.configManagement.workflows'),
-														value:
-															platformConfigExport.counts.workflow_templates,
-													},
-													{
-														label: t(
-															'platform.configManagement.toolPolicyTenants',
-														),
-														value:
-															platformConfigExport.counts
-																.tool_policy_tenants,
-													},
-													{
-														label: t(
-															'platform.configManagement.toolPolicyUsers',
-														),
-														value:
-															platformConfigExport.counts
-																.tool_policy_users,
-													},
-												].map((item) => (
-													<div
-														key={item.label}
-														className="rounded-lg border bg-muted/10 p-3"
-													>
-														<div className="truncate text-xs text-muted-foreground">
-															{item.label}
-														</div>
-														<div className="mt-1 text-xl font-semibold tabular-nums">
-															{item.value}
-														</div>
-													</div>
-												))
-											: (
-													<div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground sm:col-span-2 xl:col-span-3">
-														{t('platform.configManagement.empty')}
-													</div>
-												)}
-								</div>
-								<div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-									{platformConfigExport ? (
-										<>
-											<span>
-												{t('platform.configManagement.schemaVersion')}:{' '}
-												{platformConfigExport.schema_version}
-											</span>
-											<span>
-												{t('platform.configManagement.lastExported')}:{' '}
-												{formatTimestamp(platformConfigExport.exported_at)}
-											</span>
-										</>
-									) : null}
-								</div>
-								<div className="flex flex-wrap items-center gap-2">
-									<Select
-										value={platformConfigImportMode}
-										onValueChange={(value) =>
-											setPlatformConfigImportMode(value as 'merge' | 'replace')
-										}
-									>
-										<SelectTrigger className="w-[8rem]">
-											<SelectValue
-												placeholder={t(
-													'platform.configManagement.importMode',
-												)}
-											/>
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="merge">
-												{t('platform.configManagement.merge')}
-											</SelectItem>
-											<SelectItem value="replace">
-												{t('platform.configManagement.replace')}
-											</SelectItem>
-										</SelectContent>
-									</Select>
-									<Button
-										size="sm"
-										onClick={handleImportPlatformConfig}
-										disabled={
-											importingPlatformConfig ||
-											!platformConfigImportText.trim()
-										}
-									>
-										<Upload />
-										{t('platform.configManagement.import')}
-									</Button>
-								</div>
-								<Textarea
-									className="min-h-[18rem] font-mono text-xs"
-									value={platformConfigImportText}
-									onChange={(event) =>
-										setPlatformConfigImportText(event.target.value)
-									}
-									placeholder={t('platform.configManagement.empty')}
-								/>
-							</CardContent>
-						</Card>
-					</section>
-				</div>
-			</main>
+			<SettingsViewPage
+				platformLoading={platformLoading}
+				platformError={platformError}
+				platformConfigExport={platformConfigExport}
+				platformConfigLoading={platformConfigLoading}
+				platformConfigError={platformConfigError}
+				platformConfigImportResult={platformConfigImportResult}
+				platformConfigImportMode={platformConfigImportMode}
+				platformConfigImportText={platformConfigImportText}
+				importingPlatformConfig={importingPlatformConfig}
+				serverUrl={serverUrl}
+				username={username}
+				hasErrors={hasErrors}
+				runtimeItems={runtimeItems}
+				onRefreshPlatform={() => void refetchPlatform()}
+				onRefetchPlatformConfigExport={refetchPlatformConfigExport}
+				onCopyPlatformConfig={handleCopyPlatformConfig}
+				onImportPlatformConfig={handleImportPlatformConfig}
+				onPlatformConfigImportModeChange={setPlatformConfigImportMode}
+				onPlatformConfigImportTextChange={setPlatformConfigImportText}
+				formatTimestamp={formatTimestamp}
+				t={t}
+			/>
 		);
 	}
 
