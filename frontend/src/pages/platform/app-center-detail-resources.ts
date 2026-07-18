@@ -96,3 +96,42 @@ export function templateAppCenterDetailResources(
 		},
 	];
 }
+
+export function appCenterDetailResourcesForSelection(
+	values: {
+		agent: {
+			model: string;
+			knowledge: string[];
+			tools: string[];
+			runtime: string;
+			access: string;
+		} | null;
+		template: {
+			modelCount: number;
+			knowledgeBaseCount: number;
+			tools: string[];
+		} | null;
+	},
+	labels: {
+		model: string;
+		knowledgeBases: string;
+		tools: string;
+		runtime: string;
+		access: string;
+		none: string;
+		availableModels: (count: number) => string;
+		noModel: string;
+		availableKnowledgeBases: (count: number) => string;
+		templateRuntime: string;
+	},
+): AppCenterResource[] {
+	if (values.agent) {
+		return agentAppCenterDetailResources(values.agent, labels);
+	}
+
+	if (values.template) {
+		return templateAppCenterDetailResources(values.template, labels);
+	}
+
+	return [];
+}

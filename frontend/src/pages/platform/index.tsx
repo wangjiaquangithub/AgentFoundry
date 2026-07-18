@@ -63,10 +63,7 @@ import { useKnowledgeBases } from '@/hooks/useKnowledgeBases';
 import { usePlatformStatus } from '@/hooks/usePlatformStatus';
 import { useSchedules } from '@/hooks/useSchedules';
 import { useTranslation } from '@/i18n/useI18n';
-import {
-	agentAppCenterDetailResources,
-	templateAppCenterDetailResources,
-} from './app-center-detail-resources';
+import { appCenterDetailResourcesForSelection } from './app-center-detail-resources';
 import { AgentsViewPage } from './components/AgentsViewPage';
 import type { ApprovalFormState } from './components/ApprovalsPanel';
 import { ApprovalsViewPage } from './components/ApprovalsViewPage';
@@ -1378,46 +1375,39 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				},
 			})
 		: null;
-	const appCenterDetailResources = inspectedAppCenterAgent
-		? agentAppCenterDetailResources(
-				{
-					model: inspectedAppCenterAgentModel,
-					knowledge: inspectedAppCenterAgentKnowledge,
-					tools: inspectedAppCenterAgentTools,
-					runtime: inspectedAppCenterAgentDetailLabels?.runtime ?? '',
-					access: inspectedAppCenterAgentDetailLabels?.access ?? '',
-				},
-				{
-					model: t('platform.appCenter.model'),
-					knowledgeBases: t('platform.appCenter.knowledgeBases'),
-					tools: t('platform.appCenter.tools'),
-					runtime: t('platform.appCenter.runtime'),
-					access: t('platform.appCenter.access'),
-					none: t('platform.appCenter.none'),
-				},
-			)
-		: inspectedAppCenterTemplate
-			? templateAppCenterDetailResources(
-					{
+	const appCenterDetailResources = appCenterDetailResourcesForSelection(
+		{
+			agent: inspectedAppCenterAgent
+				? {
+						model: inspectedAppCenterAgentModel,
+						knowledge: inspectedAppCenterAgentKnowledge,
+						tools: inspectedAppCenterAgentTools,
+						runtime: inspectedAppCenterAgentDetailLabels?.runtime ?? '',
+						access: inspectedAppCenterAgentDetailLabels?.access ?? '',
+					}
+				: null,
+			template: inspectedAppCenterTemplate
+				? {
 						modelCount: credentials.length,
 						knowledgeBaseCount: knowledgeBases.length,
 						tools: inspectedAppCenterTemplateTools,
-					},
-					{
-						model: t('platform.appCenter.model'),
-						availableModels: (count) =>
-							t('platform.appCenter.availableModels', { count }),
-						noModel: t('platform.appCenter.noModel'),
-						knowledgeBases: t('platform.appCenter.knowledgeBases'),
-						availableKnowledgeBases: (count) =>
-							t('platform.appCenter.availableKnowledgeBases', { count }),
-						tools: t('platform.appCenter.tools'),
-						runtime: t('platform.appCenter.runtime'),
-						templateRuntime: t('platform.appCenter.templateRuntime'),
-						none: t('platform.appCenter.none'),
-					},
-				)
-			: [];
+					}
+				: null,
+		},
+		{
+			model: t('platform.appCenter.model'),
+			knowledgeBases: t('platform.appCenter.knowledgeBases'),
+			tools: t('platform.appCenter.tools'),
+			runtime: t('platform.appCenter.runtime'),
+			access: t('platform.appCenter.access'),
+			none: t('platform.appCenter.none'),
+			availableModels: (count) => t('platform.appCenter.availableModels', { count }),
+			noModel: t('platform.appCenter.noModel'),
+			availableKnowledgeBases: (count) =>
+				t('platform.appCenter.availableKnowledgeBases', { count }),
+			templateRuntime: t('platform.appCenter.templateRuntime'),
+		},
+	);
 	const appCenterDetailHealth = appCenterDetailHealthState({
 		hasAgent: Boolean(inspectedAppCenterAgent),
 		agentReadiness: inspectedAppCenterAgentReadiness,
