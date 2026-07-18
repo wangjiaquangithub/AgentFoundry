@@ -102,6 +102,7 @@ import {
 	auditStatsForSummary,
 	capabilityItemsForStatus,
 	connectorDraftIssuesForDraft,
+	dashboardFallbackStateForStatus,
 	dashboardOperationsSummaryForOperations,
 	dashboardRiskToolItemsForStatus,
 	dashboardTodoItemsForStatus,
@@ -979,28 +980,21 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	);
 	const dashboard = platformStatus?.dashboard;
 	const dashboardOperations = dashboard?.operations;
-	const pendingApprovals =
-		governance?.pending_approvals ??
-		dashboard?.pending_approvals.items ??
-		approvalRequests.filter((approval) => approval.status === 'pending');
-	const approvedApprovalCount =
-		dashboard?.approved_approval_count ??
-		approvalRequests.filter((approval) => approval.status === 'approved').length;
-	const approvalSummary = useMemo(
-		() => ({
-			total: approvalRequests.length,
-			pending: approvalRequests.filter((approval) => approval.status === 'pending').length,
-			approved: approvalRequests.filter((approval) => approval.status === 'approved').length,
-			rejected: approvalRequests.filter((approval) => approval.status === 'rejected').length,
-		}),
-		[approvalRequests],
-	);
-	const recentWorkflowRuns =
-		dashboard?.recent_workflow_runs ?? workflowRuns.slice(0, 3);
-	const workflowRunCount = dashboard?.workflow_run_count ?? workflowRuns.length;
-	const recentAuditEvents =
-		dashboard?.recent_audit_events ?? auditEvents.slice(0, 4);
-	const auditEventCount = dashboard?.audit_event_count ?? auditEvents.length;
+	const {
+		pendingApprovals,
+		approvedApprovalCount,
+		approvalSummary,
+		recentWorkflowRuns,
+		workflowRunCount,
+		recentAuditEvents,
+		auditEventCount,
+	} = dashboardFallbackStateForStatus({
+		dashboard,
+		governance,
+		approvalRequests,
+		workflowRuns,
+		auditEvents,
+	});
 	const tenantOverviewItems = useMemo(() => {
 		return tenantOverviewItemsForWorkspace(
 			{

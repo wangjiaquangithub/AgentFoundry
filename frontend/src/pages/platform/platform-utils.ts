@@ -9,6 +9,7 @@ import type {
 	EnterprisePlatformMember,
 	EnterprisePlatformOperations,
 	EnterprisePlatformDashboardRiskTool,
+	EnterprisePlatformDashboard,
 	EnterprisePlatformGovernanceResponse,
 	EnterprisePlatformStatusResponse,
 	EnterprisePublishedAgent,
@@ -2501,6 +2502,43 @@ export function agentReleasePipelineForStatus<TIcon>(
 		labels,
 		icons,
 	);
+}
+
+export function dashboardFallbackStateForStatus(values: {
+	dashboard?: EnterprisePlatformDashboard | null;
+	governance?: Pick<EnterprisePlatformGovernanceResponse, 'pending_approvals'> | null;
+	approvalRequests: EnterpriseApprovalRequestItem[];
+	workflowRuns: EnterpriseWorkflowRunHistoryItem[];
+	auditEvents: EnterpriseAuditEvent[];
+}) {
+	const pendingApprovals =
+		values.governance?.pending_approvals ??
+		values.dashboard?.pending_approvals.items ??
+		values.approvalRequests.filter((approval) => approval.status === 'pending');
+	const approvedApprovalCount =
+		values.dashboard?.approved_approval_count ??
+		values.approvalRequests.filter((approval) => approval.status === 'approved').length;
+	const approvalSummary = {
+		total: values.approvalRequests.length,
+		pending: values.approvalRequests.filter((approval) => approval.status === 'pending').length,
+		approved: values.approvalRequests.filter((approval) => approval.status === 'approved').length,
+		rejected: values.approvalRequests.filter((approval) => approval.status === 'rejected').length,
+	};
+	const recentWorkflowRuns =
+		values.dashboard?.recent_workflow_runs ?? values.workflowRuns.slice(0, 3);
+	const workflowRunCount = values.dashboard?.workflow_run_count ?? values.workflowRuns.length;
+	const recentAuditEvents = values.dashboard?.recent_audit_events ?? values.auditEvents.slice(0, 4);
+	const auditEventCount = values.dashboard?.audit_event_count ?? values.auditEvents.length;
+
+	return {
+		pendingApprovals,
+		approvedApprovalCount,
+		approvalSummary,
+		recentWorkflowRuns,
+		workflowRunCount,
+		recentAuditEvents,
+		auditEventCount,
+	};
 }
 
 export function identityAccessRowsForGovernance(
