@@ -20,6 +20,8 @@ import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import {
 	formatTimestamp,
+	workflowInputLabel,
+	workflowInputLabelKeys,
 	workflowStatusClassName,
 	workflowStatusLabelKey,
 } from '../platform-utils';
@@ -38,7 +40,6 @@ interface WorkflowRunnerPanelProps {
 	workflowOptions: WorkflowOption[];
 	selectedWorkflowTemplate: EnterpriseWorkflowTemplate | null;
 	workflowInputs: Record<string, string>;
-	workflowInputLabelKeys: Record<string, string>;
 	workflowApprovalId: string;
 	workflowRunError: string | null;
 	workflowRunResult: EnterpriseWorkflowRunResponse | null;
@@ -62,7 +63,6 @@ interface WorkflowRunnerPanelProps {
 		template: EnterpriseWorkflowTemplate,
 		checked: boolean,
 	) => void;
-	workflowInputLabel: (key: string) => string;
 	summarizeAuditObject: (value?: Record<string, unknown>) => string;
 	t: Translate;
 }
@@ -72,7 +72,6 @@ export function WorkflowRunnerPanel({
 	workflowOptions,
 	selectedWorkflowTemplate,
 	workflowInputs,
-	workflowInputLabelKeys,
 	workflowApprovalId,
 	workflowRunError,
 	workflowRunResult,
@@ -93,7 +92,6 @@ export function WorkflowRunnerPanel({
 	onRequestApproval,
 	onRunWorkflow,
 	onToggleWorkflowTemplate,
-	workflowInputLabel,
 	summarizeAuditObject,
 	t,
 }: WorkflowRunnerPanelProps) {

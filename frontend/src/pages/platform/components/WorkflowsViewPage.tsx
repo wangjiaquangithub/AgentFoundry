@@ -28,7 +28,6 @@ interface WorkflowsViewPageProps {
 	workflowOptions: WorkflowOption[];
 	selectedWorkflowTemplate: EnterpriseWorkflowTemplate | null;
 	workflowInputs: Record<string, string>;
-	workflowInputLabelKeys: Record<string, string>;
 	workflowApprovalId: string;
 	workflowRunError: string | null;
 	workflowRunResult: EnterpriseWorkflowRunResponse | null;
@@ -52,7 +51,6 @@ interface WorkflowsViewPageProps {
 		template: EnterpriseWorkflowTemplate,
 		checked: boolean,
 	) => void;
-	workflowInputLabel: (key: string) => string;
 	summarizeAuditObject: (value?: Record<string, unknown>) => string;
 	t: Translate;
 }
@@ -66,7 +64,6 @@ export function WorkflowsViewPage({
 	workflowOptions,
 	selectedWorkflowTemplate,
 	workflowInputs,
-	workflowInputLabelKeys,
 	workflowApprovalId,
 	workflowRunError,
 	workflowRunResult,
@@ -87,7 +84,6 @@ export function WorkflowsViewPage({
 	onRequestApproval,
 	onRunWorkflow,
 	onToggleWorkflowTemplate,
-	workflowInputLabel,
 	summarizeAuditObject,
 	t,
 }: WorkflowsViewPageProps) {
@@ -146,7 +142,6 @@ export function WorkflowsViewPage({
 						workflowOptions={workflowOptions}
 						selectedWorkflowTemplate={selectedWorkflowTemplate}
 						workflowInputs={workflowInputs}
-						workflowInputLabelKeys={workflowInputLabelKeys}
 						workflowApprovalId={workflowApprovalId}
 						workflowRunError={workflowRunError}
 						workflowRunResult={workflowRunResult}
@@ -167,7 +162,6 @@ export function WorkflowsViewPage({
 						onRequestApproval={onRequestApproval}
 						onRunWorkflow={onRunWorkflow}
 						onToggleWorkflowTemplate={onToggleWorkflowTemplate}
-						workflowInputLabel={workflowInputLabel}
 						summarizeAuditObject={summarizeAuditObject}
 						t={t}
 					/>

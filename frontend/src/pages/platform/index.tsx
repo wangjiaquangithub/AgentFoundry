@@ -109,8 +109,6 @@ import {
 	defaultEnterpriseWorkflowInputs,
 	normalizeWorkflowInputs,
 	shortResourceId,
-	workflowInputLabel,
-	workflowInputLabelKeys,
 } from './platform-utils';
 
 export type PlatformView =
@@ -4938,7 +4936,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				workflowOptions={workflowOptions}
 				selectedWorkflowTemplate={selectedWorkflowTemplate}
 				workflowInputs={workflowInputs}
-				workflowInputLabelKeys={workflowInputLabelKeys}
 				workflowApprovalId={workflowApprovalId}
 				workflowRunError={workflowRunError}
 				workflowRunResult={workflowRunResult}
@@ -4973,7 +4970,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				onToggleWorkflowTemplate={(template, checked) =>
 					void handleToggleWorkflowTemplate(template, checked)
 				}
-				workflowInputLabel={workflowInputLabel}
 				summarizeAuditObject={summarizeAuditObject}
 				t={t}
 			/>
@@ -5415,8 +5411,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			workbenchReadinessItems={workbenchReadinessItems}
 			workbenchRiskItems={workbenchRiskItems}
 			workflowApprovalId={workflowApprovalId}
-			workflowInputLabel={workflowInputLabel}
-			workflowInputLabelKeys={workflowInputLabelKeys}
 			workflowInputs={workflowInputs}
 			workflowOpsStats={workflowOpsStats}
 			workflowOptions={workflowOptions}

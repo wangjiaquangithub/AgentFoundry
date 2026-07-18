@@ -436,8 +436,6 @@ export function DashboardViewPage({
 	workbenchReadinessItems,
 	workbenchRiskItems,
 	workflowApprovalId,
-	workflowInputLabel,
-	workflowInputLabelKeys,
 	workflowInputs,
 	workflowOpsStats,
 	workflowOptions,
@@ -2459,7 +2457,6 @@ export function DashboardViewPage({
 						workflowOptions={workflowOptions}
 						selectedWorkflowTemplate={selectedWorkflowTemplate}
 						workflowInputs={workflowInputs}
-						workflowInputLabelKeys={workflowInputLabelKeys}
 						workflowApprovalId={workflowApprovalId}
 						workflowRunError={workflowRunError}
 						workflowRunResult={workflowRunResult}
@@ -2496,7 +2493,6 @@ export function DashboardViewPage({
 						onToggleWorkflowTemplate={(template, checked) =>
 							void handleToggleWorkflowTemplate(template, checked)
 						}
-						workflowInputLabel={workflowInputLabel}
 						summarizeAuditObject={summarizeAuditObject}
 						t={t}
 					/>
