@@ -111,7 +111,6 @@ import {
 	launchpadStepsForStatus,
 	launchpadTargetActionsForNavigation,
 	memoryOperationsStateForConversations,
-	modelCredentialLabel,
 	nextAgentSetupStepForSteps,
 	normalizeWorkflowInputs,
 	monitoringActivitySummaryForStatus,
@@ -119,7 +118,7 @@ import {
 	operationsHeadlineText,
 	orchestrationPrimaryStepForSteps,
 	orchestrationWorkbenchStepsForStatus,
-	publishReleaseIssuesForDraft,
+	publishDraftStateForStatus,
 	platformMembersByUserId,
 	platformOverviewStatsForSummary,
 	platformConsoleItemsForDisplay,
@@ -659,38 +658,36 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			}),
 		[activePlatformMembers, platformMembers?.roles, publishForm.allowed_roles],
 	);
-	const publishSelectedModelLabel = modelCredentialLabel(
-		publishForm.model_config_id,
-		credentialById,
-		t('platform.agentManagement.noneConfigured'),
-		{ shortenFallback: true },
-	);
-	const publishAccessScopeSummary =
-		publishForm.allowed_user_ids.length === 0 && publishForm.allowed_roles.length === 0
-			? t('platform.agentManagement.accessOpen')
-			: t('platform.agentManagement.releaseAccessRestricted', {
-					users: publishForm.allowed_user_ids.length,
-					roles: publishForm.allowed_roles.length,
-				});
-	const publishRuntimeSummary = t('platform.agentManagement.releaseRuntimeSummary', {
-		memory: publishForm.memory_enabled
-			? t('platform.agentManagement.enabled')
-			: t('platform.agentManagement.disabled'),
-		workflow: publishForm.workflow_enabled
-			? t('platform.agentManagement.enabled')
-			: t('platform.agentManagement.disabled'),
-	});
-	const publishReleaseIssues = publishReleaseIssuesForDraft(
+	const {
+		publishSelectedModelLabel,
+		publishAccessScopeSummary,
+		publishRuntimeSummary,
+		publishReleaseIssues,
+		publishBlocked,
+	} = publishDraftStateForStatus(
 		{
 			modelConfigId: publishForm.model_config_id,
 			knowledgeBaseCount: publishForm.knowledge_base_ids.length,
+			allowedUserCount: publishForm.allowed_user_ids.length,
+			allowedRoleCount: publishForm.allowed_roles.length,
+			memoryEnabled: publishForm.memory_enabled,
+			workflowEnabled: publishForm.workflow_enabled,
+			hasSelectedTemplate: Boolean(selectedTemplate),
+			credentialById,
 		},
 		{
+			noneConfigured: t('platform.agentManagement.noneConfigured'),
+			accessOpen: t('platform.agentManagement.accessOpen'),
+			accessRestricted: (values) =>
+				t('platform.agentManagement.releaseAccessRestricted', values),
+			runtimeSummary: (values) =>
+				t('platform.agentManagement.releaseRuntimeSummary', values),
+			enabled: t('platform.agentManagement.enabled'),
+			disabled: t('platform.agentManagement.disabled'),
 			missingModel: t('platform.agentManagement.releaseMissingModel'),
 			noKnowledge: t('platform.agentManagement.releaseNoKnowledge'),
 		},
 	);
-	const publishBlocked = !selectedTemplate || !publishForm.model_config_id;
 	const selectedIdentity =
 		enterpriseIdentities.find((identity) => identity.user_id === selectedIdentityUserId) ??
 		enterpriseIdentities[0] ??

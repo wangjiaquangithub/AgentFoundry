@@ -559,6 +559,66 @@ export function publishReleaseIssuesForDraft(
 	].filter(Boolean) as string[];
 }
 
+export function publishDraftStateForStatus(
+	values: {
+		modelConfigId?: string | null;
+		knowledgeBaseCount: number;
+		allowedUserCount: number;
+		allowedRoleCount: number;
+		memoryEnabled: boolean;
+		workflowEnabled: boolean;
+		hasSelectedTemplate: boolean;
+		credentialById: Map<string, { id?: unknown; data?: { name?: unknown } }>;
+	},
+	labels: {
+		noneConfigured: string;
+		accessOpen: string;
+		accessRestricted: (values: { users: number; roles: number }) => string;
+		runtimeSummary: (values: { memory: string; workflow: string }) => string;
+		enabled: string;
+		disabled: string;
+		missingModel: string;
+		noKnowledge: string;
+	},
+) {
+	const publishSelectedModelLabel = modelCredentialLabel(
+		values.modelConfigId,
+		values.credentialById,
+		labels.noneConfigured,
+		{ shortenFallback: true },
+	);
+	const publishAccessScopeSummary =
+		values.allowedUserCount === 0 && values.allowedRoleCount === 0
+			? labels.accessOpen
+			: labels.accessRestricted({
+					users: values.allowedUserCount,
+					roles: values.allowedRoleCount,
+				});
+	const publishRuntimeSummary = labels.runtimeSummary({
+		memory: values.memoryEnabled ? labels.enabled : labels.disabled,
+		workflow: values.workflowEnabled ? labels.enabled : labels.disabled,
+	});
+	const publishReleaseIssues = publishReleaseIssuesForDraft(
+		{
+			modelConfigId: values.modelConfigId,
+			knowledgeBaseCount: values.knowledgeBaseCount,
+		},
+		{
+			missingModel: labels.missingModel,
+			noKnowledge: labels.noKnowledge,
+		},
+	);
+	const publishBlocked = !values.hasSelectedTemplate || !values.modelConfigId;
+
+	return {
+		publishSelectedModelLabel,
+		publishAccessScopeSummary,
+		publishRuntimeSummary,
+		publishReleaseIssues,
+		publishBlocked,
+	};
+}
+
 export function connectorDraftIssuesForDraft(
 	values: {
 		baseUrl: string;
