@@ -70,6 +70,11 @@ import {
 	type PlatformApprovalRunType,
 } from './platform-approval-helpers';
 import {
+	connectorFormPatchFromSavedConfig,
+	connectorSavePayloadFromForm,
+	connectorTestPayloadFromForm,
+} from './platform-connector-helpers';
+import {
 	approvalFiltersForIdentity,
 	approvalFiltersForTenant,
 	auditFiltersForAgentRunEvidence,
@@ -1198,20 +1203,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function loadSavedConnectorConfig(config: EnterpriseConnectorSavedConfig) {
-		setConnectorTestForm((previous) => ({
-			...previous,
-			base_url: config.base_url,
-			token: '',
-			tenant: config.tenant,
-			policy_path: config.policy_path || previous.policy_path,
-			ticket_path: config.ticket_path || previous.ticket_path,
-			metrics_path: config.metrics_path || previous.metrics_path,
-			timeout_seconds:
-				Number.isFinite(config.timeout_seconds) && config.timeout_seconds > 0
-					? String(config.timeout_seconds)
-					: previous.timeout_seconds,
-			enabled: config.enabled,
-		}));
+		setConnectorTestForm((previous) =>
+			connectorFormPatchFromSavedConfig(previous, config),
+		);
 		setConnectorTestResult(null);
 		setConnectorTestError(null);
 		setConnectorSaveError(null);
@@ -1235,23 +1229,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setConnectorSaveError(null);
 		setConnectorSaveSuccess(null);
 		try {
-			const timeout = Number.parseFloat(connectorTestForm.timeout_seconds);
-			const response = await platformApi.saveConnectorConfig({
-				base_url: baseUrl,
-				token: connectorTestForm.token.trim() || undefined,
-				tenant: connectorTestForm.tenant.trim() || 'acme',
-				policy_path:
-					connectorTestForm.policy_path.trim() ||
-					'/tenants/{tenant}/policies/search',
-				ticket_path:
-					connectorTestForm.ticket_path.trim() ||
-					'/tenants/{tenant}/tickets/{ticket_id}',
-				metrics_path:
-					connectorTestForm.metrics_path.trim() ||
-					'/tenants/{tenant}/departments/{department}/metrics',
-				timeout_seconds: Number.isFinite(timeout) && timeout > 0 ? timeout : 5,
-				enabled: connectorTestForm.enabled,
-			});
+			const response = await platformApi.saveConnectorConfig(
+				connectorSavePayloadFromForm(connectorTestForm, baseUrl),
+			);
 			setConnectors((previous) =>
 				previous
 					? {
@@ -1293,25 +1273,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setTestingConnector(true);
 		setConnectorTestError(null);
 		try {
-			const timeout = Number.parseFloat(connectorTestForm.timeout_seconds);
-			const response = await platformApi.testConnector({
-				base_url: baseUrl,
-				token: connectorTestForm.token.trim() || undefined,
-				tenant: connectorTestForm.tenant.trim() || 'acme',
-				policy_keyword: connectorTestForm.policy_keyword.trim() || 'remote',
-				ticket_id: connectorTestForm.ticket_id.trim() || 'INC-1001',
-				department: connectorTestForm.department.trim() || 'engineering',
-				policy_path:
-					connectorTestForm.policy_path.trim() ||
-					'/tenants/{tenant}/policies/search',
-				ticket_path:
-					connectorTestForm.ticket_path.trim() ||
-					'/tenants/{tenant}/tickets/{ticket_id}',
-				metrics_path:
-					connectorTestForm.metrics_path.trim() ||
-					'/tenants/{tenant}/departments/{department}/metrics',
-				timeout_seconds: Number.isFinite(timeout) && timeout > 0 ? timeout : 5,
-			});
+			const response = await platformApi.testConnector(
+				connectorTestPayloadFromForm(connectorTestForm, baseUrl),
+			);
 			setConnectorTestResult(response);
 			return response;
 		} catch (error) {
