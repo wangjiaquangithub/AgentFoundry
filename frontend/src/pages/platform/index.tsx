@@ -113,6 +113,7 @@ import {
 	agentRunnerAccessLabelKey,
 	defaultEnterpriseWorkflowInputs,
 	formatAgentAccessLabel,
+	formatAgentRuntimeLabel,
 	formatOperationsAgentIssueText,
 	knowledgeBaseLabels,
 	modelCredentialLabel,
@@ -1399,13 +1400,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				},
 				{
 					label: t('platform.appCenter.runtime'),
-					value: t('platform.appCenter.runtimeValue', {
-						memory: inspectedAppCenterAgent.memory_enabled
-							? t('platform.agentManagement.enabled')
-							: t('platform.agentManagement.disabled'),
-						workflow: inspectedAppCenterAgent.workflow_enabled
-							? t('platform.agentManagement.enabled')
-							: t('platform.agentManagement.disabled'),
+					value: formatAgentRuntimeLabel(inspectedAppCenterAgent, {
+						runtime: ({ memory, workflow }) =>
+							t('platform.appCenter.runtimeValue', { memory, workflow }),
+						enabled: t('platform.agentManagement.enabled'),
+						disabled: t('platform.agentManagement.disabled'),
 					}),
 					icon: Brain,
 				},

@@ -161,6 +161,20 @@ export function formatAgentAccessLabel(
 		: labels.open;
 }
 
+export function formatAgentRuntimeLabel(
+	agent: { memory_enabled?: boolean | null; workflow_enabled?: boolean | null },
+	labels: {
+		runtime: (states: { memory: string; workflow: string }) => string;
+		enabled: string;
+		disabled: string;
+	},
+) {
+	return labels.runtime({
+		memory: agent.memory_enabled ? labels.enabled : labels.disabled,
+		workflow: agent.workflow_enabled ? labels.enabled : labels.disabled,
+	});
+}
+
 export function agentRunnerAccessLabelKey(
 	agent:
 		| { allowed_user_ids?: string[] | null; allowed_roles?: string[] | null }
