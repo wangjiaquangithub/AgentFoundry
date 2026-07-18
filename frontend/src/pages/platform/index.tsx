@@ -4114,7 +4114,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			: launchpadReadyCount > 0
 				? 'partial'
 				: 'blocked';
-	const launchpadStateLabel = t(`platform.launchpad.${launchpadState}`);
 	const launchpadPrimaryStep =
 		launchpadSteps.find((step) => step.state !== 'ready') ??
 		launchpadSteps[launchpadSteps.length - 1];
@@ -5198,7 +5197,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			launchpadPrimaryStep={launchpadPrimaryStep}
 			launchpadReadyCount={launchpadReadyCount}
 			launchpadState={launchpadState}
-			launchpadStateLabel={launchpadStateLabel}
 			launchpadSteps={launchpadSteps}
 			launchpadTotalCount={launchpadTotalCount}
 			loadSavedConnectorConfig={loadSavedConnectorConfig}

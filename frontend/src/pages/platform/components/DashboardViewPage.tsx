@@ -247,7 +247,6 @@ export function DashboardViewPage({
 	launchpadPrimaryStep,
 	launchpadReadyCount,
 	launchpadState,
-	launchpadStateLabel,
 	launchpadSteps,
 	launchpadTotalCount,
 	loadSavedConnectorConfig,
@@ -635,7 +634,7 @@ export function DashboardViewPage({
 						title: t('platform.launchpad.title'),
 						description: t('platform.launchpad.description'),
 						state: launchpadState,
-						stateLabel: launchpadStateLabel,
+						stateLabel: t(`platform.launchpad.${launchpadState}`),
 						progress: t('platform.launchpad.progress', {
 							ready: launchpadReadyCount,
 							total: launchpadTotalCount,
