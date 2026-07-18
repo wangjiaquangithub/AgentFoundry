@@ -103,8 +103,7 @@ import {
 	capabilityItemsForStatus,
 	connectorDraftIssuesForDraft,
 	dashboardFallbackStateForStatus,
-	dashboardOperationsSummaryForOperations,
-	dashboardRiskToolItemsForStatus,
+	dashboardOperationsStateForStatus,
 	dashboardTodoItemsForStatus,
 	defaultEnterpriseWorkflowInputs,
 	enabledEnterpriseWorkflowTemplates,
@@ -1032,18 +1031,17 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const memoryOperationsRunCount = memoryOperationsState.runCount;
 	const memoryOperationsHitCount = memoryOperationsState.hitCount;
 	const memoryOperationsSavedCount = memoryOperationsState.savedCount;
-	const riskToolItems = dashboardRiskToolItemsForStatus({
+	const dashboardOperationsState = dashboardOperationsStateForStatus({
+		dashboardOperations,
 		dashboardRiskTools: dashboard?.risk_tools,
 		availableToolItems,
 	});
-	const dashboardOperationsSummary =
-		dashboardOperationsSummaryForOperations(dashboardOperations);
-	const completedWorkflowRunCount = dashboardOperationsSummary.completedWorkflowRunCount;
-	const partialWorkflowRunCount = dashboardOperationsSummary.partialWorkflowRunCount;
-	const failedWorkflowRunCount = dashboardOperationsSummary.failedWorkflowRunCount;
-	const governedWorkflowItems = dashboardOperationsSummary.governedWorkflowItems;
-	const recommendedOperationActions =
-		dashboardOperationsSummary.recommendedOperationActions;
+	const riskToolItems = dashboardOperationsState.riskToolItems;
+	const completedWorkflowRunCount = dashboardOperationsState.completedWorkflowRunCount;
+	const partialWorkflowRunCount = dashboardOperationsState.partialWorkflowRunCount;
+	const failedWorkflowRunCount = dashboardOperationsState.failedWorkflowRunCount;
+	const governedWorkflowItems = dashboardOperationsState.governedWorkflowItems;
+	const recommendedOperationActions = dashboardOperationsState.recommendedOperationActions;
 	const dashboardTodoItems = dashboardTodoItemsForStatus(
 		{
 			credentialCount: credentials.length,

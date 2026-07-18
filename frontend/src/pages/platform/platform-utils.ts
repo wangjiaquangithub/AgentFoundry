@@ -965,6 +965,27 @@ export function dashboardOperationsSummaryForOperations(
 	};
 }
 
+export function dashboardOperationsStateForStatus(values: {
+	dashboardOperations?: EnterprisePlatformOperations;
+	dashboardRiskTools: EnterprisePlatformDashboardRiskTool[] | null | undefined;
+	availableToolItems: EnterpriseToolCatalogItem[];
+}) {
+	const summary = dashboardOperationsSummaryForOperations(values.dashboardOperations);
+
+	return {
+		riskToolItems: dashboardRiskToolItemsForStatus({
+			dashboardRiskTools: values.dashboardRiskTools,
+			availableToolItems: values.availableToolItems,
+		}),
+		summary,
+		completedWorkflowRunCount: summary.completedWorkflowRunCount,
+		partialWorkflowRunCount: summary.partialWorkflowRunCount,
+		failedWorkflowRunCount: summary.failedWorkflowRunCount,
+		governedWorkflowItems: summary.governedWorkflowItems,
+		recommendedOperationActions: summary.recommendedOperationActions,
+	};
+}
+
 export function blockedOrPartialPlatformAgentsForReadiness(values: {
 	activePlatformAgents: EnterprisePublishedAgent[];
 	readyPlatformAgents: EnterprisePublishedAgent[];
