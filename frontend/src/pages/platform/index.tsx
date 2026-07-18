@@ -59,12 +59,10 @@ import { useSchedules } from '@/hooks/useSchedules';
 import { useTranslation } from '@/i18n/useI18n';
 import { appCenterDetailResourcesForSelection } from './app-center-detail-resources';
 import { AgentsViewPage } from './components/AgentsViewPage';
-import type { ApprovalFormState } from './components/ApprovalsPanel';
 import { ApprovalsViewPage } from './components/ApprovalsViewPage';
 import type { AppCenterSelection } from './components/AppCenterPanel';
 import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
 import { MemoryViewPage } from './components/MemoryViewPage';
-import type { MemberFormState } from './components/MembersPanel';
 import { RunsViewPage } from './components/RunsViewPage';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
 import { SettingsViewPage } from './components/SettingsViewPage';
@@ -73,6 +71,16 @@ import { ToolsViewPage } from './components/ToolsViewPage';
 import { WorkflowsViewPage } from './components/WorkflowsViewPage';
 import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
+import {
+	agentSampleQuestions,
+	defaultApprovalForm,
+	defaultMemberForm,
+	defaultPublishForm,
+	enterpriseToolInputConfig,
+	type ApprovalFormState,
+	type MemberFormState,
+	type PublishFormState,
+} from './platform-defaults';
 import {
 	agentAccessAllowed,
 	agentRoutingDisplayStateForResult,
@@ -152,67 +160,6 @@ export type PlatformView =
 	| 'tenants'
 	| 'memory'
 	| 'settings';
-
-interface PublishFormState {
-	name: string;
-	description: string;
-	tenant: string;
-	model_config_id: string;
-	knowledge_base_ids: string[];
-	tools: string[];
-	allowed_user_ids: string[];
-	allowed_roles: string[];
-	memory_enabled: boolean;
-	workflow_enabled: boolean;
-}
-
-
-const enterpriseToolInputConfig: Record<
-	string,
-	{ inputKey: string; labelKey: string; defaultValue: string }
-> = {
-	enterprise_lookup_policy: {
-		inputKey: 'keyword',
-		labelKey: 'keyword',
-		defaultValue: 'remote',
-	},
-	enterprise_get_ticket_status: {
-		inputKey: 'ticket_id',
-		labelKey: 'ticket_id',
-		defaultValue: 'INC-1001',
-	},
-	enterprise_summarize_department_metrics: {
-		inputKey: 'department',
-		labelKey: 'department',
-		defaultValue: 'engineering',
-	},
-};
-
-const agentSampleQuestions = [
-	'请查询 remote 政策、INC-1001 工单状态，并总结 engineering 部门指标。',
-	'帮我查一下 INC-1001 的工单状态',
-	'远程办公制度怎么说？',
-	'总结 engineering 部门指标',
-];
-
-const defaultApprovalForm: ApprovalFormState = {
-	request_type: 'tool_run',
-	tool_name: 'enterprise_lookup_policy',
-	workflow_type: 'daily_ops_brief',
-	input_key: 'keyword',
-	input_value: 'remote',
-	reason: '需要审批后调用企业工具',
-	user_id: '',
-	agent_id: '',
-};
-
-const defaultMemberForm: MemberFormState = {
-	user_id: '',
-	tenant: 'acme',
-	display_name: '',
-	role: '',
-	status: 'active',
-};
 
 export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const navigate = useNavigate();
@@ -397,18 +344,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const [bindingAgentToolsId, setBindingAgentToolsId] = useState<string | null>(null);
 	const [enablingAgentMemoryId, setEnablingAgentMemoryId] = useState<string | null>(null);
 	const [enablingAgentWorkflowId, setEnablingAgentWorkflowId] = useState<string | null>(null);
-	const [publishForm, setPublishForm] = useState<PublishFormState>({
-		name: '',
-		description: '',
-		tenant: '',
-		model_config_id: '',
-		knowledge_base_ids: [],
-		tools: [],
-		allowed_user_ids: [],
-		allowed_roles: [],
-		memory_enabled: true,
-		workflow_enabled: false,
-	});
+	const [publishForm, setPublishForm] = useState<PublishFormState>(defaultPublishForm);
 
 	const serverUrl = localStorage.getItem('server_url') || t('platform.connection.notConfigured');
 	const username =
