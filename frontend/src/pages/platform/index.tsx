@@ -98,6 +98,7 @@ import {
 	AgentManagementOverview,
 	AgentTemplateList,
 } from './components/AgentManagementOverview';
+import { AgentRunNowPanel } from './components/AgentRunNowPanel';
 import { AgentRunnerConversation } from './components/AgentRunnerConversation';
 import { AgentRunnerResult } from './components/AgentRunnerResult';
 import {
@@ -8400,205 +8401,51 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					}}
 				/>
 
-				<section className="grid gap-4 rounded-lg border bg-muted/10 p-4">
-					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-						<div className="min-w-0">
-							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-								<Play className="size-4" />
-								<span>{t('platform.now.eyebrow')}</span>
-							</div>
-							<h2 className="text-base font-semibold">{t('platform.now.title')}</h2>
-							<p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-								{t('platform.now.description')}
-							</p>
-						</div>
-						<div className="flex flex-wrap gap-2">
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={() => handlePrimeAgentRunner()}
-								disabled={!selectedRunAgent}
-							>
-								<Pencil className="size-4" />
-								{t('platform.now.fillSample')}
-							</Button>
-							<Button
-								type="button"
-								size="sm"
-								onClick={selectedRunAgent ? scrollToAgentRunner : handleStartPublishing}
-							>
-								{selectedRunAgent ? (
-									<Play className="size-4" />
-								) : (
-									<BotMessageSquare className="size-4" />
-								)}
-								{selectedRunAgent
-									? t('platform.now.run')
-									: t('platform.now.publishAgent')}
-							</Button>
-						</div>
-					</div>
-
-					{platformAgentsLoading && !platformAgents ? (
-						<div className="grid gap-3 md:grid-cols-[1.2fr_2fr]">
-							<Skeleton className="h-32 rounded-lg" />
-							<Skeleton className="h-32 rounded-lg" />
-						</div>
-					) : selectedRunAgent ? (
-						<div className="grid gap-3 lg:grid-cols-[1.1fr_2fr]">
-							<div className="grid gap-3 rounded-lg border bg-background p-3">
-								<div className="flex items-start justify-between gap-3">
-									<div className="min-w-0">
-										<div className="text-xs text-muted-foreground">
-											{t('platform.now.currentAgent')}
-										</div>
-										<div className="mt-1 truncate text-sm font-medium">
-											{selectedRunAgent.name}
-										</div>
-									</div>
-									<StateBadge
-										state="ready"
-										label={t('platform.agentManagement.publishedStatus')}
-									/>
-								</div>
-								<div className="rounded-lg border bg-muted/20 p-3">
-									<div className="text-xs text-muted-foreground">
-										{t('platform.now.sample')}
-									</div>
-									<div className="mt-1 text-sm leading-6">
-										{primaryAgentSampleQuestion}
-									</div>
-								</div>
-							</div>
-
-							<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-								<div className="grid gap-2 rounded-lg border bg-background p-3">
-									<UserRound className="size-4 text-muted-foreground" />
-									<div className="min-w-0">
-										<div className="text-xs text-muted-foreground">
-											{t('platform.now.currentUser')}
-										</div>
-										<div className="mt-1 truncate text-sm font-medium">
-											{currentIdentityLabel}
-										</div>
-									</div>
-								</div>
-								<div className="grid gap-2 rounded-lg border bg-background p-3">
-									<KeyRound className="size-4 text-muted-foreground" />
-									<div className="min-w-0">
-										<div className="text-xs text-muted-foreground">
-											{t('platform.now.model')}
-										</div>
-										<div className="mt-1 truncate text-sm font-medium">
-											{selectedRunAgentModelLabel}
-										</div>
-									</div>
-								</div>
-								<div className="grid gap-2 rounded-lg border bg-background p-3">
-									<LibraryBig className="size-4 text-muted-foreground" />
-									<div className="min-w-0">
-										<div className="text-xs text-muted-foreground">
-											{t('platform.now.knowledge')}
-										</div>
-										<div className="mt-1 truncate text-sm font-medium">
-											{t('platform.agentRunner.knowledgeCount', {
-												count: selectedRunAgentKnowledgeCount,
-											})}
-										</div>
-									</div>
-								</div>
-								<div className="grid gap-2 rounded-lg border bg-background p-3">
-									<Boxes className="size-4 text-muted-foreground" />
-									<div className="min-w-0">
-										<div className="text-xs text-muted-foreground">
-											{t('platform.now.tools')}
-										</div>
-										<div className="mt-1 truncate text-sm font-medium">
-											{t('platform.agentRunner.toolsCount', {
-												count: selectedRunAgentToolCount,
-											})}
-										</div>
-									</div>
-								</div>
-								<div className="grid gap-2 rounded-lg border bg-background p-3">
-									<Brain className="size-4 text-muted-foreground" />
-									<div className="min-w-0">
-										<div className="text-xs text-muted-foreground">
-											{t('platform.now.memory')}
-										</div>
-										<div className="mt-1 truncate text-sm font-medium">
-											{selectedRunAgent.memory_enabled
-												? t('platform.runtime.enabled')
-												: t('platform.runtime.disabled')}
-										</div>
-									</div>
-								</div>
-								<div className="grid gap-2 rounded-lg border bg-background p-3">
-									<Workflow className="size-4 text-muted-foreground" />
-									<div className="min-w-0">
-										<div className="text-xs text-muted-foreground">
-											{t('platform.now.workflow')}
-										</div>
-										<div className="mt-1 truncate text-sm font-medium">
-											{selectedRunAgent.workflow_enabled
-												? t('platform.runtime.enabled')
-												: t('platform.runtime.disabled')}
-										</div>
-									</div>
-								</div>
-								<div className="grid gap-2 rounded-lg border bg-background p-3 sm:col-span-2">
-									<Network className="size-4 text-muted-foreground" />
-									<div className="min-w-0">
-										<div className="text-xs text-muted-foreground">
-											{t('platform.now.connector')}
-										</div>
-										<div className="mt-1 truncate text-sm font-medium">
-											{platformStatus?.connector.name ||
-												t('platform.runtime.unavailable')}
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					) : (
-						<div className="flex flex-col gap-3 rounded-lg border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
-							<div className="min-w-0">
-								<div className="text-sm font-medium">{t('platform.now.noAgent')}</div>
-								<p className="mt-1 text-sm leading-6 text-muted-foreground">
-									{t('platform.now.noAgentDescription')}
-								</p>
-							</div>
-							<div className="flex flex-wrap gap-2 sm:justify-end">
-								<Button
-									type="button"
-									size="sm"
-									variant="outline"
-									onClick={handleStartPublishing}
-								>
-									<ListChecks className="size-4" />
-									{t('platform.now.manualPublish')}
-								</Button>
-								<Button
-									type="button"
-									size="sm"
-									onClick={() => void handleQuickPublishAgent()}
-									disabled={!defaultAgentTemplate || Boolean(publishingTemplateId)}
-								>
-									<BotMessageSquare
-										className={cn(
-											'size-4',
-											publishingTemplateId && 'animate-pulse',
-										)}
-									/>
-									{publishingTemplateId
-										? t('platform.agentManagement.publishing')
-										: t('platform.now.quickPublish')}
-								</Button>
-							</div>
-						</div>
-					)}
-				</section>
+				<AgentRunNowPanel
+					loading={platformAgentsLoading && !platformAgents}
+					selectedRunAgent={selectedRunAgent}
+					currentIdentityLabel={currentIdentityLabel}
+					selectedRunAgentModelLabel={selectedRunAgentModelLabel}
+					selectedRunAgentKnowledgeCount={selectedRunAgentKnowledgeCount}
+					selectedRunAgentToolCount={selectedRunAgentToolCount}
+					primaryAgentSampleQuestion={primaryAgentSampleQuestion}
+					connectorName={platformStatus?.connector.name}
+					hasDefaultAgentTemplate={Boolean(defaultAgentTemplate)}
+					isPublishingTemplate={Boolean(publishingTemplateId)}
+					onPrimeAgentRunner={handlePrimeAgentRunner}
+					onScrollToAgentRunner={scrollToAgentRunner}
+					onStartPublishing={handleStartPublishing}
+					onQuickPublishAgent={() => void handleQuickPublishAgent()}
+					labels={{
+						eyebrow: t('platform.now.eyebrow'),
+						title: t('platform.now.title'),
+						description: t('platform.now.description'),
+						fillSample: t('platform.now.fillSample'),
+						run: t('platform.now.run'),
+						publishAgent: t('platform.now.publishAgent'),
+						currentAgent: t('platform.now.currentAgent'),
+						publishedStatus: t('platform.agentManagement.publishedStatus'),
+						sample: t('platform.now.sample'),
+						currentUser: t('platform.now.currentUser'),
+						model: t('platform.now.model'),
+						knowledge: t('platform.now.knowledge'),
+						knowledgeCount: (count) =>
+							t('platform.agentRunner.knowledgeCount', { count }),
+						tools: t('platform.now.tools'),
+						toolsCount: (count) => t('platform.agentRunner.toolsCount', { count }),
+						memory: t('platform.now.memory'),
+						workflow: t('platform.now.workflow'),
+						enabled: t('platform.runtime.enabled'),
+						disabled: t('platform.runtime.disabled'),
+						connector: t('platform.now.connector'),
+						unavailable: t('platform.runtime.unavailable'),
+						noAgent: t('platform.now.noAgent'),
+						noAgentDescription: t('platform.now.noAgentDescription'),
+						manualPublish: t('platform.now.manualPublish'),
+						publishing: t('platform.agentManagement.publishing'),
+						quickPublish: t('platform.now.quickPublish'),
+					}}
+				/>
 
 				<section className="grid gap-4 rounded-lg border bg-muted/10 p-4">
 					<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
