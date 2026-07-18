@@ -1,3 +1,5 @@
+import type { AgentView, EnterprisePublishedAgent } from '@/api';
+
 export const defaultEnterpriseWorkflowInputs: Record<string, string> = {
 	policy_keyword: 'remote',
 	ticket_id: 'INC-1001',
@@ -41,6 +43,27 @@ export function knowledgeBaseLabel(knowledgeBase: { id?: unknown; name?: unknown
 	return typeof knowledgeBase.name === 'string' && knowledgeBase.name
 		? knowledgeBase.name
 		: String(knowledgeBase.id ?? '');
+}
+
+export function formatScheduleAgentLabel(
+	schedule: { agent_id?: string | null },
+	activePlatformAgents: EnterprisePublishedAgent[],
+	agents: AgentView[],
+	fallback: string,
+) {
+	const publishedName = activePlatformAgents.find(
+		(agent) => agent.id === schedule.agent_id,
+	)?.name;
+	if (publishedName) {
+		return publishedName;
+	}
+
+	const draftName = agents.find((agent) => agent.id === schedule.agent_id)?.data?.name;
+	if (typeof draftName === 'string' && draftName.trim()) {
+		return draftName;
+	}
+
+	return schedule.agent_id || fallback;
 }
 
 export function normalizeWorkflowInputs(

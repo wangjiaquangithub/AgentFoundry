@@ -1894,12 +1894,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					: `${Math.round(auditSummary.avg_duration_ms)} ms`,
 		},
 	];
-	const scheduleAgentLabel = (schedule: ScheduleRecord) =>
-		activePlatformAgents.find((agent) => agent.id === schedule.agent_id)?.name ||
-		agents.find((agent) => agent.id === schedule.agent_id)?.data.name ||
-		schedule.agent_id ||
-		t('platform.triggerOps.unknownAgent');
-
 	useEffect(() => {
 		void refetchConnectors();
 		void refetchGovernance();
@@ -5056,6 +5050,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			agentRunnerRef={agentRunnerRef}
 			agentRunsError={agentRunsError}
 			agentRunsLoading={agentRunsLoading}
+			agents={agents}
 			agentRuntimeStepRef={agentRuntimeStepRef}
 			agentSampleQuestions={agentSampleQuestions}
 			agentSetupSteps={agentSetupSteps}
@@ -5298,7 +5293,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			scenarios={scenarios}
 			scenariosError={scenariosError}
 			scenariosLoading={scenariosLoading}
-			scheduleAgentLabel={scheduleAgentLabel}
 			schedulesError={schedulesError}
 			schedulesLoading={schedulesLoading}
 			scrollToAgentManagement={scrollToAgentManagement}

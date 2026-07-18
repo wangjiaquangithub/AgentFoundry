@@ -61,6 +61,7 @@ import { PlatformNotice, StateBadge } from './common';
 import {
 	countArrayField,
 	credentialLabel,
+	formatScheduleAgentLabel,
 	formatTimestamp,
 	knowledgeBaseLabel,
 	normalizeWorkflowInputs,
@@ -104,6 +105,7 @@ export function DashboardViewPage({
 	agentToolCallBadgeText,
 	agentToolCalls,
 	agentToolsStepRef,
+	agents,
 	agentsLoading,
 	appCenterAgents,
 	appCenterDetailIssues,
@@ -338,7 +340,6 @@ export function DashboardViewPage({
 	scenarios,
 	scenariosError,
 	scenariosLoading,
-	scheduleAgentLabel,
 	schedulesError,
 	schedulesLoading,
 	scrollToAgentManagement,
@@ -1133,7 +1134,14 @@ export function DashboardViewPage({
 						);
 						return `${getFrequencyLabel(parsed, t)} · ${parsed.time}`;
 					}}
-					scheduleAgentLabel={scheduleAgentLabel}
+					scheduleAgentLabel={(schedule) =>
+						formatScheduleAgentLabel(
+							schedule,
+							activePlatformAgents,
+							agents,
+							t('platform.triggerOps.unknownAgent'),
+						)
+					}
 					labels={{
 						eyebrow: t('platform.triggerOps.eyebrow'),
 						title: t('platform.triggerOps.title'),
