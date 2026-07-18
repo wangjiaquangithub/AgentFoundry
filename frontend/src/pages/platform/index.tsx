@@ -138,6 +138,10 @@ import {
 	type TenantOverviewItem,
 } from './components/TenantWorkspacePanel';
 import {
+	TenantGovernancePanel,
+	type ToolPolicyDraftValue,
+} from './components/TenantGovernancePanel';
+import {
 	WorkbenchReadinessPanel,
 	type WorkbenchQuickAction,
 	type WorkbenchReadinessItem,
@@ -158,7 +162,6 @@ import { WorkflowOpsPanel } from './components/WorkflowOpsPanel';
 import { TriggerOpsPanel } from './components/TriggerOpsPanel';
 import { DashboardOpsPanel } from './components/DashboardOpsPanel';
 
-type ToolPolicyDraftValue = 'allow' | 'deny' | 'inherit';
 export type PlatformView =
 	| 'dashboard'
 	| 'agents'
@@ -8447,571 +8450,91 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					}}
 				/>
 
-				<section className="grid gap-4 rounded-lg border bg-muted/10 p-4">
-					<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-						<div>
-							<h2 className="text-base font-semibold">
-								{t('platform.tenantGovernance.title')}
-							</h2>
-							<p className="text-sm text-muted-foreground">
-								{t('platform.tenantGovernance.description')}
-							</p>
-						</div>
-						<StateBadge
-							state={selectedIdentity ? 'ready' : 'todo'}
-							label={
-								selectedIdentity
-									? t('platform.tenantGovernance.currentIdentity')
-									: t('platform.tenantGovernance.noIdentity')
-							}
-						/>
-					</div>
-
-					{connectorsLoading && !connectors ? (
-						<div className="grid gap-3 lg:grid-cols-[0.9fr_1.1fr]">
-							<Skeleton className="h-64 rounded-lg" />
-							<Skeleton className="h-64 rounded-lg" />
-						</div>
-					) : enterpriseIdentities.length > 0 ? (
-						<div className="grid gap-3 lg:grid-cols-[0.9fr_1.1fr]">
-							<div className="grid gap-3 rounded-lg border bg-background p-3">
-								<div className="flex items-start gap-3">
-									<div className="flex size-9 items-center justify-center rounded-lg border bg-muted/30">
-										<UserRound className="size-4 text-muted-foreground" />
-									</div>
-									<div className="min-w-0 flex-1">
-										<div className="text-xs text-muted-foreground">
-											{t('platform.tenantGovernance.currentIdentity')}
-										</div>
-										<div className="mt-1 truncate text-sm font-medium">
-											{currentIdentityLabel}
-										</div>
-										{selectedIdentity ? (
-											<div className="mt-2 flex flex-wrap gap-1">
-												<Badge variant="secondary">
-													{selectedIdentity.role}
-												</Badge>
-												<Badge variant="outline">
-													{selectedIdentity.user_id}
-												</Badge>
-											</div>
-										) : null}
-									</div>
-								</div>
-
-								<div className="grid gap-2">
-									<label className="text-xs text-muted-foreground">
-										{t('platform.tenantGovernance.selectIdentity')}
-									</label>
-									<Select
-										value={selectedIdentity?.user_id ?? ''}
-										onValueChange={setSelectedIdentityUserId}
-									>
-										<SelectTrigger>
-											<SelectValue
-												placeholder={t('platform.tenantGovernance.selectIdentity')}
-											/>
-										</SelectTrigger>
-										<SelectContent>
-											{enterpriseIdentities.map((identity) => (
-												<SelectItem key={identity.user_id} value={identity.user_id}>
-													{identity.display_name} / {identity.tenant}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								</div>
-
-								{selectedIdentity?.sample_questions.length ? (
-									<div className="grid gap-2">
-										<div className="text-xs text-muted-foreground">
-											{t('platform.tenantGovernance.sampleQuestion')}
-										</div>
-										<div className="grid gap-2">
-											{selectedIdentity.sample_questions.slice(0, 3).map((question) => (
-												<Button
-													key={question}
-													type="button"
-													variant="outline"
-													className="h-auto justify-between gap-3 whitespace-normal text-left"
-													onClick={() => {
-														setAgentQuestion(question);
-														window.setTimeout(scrollToAgentRunner, 0);
-													}}
-												>
-													<span className="min-w-0 text-xs leading-5">{question}</span>
-													<ArrowRight className="size-4 shrink-0" />
-												</Button>
-											))}
-										</div>
-									</div>
-								) : null}
-							</div>
-
-							<div className="grid gap-3">
-								<div className="grid gap-3 rounded-lg border bg-background p-3">
-									<div className="flex items-center justify-between gap-3">
-										<div className="flex items-center gap-2">
-											<ShieldCheck className="size-4 text-muted-foreground" />
-											<h3 className="text-sm font-medium">
-												{t('platform.tenantGovernance.policies')}
-											</h3>
-										</div>
-										<Badge variant="outline">
-											{selectedIdentity?.tool_policy.mode ?? toolPolicyMode}
-										</Badge>
-									</div>
-									<div className="grid gap-3 sm:grid-cols-2">
-										<div className="grid gap-2 rounded-md bg-muted/20 p-3">
-											<div className="flex items-center justify-between gap-2">
-												<span className="text-xs font-medium">
-													{t('platform.tenantGovernance.allowedTools')}
-												</span>
-												<Badge variant="secondary">
-													{selectedIdentityAllowedTools.length}
-												</Badge>
-											</div>
-											<div className="flex flex-wrap gap-1">
-												{selectedIdentityAllowedTools.length > 0 ? (
-													selectedIdentityAllowedTools.map((decision) => (
-														<Badge
-															key={decision.name}
-															variant="outline"
-															className="max-w-full truncate"
-															title={decision.reason}
-														>
-															{decision.name}
-														</Badge>
-													))
-												) : (
-													<span className="text-xs text-muted-foreground">
-														{t('platform.tenantGovernance.noIdentity')}
-													</span>
-												)}
-											</div>
-										</div>
-
-										<div className="grid gap-2 rounded-md bg-muted/20 p-3">
-											<div className="flex items-center justify-between gap-2">
-												<span className="text-xs font-medium">
-													{t('platform.tenantGovernance.deniedTools')}
-												</span>
-												<Badge variant="secondary">
-													{selectedIdentityDeniedTools.length}
-												</Badge>
-											</div>
-											<div className="flex flex-wrap gap-1">
-												{selectedIdentityDeniedTools.length > 0 ? (
-													selectedIdentityDeniedTools.map((decision) => (
-														<Badge
-															key={decision.name}
-															variant="outline"
-															className="max-w-full truncate border-amber-500/30 bg-amber-500/10 text-amber-700"
-															title={decision.reason}
-														>
-															{decision.name}
-														</Badge>
-													))
-												) : (
-													<span className="text-xs text-muted-foreground">
-														{t('platform.tenantGovernance.noIdentity')}
-													</span>
-												)}
-											</div>
-										</div>
-									</div>
-									<div className="grid gap-3 rounded-md bg-muted/20 p-3">
-										<div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-											<div className="min-w-0">
-												<h4 className="text-xs font-medium">
-													{t('platform.tenantGovernance.editToolPolicy')}
-												</h4>
-												<p className="mt-1 text-xs text-muted-foreground">
-													{currentIdentityLabel}
-												</p>
-											</div>
-											<div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
-												<div className="rounded-md border bg-background px-3 py-2">
-													<div className="text-muted-foreground">
-														{t('platform.tenantGovernance.effectiveAllowed')}
-													</div>
-													<div className="mt-1 font-semibold tabular-nums">
-														{toolPolicySummary.effectiveAllowed}
-													</div>
-												</div>
-												<div className="rounded-md border bg-background px-3 py-2">
-													<div className="text-muted-foreground">
-														{t('platform.tenantGovernance.effectiveDenied')}
-													</div>
-													<div className="mt-1 font-semibold tabular-nums">
-														{toolPolicySummary.effectiveDenied}
-													</div>
-												</div>
-												<div className="rounded-md border bg-background px-3 py-2">
-													<div className="text-muted-foreground">
-														{t('platform.tenantGovernance.policyInherited')}
-													</div>
-													<div className="mt-1 font-semibold tabular-nums">
-														{toolPolicySummary.draftInherit}
-													</div>
-												</div>
-												<div className="rounded-md border bg-background px-3 py-2">
-													<div className="text-muted-foreground">
-														{t('platform.tenantGovernance.pendingToolApprovals')}
-													</div>
-													<div className="mt-1 font-semibold tabular-nums">
-														{toolPolicySummary.pending}
-													</div>
-												</div>
-											</div>
-										</div>
-										<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-											<div className="flex flex-wrap gap-1">
-												<Badge variant="outline">
-													{t('platform.tenantGovernance.draftAllowCount', {
-														count: toolPolicySummary.draftAllow,
-													})}
-												</Badge>
-												<Badge variant="outline">
-													{t('platform.tenantGovernance.draftDenyCount', {
-														count: toolPolicySummary.draftDeny,
-													})}
-												</Badge>
-												<Badge variant="outline">
-													{t('platform.tenantGovernance.draftInheritCount', {
-														count: toolPolicySummary.draftInherit,
-													})}
-												</Badge>
-											</div>
-											<Button
-												type="button"
-												size="sm"
-												onClick={() => void handleSaveToolPolicy()}
-												disabled={
-													savingToolPolicy ||
-													!selectedIdentity ||
-													availableToolItems.length === 0
-												}
-											>
-												<Save
-													className={cn(
-														'mr-2 size-3.5',
-														savingToolPolicy && 'animate-pulse',
-													)}
-												/>
-												{savingToolPolicy
-													? t('platform.tenantGovernance.savingPolicy')
-													: t('platform.tenantGovernance.savePolicy')}
-											</Button>
-										</div>
-										{availableToolItems.length > 0 ? (
-											<div className="grid gap-2">
-												{availableToolItems.map((tool) => {
-													const draftValue = toolPolicyDraft[tool.name] ?? 'inherit';
-													const pendingApproval = selectedIdentityPendingToolNames.has(
-														tool.name,
-													);
-													const configuredForAgent = tool.configured_for_agent !== false;
-													const effectiveAllowed = configuredForAgent && tool.allowed;
-													const effectiveState = effectiveAllowed
-														? 'ready'
-														: pendingApproval
-															? 'partial'
-															: 'blocked';
-
-													return (
-														<div
-															key={tool.name}
-															className="grid gap-3 rounded-md border bg-background p-3 xl:grid-cols-[minmax(0,1.4fr)_minmax(16rem,0.8fr)_10rem] xl:items-center"
-														>
-															<div className="min-w-0">
-																<div className="flex flex-wrap items-center gap-2">
-																	<div className="min-w-0 truncate text-xs font-medium">
-																		{tool.name}
-																	</div>
-																	<StateBadge
-																		state={effectiveState}
-																		label={
-																			effectiveAllowed
-																				? t(
-																						'platform.tenantGovernance.effectiveAllow',
-																					)
-																				: t(
-																						'platform.tenantGovernance.effectiveDeny',
-																					)
-																		}
-																	/>
-																	{pendingApproval ? (
-																		<Badge
-																			variant="outline"
-																			className="border-amber-500/30 bg-amber-500/10 text-amber-700"
-																		>
-																			{t(
-																				'platform.tenantGovernance.pendingApproval',
-																			)}
-																		</Badge>
-																	) : null}
-																	{!configuredForAgent ? (
-																		<Badge variant="outline">
-																			{t(
-																				'platform.tenantGovernance.notBoundToAgent',
-																			)}
-																		</Badge>
-																	) : null}
-																</div>
-																<div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-																	{tool.description || tool.reason}
-																</div>
-																<div className="mt-2 flex flex-wrap gap-1">
-																	<Badge variant="secondary">
-																		{t('platform.tenantGovernance.toolCalls', {
-																			count: tool.stats.calls,
-																		})}
-																	</Badge>
-																	<Badge variant="outline">
-																		{t('platform.tenantGovernance.toolSuccesses', {
-																			count: tool.stats.successes,
-																		})}
-																	</Badge>
-																	<Badge variant="outline">
-																		{t('platform.tenantGovernance.toolFailures', {
-																			count: tool.stats.failures,
-																		})}
-																	</Badge>
-																</div>
-															</div>
-															<div className="grid gap-2 text-xs">
-																<div>
-																	<div className="text-muted-foreground">
-																		{t('platform.tenantGovernance.effectiveReason')}
-																	</div>
-																	<div className="mt-1 line-clamp-2">{tool.reason}</div>
-																</div>
-																<div>
-																	<div className="text-muted-foreground">
-																		{t('platform.tenantGovernance.configuredBy')}
-																	</div>
-																	<div className="mt-1 flex flex-wrap gap-1">
-																		{tool.configured_by_agents.length > 0 ? (
-																			tool.configured_by_agents.slice(0, 3).map((agent) => (
-																				<Badge key={agent} variant="outline">
-																					{agent}
-																				</Badge>
-																			))
-																		) : (
-																			<span className="text-muted-foreground">
-																				{t(
-																					'platform.tenantGovernance.noConfiguredAgent',
-																				)}
-																			</span>
-																		)}
-																	</div>
-																</div>
-															</div>
-															<Select
-																value={draftValue}
-																onValueChange={(value) => {
-																	const nextValue = value as ToolPolicyDraftValue;
-																	setToolPolicyDraft((previous) => ({
-																		...previous,
-																		[tool.name]: nextValue,
-																	}));
-																	setToolPolicySaveError(null);
-																	setToolPolicySaveSuccess(null);
-																}}
-															>
-																<SelectTrigger className="h-8">
-																	<SelectValue />
-																</SelectTrigger>
-																<SelectContent>
-																	<SelectItem value="inherit">
-																		{t('platform.tenantGovernance.policyInherit')}
-																	</SelectItem>
-																	<SelectItem value="allow">
-																		{t('platform.tenantGovernance.policyAllow')}
-																	</SelectItem>
-																	<SelectItem value="deny">
-																		{t('platform.tenantGovernance.policyDeny')}
-																	</SelectItem>
-																</SelectContent>
-															</Select>
-														</div>
-													);
-												})}
-											</div>
-										) : (
-											<span className="text-xs text-muted-foreground">
-												{t('platform.tenantGovernance.noIdentity')}
-											</span>
-										)}
-										{toolPolicySaveError ? (
-											<PlatformNotice>{toolPolicySaveError}</PlatformNotice>
-										) : null}
-										{toolPolicySaveSuccess ? (
-											<div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700">
-												{toolPolicySaveSuccess}
-											</div>
-										) : null}
-									</div>
-								</div>
-
-								<div className="grid gap-3 rounded-lg border bg-background p-3">
-									<div className="flex items-center justify-between gap-3">
-										<div className="flex items-center gap-2">
-											<Database className="size-4 text-muted-foreground" />
-											<h3 className="text-sm font-medium">
-												{t('platform.tenantGovernance.tenantWorkspaces')}
-											</h3>
-										</div>
-										<Badge variant="outline">
-											{selectedIdentityWorkspace?.source ??
-												t('platform.tenantGovernance.source')}
-										</Badge>
-									</div>
-									<div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3 xl:grid-cols-6">
-										<div className="rounded-md bg-muted/20 px-3 py-2">
-											<div className="text-muted-foreground">
-												{t('platform.tenantGovernance.policies')}
-											</div>
-											<div className="mt-1 font-semibold tabular-nums">
-												{selectedIdentityWorkspace
-													? countArrayField(selectedIdentityWorkspace, 'policies')
-													: 0}
-											</div>
-										</div>
-										<div className="rounded-md bg-muted/20 px-3 py-2">
-											<div className="text-muted-foreground">
-												{t('platform.tenantGovernance.tickets')}
-											</div>
-											<div className="mt-1 font-semibold tabular-nums">
-												{selectedIdentityWorkspace
-													? countArrayField(selectedIdentityWorkspace, 'tickets')
-													: 0}
-											</div>
-										</div>
-										<div className="rounded-md bg-muted/20 px-3 py-2">
-											<div className="text-muted-foreground">
-												{t('platform.tenantGovernance.departments')}
-											</div>
-											<div className="mt-1 font-semibold tabular-nums">
-												{selectedIdentityWorkspace
-													? countArrayField(selectedIdentityWorkspace, 'departments')
-													: 0}
-											</div>
-										</div>
-										<div className="rounded-md bg-muted/20 px-3 py-2">
-											<div className="text-muted-foreground">
-												{t('platform.tenantGovernance.knowledgeBases')}
-											</div>
-											<div className="mt-1 font-semibold tabular-nums">
-												{selectedIdentityWorkspace
-													? countArrayField(selectedIdentityWorkspace, 'knowledge_bases')
-													: 0}
-											</div>
-										</div>
-										<div className="rounded-md bg-muted/20 px-3 py-2">
-											<div className="text-muted-foreground">
-												{t('platform.tenantGovernance.tools')}
-											</div>
-											<div className="mt-1 font-semibold tabular-nums">
-												{selectedIdentityWorkspace
-													? countArrayField(selectedIdentityWorkspace, 'tools')
-													: 0}
-											</div>
-										</div>
-										<div className="rounded-md bg-muted/20 px-3 py-2">
-											<div className="text-muted-foreground">
-												{t('platform.tenantGovernance.sampleQuestion')}
-											</div>
-											<div className="mt-1 font-semibold tabular-nums">
-												{selectedIdentityWorkspace?.sample_questions.length ?? 0}
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-
-							<div className="grid gap-3 rounded-lg border bg-background p-3 lg:col-span-2">
-								<div className="flex items-center justify-between gap-3">
-									<div className="flex items-center gap-2">
-										<Boxes className="size-4 text-muted-foreground" />
-										<h3 className="text-sm font-medium">
-											{t('platform.tenantGovernance.identities')}
-										</h3>
-									</div>
-									<Badge variant="outline">{enterpriseIdentities.length}</Badge>
-								</div>
-								<div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-									{enterpriseIdentities.map((identity) => (
-										<div
-											key={identity.user_id}
-											className={cn(
-												'grid gap-3 rounded-md border bg-muted/10 p-3',
-												identity.user_id === selectedIdentity?.user_id &&
-													'border-primary/40 bg-primary/5',
-											)}
-										>
-											<div className="flex flex-wrap items-start justify-between gap-2">
-												<div className="min-w-0">
-													<div className="truncate text-sm font-medium">
-														{identity.display_name}
-													</div>
-													<div className="font-mono text-xs text-muted-foreground">
-														{identity.user_id}
-													</div>
-												</div>
-												<div className="flex flex-wrap gap-1">
-													<Badge variant="secondary">{identity.tenant}</Badge>
-													<Badge variant="outline">{identity.role}</Badge>
-												</div>
-											</div>
-											<div className="flex flex-wrap gap-1">
-												{identity.sample_questions.slice(0, 2).map((question) => (
-													<Badge
-														key={question}
-														variant="outline"
-														className="max-w-full truncate"
-														title={question}
-													>
-														{question}
-													</Badge>
-												))}
-											</div>
-											<div className="flex flex-wrap gap-2">
-												<Button
-													type="button"
-													size="sm"
-													variant={
-														identity.user_id === selectedIdentity?.user_id
-															? 'default'
-															: 'outline'
-													}
-													onClick={() => handleUseIdentity(identity)}
-												>
-													<Play className="size-4" />
-													{t('platform.tenantGovernance.useIdentity')}
-												</Button>
-												<Button
-													type="button"
-													size="sm"
-													variant="outline"
-													onClick={() => handleInspectIdentityAudit(identity)}
-												>
-													<FileClock className="size-4" />
-													{t('platform.tenantGovernance.viewAudit')}
-												</Button>
-											</div>
-										</div>
-									))}
-								</div>
-							</div>
-						</div>
-					) : (
-						<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-							{t('platform.tenantGovernance.noIdentity')}
-						</div>
-					)}
-				</section>
+				<TenantGovernancePanel
+					connectorsLoading={connectorsLoading}
+					hasConnectors={Boolean(connectors)}
+					enterpriseIdentities={enterpriseIdentities}
+					selectedIdentity={selectedIdentity}
+					currentIdentityLabel={currentIdentityLabel}
+					selectedIdentityAllowedTools={selectedIdentityAllowedTools}
+					selectedIdentityDeniedTools={selectedIdentityDeniedTools}
+					toolPolicyMode={toolPolicyMode}
+					toolPolicySummary={toolPolicySummary}
+					savingToolPolicy={savingToolPolicy}
+					availableToolItems={availableToolItems}
+					toolPolicyDraft={toolPolicyDraft}
+					selectedIdentityPendingToolNames={selectedIdentityPendingToolNames}
+					selectedIdentityWorkspace={selectedIdentityWorkspace}
+					toolPolicySaveError={toolPolicySaveError}
+					toolPolicySaveSuccess={toolPolicySaveSuccess}
+					onSelectIdentity={setSelectedIdentityUserId}
+					onUseSampleQuestion={(question) => {
+						setAgentQuestion(question);
+						window.setTimeout(scrollToAgentRunner, 0);
+					}}
+					onSaveToolPolicy={() => void handleSaveToolPolicy()}
+					onChangeToolPolicyDraft={(toolName, value) => {
+						setToolPolicyDraft((previous) => ({
+							...previous,
+							[toolName]: value,
+						}));
+						setToolPolicySaveError(null);
+						setToolPolicySaveSuccess(null);
+					}}
+					onUseIdentity={handleUseIdentity}
+					onInspectIdentityAudit={handleInspectIdentityAudit}
+					labels={{
+						title: t('platform.tenantGovernance.title'),
+						description: t('platform.tenantGovernance.description'),
+						currentIdentity: t('platform.tenantGovernance.currentIdentity'),
+						noIdentity: t('platform.tenantGovernance.noIdentity'),
+						selectIdentity: t('platform.tenantGovernance.selectIdentity'),
+						sampleQuestion: t('platform.tenantGovernance.sampleQuestion'),
+						policies: t('platform.tenantGovernance.policies'),
+						allowedTools: t('platform.tenantGovernance.allowedTools'),
+						deniedTools: t('platform.tenantGovernance.deniedTools'),
+						editToolPolicy: t('platform.tenantGovernance.editToolPolicy'),
+						effectiveAllowed: t('platform.tenantGovernance.effectiveAllowed'),
+						effectiveDenied: t('platform.tenantGovernance.effectiveDenied'),
+						policyInherited: t('platform.tenantGovernance.policyInherited'),
+						pendingToolApprovals: t(
+							'platform.tenantGovernance.pendingToolApprovals',
+						),
+						draftAllowCount: (count) =>
+							t('platform.tenantGovernance.draftAllowCount', { count }),
+						draftDenyCount: (count) =>
+							t('platform.tenantGovernance.draftDenyCount', { count }),
+						draftInheritCount: (count) =>
+							t('platform.tenantGovernance.draftInheritCount', { count }),
+						savingPolicy: t('platform.tenantGovernance.savingPolicy'),
+						savePolicy: t('platform.tenantGovernance.savePolicy'),
+						effectiveAllow: t('platform.tenantGovernance.effectiveAllow'),
+						effectiveDeny: t('platform.tenantGovernance.effectiveDeny'),
+						pendingApproval: t('platform.tenantGovernance.pendingApproval'),
+						notBoundToAgent: t('platform.tenantGovernance.notBoundToAgent'),
+						toolCalls: (count) =>
+							t('platform.tenantGovernance.toolCalls', { count }),
+						toolSuccesses: (count) =>
+							t('platform.tenantGovernance.toolSuccesses', { count }),
+						toolFailures: (count) =>
+							t('platform.tenantGovernance.toolFailures', { count }),
+						effectiveReason: t('platform.tenantGovernance.effectiveReason'),
+						configuredBy: t('platform.tenantGovernance.configuredBy'),
+						noConfiguredAgent: t('platform.tenantGovernance.noConfiguredAgent'),
+						policyInherit: t('platform.tenantGovernance.policyInherit'),
+						policyAllow: t('platform.tenantGovernance.policyAllow'),
+						policyDeny: t('platform.tenantGovernance.policyDeny'),
+						tenantWorkspaces: t('platform.tenantGovernance.tenantWorkspaces'),
+						source: t('platform.tenantGovernance.source'),
+						tickets: t('platform.tenantGovernance.tickets'),
+						departments: t('platform.tenantGovernance.departments'),
+						knowledgeBases: t('platform.tenantGovernance.knowledgeBases'),
+						tools: t('platform.tenantGovernance.tools'),
+						identities: t('platform.tenantGovernance.identities'),
+						useIdentity: t('platform.tenantGovernance.useIdentity'),
+						viewAudit: t('platform.tenantGovernance.viewAudit'),
+					}}
+				/>
 
 				<section
 					ref={connectorCenterRef}
