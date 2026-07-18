@@ -808,13 +808,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const connectorTestPassed = connectorOperationsState.connectorTestPassed;
 	const connectorRuntimeState = connectorOperationsState.connectorRuntimeState;
 	const connectorRuntimeSourceText = connectorOperationsState.connectorRuntimeSourceText;
-	const workflowSelectionState = useMemo(
-		() =>
-			workflowSelectionStateForTemplates(
-				{ workflowTemplates, selectedWorkflowType },
-				{ fallbackLabel: (labelKey) => t(`platform.workflowRunner.${labelKey}`) },
-			),
-		[t, workflowTemplates, selectedWorkflowType],
+	const workflowSelectionState = workflowSelectionStateForTemplates(
+		{ workflowTemplates, selectedWorkflowType },
+		{ fallbackLabel: (labelKey) => t(`platform.workflowRunner.${labelKey}`) },
 	);
 	const selectedWorkflowTemplate = workflowSelectionState.selectedWorkflowTemplate;
 	const workflowOptions = workflowSelectionState.workflowOptions;
