@@ -93,7 +93,6 @@ import {
 	agentSetupStepsForStatus,
 	appCenterDetailResourceValuesForSelection,
 	appCenterOperationsStateForStatus,
-	availableToolItemsForCatalog,
 	auditStatsForSummary,
 	capabilityItemsForStatus,
 	connectorOperationsStateForStatus,
@@ -132,6 +131,7 @@ import {
 	tenantWorkspaceByNameForEntries,
 	tenantWorkspaceEntriesForWorkspaces,
 	tenantWorkspaceStateForStatus,
+	toolCatalogStateForStatus,
 	toolPolicySummaryForGovernance,
 	triggerOperationsStateForStatus,
 	workbenchActionsForStatus,
@@ -749,21 +749,19 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	);
 
-	const policyDecisions = useMemo(
-		() => platformStatus?.tool_policy.decisions ?? [],
-		[platformStatus],
-	);
 	const subagentTemplates = platformStatus?.subagent_templates ?? [];
 	const toolPolicyMode = platformStatus?.tool_policy.mode || t('platform.runtime.unavailable');
-	const toolCatalogItems = useMemo(() => toolCatalog?.tools ?? [], [toolCatalog]);
-	const availableToolItems = useMemo(
+	const {
+		policyDecisions,
+		availableToolItems,
+	} = useMemo(
 		() =>
-			availableToolItemsForCatalog({
-				toolCatalogItems,
-				policyDecisions,
+			toolCatalogStateForStatus({
+				platformStatus,
+				toolCatalog,
 				toolInputConfig: enterpriseToolInputConfig,
 			}),
-		[policyDecisions, toolCatalogItems],
+		[platformStatus, toolCatalog],
 	);
 	const selectedToolRunnerState = selectedToolRunnerStateForStatus({
 		availableToolItems,

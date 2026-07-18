@@ -16,6 +16,7 @@ import type {
 	EnterprisePlatformStatusResponse,
 	EnterprisePublishedAgent,
 	EnterpriseTenantWorkspace,
+	EnterpriseToolCatalogResponse,
 	EnterpriseToolCatalogItem,
 	EnterpriseWorkflowRunHistoryItem,
 	EnterpriseWorkflowTemplate,
@@ -3295,6 +3296,26 @@ export function availableToolItemsForCatalog(values: {
 			failures: 0,
 		},
 	}));
+}
+
+export function toolCatalogStateForStatus(values: {
+	platformStatus?: EnterprisePlatformStatusResponse | null;
+	toolCatalog?: EnterpriseToolCatalogResponse | null;
+	toolInputConfig: EnterpriseToolInputConfigMap;
+}) {
+	const policyDecisions = values.platformStatus?.tool_policy.decisions ?? [];
+	const toolCatalogItems = values.toolCatalog?.tools ?? [];
+	const availableToolItems = availableToolItemsForCatalog({
+		toolCatalogItems,
+		policyDecisions,
+		toolInputConfig: values.toolInputConfig,
+	});
+
+	return {
+		policyDecisions,
+		toolCatalogItems,
+		availableToolItems,
+	};
 }
 
 export function selectedToolRunnerStateForStatus(values: {
