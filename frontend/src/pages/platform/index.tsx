@@ -54,7 +54,6 @@ import {
 	type EnterpriseWorkflowRunHistoryItem,
 	type EnterpriseWorkflowRunResponse,
 	type EnterpriseWorkflowTemplate,
-	type ScheduleRecord,
 } from '@/api';
 import { ApiError } from '@/api/client';
 import { useAgents } from '@/hooks/useAgents';
@@ -121,6 +120,7 @@ import {
 	appCenterTemplateDetailResourceValues,
 	defaultEnterpriseWorkflowInputs,
 	enabledEnterpriseWorkflowTemplates,
+	enabledTriggerSchedules,
 	formatOperationsAgentIssueText,
 	knowledgeBaseLabels,
 	modelCredentialLabel,
@@ -128,7 +128,11 @@ import {
 	governanceHealthItemsForSummary,
 	operationsHeadlineText,
 	pendingWorkflowRunApprovals,
+	recentTriggerSchedules,
 	topOperationsAgentsForDisplay,
+	triggerOpsStatsForSummary,
+	triggerOpsSummaryText,
+	triggerSchedulesBySource,
 	workflowOpsStatsForSummary,
 } from './platform-utils';
 
@@ -257,11 +261,6 @@ const defaultMemberForm: MemberFormState = {
 	role: '',
 	status: 'active',
 };
-
-function scheduleSortTime(schedule: ScheduleRecord) {
-	const timestamp = Date.parse(schedule.updated_at || schedule.created_at || schedule.data.started_at);
-	return Number.isNaN(timestamp) ? 0 : timestamp;
-}
 
 function summarizeAuditValue(value: unknown): string {
 	if (value === null || value === undefined) {
@@ -1611,38 +1610,35 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			approvals: t('platform.workflowOps.approvals'),
 		},
 	);
-	const enabledSchedules = schedules.filter((schedule) => schedule.data.enabled);
-	const agentSourceSchedules = schedules.filter((schedule) => schedule.data.source === 'AGENT');
-	const userSourceSchedules = schedules.filter((schedule) => schedule.data.source === 'USER');
-	const recentSchedules = [...schedules]
-		.sort((left, right) => scheduleSortTime(right) - scheduleSortTime(left))
-		.slice(0, 4);
-	const triggerOpsStats = [
+	const enabledSchedules = enabledTriggerSchedules(schedules);
+	const agentSourceSchedules = triggerSchedulesBySource(schedules, 'AGENT');
+	const userSourceSchedules = triggerSchedulesBySource(schedules, 'USER');
+	const recentSchedules = recentTriggerSchedules(schedules);
+	const triggerOpsStats = triggerOpsStatsForSummary(
 		{
-			label: t('platform.triggerOps.schedules'),
-			value: schedules.length,
+			scheduleCount: schedules.length,
+			enabledScheduleCount: enabledSchedules.length,
+			agentSourceScheduleCount: agentSourceSchedules.length,
+			userSourceScheduleCount: userSourceSchedules.length,
 		},
 		{
-			label: t('platform.triggerOps.enabled'),
-			value: enabledSchedules.length,
+			schedules: t('platform.triggerOps.schedules'),
+			enabled: t('platform.triggerOps.enabled'),
+			agentSource: t('platform.triggerOps.agentSource'),
+			userSource: t('platform.triggerOps.userSource'),
+		},
+	);
+	const triggerOpsSummary = triggerOpsSummaryText(
+		{
+			scheduleCount: schedules.length,
+			enabledScheduleCount: enabledSchedules.length,
 		},
 		{
-			label: t('platform.triggerOps.agentSource'),
-			value: agentSourceSchedules.length,
+			manual: t('platform.triggerOps.summaryManual'),
+			paused: t('platform.triggerOps.summaryPaused'),
+			active: ({ count }) => t('platform.triggerOps.summaryActive', { count }),
 		},
-		{
-			label: t('platform.triggerOps.userSource'),
-			value: userSourceSchedules.length,
-		},
-	];
-	const triggerOpsSummary =
-		schedules.length === 0
-			? t('platform.triggerOps.summaryManual')
-			: enabledSchedules.length === 0
-				? t('platform.triggerOps.summaryPaused')
-				: t('platform.triggerOps.summaryActive', {
-						count: enabledSchedules.length,
-					});
+	);
 	const auditStats = [
 		{
 			label: t('platform.audit.summaryReturned'),

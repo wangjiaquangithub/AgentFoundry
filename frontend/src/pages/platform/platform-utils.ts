@@ -6,9 +6,11 @@ import type {
 	EnterprisePlatformGovernanceResponse,
 	EnterprisePublishedAgent,
 	EnterpriseWorkflowTemplate,
+	ScheduleRecord,
 } from '@/api';
 import type { AccessControlStat } from './components/AccessControlPanel';
 import type { GovernanceHealthItem } from './components/GovernanceHealthPanel';
+import type { TriggerOpsStat } from './components/TriggerOpsPanel';
 import type { WorkflowOpsStat } from './components/WorkflowOpsPanel';
 import type { HealthState } from './components/common';
 
@@ -775,6 +777,87 @@ export function workflowOpsStatsForSummary(
 			value: values.workflowPendingApprovalCount,
 		},
 	];
+}
+
+export function scheduleSortTime(schedule: ScheduleRecord) {
+	const timestamp = Date.parse(schedule.updated_at || schedule.created_at || schedule.data.started_at);
+	return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+export function enabledTriggerSchedules(schedules: ScheduleRecord[]): ScheduleRecord[] {
+	return schedules.filter((schedule) => schedule.data.enabled);
+}
+
+export function triggerSchedulesBySource(
+	schedules: ScheduleRecord[],
+	source: ScheduleRecord['data']['source'],
+): ScheduleRecord[] {
+	return schedules.filter((schedule) => schedule.data.source === source);
+}
+
+export function recentTriggerSchedules(
+	schedules: ScheduleRecord[],
+	limit = 4,
+): ScheduleRecord[] {
+	return [...schedules]
+		.sort((left, right) => scheduleSortTime(right) - scheduleSortTime(left))
+		.slice(0, limit);
+}
+
+export function triggerOpsStatsForSummary(
+	values: {
+		scheduleCount: number;
+		enabledScheduleCount: number;
+		agentSourceScheduleCount: number;
+		userSourceScheduleCount: number;
+	},
+	labels: {
+		schedules: string;
+		enabled: string;
+		agentSource: string;
+		userSource: string;
+	},
+): TriggerOpsStat[] {
+	return [
+		{
+			label: labels.schedules,
+			value: values.scheduleCount,
+		},
+		{
+			label: labels.enabled,
+			value: values.enabledScheduleCount,
+		},
+		{
+			label: labels.agentSource,
+			value: values.agentSourceScheduleCount,
+		},
+		{
+			label: labels.userSource,
+			value: values.userSourceScheduleCount,
+		},
+	];
+}
+
+export function triggerOpsSummaryText(
+	values: {
+		scheduleCount: number;
+		enabledScheduleCount: number;
+	},
+	labels: {
+		manual: string;
+		paused: string;
+		active: (values: { count: number }) => string;
+	},
+): string {
+	if (values.scheduleCount === 0) {
+		return labels.manual;
+	}
+
+	if (values.enabledScheduleCount === 0) {
+		return labels.paused;
+	}
+
+	return labels.active({ count: values.enabledScheduleCount });
 }
 
 export function templateDetailIssues(
