@@ -125,12 +125,11 @@ import {
 	readyPlatformAgentsForAgents,
 	rolloutPathStepsForStatus,
 	runtimeStatusItemsForStatus,
-	selectedIdentityGovernanceActivityForIdentity,
+	selectedIdentityGovernanceDisplayStateForStatus,
 	selectedIdentityStateForStatus,
 	selectedToolRunnerStateForStatus,
 	tenantWorkspaceOperationsStateForStatus,
 	toolCatalogStateForStatus,
-	toolPolicySummaryForGovernance,
 	triggerOperationsStateForStatus,
 	workbenchActionsForStatus,
 	workbenchIndicatorsForStatus,
@@ -1062,19 +1061,18 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		state: HealthState;
 		icon: ComponentType<{ className?: string }>;
 	}>;
-	const selectedIdentityGovernanceActivity = useMemo(
-		() =>
-			selectedIdentityGovernanceActivityForIdentity({
-				selectedIdentity,
-				pendingApprovals,
-				auditEvents,
-			}),
-		[auditEvents, pendingApprovals, selectedIdentity],
-	);
+	const selectedIdentityGovernanceDisplayState =
+		selectedIdentityGovernanceDisplayStateForStatus({
+			selectedIdentity,
+			pendingApprovals,
+			auditEvents,
+			availableToolItems,
+			toolPolicyDraft,
+		});
 	const selectedIdentityPendingApprovals =
-		selectedIdentityGovernanceActivity.selectedIdentityPendingApprovals;
+		selectedIdentityGovernanceDisplayState.selectedIdentityPendingApprovals;
 	const selectedIdentityPendingToolNames =
-		selectedIdentityGovernanceActivity.selectedIdentityPendingToolNames;
+		selectedIdentityGovernanceDisplayState.selectedIdentityPendingToolNames;
 	const governanceOperationsState = governanceOperationsStateForStatus({
 		enterpriseIdentities,
 		pendingApprovals,
@@ -1110,17 +1108,12 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const accessTenantSummaries = governanceOperationsState.accessTenantSummaries;
 	const accessControlStats = governanceOperationsState.accessControlStats;
 	const governanceHealthItems = governanceOperationsState.governanceHealthItems;
-	const toolPolicySummary = useMemo(() => {
-		return toolPolicySummaryForGovernance(
-			availableToolItems,
-			toolPolicyDraft,
-			selectedIdentityPendingToolNames,
-		);
-	}, [availableToolItems, selectedIdentityPendingToolNames, toolPolicyDraft]);
+	const toolPolicySummary =
+		selectedIdentityGovernanceDisplayState.toolPolicySummary;
 	const selectedIdentityFailedAuditEvents =
-		selectedIdentityGovernanceActivity.selectedIdentityFailedAuditEvents;
+		selectedIdentityGovernanceDisplayState.selectedIdentityFailedAuditEvents;
 	const selectedIdentityRecentAuditEvents =
-		selectedIdentityGovernanceActivity.selectedIdentityRecentAuditEvents;
+		selectedIdentityGovernanceDisplayState.selectedIdentityRecentAuditEvents;
 	const workflowOperationsState = workflowOperationsStateForStatus({
 		workflowTemplates,
 		workflowOptions,

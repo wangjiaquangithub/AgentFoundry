@@ -3410,6 +3410,30 @@ export function toolPolicySummaryForGovernance(
 	};
 }
 
+export function selectedIdentityGovernanceDisplayStateForStatus(values: {
+	selectedIdentity?: EnterpriseIdentity;
+	pendingApprovals: EnterpriseApprovalRequestItem[];
+	auditEvents: EnterpriseAuditEvent[];
+	availableToolItems: EnterpriseToolCatalogItem[];
+	toolPolicyDraft: Record<string, ToolPolicyDraftValue>;
+}) {
+	const activity = selectedIdentityGovernanceActivityForIdentity({
+		selectedIdentity: values.selectedIdentity,
+		pendingApprovals: values.pendingApprovals,
+		auditEvents: values.auditEvents,
+	});
+	const toolPolicySummary = toolPolicySummaryForGovernance(
+		values.availableToolItems,
+		values.toolPolicyDraft,
+		activity.selectedIdentityPendingToolNames,
+	);
+
+	return {
+		...activity,
+		toolPolicySummary,
+	};
+}
+
 export function availableToolItemsForCatalog(values: {
 	toolCatalogItems: EnterpriseToolCatalogItem[];
 	policyDecisions: EnterprisePlatformStatusResponse['tool_policy']['decisions'];
