@@ -407,7 +407,6 @@ export function DashboardViewPage({
 	setWorkflowApprovalId,
 	setWorkflowInputs,
 	setWorkflowRunError,
-	shortResourceId,
 	stats,
 	subagentTemplates,
 	summarizeAuditObject,
@@ -2339,7 +2338,6 @@ export function DashboardViewPage({
 					handleArchiveAgent={handleArchiveAgent}
 					handlePrimePublishedAgent={handlePrimePublishedAgent}
 					credentialLabel={credentialLabel}
-					shortResourceId={shortResourceId}
 					knowledgeBaseLabel={knowledgeBaseLabel}
 					agentAccessAllowed={agentAccessAllowed}
 					t={t}

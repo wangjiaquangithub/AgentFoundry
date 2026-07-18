@@ -5386,7 +5386,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setWorkflowApprovalId={setWorkflowApprovalId}
 			setWorkflowInputs={setWorkflowInputs}
 			setWorkflowRunError={setWorkflowRunError}
-			shortResourceId={shortResourceId}
 			stats={stats}
 			subagentTemplates={subagentTemplates}
 			summarizeAuditObject={summarizeAuditObject}
