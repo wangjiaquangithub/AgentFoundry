@@ -2807,6 +2807,23 @@ export function agentIsReady(agent?: Pick<EnterprisePublishedAgent, 'readiness'>
 	return agentReadinessState(agent) === 'ready';
 }
 
+export function activePlatformAgentsForAgents(agents: EnterprisePublishedAgent[]) {
+	return agents.filter((agent) => agent.status === 'published');
+}
+
+export function archivedPlatformAgentsForAgents(agents: EnterprisePublishedAgent[]) {
+	return agents.filter((agent) => agent.status !== 'published');
+}
+
+export function readyPlatformAgentsForAgents(agents: EnterprisePublishedAgent[]) {
+	return agents.filter(
+		(agent) =>
+			agentIsReady(agent) ||
+			(Boolean(agent.model_config_id) &&
+				!(agent.readiness?.issues ?? []).some((issue) => issue.severity === 'blocking')),
+	);
+}
+
 export function publishedAgentReadinessState(
 	agent: {
 		readiness?: EnterprisePublishedAgent['readiness'] | null;

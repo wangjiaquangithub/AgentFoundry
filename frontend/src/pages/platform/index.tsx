@@ -82,6 +82,7 @@ import { DashboardViewPage } from './components/DashboardViewPage';
 import {
 	accessControlStatsForGovernance,
 	accessTenantSummariesForGovernance,
+	activePlatformAgentsForAgents,
 	agentAccessAllowed,
 	appCenterAgentDetailResourceValues,
 	appCenterDetailHealthState,
@@ -91,6 +92,7 @@ import {
 	agentReadinessIssues,
 	agentReadinessState,
 	agentReleasePipelineItems,
+	archivedPlatformAgentsForAgents,
 	identityAccessRowsForGovernance,
 	agentOpsSummaryItems,
 	agentResourceSummary,
@@ -135,6 +137,7 @@ import {
 	platformConsoleItemsForDisplay,
 	readyLaunchpadStepCountForSteps,
 	readyOrchestrationWorkbenchStepCountForSteps,
+	readyPlatformAgentsForAgents,
 	recentTriggerSchedules,
 	rolloutPathStepsForStatus,
 	runtimeStatusItemsForStatus,
@@ -543,23 +546,15 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const agentTemplates = platformAgents?.templates ?? [];
 	const publishedPlatformAgents = platformAgents?.agents ?? [];
 	const activePlatformAgents = useMemo(
-		() => publishedPlatformAgents.filter((agent) => agent.status === 'published'),
+		() => activePlatformAgentsForAgents(publishedPlatformAgents),
 		[publishedPlatformAgents],
 	);
 	const archivedPlatformAgents = useMemo(
-		() => publishedPlatformAgents.filter((agent) => agent.status !== 'published'),
+		() => archivedPlatformAgentsForAgents(publishedPlatformAgents),
 		[publishedPlatformAgents],
 	);
 	const readyPlatformAgents = useMemo(
-		() =>
-			activePlatformAgents.filter(
-				(agent) =>
-					agentIsReady(agent) ||
-					(Boolean(agent.model_config_id) &&
-						!(agent.readiness?.issues ?? []).some(
-							(issue) => issue.severity === 'blocking',
-						)),
-			),
+		() => readyPlatformAgentsForAgents(activePlatformAgents),
 		[activePlatformAgents],
 	);
 	const selectedRunAgent =
