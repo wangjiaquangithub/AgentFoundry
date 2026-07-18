@@ -82,6 +82,7 @@ import {
 	platformConfigImportTextForExport,
 	platformConfigLoadErrorMessage,
 } from './platform-config-management';
+import { toolPolicyPayloadFromDraft } from './platform-tool-policy-helpers';
 import {
 	memberCreatePayloadFromForm,
 	memberFormFromMember,
@@ -1329,19 +1330,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setToolPolicySaveError(null);
 		setToolPolicySaveSuccess(null);
 		try {
-			const allow = Object.entries(toolPolicyDraft)
-				.filter(([, value]) => value === 'allow')
-				.map(([name]) => name);
-			const deny = Object.entries(toolPolicyDraft)
-				.filter(([, value]) => value === 'deny')
-				.map(([name]) => name);
-
-			await platformApi.updateToolPolicy({
+			await platformApi.updateToolPolicy(toolPolicyPayloadFromDraft({
 				tenant: selectedIdentity.tenant,
-				user_id: selectedIdentity.user_id,
-				allow,
-				deny,
-			});
+				userId: selectedIdentity.user_id,
+				draft: toolPolicyDraft,
+			}));
 
 			setToolPolicySaveSuccess(tenantGovernanceRequestText.policySaved);
 			await Promise.all([refetchPlatform(), refetchGovernance(), refetchToolCatalog()]);
