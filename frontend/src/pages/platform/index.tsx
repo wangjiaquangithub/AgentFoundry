@@ -67,7 +67,6 @@ import { AgentsViewPage } from './components/AgentsViewPage';
 import type { ApprovalFormState } from './components/ApprovalsPanel';
 import { ApprovalsViewPage } from './components/ApprovalsViewPage';
 import type { AppCenterSelection } from './components/AppCenterPanel';
-import type { FirstAgentGuideStep } from './components/FirstAgentGuide';
 import type { MonitoringAgentTurn } from './components/MonitoringSnapshotPanel';
 import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
 import { MemoryViewPage } from './components/MemoryViewPage';
@@ -106,6 +105,8 @@ import {
 	defaultEnterpriseWorkflowInputs,
 	enabledEnterpriseWorkflowTemplates,
 	enabledTriggerSchedules,
+	firstAgentGuidePrimaryStepForSteps,
+	firstAgentGuideStepsForStatus,
 	formatOperationsAgentIssueText,
 	knowledgeBaseLabels,
 	launchpadStepsForStatus,
@@ -3951,85 +3952,53 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			},
 		},
 	);
-	const firstAgentGuideSteps = [
+	const firstAgentGuideSteps = firstAgentGuideStepsForStatus(
 		{
-			key: 'model',
-			icon: KeyRound,
-			state: credentials.length > 0 ? 'ready' : 'blocked',
-			detail:
-				credentials.length > 0
-					? t('platform.workbench.firstAgentGuide.steps.model.ready', {
-							count: credentials.length,
-						})
-					: t('platform.workbench.firstAgentGuide.steps.model.empty'),
-			onClick: () => navigate('/credential'),
+			credentialCount: credentials.length,
+			readyAgentCount: readyPlatformAgents.length,
+			activeAgentCount: activePlatformAgents.length,
+			hasAgentRunResult: Boolean(agentRunResult),
+			hasSelectedRunAgent: Boolean(selectedRunAgent),
+			auditEventCount,
+			pendingApprovalCount: pendingApprovals.length,
 		},
 		{
-			key: 'agent',
-			icon: BotMessageSquare,
-			state:
-				readyPlatformAgents.length > 0
-					? 'ready'
-					: activePlatformAgents.length > 0
-						? 'partial'
-						: credentials.length > 0
-							? 'todo'
-							: 'blocked',
-			detail:
-				readyPlatformAgents.length > 0
-					? t('platform.workbench.firstAgentGuide.steps.agent.ready', {
-							count: readyPlatformAgents.length,
-						})
-					: activePlatformAgents.length > 0
-						? t('platform.workbench.firstAgentGuide.steps.agent.partial', {
-								count: activePlatformAgents.length,
-							})
-						: t('platform.workbench.firstAgentGuide.steps.agent.empty'),
-			onClick: () => void handleQuickPublishAgent(),
+			icons: {
+				model: KeyRound,
+				agent: BotMessageSquare,
+				run: Play,
+				governance: ShieldCheck,
+			},
+			actions: {
+				model: () => navigate('/credential'),
+				agent: () => void handleQuickPublishAgent(),
+				run: scrollToAgentRunner,
+				governance: scrollToGovernance,
+			},
+			labels: {
+				title: (key) => t(`platform.workbench.firstAgentGuide.steps.${key}.title`),
+				action: (key) => t(`platform.workbench.firstAgentGuide.steps.${key}.action`),
+				modelReady: (count) =>
+					t('platform.workbench.firstAgentGuide.steps.model.ready', { count }),
+				modelEmpty: t('platform.workbench.firstAgentGuide.steps.model.empty'),
+				agentReady: (count) =>
+					t('platform.workbench.firstAgentGuide.steps.agent.ready', { count }),
+				agentPartial: (count) =>
+					t('platform.workbench.firstAgentGuide.steps.agent.partial', { count }),
+				agentEmpty: t('platform.workbench.firstAgentGuide.steps.agent.empty'),
+				runReady: t('platform.workbench.firstAgentGuide.steps.run.ready'),
+				runPartial: t('platform.workbench.firstAgentGuide.steps.run.partial'),
+				runEmpty: t('platform.workbench.firstAgentGuide.steps.run.empty'),
+				governanceReady: (count) =>
+					t('platform.workbench.firstAgentGuide.steps.governance.ready', { count }),
+				governancePending: (count) =>
+					t('platform.workbench.firstAgentGuide.steps.governance.pending', { count }),
+				governanceEmpty: t('platform.workbench.firstAgentGuide.steps.governance.empty'),
+			},
 		},
-		{
-			key: 'run',
-			icon: Play,
-			state: agentRunResult ? 'ready' : readyPlatformAgents.length > 0 ? 'todo' : 'blocked',
-			detail: agentRunResult
-				? t('platform.workbench.firstAgentGuide.steps.run.ready')
-				: selectedRunAgent
-					? t('platform.workbench.firstAgentGuide.steps.run.partial')
-					: t('platform.workbench.firstAgentGuide.steps.run.empty'),
-			onClick: scrollToAgentRunner,
-		},
-		{
-			key: 'governance',
-			icon: ShieldCheck,
-			state:
-				auditEventCount > 0
-					? 'ready'
-					: agentRunResult || pendingApprovals.length > 0
-						? 'partial'
-						: 'blocked',
-			detail:
-				auditEventCount > 0
-					? t('platform.workbench.firstAgentGuide.steps.governance.ready', {
-							count: auditEventCount,
-						})
-					: pendingApprovals.length > 0
-						? t('platform.workbench.firstAgentGuide.steps.governance.pending', {
-								count: pendingApprovals.length,
-							})
-						: t('platform.workbench.firstAgentGuide.steps.governance.empty'),
-			onClick: scrollToGovernance,
-		},
-	].map((step) => ({
-		...step,
-		title: t(`platform.workbench.firstAgentGuide.steps.${step.key}.title`),
-		actionLabel: t(`platform.workbench.firstAgentGuide.steps.${step.key}.action`),
-		state: step.state as HealthState,
-	})) satisfies FirstAgentGuideStep[];
+	);
 	const firstAgentGuidePrimaryStep =
-		firstAgentGuideSteps.find((step) => step.state === 'blocked') ??
-		firstAgentGuideSteps.find((step) => step.state === 'todo') ??
-		firstAgentGuideSteps.find((step) => step.state === 'partial') ??
-		firstAgentGuideSteps[firstAgentGuideSteps.length - 1];
+		firstAgentGuidePrimaryStepForSteps(firstAgentGuideSteps);
 	const orchestrationWorkbenchSteps = [
 		{
 			key: 'template',

@@ -17,6 +17,7 @@ import type {
 } from '@/api';
 import type { ComponentType } from 'react';
 import type { AccessControlStat } from './components/AccessControlPanel';
+import type { FirstAgentGuideStep } from './components/FirstAgentGuide';
 import type { GovernanceHealthItem } from './components/GovernanceHealthPanel';
 import type { LaunchpadStep } from './components/LaunchpadPanel';
 import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
@@ -474,6 +475,7 @@ type RolloutPathStepKey =
 	| 'run'
 	| 'governance'
 	| 'config';
+type FirstAgentGuideStepKey = 'model' | 'agent' | 'run' | 'governance';
 
 export function workbenchReadinessItemsForStatus(
 	values: {
@@ -752,6 +754,116 @@ export function rolloutPathStepsForStatus(
 		state: step.state,
 		onClick: options.actions[step.key],
 	}));
+}
+
+export function firstAgentGuideStepsForStatus(
+	values: {
+		credentialCount: number;
+		readyAgentCount: number;
+		activeAgentCount: number;
+		hasAgentRunResult: boolean;
+		hasSelectedRunAgent: boolean;
+		auditEventCount: number;
+		pendingApprovalCount: number;
+	},
+	options: {
+		icons: Record<FirstAgentGuideStepKey, ComponentType<{ className?: string }>>;
+		actions: Record<FirstAgentGuideStepKey, () => void>;
+		labels: {
+			title: (key: FirstAgentGuideStepKey) => string;
+			action: (key: FirstAgentGuideStepKey) => string;
+			modelReady: (count: number) => string;
+			modelEmpty: string;
+			agentReady: (count: number) => string;
+			agentPartial: (count: number) => string;
+			agentEmpty: string;
+			runReady: string;
+			runPartial: string;
+			runEmpty: string;
+			governanceReady: (count: number) => string;
+			governancePending: (count: number) => string;
+			governanceEmpty: string;
+		};
+	},
+): FirstAgentGuideStep[] {
+	const steps: Array<{
+		key: FirstAgentGuideStepKey;
+		state: HealthState;
+		detail: string;
+	}> = [
+		{
+			key: 'model',
+			state: values.credentialCount > 0 ? 'ready' : 'blocked',
+			detail:
+				values.credentialCount > 0
+					? options.labels.modelReady(values.credentialCount)
+					: options.labels.modelEmpty,
+		},
+		{
+			key: 'agent',
+			state:
+				values.readyAgentCount > 0
+					? 'ready'
+					: values.activeAgentCount > 0
+						? 'partial'
+						: values.credentialCount > 0
+							? 'todo'
+							: 'blocked',
+			detail:
+				values.readyAgentCount > 0
+					? options.labels.agentReady(values.readyAgentCount)
+					: values.activeAgentCount > 0
+						? options.labels.agentPartial(values.activeAgentCount)
+						: options.labels.agentEmpty,
+		},
+		{
+			key: 'run',
+			state: values.hasAgentRunResult
+				? 'ready'
+				: values.readyAgentCount > 0
+					? 'todo'
+					: 'blocked',
+			detail: values.hasAgentRunResult
+				? options.labels.runReady
+				: values.hasSelectedRunAgent
+					? options.labels.runPartial
+					: options.labels.runEmpty,
+		},
+		{
+			key: 'governance',
+			state:
+				values.auditEventCount > 0
+					? 'ready'
+					: values.hasAgentRunResult || values.pendingApprovalCount > 0
+						? 'partial'
+						: 'blocked',
+			detail:
+				values.auditEventCount > 0
+					? options.labels.governanceReady(values.auditEventCount)
+					: values.pendingApprovalCount > 0
+						? options.labels.governancePending(values.pendingApprovalCount)
+						: options.labels.governanceEmpty,
+		},
+	];
+
+	return steps.map((step) => ({
+		key: step.key,
+		title: options.labels.title(step.key),
+		detail: step.detail,
+		actionLabel: options.labels.action(step.key),
+		icon: options.icons[step.key],
+		state: step.state,
+		onClick: options.actions[step.key],
+	}));
+}
+
+export function firstAgentGuidePrimaryStepForSteps(steps: FirstAgentGuideStep[]) {
+	return (
+		steps.find((step) => step.state === 'blocked') ??
+		steps.find((step) => step.state === 'todo') ??
+		steps.find((step) => step.state === 'partial') ??
+		steps[steps.length - 1]
+	);
 }
 
 export function workbenchIndicatorsForStatus(
