@@ -531,10 +531,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const selectedAgentConversation = agentConversations[selectedRunAgentId] ?? [];
 	const selectedTemplate = platformAgentInventoryState.selectedTemplate;
 	const defaultAgentTemplate = platformAgentInventoryState.defaultAgentTemplate;
-	const platformResourceLookupState = useMemo(
-		() => platformResourceLookupStateForStatus({ credentials, knowledgeBases }),
-		[credentials, knowledgeBases],
-	);
+	const platformResourceLookupState = platformResourceLookupStateForStatus({
+		credentials,
+		knowledgeBases,
+	});
 	const credentialById = platformResourceLookupState.credentialById;
 	const knowledgeBaseById = platformResourceLookupState.knowledgeBaseById;
 	const agentSetupSteps: AgentWizardStep[] = agentSetupStepsForStatus(
