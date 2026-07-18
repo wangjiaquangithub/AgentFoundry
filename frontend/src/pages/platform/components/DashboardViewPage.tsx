@@ -6,9 +6,12 @@ import {
 	Building2,
 	CheckCircle2,
 	Database,
+	KeyRound,
+	ListChecks,
 	Play,
 	RefreshCcw,
 	Save,
+	ShieldCheck,
 	XCircle,
 } from 'lucide-react';
 
@@ -60,7 +63,6 @@ interface DashboardViewPageProps {
 }
 
 export function DashboardViewPage({
-	NextStepIcon,
 	accessControlStats,
 	accessTenantSummaries,
 	activeConnectorTenant,
@@ -458,7 +460,18 @@ export function DashboardViewPage({
 	workflowTemplatesError,
 	workflowTemplatesLoading,
 }: DashboardViewPageProps) {
-		return (
+	const NextStepIcon =
+		nextStepMode === 'model'
+			? KeyRound
+			: nextStepMode === 'publish'
+				? BotMessageSquare
+				: nextStepMode === 'configure'
+					? ListChecks
+					: nextStepMode === 'governance'
+						? ShieldCheck
+						: Play;
+
+	return (
 		<main className="h-full overflow-y-auto bg-background">
 			<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 lg:px-8">
 				<PlatformDashboardOverview

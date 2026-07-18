@@ -779,16 +779,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					: agentRunResult
 						? 'governance'
 						: 'run';
-	const NextStepIcon =
-		nextStepMode === 'model'
-			? KeyRound
-			: nextStepMode === 'publish'
-				? BotMessageSquare
-				: nextStepMode === 'configure'
-					? ListChecks
-					: nextStepMode === 'governance'
-						? ShieldCheck
-						: Play;
 	const nextStepPrimaryDisabled =
 		(nextStepMode === 'publish' &&
 			(!defaultAgentTemplate || Boolean(publishingTemplateId))) ||
@@ -5152,7 +5142,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 	return (
 		<DashboardViewPage
-			NextStepIcon={NextStepIcon}
 			accessControlStats={accessControlStats}
 			accessTenantSummaries={accessTenantSummaries}
 			activeConnectorTenant={activeConnectorTenant}
