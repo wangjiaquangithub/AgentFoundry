@@ -101,6 +101,7 @@ import {
 import { AgentRunnerConversation } from './components/AgentRunnerConversation';
 import { AgentRunnerResult } from './components/AgentRunnerResult';
 import { FirstAgentGuide, type FirstAgentGuideStep } from './components/FirstAgentGuide';
+import { LaunchpadPanel, type LaunchpadStep } from './components/LaunchpadPanel';
 import { PlatformDashboardOverview } from './components/PlatformDashboardOverview';
 import { RolloutPath, type RolloutPathStep } from './components/RolloutPath';
 import {
@@ -4321,15 +4322,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		icon: step.icon,
 		state: step.state as HealthState,
 		onClick: launchpadTargetActions[step.target] ?? scrollToGovernance,
-	})) satisfies Array<{
-		key: string;
-		title: string;
-		description: string;
-		actionLabel: string;
-		icon: ComponentType<{ className?: string }>;
-		state: HealthState;
-		onClick: () => void;
-	}>;
+	})) satisfies LaunchpadStep[];
 	const launchpadReadyCount = launchpadSteps.filter((step) => step.state === 'ready').length;
 	const launchpadTotalCount = launchpadSteps.length;
 	const launchpadState: HealthState =
@@ -7814,78 +7807,29 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					/>
 				</section>
 
-				<section className="grid gap-3 rounded-lg border bg-muted/10 p-4">
-					<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-						<div>
-							<div className="flex flex-wrap items-center gap-2">
-								<h2 className="text-base font-semibold">
-									{t('platform.launchpad.title')}
-								</h2>
-								<StateBadge state={launchpadState} label={launchpadStateLabel} />
-								<Badge variant="outline">
-									{t('platform.launchpad.progress', {
-										ready: launchpadReadyCount,
-										total: launchpadTotalCount,
-									})}
-								</Badge>
-							</div>
-							<p className="text-sm text-muted-foreground">
-								{t('platform.launchpad.description')}
-							</p>
-						</div>
-						<Button
-							type="button"
-							size="sm"
-							onClick={launchpadPrimaryStep.onClick}
-							className="w-full sm:w-auto"
-						>
-							{t('platform.launchpad.primaryAction', {
-								action: launchpadPrimaryStep.actionLabel,
-							})}
-							<ArrowRight className="size-4" />
-						</Button>
-					</div>
-					<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-						{launchpadSteps.map((step) => {
-							const Icon = step.icon;
-							const stateLabel =
-								step.state === 'ready'
-									? t('platform.launchpad.ready')
-									: step.state === 'partial'
-										? t('platform.launchpad.partial')
-										: t('platform.launchpad.todo');
-
-							return (
-								<div
-									key={step.key}
-									className="grid gap-3 rounded-lg border bg-background p-3"
-								>
-									<div className="flex items-start justify-between gap-3">
-										<div className="flex size-9 items-center justify-center rounded-lg border bg-muted/30">
-											<Icon className="size-4 text-muted-foreground" />
-										</div>
-										<StateBadge state={step.state} label={stateLabel} />
-									</div>
-									<div className="min-w-0">
-										<h3 className="text-sm font-medium">{step.title}</h3>
-										<p className="mt-1 text-xs leading-5 text-muted-foreground">
-											{step.description}
-										</p>
-									</div>
-									<Button
-										type="button"
-										size="sm"
-										variant="outline"
-										onClick={step.onClick}
-									>
-										{step.actionLabel}
-										<ArrowRight className="size-4" />
-									</Button>
-								</div>
-							);
-						})}
-					</div>
-				</section>
+				<LaunchpadPanel
+					steps={launchpadSteps}
+					primaryStep={launchpadPrimaryStep}
+					labels={{
+						title: t('platform.launchpad.title'),
+						description: t('platform.launchpad.description'),
+						state: launchpadState,
+						stateLabel: launchpadStateLabel,
+						progress: t('platform.launchpad.progress', {
+							ready: launchpadReadyCount,
+							total: launchpadTotalCount,
+						}),
+						primaryAction: t('platform.launchpad.primaryAction', {
+							action: launchpadPrimaryStep.actionLabel,
+						}),
+						states: {
+							ready: t('platform.launchpad.ready'),
+							partial: t('platform.launchpad.partial'),
+							todo: t('platform.launchpad.todo'),
+							blocked: t('platform.launchpad.blocked'),
+						},
+					}}
+				/>
 
 				<section
 					ref={memoryOperationsRef}
