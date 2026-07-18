@@ -98,11 +98,9 @@ import {
 	agentResourceSummary,
 	agentRunnerAccessLabelKey,
 	agentSetupStepsForStatus,
-	appCenterAgentsForDisplay,
-	appCenterSelectionState,
+	appCenterDerivedStateForStatus,
 	appCenterTemplateDetailResourceValues,
 	auditStatsForSummary,
-	blockedOrPartialPlatformAgentsForReadiness,
 	capabilityItemsForStatus,
 	connectorDraftIssuesForDraft,
 	dashboardOperationsSummaryForOperations,
@@ -1075,24 +1073,18 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			errors: t('platform.dashboard.todoErrors'),
 		},
 	);
-	const blockedOrPartialPlatformAgents = blockedOrPartialPlatformAgentsForReadiness({
-		activePlatformAgents,
-		readyPlatformAgents,
-	});
-	const appCenterAgents = appCenterAgentsForDisplay(
-		readyPlatformAgents,
-		blockedOrPartialPlatformAgents,
-	);
-	const appCenterSelection = appCenterSelectionState({
+	const appCenterDerivedState = appCenterDerivedStateForStatus({
 		selectedItem: selectedAppCenterItem,
 		activeAgents: activePlatformAgents,
 		readyAgents: readyPlatformAgents,
-		appCenterAgents,
 		templates: agentTemplates,
 		defaultTemplate: defaultAgentTemplate,
 		hasCredentials: credentials.length > 0,
 		publishingTemplateId,
 	});
+	const blockedOrPartialPlatformAgents = appCenterDerivedState.blockedOrPartialAgents;
+	const appCenterAgents = appCenterDerivedState.appCenterAgents;
+	const appCenterSelection = appCenterDerivedState.selection;
 	const inspectedAppCenterAgent = appCenterSelection.inspectedAgent;
 	const inspectedAppCenterTemplate = appCenterSelection.inspectedTemplate;
 	const appCenterPrimaryDisabled = appCenterSelection.primaryDisabled;

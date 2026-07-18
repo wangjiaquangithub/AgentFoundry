@@ -2138,6 +2138,43 @@ export function appCenterAgentsForDisplay<TAgent>(
 	return [...readyAgents, ...blockedOrPartialAgents].slice(0, limit);
 }
 
+export function appCenterDerivedStateForStatus(values: {
+	selectedItem?: { type: 'template' | 'agent'; id: string } | null;
+	activeAgents: EnterprisePublishedAgent[];
+	readyAgents: EnterprisePublishedAgent[];
+	templates: EnterpriseAgentTemplate[];
+	defaultTemplate?: EnterpriseAgentTemplate | null;
+	hasCredentials: boolean;
+	publishingTemplateId?: string | null;
+	displayLimit?: number;
+}) {
+	const blockedOrPartialAgents = blockedOrPartialPlatformAgentsForReadiness({
+		activePlatformAgents: values.activeAgents,
+		readyPlatformAgents: values.readyAgents,
+	});
+	const appCenterAgents = appCenterAgentsForDisplay(
+		values.readyAgents,
+		blockedOrPartialAgents,
+		values.displayLimit,
+	);
+	const selection = appCenterSelectionState({
+		selectedItem: values.selectedItem,
+		activeAgents: values.activeAgents,
+		readyAgents: values.readyAgents,
+		appCenterAgents,
+		templates: values.templates,
+		defaultTemplate: values.defaultTemplate,
+		hasCredentials: values.hasCredentials,
+		publishingTemplateId: values.publishingTemplateId,
+	});
+
+	return {
+		blockedOrPartialAgents,
+		appCenterAgents,
+		selection,
+	};
+}
+
 export function agentOpsSummaryItems(
 	values: {
 		published: number;
