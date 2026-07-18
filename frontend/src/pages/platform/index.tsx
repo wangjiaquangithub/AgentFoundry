@@ -106,6 +106,7 @@ import {
 	appCenterOperationsLabels,
 	auditRequestLabels,
 	auditStatsLabels,
+	configManagementRequestLabels,
 	connectorOperationsLabels,
 	connectorRequestLabels,
 	dashboardTodoLabels,
@@ -408,6 +409,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const serverUrl = platformConnectionState.serverUrl;
 	const username = platformConnectionState.username;
 	const auditRequestText = auditRequestLabels(t);
+	const configManagementRequestText = configManagementRequestLabels(t);
 	const connectorRequestText = connectorRequestLabels(t);
 	const hasErrors = Boolean(
 		agentsError ||
@@ -1022,7 +1024,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setPlatformConfigError(
 				error instanceof Error
 					? error.message
-					: t('platform.configManagement.loadError'),
+					: configManagementRequestText.loadError,
 			);
 		} finally {
 			setPlatformConfigLoading(false);
@@ -1052,7 +1054,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				config: parsed,
 			});
 			setPlatformConfigImportResult(
-				t('platform.configManagement.importSuccess', {
+				configManagementRequestText.importSuccess({
 					members: response.counts.members,
 					agents: response.counts.agents,
 				}),
@@ -1070,10 +1072,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		} catch (error) {
 			setPlatformConfigError(
 				error instanceof SyntaxError
-					? t('platform.configManagement.parseError')
+					? configManagementRequestText.parseError
 					: error instanceof Error
 						? error.message
-						: t('platform.configManagement.importError'),
+						: configManagementRequestText.importError,
 			);
 		} finally {
 			setImportingPlatformConfig(false);

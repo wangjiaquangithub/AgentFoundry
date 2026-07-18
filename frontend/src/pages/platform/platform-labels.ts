@@ -62,6 +62,14 @@ export const connectorRequestLabels = (t: PlatformTranslate) => ({
 	testBeforeSaveRequired: t('platform.connectors.testBeforeSaveRequired'),
 });
 
+export const configManagementRequestLabels = (t: PlatformTranslate) => ({
+	loadError: t('platform.configManagement.loadError'),
+	importSuccess: (values: { members: number; agents: number }) =>
+		t('platform.configManagement.importSuccess', values),
+	parseError: t('platform.configManagement.parseError'),
+	importError: t('platform.configManagement.importError'),
+});
+
 export const dashboardTodoLabels = (t: PlatformTranslate) => ({
 	model: t('platform.dashboard.todoModel'),
 	agent: t('platform.dashboard.todoAgent'),
