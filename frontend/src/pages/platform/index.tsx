@@ -139,6 +139,7 @@ import {
 	workbenchReadinessLabels,
 	workbenchRiskLabels,
 	workflowOperationsLabels,
+	workflowRunnerRequestLabels,
 	workflowSelectionLabels,
 } from './platform-labels';
 import { runPlatformOperationAction } from './platform-operation-actions';
@@ -419,6 +420,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const memberRequestText = memberRequestLabels(t);
 	const tenantGovernanceRequestText = tenantGovernanceRequestLabels(t);
 	const toolCatalogRequestText = toolCatalogRequestLabels(t);
+	const workflowRunnerRequestText = workflowRunnerRequestLabels(t);
 	const hasErrors = Boolean(
 		agentsError ||
 		credentialsError ||
@@ -1460,7 +1462,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setWorkflowTemplates(response.workflows);
 		} catch (error) {
 			setWorkflowTemplatesError(
-				error instanceof Error ? error.message : t('platform.workflowRunner.templatesLoadError'),
+				error instanceof Error ? error.message : workflowRunnerRequestText.templatesLoadError,
 			);
 		} finally {
 			setWorkflowTemplatesLoading(false);
@@ -1475,7 +1477,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setWorkflowRuns(response.runs);
 		} catch (error) {
 			setWorkflowRunsError(
-				error instanceof Error ? error.message : t('platform.workflowRunner.historyLoadError'),
+				error instanceof Error ? error.message : workflowRunnerRequestText.historyLoadError,
 			);
 		} finally {
 			setWorkflowRunsLoading(false);
@@ -1785,7 +1787,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			await refetchOpsTasks();
 		} catch (error) {
 			setWorkflowTemplatesError(
-				error instanceof Error ? error.message : t('platform.workflowRunner.templatesLoadError'),
+				error instanceof Error ? error.message : workflowRunnerRequestText.templatesLoadError,
 			);
 		} finally {
 			setSavingWorkflowType(null);
@@ -2729,7 +2731,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					approvalRequired.message,
 				);
 				if (created) {
-					setWorkflowRunError(t('platform.workflowRunner.approvalRequiredCreated'));
+					setWorkflowRunError(workflowRunnerRequestText.approvalRequiredCreated);
 				}
 				return;
 			}

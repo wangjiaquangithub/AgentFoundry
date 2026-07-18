@@ -243,6 +243,12 @@ export const workflowOperationsLabels = (t: PlatformTranslate) => ({
 	approvals: t('platform.workflowOps.approvals'),
 });
 
+export const workflowRunnerRequestLabels = (t: PlatformTranslate) => ({
+	templatesLoadError: t('platform.workflowRunner.templatesLoadError'),
+	historyLoadError: t('platform.workflowRunner.historyLoadError'),
+	approvalRequiredCreated: t('platform.workflowRunner.approvalRequiredCreated'),
+});
+
 export const workflowSelectionLabels = (t: PlatformTranslate) => ({
 	fallbackLabel: (labelKey: string) => t(`platform.workflowRunner.${labelKey}`),
 });
