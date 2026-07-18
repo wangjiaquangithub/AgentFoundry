@@ -1,7 +1,9 @@
 import type {
 	AgentView,
 	EnterpriseAgentTemplate,
+	EnterpriseApprovalRequestItem,
 	EnterpriseIdentity,
+	EnterprisePlatformGovernanceResponse,
 	EnterprisePublishedAgent,
 } from '@/api';
 import type { HealthState } from './components/common';
@@ -531,6 +533,92 @@ export function agentReleasePipelineItems<TIcon>(
 			icon: icons.governance,
 		},
 	];
+}
+
+export function identityAccessRowsForGovernance(
+	enterpriseIdentities: EnterpriseIdentity[],
+	pendingApprovals: EnterpriseApprovalRequestItem[],
+	governance: Pick<EnterprisePlatformGovernanceResponse, 'identity_summaries'> | null | undefined,
+) {
+	const governanceIdentitySummaries = new Map(
+		governance?.identity_summaries.map((summary) => [summary.user_id, summary]) ?? [],
+	);
+
+	return enterpriseIdentities.map((identity) => {
+		const governanceSummary = governanceIdentitySummaries.get(identity.user_id);
+		const allowedCount =
+			governanceSummary?.allowed_count ??
+			identity.tool_policy.decisions.filter((decision) => decision.allowed).length;
+		const deniedCount =
+			governanceSummary?.denied_count ??
+			identity.tool_policy.decisions.length - allowedCount;
+		const pendingCount =
+			governanceSummary?.pending_approvals ??
+			pendingApprovals.filter((approval) => approval.user_id === identity.user_id).length;
+
+		return {
+			identity,
+			allowedCount,
+			deniedCount,
+			pendingCount,
+			risk: deniedCount + pendingCount,
+		};
+	});
+}
+
+export function accessTenantSummariesForGovernance(
+	enterpriseIdentities: EnterpriseIdentity[],
+	pendingApprovals: EnterpriseApprovalRequestItem[],
+	governance: Pick<EnterprisePlatformGovernanceResponse, 'tenant_summaries'> | null | undefined,
+) {
+	return Object.values(
+		governance?.tenant_summaries.map((tenant) => ({
+			tenant: tenant.tenant,
+			identities: tenant.identity_count,
+			roles: tenant.roles,
+			allowed: tenant.allowed_count,
+			denied: tenant.denied_count,
+			pending: tenant.pending_approvals,
+		})) ??
+			enterpriseIdentities.reduce<
+				Record<
+					string,
+					{
+						tenant: string;
+						identities: number;
+						roles: string[];
+						allowed: number;
+						denied: number;
+						pending: number;
+					}
+				>
+			>((summary, identity) => {
+				const tenantSummary =
+					summary[identity.tenant] ??
+					(summary[identity.tenant] = {
+						tenant: identity.tenant,
+						identities: 0,
+						roles: [],
+						allowed: 0,
+						denied: 0,
+						pending: 0,
+					});
+				const decisions = identity.tool_policy.decisions;
+				const allowed = decisions.filter((decision) => decision.allowed).length;
+				const pending = pendingApprovals.filter(
+					(approval) => approval.user_id === identity.user_id,
+				).length;
+
+				tenantSummary.identities += 1;
+				if (!tenantSummary.roles.includes(identity.role)) {
+					tenantSummary.roles.push(identity.role);
+				}
+				tenantSummary.allowed += allowed;
+				tenantSummary.denied += decisions.length - allowed;
+				tenantSummary.pending += pending;
+				return summary;
+			}, {}),
+	);
 }
 
 export function templateDetailIssues(

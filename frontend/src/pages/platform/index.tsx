@@ -104,6 +104,7 @@ import { WorkflowsViewPage } from './components/WorkflowsViewPage';
 import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import {
+	accessTenantSummariesForGovernance,
 	agentAccessAllowed,
 	appCenterAgentDetailResourceValues,
 	appCenterDetailHealthState,
@@ -111,6 +112,7 @@ import {
 	agentReadinessIssues,
 	agentReadinessState,
 	agentReleasePipelineItems,
+	identityAccessRowsForGovernance,
 	agentOpsSummaryItems,
 	agentResourceSummary,
 	agentRunnerAccessLabelKey,
@@ -1475,76 +1477,15 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		state: HealthState;
 		icon: ComponentType<{ className?: string }>;
 	}>;
-	const governanceIdentitySummaries = new Map(
-		governance?.identity_summaries.map((summary) => [summary.user_id, summary]) ?? [],
+	const identityAccessRows = identityAccessRowsForGovernance(
+		enterpriseIdentities,
+		pendingApprovals,
+		governance,
 	);
-	const identityAccessRows = enterpriseIdentities.map((identity) => {
-		const governanceSummary = governanceIdentitySummaries.get(identity.user_id);
-		const allowedCount =
-			governanceSummary?.allowed_count ??
-			identity.tool_policy.decisions.filter((decision) => decision.allowed).length;
-		const deniedCount =
-			governanceSummary?.denied_count ??
-			identity.tool_policy.decisions.length - allowedCount;
-		const pendingCount =
-			governanceSummary?.pending_approvals ??
-			pendingApprovals.filter((approval) => approval.user_id === identity.user_id).length;
-
-		return {
-			identity,
-			allowedCount,
-			deniedCount,
-			pendingCount,
-			risk: deniedCount + pendingCount,
-		};
-	});
-	const accessTenantSummaries = Object.values(
-		governance?.tenant_summaries.map((tenant) => ({
-			tenant: tenant.tenant,
-			identities: tenant.identity_count,
-			roles: tenant.roles,
-			allowed: tenant.allowed_count,
-			denied: tenant.denied_count,
-			pending: tenant.pending_approvals,
-		})) ??
-			enterpriseIdentities.reduce<
-				Record<
-					string,
-					{
-						tenant: string;
-						identities: number;
-						roles: string[];
-						allowed: number;
-						denied: number;
-						pending: number;
-					}
-				>
-			>((summary, identity) => {
-				const tenantSummary =
-					summary[identity.tenant] ??
-					(summary[identity.tenant] = {
-						tenant: identity.tenant,
-						identities: 0,
-						roles: [],
-						allowed: 0,
-						denied: 0,
-						pending: 0,
-					});
-				const decisions = identity.tool_policy.decisions;
-				const allowed = decisions.filter((decision) => decision.allowed).length;
-				const pending = pendingApprovals.filter(
-					(approval) => approval.user_id === identity.user_id,
-				).length;
-
-				tenantSummary.identities += 1;
-				if (!tenantSummary.roles.includes(identity.role)) {
-					tenantSummary.roles.push(identity.role);
-				}
-				tenantSummary.allowed += allowed;
-				tenantSummary.denied += decisions.length - allowed;
-				tenantSummary.pending += pending;
-				return summary;
-			}, {}),
+	const accessTenantSummaries = accessTenantSummariesForGovernance(
+		enterpriseIdentities,
+		pendingApprovals,
+		governance,
 	);
 	const selectedIdentityPendingApprovals = selectedIdentity
 		? pendingApprovals.filter((approval) => approval.user_id === selectedIdentity.user_id)
