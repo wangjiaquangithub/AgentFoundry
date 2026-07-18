@@ -51,8 +51,12 @@ import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import { usePlatformPageRefs } from './platform-page-refs';
 import {
+	enterpriseAgentRunPayload,
+	enterpriseToolRunPayload,
+	enterpriseWorkflowRunPayload,
 	latestAgentRunResponse,
 	mergeAgentConversationTurn,
+	selectedToolInputs,
 	type AgentConversationMap,
 } from './platform-agent-runner';
 import {
@@ -2515,12 +2519,12 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setRunningAgent(true);
 		setAgentRunError(null);
 		try {
-			const response = await platformApi.runAgent({
-				agent_id: agentId,
+			const response = await platformApi.runAgent(enterpriseAgentRunPayload({
+				agentId,
 				question,
-				user_id: userId || undefined,
-				approval_id: explicitApprovalId || undefined,
-			});
+				userId,
+				approvalId: explicitApprovalId,
+			}));
 			const turn: EnterpriseAgentConversationTurn = {
 				id: response.turn_id || `${agentId}-${Date.now()}`,
 				agentId,
@@ -2564,11 +2568,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		const toolName = options?.toolName ?? selectedToolName;
 		const inputs =
 			options?.inputs ??
-			(selectedToolInputKey
-				? {
-						[selectedToolInputKey]: selectedToolInputValue,
-					}
-				: null);
+			selectedToolInputs({
+				inputKey: selectedToolInputKey,
+				inputValue: selectedToolInputValue,
+			});
 		const userId = options?.userId ?? selectedIdentityUserId;
 		const agentId = options?.agentId ?? selectedRunAgentId;
 		const approvalId = options?.approvalId ?? toolApprovalId.trim();
@@ -2580,13 +2583,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setRunningTool(true);
 		setToolRunError(null);
 		try {
-			const response = await platformApi.runTool({
-				tool_name: toolName,
+			const response = await platformApi.runTool(enterpriseToolRunPayload({
+				toolName,
 				inputs,
-				user_id: userId || undefined,
-				agent_id: agentId || undefined,
-				approval_id: approvalId || undefined,
-			});
+				userId,
+				agentId,
+				approvalId,
+			}));
 			setToolRunResult(response);
 			await refetchPlatform();
 			await refetchToolCatalog();
@@ -2630,13 +2633,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setRunningWorkflow(true);
 		setWorkflowRunError(null);
 		try {
-			const response = await platformApi.runWorkflow({
-				workflow_type: workflowType,
+			const response = await platformApi.runWorkflow(enterpriseWorkflowRunPayload({
+				workflowType,
 				inputs,
-				agent_id: agentId || undefined,
-				user_id: userId || undefined,
-				approval_id: approvalId || undefined,
-			});
+				agentId,
+				userId,
+				approvalId,
+			}));
 			setWorkflowRunResult(response);
 			await refetchPlatform();
 			await refetchToolCatalog();
