@@ -104,7 +104,7 @@ import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import {
 	defaultEnterpriseWorkflowInputs,
-	knowledgeBaseLabel,
+	knowledgeBaseLabels,
 	modelCredentialLabel,
 	normalizeWorkflowInputs,
 } from './platform-utils';
@@ -655,11 +655,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		credentialById,
 		t('platform.agentManagement.noneConfigured'),
 	);
-	const selectedRunAgentKnowledgeLabels =
-		(selectedRunAgent?.knowledge_base_ids ?? []).map((knowledgeBaseId) => {
-			const knowledgeBase = knowledgeBaseById.get(knowledgeBaseId);
-			return knowledgeBase ? knowledgeBaseLabel(knowledgeBase) : knowledgeBaseId;
-		});
+	const selectedRunAgentKnowledgeLabels = knowledgeBaseLabels(
+		selectedRunAgent?.knowledge_base_ids ?? [],
+		knowledgeBaseById,
+	);
 	const selectedRunAgentToolCount = selectedRunAgent?.tools?.length ?? 0;
 	const selectedRunAgentKnowledgeCount = selectedRunAgentKnowledgeLabels.length;
 	const selectedRunAgentReadinessState: HealthState = selectedRunAgent
@@ -688,11 +687,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		credentialById,
 		t('platform.agentManagement.noneConfigured'),
 	);
-	const agentRunKnowledgeLabels =
-		agentRunResult?.knowledge_base_ids?.map((knowledgeBaseId) => {
-			const knowledgeBase = knowledgeBaseById.get(knowledgeBaseId);
-			return knowledgeBase ? knowledgeBaseLabel(knowledgeBase) : knowledgeBaseId;
-		}) ?? [];
+	const agentRunKnowledgeLabels = knowledgeBaseLabels(
+		agentRunResult?.knowledge_base_ids ?? [],
+		knowledgeBaseById,
+	);
 	const agentRunConnectorSourceText =
 		agentRunResult?.connector_source === 'saved_config'
 			? t('platform.agentRunner.connectorSourceSaved')
@@ -1387,11 +1385,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		credentialById,
 		t('platform.appCenter.noModel'),
 	);
-	const inspectedAppCenterAgentKnowledge =
-		inspectedAppCenterAgentKnowledgeBaseIds.map((knowledgeBaseId) => {
-			const knowledgeBase = knowledgeBaseById.get(knowledgeBaseId);
-			return knowledgeBase ? knowledgeBaseLabel(knowledgeBase) : knowledgeBaseId;
-		});
+	const inspectedAppCenterAgentKnowledge = knowledgeBaseLabels(
+		inspectedAppCenterAgentKnowledgeBaseIds,
+		knowledgeBaseById,
+	);
 	const inspectedAppCenterAgentAccess =
 		inspectedAppCenterAgentAllowedUserIds.length > 0 ||
 		inspectedAppCenterAgentAllowedRoles.length > 0

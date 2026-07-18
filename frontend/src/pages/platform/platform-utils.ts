@@ -63,6 +63,16 @@ export function knowledgeBaseLabel(knowledgeBase: { id?: unknown; name?: unknown
 		: String(knowledgeBase.id ?? '');
 }
 
+export function knowledgeBaseLabels(
+	knowledgeBaseIds: string[],
+	knowledgeBaseById: Map<string, { id?: unknown; name?: unknown }>,
+) {
+	return knowledgeBaseIds.map((knowledgeBaseId) => {
+		const knowledgeBase = knowledgeBaseById.get(knowledgeBaseId);
+		return knowledgeBase ? knowledgeBaseLabel(knowledgeBase) : knowledgeBaseId;
+	});
+}
+
 export function formatScheduleAgentLabel(
 	schedule: { agent_id?: string | null },
 	activePlatformAgents: EnterprisePublishedAgent[],
