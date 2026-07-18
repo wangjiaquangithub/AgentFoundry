@@ -110,6 +110,11 @@ import {
 	type WorkbenchRiskItem,
 } from './components/WorkbenchReadinessPanel';
 import {
+	WorkbenchStatusPanel,
+	type WorkbenchActionCard,
+	type WorkbenchIndicator,
+} from './components/WorkbenchStatusPanel';
+import {
 	PlatformNotice,
 	StateBadge,
 	type HealthState,
@@ -4392,6 +4397,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					: activePlatformAgents.length > 0
 						? 'partial'
 						: 'todo',
+			onClick: scrollToAgentRunner,
 		},
 		{
 			key: 'approvals',
@@ -4400,6 +4406,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			helper: t('platform.workbench.indicators.approvalsHelper'),
 			icon: ShieldCheck,
 			state: pendingApprovals.length > 0 ? 'partial' : 'ready',
+			onClick: scrollToGovernance,
 		},
 		{
 			key: 'workflows',
@@ -4413,6 +4420,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 						? 'partial'
 						: 'ready'
 					: 'todo',
+			onClick: scrollToWorkflowRunner,
 		},
 		{
 			key: 'memory',
@@ -4424,15 +4432,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			}),
 			icon: Brain,
 			state: memoryOperationsItems.length > 0 ? 'ready' : 'todo',
+			onClick: scrollToMemoryOperations,
 		},
-	] satisfies Array<{
-		key: string;
-		label: string;
-		value: string | number;
-		helper: string;
-		icon: ComponentType<{ className?: string }>;
-		state: HealthState;
-	}>;
+	] satisfies WorkbenchIndicator[];
 	const workbenchActions = [
 		{
 			key: 'run',
@@ -4482,15 +4484,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			primary: false,
 			onClick: scrollToMemoryOperations,
 		},
-	] satisfies Array<{
-		key: string;
-		title: string;
-		description: string;
-		actionLabel: string;
-		icon: ComponentType<{ className?: string }>;
-		primary: boolean;
-		onClick: () => void;
-	}>;
+	] satisfies WorkbenchActionCard[];
 	const workbenchReadinessItems = [
 		{
 			key: 'model',
@@ -7796,119 +7790,28 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 						}}
 					/>
 
-					<div className="grid gap-3 lg:grid-cols-[1.1fr_1.4fr]">
-						<div className="grid gap-3 rounded-lg border bg-muted/10 p-3">
-							<div className="flex items-start justify-between gap-3">
-								<div className="min-w-0">
-									<h3 className="text-sm font-medium">
-										{t('platform.workbench.statusTitle')}
-									</h3>
-									<p className="mt-1 text-xs leading-5 text-muted-foreground">
-										{dashboardTodoItems.length > 0
-											? dashboardTodoItems.join(' · ')
-											: t('platform.dashboard.todoReady')}
-									</p>
-								</div>
-								<StateBadge
-									state={dashboardTodoItems.length > 0 ? 'partial' : 'ready'}
-									label={
-										dashboardTodoItems.length > 0
-											? t('platform.workbench.needsAction')
-											: t('platform.workbench.ready')
-									}
-								/>
-							</div>
-							<div className="grid gap-2 sm:grid-cols-2">
-								{workbenchIndicators.map((item) => {
-									const ItemIcon = item.icon;
-
-									return (
-										<button
-											key={item.key}
-											type="button"
-											onClick={
-												item.key === 'approvals'
-													? scrollToGovernance
-													: item.key === 'workflows'
-														? scrollToWorkflowRunner
-														: item.key === 'memory'
-															? scrollToMemoryOperations
-															: scrollToAgentRunner
-											}
-											className="grid gap-2 rounded-lg border bg-background p-3 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-										>
-											<div className="flex items-center justify-between gap-3">
-												<div className="grid size-8 place-items-center rounded-md border bg-muted/20">
-													<ItemIcon className="size-4 text-muted-foreground" />
-												</div>
-												<StateBadge
-													state={item.state}
-													label={t(`platform.launchpad.${item.state}`)}
-												/>
-											</div>
-											<div className="text-lg font-semibold tabular-nums">
-												{item.value}
-											</div>
-											<div className="min-w-0">
-												<div className="text-xs font-medium">{item.label}</div>
-												<p className="mt-1 text-xs leading-5 text-muted-foreground">
-													{item.helper}
-												</p>
-											</div>
-										</button>
-									);
-								})}
-							</div>
-						</div>
-
-						<div className="grid gap-3 sm:grid-cols-2">
-							{workbenchActions.map((action) => {
-								const ActionIcon = action.icon;
-
-								return (
-									<button
-										key={action.key}
-										type="button"
-										onClick={action.onClick}
-										className={cn(
-											'grid min-h-32 gap-3 rounded-lg border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-											action.primary
-												? 'bg-primary text-primary-foreground hover:bg-primary/90'
-												: 'bg-muted/10 hover:bg-muted/30',
-										)}
-									>
-										<div className="flex items-start justify-between gap-3">
-											<div
-												className={cn(
-													'grid size-9 place-items-center rounded-md border',
-													action.primary
-														? 'border-primary-foreground/30 bg-primary-foreground/10'
-														: 'bg-background',
-												)}
-											>
-												<ActionIcon className="size-4" />
-											</div>
-											<ArrowRight className="mt-1 size-4 shrink-0" />
-										</div>
-										<div className="min-w-0">
-											<h3 className="text-sm font-medium">{action.title}</h3>
-											<p
-												className={cn(
-													'mt-1 line-clamp-2 text-xs leading-5',
-													action.primary
-														? 'text-primary-foreground/80'
-														: 'text-muted-foreground',
-												)}
-											>
-												{action.description}
-											</p>
-										</div>
-										<div className="text-xs font-medium">{action.actionLabel}</div>
-									</button>
-								);
-							})}
-						</div>
-					</div>
+					<WorkbenchStatusPanel
+						indicators={workbenchIndicators}
+						actions={workbenchActions}
+						labels={{
+							statusTitle: t('platform.workbench.statusTitle'),
+							statusDescription:
+								dashboardTodoItems.length > 0
+									? dashboardTodoItems.join(' · ')
+									: t('platform.dashboard.todoReady'),
+							statusState: dashboardTodoItems.length > 0 ? 'partial' : 'ready',
+							statusStateLabel:
+								dashboardTodoItems.length > 0
+									? t('platform.workbench.needsAction')
+									: t('platform.workbench.ready'),
+							states: {
+								ready: t('platform.launchpad.ready'),
+								partial: t('platform.launchpad.partial'),
+								todo: t('platform.launchpad.todo'),
+								blocked: t('platform.launchpad.blocked'),
+							},
+						}}
+					/>
 				</section>
 
 				<section className="grid gap-3 rounded-lg border bg-muted/10 p-4">
