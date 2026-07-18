@@ -129,6 +129,10 @@ import { PlatformDashboardOverview } from './components/PlatformDashboardOvervie
 import { RolloutPath, type RolloutPathStep } from './components/RolloutPath';
 import { ScenariosPanel } from './components/ScenariosPanel';
 import {
+	TenantWorkspacePanel,
+	type TenantOverviewItem,
+} from './components/TenantWorkspacePanel';
+import {
 	WorkbenchReadinessPanel,
 	type WorkbenchQuickAction,
 	type WorkbenchReadinessItem,
@@ -231,19 +235,6 @@ interface MemberFormState {
 	display_name: string;
 	role: string;
 	status: 'active' | 'inactive';
-}
-
-interface TenantOverviewItem {
-	tenant: string;
-	source: string;
-	identityCount: number;
-	roleCount: number;
-	agentCount: number;
-	pendingApprovalCount: number;
-	auditEventCount: number;
-	workflowRunCount: number;
-	sampleQuestion: string;
-	representativeIdentity: EnterpriseIdentity | null;
 }
 
 interface PlatformMemberTenantSummary {
@@ -8112,358 +8103,63 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					}}
 				/>
 
-				<section className="grid gap-4 rounded-lg border bg-background p-4">
-					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-						<div className="min-w-0">
-							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-								<Building2 className="size-4" />
-								<span>{t('platform.tenantWorkspace.eyebrow')}</span>
-							</div>
-							<h2 className="text-base font-semibold">
-								{t('platform.tenantWorkspace.title')}
-							</h2>
-							<p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-								{t('platform.tenantWorkspace.description')}
-							</p>
-						</div>
-						<div className="flex flex-wrap gap-2 lg:justify-end">
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={scrollToConnectorCenter}
-							>
-								<Database className="size-4" />
-								{t('platform.tenantWorkspace.configureSources')}
-							</Button>
-							{selectedIdentity ? (
-								<Button
-									type="button"
-									size="sm"
-									onClick={() => handleUseIdentity(selectedIdentity)}
-								>
-									<Play className="size-4" />
-									{t('platform.tenantWorkspace.runAsCurrent')}
-								</Button>
-							) : null}
-						</div>
-					</div>
-
-					{tenantOverviewItems.length === 0 ? (
-						<div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-							{t('platform.tenantWorkspace.emptyTenants')}
-						</div>
-					) : (
-						<div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
-							{tenantOverviewItems.map((tenantItem) => (
-								<div
-									key={tenantItem.tenant}
-									className={cn(
-										'grid gap-3 rounded-lg border bg-muted/20 p-3',
-										selectedIdentity?.tenant === tenantItem.tenant &&
-											'border-primary/60 bg-primary/5',
-									)}
-								>
-									<div className="flex items-start justify-between gap-3">
-										<div className="min-w-0">
-											<div className="flex items-center gap-2 text-xs text-muted-foreground">
-												<Building2 className="size-4" />
-												<span>{t('platform.tenantWorkspace.tenant')}</span>
-											</div>
-											<div className="mt-1 truncate text-sm font-semibold">
-												{tenantItem.tenant}
-											</div>
-											<div className="mt-1 truncate text-xs text-muted-foreground">
-												{tenantItem.source}
-											</div>
-										</div>
-										<Badge variant="outline">
-											{t('platform.tenantWorkspace.roleCount', {
-												count: tenantItem.roleCount,
-											})}
-										</Badge>
-									</div>
-
-									<div className="grid grid-cols-3 gap-2">
-										{[
-											{
-												label: t('platform.tenantWorkspace.identities'),
-												value: tenantItem.identityCount,
-											},
-											{
-												label: t('platform.tenantWorkspace.agents'),
-												value: tenantItem.agentCount,
-											},
-											{
-												label: t('platform.tenantWorkspace.pendingApprovals'),
-												value: tenantItem.pendingApprovalCount,
-											},
-											{
-												label: t('platform.tenantWorkspace.auditEvents'),
-												value: tenantItem.auditEventCount,
-											},
-											{
-												label: t('platform.tenantWorkspace.workflowRuns'),
-												value: tenantItem.workflowRunCount,
-											},
-											{
-												label: t('platform.tenantWorkspace.roles'),
-												value: tenantItem.roleCount,
-											},
-										].map((item) => (
-											<div
-												key={item.label}
-												className="rounded-md border bg-background px-2 py-2"
-											>
-												<div className="truncate text-xs text-muted-foreground">
-													{item.label}
-												</div>
-												<div className="mt-1 text-base font-semibold tabular-nums">
-													{item.value}
-												</div>
-											</div>
-										))}
-									</div>
-
-									<div className="rounded-md border bg-background p-3">
-										<div className="text-xs text-muted-foreground">
-											{t('platform.tenantWorkspace.sampleQuestion')}
-										</div>
-										<div className="mt-1 line-clamp-2 text-sm leading-6">
-											{tenantItem.sampleQuestion ||
-												t('platform.tenantWorkspace.noSample')}
-										</div>
-									</div>
-
-									<div className="flex flex-wrap gap-2">
-										<Button
-											type="button"
-											size="sm"
-											variant={
-												selectedIdentity?.tenant === tenantItem.tenant
-													? 'default'
-													: 'outline'
-											}
-											onClick={() => handleUseTenant(tenantItem.tenant)}
-											disabled={!tenantItem.representativeIdentity}
-										>
-											<Play className="size-4" />
-											{t('platform.tenantWorkspace.useTenant')}
-										</Button>
-										<Button
-											type="button"
-											size="sm"
-											variant="outline"
-											onClick={() => handlePrepareTenantAgent(tenantItem.tenant)}
-										>
-											<BotMessageSquare className="size-4" />
-											{t('platform.tenantWorkspace.publishForTenant')}
-										</Button>
-										<Button
-											type="button"
-											size="sm"
-											variant="ghost"
-											onClick={() => handleInspectTenantApprovals(tenantItem.tenant)}
-										>
-											<ListChecks className="size-4" />
-											{t('platform.tenantWorkspace.openTenantApprovals')}
-										</Button>
-										<Button
-											type="button"
-											size="sm"
-											variant="ghost"
-											onClick={() => handleInspectTenantAudit(tenantItem.tenant)}
-										>
-											<FileClock className="size-4" />
-											{t('platform.tenantWorkspace.openTenantAudit')}
-										</Button>
-									</div>
-								</div>
-							))}
-						</div>
-					)}
-
-					{selectedIdentity ? (
-						<div className="grid gap-3 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)_minmax(18rem,0.7fr)]">
-							<div className="grid gap-3 rounded-lg border bg-muted/20 p-3">
-								<div className="flex items-start justify-between gap-3">
-									<div className="min-w-0">
-										<div className="flex items-center gap-2 text-xs text-muted-foreground">
-											<UserRound className="size-4" />
-											<span>{t('platform.tenantWorkspace.activeIdentity')}</span>
-										</div>
-										<div className="mt-2 truncate text-sm font-semibold">
-											{selectedIdentity.display_name}
-										</div>
-										<div className="font-mono text-xs text-muted-foreground">
-											{selectedIdentity.user_id}
-										</div>
-									</div>
-									<div className="flex flex-wrap justify-end gap-1">
-										<Badge variant="secondary">{selectedIdentity.tenant}</Badge>
-										<Badge variant="outline">{selectedIdentity.role}</Badge>
-									</div>
-								</div>
-								<div className="rounded-md border bg-background p-3">
-									<div className="text-xs text-muted-foreground">
-										{t('platform.tenantWorkspace.sampleQuestion')}
-									</div>
-									<div className="mt-1 text-sm leading-6">
-										{selectedIdentity.sample_questions[0] ??
-											t('platform.tenantWorkspace.noSample')}
-									</div>
-								</div>
-								<div className="flex flex-wrap gap-2">
-									<Button
-										type="button"
-										size="sm"
-										onClick={() => handleUseIdentity(selectedIdentity)}
-									>
-										<Play className="size-4" />
-										{t('platform.tenantWorkspace.runSample')}
-									</Button>
-									<Button
-										type="button"
-										size="sm"
-										variant="outline"
-										onClick={() => handleInspectIdentityAudit(selectedIdentity)}
-									>
-										<FileClock className="size-4" />
-										{t('platform.tenantWorkspace.viewAudit')}
-									</Button>
-								</div>
-							</div>
-
-							<div className="grid gap-3 rounded-lg border bg-muted/20 p-3">
-								<div className="flex items-center justify-between gap-3">
-									<div className="flex items-center gap-2">
-										<Boxes className="size-4 text-muted-foreground" />
-										<h3 className="text-sm font-medium">
-											{t('platform.tenantWorkspace.workspace')}
-										</h3>
-									</div>
-									<Badge variant="outline">
-										{selectedIdentityWorkspace?.source ??
-											t('platform.tenantWorkspace.localSource')}
-									</Badge>
-								</div>
-								<div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-									{[
-										{
-											label: t('platform.tenantGovernance.policies'),
-											value: selectedIdentityWorkspace
-												? countArrayField(selectedIdentityWorkspace, 'policies')
-												: 0,
-										},
-										{
-											label: t('platform.tenantGovernance.tickets'),
-											value: selectedIdentityWorkspace
-												? countArrayField(selectedIdentityWorkspace, 'tickets')
-												: 0,
-										},
-										{
-											label: t('platform.tenantGovernance.departments'),
-											value: selectedIdentityWorkspace
-												? countArrayField(selectedIdentityWorkspace, 'departments')
-												: 0,
-										},
-										{
-											label: t('platform.tenantGovernance.knowledgeBases'),
-											value: selectedIdentityWorkspace
-												? countArrayField(
-														selectedIdentityWorkspace,
-														'knowledge_bases',
-													)
-												: 0,
-										},
-										{
-											label: t('platform.tenantGovernance.tools'),
-											value: selectedIdentityWorkspace
-												? countArrayField(selectedIdentityWorkspace, 'tools')
-												: 0,
-										},
-										{
-											label: t('platform.tenantWorkspace.identities'),
-											value: enterpriseIdentities.length,
-										},
-									].map((item) => (
-										<div
-											key={item.label}
-											className="rounded-md border bg-background px-3 py-2"
-										>
-											<div className="text-xs text-muted-foreground">
-												{item.label}
-											</div>
-											<div className="mt-1 text-lg font-semibold tabular-nums">
-												{item.value}
-											</div>
-										</div>
-									))}
-								</div>
-							</div>
-
-							<div className="grid content-start gap-3 rounded-lg border bg-muted/20 p-3">
-								<div className="flex items-center gap-2">
-									<ShieldCheck className="size-4 text-muted-foreground" />
-									<h3 className="text-sm font-medium">
-										{t('platform.tenantWorkspace.policy')}
-									</h3>
-								</div>
-								<div className="grid gap-2">
-									<div>
-										<div className="text-xs text-muted-foreground">
-											{t('platform.tenantGovernance.allowedTools')}
-										</div>
-										<div className="mt-1 flex flex-wrap gap-1">
-											{selectedIdentityAllowedTools.length === 0 ? (
-												<Badge variant="outline">
-													{t('platform.tenantWorkspace.none')}
-												</Badge>
-											) : (
-												selectedIdentityAllowedTools.slice(0, 4).map((decision) => (
-													<Badge key={decision.name} variant="secondary">
-														{decision.name}
-													</Badge>
-												))
-											)}
-										</div>
-									</div>
-									<div>
-										<div className="text-xs text-muted-foreground">
-											{t('platform.tenantGovernance.deniedTools')}
-										</div>
-										<div className="mt-1 flex flex-wrap gap-1">
-											{selectedIdentityDeniedTools.length === 0 ? (
-												<Badge variant="outline">
-													{t('platform.tenantWorkspace.none')}
-												</Badge>
-											) : (
-												selectedIdentityDeniedTools.slice(0, 4).map((decision) => (
-													<Badge key={decision.name} variant="outline">
-														{decision.name}
-													</Badge>
-												))
-											)}
-										</div>
-									</div>
-								</div>
-								<Button
-									type="button"
-									size="sm"
-									variant="outline"
-									onClick={scrollToGovernance}
-								>
-									<ArrowRight className="size-4" />
-									{t('platform.tenantWorkspace.openGovernance')}
-								</Button>
-							</div>
-						</div>
-					) : (
-						<div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-							{t('platform.tenantWorkspace.noIdentity')}
-						</div>
-					)}
-				</section>
+				<TenantWorkspacePanel
+					tenantOverviewItems={tenantOverviewItems}
+					selectedIdentity={selectedIdentity}
+					selectedIdentityWorkspace={selectedIdentityWorkspace}
+					selectedIdentityAllowedTools={selectedIdentityAllowedTools}
+					selectedIdentityDeniedTools={selectedIdentityDeniedTools}
+					enterpriseIdentityCount={enterpriseIdentities.length}
+					onConfigureSources={scrollToConnectorCenter}
+					onUseIdentity={handleUseIdentity}
+					onUseTenant={handleUseTenant}
+					onPrepareTenantAgent={handlePrepareTenantAgent}
+					onInspectTenantApprovals={handleInspectTenantApprovals}
+					onInspectTenantAudit={handleInspectTenantAudit}
+					onInspectIdentityAudit={handleInspectIdentityAudit}
+					onOpenGovernance={scrollToGovernance}
+					labels={{
+						eyebrow: t('platform.tenantWorkspace.eyebrow'),
+						title: t('platform.tenantWorkspace.title'),
+						description: t('platform.tenantWorkspace.description'),
+						configureSources: t('platform.tenantWorkspace.configureSources'),
+						runAsCurrent: t('platform.tenantWorkspace.runAsCurrent'),
+						emptyTenants: t('platform.tenantWorkspace.emptyTenants'),
+						tenant: t('platform.tenantWorkspace.tenant'),
+						roleCount: (count) =>
+							t('platform.tenantWorkspace.roleCount', { count }),
+						identities: t('platform.tenantWorkspace.identities'),
+						agents: t('platform.tenantWorkspace.agents'),
+						pendingApprovals: t('platform.tenantWorkspace.pendingApprovals'),
+						auditEvents: t('platform.tenantWorkspace.auditEvents'),
+						workflowRuns: t('platform.tenantWorkspace.workflowRuns'),
+						roles: t('platform.tenantWorkspace.roles'),
+						sampleQuestion: t('platform.tenantWorkspace.sampleQuestion'),
+						noSample: t('platform.tenantWorkspace.noSample'),
+						useTenant: t('platform.tenantWorkspace.useTenant'),
+						publishForTenant: t('platform.tenantWorkspace.publishForTenant'),
+						openTenantApprovals: t(
+							'platform.tenantWorkspace.openTenantApprovals',
+						),
+						openTenantAudit: t('platform.tenantWorkspace.openTenantAudit'),
+						activeIdentity: t('platform.tenantWorkspace.activeIdentity'),
+						runSample: t('platform.tenantWorkspace.runSample'),
+						viewAudit: t('platform.tenantWorkspace.viewAudit'),
+						workspace: t('platform.tenantWorkspace.workspace'),
+						localSource: t('platform.tenantWorkspace.localSource'),
+						policies: t('platform.tenantGovernance.policies'),
+						tickets: t('platform.tenantGovernance.tickets'),
+						departments: t('platform.tenantGovernance.departments'),
+						knowledgeBases: t('platform.tenantGovernance.knowledgeBases'),
+						tools: t('platform.tenantGovernance.tools'),
+						policy: t('platform.tenantWorkspace.policy'),
+						allowedTools: t('platform.tenantGovernance.allowedTools'),
+						deniedTools: t('platform.tenantGovernance.deniedTools'),
+						none: t('platform.tenantWorkspace.none'),
+						openGovernance: t('platform.tenantWorkspace.openGovernance'),
+						noIdentity: t('platform.tenantWorkspace.noIdentity'),
+					}}
+				/>
 
 				<section className="grid gap-4 rounded-lg border bg-background p-4">
 					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
