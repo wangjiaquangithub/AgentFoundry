@@ -178,6 +178,7 @@ import {
 	publishFormFromPublishedAgent,
 	publishFormForListToggle,
 	publishFormForTenantChange,
+	publishFormWithPatch,
 	type PublishListFormKey,
 } from './platform-publish-form';
 import {
@@ -2348,10 +2349,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				setSelectedRunAgentId(response.agent.id);
 			}
 			if (editingAgentId === agent.id) {
-				setPublishForm((current) => ({
-					...current,
-					model_config_id: modelConfigId,
-				}));
+				setPublishForm((current) =>
+					publishFormWithPatch(current, { model_config_id: modelConfigId }),
+				);
 			}
 			await refetchPlatformAgents();
 			await refetchPlatform();
@@ -2383,10 +2383,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				setSelectedRunAgentId(response.agent.id);
 			}
 			if (editingAgentId === agent.id) {
-				setPublishForm((current) => ({
-					...current,
-					knowledge_base_ids: knowledgeBaseIds,
-				}));
+				setPublishForm((current) =>
+					publishFormWithPatch(current, { knowledge_base_ids: knowledgeBaseIds }),
+				);
 			}
 			await refetchPlatformAgents();
 			await refetchPlatform();
@@ -2421,10 +2420,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				setSelectedRunAgentId(response.agent.id);
 			}
 			if (editingAgentId === agent.id) {
-				setPublishForm((current) => ({
-					...current,
-					tools: [...template.tools],
-				}));
+				setPublishForm((current) =>
+					publishFormWithPatch(current, { tools: [...template.tools] }),
+				);
 			}
 			await refetchPlatformAgents();
 			await refetchPlatform();
@@ -2450,10 +2448,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				setSelectedRunAgentId(response.agent.id);
 			}
 			if (editingAgentId === agent.id) {
-				setPublishForm((current) => ({
-					...current,
-					memory_enabled: true,
-				}));
+				setPublishForm((current) => publishFormWithPatch(current, { memory_enabled: true }));
 			}
 			await refetchPlatformAgents();
 			await refetchPlatform();
@@ -2481,10 +2476,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				setSelectedRunAgentId(response.agent.id);
 			}
 			if (editingAgentId === agent.id) {
-				setPublishForm((current) => ({
-					...current,
-					workflow_enabled: true,
-				}));
+				setPublishForm((current) => publishFormWithPatch(current, { workflow_enabled: true }));
 			}
 			await refetchPlatformAgents();
 			await refetchPlatform();

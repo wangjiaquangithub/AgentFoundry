@@ -13,6 +13,17 @@ export type PublishListFormKey =
 	| 'allowed_user_ids'
 	| 'allowed_roles';
 
+export type PublishFormPatch = Partial<
+	Pick<
+		PublishFormState,
+		| 'model_config_id'
+		| 'knowledge_base_ids'
+		| 'tools'
+		| 'memory_enabled'
+		| 'workflow_enabled'
+	>
+>;
+
 export type DefaultPublishFormOptions = {
 	template: EnterpriseAgentTemplate;
 	tenant: string;
@@ -111,5 +122,15 @@ export function publishFormForListToggle(values: {
 	return {
 		...values.current,
 		[values.key]: nextValues,
+	};
+}
+
+export function publishFormWithPatch(
+	current: PublishFormState,
+	patch: PublishFormPatch,
+): PublishFormState {
+	return {
+		...current,
+		...patch,
 	};
 }
