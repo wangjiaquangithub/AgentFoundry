@@ -2571,7 +2571,6 @@ export function DashboardViewPage({
 					toolCatalogLoading={toolCatalogLoading}
 					toolCatalogError={toolCatalogError}
 					onRefetchToolCatalog={refetchToolCatalog}
-					formatTimestamp={formatTimestamp}
 					t={t}
 				/>
 
@@ -2632,7 +2631,6 @@ export function DashboardViewPage({
 					onImportPlatformConfig={handleImportPlatformConfig}
 					onPlatformConfigImportModeChange={setPlatformConfigImportMode}
 					onPlatformConfigImportTextChange={setPlatformConfigImportText}
-					formatTimestamp={formatTimestamp}
 					t={t}
 				/>
 
