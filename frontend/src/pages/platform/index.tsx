@@ -83,6 +83,7 @@ import {
 	agentRoutingDisplayStateForResult,
 	agentRunnerStateForStatus,
 	appCenterDetailHealthState,
+	appCenterAgentDisplayStateForStatus,
 	activePlatformMemberCountForMembers,
 	activePlatformMembersForTenant,
 	agentIsReady,
@@ -90,7 +91,6 @@ import {
 	agentReadinessState,
 	agentReleasePipelineForStatus,
 	archivedPlatformAgentsForAgents,
-	agentResourceSummary,
 	agentSetupStepsForStatus,
 	appCenterDetailResourceValuesForSelection,
 	appCenterOperationsStateForStatus,
@@ -103,7 +103,6 @@ import {
 	defaultEnterpriseWorkflowInputs,
 	firstAgentGuidePrimaryStepForSteps,
 	firstAgentGuideStepsForStatus,
-	formatOperationsAgentIssueText,
 	governanceOperationsStateForStatus,
 	launchpadPrimaryStepForSteps,
 	launchpadStateForCounts,
@@ -929,26 +928,16 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const appCenterPrimaryDisabled = appCenterOperationsState.primaryDisabled;
 	const agentOpsSummary = appCenterOperationsState.agentOpsSummary;
 	const topOperationsAgents = appCenterOperationsState.topOperationsAgents;
-	const operationsAgentIssueText = (agent: EnterprisePublishedAgent) => {
-		return formatOperationsAgentIssueText(agent, {
-			archived: t('platform.operations.archivedIssue'),
-			missing: t('platform.operations.missingIssue'),
-			ready: t('platform.operations.readyIssue'),
-		});
-	};
-	const agentResourceText = (agent: EnterprisePublishedAgent) => {
-		const resources = agentResourceSummary(
-			agent,
-			credentialById,
-			t('platform.appCenter.noModel'),
-		);
-
-		return t('platform.appCenter.agentResources', {
-			model: resources.model,
-			knowledge: resources.knowledge,
-			tools: resources.tools,
-		});
-	};
+	const { operationsAgentIssueText, agentResourceText } = appCenterAgentDisplayStateForStatus({
+		credentialById,
+		labels: {
+			archivedIssue: t('platform.operations.archivedIssue'),
+			missingIssue: t('platform.operations.missingIssue'),
+			readyIssue: t('platform.operations.readyIssue'),
+			noModel: t('platform.appCenter.noModel'),
+			agentResources: (values) => t('platform.appCenter.agentResources', values),
+		},
+	});
 	const inspectedAppCenterAgentReadiness = agentReadinessState(inspectedAppCenterAgent);
 	const inspectedAppCenterAgentIssues = agentReadinessIssues(inspectedAppCenterAgent);
 	const inspectedAppCenterResourceValues = appCenterDetailResourceValuesForSelection({

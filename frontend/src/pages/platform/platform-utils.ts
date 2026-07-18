@@ -2784,6 +2784,39 @@ export function appCenterOperationsStateForStatus(values: {
 	};
 }
 
+export function appCenterAgentDisplayStateForStatus(values: {
+	credentialById: Map<string, { id?: unknown; data?: { name?: unknown } }>;
+	labels: {
+		archivedIssue: string;
+		missingIssue: string;
+		readyIssue: string;
+		noModel: string;
+		agentResources: (values: { model: string; knowledge: number; tools: number }) => string;
+	};
+}) {
+	const operationsAgentIssueText = (agent: EnterprisePublishedAgent) =>
+		formatOperationsAgentIssueText(agent, {
+			archived: values.labels.archivedIssue,
+			missing: values.labels.missingIssue,
+			ready: values.labels.readyIssue,
+		});
+	const agentResourceText = (agent: EnterprisePublishedAgent) => {
+		const resources = agentResourceSummary(
+			agent,
+			values.credentialById,
+			values.labels.noModel,
+		);
+
+		return values.labels.agentResources({
+			model: resources.model,
+			knowledge: resources.knowledge,
+			tools: resources.tools,
+		});
+	};
+
+	return { operationsAgentIssueText, agentResourceText };
+}
+
 export function topOperationsAgentsForDisplay<
 	TAgent extends { status?: string | null },
 >(
