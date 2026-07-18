@@ -108,7 +108,6 @@ import { DashboardViewPage } from './components/DashboardViewPage';
 import {
 	approvalStatusClassName,
 	defaultEnterpriseWorkflowInputs,
-	formatTimestamp,
 	normalizeWorkflowInputs,
 	shortResourceId,
 	workflowInputLabel,
@@ -5153,7 +5152,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			featuredAgents={featuredAgents}
 			firstAgentGuidePrimaryStep={firstAgentGuidePrimaryStep}
 			firstAgentGuideSteps={firstAgentGuideSteps}
-			formatTimestamp={formatTimestamp}
 			getFrequencyLabel={getFrequencyLabel}
 			governance={governance}
 			governanceError={governanceError}

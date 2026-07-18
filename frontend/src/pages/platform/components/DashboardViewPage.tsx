@@ -58,6 +58,7 @@ import { WorkbenchStatusPanel } from './WorkbenchStatusPanel';
 import { WorkflowOpsPanel } from './WorkflowOpsPanel';
 import { WorkflowRunnerPanel } from './WorkflowRunnerPanel';
 import { PlatformNotice, StateBadge } from './common';
+import { formatTimestamp } from '../platform-utils';
 
 interface DashboardViewPageProps {
 	[key: string]: any;
@@ -181,7 +182,6 @@ export function DashboardViewPage({
 	featuredAgents,
 	firstAgentGuidePrimaryStep,
 	firstAgentGuideSteps,
-	formatTimestamp,
 	getFrequencyLabel,
 	governance,
 	governanceError,
