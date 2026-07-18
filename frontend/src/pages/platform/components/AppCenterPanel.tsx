@@ -18,6 +18,7 @@ import type {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { agentIsReady, agentReadinessState } from '../platform-utils';
 import { StateBadge, type HealthState } from './common';
 
 export type AppCenterSelection = { type: 'template' | 'agent'; id: string };
@@ -243,9 +244,8 @@ export function AppCenterPanel({
 						</div>
 					) : (
 						appCenterAgents.map((agent) => {
-							const readinessState: HealthState =
-								agent.readiness?.status ?? 'partial';
-							const isReady = readinessState === 'ready';
+							const readinessState: HealthState = agentReadinessState(agent);
+							const isReady = agentIsReady(agent);
 
 							return (
 								<div
@@ -465,15 +465,13 @@ export function AppCenterPanel({
 							disabled={!inspectedAppCenterAgent && !inspectedAppCenterTemplate}
 						>
 							{inspectedAppCenterAgent &&
-							(inspectedAppCenterAgent.readiness?.status ?? 'partial') ===
-								'ready' ? (
+							agentIsReady(inspectedAppCenterAgent) ? (
 								<Play className="size-4" />
 							) : (
 								<Pencil className="size-4" />
 							)}
 							{inspectedAppCenterAgent
-								? (inspectedAppCenterAgent.readiness?.status ?? 'partial') ===
-									'ready'
+								? agentIsReady(inspectedAppCenterAgent)
 									? labels.runSelected
 									: labels.editConfiguration
 								: labels.publishFromTemplate}

@@ -124,6 +124,10 @@ export function agentReadinessState(
 	return agent ? agent.readiness?.status ?? 'partial' : 'todo';
 }
 
+export function agentIsReady(agent?: Pick<EnterprisePublishedAgent, 'readiness'> | null) {
+	return agentReadinessState(agent) === 'ready';
+}
+
 export function formatScheduleAgentLabel(
 	schedule: { agent_id?: string | null },
 	activePlatformAgents: EnterprisePublishedAgent[],

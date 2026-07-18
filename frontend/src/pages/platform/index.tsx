@@ -104,6 +104,7 @@ import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import {
 	agentAccessAllowed,
+	agentIsReady,
 	agentReadinessState,
 	agentRunnerAccessLabelKey,
 	defaultEnterpriseWorkflowInputs,
@@ -536,7 +537,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		() =>
 			activePlatformAgents.filter(
 				(agent) =>
-					(agent.readiness?.status ?? 'partial') === 'ready' ||
+					agentIsReady(agent) ||
 					(Boolean(agent.model_config_id) &&
 						!(agent.readiness?.issues ?? []).some(
 							(issue) => issue.severity === 'blocking',
@@ -1328,7 +1329,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			return issue.message;
 		}
 
-		if ((agent.readiness?.status ?? 'partial') === 'ready') {
+		if (agentIsReady(agent)) {
 			return t('platform.operations.readyIssue');
 		}
 
@@ -3455,7 +3456,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	function handleAppCenterDetailPrimaryAction() {
 		if (inspectedAppCenterAgent) {
-			if ((inspectedAppCenterAgent.readiness?.status ?? 'partial') === 'ready') {
+			if (agentIsReady(inspectedAppCenterAgent)) {
 				setSelectedRunAgentId(inspectedAppCenterAgent.id);
 				handlePrimeAgentRunner();
 				return;
