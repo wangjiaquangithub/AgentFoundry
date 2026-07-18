@@ -105,6 +105,17 @@ import type {
 import { WorkflowsViewPage } from './components/WorkflowsViewPage';
 import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
+import {
+	approvalStatusClassName,
+	defaultEnterpriseWorkflowInputs,
+	formatTimestamp,
+	normalizeWorkflowInputs,
+	shortResourceId,
+	workflowInputLabel,
+	workflowInputLabelKeys,
+	workflowStatusClassName,
+	workflowStatusLabelKey,
+} from './platform-utils';
 
 export type PlatformView =
 	| 'dashboard'
@@ -206,18 +217,6 @@ const enterpriseWorkflowOptions = [
 	{ value: 'policy_review', labelKey: 'policyReview' },
 ];
 
-const defaultEnterpriseWorkflowInputs: Record<string, string> = {
-	policy_keyword: 'remote',
-	ticket_id: 'INC-1001',
-	department: 'engineering',
-};
-
-const workflowInputLabelKeys: Record<string, string> = {
-	policy_keyword: 'policyKeyword',
-	ticket_id: 'ticketId',
-	department: 'department',
-};
-
 const agentSampleQuestions = [
 	'请查询 remote 政策、INC-1001 工单状态，并总结 engineering 部门指标。',
 	'帮我查一下 INC-1001 的工单状态',
@@ -262,19 +261,6 @@ const defaultMemberForm: MemberFormState = {
 	status: 'active',
 };
 
-function formatTimestamp(value?: string) {
-	if (!value) {
-		return '-';
-	}
-
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) {
-		return value;
-	}
-
-	return date.toLocaleString();
-}
-
 function credentialLabel(credential: CredentialView) {
 	const name = credential.data.name;
 	return typeof name === 'string' && name.trim() ? name : credential.id;
@@ -282,10 +268,6 @@ function credentialLabel(credential: CredentialView) {
 
 function knowledgeBaseLabel(knowledgeBase: KnowledgeBaseView) {
 	return knowledgeBase.name || knowledgeBase.id;
-}
-
-function shortResourceId(id: string) {
-	return id.length > 12 ? `${id.slice(0, 8)}...${id.slice(-4)}` : id;
 }
 
 function scheduleSortTime(schedule: ScheduleRecord) {
@@ -339,54 +321,6 @@ function connectorHealthState(status?: string): HealthState {
 	}
 
 	return 'partial';
-}
-
-function normalizeWorkflowInputs(inputs?: Record<string, unknown>): Record<string, string> {
-	const source = inputs && Object.keys(inputs).length > 0 ? inputs : defaultEnterpriseWorkflowInputs;
-
-	return Object.fromEntries(
-		Object.entries(source).map(([key, value]) => [key, value == null ? '' : String(value)]),
-	);
-}
-
-function workflowStatusLabelKey(status?: string) {
-	if (status === 'completed') {
-		return 'statusCompleted';
-	}
-
-	if (status === 'partial') {
-		return 'statusPartial';
-	}
-
-	return 'statusWorkflowFailed';
-}
-
-function workflowStatusClassName(status?: string) {
-	if (status === 'completed') {
-		return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700';
-	}
-
-	if (status === 'partial') {
-		return 'border-amber-500/30 bg-amber-500/10 text-amber-700';
-	}
-
-	return '';
-}
-
-function approvalStatusClassName(status?: string) {
-	if (status === 'approved') {
-		return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700';
-	}
-
-	if (status === 'pending') {
-		return 'border-amber-500/30 bg-amber-500/10 text-amber-700';
-	}
-
-	return 'border-slate-500/30 bg-slate-500/10 text-slate-700';
-}
-
-function workflowInputLabel(key: string) {
-	return key.replace(/_/g, ' ');
 }
 
 export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
