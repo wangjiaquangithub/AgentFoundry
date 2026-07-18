@@ -72,6 +72,7 @@ import { WorkflowsViewPage } from './components/WorkflowsViewPage';
 import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import { usePlatformPageRefs } from './platform-page-refs';
+import { runPlatformOperationAction } from './platform-operation-actions';
 import {
 	agentSampleQuestions,
 	defaultAgentQuestion,
@@ -1964,47 +1965,15 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleOperationAction(target?: string) {
-		if (target === 'agents') {
-			scrollToAgentManagement();
-			return;
-		}
-
-		if (target === 'connectors') {
-			scrollToConnectorCenter();
-			return;
-		}
-
-		if (target === 'governance' || target === 'approvals' || target === 'audit') {
-			scrollToGovernance();
-			return;
-		}
-
-		if (target === 'credentials') {
-			navigate('/credential');
-			return;
-		}
-
-		if (target === 'knowledge') {
-			navigate('/knowledge');
-			return;
-		}
-
-		if (target === 'workflows') {
-			scrollToWorkflowRunner();
-			return;
-		}
-
-		if (target === 'tools') {
-			scrollToToolRunner();
-			return;
-		}
-
-		if (target === 'memory') {
-			scrollToMemoryOperations();
-			return;
-		}
-
-		scrollToGovernance();
+		runPlatformOperationAction(target, {
+			scrollToAgentManagement,
+			scrollToConnectorCenter,
+			scrollToGovernance,
+			scrollToWorkflowRunner,
+			scrollToToolRunner,
+			scrollToMemoryOperations,
+			navigate,
+		});
 	}
 
 	async function handleResolveOpsTask(task: EnterprisePlatformOpsTask) {
