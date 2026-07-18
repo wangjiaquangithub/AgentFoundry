@@ -126,6 +126,7 @@ import {
 	publishDraftLabels,
 	rolloutPathStepLabels,
 	runtimeStatusLabels,
+	scenarioRequestLabels,
 	selectedIdentityLabels,
 	selectedToolRunnerLabels,
 	tenantGovernanceRequestLabels,
@@ -420,6 +421,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const memberRequestText = memberRequestLabels(t);
 	const tenantGovernanceRequestText = tenantGovernanceRequestLabels(t);
 	const toolCatalogRequestText = toolCatalogRequestLabels(t);
+	const scenarioRequestText = scenarioRequestLabels(t);
 	const workflowRunnerRequestText = workflowRunnerRequestLabels(t);
 	const hasErrors = Boolean(
 		agentsError ||
@@ -1492,7 +1494,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setScenarios(response.scenarios);
 		} catch (error) {
 			setScenariosError(
-				error instanceof Error ? error.message : t('platform.scenarios.loadError'),
+				error instanceof Error ? error.message : scenarioRequestText.loadError,
 			);
 		} finally {
 			setScenariosLoading(false);
