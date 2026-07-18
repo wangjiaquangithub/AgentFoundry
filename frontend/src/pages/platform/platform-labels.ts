@@ -97,6 +97,11 @@ export const scenarioRequestLabels = (t: PlatformTranslate) => ({
 	loadError: t('platform.scenarios.loadError'),
 });
 
+export const opsTasksRequestLabels = (t: PlatformTranslate) => ({
+	loadError: t('platform.opsTasks.loadError'),
+	resolveError: t('platform.opsTasks.resolveError'),
+});
+
 export const dashboardTodoLabels = (t: PlatformTranslate) => ({
 	model: t('platform.dashboard.todoModel'),
 	agent: t('platform.dashboard.todoAgent'),

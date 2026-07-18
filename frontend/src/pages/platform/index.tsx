@@ -116,6 +116,7 @@ import {
 	governanceHealthLabels,
 	memberRequestLabels,
 	monitoringStatLabels,
+	opsTasksRequestLabels,
 	orchestrationWorkbenchStepLabels,
 	operationsHeadlineLabels,
 	launchpadStepLabels,
@@ -422,6 +423,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const tenantGovernanceRequestText = tenantGovernanceRequestLabels(t);
 	const toolCatalogRequestText = toolCatalogRequestLabels(t);
 	const scenarioRequestText = scenarioRequestLabels(t);
+	const opsTasksRequestText = opsTasksRequestLabels(t);
 	const workflowRunnerRequestText = workflowRunnerRequestLabels(t);
 	const hasErrors = Boolean(
 		agentsError ||
@@ -1510,7 +1512,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setOpsTasksSummary(response.summary);
 		} catch (error) {
 			setOpsTasksError(
-				error instanceof Error ? error.message : t('platform.opsTasks.loadError'),
+				error instanceof Error ? error.message : opsTasksRequestText.loadError,
 			);
 		} finally {
 			setOpsTasksLoading(false);
@@ -1859,7 +1861,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			await refetchScenarios();
 		} catch (error) {
 			setOpsTasksError(
-				error instanceof Error ? error.message : t('platform.opsTasks.resolveError'),
+				error instanceof Error ? error.message : opsTasksRequestText.resolveError,
 			);
 		} finally {
 			setResolvingOpsTaskCode(null);
