@@ -104,6 +104,7 @@ import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import {
 	agentAccessAllowed,
+	appCenterDetailStatusState,
 	agentIsReady,
 	agentKnowledgeBaseLabels,
 	agentModelLabel,
@@ -1460,13 +1461,12 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					missingKnowledge: t('platform.agentManagement.noKnowledge'),
 				})
 			: [];
-	const appCenterDetailStatus: HealthState = inspectedAppCenterAgent
-		? inspectedAppCenterAgentReadiness
-		: appCenterDetailIssues.length === 0
-			? 'ready'
-			: credentials.length === 0
-				? 'blocked'
-				: 'partial';
+	const appCenterDetailStatus = appCenterDetailStatusState(
+		Boolean(inspectedAppCenterAgent),
+		inspectedAppCenterAgentReadiness,
+		appCenterDetailIssues,
+		credentials.length > 0,
+	);
 	const operationsHeadline =
 		activePlatformAgents.length === 0
 			? t('platform.operations.headlineEmpty')

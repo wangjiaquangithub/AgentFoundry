@@ -186,6 +186,23 @@ export function templateDetailIssues(
 	].filter(Boolean) as string[];
 }
 
+export function appCenterDetailStatusState(
+	hasAgent: boolean,
+	agentReadiness: HealthState,
+	issues: string[],
+	hasCredentials: boolean,
+): HealthState {
+	if (hasAgent) {
+		return agentReadiness;
+	}
+
+	if (issues.length === 0) {
+		return 'ready';
+	}
+
+	return hasCredentials ? 'partial' : 'blocked';
+}
+
 export function agentRunnerAccessLabelKey(
 	agent:
 		| { allowed_user_ids?: string[] | null; allowed_roles?: string[] | null }
