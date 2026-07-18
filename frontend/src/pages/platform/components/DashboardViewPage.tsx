@@ -792,7 +792,6 @@ export function DashboardViewPage({
 					onOpenAudit={scrollToGovernance}
 					onOpenRun={handleOpenMemoryOperation}
 					onViewAudit={handleInspectMemoryOperationAudit}
-					formatTimestamp={formatTimestamp}
 					labels={{
 						eyebrow: t('platform.memoryOps.eyebrow'),
 						title: t('platform.memoryOps.title'),

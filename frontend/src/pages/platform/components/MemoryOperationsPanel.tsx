@@ -3,6 +3,7 @@ import { ArrowRight, Brain, Database, FileClock, Play, ShieldCheck } from 'lucid
 import type { EnterpriseAgentRunResponse } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { formatTimestamp } from '../platform-utils';
 
 export interface MemoryOperationsItem {
 	key: string;
@@ -29,7 +30,6 @@ interface MemoryOperationsPanelProps {
 	onOpenAudit: () => void;
 	onOpenRun: (item: MemoryOperationsItem) => void;
 	onViewAudit: (item: MemoryOperationsItem) => void;
-	formatTimestamp: (value?: string) => string;
 	labels: {
 		eyebrow: string;
 		title: string;
@@ -65,7 +65,6 @@ export function MemoryOperationsPanel({
 	onOpenAudit,
 	onOpenRun,
 	onViewAudit,
-	formatTimestamp,
 	labels,
 }: MemoryOperationsPanelProps) {
 	const summaryItems = [
