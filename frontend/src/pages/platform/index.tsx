@@ -96,6 +96,7 @@ import {
 	AgentTemplateList,
 } from './components/AgentManagementOverview';
 import { AgentManagementPanel } from './components/AgentManagementPanel';
+import { AgentQuickStartPanel } from './components/AgentQuickStartPanel';
 import { AgentRunNowPanel } from './components/AgentRunNowPanel';
 import { AgentRunnerConversation } from './components/AgentRunnerConversation';
 import { AgentRunnerResult } from './components/AgentRunnerResult';
@@ -9510,126 +9511,27 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					}}
 				/>
 
-				<section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
-					<div className="flex flex-col gap-3">
-						<div className="flex items-center justify-between gap-3">
-							<div>
-								<h2 className="text-base font-semibold">
-									{t('platform.agents.title')}
-								</h2>
-								<p className="text-sm text-muted-foreground">
-									{t('platform.agents.description')}
-								</p>
-							</div>
-							<Button size="sm" variant="outline" onClick={() => navigate('/chat')}>
-								<BotMessageSquare />
-								{t('platform.actions.openChat')}
-							</Button>
-						</div>
-
-						{agentsLoading ? (
-							<div className="grid gap-3">
-								<Skeleton className="h-20 w-full" />
-								<Skeleton className="h-20 w-full" />
-							</div>
-						) : featuredAgents.length === 0 ? (
-							<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-								{t('platform.agents.empty')}
-							</div>
-						) : (
-							<div className="grid gap-3">
-								{featuredAgents.map((agent) => (
-									<Card
-										key={agent.id}
-										size="sm"
-										className="rounded-lg shadow-none"
-									>
-										<CardHeader className="grid-cols-[1fr_auto] gap-3">
-											<div className="min-w-0">
-												<CardTitle className="truncate text-sm">
-													{agent.data.name}
-												</CardTitle>
-												<p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
-													{agent.data.system_prompt ||
-														t('platform.agents.noPrompt')}
-												</p>
-											</div>
-											<Button
-												size="icon-sm"
-												variant="ghost"
-												tooltip={t('platform.actions.openAgent')}
-												onClick={() => navigate(`/chat/${agent.id}`)}
-											>
-												<ArrowRight />
-											</Button>
-										</CardHeader>
-										<CardContent className="flex flex-wrap gap-2">
-											<StateBadge
-												state={agent.editable ? 'ready' : 'partial'}
-												label={
-													agent.editable
-														? t('platform.agents.editable')
-														: t('common.readOnly')
-												}
-											/>
-											{agent.data.invite_config?.invitable ? (
-												<Badge variant="outline">
-													{t('platform.agents.invitable')}
-												</Badge>
-											) : null}
-										</CardContent>
-									</Card>
-								))}
-							</div>
-						)}
-					</div>
-
-					<div className="flex flex-col gap-3">
-						<div>
-							<h2 className="text-base font-semibold">
-								{t('platform.quickActions.title')}
-							</h2>
-							<p className="text-sm text-muted-foreground">
-								{t('platform.quickActions.description')}
-							</p>
-						</div>
-						<div className="grid gap-2">
-							<Button
-								className="justify-between"
-								variant="outline"
-								onClick={() => navigate('/credential')}
-							>
-								<span className="inline-flex items-center gap-2">
-									<KeyRound />
-									{t('platform.actions.configureModel')}
-								</span>
-								<ArrowRight className="size-4" />
-							</Button>
-							<Button
-								className="justify-between"
-								variant="outline"
-								onClick={() => navigate('/knowledge')}
-							>
-								<span className="inline-flex items-center gap-2">
-									<LibraryBig />
-									{t('platform.actions.manageKnowledge')}
-								</span>
-								<ArrowRight className="size-4" />
-							</Button>
-							<Button
-								className="justify-between"
-								variant="outline"
-								onClick={() => navigate('/schedule')}
-							>
-								<span className="inline-flex items-center gap-2">
-									<Workflow />
-									{t('platform.actions.manageWorkflow')}
-								</span>
-								<ArrowRight className="size-4" />
-							</Button>
-						</div>
-					</div>
-				</section>
+				<AgentQuickStartPanel
+					agentsLoading={agentsLoading}
+					featuredAgents={featuredAgents}
+					onNavigate={navigate}
+					labels={{
+						agentsTitle: t('platform.agents.title'),
+						agentsDescription: t('platform.agents.description'),
+						openChat: t('platform.actions.openChat'),
+						emptyAgents: t('platform.agents.empty'),
+						noPrompt: t('platform.agents.noPrompt'),
+						openAgent: t('platform.actions.openAgent'),
+						editable: t('platform.agents.editable'),
+						readOnly: t('common.readOnly'),
+						invitable: t('platform.agents.invitable'),
+						quickActionsTitle: t('platform.quickActions.title'),
+						quickActionsDescription: t('platform.quickActions.description'),
+						configureModel: t('platform.actions.configureModel'),
+						manageKnowledge: t('platform.actions.manageKnowledge'),
+						manageWorkflow: t('platform.actions.manageWorkflow'),
+					}}
+				/>
 
 				<section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.9fr)]">
 					<div className="flex flex-col gap-3">
