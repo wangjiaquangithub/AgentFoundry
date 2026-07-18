@@ -243,3 +243,31 @@ export const workbenchQuickActionLabels = (t: PlatformTranslate) => ({
 	governance: t('platform.workbench.quickActions.governance'),
 	tools: t('platform.workbench.quickActions.tools'),
 });
+
+export const rolloutPathStepLabels = (t: PlatformTranslate) => ({
+	title: (key: string) => t(`platform.workbench.rolloutPath.steps.${key}.title`),
+	description: (key: string) =>
+		t(`platform.workbench.rolloutPath.steps.${key}.description`),
+	action: (key: string) => t(`platform.workbench.rolloutPath.steps.${key}.action`),
+});
+
+export const firstAgentGuideStepLabels = (t: PlatformTranslate) => ({
+	title: (key: string) => t(`platform.workbench.firstAgentGuide.steps.${key}.title`),
+	action: (key: string) => t(`platform.workbench.firstAgentGuide.steps.${key}.action`),
+	modelReady: (count: number) =>
+		t('platform.workbench.firstAgentGuide.steps.model.ready', { count }),
+	modelEmpty: t('platform.workbench.firstAgentGuide.steps.model.empty'),
+	agentReady: (count: number) =>
+		t('platform.workbench.firstAgentGuide.steps.agent.ready', { count }),
+	agentPartial: (count: number) =>
+		t('platform.workbench.firstAgentGuide.steps.agent.partial', { count }),
+	agentEmpty: t('platform.workbench.firstAgentGuide.steps.agent.empty'),
+	runReady: t('platform.workbench.firstAgentGuide.steps.run.ready'),
+	runPartial: t('platform.workbench.firstAgentGuide.steps.run.partial'),
+	runEmpty: t('platform.workbench.firstAgentGuide.steps.run.empty'),
+	governanceReady: (count: number) =>
+		t('platform.workbench.firstAgentGuide.steps.governance.ready', { count }),
+	governancePending: (count: number) =>
+		t('platform.workbench.firstAgentGuide.steps.governance.pending', { count }),
+	governanceEmpty: t('platform.workbench.firstAgentGuide.steps.governance.empty'),
+});

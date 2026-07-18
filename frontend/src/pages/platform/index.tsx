@@ -105,10 +105,12 @@ import {
 	auditStatsLabels,
 	connectorOperationsLabels,
 	dashboardTodoLabels,
+	firstAgentGuideStepLabels,
 	operationsHeadlineLabels,
 	launchpadStepLabels,
 	platformConsoleItemLabels,
 	platformOverviewStatLabels,
+	rolloutPathStepLabels,
 	runtimeStatusLabels,
 	selectedToolRunnerLabels,
 	triggerOperationsStatLabels,
@@ -2937,12 +2939,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		{
 			icons: rolloutPathIcons,
 			actions: rolloutPathNavigationActions(platformNavigationHandlers),
-			labels: {
-				title: (key) => t(`platform.workbench.rolloutPath.steps.${key}.title`),
-				description: (key) =>
-					t(`platform.workbench.rolloutPath.steps.${key}.description`),
-				action: (key) => t(`platform.workbench.rolloutPath.steps.${key}.action`),
-			},
+			labels: rolloutPathStepLabels(t),
 		},
 	);
 	const firstAgentGuideSteps = firstAgentGuideStepsForStatus(
@@ -2958,26 +2955,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		{
 			icons: firstAgentGuideIcons,
 			actions: firstAgentGuideNavigationActions(platformNavigationHandlers),
-			labels: {
-				title: (key) => t(`platform.workbench.firstAgentGuide.steps.${key}.title`),
-				action: (key) => t(`platform.workbench.firstAgentGuide.steps.${key}.action`),
-				modelReady: (count) =>
-					t('platform.workbench.firstAgentGuide.steps.model.ready', { count }),
-				modelEmpty: t('platform.workbench.firstAgentGuide.steps.model.empty'),
-				agentReady: (count) =>
-					t('platform.workbench.firstAgentGuide.steps.agent.ready', { count }),
-				agentPartial: (count) =>
-					t('platform.workbench.firstAgentGuide.steps.agent.partial', { count }),
-				agentEmpty: t('platform.workbench.firstAgentGuide.steps.agent.empty'),
-				runReady: t('platform.workbench.firstAgentGuide.steps.run.ready'),
-				runPartial: t('platform.workbench.firstAgentGuide.steps.run.partial'),
-				runEmpty: t('platform.workbench.firstAgentGuide.steps.run.empty'),
-				governanceReady: (count) =>
-					t('platform.workbench.firstAgentGuide.steps.governance.ready', { count }),
-				governancePending: (count) =>
-					t('platform.workbench.firstAgentGuide.steps.governance.pending', { count }),
-				governanceEmpty: t('platform.workbench.firstAgentGuide.steps.governance.empty'),
-			},
+			labels: firstAgentGuideStepLabels(t),
 		},
 	);
 	const firstAgentGuidePrimaryStep =
