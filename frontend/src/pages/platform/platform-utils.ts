@@ -330,6 +330,31 @@ export function memoryOperationsItemsForConversations(values: {
 	});
 }
 
+export function dashboardTodoItemsForStatus(
+	values: {
+		credentialCount: number;
+		activeAgentCount: number;
+		readyAgentCount: number;
+		pendingApprovalCount: number;
+		hasErrors: boolean;
+	},
+	labels: {
+		model: string;
+		agent: string;
+		agentReadiness: string;
+		approval: (count: number) => string;
+		errors: string;
+	},
+): string[] {
+	return [
+		values.credentialCount === 0 ? labels.model : null,
+		values.activeAgentCount === 0 ? labels.agent : null,
+		values.activeAgentCount > 0 && values.readyAgentCount === 0 ? labels.agentReadiness : null,
+		values.pendingApprovalCount > 0 ? labels.approval(values.pendingApprovalCount) : null,
+		values.hasErrors ? labels.errors : null,
+	].filter((item): item is string => Boolean(item));
+}
+
 export function formatOperationsAgentIssueText(
 	agent: Pick<EnterprisePublishedAgent, 'readiness' | 'status'>,
 	labels: { archived: string; missing: string; ready: string },

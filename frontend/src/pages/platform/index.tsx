@@ -115,6 +115,7 @@ import {
 	appCenterSelectionState,
 	appCenterTemplateDetailResourceValues,
 	auditStatsForSummary,
+	dashboardTodoItemsForStatus,
 	defaultEnterpriseWorkflowInputs,
 	enabledEnterpriseWorkflowTemplates,
 	enabledTriggerSchedules,
@@ -1138,17 +1139,22 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const failedWorkflowRunCount = workflowStatusCounts.failed ?? 0;
 	const governedWorkflowItems = dashboardOperations?.governed_workflows ?? [];
 	const recommendedOperationActions = dashboardOperations?.recommended_actions ?? [];
-	const dashboardTodoItems = [
-		credentials.length === 0 ? t('platform.dashboard.todoModel') : null,
-		activePlatformAgents.length === 0 ? t('platform.dashboard.todoAgent') : null,
-		activePlatformAgents.length > 0 && readyPlatformAgents.length === 0
-			? t('platform.dashboard.todoAgentReadiness')
-			: null,
-		pendingApprovals.length > 0
-			? t('platform.dashboard.todoApproval', { count: pendingApprovals.length })
-			: null,
-		hasErrors ? t('platform.dashboard.todoErrors') : null,
-	].filter(Boolean) as string[];
+	const dashboardTodoItems = dashboardTodoItemsForStatus(
+		{
+			credentialCount: credentials.length,
+			activeAgentCount: activePlatformAgents.length,
+			readyAgentCount: readyPlatformAgents.length,
+			pendingApprovalCount: pendingApprovals.length,
+			hasErrors,
+		},
+		{
+			model: t('platform.dashboard.todoModel'),
+			agent: t('platform.dashboard.todoAgent'),
+			agentReadiness: t('platform.dashboard.todoAgentReadiness'),
+			approval: (count) => t('platform.dashboard.todoApproval', { count }),
+			errors: t('platform.dashboard.todoErrors'),
+		},
+	);
 	const blockedOrPartialPlatformAgents = activePlatformAgents.filter(
 		(agent) =>
 			!readyPlatformAgents.some((readyAgent) => readyAgent.id === agent.id),
