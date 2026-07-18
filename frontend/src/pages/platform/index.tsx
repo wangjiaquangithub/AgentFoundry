@@ -105,11 +105,9 @@ import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import {
 	agentAccessAllowed,
-	appCenterAgentDetailLabels,
+	appCenterAgentDetailResourceValues,
 	appCenterDetailHealthState,
 	agentIsReady,
-	agentKnowledgeBaseLabels,
-	agentModelLabel,
 	agentReadinessIssues,
 	agentReadinessState,
 	agentResourceSummary,
@@ -1347,45 +1345,33 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			tools: resources.tools,
 		});
 	};
-	const inspectedAppCenterAgentTools = inspectedAppCenterAgent?.tools ?? [];
 	const inspectedAppCenterTemplateTools = inspectedAppCenterTemplate?.tools ?? [];
 	const inspectedAppCenterAgentReadiness = agentReadinessState(inspectedAppCenterAgent);
 	const inspectedAppCenterAgentIssues = agentReadinessIssues(inspectedAppCenterAgent);
-	const inspectedAppCenterAgentModel = agentModelLabel(
-		inspectedAppCenterAgent,
-		credentialById,
-		t('platform.appCenter.noModel'),
-	);
-	const inspectedAppCenterAgentKnowledge = agentKnowledgeBaseLabels(
-		inspectedAppCenterAgent,
-		knowledgeBaseById,
-	);
-	const inspectedAppCenterAgentDetailLabels = inspectedAppCenterAgent
-		? appCenterAgentDetailLabels(inspectedAppCenterAgent, {
-				access: {
-					restricted: ({ users, roles }) =>
-						t('platform.appCenter.restrictedAccess', { users, roles }),
-					open: t('platform.appCenter.tenantAccess'),
+	const inspectedAppCenterAgentResourceValues = inspectedAppCenterAgent
+		? appCenterAgentDetailResourceValues(
+				inspectedAppCenterAgent,
+				credentialById,
+				knowledgeBaseById,
+				{
+					noModel: t('platform.appCenter.noModel'),
+					access: {
+						restricted: ({ users, roles }) =>
+							t('platform.appCenter.restrictedAccess', { users, roles }),
+						open: t('platform.appCenter.tenantAccess'),
+					},
+					runtime: {
+						value: ({ memory, workflow }) =>
+							t('platform.appCenter.runtimeValue', { memory, workflow }),
+						enabled: t('platform.agentManagement.enabled'),
+						disabled: t('platform.agentManagement.disabled'),
+					},
 				},
-				runtime: {
-					value: ({ memory, workflow }) =>
-						t('platform.appCenter.runtimeValue', { memory, workflow }),
-					enabled: t('platform.agentManagement.enabled'),
-					disabled: t('platform.agentManagement.disabled'),
-				},
-			})
+			)
 		: null;
 	const appCenterDetailResources = appCenterDetailResourcesForSelection(
 		{
-			agent: inspectedAppCenterAgent
-				? {
-						model: inspectedAppCenterAgentModel,
-						knowledge: inspectedAppCenterAgentKnowledge,
-						tools: inspectedAppCenterAgentTools,
-						runtime: inspectedAppCenterAgentDetailLabels?.runtime ?? '',
-						access: inspectedAppCenterAgentDetailLabels?.access ?? '',
-					}
-				: null,
+			agent: inspectedAppCenterAgentResourceValues,
 			template: inspectedAppCenterTemplate
 				? {
 						modelCount: credentials.length,

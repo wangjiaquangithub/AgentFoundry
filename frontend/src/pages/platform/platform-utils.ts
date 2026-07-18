@@ -209,6 +209,46 @@ export function appCenterAgentDetailLabels(
 	};
 }
 
+export function appCenterAgentDetailResourceValues(
+	agent: Pick<
+		EnterprisePublishedAgent,
+		| 'allowed_roles'
+		| 'allowed_user_ids'
+		| 'knowledge_base_ids'
+		| 'memory_enabled'
+		| 'model_config_id'
+		| 'tools'
+		| 'workflow_enabled'
+	>,
+	credentialById: Map<string, { id?: unknown; data?: { name?: unknown } }>,
+	knowledgeBaseById: Map<string, { id?: unknown; name?: unknown }>,
+	labels: {
+		noModel: string;
+		access: {
+			restricted: (counts: { users: number; roles: number }) => string;
+			open: string;
+		};
+		runtime: {
+			value: (states: { memory: string; workflow: string }) => string;
+			enabled: string;
+			disabled: string;
+		};
+	},
+) {
+	const detailLabels = appCenterAgentDetailLabels(agent, {
+		access: labels.access,
+		runtime: labels.runtime,
+	});
+
+	return {
+		model: agentModelLabel(agent, credentialById, labels.noModel),
+		knowledge: agentKnowledgeBaseLabels(agent, knowledgeBaseById),
+		tools: agent.tools ?? [],
+		runtime: detailLabels.runtime,
+		access: detailLabels.access,
+	};
+}
+
 export function templateDetailIssues(
 	hasCredentials: boolean,
 	hasKnowledgeBases: boolean,
