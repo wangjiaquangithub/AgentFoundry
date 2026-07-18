@@ -313,3 +313,23 @@ export const monitoringStatLabels = (t: PlatformTranslate) => ({
 	pendingApprovals: t('platform.monitoring.pendingApprovals'),
 	pendingApprovalsHelper: t('platform.monitoring.pendingApprovalsHelper'),
 });
+
+export const governanceAccessLabels = (t: PlatformTranslate) => ({
+	identities: t('platform.accessControl.identities'),
+	tenants: t('platform.accessControl.tenants'),
+	riskyIdentities: t('platform.accessControl.riskyIdentities'),
+	pendingApprovals: t('platform.accessControl.pendingApprovals'),
+});
+
+export const governanceHealthLabels = (t: PlatformTranslate) => ({
+	tenants: t('platform.governanceHealth.tenants'),
+	tenantsHelper: t('platform.governanceHealth.tenantsHelper'),
+	identities: t('platform.governanceHealth.identities'),
+	identitiesHelper: t('platform.governanceHealth.identitiesHelper'),
+	pendingApprovals: t('platform.governanceHealth.pendingApprovals'),
+	pendingApprovalsHelper: t('platform.governanceHealth.pendingApprovalsHelper'),
+	auditEvents: t('platform.governanceHealth.auditEvents'),
+	auditEventsHelper: t('platform.governanceHealth.auditEventsHelper'),
+	auditEventsFailedHelper: ({ count }: { count: number }) =>
+		t('platform.governanceHealth.auditEventsFailedHelper', { count }),
+});

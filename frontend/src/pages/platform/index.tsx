@@ -106,6 +106,8 @@ import {
 	connectorOperationsLabels,
 	dashboardTodoLabels,
 	firstAgentGuideStepLabels,
+	governanceAccessLabels,
+	governanceHealthLabels,
 	monitoringStatLabels,
 	orchestrationWorkbenchStepLabels,
 	operationsHeadlineLabels,
@@ -830,24 +832,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		governance,
 		auditEventCount,
 		selectedIdentityPendingApprovalCount: selectedIdentityPendingApprovals.length,
-		accessLabels: {
-			identities: t('platform.accessControl.identities'),
-			tenants: t('platform.accessControl.tenants'),
-			riskyIdentities: t('platform.accessControl.riskyIdentities'),
-			pendingApprovals: t('platform.accessControl.pendingApprovals'),
-		},
-		healthLabels: {
-			tenants: t('platform.governanceHealth.tenants'),
-			tenantsHelper: t('platform.governanceHealth.tenantsHelper'),
-			identities: t('platform.governanceHealth.identities'),
-			identitiesHelper: t('platform.governanceHealth.identitiesHelper'),
-			pendingApprovals: t('platform.governanceHealth.pendingApprovals'),
-			pendingApprovalsHelper: t('platform.governanceHealth.pendingApprovalsHelper'),
-			auditEvents: t('platform.governanceHealth.auditEvents'),
-			auditEventsHelper: t('platform.governanceHealth.auditEventsHelper'),
-			auditEventsFailedHelper: ({ count }) =>
-				t('platform.governanceHealth.auditEventsFailedHelper', { count }),
-		},
+		accessLabels: governanceAccessLabels(t),
+		healthLabels: governanceHealthLabels(t),
 		icons: governanceHealthIcons,
 	});
 	const identityAccessRows = governanceOperationsState.identityAccessRows;
