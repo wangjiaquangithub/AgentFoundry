@@ -117,12 +117,10 @@ import {
 	operationsHeadlineText,
 	orchestrationPrimaryStepForSteps,
 	orchestrationWorkbenchStepsForStatus,
+	publishAccessStateForStatus,
 	publishDraftStateForStatus,
-	platformMembersByUserId,
 	platformOverviewStatsForSummary,
 	platformConsoleItemsForDisplay,
-	publishAccessMembersForSelection,
-	publishRoleOptionsForMembers,
 	readyLaunchpadStepCountForSteps,
 	readyOrchestrationWorkbenchStepCountForSteps,
 	readyPlatformAgentsForAgents,
@@ -629,34 +627,28 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	);
 	const enterpriseIdentities = governance?.identities ?? connectors?.identities ?? [];
-	const publishTenant =
-		publishForm.tenant.trim() || platformStatus?.current_user.tenant || 'default';
-	const activePlatformMembers = useMemo(
-		() => activePlatformMembersForTenant(platformMembers?.members ?? [], publishTenant),
-		[platformMembers?.members, publishTenant],
-	);
-	const platformMemberById = useMemo(
-		() => platformMembersByUserId(platformMembers?.members ?? []),
-		[platformMembers?.members],
-	);
-	const publishAccessMembers = useMemo(
+	const {
+		publishTenant,
+		publishAccessMembers,
+		publishRoleOptions,
+	} = useMemo(
 		() =>
-			publishAccessMembersForSelection({
-				activeMembers: activePlatformMembers,
-				memberByUserId: platformMemberById,
-				allowedUserIds: publishForm.allowed_user_ids,
-				tenant: publishTenant,
-			}),
-		[activePlatformMembers, platformMemberById, publishForm.allowed_user_ids, publishTenant],
-	);
-	const publishRoleOptions = useMemo(
-		() =>
-			publishRoleOptionsForMembers({
-				activeMembers: activePlatformMembers,
+			publishAccessStateForStatus({
+				tenant: publishForm.tenant,
+				currentUserTenant: platformStatus?.current_user.tenant,
+				members: platformMembers?.members ?? [],
 				configuredRoles: platformMembers?.roles ?? [],
-				selectedRoles: publishForm.allowed_roles,
+				allowedUserIds: publishForm.allowed_user_ids,
+				allowedRoles: publishForm.allowed_roles,
 			}),
-		[activePlatformMembers, platformMembers?.roles, publishForm.allowed_roles],
+		[
+			platformMembers?.members,
+			platformMembers?.roles,
+			platformStatus?.current_user.tenant,
+			publishForm.allowed_roles,
+			publishForm.allowed_user_ids,
+			publishForm.tenant,
+		],
 	);
 	const {
 		publishSelectedModelLabel,

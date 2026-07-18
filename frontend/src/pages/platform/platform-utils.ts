@@ -527,6 +527,38 @@ export function publishRoleOptionsForMembers(values: {
 	).sort();
 }
 
+export function publishAccessStateForStatus(values: {
+	tenant: string;
+	currentUserTenant?: string;
+	members: EnterprisePlatformMember[];
+	configuredRoles: string[];
+	allowedUserIds: string[];
+	allowedRoles: string[];
+}) {
+	const publishTenant = values.tenant.trim() || values.currentUserTenant || 'default';
+	const activePlatformMembers = activePlatformMembersForTenant(values.members, publishTenant);
+	const platformMemberById = platformMembersByUserId(values.members);
+	const publishAccessMembers = publishAccessMembersForSelection({
+		activeMembers: activePlatformMembers,
+		memberByUserId: platformMemberById,
+		allowedUserIds: values.allowedUserIds,
+		tenant: publishTenant,
+	});
+	const publishRoleOptions = publishRoleOptionsForMembers({
+		activeMembers: activePlatformMembers,
+		configuredRoles: values.configuredRoles,
+		selectedRoles: values.allowedRoles,
+	});
+
+	return {
+		publishTenant,
+		activePlatformMembers,
+		platformMemberById,
+		publishAccessMembers,
+		publishRoleOptions,
+	};
+}
+
 export function tenantWorkspaceEntriesForWorkspaces(
 	workspaces?: Record<string, EnterpriseTenantWorkspace> | null,
 ) {
