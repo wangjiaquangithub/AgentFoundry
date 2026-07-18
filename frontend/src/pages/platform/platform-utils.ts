@@ -39,6 +39,24 @@ export function credentialLabel(credential: { id?: unknown; data?: { name?: unkn
 	return typeof name === 'string' && name.trim() ? name : String(credential.id ?? '');
 }
 
+export function modelCredentialLabel(
+	modelConfigId: string | null | undefined,
+	credentialById: Map<string, { id?: unknown; data?: { name?: unknown } }>,
+	fallback: string,
+	options?: { shortenFallback?: boolean },
+) {
+	if (!modelConfigId) {
+		return fallback;
+	}
+
+	const credential = credentialById.get(modelConfigId);
+	if (credential) {
+		return credentialLabel(credential);
+	}
+
+	return options?.shortenFallback ? shortResourceId(modelConfigId) : modelConfigId;
+}
+
 export function knowledgeBaseLabel(knowledgeBase: { id?: unknown; name?: unknown }) {
 	return typeof knowledgeBase.name === 'string' && knowledgeBase.name
 		? knowledgeBase.name

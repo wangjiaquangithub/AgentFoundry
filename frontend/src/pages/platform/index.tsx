@@ -106,8 +106,8 @@ import {
 	credentialLabel,
 	defaultEnterpriseWorkflowInputs,
 	knowledgeBaseLabel,
+	modelCredentialLabel,
 	normalizeWorkflowInputs,
-	shortResourceId,
 } from './platform-utils';
 
 export type PlatformView =
@@ -651,11 +651,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		agentSetupSteps.find((step) => step.state === 'blocked' || step.state === 'todo') ??
 		agentSetupSteps.find((step) => step.state === 'partial') ??
 		null;
-	const selectedRunAgentModelLabel = selectedRunAgent?.model_config_id
-		? credentialById.get(selectedRunAgent.model_config_id)
-			? credentialLabel(credentialById.get(selectedRunAgent.model_config_id)!)
-			: selectedRunAgent.model_config_id
-		: t('platform.agentManagement.noneConfigured');
+	const selectedRunAgentModelLabel = modelCredentialLabel(
+		selectedRunAgent?.model_config_id,
+		credentialById,
+		t('platform.agentManagement.noneConfigured'),
+	);
 	const selectedRunAgentKnowledgeLabels =
 		(selectedRunAgent?.knowledge_base_ids ?? []).map((knowledgeBaseId) => {
 			const knowledgeBase = knowledgeBaseById.get(knowledgeBaseId);
@@ -684,11 +684,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		(nextStepMode === 'publish' &&
 			(!defaultAgentTemplate || Boolean(publishingTemplateId))) ||
 		(nextStepMode === 'run' && !selectedRunAgent);
-	const agentRunModelLabel = agentRunResult?.model_config_id
-		? credentialById.get(agentRunResult.model_config_id)
-			? credentialLabel(credentialById.get(agentRunResult.model_config_id)!)
-			: agentRunResult.model_config_id
-		: t('platform.agentManagement.noneConfigured');
+	const agentRunModelLabel = modelCredentialLabel(
+		agentRunResult?.model_config_id,
+		credentialById,
+		t('platform.agentManagement.noneConfigured'),
+	);
 	const agentRunKnowledgeLabels =
 		agentRunResult?.knowledge_base_ids?.map((knowledgeBaseId) => {
 			const knowledgeBase = knowledgeBaseById.get(knowledgeBaseId);
@@ -776,11 +776,12 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			).sort(),
 		[activePlatformMembers, platformMembers?.roles, publishForm.allowed_roles],
 	);
-	const publishSelectedModelLabel = publishForm.model_config_id
-		? credentialById.get(publishForm.model_config_id)
-			? credentialLabel(credentialById.get(publishForm.model_config_id)!)
-			: shortResourceId(publishForm.model_config_id)
-		: t('platform.agentManagement.noneConfigured');
+	const publishSelectedModelLabel = modelCredentialLabel(
+		publishForm.model_config_id,
+		credentialById,
+		t('platform.agentManagement.noneConfigured'),
+		{ shortenFallback: true },
+	);
 	const publishAccessScopeSummary =
 		publishForm.allowed_user_ids.length === 0 && publishForm.allowed_roles.length === 0
 			? t('platform.agentManagement.accessOpen')
