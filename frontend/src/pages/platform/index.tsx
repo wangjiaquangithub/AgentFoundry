@@ -106,6 +106,7 @@ import {
 	agentAccessAllowed,
 	agentIsReady,
 	agentReadinessState,
+	agentResourceSummary,
 	agentRunnerAccessLabelKey,
 	defaultEnterpriseWorkflowInputs,
 	knowledgeBaseLabels,
@@ -1336,18 +1337,16 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		return t('platform.operations.missingIssue');
 	};
 	const agentResourceText = (agent: EnterprisePublishedAgent) => {
-		const knowledgeBaseIds = agent.knowledge_base_ids ?? [];
-		const tools = agent.tools ?? [];
-		const model = modelCredentialLabel(
-			agent.model_config_id,
+		const resources = agentResourceSummary(
+			agent,
 			credentialById,
 			t('platform.appCenter.noModel'),
 		);
 
 		return t('platform.appCenter.agentResources', {
-			model,
-			knowledge: knowledgeBaseIds.length,
-			tools: tools.length,
+			model: resources.model,
+			knowledge: resources.knowledge,
+			tools: resources.tools,
 		});
 	};
 	const inspectedAppCenterAgentKnowledgeBaseIds =

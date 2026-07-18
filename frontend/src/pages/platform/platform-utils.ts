@@ -74,6 +74,18 @@ export function knowledgeBaseLabels(
 	});
 }
 
+export function agentResourceSummary(
+	agent: Pick<EnterprisePublishedAgent, 'knowledge_base_ids' | 'model_config_id' | 'tools'>,
+	credentialById: Map<string, { id?: unknown; data?: { name?: unknown } }>,
+	noModelLabel: string,
+) {
+	return {
+		model: modelCredentialLabel(agent.model_config_id, credentialById, noModelLabel),
+		knowledge: (agent.knowledge_base_ids ?? []).length,
+		tools: (agent.tools ?? []).length,
+	};
+}
+
 export function agentAccessAllowed(
 	agent: EnterprisePublishedAgent,
 	identity?: EnterpriseIdentity | null,
