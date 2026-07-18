@@ -1,62 +1,66 @@
 // @ts-nocheck
 
+import {
+	AlertTriangle,
+	BotMessageSquare,
+	Building2,
+	CheckCircle2,
+	Database,
+	Play,
+	RefreshCcw,
+	Save,
+	XCircle,
+} from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
+import { AccessControlPanel } from './AccessControlPanel';
+import { AgentManagementPanel } from './AgentManagementPanel';
+import { AgentQuickStartPanel } from './AgentQuickStartPanel';
+import { AgentRunNowPanel } from './AgentRunNowPanel';
+import { AgentRunnerPanel } from './AgentRunnerPanel';
+import { AppCenterPanel } from './AppCenterPanel';
+import { ApprovalsPanel } from './ApprovalsPanel';
+import { AuditEventsPanel } from './AuditEventsPanel';
+import { CapabilitiesPanel } from './CapabilitiesPanel';
+import { ConfigManagementPanel } from './ConfigManagementPanel';
+import { DashboardOpsPanel } from './DashboardOpsPanel';
+import { FirstAgentGuide } from './FirstAgentGuide';
+import { GovernanceHealthPanel } from './GovernanceHealthPanel';
+import { LaunchpadPanel } from './LaunchpadPanel';
+import { MembersPanel } from './MembersPanel';
+import { MemoryOperationsPanel } from './MemoryOperationsPanel';
+import { MonitoringSnapshotPanel } from './MonitoringSnapshotPanel';
+import { OperationsPanel } from './OperationsPanel';
+import { OpsTasksPanel } from './OpsTasksPanel';
+import { OrchestrationWorkbenchPanel } from './OrchestrationWorkbenchPanel';
+import { PlatformConsolePanel } from './PlatformConsolePanel';
+import { PlatformDashboardOverview } from './PlatformDashboardOverview';
+import { PolicySubagentsPanel } from './PolicySubagentsPanel';
+import { RolloutPath } from './RolloutPath';
+import { RuntimeStatusPanel } from './RuntimeStatusPanel';
+import { ScenariosPanel } from './ScenariosPanel';
+import { TenantGovernancePanel } from './TenantGovernancePanel';
+import { TenantWorkspacePanel } from './TenantWorkspacePanel';
+import { ToolCatalogPanel } from './ToolCatalogPanel';
+import { ToolRunnerPanel } from './ToolRunnerPanel';
+import { TriggerOpsPanel } from './TriggerOpsPanel';
+import { WorkbenchReadinessPanel } from './WorkbenchReadinessPanel';
+import { WorkbenchStatusPanel } from './WorkbenchStatusPanel';
+import { WorkflowOpsPanel } from './WorkflowOpsPanel';
+import { WorkflowRunnerPanel } from './WorkflowRunnerPanel';
+import { PlatformNotice, StateBadge } from './common';
+
 interface DashboardViewPageProps {
 	[key: string]: any;
 }
 
 export function DashboardViewPage({
-	AccessControlPanel,
-	AgentManagementPanel,
-	AgentQuickStartPanel,
-	AgentRunNowPanel,
-	AgentRunnerPanel,
-	AlertTriangle,
-	AppCenterPanel,
-	ApprovalsPanel,
-	AuditEventsPanel,
-	Badge,
-	BotMessageSquare,
-	Building2,
-	Button,
-	CapabilitiesPanel,
-	CheckCircle2,
-	ConfigManagementPanel,
-	DashboardOpsPanel,
-	Database,
-	FirstAgentGuide,
-	GovernanceHealthPanel,
-	Input,
-	LaunchpadPanel,
-	MembersPanel,
-	MemoryOperationsPanel,
-	MonitoringSnapshotPanel,
 	NextStepIcon,
-	OperationsPanel,
-	OpsTasksPanel,
-	OrchestrationWorkbenchPanel,
-	PlatformConsolePanel,
-	PlatformDashboardOverview,
-	PlatformNotice,
-	Play,
-	PolicySubagentsPanel,
-	RefreshCcw,
-	RolloutPath,
-	RuntimeStatusPanel,
-	Save,
-	ScenariosPanel,
-	Skeleton,
-	StateBadge,
-	Switch,
-	TenantGovernancePanel,
-	TenantWorkspacePanel,
-	ToolCatalogPanel,
-	ToolRunnerPanel,
-	TriggerOpsPanel,
-	WorkbenchReadinessPanel,
-	WorkbenchStatusPanel,
-	WorkflowOpsPanel,
-	WorkflowRunnerPanel,
-	XCircle,
 	accessControlStats,
 	accessTenantSummaries,
 	activeConnectorTenant,

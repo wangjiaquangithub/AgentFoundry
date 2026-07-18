@@ -4,7 +4,6 @@ import {
 	Boxes,
 	Brain,
 	Building2,
-	CheckCircle2,
 	Clock3,
 	Database,
 	FileClock,
@@ -14,14 +13,11 @@ import {
 	ListChecks,
 	Network,
 	Play,
-	RefreshCcw,
-	Save,
 	Server,
 	ShieldCheck,
 	Upload,
 	UserRound,
 	Workflow,
-	XCircle,
 } from 'lucide-react';
 import type { ComponentType, RefObject } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -63,108 +59,51 @@ import {
 	type ScheduleRecord,
 } from '@/api';
 import { ApiError } from '@/api/client';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Switch } from '@/components/ui/switch';
 import { useAgents } from '@/hooks/useAgents';
 import { useCredentials } from '@/hooks/useCredentials';
 import { useKnowledgeBases } from '@/hooks/useKnowledgeBases';
 import { usePlatformStatus } from '@/hooks/usePlatformStatus';
 import { useSchedules } from '@/hooks/useSchedules';
 import { useTranslation } from '@/i18n/useI18n';
-import { cn } from '@/lib/utils';
 import { getFrequencyLabel, parseCronExpression } from '../schedule/schedule-utils';
-import { AccessControlPanel } from './components/AccessControlPanel';
-import { AgentManagementPanel } from './components/AgentManagementPanel';
-import { AgentQuickStartPanel } from './components/AgentQuickStartPanel';
-import { AgentRunNowPanel } from './components/AgentRunNowPanel';
-import { AgentRunnerPanel } from './components/AgentRunnerPanel';
 import { AgentsViewPage } from './components/AgentsViewPage';
-import { AuditEventsPanel } from './components/AuditEventsPanel';
-import { ApprovalsPanel, type ApprovalFormState } from './components/ApprovalsPanel';
+import type { ApprovalFormState } from './components/ApprovalsPanel';
 import { ApprovalsViewPage } from './components/ApprovalsViewPage';
-import {
-	AppCenterPanel,
-	type AppCenterSelection,
-} from './components/AppCenterPanel';
-import { CapabilitiesPanel } from './components/CapabilitiesPanel';
-import { ConfigManagementPanel } from './components/ConfigManagementPanel';
-import { FirstAgentGuide, type FirstAgentGuideStep } from './components/FirstAgentGuide';
-import {
-	GovernanceHealthPanel,
-	type GovernanceHealthItem,
-} from './components/GovernanceHealthPanel';
-import { LaunchpadPanel, type LaunchpadStep } from './components/LaunchpadPanel';
-import {
-	MonitoringSnapshotPanel,
-	type MonitoringAgentTurn,
-	type MonitoringStat,
+import type { AppCenterSelection } from './components/AppCenterPanel';
+import type { FirstAgentGuideStep } from './components/FirstAgentGuide';
+import type { GovernanceHealthItem } from './components/GovernanceHealthPanel';
+import type { LaunchpadStep } from './components/LaunchpadPanel';
+import type {
+	MonitoringAgentTurn,
+	MonitoringStat,
 } from './components/MonitoringSnapshotPanel';
-import {
-	MemoryOperationsPanel,
-	type MemoryOperationsItem,
-} from './components/MemoryOperationsPanel';
+import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
 import { MemoryViewPage } from './components/MemoryViewPage';
-import {
-	MembersPanel,
-	type MemberFormState,
-	type PlatformMemberTenantSummary,
+import type {
+	MemberFormState,
+	PlatformMemberTenantSummary,
 } from './components/MembersPanel';
-import {
-	OrchestrationWorkbenchPanel,
-	type OrchestrationWorkbenchStep,
-} from './components/OrchestrationWorkbenchPanel';
-import { OperationsPanel } from './components/OperationsPanel';
-import { OpsTasksPanel } from './components/OpsTasksPanel';
-import {
-	PlatformConsolePanel,
-	type PlatformConsoleItem,
-} from './components/PlatformConsolePanel';
-import { PlatformDashboardOverview } from './components/PlatformDashboardOverview';
-import { PolicySubagentsPanel } from './components/PolicySubagentsPanel';
-import { RolloutPath, type RolloutPathStep } from './components/RolloutPath';
+import type { OrchestrationWorkbenchStep } from './components/OrchestrationWorkbenchPanel';
+import type { PlatformConsoleItem } from './components/PlatformConsolePanel';
+import type { RolloutPathStep } from './components/RolloutPath';
 import { RunsViewPage } from './components/RunsViewPage';
-import {
-	RuntimeStatusPanel,
-	type RuntimeStatusItem,
-} from './components/RuntimeStatusPanel';
-import { ScenariosPanel } from './components/ScenariosPanel';
-import {
-	TenantWorkspacePanel,
-	type TenantOverviewItem,
-} from './components/TenantWorkspacePanel';
-import {
-	TenantGovernancePanel,
-	type ToolPolicyDraftValue,
-} from './components/TenantGovernancePanel';
+import type { RuntimeStatusItem } from './components/RuntimeStatusPanel';
+import type { TenantOverviewItem } from './components/TenantWorkspacePanel';
+import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
 import { SettingsViewPage } from './components/SettingsViewPage';
 import { TenantsViewPage } from './components/TenantsViewPage';
-import { ToolCatalogPanel } from './components/ToolCatalogPanel';
-import { ToolRunnerPanel } from './components/ToolRunnerPanel';
 import { ToolsViewPage } from './components/ToolsViewPage';
-import {
-	WorkbenchReadinessPanel,
-	type WorkbenchQuickAction,
-	type WorkbenchReadinessItem,
-	type WorkbenchRiskItem,
+import type {
+	WorkbenchQuickAction,
+	WorkbenchReadinessItem,
+	WorkbenchRiskItem,
 } from './components/WorkbenchReadinessPanel';
-import {
-	WorkbenchStatusPanel,
-	type WorkbenchActionCard,
-	type WorkbenchIndicator,
+import type {
+	WorkbenchActionCard,
+	WorkbenchIndicator,
 } from './components/WorkbenchStatusPanel';
 import { WorkflowsViewPage } from './components/WorkflowsViewPage';
-import {
-	PlatformNotice,
-	StateBadge,
-	type HealthState,
-} from './components/common';
-import { WorkflowRunnerPanel } from './components/WorkflowRunnerPanel';
-import { WorkflowOpsPanel } from './components/WorkflowOpsPanel';
-import { TriggerOpsPanel } from './components/TriggerOpsPanel';
-import { DashboardOpsPanel } from './components/DashboardOpsPanel';
+import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 
 export type PlatformView =
@@ -5213,58 +5152,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 	return (
 		<DashboardViewPage
-			AccessControlPanel={AccessControlPanel}
-			AgentManagementPanel={AgentManagementPanel}
-			AgentQuickStartPanel={AgentQuickStartPanel}
-			AgentRunNowPanel={AgentRunNowPanel}
-			AgentRunnerPanel={AgentRunnerPanel}
-			AlertTriangle={AlertTriangle}
-			AppCenterPanel={AppCenterPanel}
-			ApprovalsPanel={ApprovalsPanel}
-			AuditEventsPanel={AuditEventsPanel}
-			Badge={Badge}
-			BotMessageSquare={BotMessageSquare}
-			Building2={Building2}
-			Button={Button}
-			CapabilitiesPanel={CapabilitiesPanel}
-			CheckCircle2={CheckCircle2}
-			ConfigManagementPanel={ConfigManagementPanel}
-			DashboardOpsPanel={DashboardOpsPanel}
-			Database={Database}
-			FirstAgentGuide={FirstAgentGuide}
-			GovernanceHealthPanel={GovernanceHealthPanel}
-			Input={Input}
-			LaunchpadPanel={LaunchpadPanel}
-			MembersPanel={MembersPanel}
-			MemoryOperationsPanel={MemoryOperationsPanel}
-			MonitoringSnapshotPanel={MonitoringSnapshotPanel}
 			NextStepIcon={NextStepIcon}
-			OperationsPanel={OperationsPanel}
-			OpsTasksPanel={OpsTasksPanel}
-			OrchestrationWorkbenchPanel={OrchestrationWorkbenchPanel}
-			PlatformConsolePanel={PlatformConsolePanel}
-			PlatformDashboardOverview={PlatformDashboardOverview}
-			PlatformNotice={PlatformNotice}
-			Play={Play}
-			PolicySubagentsPanel={PolicySubagentsPanel}
-			RefreshCcw={RefreshCcw}
-			RolloutPath={RolloutPath}
-			RuntimeStatusPanel={RuntimeStatusPanel}
-			Save={Save}
-			ScenariosPanel={ScenariosPanel}
-			Skeleton={Skeleton}
-			StateBadge={StateBadge}
-			Switch={Switch}
-			TenantGovernancePanel={TenantGovernancePanel}
-			TenantWorkspacePanel={TenantWorkspacePanel}
-			ToolCatalogPanel={ToolCatalogPanel}
-			ToolRunnerPanel={ToolRunnerPanel}
-			TriggerOpsPanel={TriggerOpsPanel}
-			WorkbenchReadinessPanel={WorkbenchReadinessPanel}
-			WorkbenchStatusPanel={WorkbenchStatusPanel}
-			WorkflowOpsPanel={WorkflowOpsPanel}
-			WorkflowRunnerPanel={WorkflowRunnerPanel}
-			XCircle={XCircle}
 			accessControlStats={accessControlStats}
 			accessTenantSummaries={accessTenantSummaries}
 			activeConnectorTenant={activeConnectorTenant}
@@ -5326,7 +5214,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			bindingAgentToolsId={bindingAgentToolsId}
 			blockedOrPartialPlatformAgents={blockedOrPartialPlatformAgents}
 			capabilities={capabilities}
-			cn={cn}
 			completedWorkflowRunCount={completedWorkflowRunCount}
 			configManagementRef={configManagementRef}
 			connectorCenterRef={connectorCenterRef}
