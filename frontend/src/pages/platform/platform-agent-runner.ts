@@ -14,6 +14,23 @@ export type ClearAgentRunsParams = {
 	session_id?: string;
 };
 
+export function agentConversationTurnFromRunResponse(values: {
+	response: EnterpriseAgentRunResponse;
+	agentId: string;
+	question: string;
+	createdAt: string;
+	fallbackId: string;
+}): EnterpriseAgentConversationTurn {
+	return {
+		id: values.response.turn_id || values.fallbackId,
+		agentId: values.agentId,
+		question: values.question,
+		answer: values.response.answer,
+		createdAt: values.createdAt,
+		response: values.response,
+	};
+}
+
 export function latestAgentRunResponse(
 	agentConversations: AgentConversationMap,
 	agentId: string,

@@ -51,6 +51,7 @@ import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import { usePlatformPageRefs } from './platform-page-refs';
 import {
+	agentConversationTurnFromRunResponse,
 	clearAgentRunsParams,
 	enterpriseAgentRunPayload,
 	enterpriseToolRunPayload,
@@ -2489,14 +2490,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				userId,
 				approvalId: explicitApprovalId,
 			}));
-			const turn: EnterpriseAgentConversationTurn = {
-				id: response.turn_id || `${agentId}-${Date.now()}`,
+			const turn = agentConversationTurnFromRunResponse({
+				response,
 				agentId,
 				question,
-				answer: response.answer,
 				createdAt: new Date().toISOString(),
-				response,
-			};
+				fallbackId: `${agentId}-${Date.now()}`,
+			});
 			setAgentRunResult(response);
 			setAgentConversations((current) => mergeAgentConversationTurn(current, turn, 20));
 			const approvalRequired = response.tool_calls?.some(
