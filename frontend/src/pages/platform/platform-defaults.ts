@@ -16,6 +16,37 @@ export interface PublishFormState {
 	workflow_enabled: boolean;
 }
 
+export interface ApprovalFiltersState {
+	status: string;
+	tenant: string;
+	user_id: string;
+	agent_id: string;
+	limit: string;
+}
+
+export interface AuditFiltersState {
+	tenant: string;
+	user_id: string;
+	agent_id: string;
+	tool_name: string;
+	success: string;
+	limit: string;
+}
+
+export interface ConnectorTestFormState {
+	base_url: string;
+	token: string;
+	tenant: string;
+	policy_keyword: string;
+	ticket_id: string;
+	department: string;
+	policy_path: string;
+	ticket_path: string;
+	metrics_path: string;
+	timeout_seconds: string;
+	enabled: boolean;
+}
+
 export const enterpriseToolInputConfig: Record<
 	string,
 	{ inputKey: string; labelKey: string; defaultValue: string }
@@ -55,12 +86,43 @@ export const defaultApprovalForm: ApprovalFormState = {
 	agent_id: '',
 };
 
+export const defaultApprovalFilters: ApprovalFiltersState = {
+	status: '',
+	tenant: '',
+	user_id: '',
+	agent_id: '',
+	limit: '20',
+};
+
 export const defaultMemberForm: MemberFormState = {
 	user_id: '',
 	tenant: 'acme',
 	display_name: '',
 	role: '',
 	status: 'active',
+};
+
+export const defaultConnectorTestForm: ConnectorTestFormState = {
+	base_url: '',
+	token: '',
+	tenant: 'acme',
+	policy_keyword: 'remote',
+	ticket_id: 'INC-1001',
+	department: 'engineering',
+	policy_path: '/tenants/{tenant}/policies/search',
+	ticket_path: '/tenants/{tenant}/tickets/{ticket_id}',
+	metrics_path: '/tenants/{tenant}/departments/{department}/metrics',
+	timeout_seconds: '5',
+	enabled: true,
+};
+
+export const defaultAuditFilters: AuditFiltersState = {
+	tenant: '',
+	user_id: '',
+	agent_id: '',
+	tool_name: '',
+	success: '',
+	limit: '50',
 };
 
 export const defaultPublishForm: PublishFormState = {

@@ -73,11 +73,17 @@ import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import {
 	agentSampleQuestions,
+	defaultApprovalFilters,
 	defaultApprovalForm,
+	defaultAuditFilters,
+	defaultConnectorTestForm,
 	defaultMemberForm,
 	defaultPublishForm,
 	enterpriseToolInputConfig,
+	type ApprovalFiltersState,
 	type ApprovalFormState,
+	type AuditFiltersState,
+	type ConnectorTestFormState,
 	type MemberFormState,
 	type PublishFormState,
 } from './platform-defaults';
@@ -230,13 +236,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const [approvalLoading, setApprovalLoading] = useState(true);
 	const [approvalError, setApprovalError] = useState<string | null>(null);
 	const [approvalForm, setApprovalForm] = useState<ApprovalFormState>(defaultApprovalForm);
-	const [approvalFilters, setApprovalFilters] = useState({
-		status: '',
-		tenant: '',
-		user_id: '',
-		agent_id: '',
-		limit: '20',
-	});
+	const [approvalFilters, setApprovalFilters] =
+		useState<ApprovalFiltersState>(defaultApprovalFilters);
 	const [creatingApproval, setCreatingApproval] = useState(false);
 	const [creatingRunApproval, setCreatingRunApproval] =
 		useState<EnterpriseApprovalRequestType | null>(null);
@@ -273,19 +274,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const [updatingMemberId, setUpdatingMemberId] = useState<string | null>(null);
 	const [connectorsLoading, setConnectorsLoading] = useState(true);
 	const [connectorsError, setConnectorsError] = useState<string | null>(null);
-	const [connectorTestForm, setConnectorTestForm] = useState({
-		base_url: '',
-		token: '',
-		tenant: 'acme',
-		policy_keyword: 'remote',
-		ticket_id: 'INC-1001',
-		department: 'engineering',
-		policy_path: '/tenants/{tenant}/policies/search',
-		ticket_path: '/tenants/{tenant}/tickets/{ticket_id}',
-		metrics_path: '/tenants/{tenant}/departments/{department}/metrics',
-		timeout_seconds: '5',
-		enabled: true,
-	});
+	const [connectorTestForm, setConnectorTestForm] =
+		useState<ConnectorTestFormState>(defaultConnectorTestForm);
 	const [testingConnector, setTestingConnector] = useState(false);
 	const [connectorTestResult, setConnectorTestResult] =
 		useState<EnterpriseConnectorTestResponse | null>(null);
@@ -313,14 +303,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	>(null);
 	const [auditLoading, setAuditLoading] = useState(true);
 	const [auditError, setAuditError] = useState<string | null>(null);
-	const [auditFilters, setAuditFilters] = useState({
-		tenant: '',
-		user_id: '',
-		agent_id: '',
-		tool_name: '',
-		success: '',
-		limit: '50',
-	});
+	const [auditFilters, setAuditFilters] = useState<AuditFiltersState>(defaultAuditFilters);
 	const [platformConfigExport, setPlatformConfigExport] =
 		useState<EnterprisePlatformConfigExportResponse | null>(null);
 	const [platformConfigLoading, setPlatformConfigLoading] = useState(true);
