@@ -1,10 +1,15 @@
 import type {
 	EnterpriseAgentRunRequest,
 	EnterpriseAgentRunResponse,
+	EnterprisePlatformScenario,
 	EnterpriseToolRunRequest,
 	EnterpriseWorkflowRunRequest,
+	EnterpriseWorkflowTemplate,
 } from '@/api';
-import type { EnterpriseAgentConversationTurn } from './platform-utils';
+import {
+	normalizeWorkflowInputs,
+	type EnterpriseAgentConversationTurn,
+} from './platform-utils';
 
 export type AgentConversationMap = Record<string, EnterpriseAgentConversationTurn[]>;
 export type ClearAgentRunsParams = {
@@ -114,5 +119,23 @@ export function enterpriseWorkflowRunPayload(values: {
 		agent_id: values.agentId || undefined,
 		user_id: values.userId || undefined,
 		approval_id: values.approvalId || undefined,
+	};
+}
+
+export function scenarioWorkflowRunTarget(values: {
+	scenario: EnterprisePlatformScenario;
+	workflowTemplates: EnterpriseWorkflowTemplate[];
+	currentInputs: Record<string, unknown>;
+}): {
+	workflowType: string;
+	inputs: Record<string, string>;
+} {
+	const template = values.workflowTemplates.find(
+		(item) => item.workflow_type === values.scenario.workflow_type,
+	);
+
+	return {
+		workflowType: values.scenario.workflow_type,
+		inputs: normalizeWorkflowInputs(template?.default_inputs ?? values.currentInputs),
 	};
 }

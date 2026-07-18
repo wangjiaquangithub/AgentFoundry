@@ -58,6 +58,7 @@ import {
 	enterpriseWorkflowRunPayload,
 	latestAgentRunResponse,
 	mergeAgentConversationTurn,
+	scenarioWorkflowRunTarget,
 	selectedToolInputs,
 	type AgentConversationMap,
 } from './platform-agent-runner';
@@ -2640,16 +2641,17 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleRunScenario(scenario: EnterprisePlatformScenario) {
-		const template = workflowTemplates.find(
-			(item) => item.workflow_type === scenario.workflow_type,
-		);
-		const inputs = normalizeWorkflowInputs(template?.default_inputs ?? workflowInputs);
-		setSelectedWorkflowType(scenario.workflow_type);
-		setWorkflowInputs(inputs);
+		const target = scenarioWorkflowRunTarget({
+			scenario,
+			workflowTemplates,
+			currentInputs: workflowInputs,
+		});
+		setSelectedWorkflowType(target.workflowType);
+		setWorkflowInputs(target.inputs);
 		window.setTimeout(scrollToWorkflowRunner, 0);
 		await runEnterpriseWorkflow({
-			workflowType: scenario.workflow_type,
-			inputs,
+			workflowType: target.workflowType,
+			inputs: target.inputs,
 		});
 	}
 
