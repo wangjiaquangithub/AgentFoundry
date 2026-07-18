@@ -914,6 +914,22 @@ export function memoryOperationsSummaryForItems(items: MemoryOperationsItem[]) {
 	);
 }
 
+export function memoryOperationsStateForConversations(values: {
+	activePlatformAgents: EnterprisePublishedAgent[];
+	agentConversations: Record<string, MemoryOperationsConversationTurn[]>;
+}) {
+	const items = memoryOperationsItemsForConversations(values);
+	const summary = memoryOperationsSummaryForItems(items);
+
+	return {
+		items,
+		summary,
+		runCount: summary.runCount,
+		hitCount: summary.hitCount,
+		savedCount: summary.savedCount,
+	};
+}
+
 export function dashboardOperationsSummaryForOperations(
 	operations?: EnterprisePlatformOperations,
 ) {

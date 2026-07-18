@@ -117,8 +117,7 @@ import {
 	launchpadStateForCounts,
 	launchpadStepsForStatus,
 	launchpadTargetActionsForNavigation,
-	memoryOperationsItemsForConversations,
-	memoryOperationsSummaryForItems,
+	memoryOperationsStateForConversations,
 	modelCredentialLabel,
 	nextAgentSetupStepForSteps,
 	normalizeWorkflowInputs,
@@ -1028,16 +1027,16 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			auditEvents,
 		});
 	}, [activePlatformAgents, auditEvents, pendingApprovals, platformMembers?.members]);
-	const memoryOperationsItems = useMemo(() => {
-		return memoryOperationsItemsForConversations({
+	const memoryOperationsState = useMemo(() => {
+		return memoryOperationsStateForConversations({
 			activePlatformAgents,
 			agentConversations,
 		});
 	}, [activePlatformAgents, agentConversations]);
-	const memoryOperationsSummary = memoryOperationsSummaryForItems(memoryOperationsItems);
-	const memoryOperationsRunCount = memoryOperationsSummary.runCount;
-	const memoryOperationsHitCount = memoryOperationsSummary.hitCount;
-	const memoryOperationsSavedCount = memoryOperationsSummary.savedCount;
+	const memoryOperationsItems = memoryOperationsState.items;
+	const memoryOperationsRunCount = memoryOperationsState.runCount;
+	const memoryOperationsHitCount = memoryOperationsState.hitCount;
+	const memoryOperationsSavedCount = memoryOperationsState.savedCount;
 	const riskToolItems = dashboardRiskToolItemsForStatus({
 		dashboardRiskTools: dashboard?.risk_tools,
 		availableToolItems,
