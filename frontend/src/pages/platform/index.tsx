@@ -108,6 +108,10 @@ import {
 	type MonitoringStat,
 } from './components/MonitoringSnapshotPanel';
 import {
+	MemoryOperationsPanel,
+	type MemoryOperationsItem,
+} from './components/MemoryOperationsPanel';
+import {
 	OrchestrationWorkbenchPanel,
 	type OrchestrationWorkbenchStep,
 } from './components/OrchestrationWorkbenchPanel';
@@ -242,22 +246,6 @@ interface PlatformMemberTenantSummary {
 	agentCount: number;
 	pendingApprovalCount: number;
 	auditEventCount: number;
-}
-
-interface MemoryOperationsItem {
-	key: string;
-	tenant: string;
-	userId: string;
-	agentId: string;
-	agentName: string;
-	runCount: number;
-	memoryHitCount: number;
-	memorySavedCount: number;
-	latestAt: string;
-	latestQuestion: string;
-	latestAnswer: string;
-	latestResponse: EnterpriseAgentRunResponse;
-	sources: string[];
 }
 
 interface ApprovalFormState {
@@ -7932,210 +7920,41 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					}}
 				/>
 
-				<section className="grid gap-4 rounded-lg border bg-background p-4">
-					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-						<div className="min-w-0">
-							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-								<Brain className="size-4" />
-								<span>{t('platform.memoryOps.eyebrow')}</span>
-							</div>
-							<h2 className="text-base font-semibold">
-								{t('platform.memoryOps.title')}
-							</h2>
-							<p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-								{t('platform.memoryOps.description')}
-							</p>
-						</div>
-						<div className="flex flex-wrap gap-2 lg:justify-end">
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={scrollToAgentRunner}
-							>
-								<Play className="size-4" />
-								{t('platform.memoryOps.runAgent')}
-							</Button>
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={scrollToGovernance}
-							>
-								<FileClock className="size-4" />
-								{t('platform.memoryOps.openAudit')}
-							</Button>
-						</div>
-					</div>
-
-					<div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-						{[
-							{
-								label: t('platform.memoryOps.loadedRuns'),
-								value: memoryOperationsRunCount,
-								icon: FileClock,
-							},
-							{
-								label: t('platform.memoryOps.memoryHits'),
-								value: memoryOperationsHitCount,
-								icon: Brain,
-							},
-							{
-								label: t('platform.memoryOps.memoryWrites'),
-								value: memoryOperationsSavedCount,
-								icon: Database,
-							},
-							{
-								label: t('platform.memoryOps.activeScopes'),
-								value: memoryOperationsItems.length,
-								icon: ShieldCheck,
-							},
-						].map((item) => {
-							const Icon = item.icon;
-							return (
-								<div
-									key={item.label}
-									className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 p-3"
-								>
-									<div className="min-w-0">
-										<div className="truncate text-xs text-muted-foreground">
-											{item.label}
-										</div>
-										<div className="mt-1 text-xl font-semibold tabular-nums">
-											{item.value}
-										</div>
-									</div>
-									<Icon className="size-4 shrink-0 text-muted-foreground" />
-								</div>
-							);
-						})}
-					</div>
-
-					{memoryOperationsItems.length === 0 ? (
-						<div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-							{t('platform.memoryOps.empty')}
-						</div>
-					) : (
-						<div className="grid gap-3 xl:grid-cols-2">
-							{memoryOperationsItems.slice(0, 6).map((item) => (
-								<div
-									key={item.key}
-									className="grid gap-3 rounded-lg border bg-muted/20 p-3"
-								>
-									<div className="flex items-start justify-between gap-3">
-										<div className="min-w-0">
-											<div className="flex flex-wrap items-center gap-2">
-												<span className="truncate text-sm font-semibold">
-													{item.agentName}
-												</span>
-												<Badge variant="secondary">{item.tenant}</Badge>
-												<Badge variant="outline">{item.userId}</Badge>
-											</div>
-											<div className="mt-1 truncate font-mono text-xs text-muted-foreground">
-												{item.agentId}
-											</div>
-										</div>
-										<div className="shrink-0 text-right text-xs text-muted-foreground">
-											<div>{t('platform.memoryOps.latestRun')}</div>
-											<div className="mt-1 tabular-nums">
-												{formatTimestamp(item.latestAt)}
-											</div>
-										</div>
-									</div>
-
-									<div className="grid grid-cols-3 gap-2">
-										{[
-											{
-												label: t('platform.memoryOps.runs'),
-												value: item.runCount,
-											},
-											{
-												label: t('platform.memoryOps.hits'),
-												value: item.memoryHitCount,
-											},
-											{
-												label: t('platform.memoryOps.writes'),
-												value: item.memorySavedCount,
-											},
-										].map((metric) => (
-											<div
-												key={metric.label}
-												className="rounded-md border bg-background px-3 py-2"
-											>
-												<div className="truncate text-xs text-muted-foreground">
-													{metric.label}
-												</div>
-												<div className="mt-1 text-lg font-semibold tabular-nums">
-													{metric.value}
-												</div>
-											</div>
-										))}
-									</div>
-
-									<div className="grid gap-2 rounded-md border bg-background p-3">
-										<div>
-											<div className="text-xs text-muted-foreground">
-												{t('platform.memoryOps.latestQuestion')}
-											</div>
-											<div className="mt-1 line-clamp-2 text-sm leading-6">
-												{item.latestQuestion || t('platform.memoryOps.noQuestion')}
-											</div>
-										</div>
-										<div>
-											<div className="text-xs text-muted-foreground">
-												{t('platform.memoryOps.latestAnswer')}
-											</div>
-											<div className="mt-1 line-clamp-2 text-sm leading-6 text-muted-foreground">
-												{item.latestAnswer || t('platform.memoryOps.noAnswer')}
-											</div>
-										</div>
-									</div>
-
-									<div className="flex flex-wrap items-center gap-2">
-										{item.sources.length === 0 ? (
-											<Badge variant="outline">
-												{t('platform.memoryOps.noSources')}
-											</Badge>
-										) : (
-											item.sources.slice(0, 3).map((source) => (
-												<Badge key={source} variant="outline">
-													{source}
-												</Badge>
-											))
-										)}
-										{item.sources.length > 3 ? (
-											<Badge variant="secondary">
-												{t('platform.memoryOps.moreSources', {
-													count: item.sources.length - 3,
-												})}
-											</Badge>
-										) : null}
-									</div>
-
-									<div className="flex flex-wrap gap-2">
-										<Button
-											type="button"
-											size="sm"
-											onClick={() => handleOpenMemoryOperation(item)}
-										>
-											<ArrowRight className="size-4" />
-											{t('platform.memoryOps.openRun')}
-										</Button>
-										<Button
-											type="button"
-											size="sm"
-											variant="outline"
-											onClick={() => handleInspectMemoryOperationAudit(item)}
-										>
-											<FileClock className="size-4" />
-											{t('platform.memoryOps.viewAudit')}
-										</Button>
-									</div>
-								</div>
-							))}
-						</div>
-					)}
-				</section>
+				<MemoryOperationsPanel
+					items={memoryOperationsItems}
+					runCount={memoryOperationsRunCount}
+					hitCount={memoryOperationsHitCount}
+					savedCount={memoryOperationsSavedCount}
+					onRunAgent={scrollToAgentRunner}
+					onOpenAudit={scrollToGovernance}
+					onOpenRun={handleOpenMemoryOperation}
+					onViewAudit={handleInspectMemoryOperationAudit}
+					formatTimestamp={formatTimestamp}
+					labels={{
+						eyebrow: t('platform.memoryOps.eyebrow'),
+						title: t('platform.memoryOps.title'),
+						description: t('platform.memoryOps.description'),
+						runAgent: t('platform.memoryOps.runAgent'),
+						openAudit: t('platform.memoryOps.openAudit'),
+						loadedRuns: t('platform.memoryOps.loadedRuns'),
+						memoryHits: t('platform.memoryOps.memoryHits'),
+						memoryWrites: t('platform.memoryOps.memoryWrites'),
+						activeScopes: t('platform.memoryOps.activeScopes'),
+						empty: t('platform.memoryOps.empty'),
+						latestRun: t('platform.memoryOps.latestRun'),
+						runs: t('platform.memoryOps.runs'),
+						hits: t('platform.memoryOps.hits'),
+						writes: t('platform.memoryOps.writes'),
+						latestQuestion: t('platform.memoryOps.latestQuestion'),
+						latestAnswer: t('platform.memoryOps.latestAnswer'),
+						noQuestion: t('platform.memoryOps.noQuestion'),
+						noAnswer: t('platform.memoryOps.noAnswer'),
+						noSources: t('platform.memoryOps.noSources'),
+						moreSources: (count) => t('platform.memoryOps.moreSources', { count }),
+						openRun: t('platform.memoryOps.openRun'),
+						viewAudit: t('platform.memoryOps.viewAudit'),
+					}}
+				/>
 
 				<section className="grid gap-4 rounded-lg border bg-background p-4">
 					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
