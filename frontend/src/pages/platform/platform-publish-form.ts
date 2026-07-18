@@ -1,9 +1,11 @@
 import type {
+	CredentialView,
 	EnterpriseAgentUpdateRequest,
 	EnterpriseAgentPublishRequest,
 	EnterpriseAgentTemplate,
 	EnterprisePublishedAgent,
 	EnterprisePlatformMember,
+	KnowledgeBaseView,
 } from '@/api';
 import type { PublishFormState } from './platform-defaults';
 import { activePlatformMembersForTenant } from './platform-utils';
@@ -51,6 +53,22 @@ export function createDefaultPublishForm({
 		memory_enabled: true,
 		workflow_enabled: false,
 	};
+}
+
+export function defaultPublishFormForTemplate(values: {
+	template: EnterpriseAgentTemplate;
+	currentUserTenant?: string;
+	credentials: CredentialView[];
+	knowledgeBases: KnowledgeBaseView[];
+}): PublishFormState {
+	return createDefaultPublishForm({
+		template: values.template,
+		tenant: values.currentUserTenant ?? '',
+		modelConfigId: values.credentials[0]?.id ?? '',
+		knowledgeBaseIds: values.knowledgeBases.map(
+			(knowledgeBase) => knowledgeBase.id,
+		),
+	});
 }
 
 export function buildAgentConfigurationPayloadFromForm(

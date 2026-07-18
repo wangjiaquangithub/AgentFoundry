@@ -197,7 +197,7 @@ import {
 	agentTemplateToolsPatch,
 	agentWorkflowEnabledPatch,
 	buildAgentConfigurationPayloadFromForm,
-	createDefaultPublishForm,
+	defaultPublishFormForTemplate,
 	publishFormFromPublishedAgent,
 	publishFormForListToggle,
 	publishFormForTenantChange,
@@ -1730,11 +1730,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function buildDefaultPublishForm(template: EnterpriseAgentTemplate): PublishFormState {
-		return createDefaultPublishForm({
+		return defaultPublishFormForTemplate({
 			template,
-			tenant: platformStatus?.current_user.tenant ?? '',
-			modelConfigId: credentials[0]?.id ?? '',
-			knowledgeBaseIds: knowledgeBases.map((knowledgeBase) => knowledgeBase.id),
+			currentUserTenant: platformStatus?.current_user.tenant,
+			credentials,
+			knowledgeBases,
 		});
 	}
 
