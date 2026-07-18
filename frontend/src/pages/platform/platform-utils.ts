@@ -2434,6 +2434,75 @@ export function agentReleasePipelineItems<TIcon>(
 	];
 }
 
+export function agentReleasePipelineForStatus<TIcon>(
+	values: {
+		selectedTemplate?: { name: string } | null;
+		publishForm: {
+			model_config_id?: string | null;
+			knowledge_base_ids: string[];
+			tools: string[];
+			memory_enabled: boolean;
+			workflow_enabled: boolean;
+		};
+		credentialById: Map<string, { id?: unknown; data?: { name?: unknown } }>;
+		activeAgents: EnterprisePublishedAgent[];
+		pendingApprovals: EnterpriseApprovalRequestItem[];
+		auditEventCount: number;
+		selectedRunAgent?: EnterprisePublishedAgent | null;
+		stepStates: Array<{ state: HealthState }>;
+	},
+	labels: {
+		template: string;
+		templateDetail: string;
+		model: string;
+		modelDetail: string;
+		knowledge: string;
+		selectedKnowledge: (counts: { count: number }) => string;
+		knowledgeDetail: string;
+		tools: string;
+		toolsSelected: (counts: { count: number }) => string;
+		toolsDetail: string;
+		runtime: string;
+		runtimeDetail: (states: { memory: string; workflow: string }) => string;
+		enabled: string;
+		disabled: string;
+		publish: string;
+		publishDetailReady: (counts: { count: number }) => string;
+		publishDetail: string;
+		governance: string;
+		governanceDetailPending: (counts: { count: number }) => string;
+		governanceDetail: string;
+	},
+	icons: {
+		template: TIcon;
+		model: TIcon;
+		knowledge: TIcon;
+		tools: TIcon;
+		runtime: TIcon;
+		publish: TIcon;
+		governance: TIcon;
+	},
+) {
+	return agentReleasePipelineItems(
+		{
+			selectedTemplate: values.selectedTemplate,
+			modelConfigId: values.publishForm.model_config_id,
+			credentialById: values.credentialById,
+			knowledgeBaseCount: values.publishForm.knowledge_base_ids.length,
+			toolCount: values.publishForm.tools.length,
+			memoryEnabled: values.publishForm.memory_enabled,
+			workflowEnabled: values.publishForm.workflow_enabled,
+			activeAgentCount: values.activeAgents.length,
+			pendingApprovalCount: values.pendingApprovals.length,
+			auditEventCount: values.auditEventCount,
+			hasSelectedRunAgent: Boolean(values.selectedRunAgent),
+			stepStates: values.stepStates,
+		},
+		labels,
+		icons,
+	);
+}
+
 export function identityAccessRowsForGovernance(
 	enterpriseIdentities: EnterpriseIdentity[],
 	pendingApprovals: EnterpriseApprovalRequestItem[],

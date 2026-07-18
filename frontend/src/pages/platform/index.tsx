@@ -90,7 +90,7 @@ import {
 	agentIsReady,
 	agentReadinessIssues,
 	agentReadinessState,
-	agentReleasePipelineItems,
+	agentReleasePipelineForStatus,
 	archivedPlatformAgentsForAgents,
 	identityAccessRowsForGovernance,
 	agentOpsSummaryItems,
@@ -1202,19 +1202,15 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			ready: t('platform.operations.headlineReady'),
 		},
 	);
-	const agentReleasePipeline = agentReleasePipelineItems(
+	const agentReleasePipeline = agentReleasePipelineForStatus(
 		{
 			selectedTemplate,
-			modelConfigId: publishForm.model_config_id,
+			publishForm,
 			credentialById,
-			knowledgeBaseCount: publishForm.knowledge_base_ids.length,
-			toolCount: publishForm.tools.length,
-			memoryEnabled: publishForm.memory_enabled,
-			workflowEnabled: publishForm.workflow_enabled,
-			activeAgentCount: activePlatformAgents.length,
-			pendingApprovalCount: pendingApprovals.length,
+			activeAgents: activePlatformAgents,
+			pendingApprovals,
 			auditEventCount,
-			hasSelectedRunAgent: Boolean(selectedRunAgent),
+			selectedRunAgent,
 			stepStates: agentSetupSteps,
 		},
 		{
