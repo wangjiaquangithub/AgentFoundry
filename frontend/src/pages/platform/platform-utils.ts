@@ -24,6 +24,7 @@ import type { PlatformMemberTenantSummary } from './components/MembersPanel';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
 import type { TenantOverviewItem } from './components/TenantWorkspacePanel';
 import type { TriggerOpsStat } from './components/TriggerOpsPanel';
+import type { WorkbenchIndicator } from './components/WorkbenchStatusPanel';
 import type { WorkflowOpsStat } from './components/WorkflowOpsPanel';
 import type { HealthState } from './components/common';
 
@@ -430,6 +431,84 @@ export function launchpadStepsForStatus(
 		state: step.state,
 		onClick: options.actions[step.target] ?? options.fallbackAction,
 	}));
+}
+
+type WorkbenchIndicatorKey = 'agents' | 'approvals' | 'workflows' | 'memory';
+
+export function workbenchIndicatorsForStatus(
+	values: {
+		activeAgentCount: number;
+		readyAgentCount: number;
+		pendingApprovalCount: number;
+		recentWorkflowRunCount: number;
+		failedWorkflowRunCount: number;
+		memoryOperationsSavedCount: number;
+		memoryOperationsHitCount: number;
+		memoryOperationsItemCount: number;
+	},
+	options: {
+		icons: Record<WorkbenchIndicatorKey, ComponentType<{ className?: string }>>;
+		actions: Record<WorkbenchIndicatorKey, () => void>;
+		labels: {
+			readyAgents: string;
+			readyAgentsHelper: string;
+			approvals: string;
+			approvalsHelper: string;
+			workflowRuns: string;
+			workflowRunsHelper: string;
+			memory: string;
+			memoryHelper: string;
+		};
+	},
+): WorkbenchIndicator[] {
+	return [
+		{
+			key: 'agents',
+			label: options.labels.readyAgents,
+			value: `${values.readyAgentCount}/${values.activeAgentCount}`,
+			helper: options.labels.readyAgentsHelper,
+			icon: options.icons.agents,
+			state:
+				values.readyAgentCount > 0
+					? 'ready'
+					: values.activeAgentCount > 0
+						? 'partial'
+						: 'todo',
+			onClick: options.actions.agents,
+		},
+		{
+			key: 'approvals',
+			label: options.labels.approvals,
+			value: values.pendingApprovalCount,
+			helper: options.labels.approvalsHelper,
+			icon: options.icons.approvals,
+			state: values.pendingApprovalCount > 0 ? 'partial' : 'ready',
+			onClick: options.actions.approvals,
+		},
+		{
+			key: 'workflows',
+			label: options.labels.workflowRuns,
+			value: values.recentWorkflowRunCount,
+			helper: options.labels.workflowRunsHelper,
+			icon: options.icons.workflows,
+			state:
+				values.recentWorkflowRunCount > 0
+					? values.failedWorkflowRunCount > 0
+						? 'partial'
+						: 'ready'
+					: 'todo',
+			onClick: options.actions.workflows,
+		},
+		{
+			key: 'memory',
+			label: options.labels.memory,
+			value: values.memoryOperationsSavedCount + values.memoryOperationsHitCount,
+			helper: options.labels.memoryHelper,
+			icon: options.icons.memory,
+			state: values.memoryOperationsItemCount > 0 ? 'ready' : 'todo',
+			onClick: options.actions.memory,
+		},
+	];
 }
 
 export function dashboardTodoItemsForStatus(

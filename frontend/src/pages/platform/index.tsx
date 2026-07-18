@@ -91,7 +91,6 @@ import type {
 } from './components/WorkbenchReadinessPanel';
 import type {
 	WorkbenchActionCard,
-	WorkbenchIndicator,
 } from './components/WorkbenchStatusPanel';
 import { WorkflowsViewPage } from './components/WorkflowsViewPage';
 import type { HealthState } from './components/common';
@@ -136,6 +135,7 @@ import {
 	triggerOpsStatsForSummary,
 	triggerOpsSummaryText,
 	triggerSchedulesBySource,
+	workbenchIndicatorsForStatus,
 	workflowOpsStatsForSummary,
 } from './platform-utils';
 
@@ -3740,57 +3740,45 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			onClick: scrollToGovernance,
 		},
 	] satisfies PlatformConsoleItem[];
-	const workbenchIndicators = [
+	const workbenchIndicators = workbenchIndicatorsForStatus(
 		{
-			key: 'agents',
-			label: t('platform.workbench.indicators.readyAgents'),
-			value: `${readyPlatformAgents.length}/${activePlatformAgents.length}`,
-			helper: t('platform.workbench.indicators.readyAgentsHelper'),
-			icon: BotMessageSquare,
-			state:
-				readyPlatformAgents.length > 0
-					? 'ready'
-					: activePlatformAgents.length > 0
-						? 'partial'
-						: 'todo',
-			onClick: scrollToAgentRunner,
+			activeAgentCount: activePlatformAgents.length,
+			readyAgentCount: readyPlatformAgents.length,
+			pendingApprovalCount: pendingApprovals.length,
+			recentWorkflowRunCount: recentWorkflowRuns.length,
+			failedWorkflowRunCount,
+			memoryOperationsSavedCount,
+			memoryOperationsHitCount,
+			memoryOperationsItemCount: memoryOperationsItems.length,
 		},
 		{
-			key: 'approvals',
-			label: t('platform.workbench.indicators.approvals'),
-			value: pendingApprovals.length,
-			helper: t('platform.workbench.indicators.approvalsHelper'),
-			icon: ShieldCheck,
-			state: pendingApprovals.length > 0 ? 'partial' : 'ready',
-			onClick: scrollToGovernance,
+			icons: {
+				agents: BotMessageSquare,
+				approvals: ShieldCheck,
+				workflows: Workflow,
+				memory: Brain,
+			},
+			actions: {
+				agents: scrollToAgentRunner,
+				approvals: scrollToGovernance,
+				workflows: scrollToWorkflowRunner,
+				memory: scrollToMemoryOperations,
+			},
+			labels: {
+				readyAgents: t('platform.workbench.indicators.readyAgents'),
+				readyAgentsHelper: t('platform.workbench.indicators.readyAgentsHelper'),
+				approvals: t('platform.workbench.indicators.approvals'),
+				approvalsHelper: t('platform.workbench.indicators.approvalsHelper'),
+				workflowRuns: t('platform.workbench.indicators.workflowRuns'),
+				workflowRunsHelper: t('platform.workbench.indicators.workflowRunsHelper'),
+				memory: t('platform.workbench.indicators.memory'),
+				memoryHelper: t('platform.workbench.indicators.memoryHelper', {
+					saved: memoryOperationsSavedCount,
+					hits: memoryOperationsHitCount,
+				}),
+			},
 		},
-		{
-			key: 'workflows',
-			label: t('platform.workbench.indicators.workflowRuns'),
-			value: recentWorkflowRuns.length,
-			helper: t('platform.workbench.indicators.workflowRunsHelper'),
-			icon: Workflow,
-			state:
-				recentWorkflowRuns.length > 0
-					? failedWorkflowRunCount > 0
-						? 'partial'
-						: 'ready'
-					: 'todo',
-			onClick: scrollToWorkflowRunner,
-		},
-		{
-			key: 'memory',
-			label: t('platform.workbench.indicators.memory'),
-			value: memoryOperationsSavedCount + memoryOperationsHitCount,
-			helper: t('platform.workbench.indicators.memoryHelper', {
-				saved: memoryOperationsSavedCount,
-				hits: memoryOperationsHitCount,
-			}),
-			icon: Brain,
-			state: memoryOperationsItems.length > 0 ? 'ready' : 'todo',
-			onClick: scrollToMemoryOperations,
-		},
-	] satisfies WorkbenchIndicator[];
+	);
 	const workbenchActions = [
 		{
 			key: 'run',
