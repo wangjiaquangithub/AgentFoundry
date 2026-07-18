@@ -60,9 +60,11 @@ import {
 	approvalCreatePayloadFromForm,
 	approvalCreatePayloadFromRun,
 	approvalDecisionPayload,
+	approvalAgentQuestionFromInputs,
 	approvalInputForTool,
 	approvalQueryFromFilters,
 	approvalToolFormPatch,
+	approvalToolInputsPatch,
 	prependApprovalRequest,
 	replaceApprovalRequest,
 	type PlatformApprovalRunType,
@@ -1695,11 +1697,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			await refetchOpsTasks();
 
 			if (canContinueAgentRun && approval.tool_name) {
-				const department = approval.inputs?.department;
-				const question =
-					department != null
-						? `帮我看一下 ${String(department)} 部门指标`
-						: agentQuestion.trim();
+				const question = approvalAgentQuestionFromInputs(
+					approval.inputs,
+					agentQuestion,
+					{ trimFallback: true },
+				);
 
 				setSelectedIdentityUserId(approval.user_id);
 				setSelectedRunAgentId(approval.agent_id);
@@ -1725,10 +1727,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				setSelectedIdentityUserId(approval.user_id);
 				setSelectedRunAgentId(approval.agent_id);
 				setSelectedToolName(approval.tool_name);
-				setToolInputs((current) => ({
-					...current,
-					[approval.tool_name!]: inputValue == null ? '' : String(inputValue),
-				}));
+				setToolInputs((current) =>
+					approvalToolInputsPatch(current, approval.tool_name!, inputValue),
+				);
 				setToolApprovalId(approval.approval_id);
 				window.setTimeout(scrollToToolRunner, 0);
 				await runEnterpriseTool({
@@ -1905,12 +1906,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 		if (approval.request_type === 'tool_run' && approval.tool_name) {
 			if (approval.agent_id && approval.agent_id !== 'platform-console') {
-				const department = approval.inputs?.department;
 				setSelectedRunAgentId(approval.agent_id);
 				setAgentApprovalId(approval.approval_id);
-				if (department != null) {
-					setAgentQuestion(`帮我看一下 ${String(department)} 部门指标`);
-				}
+				setAgentQuestion((current) =>
+					approvalAgentQuestionFromInputs(approval.inputs, current),
+				);
 				setAgentRunError(null);
 				window.setTimeout(scrollToAgentRunner, 0);
 				return;
@@ -1923,10 +1923,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			);
 
 			setSelectedToolName(approval.tool_name);
-			setToolInputs((current) => ({
-				...current,
-				[approval.tool_name!]: inputValue == null ? '' : String(inputValue),
-			}));
+			setToolInputs((current) =>
+				approvalToolInputsPatch(current, approval.tool_name!, inputValue),
+			);
 			setToolApprovalId(approval.approval_id);
 			setToolRunError(null);
 			window.setTimeout(scrollToToolRunner, 0);

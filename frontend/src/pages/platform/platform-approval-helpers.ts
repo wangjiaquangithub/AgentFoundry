@@ -161,6 +161,31 @@ export function approvalInputForTool(
 	};
 }
 
+export function approvalAgentQuestionFromInputs(
+	inputs: Record<string, unknown> | undefined,
+	fallbackQuestion: string,
+	options: { trimFallback?: boolean } = {},
+) {
+	const department = inputs?.department;
+
+	return department != null
+		? `帮我看一下 ${String(department)} 部门指标`
+		: options.trimFallback
+			? fallbackQuestion.trim()
+			: fallbackQuestion;
+}
+
+export function approvalToolInputsPatch(
+	current: Record<string, string>,
+	toolName: string,
+	inputValue: unknown,
+) {
+	return {
+		...current,
+		[toolName]: inputValue == null ? '' : String(inputValue),
+	};
+}
+
 export function approvalToolFormPatch(
 	current: ApprovalFormState,
 	options: {
