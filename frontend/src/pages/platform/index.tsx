@@ -75,6 +75,11 @@ import {
 	connectorTestPayloadFromForm,
 } from './platform-connector-helpers';
 import {
+	memberCreatePayloadFromForm,
+	memberFormFromMember,
+	memberShouldActivate,
+} from './platform-member-helpers';
+import {
 	approvalFiltersForIdentity,
 	approvalFiltersForTenant,
 	auditFiltersForAgentRunEvidence,
@@ -1155,13 +1160,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setSavingMember(true);
 		setPlatformMembersError(null);
 		try {
-			await platformApi.createMember({
-				user_id: userId,
-				tenant: memberForm.tenant.trim() || 'default',
-				display_name: memberForm.display_name.trim() || userId,
-				role: memberForm.role.trim() || 'Member',
-				status: memberForm.status,
-			});
+			await platformApi.createMember(memberCreatePayloadFromForm(memberForm, userId));
 			setMemberForm(defaultMemberForm);
 			await refreshMemberDependentViews();
 		} catch (error) {
@@ -1174,20 +1173,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleEditMember(member: EnterprisePlatformMember) {
-		setMemberForm({
-			user_id: member.user_id,
-			tenant: member.tenant || 'acme',
-			display_name: member.display_name || member.user_id,
-			role: member.role || '',
-			status: member.status === 'inactive' ? 'inactive' : 'active',
-		});
+		setMemberForm(memberFormFromMember(member));
 	}
 
 	async function handleToggleMemberStatus(member: EnterprisePlatformMember) {
 		setUpdatingMemberId(member.user_id);
 		setPlatformMembersError(null);
 		try {
-			if (member.status === 'inactive') {
+			if (memberShouldActivate(member)) {
 				await platformApi.updateMember(member.user_id, { status: 'active' });
 			} else {
 				await platformApi.deactivateMember(member.user_id);
