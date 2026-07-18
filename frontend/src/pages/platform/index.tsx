@@ -71,6 +71,15 @@ import { WorkflowsViewPage } from './components/WorkflowsViewPage';
 import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import { usePlatformPageRefs } from './platform-page-refs';
+import {
+	approvalFiltersForIdentity,
+	approvalFiltersForTenant,
+	auditFiltersForAgentRunEvidence,
+	auditFiltersForIdentity,
+	auditFiltersForMemoryOperation,
+	auditFiltersForTenant,
+	failedAuditFiltersForIdentity,
+} from './platform-filter-builders';
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
 	buildAgentConfigurationPayloadFromForm,
@@ -2171,29 +2180,21 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleInspectIdentityAudit(identity: EnterpriseIdentity) {
-		const filters = { tenant: identity.tenant, user_id: identity.user_id };
+		const filters = auditFiltersForIdentity(identity);
 		setAuditFilters((previous) => ({ ...previous, ...filters }));
 		void refetchAuditEvents(filters);
 		window.setTimeout(scrollToGovernance, 0);
 	}
 
 	function handleInspectIdentityApprovals(identity: EnterpriseIdentity) {
-		const filters = {
-			status: 'pending',
-			tenant: identity.tenant,
-			user_id: identity.user_id,
-		};
+		const filters = approvalFiltersForIdentity(identity);
 		setApprovalFilters((previous) => ({ ...previous, ...filters }));
 		void refetchApprovals(filters);
 		window.setTimeout(scrollToGovernance, 0);
 	}
 
 	function handleInspectIdentityFailures(identity: EnterpriseIdentity) {
-		const filters = {
-			tenant: identity.tenant,
-			user_id: identity.user_id,
-			success: 'false',
-		};
+		const filters = failedAuditFiltersForIdentity(identity);
 		setAuditFilters((previous) => ({ ...previous, ...filters }));
 		void refetchAuditEvents(filters);
 		window.setTimeout(scrollToGovernance, 0);
@@ -2213,7 +2214,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleInspectTenantAudit(tenant: string) {
-		const filters = { tenant, user_id: '', agent_id: '', tool_name: '', success: '' };
+		const filters = auditFiltersForTenant(tenant);
 		setAuditFilters((previous) => ({ ...previous, ...filters }));
 		void refetchAuditEvents(filters);
 		window.setTimeout(scrollToGovernance, 0);
@@ -2237,25 +2238,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleInspectMemoryOperationAudit(item: MemoryOperationsItem) {
-		const filters = {
-			tenant: item.tenant,
-			user_id: item.userId,
-			agent_id: item.agentId,
-			tool_name: '',
-			success: '',
-		};
+		const filters = auditFiltersForMemoryOperation(item);
 		setAuditFilters((previous) => ({ ...previous, ...filters }));
 		void refetchAuditEvents(filters);
 		window.setTimeout(scrollToGovernance, 0);
 	}
 
 	function handleInspectTenantApprovals(tenant: string) {
-		const filters = {
-			status: 'pending',
-			tenant,
-			user_id: '',
-			agent_id: '',
-		};
+		const filters = approvalFiltersForTenant(tenant);
 		setApprovalFilters((previous) => ({ ...previous, ...filters }));
 		void refetchApprovals(filters);
 		window.setTimeout(scrollToGovernance, 0);
@@ -2285,14 +2275,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			return;
 		}
 
-		const toolNames = agentRunEvidence.audit_filter.tool_names;
-		const firstToolName = Array.isArray(toolNames) ? toolNames[0] : '';
-		const filters = {
-			tenant: agentRunEvidence.tenant,
-			user_id: agentRunEvidence.user_id,
-			agent_id: agentRunEvidence.agent_id,
-			tool_name: firstToolName ? String(firstToolName) : '',
-		};
+		const filters = auditFiltersForAgentRunEvidence(agentRunEvidence);
 		setAuditFilters((previous) => ({ ...previous, ...filters }));
 		void refetchAuditEvents(filters);
 		window.setTimeout(scrollToGovernance, 0);
