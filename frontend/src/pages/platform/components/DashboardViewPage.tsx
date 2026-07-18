@@ -58,7 +58,11 @@ import { WorkbenchStatusPanel } from './WorkbenchStatusPanel';
 import { WorkflowOpsPanel } from './WorkflowOpsPanel';
 import { WorkflowRunnerPanel } from './WorkflowRunnerPanel';
 import { PlatformNotice, StateBadge } from './common';
-import { countArrayField, formatTimestamp } from '../platform-utils';
+import {
+	countArrayField,
+	formatTimestamp,
+	normalizeWorkflowInputs,
+} from '../platform-utils';
 
 interface DashboardViewPageProps {
 	[key: string]: any;
@@ -258,7 +262,6 @@ export function DashboardViewPage({
 	nextAgentSetupStep,
 	nextStepMode,
 	nextStepPrimaryDisabled,
-	normalizeWorkflowInputs,
 	operationsAgentIssueText,
 	operationsHeadline,
 	opsTasks,

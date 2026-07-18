@@ -5233,7 +5233,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			nextAgentSetupStep={nextAgentSetupStep}
 			nextStepMode={nextStepMode}
 			nextStepPrimaryDisabled={nextStepPrimaryDisabled}
-			normalizeWorkflowInputs={normalizeWorkflowInputs}
 			operationsAgentIssueText={operationsAgentIssueText}
 			operationsHeadline={operationsHeadline}
 			opsTasks={opsTasks}
