@@ -50,7 +50,6 @@ interface ToolsViewPageProps {
 	onToolApprovalIdChange: (value: string) => void;
 	onCreateRunApproval: (requestType: 'tool_run') => void | Promise<unknown>;
 	onRunEnterpriseTool: () => void | Promise<void>;
-	formatTimestamp: (value?: string) => string;
 	t: Translate;
 }
 
@@ -85,7 +84,6 @@ export function ToolsViewPage({
 	onToolApprovalIdChange,
 	onCreateRunApproval,
 	onRunEnterpriseTool,
-	formatTimestamp,
 	t,
 }: ToolsViewPageProps) {
 	return (
@@ -144,7 +142,6 @@ export function ToolsViewPage({
 					toolCatalogLoading={toolCatalogLoading}
 					toolCatalogError={toolCatalogError}
 					onRefetchToolCatalog={onRefetchToolCatalog}
-					formatTimestamp={formatTimestamp}
 					t={t}
 				/>
 

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { formatTimestamp } from '../platform-utils';
 import { PlatformNotice } from './common';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -18,7 +19,6 @@ interface ToolCatalogPanelProps {
 	toolCatalogLoading: boolean;
 	toolCatalogError: string | null;
 	onRefetchToolCatalog: () => void | Promise<void>;
-	formatTimestamp: (value?: string) => string;
 	t: Translate;
 }
 
@@ -29,7 +29,6 @@ export function ToolCatalogPanel({
 	toolCatalogLoading,
 	toolCatalogError,
 	onRefetchToolCatalog,
-	formatTimestamp,
 	t,
 }: ToolCatalogPanelProps) {
 	return (

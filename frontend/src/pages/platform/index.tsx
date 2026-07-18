@@ -4850,7 +4850,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				onToolApprovalIdChange={setToolApprovalId}
 				onCreateRunApproval={handleCreateRunApproval}
 				onRunEnterpriseTool={handleRunEnterpriseTool}
-				formatTimestamp={formatTimestamp}
 				t={t}
 			/>
 		);
