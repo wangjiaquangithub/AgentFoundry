@@ -751,15 +751,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const {
 		policyDecisions,
 		availableToolItems,
-	} = useMemo(
-		() =>
-			toolCatalogStateForStatus({
-				platformStatus,
-				toolCatalog,
-				toolInputConfig: enterpriseToolInputConfig,
-			}),
-		[platformStatus, toolCatalog],
-	);
+	} = toolCatalogStateForStatus({
+		platformStatus,
+		toolCatalog,
+		toolInputConfig: enterpriseToolInputConfig,
+	});
 	const selectedToolRunnerState = selectedToolRunnerStateForStatus({
 		availableToolItems,
 		selectedToolName,
