@@ -7,6 +7,7 @@ import type {
 	EnterpriseAuditQueryResponse,
 	EnterpriseIdentity,
 	EnterprisePlatformMember,
+	EnterprisePlatformDashboardRiskTool,
 	EnterprisePlatformGovernanceResponse,
 	EnterprisePlatformStatusResponse,
 	EnterprisePublishedAgent,
@@ -1376,6 +1377,20 @@ export function dashboardTodoItemsForStatus(
 		values.pendingApprovalCount > 0 ? labels.approval(values.pendingApprovalCount) : null,
 		values.hasErrors ? labels.errors : null,
 	].filter((item): item is string => Boolean(item));
+}
+
+export function dashboardRiskToolItemsForStatus(values: {
+	dashboardRiskTools: EnterprisePlatformDashboardRiskTool[] | null | undefined;
+	availableToolItems: EnterpriseToolCatalogItem[];
+}): Array<EnterprisePlatformDashboardRiskTool | EnterpriseToolCatalogItem> {
+	return (
+		values.dashboardRiskTools ??
+		values.availableToolItems.filter(
+			(item) =>
+				item.name === 'enterprise_summarize_department_metrics' ||
+				item.name.includes('summarize'),
+		)
+	);
 }
 
 type MonitoringStatKey = 'agentRuns' | 'workflowRuns' | 'toolAudit' | 'pendingApprovals';

@@ -99,6 +99,7 @@ import {
 	auditStatsForSummary,
 	blockedOrPartialPlatformAgentsForReadiness,
 	connectorDraftIssuesForDraft,
+	dashboardRiskToolItemsForStatus,
 	dashboardTodoItemsForStatus,
 	defaultEnterpriseWorkflowInputs,
 	enabledEnterpriseWorkflowTemplates,
@@ -1108,13 +1109,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		(total, item) => total + item.memorySavedCount,
 		0,
 	);
-	const riskToolItems =
-		dashboard?.risk_tools ??
-		availableToolItems.filter(
-			(item) =>
-				item.name === 'enterprise_summarize_department_metrics' ||
-				item.name.includes('summarize'),
-		);
+	const riskToolItems = dashboardRiskToolItemsForStatus({
+		dashboardRiskTools: dashboard?.risk_tools,
+		availableToolItems,
+	});
 	const workflowStatusCounts = dashboardOperations?.workflow_status_counts ?? {};
 	const completedWorkflowRunCount = workflowStatusCounts.completed ?? 0;
 	const partialWorkflowRunCount = workflowStatusCounts.partial ?? 0;
