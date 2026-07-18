@@ -1,6 +1,7 @@
 import type {
 	EnterpriseAgentPublishRequest,
 	EnterpriseAgentTemplate,
+	EnterprisePublishedAgent,
 	EnterprisePlatformMember,
 } from '@/api';
 import type { PublishFormState } from './platform-defaults';
@@ -70,5 +71,22 @@ export function publishFormForTenantChange(values: {
 			validUserIds.has(userId),
 		),
 		allowed_roles: values.current.allowed_roles.filter((role) => validRoles.has(role)),
+	};
+}
+
+export function publishFormFromPublishedAgent(
+	agent: EnterprisePublishedAgent,
+): PublishFormState {
+	return {
+		name: agent.name,
+		description: agent.description,
+		tenant: agent.tenant,
+		model_config_id: agent.model_config_id ?? '',
+		knowledge_base_ids: agent.knowledge_base_ids ?? [],
+		tools: agent.tools ?? [],
+		allowed_user_ids: agent.allowed_user_ids ?? [],
+		allowed_roles: agent.allowed_roles ?? [],
+		memory_enabled: agent.memory_enabled,
+		workflow_enabled: agent.workflow_enabled,
 	};
 }

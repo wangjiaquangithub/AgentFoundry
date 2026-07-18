@@ -175,6 +175,7 @@ import { runPlatformOperationAction } from './platform-operation-actions';
 import {
 	buildAgentConfigurationPayloadFromForm,
 	createDefaultPublishForm,
+	publishFormFromPublishedAgent,
 	publishFormForTenantChange,
 } from './platform-publish-form';
 import {
@@ -2118,18 +2119,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	function handleEditAgent(agent: EnterprisePublishedAgent) {
 		setSelectedTemplateId(agent.template_id);
 		setEditingAgentId(agent.id);
-		setPublishForm({
-			name: agent.name,
-			description: agent.description,
-			tenant: agent.tenant,
-			model_config_id: agent.model_config_id ?? '',
-			knowledge_base_ids: agent.knowledge_base_ids ?? [],
-			tools: agent.tools ?? [],
-			allowed_user_ids: agent.allowed_user_ids ?? [],
-			allowed_roles: agent.allowed_roles ?? [],
-			memory_enabled: agent.memory_enabled,
-			workflow_enabled: agent.workflow_enabled,
-		});
+		setPublishForm(publishFormFromPublishedAgent(agent));
 	}
 
 	function handleCancelEdit() {
