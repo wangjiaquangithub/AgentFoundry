@@ -75,6 +75,18 @@ export const agentSampleQuestions = [
 	'总结 engineering 部门指标',
 ];
 
+export const defaultAgentQuestion = '帮我查一下 INC-1001 的工单状态';
+
+export const defaultSelectedToolName = 'enterprise_lookup_policy';
+
+export const defaultToolInputs: Record<string, string> = {
+	enterprise_lookup_policy: 'remote',
+	enterprise_get_ticket_status: 'INC-1001',
+	enterprise_summarize_department_metrics: 'engineering',
+};
+
+export const defaultSelectedWorkflowType = 'daily_ops_brief';
+
 export const defaultApprovalForm: ApprovalFormState = {
 	request_type: 'tool_run',
 	tool_name: 'enterprise_lookup_policy',

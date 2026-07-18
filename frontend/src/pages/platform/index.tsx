@@ -73,12 +73,16 @@ import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import {
 	agentSampleQuestions,
+	defaultAgentQuestion,
 	defaultApprovalFilters,
 	defaultApprovalForm,
 	defaultAuditFilters,
 	defaultConnectorTestForm,
 	defaultMemberForm,
 	defaultPublishForm,
+	defaultSelectedToolName,
+	defaultSelectedWorkflowType,
+	defaultToolInputs,
 	enterpriseToolInputConfig,
 	type ApprovalFiltersState,
 	type ApprovalFormState,
@@ -185,7 +189,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const agentToolsStepRef = useRef<HTMLDivElement | null>(null);
 	const agentRuntimeStepRef = useRef<HTMLDivElement | null>(null);
 	const connectorDefaultsAppliedRef = useRef(false);
-	const [agentQuestion, setAgentQuestion] = useState('帮我查一下 INC-1001 的工单状态');
+	const [agentQuestion, setAgentQuestion] = useState(defaultAgentQuestion);
 	const [runningAgent, setRunningAgent] = useState(false);
 	const [agentRunResult, setAgentRunResult] = useState<EnterpriseAgentRunResponse | null>(null);
 	const [agentRunError, setAgentRunError] = useState<string | null>(null);
@@ -197,17 +201,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	>({});
 	const [agentRunsLoading, setAgentRunsLoading] = useState(false);
 	const [agentRunsError, setAgentRunsError] = useState<string | null>(null);
-	const [selectedToolName, setSelectedToolName] = useState('enterprise_lookup_policy');
-	const [toolInputs, setToolInputs] = useState<Record<string, string>>({
-		enterprise_lookup_policy: 'remote',
-		enterprise_get_ticket_status: 'INC-1001',
-		enterprise_summarize_department_metrics: 'engineering',
-	});
+	const [selectedToolName, setSelectedToolName] = useState(defaultSelectedToolName);
+	const [toolInputs, setToolInputs] = useState<Record<string, string>>(defaultToolInputs);
 	const [runningTool, setRunningTool] = useState(false);
 	const [toolRunResult, setToolRunResult] = useState<EnterpriseToolRunResponse | null>(null);
 	const [toolRunError, setToolRunError] = useState<string | null>(null);
 	const [toolApprovalId, setToolApprovalId] = useState('');
-	const [selectedWorkflowType, setSelectedWorkflowType] = useState('daily_ops_brief');
+	const [selectedWorkflowType, setSelectedWorkflowType] = useState(defaultSelectedWorkflowType);
 	const [runningWorkflow, setRunningWorkflow] = useState(false);
 	const [workflowRunResult, setWorkflowRunResult] =
 		useState<EnterpriseWorkflowRunResponse | null>(null);
