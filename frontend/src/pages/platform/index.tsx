@@ -86,6 +86,7 @@ import {
 	failedAuditFiltersForIdentity,
 } from './platform-filter-builders';
 import {
+	capabilityNavigationActions,
 	firstAgentGuideNavigationActions,
 	launchpadNavigationActions,
 	orchestrationWorkbenchNavigationActions,
@@ -2918,6 +2919,19 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		});
 	}
 
+	const platformNavigationHandlers = {
+		navigate,
+		handleStartPublishing,
+		handleQuickPublishAgent,
+		scrollToAgentRunner,
+		scrollToConfigManagement,
+		scrollToConnectorCenter,
+		scrollToGovernance,
+		scrollToMemoryOperations,
+		scrollToMembers,
+		scrollToToolRunner,
+		scrollToWorkflowRunner,
+	};
 	const capabilities = capabilityItemsForStatus({
 		t,
 		counts: {
@@ -2943,31 +2957,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			audit: Network,
 			config: Upload,
 		},
-		actions: {
-			credentials: () => navigate('/credential'),
-			knowledge: () => navigate('/knowledge'),
-			agents: handleStartPublishing,
-			tools: scrollToToolRunner,
-			workflows: scrollToWorkflowRunner,
-			tenants: scrollToMembers,
-			governance: scrollToGovernance,
-			config: scrollToConfigManagement,
-		},
+		actions: capabilityNavigationActions(platformNavigationHandlers),
 	});
 
-	const platformNavigationHandlers = {
-		navigate,
-		handleStartPublishing,
-		handleQuickPublishAgent,
-		scrollToAgentRunner,
-		scrollToConfigManagement,
-		scrollToConnectorCenter,
-		scrollToGovernance,
-		scrollToMemoryOperations,
-		scrollToMembers,
-		scrollToToolRunner,
-		scrollToWorkflowRunner,
-	};
 	const launchpadTargetActions = launchpadTargetActionsForNavigation(
 		launchpadNavigationActions(platformNavigationHandlers),
 	);

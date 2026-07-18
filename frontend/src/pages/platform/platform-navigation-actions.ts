@@ -32,6 +32,21 @@ export function launchpadNavigationActions(
 	};
 }
 
+export function capabilityNavigationActions(
+	handlers: PlatformNavigationActionHandlers,
+) {
+	return {
+		credentials: () => handlers.navigate('/credential'),
+		knowledge: () => handlers.navigate('/knowledge'),
+		agents: handlers.handleStartPublishing,
+		tools: handlers.scrollToToolRunner,
+		workflows: handlers.scrollToWorkflowRunner,
+		tenants: handlers.scrollToMembers,
+		governance: handlers.scrollToGovernance,
+		config: handlers.scrollToConfigManagement,
+	};
+}
+
 export function platformConsoleNavigationActions(
 	handlers: PlatformNavigationActionHandlers,
 ) {
