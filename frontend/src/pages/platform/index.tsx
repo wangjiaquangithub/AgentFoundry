@@ -1437,10 +1437,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					},
 					{
 						label: t('platform.appCenter.tools'),
-						value:
-							inspectedAppCenterTemplateTools.length > 0
-								? inspectedAppCenterTemplateTools.join(', ')
-								: t('platform.appCenter.none'),
+						value: resourceListLabel(
+							inspectedAppCenterTemplateTools,
+							t('platform.appCenter.none'),
+						),
 						icon: Boxes,
 					},
 					{
