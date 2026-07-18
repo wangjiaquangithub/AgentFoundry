@@ -116,6 +116,7 @@ import {
 	launchpadStepLabels,
 	platformConsoleItemLabels,
 	platformOverviewStatLabels,
+	platformRuntimeConfigLabels,
 	publishDraftLabels,
 	rolloutPathStepLabels,
 	runtimeStatusLabels,
@@ -501,7 +502,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		platformStatus,
 		governance,
 		connectors,
-		unavailableLabel: t('platform.runtime.unavailable'),
+		labels: platformRuntimeConfigLabels(t),
 	});
 	const enterpriseIdentities = platformRuntimeConfigState.enterpriseIdentities;
 	const {

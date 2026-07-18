@@ -12,6 +12,10 @@ export const runtimeStatusLabels = (t: PlatformTranslate) => ({
 	disabled: t('platform.runtime.disabled'),
 });
 
+export const platformRuntimeConfigLabels = (t: PlatformTranslate) => ({
+	unavailable: t('platform.runtime.unavailable'),
+});
+
 export const selectedToolRunnerLabels = (t: PlatformTranslate) => ({
 	notConfiguredForAgent: t('platform.toolRunner.notConfiguredForAgent'),
 });

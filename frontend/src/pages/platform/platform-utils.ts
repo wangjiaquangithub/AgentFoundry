@@ -413,13 +413,15 @@ export function platformRuntimeConfigStateForStatus(values: {
 	platformStatus?: EnterprisePlatformStatusResponse | null;
 	governance?: EnterprisePlatformGovernanceResponse | null;
 	connectors?: EnterprisePlatformConnectorsResponse | null;
-	unavailableLabel: string;
+	labels: {
+		unavailable: string;
+	};
 }) {
 	return {
 		enterpriseIdentities:
 			values.governance?.identities ?? values.connectors?.identities ?? [],
 		subagentTemplates: values.platformStatus?.subagent_templates ?? [],
-		toolPolicyMode: values.platformStatus?.tool_policy.mode || values.unavailableLabel,
+		toolPolicyMode: values.platformStatus?.tool_policy.mode || values.labels.unavailable,
 	};
 }
 
