@@ -123,6 +123,7 @@ import {
 	OrchestrationWorkbenchPanel,
 	type OrchestrationWorkbenchStep,
 } from './components/OrchestrationWorkbenchPanel';
+import { OperationsPanel } from './components/OperationsPanel';
 import { OpsTasksPanel } from './components/OpsTasksPanel';
 import { PlatformDashboardOverview } from './components/PlatformDashboardOverview';
 import { RolloutPath, type RolloutPathStep } from './components/RolloutPath';
@@ -8072,218 +8073,44 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					}}
 				/>
 
-				<section className="grid gap-4 rounded-lg border bg-background p-4">
-					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-						<div className="min-w-0">
-							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-								<BotMessageSquare className="size-4" />
-								<span>{t('platform.operations.eyebrow')}</span>
-							</div>
-							<h2 className="text-base font-semibold">
-								{t('platform.operations.title')}
-							</h2>
-							<p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-								{operationsHeadline}
-							</p>
-						</div>
-						<div className="flex flex-wrap gap-2 lg:justify-end">
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={scrollToAgentManagement}
-							>
-								<ListChecks className="size-4" />
-								{t('platform.operations.manageAgents')}
-							</Button>
-							<Button
-								type="button"
-								size="sm"
-								onClick={() =>
-									readyPlatformAgents[0]
-										? handlePrimeAgentRunner()
-										: handleStartPublishing()
-								}
-							>
-								<Play className="size-4" />
-								{readyPlatformAgents[0]
-									? t('platform.operations.runReadyAgent')
-									: t('platform.operations.publishAgent')}
-							</Button>
-						</div>
-					</div>
-
-					<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-						<div className="rounded-lg border bg-muted/20 p-3">
-							<div className="text-xs text-muted-foreground">
-								{t('platform.operations.totalAgents')}
-							</div>
-							<div className="mt-1 text-2xl font-semibold tabular-nums">
-								{activePlatformAgents.length}
-							</div>
-						</div>
-						<div className="rounded-lg border bg-muted/20 p-3">
-							<div className="text-xs text-muted-foreground">
-								{t('platform.operations.readyAgents')}
-							</div>
-							<div className="mt-1 text-2xl font-semibold tabular-nums">
-								{readyPlatformAgents.length}
-							</div>
-						</div>
-						<div className="rounded-lg border bg-muted/20 p-3">
-							<div className="text-xs text-muted-foreground">
-								{t('platform.operations.needsConfiguration')}
-							</div>
-							<div className="mt-1 text-2xl font-semibold tabular-nums">
-								{blockedOrPartialPlatformAgents.length}
-							</div>
-						</div>
-						<div className="rounded-lg border bg-muted/20 p-3">
-							<div className="text-xs text-muted-foreground">
-								{t('platform.operations.pendingApprovals')}
-							</div>
-							<div className="mt-1 text-2xl font-semibold tabular-nums">
-								{pendingApprovals.length}
-							</div>
-						</div>
-					</div>
-
-					<div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.45fr)]">
-						<div className="grid gap-2">
-							<div className="flex items-center justify-between gap-3">
-								<h3 className="text-sm font-medium">
-									{t('platform.operations.agentReadiness')}
-								</h3>
-								<Button
-									type="button"
-									size="sm"
-									variant="ghost"
-									onClick={scrollToAgentManagement}
-								>
-									{t('platform.operations.viewAll')}
-									<ArrowRight className="size-4" />
-								</Button>
-							</div>
-							{topOperationsAgents.length === 0 ? (
-								<div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-									{t('platform.operations.emptyAgents')}
-								</div>
-							) : (
-								<div className="grid gap-2">
-									{topOperationsAgents.map((agent) => {
-										const readinessState: HealthState =
-											agent.status !== 'published'
-												? 'todo'
-												: agent.readiness?.status ?? 'partial';
-										const isReady =
-											agent.status === 'published' &&
-											readinessState === 'ready';
-										const readinessLabel =
-											agent.status !== 'published'
-												? t('platform.agentManagement.archived')
-												: t(
-														`platform.agentManagement.readiness.${readinessState}`,
-													);
-
-										return (
-											<div
-												key={agent.id}
-												className="grid gap-3 rounded-lg border bg-muted/20 p-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"
-											>
-												<div className="min-w-0">
-													<div className="flex flex-wrap items-center gap-2">
-														<span className="min-w-0 truncate text-sm font-medium">
-															{agent.name}
-														</span>
-														<StateBadge
-															state={readinessState}
-															label={readinessLabel}
-														/>
-													</div>
-													<p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
-														{operationsAgentIssueText(agent)}
-													</p>
-												</div>
-												<div className="flex flex-wrap gap-2 md:justify-end">
-													{isReady ? (
-														<Button
-															type="button"
-															size="sm"
-															onClick={() => {
-																setSelectedRunAgentId(agent.id);
-																handlePrimeAgentRunner();
-															}}
-														>
-															<Play className="size-4" />
-															{t('platform.operations.run')}
-														</Button>
-													) : (
-														<Button
-															type="button"
-															size="sm"
-															variant="outline"
-															disabled={agent.status !== 'published'}
-															onClick={() => {
-																handleEditAgent(agent);
-																window.setTimeout(
-																	scrollToAgentManagement,
-																	0,
-																);
-															}}
-														>
-															<Pencil className="size-4" />
-															{t('platform.operations.configure')}
-														</Button>
-													)}
-												</div>
-											</div>
-										);
-									})}
-								</div>
-							)}
-						</div>
-
-						<div className="grid content-start gap-2">
-							<div className="flex items-center justify-between gap-3">
-								<h3 className="text-sm font-medium">
-									{t('platform.operations.humanInLoop')}
-								</h3>
-								<Button
-									type="button"
-									size="sm"
-									variant="ghost"
-									onClick={scrollToGovernance}
-								>
-									{t('platform.operations.review')}
-									<ArrowRight className="size-4" />
-								</Button>
-							</div>
-							{pendingApprovals.length === 0 ? (
-								<div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-									{t('platform.operations.emptyApprovals')}
-								</div>
-							) : (
-								pendingApprovals.slice(0, 3).map((approval) => (
-									<button
-										key={approval.approval_id}
-										type="button"
-										className="grid gap-1 rounded-lg border bg-muted/20 p-3 text-left text-sm transition hover:border-primary/50"
-										onClick={() => handleUseApproval(approval)}
-									>
-										<span className="truncate font-medium">
-											{approval.tool_name ||
-												approval.workflow_type ||
-												approval.request_type}
-										</span>
-										<span className="truncate text-xs text-muted-foreground">
-											{approval.user_id} · {approval.tenant}
-										</span>
-									</button>
-								))
-							)}
-						</div>
-					</div>
-				</section>
+				<OperationsPanel
+					activeAgents={activePlatformAgents}
+					readyAgents={readyPlatformAgents}
+					blockedOrPartialAgents={blockedOrPartialPlatformAgents}
+					topAgents={topOperationsAgents}
+					pendingApprovals={pendingApprovals}
+					headline={operationsHeadline}
+					agentIssueText={operationsAgentIssueText}
+					onManageAgents={scrollToAgentManagement}
+					onOpenGovernance={scrollToGovernance}
+					onRunReadyAgent={handlePrimeAgentRunner}
+					onStartPublishing={handleStartPublishing}
+					onSelectRunAgent={setSelectedRunAgentId}
+					onEditAgent={handleEditAgent}
+					onUseApproval={handleUseApproval}
+					labels={{
+						eyebrow: t('platform.operations.eyebrow'),
+						title: t('platform.operations.title'),
+						manageAgents: t('platform.operations.manageAgents'),
+						runReadyAgent: t('platform.operations.runReadyAgent'),
+						publishAgent: t('platform.operations.publishAgent'),
+						totalAgents: t('platform.operations.totalAgents'),
+						readyAgents: t('platform.operations.readyAgents'),
+						needsConfiguration: t('platform.operations.needsConfiguration'),
+						pendingApprovals: t('platform.operations.pendingApprovals'),
+						agentReadiness: t('platform.operations.agentReadiness'),
+						viewAll: t('platform.operations.viewAll'),
+						emptyAgents: t('platform.operations.emptyAgents'),
+						archived: t('platform.agentManagement.archived'),
+						readiness: (state) =>
+							t(`platform.agentManagement.readiness.${state}`),
+						run: t('platform.operations.run'),
+						configure: t('platform.operations.configure'),
+						humanInLoop: t('platform.operations.humanInLoop'),
+						review: t('platform.operations.review'),
+						emptyApprovals: t('platform.operations.emptyApprovals'),
+					}}
+				/>
 
 				<section className="grid gap-4 rounded-lg border bg-background p-4">
 					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
