@@ -20,6 +20,7 @@ import type { AccessControlStat } from './components/AccessControlPanel';
 import type { GovernanceHealthItem } from './components/GovernanceHealthPanel';
 import type { LaunchpadStep } from './components/LaunchpadPanel';
 import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
+import type { MonitoringStat } from './components/MonitoringSnapshotPanel';
 import type { PlatformMemberTenantSummary } from './components/MembersPanel';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
 import type { TenantOverviewItem } from './components/TenantWorkspacePanel';
@@ -612,6 +613,73 @@ export function dashboardTodoItemsForStatus(
 		values.pendingApprovalCount > 0 ? labels.approval(values.pendingApprovalCount) : null,
 		values.hasErrors ? labels.errors : null,
 	].filter((item): item is string => Boolean(item));
+}
+
+type MonitoringStatKey = 'agentRuns' | 'workflowRuns' | 'toolAudit' | 'pendingApprovals';
+
+export function monitoringStatsForSummary(
+	values: {
+		recentAgentTurnCount: number;
+		workflowRunCount: number;
+		completedWorkflowRunCount: number;
+		partialWorkflowRunCount: number;
+		failedWorkflowRunCount: number;
+		auditEventCount: number;
+		auditSuccessCount: number;
+		auditFailureCount: number;
+		pendingApprovalCount: number;
+	},
+	options: {
+		icons: Record<MonitoringStatKey, ComponentType<{ className?: string }>>;
+		labels: {
+			agentRuns: string;
+			agentRunsHelper: string;
+			workflowRuns: string;
+			workflowRunsHelper: (counts: {
+				completed: number;
+				partial: number;
+				failed: number;
+			}) => string;
+			toolAudit: string;
+			toolAuditHelper: (counts: { success: number; failure: number }) => string;
+			pendingApprovals: string;
+			pendingApprovalsHelper: string;
+		};
+	},
+): MonitoringStat[] {
+	return [
+		{
+			label: options.labels.agentRuns,
+			value: values.recentAgentTurnCount,
+			helper: options.labels.agentRunsHelper,
+			icon: options.icons.agentRuns,
+		},
+		{
+			label: options.labels.workflowRuns,
+			value: values.workflowRunCount,
+			helper: options.labels.workflowRunsHelper({
+				completed: values.completedWorkflowRunCount,
+				partial: values.partialWorkflowRunCount,
+				failed: values.failedWorkflowRunCount,
+			}),
+			icon: options.icons.workflowRuns,
+		},
+		{
+			label: options.labels.toolAudit,
+			value: values.auditEventCount,
+			helper: options.labels.toolAuditHelper({
+				success: values.auditSuccessCount,
+				failure: values.auditFailureCount,
+			}),
+			icon: options.icons.toolAudit,
+		},
+		{
+			label: options.labels.pendingApprovals,
+			value: values.pendingApprovalCount,
+			helper: options.labels.pendingApprovalsHelper,
+			icon: options.icons.pendingApprovals,
+		},
+	];
 }
 
 export function formatOperationsAgentIssueText(

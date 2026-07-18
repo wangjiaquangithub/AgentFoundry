@@ -68,10 +68,7 @@ import type { ApprovalFormState } from './components/ApprovalsPanel';
 import { ApprovalsViewPage } from './components/ApprovalsViewPage';
 import type { AppCenterSelection } from './components/AppCenterPanel';
 import type { FirstAgentGuideStep } from './components/FirstAgentGuide';
-import type {
-	MonitoringAgentTurn,
-	MonitoringStat,
-} from './components/MonitoringSnapshotPanel';
+import type { MonitoringAgentTurn } from './components/MonitoringSnapshotPanel';
 import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
 import { MemoryViewPage } from './components/MemoryViewPage';
 import type { MemberFormState } from './components/MembersPanel';
@@ -122,6 +119,7 @@ import {
 	modelCredentialLabel,
 	normalizeWorkflowInputs,
 	governanceHealthItemsForSummary,
+	monitoringStatsForSummary,
 	operationsHeadlineText,
 	pendingWorkflowRunApprovals,
 	platformMemberTenantSummariesForMembers,
@@ -4263,39 +4261,39 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		auditLoading ||
 		approvalLoading ||
 		governanceLoading;
-	const monitoringStats = [
+	const monitoringStats = monitoringStatsForSummary(
 		{
-			label: t('platform.monitoring.agentRuns'),
-			value: recentAgentTurns.length,
-			helper: t('platform.monitoring.agentRunsHelper'),
-			icon: BotMessageSquare,
+			recentAgentTurnCount: recentAgentTurns.length,
+			workflowRunCount,
+			completedWorkflowRunCount,
+			partialWorkflowRunCount,
+			failedWorkflowRunCount,
+			auditEventCount,
+			auditSuccessCount: monitoringAuditSuccessCount,
+			auditFailureCount: monitoringAuditFailureCount,
+			pendingApprovalCount: pendingApprovals.length,
 		},
 		{
-			label: t('platform.monitoring.workflowRuns'),
-			value: workflowRunCount,
-			helper: t('platform.monitoring.workflowRunsHelper', {
-				completed: completedWorkflowRunCount,
-				partial: partialWorkflowRunCount,
-				failed: failedWorkflowRunCount,
-			}),
-			icon: Workflow,
+			icons: {
+				agentRuns: BotMessageSquare,
+				workflowRuns: Workflow,
+				toolAudit: ShieldCheck,
+				pendingApprovals: Clock3,
+			},
+			labels: {
+				agentRuns: t('platform.monitoring.agentRuns'),
+				agentRunsHelper: t('platform.monitoring.agentRunsHelper'),
+				workflowRuns: t('platform.monitoring.workflowRuns'),
+				workflowRunsHelper: (counts) =>
+					t('platform.monitoring.workflowRunsHelper', counts),
+				toolAudit: t('platform.monitoring.toolAudit'),
+				toolAuditHelper: (counts) =>
+					t('platform.monitoring.toolAuditHelper', counts),
+				pendingApprovals: t('platform.monitoring.pendingApprovals'),
+				pendingApprovalsHelper: t('platform.monitoring.pendingApprovalsHelper'),
+			},
 		},
-		{
-			label: t('platform.monitoring.toolAudit'),
-			value: auditEventCount,
-			helper: t('platform.monitoring.toolAuditHelper', {
-				success: monitoringAuditSuccessCount,
-				failure: monitoringAuditFailureCount,
-			}),
-			icon: ShieldCheck,
-		},
-		{
-			label: t('platform.monitoring.pendingApprovals'),
-			value: pendingApprovals.length,
-			helper: t('platform.monitoring.pendingApprovalsHelper'),
-			icon: Clock3,
-		},
-	] satisfies MonitoringStat[];
+	);
 
 	if (view === 'tenants') {
 		return (
