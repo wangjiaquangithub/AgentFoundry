@@ -103,3 +103,31 @@ export const operationsHeadlineLabels = (t: PlatformTranslate) => ({
 		t('platform.operations.headlineApprovals', { count }),
 	ready: t('platform.operations.headlineReady'),
 });
+
+export const agentReleasePipelineLabels = (t: PlatformTranslate) => ({
+	template: t('platform.agentManagement.pipeline.template'),
+	templateDetail: t('platform.agentManagement.pipeline.templateDetail'),
+	model: t('platform.agentManagement.pipeline.model'),
+	modelDetail: t('platform.agentManagement.pipeline.modelDetail'),
+	knowledge: t('platform.agentManagement.pipeline.knowledge'),
+	selectedKnowledge: ({ count }: { count: number }) =>
+		t('platform.agentManagement.selectedKnowledge', { count }),
+	knowledgeDetail: t('platform.agentManagement.pipeline.knowledgeDetail'),
+	tools: t('platform.agentManagement.pipeline.tools'),
+	toolsSelected: ({ count }: { count: number }) =>
+		t('platform.agentManagement.wizard.toolsSelected', { count }),
+	toolsDetail: t('platform.agentManagement.pipeline.toolsDetail'),
+	runtime: t('platform.agentManagement.pipeline.runtime'),
+	runtimeDetail: ({ memory, workflow }: { memory: string; workflow: string }) =>
+		t('platform.agentManagement.wizard.runtimeDetail', { memory, workflow }),
+	enabled: t('platform.agentManagement.enabled'),
+	disabled: t('platform.agentManagement.disabled'),
+	publish: t('platform.agentManagement.pipeline.publish'),
+	publishDetailReady: ({ count }: { count: number }) =>
+		t('platform.agentManagement.pipeline.publishDetailReady', { count }),
+	publishDetail: t('platform.agentManagement.pipeline.publishDetail'),
+	governance: t('platform.agentManagement.pipeline.governance'),
+	governanceDetailPending: ({ count }: { count: number }) =>
+		t('platform.agentManagement.pipeline.governanceDetailPending', { count }),
+	governanceDetail: t('platform.agentManagement.pipeline.governanceDetail'),
+});
