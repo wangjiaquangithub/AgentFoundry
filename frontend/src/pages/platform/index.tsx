@@ -187,17 +187,7 @@ import {
 	type AgentWizardStep,
 	type EnterpriseAgentConversationTurn,
 } from './platform-utils';
-
-export type PlatformView =
-	| 'dashboard'
-	| 'agents'
-	| 'tools'
-	| 'workflows'
-	| 'approvals'
-	| 'runs'
-	| 'tenants'
-	| 'memory'
-	| 'settings';
+import type { PlatformView } from './platform-view';
 
 export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const navigate = useNavigate();
