@@ -72,6 +72,11 @@ import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import { usePlatformPageRefs } from './platform-page-refs';
 import {
+	latestAgentRunResponse,
+	mergeAgentConversationTurn,
+	type AgentConversationMap,
+} from './platform-agent-runner';
+import {
 	approvalFiltersForIdentity,
 	approvalFiltersForTenant,
 	auditFiltersForAgentRunEvidence,
@@ -221,9 +226,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const [selectedRunAgentId, setSelectedRunAgentId] = useState('');
 	const [lastPublishedAgentId, setLastPublishedAgentId] = useState('');
 	const [agentApprovalId, setAgentApprovalId] = useState('');
-	const [agentConversations, setAgentConversations] = useState<
-		Record<string, EnterpriseAgentConversationTurn[]>
-	>({});
+	const [agentConversations, setAgentConversations] = useState<AgentConversationMap>({});
 	const [agentRunsLoading, setAgentRunsLoading] = useState(false);
 	const [agentRunsError, setAgentRunsError] = useState<string | null>(null);
 	const [selectedToolName, setSelectedToolName] = useState(defaultSelectedToolName);
@@ -1113,7 +1116,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			if (current?.agent_id === selectedRunAgentId) {
 				return current;
 			}
-			return agentConversations[selectedRunAgentId]?.[0]?.response ?? null;
+			return latestAgentRunResponse(agentConversations, selectedRunAgentId);
 		});
 	}, [selectedRunAgentId]);
 
@@ -2100,14 +2103,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	function handlePrimePublishedAgent(agentId: string, sample = primaryAgentSampleQuestion) {
 		setSelectedRunAgentId(agentId);
 		setAgentQuestion((current) => current.trim() || sample);
-		setAgentRunResult(agentConversations[agentId]?.[0]?.response ?? null);
+		setAgentRunResult(latestAgentRunResponse(agentConversations, agentId));
 		setAgentRunError(null);
 		window.setTimeout(scrollToAgentRunner, 0);
 	}
 
 	function handleSelectRunAgent(agentId: string) {
 		setSelectedRunAgentId(agentId);
-		setAgentRunResult(agentConversations[agentId]?.[0]?.response ?? null);
+		setAgentRunResult(latestAgentRunResponse(agentConversations, agentId));
 		setAgentRunError(null);
 	}
 
@@ -2121,16 +2124,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		try {
 			const run = await platformApi.agentRun(turn.id);
 			const detailedTurn = mapAgentRunToConversationTurn(run);
-			setAgentConversations((current) => {
-				const turns = current[detailedTurn.agentId] ?? [];
-				const nextTurns = turns.some((item) => item.id === detailedTurn.id)
-					? turns.map((item) => (item.id === detailedTurn.id ? detailedTurn : item))
-					: [detailedTurn, ...turns];
-				return {
-					...current,
-					[detailedTurn.agentId]: nextTurns,
-				};
-			});
+			setAgentConversations((current) =>
+				mergeAgentConversationTurn(current, detailedTurn),
+			);
 			setAgentRunResult(run.response);
 		} catch (error) {
 			setAgentRunsError(
@@ -2760,13 +2756,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				response,
 			};
 			setAgentRunResult(response);
-			setAgentConversations((current) => {
-				const existingTurns = current[agentId] ?? [];
-				return {
-					...current,
-					[agentId]: [turn, ...existingTurns].slice(0, 20),
-				};
-			});
+			setAgentConversations((current) => mergeAgentConversationTurn(current, turn, 20));
 			const approvalRequired = response.tool_calls?.some(
 				(toolCall) => toolCall.approval_required,
 			);
