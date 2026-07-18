@@ -100,7 +100,7 @@ import {
 	appCenterOperationsStateForStatus,
 	auditStatsForSummary,
 	capabilityItemsForStatus,
-	connectorDraftIssuesForDraft,
+	connectorOperationsStateForStatus,
 	dashboardFallbackStateForStatus,
 	dashboardOperationsStateForStatus,
 	dashboardTodoItemsForStatus,
@@ -297,18 +297,6 @@ function summarizeAuditObject(value?: Record<string, unknown>) {
 		.slice(0, 4)
 		.map(([key, item]) => `${key}: ${summarizeAuditValue(item)}`)
 		.join(' | ');
-}
-
-function connectorHealthState(status?: string): HealthState {
-	if (status === 'ready') {
-		return 'ready';
-	}
-
-	if (status === 'error') {
-		return 'todo';
-	}
-
-	return 'partial';
 }
 
 export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
@@ -892,7 +880,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			: agentRoutingLabel === 'rules'
 				? t('platform.agentRunner.routingRules')
 				: agentRoutingLabel;
-	const connectorState = connectorHealthState(connectors?.current.status);
 	const tenantWorkspaces = useMemo(
 		() => tenantWorkspaceEntriesForWorkspaces(connectors?.tenant_workspaces),
 		[connectors?.tenant_workspaces],
@@ -901,53 +888,30 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		() => tenantWorkspaceByNameForEntries(tenantWorkspaces),
 		[tenantWorkspaces],
 	);
-	const savedConnectorConfigs = connectors?.saved_configs ?? [];
-	const activeConnectorTenant = connectorTestForm.tenant.trim() || 'acme';
-	const activeSavedConnectorConfig =
-		savedConnectorConfigs.find((config) => config.tenant === activeConnectorTenant) ?? null;
-	const connectorTimeoutValue = Number.parseFloat(connectorTestForm.timeout_seconds);
-	const connectorDraftIssues = connectorDraftIssuesForDraft(
-		{
-			baseUrl: connectorTestForm.base_url,
-			timeoutSeconds: connectorTimeoutValue,
-			policyPath: connectorTestForm.policy_path,
-			ticketPath: connectorTestForm.ticket_path,
-			metricsPath: connectorTestForm.metrics_path,
-		},
-		{
+	const connectorOperationsState = connectorOperationsStateForStatus({
+		connectors,
+		form: connectorTestForm,
+		testResult: connectorTestResult,
+		labels: {
 			baseUrlRequired: t('platform.connectors.validationBaseUrlRequired'),
 			baseUrlProtocol: t('platform.connectors.validationBaseUrlProtocol'),
 			timeout: t('platform.connectors.validationTimeout'),
 			policyPath: t('platform.connectors.validationPolicyPath'),
 			ticketPath: t('platform.connectors.validationTicketPath'),
 			metricsPath: t('platform.connectors.validationMetricsPath'),
+			runtimeSavedConfig: t('platform.connectors.runtimeSavedConfig'),
+			runtimeGlobal: t('platform.connectors.runtimeGlobal'),
 		},
-	);
-	const connectorDraftMatchesSaved = Boolean(
-		activeSavedConnectorConfig &&
-			connectorTestForm.base_url.trim() === activeSavedConnectorConfig.base_url &&
-			connectorTestForm.policy_path.trim() === activeSavedConnectorConfig.policy_path &&
-			connectorTestForm.ticket_path.trim() === activeSavedConnectorConfig.ticket_path &&
-			connectorTestForm.metrics_path.trim() === activeSavedConnectorConfig.metrics_path &&
-			Number.isFinite(connectorTimeoutValue) &&
-			connectorTimeoutValue === activeSavedConnectorConfig.timeout_seconds &&
-			connectorTestForm.enabled === activeSavedConnectorConfig.enabled &&
-			!connectorTestForm.token.trim(),
-	);
-	const connectorDraftState: HealthState =
-		connectorDraftIssues.length > 0
-			? 'todo'
-			: connectorDraftMatchesSaved
-				? 'ready'
-				: 'partial';
-	const connectorTestPassed = connectorTestResult?.status === 'success';
-	const connectorRuntimeState = connectors?.runtime.saved_config_enabled
-		? 'ready'
-		: connectorState;
-	const connectorRuntimeSourceText =
-		connectors?.runtime.source === 'saved_config'
-			? t('platform.connectors.runtimeSavedConfig')
-			: t('platform.connectors.runtimeGlobal');
+	});
+	const connectorState = connectorOperationsState.connectorState;
+	const savedConnectorConfigs = connectorOperationsState.savedConnectorConfigs;
+	const activeConnectorTenant = connectorOperationsState.activeConnectorTenant;
+	const activeSavedConnectorConfig = connectorOperationsState.activeSavedConnectorConfig;
+	const connectorDraftIssues = connectorOperationsState.connectorDraftIssues;
+	const connectorDraftState = connectorOperationsState.connectorDraftState;
+	const connectorTestPassed = connectorOperationsState.connectorTestPassed;
+	const connectorRuntimeState = connectorOperationsState.connectorRuntimeState;
+	const connectorRuntimeSourceText = connectorOperationsState.connectorRuntimeSourceText;
 	const workflowTemplateByType = useMemo(
 		() => workflowTemplateByTypeForTemplates(workflowTemplates),
 		[workflowTemplates],

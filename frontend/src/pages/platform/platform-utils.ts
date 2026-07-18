@@ -10,6 +10,7 @@ import type {
 	EnterprisePlatformOperations,
 	EnterprisePlatformDashboardRiskTool,
 	EnterprisePlatformDashboard,
+	EnterprisePlatformConnectorsResponse,
 	EnterprisePlatformGovernanceResponse,
 	EnterprisePlatformStatusResponse,
 	EnterprisePublishedAgent,
@@ -458,6 +459,93 @@ export function connectorDraftIssuesForDraft(
 		!values.ticketPath.trim().startsWith('/') ? labels.ticketPath : null,
 		!values.metricsPath.trim().startsWith('/') ? labels.metricsPath : null,
 	].filter(Boolean) as string[];
+}
+
+export function connectorHealthState(status?: string): HealthState {
+	if (status === 'ready') {
+		return 'ready';
+	}
+
+	if (status === 'error') {
+		return 'todo';
+	}
+
+	return 'partial';
+}
+
+export function connectorOperationsStateForStatus(values: {
+	connectors?: EnterprisePlatformConnectorsResponse | null;
+	form: {
+		tenant: string;
+		base_url: string;
+		policy_path: string;
+		ticket_path: string;
+		metrics_path: string;
+		timeout_seconds: string;
+		enabled: boolean;
+		token: string;
+	};
+	testResult?: { status?: string | null } | null;
+	labels: Parameters<typeof connectorDraftIssuesForDraft>[1] & {
+		runtimeSavedConfig: string;
+		runtimeGlobal: string;
+	};
+}) {
+	const connectorState = connectorHealthState(values.connectors?.current.status);
+	const savedConnectorConfigs = values.connectors?.saved_configs ?? [];
+	const activeConnectorTenant = values.form.tenant.trim() || 'acme';
+	const activeSavedConnectorConfig =
+		savedConnectorConfigs.find((config) => config.tenant === activeConnectorTenant) ?? null;
+	const connectorTimeoutValue = Number.parseFloat(values.form.timeout_seconds);
+	const connectorDraftIssues = connectorDraftIssuesForDraft(
+		{
+			baseUrl: values.form.base_url,
+			timeoutSeconds: connectorTimeoutValue,
+			policyPath: values.form.policy_path,
+			ticketPath: values.form.ticket_path,
+			metricsPath: values.form.metrics_path,
+		},
+		values.labels,
+	);
+	const connectorDraftMatchesSaved = Boolean(
+		activeSavedConnectorConfig &&
+			values.form.base_url.trim() === activeSavedConnectorConfig.base_url &&
+			values.form.policy_path.trim() === activeSavedConnectorConfig.policy_path &&
+			values.form.ticket_path.trim() === activeSavedConnectorConfig.ticket_path &&
+			values.form.metrics_path.trim() === activeSavedConnectorConfig.metrics_path &&
+			Number.isFinite(connectorTimeoutValue) &&
+			connectorTimeoutValue === activeSavedConnectorConfig.timeout_seconds &&
+			values.form.enabled === activeSavedConnectorConfig.enabled &&
+			!values.form.token.trim(),
+	);
+	const connectorDraftState: HealthState =
+		connectorDraftIssues.length > 0
+			? 'todo'
+			: connectorDraftMatchesSaved
+				? 'ready'
+				: 'partial';
+	const connectorTestPassed = values.testResult?.status === 'success';
+	const connectorRuntimeState = values.connectors?.runtime.saved_config_enabled
+		? 'ready'
+		: connectorState;
+	const connectorRuntimeSourceText =
+		values.connectors?.runtime.source === 'saved_config'
+			? values.labels.runtimeSavedConfig
+			: values.labels.runtimeGlobal;
+
+	return {
+		connectorState,
+		savedConnectorConfigs,
+		activeConnectorTenant,
+		activeSavedConnectorConfig,
+		connectorTimeoutValue,
+		connectorDraftIssues,
+		connectorDraftMatchesSaved,
+		connectorDraftState,
+		connectorTestPassed,
+		connectorRuntimeState,
+		connectorRuntimeSourceText,
+	};
 }
 
 export function agentSetupStepsForStatus(
