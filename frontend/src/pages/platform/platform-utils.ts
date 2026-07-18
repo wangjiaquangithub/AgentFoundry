@@ -5,6 +5,7 @@ import type {
 	EnterpriseAuditEvent,
 	EnterpriseAuditQueryResponse,
 	EnterpriseIdentity,
+	EnterprisePlatformMember,
 	EnterprisePlatformGovernanceResponse,
 	EnterprisePublishedAgent,
 	EnterpriseTenantWorkspace,
@@ -15,6 +16,7 @@ import type {
 } from '@/api';
 import type { AccessControlStat } from './components/AccessControlPanel';
 import type { GovernanceHealthItem } from './components/GovernanceHealthPanel';
+import type { PlatformMemberTenantSummary } from './components/MembersPanel';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
 import type { TenantOverviewItem } from './components/TenantWorkspacePanel';
 import type { TriggerOpsStat } from './components/TriggerOpsPanel';
@@ -188,6 +190,54 @@ export function tenantOverviewItemsForWorkspace(
 					.length,
 				sampleQuestion,
 				representativeIdentity: identities[0] ?? null,
+			};
+		});
+}
+
+export function platformMemberTenantSummariesForMembers(values: {
+	members: EnterprisePlatformMember[];
+	activePlatformAgents: EnterprisePublishedAgent[];
+	pendingApprovals: EnterpriseApprovalRequestItem[];
+	auditEvents: EnterpriseAuditEvent[];
+}): PlatformMemberTenantSummary[] {
+	const tenants = new Set<string>();
+
+	values.members.forEach((member) => tenants.add(member.tenant));
+	values.activePlatformAgents.forEach((agent) => tenants.add(agent.tenant));
+	values.pendingApprovals.forEach((approval) => tenants.add(approval.tenant));
+	values.auditEvents.forEach((event) => {
+		if (event.tenant) {
+			tenants.add(event.tenant);
+		}
+	});
+
+	return Array.from(tenants)
+		.sort()
+		.map((tenant) => {
+			const tenantMembers = values.members.filter((member) => member.tenant === tenant);
+			const roleNames = Array.from(
+				new Set(tenantMembers.map((member) => member.role).filter(Boolean)),
+			).sort();
+
+			return {
+				tenant,
+				members: tenantMembers.sort((first, second) =>
+					(first.display_name || first.user_id).localeCompare(
+						second.display_name || second.user_id,
+					),
+				),
+				activeMemberCount: tenantMembers.filter((member) => member.status !== 'inactive')
+					.length,
+				inactiveMemberCount: tenantMembers.filter((member) => member.status === 'inactive')
+					.length,
+				roleNames,
+				agentCount: values.activePlatformAgents.filter((agent) => agent.tenant === tenant)
+					.length,
+				pendingApprovalCount: values.pendingApprovals.filter(
+					(approval) => approval.tenant === tenant,
+				).length,
+				auditEventCount: values.auditEvents.filter((event) => event.tenant === tenant)
+					.length,
 			};
 		});
 }

@@ -75,10 +75,7 @@ import type {
 } from './components/MonitoringSnapshotPanel';
 import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
 import { MemoryViewPage } from './components/MemoryViewPage';
-import type {
-	MemberFormState,
-	PlatformMemberTenantSummary,
-} from './components/MembersPanel';
+import type { MemberFormState } from './components/MembersPanel';
 import type { OrchestrationWorkbenchStep } from './components/OrchestrationWorkbenchPanel';
 import type { PlatformConsoleItem } from './components/PlatformConsolePanel';
 import type { RolloutPathStep } from './components/RolloutPath';
@@ -128,6 +125,7 @@ import {
 	governanceHealthItemsForSummary,
 	operationsHeadlineText,
 	pendingWorkflowRunApprovals,
+	platformMemberTenantSummariesForMembers,
 	recentTriggerSchedules,
 	topOperationsAgentsForDisplay,
 	tenantOverviewItemsForWorkspace,
@@ -1100,49 +1098,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		tenantWorkspaces,
 		workflowRuns,
 	]);
-	const platformMemberTenantSummaries = useMemo<PlatformMemberTenantSummary[]>(() => {
-		const members = platformMembers?.members ?? [];
-		const tenants = new Set<string>();
-
-		members.forEach((member) => tenants.add(member.tenant));
-		activePlatformAgents.forEach((agent) => tenants.add(agent.tenant));
-		pendingApprovals.forEach((approval) => tenants.add(approval.tenant));
-		auditEvents.forEach((event) => {
-			if (event.tenant) {
-				tenants.add(event.tenant);
-			}
+	const platformMemberTenantSummaries = useMemo(() => {
+		return platformMemberTenantSummariesForMembers({
+			members: platformMembers?.members ?? [],
+			activePlatformAgents,
+			pendingApprovals,
+			auditEvents,
 		});
-
-		return Array.from(tenants)
-			.sort()
-			.map((tenant) => {
-				const tenantMembers = members.filter((member) => member.tenant === tenant);
-				const roleNames = Array.from(
-					new Set(tenantMembers.map((member) => member.role).filter(Boolean)),
-				).sort();
-
-				return {
-					tenant,
-					members: tenantMembers.sort((first, second) =>
-						(first.display_name || first.user_id).localeCompare(
-							second.display_name || second.user_id,
-						),
-					),
-					activeMemberCount: tenantMembers.filter(
-						(member) => member.status !== 'inactive',
-					).length,
-					inactiveMemberCount: tenantMembers.filter(
-						(member) => member.status === 'inactive',
-					).length,
-					roleNames,
-					agentCount: activePlatformAgents.filter((agent) => agent.tenant === tenant)
-						.length,
-					pendingApprovalCount: pendingApprovals.filter(
-						(approval) => approval.tenant === tenant,
-					).length,
-					auditEventCount: auditEvents.filter((event) => event.tenant === tenant).length,
-				};
-			});
 	}, [activePlatformAgents, auditEvents, pendingApprovals, platformMembers?.members]);
 	const memoryOperationsItems = useMemo<MemoryOperationsItem[]>(() => {
 		const grouped = new Map<string, MemoryOperationsItem>();
