@@ -82,6 +82,10 @@ export const tenantGovernanceRequestLabels = (t: PlatformTranslate) => ({
 	policySaveError: t('platform.tenantGovernance.policySaveError'),
 });
 
+export const toolCatalogRequestLabels = (t: PlatformTranslate) => ({
+	loadError: t('platform.toolCatalog.loadError'),
+});
+
 export const dashboardTodoLabels = (t: PlatformTranslate) => ({
 	model: t('platform.dashboard.todoModel'),
 	agent: t('platform.dashboard.todoAgent'),

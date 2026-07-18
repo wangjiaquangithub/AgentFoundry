@@ -129,6 +129,7 @@ import {
 	selectedToolRunnerLabels,
 	tenantGovernanceRequestLabels,
 	tenantWorkspaceOperationsLabels,
+	toolCatalogRequestLabels,
 	triggerOperationsStatLabels,
 	triggerOperationsSummaryLabels,
 	workbenchIndicatorLabels,
@@ -415,6 +416,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const connectorRequestText = connectorRequestLabels(t);
 	const memberRequestText = memberRequestLabels(t);
 	const tenantGovernanceRequestText = tenantGovernanceRequestLabels(t);
+	const toolCatalogRequestText = toolCatalogRequestLabels(t);
 	const hasErrors = Boolean(
 		agentsError ||
 		credentialsError ||
@@ -1318,7 +1320,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setToolCatalog(response);
 		} catch (error) {
 			setToolCatalogError(
-				error instanceof Error ? error.message : t('platform.toolCatalog.loadError'),
+				error instanceof Error ? error.message : toolCatalogRequestText.loadError,
 			);
 		} finally {
 			setToolCatalogLoading(false);
