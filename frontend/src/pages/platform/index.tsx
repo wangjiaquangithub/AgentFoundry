@@ -51,6 +51,7 @@ import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import { usePlatformPageRefs } from './platform-page-refs';
 import {
+	clearAgentRunsParams,
 	enterpriseAgentRunPayload,
 	enterpriseToolRunPayload,
 	enterpriseWorkflowRunPayload,
@@ -1950,10 +1951,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setAgentRunsLoading(true);
 		setAgentRunsError(null);
 		try {
-			await platformApi.clearAgentRuns({
-				agent_id: agentId,
-				user_id: userId || undefined,
-			});
+			await platformApi.clearAgentRuns(clearAgentRunsParams({ agentId, userId }));
 			setAgentConversations((current) => ({
 				...current,
 				[agentId]: [],

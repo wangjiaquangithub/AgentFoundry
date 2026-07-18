@@ -7,6 +7,12 @@ import type {
 import type { EnterpriseAgentConversationTurn } from './platform-utils';
 
 export type AgentConversationMap = Record<string, EnterpriseAgentConversationTurn[]>;
+export type ClearAgentRunsParams = {
+	agent_id?: string;
+	tenant?: string;
+	user_id?: string;
+	session_id?: string;
+};
 
 export function latestAgentRunResponse(
 	agentConversations: AgentConversationMap,
@@ -42,6 +48,16 @@ export function enterpriseAgentRunPayload(values: {
 		question: values.question,
 		user_id: values.userId || undefined,
 		approval_id: values.approvalId || undefined,
+	};
+}
+
+export function clearAgentRunsParams(values: {
+	agentId: string;
+	userId: string;
+}): ClearAgentRunsParams {
+	return {
+		agent_id: values.agentId,
+		user_id: values.userId || undefined,
 	};
 }
 
