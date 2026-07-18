@@ -4924,8 +4924,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				onOpenGovernance={() => navigate('/platform/approvals')}
 				onAuditFiltersChange={setAuditFilters}
 				onRefetchAuditEvents={refetchAuditEvents}
-				workflowStatusClassName={workflowStatusClassName}
-				workflowStatusLabelKey={workflowStatusLabelKey}
 				summarizeAuditObject={summarizeAuditObject}
 				t={t}
 			/>
@@ -5435,8 +5433,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			workflowRuns={workflowRuns}
 			workflowRunsError={workflowRunsError}
 			workflowRunsLoading={workflowRunsLoading}
-			workflowStatusClassName={workflowStatusClassName}
-			workflowStatusLabelKey={workflowStatusLabelKey}
 			workflowTemplates={workflowTemplates}
 			workflowTemplatesError={workflowTemplatesError}
 			workflowTemplatesLoading={workflowTemplatesLoading}
