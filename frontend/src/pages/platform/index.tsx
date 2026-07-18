@@ -99,6 +99,7 @@ import {
 	appCenterTemplateDetailResourceValues,
 	auditStatsForSummary,
 	blockedOrPartialPlatformAgentsForReadiness,
+	connectorDraftIssuesForDraft,
 	dashboardTodoItemsForStatus,
 	defaultEnterpriseWorkflowInputs,
 	enabledEnterpriseWorkflowTemplates,
@@ -117,6 +118,7 @@ import {
 	orchestrationPrimaryStepForSteps,
 	orchestrationWorkbenchStepsForStatus,
 	pendingWorkflowRunApprovals,
+	publishReleaseIssuesForDraft,
 	platformMemberTenantSummariesForMembers,
 	platformConsoleItemsForDisplay,
 	recentTriggerSchedules,
@@ -795,12 +797,16 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			? t('platform.agentManagement.enabled')
 			: t('platform.agentManagement.disabled'),
 	});
-	const publishReleaseIssues = [
-		!publishForm.model_config_id ? t('platform.agentManagement.releaseMissingModel') : null,
-		publishForm.knowledge_base_ids.length === 0
-			? t('platform.agentManagement.releaseNoKnowledge')
-			: null,
-	].filter(Boolean) as string[];
+	const publishReleaseIssues = publishReleaseIssuesForDraft(
+		{
+			modelConfigId: publishForm.model_config_id,
+			knowledgeBaseCount: publishForm.knowledge_base_ids.length,
+		},
+		{
+			missingModel: t('platform.agentManagement.releaseMissingModel'),
+			noKnowledge: t('platform.agentManagement.releaseNoKnowledge'),
+		},
+	);
 	const publishBlocked = !selectedTemplate || !publishForm.model_config_id;
 	const selectedIdentity =
 		enterpriseIdentities.find((identity) => identity.user_id === selectedIdentityUserId) ??
@@ -978,27 +984,23 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const activeSavedConnectorConfig =
 		savedConnectorConfigs.find((config) => config.tenant === activeConnectorTenant) ?? null;
 	const connectorTimeoutValue = Number.parseFloat(connectorTestForm.timeout_seconds);
-	const connectorDraftIssues = [
-		!connectorTestForm.base_url.trim()
-			? t('platform.connectors.validationBaseUrlRequired')
-			: null,
-		connectorTestForm.base_url.trim() &&
-		!/^https?:\/\//i.test(connectorTestForm.base_url.trim())
-			? t('platform.connectors.validationBaseUrlProtocol')
-			: null,
-		!Number.isFinite(connectorTimeoutValue) || connectorTimeoutValue <= 0
-			? t('platform.connectors.validationTimeout')
-			: null,
-		!connectorTestForm.policy_path.trim().startsWith('/')
-			? t('platform.connectors.validationPolicyPath')
-			: null,
-		!connectorTestForm.ticket_path.trim().startsWith('/')
-			? t('platform.connectors.validationTicketPath')
-			: null,
-		!connectorTestForm.metrics_path.trim().startsWith('/')
-			? t('platform.connectors.validationMetricsPath')
-			: null,
-	].filter(Boolean) as string[];
+	const connectorDraftIssues = connectorDraftIssuesForDraft(
+		{
+			baseUrl: connectorTestForm.base_url,
+			timeoutSeconds: connectorTimeoutValue,
+			policyPath: connectorTestForm.policy_path,
+			ticketPath: connectorTestForm.ticket_path,
+			metricsPath: connectorTestForm.metrics_path,
+		},
+		{
+			baseUrlRequired: t('platform.connectors.validationBaseUrlRequired'),
+			baseUrlProtocol: t('platform.connectors.validationBaseUrlProtocol'),
+			timeout: t('platform.connectors.validationTimeout'),
+			policyPath: t('platform.connectors.validationPolicyPath'),
+			ticketPath: t('platform.connectors.validationTicketPath'),
+			metricsPath: t('platform.connectors.validationMetricsPath'),
+		},
+	);
 	const connectorDraftMatchesSaved = Boolean(
 		activeSavedConnectorConfig &&
 			connectorTestForm.base_url.trim() === activeSavedConnectorConfig.base_url &&

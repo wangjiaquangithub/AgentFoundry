@@ -125,6 +125,55 @@ export function resourceCountLabel(
 	return count > 0 ? labels.available(count) : labels.empty;
 }
 
+export function publishReleaseIssuesForDraft(
+	values: {
+		modelConfigId?: string | null;
+		knowledgeBaseCount: number;
+	},
+	labels: {
+		missingModel: string;
+		noKnowledge: string;
+	},
+) {
+	return [
+		!values.modelConfigId ? labels.missingModel : null,
+		values.knowledgeBaseCount === 0 ? labels.noKnowledge : null,
+	].filter(Boolean) as string[];
+}
+
+export function connectorDraftIssuesForDraft(
+	values: {
+		baseUrl: string;
+		timeoutSeconds: number;
+		policyPath: string;
+		ticketPath: string;
+		metricsPath: string;
+	},
+	labels: {
+		baseUrlRequired: string;
+		baseUrlProtocol: string;
+		timeout: string;
+		policyPath: string;
+		ticketPath: string;
+		metricsPath: string;
+	},
+) {
+	const trimmedBaseUrl = values.baseUrl.trim();
+
+	return [
+		!trimmedBaseUrl ? labels.baseUrlRequired : null,
+		trimmedBaseUrl && !/^https?:\/\//i.test(trimmedBaseUrl)
+			? labels.baseUrlProtocol
+			: null,
+		!Number.isFinite(values.timeoutSeconds) || values.timeoutSeconds <= 0
+			? labels.timeout
+			: null,
+		!values.policyPath.trim().startsWith('/') ? labels.policyPath : null,
+		!values.ticketPath.trim().startsWith('/') ? labels.ticketPath : null,
+		!values.metricsPath.trim().startsWith('/') ? labels.metricsPath : null,
+	].filter(Boolean) as string[];
+}
+
 export function agentKnowledgeBaseLabels(
 	agent: Pick<EnterprisePublishedAgent, 'knowledge_base_ids'> | null | undefined,
 	knowledgeBaseById: Map<string, { id?: unknown; name?: unknown }>,
