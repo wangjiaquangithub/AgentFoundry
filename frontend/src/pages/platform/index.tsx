@@ -67,7 +67,6 @@ import { AgentsViewPage } from './components/AgentsViewPage';
 import type { ApprovalFormState } from './components/ApprovalsPanel';
 import { ApprovalsViewPage } from './components/ApprovalsViewPage';
 import type { AppCenterSelection } from './components/AppCenterPanel';
-import type { CapabilityItem } from './components/CapabilitiesPanel';
 import type { MonitoringAgentTurn } from './components/MonitoringSnapshotPanel';
 import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
 import { MemoryViewPage } from './components/MemoryViewPage';
@@ -100,8 +99,7 @@ import {
 	appCenterTemplateDetailResourceValues,
 	auditStatsForSummary,
 	blockedOrPartialPlatformAgentsForReadiness,
-	capabilityStateForCount,
-	capabilityStatusForCount,
+	capabilityItemsForStatus,
 	connectorDraftIssuesForDraft,
 	dashboardOperationsSummaryForOperations,
 	dashboardRiskToolItemsForStatus,
@@ -3462,119 +3460,42 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		});
 	}
 
-	const capabilities: CapabilityItem[] = [
-		{
-			title: t('platform.capabilities.model.title'),
-			description: t('platform.capabilities.model.description'),
-			metric: t('platform.capabilities.model.metric', { count: credentials.length }),
-			actionLabel: t('platform.capabilities.model.action'),
-			status: capabilityStatusForCount(credentials.length, {
-				ready: t('platform.status.ready'),
-				empty: t('platform.status.toConfigure'),
-			}),
-			state: capabilityStateForCount(credentials.length),
-			icon: KeyRound,
-			onClick: () => navigate('/credential'),
+	const capabilities = capabilityItemsForStatus({
+		t,
+		counts: {
+			credentials: credentials.length,
+			knowledgeBases: knowledgeBases.length,
+			activeAgents: activePlatformAgents.length,
+			availableTools: availableToolItems.length,
+			workflows: workflowTemplates.length || schedules.length,
+			tenants: platformMemberTenantSummaries.length,
+			pendingApprovals: pendingApprovals.length,
+			auditEvents: auditEventCount,
+			configMembers: platformConfigExport?.counts.members ?? 0,
+			configAgents: platformConfigExport?.counts.agents ?? 0,
 		},
-		{
-			title: t('platform.capabilities.knowledge.title'),
-			description: t('platform.capabilities.knowledge.description'),
-			metric: t('platform.capabilities.knowledge.metric', { count: knowledgeBases.length }),
-			actionLabel: t('platform.capabilities.knowledge.action'),
-			status: capabilityStatusForCount(knowledgeBases.length, {
-				ready: t('platform.status.ready'),
-				empty: t('platform.status.toConfigure'),
-			}),
-			state: capabilityStateForCount(knowledgeBases.length),
-			icon: Database,
-			onClick: () => navigate('/knowledge'),
+		hasConfigExport: Boolean(platformConfigExport),
+		icons: {
+			model: KeyRound,
+			knowledge: Database,
+			agent: BotMessageSquare,
+			tools: Boxes,
+			workflow: Clock3,
+			tenant: ShieldCheck,
+			audit: Network,
+			config: Upload,
 		},
-		{
-			title: t('platform.capabilities.agent.title'),
-			description: t('platform.capabilities.agent.description'),
-			metric: t('platform.capabilities.agent.metric', {
-				count: activePlatformAgents.length,
-			}),
-			actionLabel: t('platform.capabilities.agent.action'),
-			status: capabilityStatusForCount(activePlatformAgents.length, {
-				ready: t('platform.status.ready'),
-				empty: t('platform.status.toConfigure'),
-			}),
-			state: capabilityStateForCount(activePlatformAgents.length, 'todo'),
-			icon: BotMessageSquare,
-			onClick: handleStartPublishing,
+		actions: {
+			credentials: () => navigate('/credential'),
+			knowledge: () => navigate('/knowledge'),
+			agents: handleStartPublishing,
+			tools: scrollToToolRunner,
+			workflows: scrollToWorkflowRunner,
+			tenants: scrollToMembers,
+			governance: scrollToGovernance,
+			config: scrollToConfigManagement,
 		},
-		{
-			title: t('platform.capabilities.tools.title'),
-			description: t('platform.capabilities.tools.description'),
-			metric: t('platform.capabilities.tools.metric', { count: availableToolItems.length }),
-			actionLabel: t('platform.capabilities.tools.action'),
-			status: capabilityStatusForCount(availableToolItems.length, {
-				ready: t('platform.status.demoReady'),
-				empty: t('platform.status.toConfigure'),
-			}),
-			state: capabilityStateForCount(availableToolItems.length),
-			icon: Boxes,
-			onClick: scrollToToolRunner,
-		},
-		{
-			title: t('platform.capabilities.workflow.title'),
-			description: t('platform.capabilities.workflow.description'),
-			metric: t('platform.capabilities.workflow.metric', {
-				count: workflowTemplates.length || schedules.length,
-			}),
-			actionLabel: t('platform.capabilities.workflow.action'),
-			status: capabilityStatusForCount(workflowTemplates.length || schedules.length, {
-				ready: t('platform.status.ready'),
-				empty: t('platform.status.toConfigure'),
-			}),
-			state: capabilityStateForCount(workflowTemplates.length || schedules.length, 'todo'),
-			icon: Clock3,
-			onClick: scrollToWorkflowRunner,
-		},
-		{
-			title: t('platform.capabilities.tenant.title'),
-			description: t('platform.capabilities.tenant.description'),
-			metric: t('platform.capabilities.tenant.metric', {
-				count: platformMemberTenantSummaries.length,
-			}),
-			actionLabel: t('platform.capabilities.tenant.action'),
-			status: capabilityStatusForCount(platformMemberTenantSummaries.length, {
-				ready: t('platform.status.ready'),
-				empty: t('platform.status.toConfigure'),
-			}),
-			state: capabilityStateForCount(platformMemberTenantSummaries.length),
-			icon: ShieldCheck,
-			onClick: scrollToMembers,
-		},
-		{
-			title: t('platform.capabilities.audit.title'),
-			description: t('platform.capabilities.audit.description'),
-			metric: t('platform.capabilities.audit.metric', {
-				count: pendingApprovals.length,
-				auditCount: auditEventCount,
-			}),
-			actionLabel: t('platform.capabilities.audit.action'),
-			status:
-				pendingApprovals.length > 0 ? t('platform.status.next') : t('platform.status.ready'),
-			state: pendingApprovals.length > 0 ? 'partial' : 'ready',
-			icon: Network,
-			onClick: scrollToGovernance,
-		},
-		{
-			title: t('platform.capabilities.config.title'),
-			description: t('platform.capabilities.config.description'),
-			metric: t('platform.capabilities.config.metric', {
-				members: platformConfigExport?.counts.members ?? 0,
-				agents: platformConfigExport?.counts.agents ?? 0,
-			}),
-			actionLabel: t('platform.capabilities.config.action'),
-			status: platformConfigExport ? t('platform.status.ready') : t('platform.status.toConfigure'),
-			state: platformConfigExport ? 'ready' : 'partial',
-			icon: Upload,
-			onClick: scrollToConfigManagement,
-		},
-	];
+	});
 
 	const launchpadTargetActions: Record<string, () => void> = {
 		members: scrollToMembers,

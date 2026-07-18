@@ -43,6 +43,7 @@ import type {
 	WorkbenchIndicator,
 } from './components/WorkbenchStatusPanel';
 import type { WorkflowOpsStat } from './components/WorkflowOpsPanel';
+import type { CapabilityItem } from './components/CapabilitiesPanel';
 import type { HealthState, StatCardProps } from './components/common';
 
 export const defaultEnterpriseWorkflowInputs: Record<string, string> = {
@@ -101,6 +102,159 @@ export function capabilityStatusForCount(
 	labels: { ready: string; empty: string },
 ) {
 	return count > 0 ? labels.ready : labels.empty;
+}
+
+export function capabilityItemsForStatus(options: {
+	t: (key: string, options?: Record<string, unknown>) => string;
+	counts: {
+		credentials: number;
+		knowledgeBases: number;
+		activeAgents: number;
+		availableTools: number;
+		workflows: number;
+		tenants: number;
+		pendingApprovals: number;
+		auditEvents: number;
+		configMembers: number;
+		configAgents: number;
+	};
+	hasConfigExport: boolean;
+	icons: {
+		model: ComponentType<{ className?: string }>;
+		knowledge: ComponentType<{ className?: string }>;
+		agent: ComponentType<{ className?: string }>;
+		tools: ComponentType<{ className?: string }>;
+		workflow: ComponentType<{ className?: string }>;
+		tenant: ComponentType<{ className?: string }>;
+		audit: ComponentType<{ className?: string }>;
+		config: ComponentType<{ className?: string }>;
+	};
+	actions: {
+		credentials: () => void;
+		knowledge: () => void;
+		agents: () => void;
+		tools: () => void;
+		workflows: () => void;
+		tenants: () => void;
+		governance: () => void;
+		config: () => void;
+	};
+}): CapabilityItem[] {
+	const { actions, counts, hasConfigExport, icons, t } = options;
+
+	return [
+		{
+			title: t('platform.capabilities.model.title'),
+			description: t('platform.capabilities.model.description'),
+			metric: t('platform.capabilities.model.metric', { count: counts.credentials }),
+			actionLabel: t('platform.capabilities.model.action'),
+			status: capabilityStatusForCount(counts.credentials, {
+				ready: t('platform.status.ready'),
+				empty: t('platform.status.toConfigure'),
+			}),
+			state: capabilityStateForCount(counts.credentials),
+			icon: icons.model,
+			onClick: actions.credentials,
+		},
+		{
+			title: t('platform.capabilities.knowledge.title'),
+			description: t('platform.capabilities.knowledge.description'),
+			metric: t('platform.capabilities.knowledge.metric', { count: counts.knowledgeBases }),
+			actionLabel: t('platform.capabilities.knowledge.action'),
+			status: capabilityStatusForCount(counts.knowledgeBases, {
+				ready: t('platform.status.ready'),
+				empty: t('platform.status.toConfigure'),
+			}),
+			state: capabilityStateForCount(counts.knowledgeBases),
+			icon: icons.knowledge,
+			onClick: actions.knowledge,
+		},
+		{
+			title: t('platform.capabilities.agent.title'),
+			description: t('platform.capabilities.agent.description'),
+			metric: t('platform.capabilities.agent.metric', {
+				count: counts.activeAgents,
+			}),
+			actionLabel: t('platform.capabilities.agent.action'),
+			status: capabilityStatusForCount(counts.activeAgents, {
+				ready: t('platform.status.ready'),
+				empty: t('platform.status.toConfigure'),
+			}),
+			state: capabilityStateForCount(counts.activeAgents, 'todo'),
+			icon: icons.agent,
+			onClick: actions.agents,
+		},
+		{
+			title: t('platform.capabilities.tools.title'),
+			description: t('platform.capabilities.tools.description'),
+			metric: t('platform.capabilities.tools.metric', { count: counts.availableTools }),
+			actionLabel: t('platform.capabilities.tools.action'),
+			status: capabilityStatusForCount(counts.availableTools, {
+				ready: t('platform.status.demoReady'),
+				empty: t('platform.status.toConfigure'),
+			}),
+			state: capabilityStateForCount(counts.availableTools),
+			icon: icons.tools,
+			onClick: actions.tools,
+		},
+		{
+			title: t('platform.capabilities.workflow.title'),
+			description: t('platform.capabilities.workflow.description'),
+			metric: t('platform.capabilities.workflow.metric', {
+				count: counts.workflows,
+			}),
+			actionLabel: t('platform.capabilities.workflow.action'),
+			status: capabilityStatusForCount(counts.workflows, {
+				ready: t('platform.status.ready'),
+				empty: t('platform.status.toConfigure'),
+			}),
+			state: capabilityStateForCount(counts.workflows, 'todo'),
+			icon: icons.workflow,
+			onClick: actions.workflows,
+		},
+		{
+			title: t('platform.capabilities.tenant.title'),
+			description: t('platform.capabilities.tenant.description'),
+			metric: t('platform.capabilities.tenant.metric', {
+				count: counts.tenants,
+			}),
+			actionLabel: t('platform.capabilities.tenant.action'),
+			status: capabilityStatusForCount(counts.tenants, {
+				ready: t('platform.status.ready'),
+				empty: t('platform.status.toConfigure'),
+			}),
+			state: capabilityStateForCount(counts.tenants),
+			icon: icons.tenant,
+			onClick: actions.tenants,
+		},
+		{
+			title: t('platform.capabilities.audit.title'),
+			description: t('platform.capabilities.audit.description'),
+			metric: t('platform.capabilities.audit.metric', {
+				count: counts.pendingApprovals,
+				auditCount: counts.auditEvents,
+			}),
+			actionLabel: t('platform.capabilities.audit.action'),
+			status:
+				counts.pendingApprovals > 0 ? t('platform.status.next') : t('platform.status.ready'),
+			state: counts.pendingApprovals > 0 ? 'partial' : 'ready',
+			icon: icons.audit,
+			onClick: actions.governance,
+		},
+		{
+			title: t('platform.capabilities.config.title'),
+			description: t('platform.capabilities.config.description'),
+			metric: t('platform.capabilities.config.metric', {
+				members: counts.configMembers,
+				agents: counts.configAgents,
+			}),
+			actionLabel: t('platform.capabilities.config.action'),
+			status: hasConfigExport ? t('platform.status.ready') : t('platform.status.toConfigure'),
+			state: hasConfigExport ? 'ready' : 'partial',
+			icon: icons.config,
+			onClick: actions.config,
+		},
+	];
 }
 
 export function credentialLabel(credential: { id?: unknown; data?: { name?: unknown } }) {
