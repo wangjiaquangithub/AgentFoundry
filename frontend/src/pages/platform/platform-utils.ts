@@ -304,6 +304,14 @@ export function appCenterSelectionState<
 	};
 }
 
+export function appCenterAgentsForDisplay<TAgent>(
+	readyAgents: TAgent[],
+	blockedOrPartialAgents: TAgent[],
+	limit = 3,
+) {
+	return [...readyAgents, ...blockedOrPartialAgents].slice(0, limit);
+}
+
 export function templateDetailIssues(
 	hasCredentials: boolean,
 	hasKnowledgeBases: boolean,

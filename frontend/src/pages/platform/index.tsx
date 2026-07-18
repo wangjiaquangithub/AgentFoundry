@@ -112,6 +112,7 @@ import {
 	agentReadinessState,
 	agentResourceSummary,
 	agentRunnerAccessLabelKey,
+	appCenterAgentsForDisplay,
 	appCenterSelectionState,
 	appCenterTemplateDetailResourceValues,
 	defaultEnterpriseWorkflowInputs,
@@ -1276,10 +1277,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		(agent) =>
 			!readyPlatformAgents.some((readyAgent) => readyAgent.id === agent.id),
 	);
-	const appCenterAgents = [
-		...readyPlatformAgents,
-		...blockedOrPartialPlatformAgents,
-	].slice(0, 3);
+	const appCenterAgents = appCenterAgentsForDisplay(
+		readyPlatformAgents,
+		blockedOrPartialPlatformAgents,
+	);
 	const appCenterSelection = appCenterSelectionState({
 		selectedItem: selectedAppCenterItem,
 		activeAgents: activePlatformAgents,
