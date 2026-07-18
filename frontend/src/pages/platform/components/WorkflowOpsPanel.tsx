@@ -15,6 +15,10 @@ import type {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import {
+	workflowStatusClassName,
+	workflowStatusLabelKey,
+} from '../platform-utils';
 
 export interface WorkflowOpsStat {
 	label: string;
@@ -36,8 +40,6 @@ interface WorkflowOpsPanelProps {
 	onScrollToWorkflowRunner: () => void;
 	onScrollToGovernance: () => void;
 	onUseApproval: (approval: EnterpriseApprovalRequestItem) => void;
-	workflowStatusLabelKey: (status?: string) => string;
-	workflowStatusClassName: (status?: string) => string;
 	labels: {
 		eyebrow: string;
 		title: string;
@@ -78,8 +80,6 @@ export function WorkflowOpsPanel({
 	onScrollToWorkflowRunner,
 	onScrollToGovernance,
 	onUseApproval,
-	workflowStatusLabelKey,
-	workflowStatusClassName,
 	labels,
 }: WorkflowOpsPanelProps) {
 	return (

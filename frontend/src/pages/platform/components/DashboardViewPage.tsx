@@ -1107,8 +1107,6 @@ export function DashboardViewPage({
 					onScrollToWorkflowRunner={scrollToWorkflowRunner}
 					onScrollToGovernance={scrollToGovernance}
 					onUseApproval={handleUseApproval}
-					workflowStatusLabelKey={workflowStatusLabelKey}
-					workflowStatusClassName={workflowStatusClassName}
 					labels={{
 						eyebrow: t('platform.workflowOps.eyebrow'),
 						title: t('platform.workflowOps.title'),
