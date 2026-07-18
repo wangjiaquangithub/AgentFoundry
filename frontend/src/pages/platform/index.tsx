@@ -131,7 +131,6 @@ import {
 	publishReleaseIssuesForDraft,
 	platformMembersByUserId,
 	platformOverviewStatsForSummary,
-	platformMemberTenantSummariesForMembers,
 	platformConsoleItemsForDisplay,
 	publishAccessMembersForSelection,
 	publishRoleOptionsForMembers,
@@ -145,7 +144,7 @@ import {
 	tenantWorkspaceByNameForEntries,
 	tenantWorkspaceEntriesForWorkspaces,
 	topOperationsAgentsForDisplay,
-	tenantOverviewItemsForWorkspace,
+	tenantWorkspaceStateForStatus,
 	toolPolicySummaryForGovernance,
 	triggerOpsStatsForSummary,
 	triggerOpsSummaryText,
@@ -994,8 +993,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		workflowRuns,
 		auditEvents,
 	});
-	const tenantOverviewItems = useMemo(() => {
-		return tenantOverviewItemsForWorkspace(
+	const tenantWorkspaceState = useMemo(() => {
+		return tenantWorkspaceStateForStatus(
 			{
 				tenantWorkspaces,
 				tenantWorkspaceByName,
@@ -1004,6 +1003,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				pendingApprovals,
 				auditEvents,
 				workflowRuns,
+				members: platformMembers?.members ?? [],
 			},
 			{
 				localSource: t('platform.tenantWorkspace.localSource'),
@@ -1018,15 +1018,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		tenantWorkspaceByName,
 		tenantWorkspaces,
 		workflowRuns,
+		platformMembers?.members,
 	]);
-	const platformMemberTenantSummaries = useMemo(() => {
-		return platformMemberTenantSummariesForMembers({
-			members: platformMembers?.members ?? [],
-			activePlatformAgents,
-			pendingApprovals,
-			auditEvents,
-		});
-	}, [activePlatformAgents, auditEvents, pendingApprovals, platformMembers?.members]);
+	const tenantOverviewItems = tenantWorkspaceState.tenantOverviewItems;
+	const platformMemberTenantSummaries = tenantWorkspaceState.platformMemberTenantSummaries;
 	const memoryOperationsState = useMemo(() => {
 		return memoryOperationsStateForConversations({
 			activePlatformAgents,

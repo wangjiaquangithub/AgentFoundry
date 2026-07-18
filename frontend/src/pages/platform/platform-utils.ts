@@ -813,6 +813,27 @@ export function platformMemberTenantSummariesForMembers(values: {
 		});
 }
 
+export function tenantWorkspaceStateForStatus(
+	values: {
+		tenantWorkspaces: Array<[string, EnterpriseTenantWorkspace]>;
+		tenantWorkspaceByName: Map<string, EnterpriseTenantWorkspace>;
+		enterpriseIdentities: EnterpriseIdentity[];
+		activePlatformAgents: EnterprisePublishedAgent[];
+		pendingApprovals: EnterpriseApprovalRequestItem[];
+		auditEvents: EnterpriseAuditEvent[];
+		workflowRuns: EnterpriseWorkflowRunHistoryItem[];
+		members: EnterprisePlatformMember[];
+	},
+	labels: {
+		localSource: string;
+	},
+) {
+	return {
+		tenantOverviewItems: tenantOverviewItemsForWorkspace(values, labels),
+		platformMemberTenantSummaries: platformMemberTenantSummariesForMembers(values),
+	};
+}
+
 export interface MemoryOperationsConversationTurn {
 	agentId: string;
 	question: string;
