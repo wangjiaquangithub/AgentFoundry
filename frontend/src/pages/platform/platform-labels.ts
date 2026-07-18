@@ -70,6 +70,12 @@ export const configManagementRequestLabels = (t: PlatformTranslate) => ({
 	importError: t('platform.configManagement.importError'),
 });
 
+export const memberRequestLabels = (t: PlatformTranslate) => ({
+	loadError: t('platform.members.loadError'),
+	userRequired: t('platform.members.userRequired'),
+	saveError: t('platform.members.saveError'),
+});
+
 export const dashboardTodoLabels = (t: PlatformTranslate) => ({
 	model: t('platform.dashboard.todoModel'),
 	agent: t('platform.dashboard.todoAgent'),

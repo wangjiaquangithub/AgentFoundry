@@ -113,6 +113,7 @@ import {
 	firstAgentGuideStepLabels,
 	governanceAccessLabels,
 	governanceHealthLabels,
+	memberRequestLabels,
 	monitoringStatLabels,
 	orchestrationWorkbenchStepLabels,
 	operationsHeadlineLabels,
@@ -411,6 +412,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const auditRequestText = auditRequestLabels(t);
 	const configManagementRequestText = configManagementRequestLabels(t);
 	const connectorRequestText = connectorRequestLabels(t);
+	const memberRequestText = memberRequestLabels(t);
 	const hasErrors = Boolean(
 		agentsError ||
 		credentialsError ||
@@ -1090,7 +1092,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setPlatformMembers(response);
 		} catch (error) {
 			setPlatformMembersError(
-				error instanceof Error ? error.message : t('platform.members.loadError'),
+				error instanceof Error ? error.message : memberRequestText.loadError,
 			);
 		} finally {
 			setPlatformMembersLoading(false);
@@ -1109,7 +1111,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	async function handleSaveMember() {
 		const userId = memberForm.user_id.trim();
 		if (!userId) {
-			setPlatformMembersError(t('platform.members.userRequired'));
+			setPlatformMembersError(memberRequestText.userRequired);
 			return;
 		}
 
@@ -1127,7 +1129,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			await refreshMemberDependentViews();
 		} catch (error) {
 			setPlatformMembersError(
-				error instanceof Error ? error.message : t('platform.members.saveError'),
+				error instanceof Error ? error.message : memberRequestText.saveError,
 			);
 		} finally {
 			setSavingMember(false);
@@ -1156,7 +1158,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			await refreshMemberDependentViews();
 		} catch (error) {
 			setPlatformMembersError(
-				error instanceof Error ? error.message : t('platform.members.saveError'),
+				error instanceof Error ? error.message : memberRequestText.saveError,
 			);
 		} finally {
 			setUpdatingMemberId(null);
