@@ -1,10 +1,13 @@
 import type {
 	AgentView,
 	CredentialView,
+	EnterpriseAgentRunHistoryItem,
 	EnterpriseAgentRunResponse,
 	EnterpriseAgentTemplate,
 	EnterpriseAgentToolCall,
+	EnterpriseApprovalRequiredDetail,
 	EnterpriseApprovalRequestItem,
+	EnterpriseApprovalRequestType,
 	EnterpriseAuditEvent,
 	EnterpriseAuditQueryResponse,
 	EnterpriseIdentity,
@@ -24,6 +27,7 @@ import type {
 	KnowledgeBaseView,
 	ScheduleRecord,
 } from '@/api';
+import { ApiError } from '@/api/client';
 import type { ComponentType, RefObject } from 'react';
 import type { AccessControlStat } from './components/AccessControlPanel';
 import type { FirstAgentGuideStep } from './components/FirstAgentGuide';
@@ -84,6 +88,71 @@ export type EnterpriseToolInputConfigMap = Record<
 	string,
 	{ inputKey: string; labelKey: string; defaultValue: string }
 >;
+
+export interface EnterpriseAgentConversationTurn extends MonitoringAgentTurn {}
+
+export function approvalRequiredDetail(
+	error: unknown,
+	requestType: EnterpriseApprovalRequestType,
+): EnterpriseApprovalRequiredDetail | null {
+	if (!(error instanceof ApiError)) return null;
+	const detail = error.detailData;
+	if (!detail || typeof detail !== 'object') return null;
+	if (!('approval_required' in detail) || detail.approval_required !== true) return null;
+	if (!('request_type' in detail) || detail.request_type !== requestType) return null;
+	if (!('message' in detail) || typeof detail.message !== 'string') return null;
+	if (!('target' in detail) || typeof detail.target !== 'string') return null;
+	return detail as EnterpriseApprovalRequiredDetail;
+}
+
+export function mapAgentRunToConversationTurn(
+	run: EnterpriseAgentRunHistoryItem,
+): EnterpriseAgentConversationTurn {
+	return {
+		id: run.turn_id,
+		agentId: run.agent_id,
+		question: run.question,
+		answer: run.answer,
+		createdAt: run.created_at,
+		response: run.response,
+	};
+}
+
+export function summarizeAuditValue(value: unknown): string {
+	if (value === null || value === undefined) {
+		return '-';
+	}
+
+	if (typeof value === 'string') {
+		return value.length > 64 ? `${value.slice(0, 61)}...` : value;
+	}
+
+	if (typeof value === 'number' || typeof value === 'boolean') {
+		return String(value);
+	}
+
+	if (Array.isArray(value)) {
+		return `[${value.length}]`;
+	}
+
+	if (typeof value === 'object') {
+		const keys = Object.keys(value as Record<string, unknown>);
+		return `{${keys.slice(0, 4).join(', ')}}`;
+	}
+
+	return String(value);
+}
+
+export function summarizeAuditObject(value?: Record<string, unknown>) {
+	if (!value) {
+		return '';
+	}
+
+	return Object.entries(value)
+		.slice(0, 4)
+		.map(([key, item]) => `${key}: ${summarizeAuditValue(item)}`)
+		.join(' | ');
+}
 
 export function formatTimestamp(value?: string) {
 	if (!value) {

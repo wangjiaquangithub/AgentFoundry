@@ -28,9 +28,7 @@ import {
 	type EnterpriseIdentity,
 	type EnterpriseAgentPublishRequest,
 	type EnterpriseAgentTemplate,
-	type EnterpriseAgentRunHistoryItem,
 	type EnterpriseAgentRunResponse,
-	type EnterpriseApprovalRequiredDetail,
 	type EnterpriseApprovalRequestItem,
 	type EnterpriseApprovalRequestType,
 	type EnterpriseAuditEvent,
@@ -53,7 +51,6 @@ import {
 	type EnterpriseWorkflowRunResponse,
 	type EnterpriseWorkflowTemplate,
 } from '@/api';
-import { ApiError } from '@/api/client';
 import { useAgents } from '@/hooks/useAgents';
 import { useCredentials } from '@/hooks/useCredentials';
 import { useKnowledgeBases } from '@/hooks/useKnowledgeBases';
@@ -65,7 +62,6 @@ import { AgentsViewPage } from './components/AgentsViewPage';
 import type { ApprovalFormState } from './components/ApprovalsPanel';
 import { ApprovalsViewPage } from './components/ApprovalsViewPage';
 import type { AppCenterSelection } from './components/AppCenterPanel';
-import type { MonitoringAgentTurn } from './components/MonitoringSnapshotPanel';
 import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
 import { MemoryViewPage } from './components/MemoryViewPage';
 import type { MemberFormState } from './components/MembersPanel';
@@ -81,6 +77,7 @@ import {
 	agentAccessAllowed,
 	agentRoutingDisplayStateForResult,
 	agentRunnerStateForStatus,
+	approvalRequiredDetail,
 	appCenterDetailHealthState,
 	appCenterAgentDisplayStateForStatus,
 	activePlatformMemberCountForMembers,
@@ -106,6 +103,7 @@ import {
 	launchpadStateForCounts,
 	launchpadStepsForStatus,
 	launchpadTargetActionsForNavigation,
+	mapAgentRunToConversationTurn,
 	memoryOperationsStateForConversations,
 	nextAgentSetupStepForSteps,
 	normalizeWorkflowInputs,
@@ -129,6 +127,7 @@ import {
 	selectedIdentityGovernanceDisplayStateForStatus,
 	selectedIdentityStateForStatus,
 	selectedToolRunnerStateForStatus,
+	summarizeAuditObject,
 	tenantWorkspaceOperationsStateForStatus,
 	toolCatalogStateForStatus,
 	triggerOperationsStateForStatus,
@@ -140,6 +139,7 @@ import {
 	workflowSelectionStateForTemplates,
 	workflowOperationsStateForStatus,
 	type AgentWizardStep,
+	type EnterpriseAgentConversationTurn,
 } from './platform-utils';
 
 export type PlatformView =
@@ -152,35 +152,6 @@ export type PlatformView =
 	| 'tenants'
 	| 'memory'
 	| 'settings';
-
-function approvalRequiredDetail(
-	error: unknown,
-	requestType: EnterpriseApprovalRequestType,
-): EnterpriseApprovalRequiredDetail | null {
-	if (!(error instanceof ApiError)) return null;
-	const detail = error.detailData;
-	if (!detail || typeof detail !== 'object') return null;
-	if (!('approval_required' in detail) || detail.approval_required !== true) return null;
-	if (!('request_type' in detail) || detail.request_type !== requestType) return null;
-	if (!('message' in detail) || typeof detail.message !== 'string') return null;
-	if (!('target' in detail) || typeof detail.target !== 'string') return null;
-	return detail as EnterpriseApprovalRequiredDetail;
-}
-
-interface EnterpriseAgentConversationTurn extends MonitoringAgentTurn {}
-
-function mapAgentRunToConversationTurn(
-	run: EnterpriseAgentRunHistoryItem,
-): EnterpriseAgentConversationTurn {
-	return {
-		id: run.turn_id,
-		agentId: run.agent_id,
-		question: run.question,
-		answer: run.answer,
-		createdAt: run.created_at,
-		response: run.response,
-	};
-}
 
 interface PublishFormState {
 	name: string;
@@ -242,42 +213,6 @@ const defaultMemberForm: MemberFormState = {
 	role: '',
 	status: 'active',
 };
-
-function summarizeAuditValue(value: unknown): string {
-	if (value === null || value === undefined) {
-		return '-';
-	}
-
-	if (typeof value === 'string') {
-		return value.length > 64 ? `${value.slice(0, 61)}...` : value;
-	}
-
-	if (typeof value === 'number' || typeof value === 'boolean') {
-		return String(value);
-	}
-
-	if (Array.isArray(value)) {
-		return `[${value.length}]`;
-	}
-
-	if (typeof value === 'object') {
-		const keys = Object.keys(value as Record<string, unknown>);
-		return `{${keys.slice(0, 4).join(', ')}}`;
-	}
-
-	return String(value);
-}
-
-function summarizeAuditObject(value?: Record<string, unknown>) {
-	if (!value) {
-		return '';
-	}
-
-	return Object.entries(value)
-		.slice(0, 4)
-		.map(([key, item]) => `${key}: ${summarizeAuditValue(item)}`)
-		.join(' | ');
-}
 
 export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const navigate = useNavigate();
