@@ -109,6 +109,7 @@ import {
 	agentResourceSummary,
 	agentRunnerAccessLabelKey,
 	defaultEnterpriseWorkflowInputs,
+	formatOperationsAgentIssueText,
 	knowledgeBaseLabels,
 	modelCredentialLabel,
 	normalizeWorkflowInputs,
@@ -1321,20 +1322,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		...publishedPlatformAgents.filter((agent) => agent.status !== 'published'),
 	].slice(0, 4);
 	const operationsAgentIssueText = (agent: EnterprisePublishedAgent) => {
-		if (agent.status !== 'published') {
-			return t('platform.operations.archivedIssue');
-		}
-
-		const issue = agent.readiness?.issues[0];
-		if (issue?.message) {
-			return issue.message;
-		}
-
-		if (agentIsReady(agent)) {
-			return t('platform.operations.readyIssue');
-		}
-
-		return t('platform.operations.missingIssue');
+		return formatOperationsAgentIssueText(agent, {
+			archived: t('platform.operations.archivedIssue'),
+			missing: t('platform.operations.missingIssue'),
+			ready: t('platform.operations.readyIssue'),
+		});
 	};
 	const agentResourceText = (agent: EnterprisePublishedAgent) => {
 		const resources = agentResourceSummary(

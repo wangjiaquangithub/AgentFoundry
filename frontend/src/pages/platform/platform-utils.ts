@@ -86,6 +86,26 @@ export function agentResourceSummary(
 	};
 }
 
+export function formatOperationsAgentIssueText(
+	agent: Pick<EnterprisePublishedAgent, 'readiness' | 'status'>,
+	labels: { archived: string; missing: string; ready: string },
+) {
+	if (agent.status !== 'published') {
+		return labels.archived;
+	}
+
+	const issue = agent.readiness?.issues[0];
+	if (issue?.message) {
+		return issue.message;
+	}
+
+	if (agentIsReady(agent)) {
+		return labels.ready;
+	}
+
+	return labels.missing;
+}
+
 export function agentAccessAllowed(
 	agent: EnterprisePublishedAgent,
 	identity?: EnterpriseIdentity | null,
