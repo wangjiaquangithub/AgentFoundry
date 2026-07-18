@@ -340,6 +340,28 @@ export function knowledgeBaseLabels(
 
 export type AgentRunnerNextStepMode = 'model' | 'publish' | 'configure' | 'governance' | 'run';
 
+export function agentRoutingDisplayStateForResult(
+	agentRunResult: EnterpriseAgentRunResponse | null,
+	labels: {
+		model: string;
+		rules: string;
+	},
+) {
+	const agentRoutingLabel =
+		agentRunResult?.routing_mode ||
+		agentRunResult?.routing_source ||
+		agentRunResult?.decision?.routing_mode ||
+		agentRunResult?.decision?.routing_source;
+	const agentRoutingText =
+		agentRoutingLabel === 'model'
+			? labels.model
+			: agentRoutingLabel === 'rules'
+				? labels.rules
+				: agentRoutingLabel;
+
+	return { agentRoutingLabel, agentRoutingText };
+}
+
 export function agentRunnerStateForStatus(
 	values: {
 		selectedRunAgent: EnterprisePublishedAgent | null;

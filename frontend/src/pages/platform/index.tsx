@@ -80,6 +80,7 @@ import { DashboardViewPage } from './components/DashboardViewPage';
 import {
 	activePlatformAgentsForAgents,
 	agentAccessAllowed,
+	agentRoutingDisplayStateForResult,
 	agentRunnerStateForStatus,
 	appCenterDetailHealthState,
 	activePlatformMemberCountForMembers,
@@ -772,17 +773,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const selectedToolInputValue = selectedToolRunnerState.selectedToolInputValue;
 	const selectedToolAllowed = selectedToolRunnerState.selectedToolAllowed;
 	const selectedToolReason = selectedToolRunnerState.selectedToolReason;
-	const agentRoutingLabel =
-		agentRunResult?.routing_mode ||
-		agentRunResult?.routing_source ||
-		agentRunResult?.decision?.routing_mode ||
-		agentRunResult?.decision?.routing_source;
-	const agentRoutingText =
-		agentRoutingLabel === 'model'
-			? t('platform.agentRunner.routingModel')
-			: agentRoutingLabel === 'rules'
-				? t('platform.agentRunner.routingRules')
-				: agentRoutingLabel;
+	const { agentRoutingLabel, agentRoutingText } = agentRoutingDisplayStateForResult(
+		agentRunResult,
+		{
+			model: t('platform.agentRunner.routingModel'),
+			rules: t('platform.agentRunner.routingRules'),
+		},
+	);
 	const connectorOperationsState = connectorOperationsStateForStatus({
 		connectors,
 		form: connectorTestForm,
