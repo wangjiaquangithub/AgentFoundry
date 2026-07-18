@@ -1351,8 +1351,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const inspectedAppCenterAgentAllowedRoles =
 		inspectedAppCenterAgent?.allowed_roles ?? [];
 	const inspectedAppCenterTemplateTools = inspectedAppCenterTemplate?.tools ?? [];
-	const inspectedAppCenterAgentReadiness: HealthState =
-		inspectedAppCenterAgent?.readiness?.status ?? 'partial';
+	const inspectedAppCenterAgentReadiness = agentReadinessState(inspectedAppCenterAgent);
 	const inspectedAppCenterAgentIssues = agentReadinessIssues(inspectedAppCenterAgent);
 	const inspectedAppCenterAgentModel = modelCredentialLabel(
 		inspectedAppCenterAgent?.model_config_id,
