@@ -170,3 +170,41 @@ export const platformConsoleItemLabels = (t: PlatformTranslate) => ({
 	description: (key: string) => t(`platform.console.${key}Description`),
 	action: (key: string) => t(`platform.console.${key}Action`),
 });
+
+export const workbenchIndicatorLabels = (
+	t: PlatformTranslate,
+	values: { memoryOperationsSavedCount: number; memoryOperationsHitCount: number },
+) => ({
+	readyAgents: t('platform.workbench.indicators.readyAgents'),
+	readyAgentsHelper: t('platform.workbench.indicators.readyAgentsHelper'),
+	approvals: t('platform.workbench.indicators.approvals'),
+	approvalsHelper: t('platform.workbench.indicators.approvalsHelper'),
+	workflowRuns: t('platform.workbench.indicators.workflowRuns'),
+	workflowRunsHelper: t('platform.workbench.indicators.workflowRunsHelper'),
+	memory: t('platform.workbench.indicators.memory'),
+	memoryHelper: t('platform.workbench.indicators.memoryHelper', {
+		saved: values.memoryOperationsSavedCount,
+		hits: values.memoryOperationsHitCount,
+	}),
+});
+
+export const workbenchPrimaryActionLabels = (t: PlatformTranslate) => ({
+	runTitle: t('platform.workbench.actions.run.title'),
+	runDescriptionReady: (agent: string) =>
+		t('platform.workbench.actions.run.descriptionReady', { agent }),
+	runDescriptionEmpty: t('platform.workbench.actions.run.descriptionEmpty'),
+	runAction: t('platform.workbench.actions.run.action'),
+	runPublishAction: t('platform.workbench.actions.run.publishAction'),
+	workflowTitle: t('platform.workbench.actions.workflow.title'),
+	workflowDescription: (count: number) =>
+		t('platform.workbench.actions.workflow.description', { count }),
+	workflowAction: t('platform.workbench.actions.workflow.action'),
+	governanceTitle: t('platform.workbench.actions.governance.title'),
+	governanceDescription: (count: number) =>
+		t('platform.workbench.actions.governance.description', { count }),
+	governanceAction: t('platform.workbench.actions.governance.action'),
+	memoryTitle: t('platform.workbench.actions.memory.title'),
+	memoryDescription: (count: number) =>
+		t('platform.workbench.actions.memory.description', { count }),
+	memoryAction: t('platform.workbench.actions.memory.action'),
+});
