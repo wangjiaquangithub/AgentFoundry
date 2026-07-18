@@ -81,9 +81,6 @@ import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
 import { SettingsViewPage } from './components/SettingsViewPage';
 import { TenantsViewPage } from './components/TenantsViewPage';
 import { ToolsViewPage } from './components/ToolsViewPage';
-import type {
-	WorkbenchQuickAction,
-} from './components/WorkbenchReadinessPanel';
 import { WorkflowsViewPage } from './components/WorkflowsViewPage';
 import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
@@ -130,6 +127,7 @@ import {
 	triggerSchedulesBySource,
 	workbenchActionsForStatus,
 	workbenchIndicatorsForStatus,
+	workbenchQuickActionsForStatus,
 	workbenchReadinessItemsForStatus,
 	workbenchRiskItemsForStatus,
 	workflowOpsStatsForSummary,
@@ -3890,44 +3888,32 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			},
 		},
 	);
-	const workbenchQuickActions = [
-		{
-			key: 'connectors',
-			label: t('platform.workbench.quickActions.connectors'),
-			icon: Network,
-			onClick: scrollToConnectorCenter,
+	const workbenchQuickActions = workbenchQuickActionsForStatus({
+		icons: {
+			connectors: Network,
+			publish: BotMessageSquare,
+			run: Play,
+			workflow: Workflow,
+			governance: ShieldCheck,
+			tools: Boxes,
 		},
-		{
-			key: 'publish',
-			label: t('platform.workbench.quickActions.publish'),
-			icon: BotMessageSquare,
-			onClick: handleStartPublishing,
+		actions: {
+			connectors: scrollToConnectorCenter,
+			publish: handleStartPublishing,
+			run: scrollToAgentRunner,
+			workflow: scrollToWorkflowRunner,
+			governance: scrollToGovernance,
+			tools: scrollToToolRunner,
 		},
-		{
-			key: 'run',
-			label: t('platform.workbench.quickActions.run'),
-			icon: Play,
-			onClick: scrollToAgentRunner,
+		labels: {
+			connectors: t('platform.workbench.quickActions.connectors'),
+			publish: t('platform.workbench.quickActions.publish'),
+			run: t('platform.workbench.quickActions.run'),
+			workflow: t('platform.workbench.quickActions.workflow'),
+			governance: t('platform.workbench.quickActions.governance'),
+			tools: t('platform.workbench.quickActions.tools'),
 		},
-		{
-			key: 'workflow',
-			label: t('platform.workbench.quickActions.workflow'),
-			icon: Workflow,
-			onClick: scrollToWorkflowRunner,
-		},
-		{
-			key: 'governance',
-			label: t('platform.workbench.quickActions.governance'),
-			icon: ShieldCheck,
-			onClick: scrollToGovernance,
-		},
-		{
-			key: 'tools',
-			label: t('platform.workbench.quickActions.tools'),
-			icon: Boxes,
-			onClick: scrollToToolRunner,
-		},
-	] satisfies WorkbenchQuickAction[];
+	});
 	const rolloutPathSteps = [
 		{
 			key: 'model',

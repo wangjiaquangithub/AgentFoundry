@@ -27,6 +27,7 @@ import type { TenantOverviewItem } from './components/TenantWorkspacePanel';
 import type { TriggerOpsStat } from './components/TriggerOpsPanel';
 import type {
 	WorkbenchReadinessItem,
+	WorkbenchQuickAction,
 	WorkbenchRiskItem,
 } from './components/WorkbenchReadinessPanel';
 import type {
@@ -458,6 +459,13 @@ type WorkbenchReadinessTarget =
 	| 'agents'
 	| 'workflows';
 type WorkbenchRiskTarget = 'governance' | 'connectors' | 'workflows' | 'agents';
+type WorkbenchQuickActionKey =
+	| 'connectors'
+	| 'publish'
+	| 'run'
+	| 'workflow'
+	| 'governance'
+	| 'tools';
 
 export function workbenchReadinessItemsForStatus(
 	values: {
@@ -613,6 +621,51 @@ export function workbenchRiskItemsForStatus(
 	];
 
 	return riskItems.filter((item): item is WorkbenchRiskItem => Boolean(item));
+}
+
+export function workbenchQuickActionsForStatus(options: {
+	icons: Record<WorkbenchQuickActionKey, ComponentType<{ className?: string }>>;
+	actions: Record<WorkbenchQuickActionKey, () => void>;
+	labels: Record<WorkbenchQuickActionKey, string>;
+}): WorkbenchQuickAction[] {
+	return [
+		{
+			key: 'connectors',
+			label: options.labels.connectors,
+			icon: options.icons.connectors,
+			onClick: options.actions.connectors,
+		},
+		{
+			key: 'publish',
+			label: options.labels.publish,
+			icon: options.icons.publish,
+			onClick: options.actions.publish,
+		},
+		{
+			key: 'run',
+			label: options.labels.run,
+			icon: options.icons.run,
+			onClick: options.actions.run,
+		},
+		{
+			key: 'workflow',
+			label: options.labels.workflow,
+			icon: options.icons.workflow,
+			onClick: options.actions.workflow,
+		},
+		{
+			key: 'governance',
+			label: options.labels.governance,
+			icon: options.icons.governance,
+			onClick: options.actions.governance,
+		},
+		{
+			key: 'tools',
+			label: options.labels.tools,
+			icon: options.icons.tools,
+			onClick: options.actions.tools,
+		},
+	];
 }
 
 export function workbenchIndicatorsForStatus(
