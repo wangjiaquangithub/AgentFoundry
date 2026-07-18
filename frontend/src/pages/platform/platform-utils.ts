@@ -3220,6 +3220,42 @@ export function triggerOpsSummaryText(
 	return labels.active({ count: values.enabledScheduleCount });
 }
 
+export function triggerOperationsStateForStatus(values: {
+	schedules: ScheduleRecord[];
+	statLabels: Parameters<typeof triggerOpsStatsForSummary>[1];
+	summaryLabels: Parameters<typeof triggerOpsSummaryText>[1];
+}) {
+	const enabledSchedules = enabledTriggerSchedules(values.schedules);
+	const agentSourceSchedules = triggerSchedulesBySource(values.schedules, 'AGENT');
+	const userSourceSchedules = triggerSchedulesBySource(values.schedules, 'USER');
+	const recentSchedules = recentTriggerSchedules(values.schedules);
+	const triggerOpsStats = triggerOpsStatsForSummary(
+		{
+			scheduleCount: values.schedules.length,
+			enabledScheduleCount: enabledSchedules.length,
+			agentSourceScheduleCount: agentSourceSchedules.length,
+			userSourceScheduleCount: userSourceSchedules.length,
+		},
+		values.statLabels,
+	);
+	const triggerOpsSummary = triggerOpsSummaryText(
+		{
+			scheduleCount: values.schedules.length,
+			enabledScheduleCount: enabledSchedules.length,
+		},
+		values.summaryLabels,
+	);
+
+	return {
+		enabledSchedules,
+		agentSourceSchedules,
+		userSourceSchedules,
+		recentSchedules,
+		triggerOpsStats,
+		triggerOpsSummary,
+	};
+}
+
 export function auditStatsForSummary(
 	values: {
 		auditSummary?: EnterpriseAuditQueryResponse['summary'] | null;

@@ -102,7 +102,6 @@ import {
 	dashboardOperationsStateForStatus,
 	dashboardTodoItemsForStatus,
 	defaultEnterpriseWorkflowInputs,
-	enabledTriggerSchedules,
 	firstAgentGuidePrimaryStepForSteps,
 	firstAgentGuideStepsForStatus,
 	formatOperationsAgentIssueText,
@@ -130,7 +129,6 @@ import {
 	readyLaunchpadStepCountForSteps,
 	readyOrchestrationWorkbenchStepCountForSteps,
 	readyPlatformAgentsForAgents,
-	recentTriggerSchedules,
 	rolloutPathStepsForStatus,
 	runtimeStatusItemsForStatus,
 	selectedIdentityGovernanceActivityForIdentity,
@@ -138,9 +136,7 @@ import {
 	tenantWorkspaceEntriesForWorkspaces,
 	tenantWorkspaceStateForStatus,
 	toolPolicySummaryForGovernance,
-	triggerOpsStatsForSummary,
-	triggerOpsSummaryText,
-	triggerSchedulesBySource,
+	triggerOperationsStateForStatus,
 	workbenchActionsForStatus,
 	workbenchIndicatorsForStatus,
 	workbenchQuickActionsForStatus,
@@ -1267,35 +1263,23 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const selectedWorkflowSteps = workflowOperationsState.selectedWorkflowSteps;
 	const selectedWorkflowLastRun = workflowOperationsState.selectedWorkflowLastRun;
 	const workflowOpsStats = workflowOperationsState.workflowOpsStats;
-	const enabledSchedules = enabledTriggerSchedules(schedules);
-	const agentSourceSchedules = triggerSchedulesBySource(schedules, 'AGENT');
-	const userSourceSchedules = triggerSchedulesBySource(schedules, 'USER');
-	const recentSchedules = recentTriggerSchedules(schedules);
-	const triggerOpsStats = triggerOpsStatsForSummary(
-		{
-			scheduleCount: schedules.length,
-			enabledScheduleCount: enabledSchedules.length,
-			agentSourceScheduleCount: agentSourceSchedules.length,
-			userSourceScheduleCount: userSourceSchedules.length,
-		},
-		{
+	const triggerOperationsState = triggerOperationsStateForStatus({
+		schedules,
+		statLabels: {
 			schedules: t('platform.triggerOps.schedules'),
 			enabled: t('platform.triggerOps.enabled'),
 			agentSource: t('platform.triggerOps.agentSource'),
 			userSource: t('platform.triggerOps.userSource'),
 		},
-	);
-	const triggerOpsSummary = triggerOpsSummaryText(
-		{
-			scheduleCount: schedules.length,
-			enabledScheduleCount: enabledSchedules.length,
-		},
-		{
+		summaryLabels: {
 			manual: t('platform.triggerOps.summaryManual'),
 			paused: t('platform.triggerOps.summaryPaused'),
 			active: ({ count }) => t('platform.triggerOps.summaryActive', { count }),
 		},
-	);
+	});
+	const recentSchedules = triggerOperationsState.recentSchedules;
+	const triggerOpsStats = triggerOperationsState.triggerOpsStats;
+	const triggerOpsSummary = triggerOperationsState.triggerOpsSummary;
 	const auditStats = auditStatsForSummary(
 		{
 			auditSummary,
