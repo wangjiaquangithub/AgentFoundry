@@ -139,7 +139,6 @@ export function DashboardViewPage({
 	connectorCenterRef,
 	connectorDraftIssues,
 	connectorDraftState,
-	connectorDraftStatusLabel,
 	connectorRuntimeSourceText,
 	connectorRuntimeState,
 	connectorSaveError,
@@ -464,6 +463,14 @@ export function DashboardViewPage({
 					: nextStepMode === 'governance'
 						? ShieldCheck
 						: Play;
+	const connectorDraftStatusLabel =
+		connectorDraftIssues.length > 0
+			? t('platform.connectors.draftInvalid')
+			: connectorDraftState === 'ready'
+				? t('platform.connectors.draftSaved')
+				: activeSavedConnectorConfig
+					? t('platform.connectors.draftChanged')
+					: t('platform.connectors.draftNew');
 
 	return (
 		<main className="h-full overflow-y-auto bg-background">

@@ -1018,14 +1018,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			: connectorDraftMatchesSaved
 				? 'ready'
 				: 'partial';
-	const connectorDraftStatusLabel =
-		connectorDraftIssues.length > 0
-			? t('platform.connectors.draftInvalid')
-			: connectorDraftMatchesSaved
-				? t('platform.connectors.draftSaved')
-				: activeSavedConnectorConfig
-					? t('platform.connectors.draftChanged')
-					: t('platform.connectors.draftNew');
 	const connectorTestPassed = connectorTestResult?.status === 'success';
 	const connectorRuntimeState = connectors?.runtime.saved_config_enabled
 		? 'ready'
@@ -5089,7 +5081,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			connectorCenterRef={connectorCenterRef}
 			connectorDraftIssues={connectorDraftIssues}
 			connectorDraftState={connectorDraftState}
-			connectorDraftStatusLabel={connectorDraftStatusLabel}
 			connectorRuntimeSourceText={connectorRuntimeSourceText}
 			connectorRuntimeState={connectorRuntimeState}
 			connectorSaveError={connectorSaveError}
