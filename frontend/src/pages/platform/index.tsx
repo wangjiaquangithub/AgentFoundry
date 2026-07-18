@@ -4884,7 +4884,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				onUseApproval={handleUseApproval}
 				approvalStatusClassName={approvalStatusClassName}
 				summarizeAuditObject={summarizeAuditObject}
-				formatTimestamp={formatTimestamp}
 				t={t}
 			/>
 		);

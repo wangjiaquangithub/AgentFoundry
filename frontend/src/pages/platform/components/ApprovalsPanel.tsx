@@ -28,6 +28,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { formatTimestamp } from '../platform-utils';
 import { PlatformNotice } from './common';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -97,7 +98,6 @@ interface ApprovalsPanelProps {
 	onUseApproval: (approval: EnterpriseApprovalRequestItem) => void;
 	approvalStatusClassName: (status?: string) => string;
 	summarizeAuditObject: (value?: Record<string, unknown>) => string;
-	formatTimestamp: (value?: string) => string;
 	t: Translate;
 }
 
@@ -132,7 +132,6 @@ export function ApprovalsPanel({
 	onUseApproval,
 	approvalStatusClassName,
 	summarizeAuditObject,
-	formatTimestamp,
 	t,
 }: ApprovalsPanelProps) {
 	const enterpriseToolInputConfig = toolInputConfig;

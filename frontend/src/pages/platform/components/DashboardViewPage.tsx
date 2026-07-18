@@ -2562,7 +2562,6 @@ export function DashboardViewPage({
 					onUseApproval={handleUseApproval}
 					approvalStatusClassName={approvalStatusClassName}
 					summarizeAuditObject={summarizeAuditObject}
-					formatTimestamp={formatTimestamp}
 					t={t}
 				/>
 

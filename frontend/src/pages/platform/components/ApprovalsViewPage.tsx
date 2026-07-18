@@ -70,7 +70,6 @@ interface ApprovalsViewPageProps {
 	onUseApproval: (approval: EnterpriseApprovalRequestItem) => void;
 	approvalStatusClassName: (status?: string) => string;
 	summarizeAuditObject: (value?: Record<string, unknown>) => string;
-	formatTimestamp: (value?: string) => string;
 	t: Translate;
 }
 
@@ -104,7 +103,6 @@ export function ApprovalsViewPage({
 	onUseApproval,
 	approvalStatusClassName,
 	summarizeAuditObject,
-	formatTimestamp,
 	t,
 }: ApprovalsViewPageProps) {
 	return (
@@ -184,7 +182,6 @@ export function ApprovalsViewPage({
 					onUseApproval={onUseApproval}
 					approvalStatusClassName={approvalStatusClassName}
 					summarizeAuditObject={summarizeAuditObject}
-					formatTimestamp={formatTimestamp}
 					t={t}
 				/>
 			</div>
