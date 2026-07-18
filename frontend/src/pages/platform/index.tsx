@@ -85,6 +85,8 @@ import {
 	agentAccessAllowed,
 	appCenterAgentDetailResourceValues,
 	appCenterDetailHealthState,
+	activePlatformMemberCountForMembers,
+	activePlatformMembersForTenant,
 	agentIsReady,
 	agentReadinessIssues,
 	agentReadinessState,
@@ -693,10 +695,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const publishTenant =
 		publishForm.tenant.trim() || platformStatus?.current_user.tenant || 'default';
 	const activePlatformMembers = useMemo(
-		() =>
-			(platformMembers?.members ?? []).filter(
-				(member) => member.status !== 'inactive' && member.tenant === publishTenant,
-			),
+		() => activePlatformMembersForTenant(platformMembers?.members ?? [], publishTenant),
 		[platformMembers?.members, publishTenant],
 	);
 	const platformMemberById = useMemo(
@@ -2390,8 +2389,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	function handlePublishTenantChange(value: string) {
 		const nextTenant = value.trim() || platformStatus?.current_user.tenant || 'default';
-		const activeMembersForTenant = (platformMembers?.members ?? []).filter(
-			(member) => member.status !== 'inactive' && member.tenant === nextTenant,
+		const activeMembersForTenant = activePlatformMembersForTenant(
+			platformMembers?.members ?? [],
+			nextTenant,
 		);
 		const validUserIds = new Set(activeMembersForTenant.map((member) => member.user_id));
 		const validRoles = new Set(activeMembersForTenant.map((member) => member.role).filter(Boolean));
@@ -3511,7 +3511,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		workflows: scrollToWorkflowRunner,
 	});
 	const activeMemberCount =
-		platformMembers?.members.filter((member) => member.status !== 'inactive').length ?? 0;
+		activePlatformMemberCountForMembers(platformMembers?.members ?? []);
 	const launchpadSteps = launchpadStepsForStatus(
 		{
 			activeMemberCount,

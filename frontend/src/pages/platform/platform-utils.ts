@@ -334,6 +334,19 @@ export function resourceCountLabel(
 	return count > 0 ? labels.available(count) : labels.empty;
 }
 
+export function activePlatformMembersForTenant(
+	members: EnterprisePlatformMember[],
+	tenant: string,
+) {
+	return members.filter(
+		(member) => member.status !== 'inactive' && member.tenant === tenant,
+	);
+}
+
+export function activePlatformMemberCountForMembers(members: EnterprisePlatformMember[]) {
+	return members.filter((member) => member.status !== 'inactive').length;
+}
+
 export function publishReleaseIssuesForDraft(
 	values: {
 		modelConfigId?: string | null;
@@ -721,8 +734,7 @@ export function platformMemberTenantSummariesForMembers(values: {
 						second.display_name || second.user_id,
 					),
 				),
-				activeMemberCount: tenantMembers.filter((member) => member.status !== 'inactive')
-					.length,
+				activeMemberCount: activePlatformMemberCountForMembers(tenantMembers),
 				inactiveMemberCount: tenantMembers.filter((member) => member.status === 'inactive')
 					.length,
 				roleNames,
