@@ -97,6 +97,7 @@ import {
 import {
 	agentReleasePipelineLabels,
 	agentRoutingLabels,
+	agentRunnerLabels,
 	agentSetupStepLabels,
 	appCenterAgentDisplayLabels,
 	appCenterDetailHealthLabels,
@@ -494,15 +495,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			hasDefaultAgentTemplate: Boolean(defaultAgentTemplate),
 			publishingTemplate: Boolean(publishingTemplateId),
 		},
-		{
-			noneConfigured: t('platform.agentManagement.noneConfigured'),
-			noSelectedAgent: t('platform.agentManagement.noSelectedAgent'),
-			readiness: (state) => t(`platform.agentManagement.readiness.${state}`),
-			connectorSourceSaved: t('platform.agentRunner.connectorSourceSaved'),
-			connectorSourceGlobal: t('platform.agentRunner.connectorSourceGlobal'),
-			toolCallCount: (count) => t('platform.agentRunner.toolCallCount', { count }),
-			notRouted: t('platform.agentRunner.notRouted'),
-		},
+		agentRunnerLabels(t),
 	);
 	const platformRuntimeConfigState = platformRuntimeConfigStateForStatus({
 		platformStatus,

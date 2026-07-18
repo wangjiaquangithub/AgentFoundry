@@ -21,6 +21,16 @@ export const agentRoutingLabels = (t: PlatformTranslate) => ({
 	rules: t('platform.agentRunner.routingRules'),
 });
 
+export const agentRunnerLabels = (t: PlatformTranslate) => ({
+	noneConfigured: t('platform.agentManagement.noneConfigured'),
+	noSelectedAgent: t('platform.agentManagement.noSelectedAgent'),
+	readiness: (state: string) => t(`platform.agentManagement.readiness.${state}`),
+	connectorSourceSaved: t('platform.agentRunner.connectorSourceSaved'),
+	connectorSourceGlobal: t('platform.agentRunner.connectorSourceGlobal'),
+	toolCallCount: (count: number) => t('platform.agentRunner.toolCallCount', { count }),
+	notRouted: t('platform.agentRunner.notRouted'),
+});
+
 export const connectorOperationsLabels = (t: PlatformTranslate) => ({
 	baseUrlRequired: t('platform.connectors.validationBaseUrlRequired'),
 	baseUrlProtocol: t('platform.connectors.validationBaseUrlProtocol'),
