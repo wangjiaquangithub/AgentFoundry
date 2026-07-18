@@ -151,6 +151,7 @@ import {
 import { WorkflowRunnerPanel } from './components/WorkflowRunnerPanel';
 import { WorkflowOpsPanel } from './components/WorkflowOpsPanel';
 import { TriggerOpsPanel } from './components/TriggerOpsPanel';
+import { DashboardOpsPanel } from './components/DashboardOpsPanel';
 
 type ToolPolicyDraftValue = 'allow' | 'deny' | 'inherit';
 export type PlatformView =
@@ -8317,406 +8318,82 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					}}
 				/>
 
-				<section className="grid gap-4 rounded-lg border bg-muted/10 p-4">
-					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-						<div className="min-w-0">
-							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-								<ShieldCheck className="size-4" />
-								<span>{t('platform.dashboard.eyebrow')}</span>
-							</div>
-							<h2 className="text-base font-semibold">
-								{t('platform.dashboard.title')}
-							</h2>
-							<p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-								{t('platform.dashboard.description')}
-							</p>
-						</div>
-						<div className="flex flex-wrap gap-2 lg:justify-end">
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={scrollToGovernance}
-							>
-								<FileClock className="size-4" />
-								{t('platform.dashboard.openAudit')}
-							</Button>
-							<Button type="button" size="sm" onClick={scrollToAgentRunner}>
-								<Play className="size-4" />
-								{t('platform.dashboard.runAgent')}
-							</Button>
-						</div>
-					</div>
-
-					<div className="grid gap-3 xl:grid-cols-[1.2fr_1fr]">
-						<div className="grid gap-3 rounded-lg border bg-background p-3">
-							<div className="flex items-start justify-between gap-3">
-								<div className="min-w-0">
-									<h3 className="text-sm font-medium">
-										{t('platform.dashboard.workflowHealth')}
-									</h3>
-									<p className="mt-1 text-xs leading-5 text-muted-foreground">
-										{t('platform.dashboard.workflowHealthDescription')}
-									</p>
-								</div>
-								<Workflow className="mt-0.5 size-4 text-muted-foreground" />
-							</div>
-							<div className="grid gap-2 sm:grid-cols-4">
-								<div className="rounded-md bg-muted/30 px-2 py-2">
-									<div className="text-lg font-semibold tabular-nums">
-										{dashboardOperations?.enabled_workflow_count ?? workflowTemplates.length}
-									</div>
-									<div className="text-xs text-muted-foreground">
-										{t('platform.dashboard.enabledWorkflows')}
-									</div>
-								</div>
-								<div className="rounded-md bg-muted/30 px-2 py-2">
-									<div className="text-lg font-semibold tabular-nums">
-										{completedWorkflowRunCount}
-									</div>
-									<div className="text-xs text-muted-foreground">
-										{t('platform.dashboard.completedRuns')}
-									</div>
-								</div>
-								<div className="rounded-md bg-muted/30 px-2 py-2">
-									<div className="text-lg font-semibold tabular-nums">
-										{partialWorkflowRunCount}
-									</div>
-									<div className="text-xs text-muted-foreground">
-										{t('platform.dashboard.partialRuns')}
-									</div>
-								</div>
-								<div className="rounded-md bg-muted/30 px-2 py-2">
-									<div className="text-lg font-semibold tabular-nums">
-										{failedWorkflowRunCount}
-									</div>
-									<div className="text-xs text-muted-foreground">
-										{t('platform.dashboard.failedRuns')}
-									</div>
-								</div>
-							</div>
-							<div className="grid gap-2">
-								{governedWorkflowItems.length === 0 ? (
-									<p className="text-xs text-muted-foreground">
-										{t('platform.dashboard.noGovernedWorkflows')}
-									</p>
-								) : (
-									governedWorkflowItems.slice(0, 3).map((workflow) => (
-										<div
-											key={workflow.workflow_type}
-											className="flex flex-col gap-2 rounded-md bg-muted/30 px-2 py-2 text-xs sm:flex-row sm:items-center sm:justify-between"
-										>
-											<div className="min-w-0">
-												<div className="truncate font-medium">{workflow.name}</div>
-												<div className="truncate text-muted-foreground">
-													{workflow.approval_required_tools.length > 0
-														? workflow.approval_required_tools.join(', ')
-														: t('platform.dashboard.workflowApprovalRequired')}
-												</div>
-											</div>
-											<div className="flex shrink-0 flex-wrap gap-2">
-												<Badge variant="outline">
-													{workflow.enabled
-														? t('platform.status.ready')
-														: t('platform.status.toConfigure')}
-												</Badge>
-												<Badge variant="outline">
-													{t('platform.dashboard.pendingCount', {
-														count: workflow.pending_approval_count,
-													})}
-												</Badge>
-											</div>
-										</div>
-									))
-								)}
-							</div>
-						</div>
-
-						<div className="grid gap-3 rounded-lg border bg-background p-3">
-							<div className="flex items-start justify-between gap-3">
-								<div className="min-w-0">
-									<h3 className="text-sm font-medium">
-										{t('platform.dashboard.recommendedActions')}
-									</h3>
-									<p className="mt-1 text-xs leading-5 text-muted-foreground">
-										{t('platform.dashboard.recommendedActionsDescription')}
-									</p>
-								</div>
-								<ListChecks className="mt-0.5 size-4 text-muted-foreground" />
-							</div>
-							<div className="grid gap-2">
-								{recommendedOperationActions.map((action) => (
-									<button
-										key={`${action.code}-${action.target ?? 'default'}`}
-										type="button"
-										className="flex items-center justify-between gap-3 rounded-md bg-muted/30 px-2 py-2 text-left text-xs transition hover:bg-muted/50"
-										onClick={() => handleOperationAction(action.target)}
-									>
-										<span className="min-w-0 truncate">
-											{t(`platform.dashboard.actions.${action.code}`, {
-												count: action.count ?? 0,
-											})}
-										</span>
-										<Badge
-											variant="outline"
-											className={operationSeverityClassName(action.severity)}
-										>
-											{t(`platform.dashboard.severity.${action.severity}`)}
-										</Badge>
-									</button>
-								))}
-							</div>
-							<div className="grid grid-cols-2 gap-2 text-xs">
-								<div className="rounded-md bg-muted/30 px-2 py-2">
-									<div className="font-semibold tabular-nums">
-										{dashboardOperations?.pending_workflow_approval_count ?? 0}
-									</div>
-									<div className="text-muted-foreground">
-										{t('platform.dashboard.workflowApprovals')}
-									</div>
-								</div>
-								<div className="rounded-md bg-muted/30 px-2 py-2">
-									<div className="font-semibold tabular-nums">
-										{dashboardOperations?.pending_tool_approval_count ?? 0}
-									</div>
-									<div className="text-muted-foreground">
-										{t('platform.dashboard.toolApprovals')}
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-
-					<div className="grid gap-3 xl:grid-cols-[1fr_1fr]">
-						<div className="grid gap-3 md:grid-cols-2">
-							<div className="grid gap-3 rounded-lg border bg-background p-3">
-								<div className="flex items-start justify-between gap-3">
-									<div className="min-w-0">
-										<h3 className="text-sm font-medium">
-											{t('platform.dashboard.pendingApprovals')}
-										</h3>
-										<p className="mt-1 text-xs leading-5 text-muted-foreground">
-											{t('platform.dashboard.pendingApprovalsDescription', {
-												approved: approvedApprovalCount,
-											})}
-										</p>
-									</div>
-									<div className="text-2xl font-semibold tabular-nums">
-										{pendingApprovals.length}
-									</div>
-								</div>
-								<div className="grid gap-2">
-									{pendingApprovals.length === 0 ? (
-										<p className="text-xs text-muted-foreground">
-											{t('platform.dashboard.emptyApprovals')}
-										</p>
-									) : (
-										pendingApprovals.slice(0, 3).map((approval) => (
-											<div
-												key={approval.approval_id}
-												className="flex items-center justify-between gap-3 rounded-md bg-muted/30 px-2 py-1.5 text-xs"
-											>
-												<span className="min-w-0 truncate">
-													{approval.tool_name ||
-														approval.workflow_type ||
-														approval.request_type}
-												</span>
-												<span className="shrink-0 text-muted-foreground">
-													{approval.tenant}
-												</span>
-											</div>
-										))
-									)}
-								</div>
-								<Button
-									type="button"
-									size="sm"
-									variant="outline"
-									onClick={scrollToGovernance}
-								>
-									<ShieldCheck className="size-4" />
-									{t('platform.dashboard.openApprovals')}
-								</Button>
-							</div>
-
-							<div className="grid gap-3 rounded-lg border bg-background p-3">
-								<div className="flex items-start justify-between gap-3">
-									<div className="min-w-0">
-										<h3 className="text-sm font-medium">
-											{t('platform.dashboard.recentRuns')}
-										</h3>
-										<p className="mt-1 text-xs leading-5 text-muted-foreground">
-											{t('platform.dashboard.recentRunsDescription')}
-										</p>
-									</div>
-									<div className="text-2xl font-semibold tabular-nums">
-										{workflowRunCount}
-									</div>
-								</div>
-								<div className="grid gap-2">
-									{recentWorkflowRuns.length === 0 ? (
-										<p className="text-xs text-muted-foreground">
-											{t('platform.dashboard.emptyRuns')}
-										</p>
-									) : (
-										recentWorkflowRuns.map((run) => (
-											<div
-												key={run.run_id}
-												className="flex items-center justify-between gap-3 rounded-md bg-muted/30 px-2 py-1.5 text-xs"
-											>
-												<span className="min-w-0 truncate">
-													{run.workflow_name}
-												</span>
-												<Badge
-													variant="outline"
-													className={workflowStatusClassName(run.status)}
-												>
-													{t(
-														`platform.workflowRunner.${workflowStatusLabelKey(run.status)}`,
-													)}
-												</Badge>
-											</div>
-										))
-									)}
-								</div>
-								<Button
-									type="button"
-									size="sm"
-									variant="outline"
-									onClick={scrollToWorkflowRunner}
-								>
-									<Workflow className="size-4" />
-									{t('platform.dashboard.openWorkflows')}
-								</Button>
-							</div>
-						</div>
-
-						<div className="grid gap-3 md:grid-cols-2">
-							<div className="grid gap-3 rounded-lg border bg-background p-3">
-								<div className="flex items-start justify-between gap-3">
-									<div className="min-w-0">
-										<h3 className="text-sm font-medium">
-											{t('platform.dashboard.riskActions')}
-										</h3>
-										<p className="mt-1 text-xs leading-5 text-muted-foreground">
-											{t('platform.dashboard.riskActionsDescription')}
-										</p>
-									</div>
-									<AlertTriangle className="mt-0.5 size-4 text-amber-600" />
-								</div>
-								<div className="grid gap-2">
-									{riskToolItems.length === 0 ? (
-										<p className="text-xs text-muted-foreground">
-											{t('platform.dashboard.emptyRiskActions')}
-										</p>
-									) : (
-										riskToolItems.slice(0, 3).map((tool) => (
-											<div
-												key={tool.name}
-												className="flex items-center justify-between gap-3 rounded-md bg-muted/30 px-2 py-1.5 text-xs"
-											>
-												<span className="min-w-0 truncate">{tool.name}</span>
-												<Badge variant="outline">
-													{tool.allowed
-														? t('platform.status.ready')
-														: t('platform.status.toConfigure')}
-												</Badge>
-											</div>
-										))
-									)}
-									<div className="flex items-center justify-between gap-3 rounded-md bg-muted/30 px-2 py-1.5 text-xs">
-										<span className="min-w-0 truncate">
-											{t('platform.dashboard.policyReviewWorkflow')}
-										</span>
-										<Badge variant="outline">
-											{t('platform.dashboard.approvalGate')}
-										</Badge>
-									</div>
-								</div>
-								<Button
-									type="button"
-									size="sm"
-									variant="outline"
-									onClick={scrollToToolRunner}
-								>
-									<Boxes className="size-4" />
-									{t('platform.dashboard.openTools')}
-								</Button>
-							</div>
-
-							<div className="grid gap-3 rounded-lg border bg-background p-3">
-								<div className="flex items-start justify-between gap-3">
-									<div className="min-w-0">
-										<h3 className="text-sm font-medium">
-											{t('platform.dashboard.auditTrail')}
-										</h3>
-										<p className="mt-1 text-xs leading-5 text-muted-foreground">
-											{t('platform.dashboard.auditTrailDescription')}
-										</p>
-									</div>
-									<div className="text-2xl font-semibold tabular-nums">
-										{auditEventCount}
-									</div>
-								</div>
-								<div className="grid gap-2">
-									{recentAuditEvents.length === 0 ? (
-										<p className="text-xs text-muted-foreground">
-											{t('platform.dashboard.emptyAudit')}
-										</p>
-									) : (
-										recentAuditEvents.map((event, index) => (
-											<div
-												key={event.event_id || `${event.timestamp}-${index}`}
-												className="flex items-center justify-between gap-3 rounded-md bg-muted/30 px-2 py-1.5 text-xs"
-											>
-												<span className="min-w-0 truncate">
-													{event.tool_name || event.event_type || '-'}
-												</span>
-												<span className="shrink-0 text-muted-foreground">
-													{event.success === false
-														? t('platform.audit.failure')
-														: t('platform.audit.success')}
-												</span>
-											</div>
-										))
-									)}
-								</div>
-								<Button
-									type="button"
-									size="sm"
-									variant="outline"
-									onClick={scrollToGovernance}
-								>
-									<FileClock className="size-4" />
-									{t('platform.dashboard.openAudit')}
-								</Button>
-							</div>
-						</div>
-					</div>
-
-					<div className="flex flex-col gap-2 rounded-lg border bg-background p-3 md:flex-row md:items-center md:justify-between">
-						<div className="min-w-0">
-							<h3 className="text-sm font-medium">
-								{t('platform.dashboard.todo')}
-							</h3>
-							<p className="mt-1 text-xs leading-5 text-muted-foreground">
-								{dashboardTodoItems.length > 0
-									? dashboardTodoItems.join(' · ')
-									: t('platform.dashboard.todoReady')}
-							</p>
-						</div>
-						<Button
-							type="button"
-							size="sm"
-							variant="outline"
-							onClick={handleNextStepPrimaryAction}
-							disabled={nextStepPrimaryDisabled}
-						>
-							<NextStepIcon className="size-4" />
-							{t(`platform.nextStep.${nextStepMode}.action`)}
-						</Button>
-					</div>
-				</section>
+				<DashboardOpsPanel
+					dashboardOperations={dashboardOperations}
+					workflowTemplates={workflowTemplates}
+					completedWorkflowRunCount={completedWorkflowRunCount}
+					partialWorkflowRunCount={partialWorkflowRunCount}
+					failedWorkflowRunCount={failedWorkflowRunCount}
+					governedWorkflowItems={governedWorkflowItems}
+					recommendedOperationActions={recommendedOperationActions}
+					pendingApprovals={pendingApprovals}
+					approvedApprovalCount={approvedApprovalCount}
+					workflowRunCount={workflowRunCount}
+					recentWorkflowRuns={recentWorkflowRuns}
+					riskToolItems={riskToolItems}
+					auditEventCount={auditEventCount}
+					recentAuditEvents={recentAuditEvents}
+					dashboardTodoItems={dashboardTodoItems}
+					nextStepMode={nextStepMode}
+					nextStepIcon={NextStepIcon}
+					nextStepPrimaryDisabled={nextStepPrimaryDisabled}
+					onOperationAction={handleOperationAction}
+					onNextStepPrimaryAction={handleNextStepPrimaryAction}
+					onScrollToGovernance={scrollToGovernance}
+					onScrollToAgentRunner={scrollToAgentRunner}
+					onScrollToWorkflowRunner={scrollToWorkflowRunner}
+					onScrollToToolRunner={scrollToToolRunner}
+					operationSeverityClassName={operationSeverityClassName}
+					workflowStatusClassName={workflowStatusClassName}
+					workflowStatusLabelKey={workflowStatusLabelKey}
+					labels={{
+						eyebrow: t('platform.dashboard.eyebrow'),
+						title: t('platform.dashboard.title'),
+						description: t('platform.dashboard.description'),
+						openAudit: t('platform.dashboard.openAudit'),
+						runAgent: t('platform.dashboard.runAgent'),
+						workflowHealth: t('platform.dashboard.workflowHealth'),
+						workflowHealthDescription: t('platform.dashboard.workflowHealthDescription'),
+						enabledWorkflows: t('platform.dashboard.enabledWorkflows'),
+						completedRuns: t('platform.dashboard.completedRuns'),
+						partialRuns: t('platform.dashboard.partialRuns'),
+						failedRuns: t('platform.dashboard.failedRuns'),
+						noGovernedWorkflows: t('platform.dashboard.noGovernedWorkflows'),
+						workflowApprovalRequired: t('platform.dashboard.workflowApprovalRequired'),
+						ready: t('platform.status.ready'),
+						toConfigure: t('platform.status.toConfigure'),
+						pendingCount: (count) => t('platform.dashboard.pendingCount', { count }),
+						recommendedActions: t('platform.dashboard.recommendedActions'),
+						recommendedActionsDescription: t('platform.dashboard.recommendedActionsDescription'),
+						actionLabel: (code, count) => t(`platform.dashboard.actions.${code}`, { count }),
+						severityLabel: (severity) => t(`platform.dashboard.severity.${severity}`),
+						workflowApprovals: t('platform.dashboard.workflowApprovals'),
+						toolApprovals: t('platform.dashboard.toolApprovals'),
+						pendingApprovals: t('platform.dashboard.pendingApprovals'),
+						pendingApprovalsDescription: (approved) => t('platform.dashboard.pendingApprovalsDescription', { approved }),
+						emptyApprovals: t('platform.dashboard.emptyApprovals'),
+						openApprovals: t('platform.dashboard.openApprovals'),
+						recentRuns: t('platform.dashboard.recentRuns'),
+						recentRunsDescription: t('platform.dashboard.recentRunsDescription'),
+						emptyRuns: t('platform.dashboard.emptyRuns'),
+						workflowStatusLabel: (labelKey) => t(`platform.workflowRunner.${labelKey}`),
+						openWorkflows: t('platform.dashboard.openWorkflows'),
+						riskActions: t('platform.dashboard.riskActions'),
+						riskActionsDescription: t('platform.dashboard.riskActionsDescription'),
+						emptyRiskActions: t('platform.dashboard.emptyRiskActions'),
+						policyReviewWorkflow: t('platform.dashboard.policyReviewWorkflow'),
+						approvalGate: t('platform.dashboard.approvalGate'),
+						openTools: t('platform.dashboard.openTools'),
+						auditTrail: t('platform.dashboard.auditTrail'),
+						auditTrailDescription: t('platform.dashboard.auditTrailDescription'),
+						emptyAudit: t('platform.dashboard.emptyAudit'),
+						auditFailure: t('platform.audit.failure'),
+						auditSuccess: t('platform.audit.success'),
+						todo: t('platform.dashboard.todo'),
+						todoReady: t('platform.dashboard.todoReady'),
+						nextStepAction: (mode) => t(`platform.nextStep.${mode}.action`),
+					}}
+				/>
 
 				<section className="grid gap-4 rounded-lg border bg-muted/10 p-4">
 					<div className="min-w-0">
