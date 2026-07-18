@@ -1,5 +1,6 @@
 import type {
 	EnterpriseApprovalCreateRequest,
+	EnterpriseApprovalDecisionRequest,
 	EnterpriseApprovalRequestItem,
 	EnterpriseApprovalRequestType,
 } from '@/api';
@@ -14,6 +15,28 @@ export interface ApprovalCreateDefaults {
 	selectedIdentityUserId: string;
 	selectedRunAgentId: string;
 	username: string;
+}
+
+export interface ApprovalDecisionLabels {
+	approved: string;
+	rejected: string;
+}
+
+export interface ApprovalToolInputDefaults {
+	defaultInputValue: string;
+	selectedIdentityUserId: string;
+	username: string;
+}
+
+export interface ApprovalToolInputConfig {
+	inputKey?: string;
+	defaultValue?: string;
+}
+
+export interface ApprovalToolCatalogItem {
+	name: string;
+	input_key?: string;
+	default_input?: string;
 }
 
 export function approvalQueryFromFilters(filters: ApprovalFiltersState) {
@@ -75,6 +98,33 @@ export function approvalCreatePayloadFromRun(
 	};
 }
 
+export function prependApprovalRequest(
+	current: EnterpriseApprovalRequestItem[],
+	approval?: EnterpriseApprovalRequestItem,
+) {
+	return approval ? [approval, ...current] : current;
+}
+
+export function replaceApprovalRequest(
+	current: EnterpriseApprovalRequestItem[],
+	nextApproval: EnterpriseApprovalRequestItem,
+) {
+	return current.map((approval) =>
+		approval.approval_id === nextApproval.approval_id ? nextApproval : approval,
+	);
+}
+
+export function approvalDecisionPayload(
+	decision: 'approved' | 'rejected',
+	options: { username: string; labels: ApprovalDecisionLabels },
+): EnterpriseApprovalDecisionRequest {
+	return {
+		decided_by: options.username,
+		decision_note:
+			decision === 'approved' ? options.labels.approved : options.labels.rejected,
+	};
+}
+
 export function approvalContinuationState(approval: EnterpriseApprovalRequestItem) {
 	const canContinueAgentRun =
 		approval.request_type === 'tool_run' &&
@@ -108,5 +158,38 @@ export function approvalInputForTool(
 	return {
 		inputKey: resolvedInputKey,
 		inputValue,
+	};
+}
+
+export function approvalToolFormPatch(
+	current: ApprovalFormState,
+	options: {
+		agentId: string;
+		inputConfig?: ApprovalToolInputConfig;
+		catalogItem?: ApprovalToolCatalogItem;
+		reason: string;
+		toolName: string;
+		defaults: ApprovalToolInputDefaults;
+	},
+): ApprovalFormState {
+	const inputKey =
+		options.inputConfig?.inputKey ?? options.catalogItem?.input_key ?? 'input';
+	const inputValue =
+		options.inputConfig?.defaultValue ??
+		options.catalogItem?.default_input ??
+		options.defaults.defaultInputValue;
+
+	return {
+		...current,
+		request_type: 'tool_run',
+		tool_name: options.toolName,
+		input_key: inputKey,
+		input_value: inputValue,
+		reason: options.reason,
+		user_id:
+			current.user_id ||
+			options.defaults.selectedIdentityUserId ||
+			options.defaults.username,
+		agent_id: options.agentId,
 	};
 }

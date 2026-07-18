@@ -59,8 +59,12 @@ import {
 	approvalContinuationState,
 	approvalCreatePayloadFromForm,
 	approvalCreatePayloadFromRun,
+	approvalDecisionPayload,
 	approvalInputForTool,
 	approvalQueryFromFilters,
+	approvalToolFormPatch,
+	prependApprovalRequest,
+	replaceApprovalRequest,
 	type PlatformApprovalRunType,
 } from './platform-approval-helpers';
 import {
@@ -1560,9 +1564,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					username,
 				}),
 			);
-			if (response.approval) {
-				setApprovalRequests((current) => [response.approval!, ...current]);
-			}
+			setApprovalRequests((current) =>
+				prependApprovalRequest(current, response.approval),
+			);
 			await refetchGovernance();
 			await refetchOpsTasks();
 			setApprovalForm((current) => ({
@@ -1605,9 +1609,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					username,
 				}),
 			);
-			if (response.approval) {
-				setApprovalRequests((current) => [response.approval!, ...current]);
-			}
+			setApprovalRequests((current) =>
+				prependApprovalRequest(current, response.approval),
+			);
 			if (requestType === 'tool_run') {
 				setToolRunError(null);
 			} else {
@@ -1638,21 +1642,19 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setDecidingApprovalId(approvalId);
 		setApprovalError(null);
 		try {
-			const request = {
-				decided_by: username,
-				decision_note:
-					decision === 'approved'
-						? approvalRequestText.approved
-						: approvalRequestText.rejected,
-			};
+			const request = approvalDecisionPayload(decision, {
+				username,
+				labels: {
+					approved: approvalRequestText.approved,
+					rejected: approvalRequestText.rejected,
+				},
+			});
 			const response =
 				decision === 'approved'
 					? await platformApi.approveApproval(approvalId, request)
 					: await platformApi.rejectApproval(approvalId, request);
 			setApprovalRequests((current) =>
-				current.map((approval) =>
-					approval.approval_id === approvalId ? response.approval : approval,
-				),
+				replaceApprovalRequest(current, response.approval),
 			);
 			await refetchGovernance();
 			await refetchOpsTasks();
@@ -1676,14 +1678,18 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setContinuingApprovalId(approval.approval_id);
 		setApprovalError(null);
 		try {
-			const response = await platformApi.approveApproval(approval.approval_id, {
-				decided_by: username,
-				decision_note: approvalRequestText.approved,
-			});
+			const response = await platformApi.approveApproval(
+				approval.approval_id,
+				approvalDecisionPayload('approved', {
+					username,
+					labels: {
+						approved: approvalRequestText.approved,
+						rejected: approvalRequestText.rejected,
+					},
+				}),
+			);
 			setApprovalRequests((current) =>
-				current.map((item) =>
-					item.approval_id === approval.approval_id ? response.approval : item,
-				),
+				replaceApprovalRequest(current, response.approval),
 			);
 			await refetchGovernance();
 			await refetchOpsTasks();
@@ -1857,24 +1863,25 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	function handlePrimeToolApproval(agent: EnterprisePublishedAgent, toolName: string) {
 		const toolConfig = enterpriseToolInputConfig[toolName];
 		const catalogItem = availableToolItems.find((tool) => tool.name === toolName);
-		const inputKey = toolConfig?.inputKey ?? catalogItem?.input_key ?? 'input';
-		const inputValue =
-			toolConfig?.defaultValue ?? catalogItem?.default_input ?? defaultApprovalForm.input_value;
 
 		setSelectedIdentityUserId(selectedIdentityUserId || username);
-		setApprovalForm((current) => ({
-			...current,
-			request_type: 'tool_run',
-			tool_name: toolName,
-			input_key: inputKey,
-			input_value: inputValue,
-			reason: approvalRequestText.agentToolApprovalReason({
-				agent: agent.name,
-				tool: toolName,
+		setApprovalForm((current) =>
+			approvalToolFormPatch(current, {
+				agentId: agent.id,
+				inputConfig: toolConfig,
+				catalogItem,
+				toolName,
+				reason: approvalRequestText.agentToolApprovalReason({
+					agent: agent.name,
+					tool: toolName,
+				}),
+				defaults: {
+					defaultInputValue: defaultApprovalForm.input_value,
+					selectedIdentityUserId,
+					username,
+				},
 			}),
-			user_id: current.user_id || selectedIdentityUserId || username,
-			agent_id: agent.id,
-		}));
+		);
 		setApprovalError(null);
 		window.setTimeout(scrollToGovernance, 0);
 	}
