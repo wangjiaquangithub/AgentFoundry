@@ -355,6 +355,21 @@ export function agentOpsSummaryItems(
 	];
 }
 
+export function topOperationsAgentsForDisplay<
+	TAgent extends { status?: string | null },
+>(
+	readyAgents: TAgent[],
+	blockedOrPartialAgents: TAgent[],
+	publishedAgents: TAgent[],
+	limit = 4,
+) {
+	return [
+		...readyAgents,
+		...blockedOrPartialAgents,
+		...publishedAgents.filter((agent) => agent.status !== 'published'),
+	].slice(0, limit);
+}
+
 export function templateDetailIssues(
 	hasCredentials: boolean,
 	hasKnowledgeBases: boolean,

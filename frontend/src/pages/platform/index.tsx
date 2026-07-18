@@ -121,6 +121,7 @@ import {
 	knowledgeBaseLabels,
 	modelCredentialLabel,
 	normalizeWorkflowInputs,
+	topOperationsAgentsForDisplay,
 } from './platform-utils';
 
 export type PlatformView =
@@ -1315,11 +1316,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				t('platform.agentManagement.ops.needsSetupTotalHelper', { count }),
 		},
 	);
-	const topOperationsAgents = [
-		...readyPlatformAgents,
-		...blockedOrPartialPlatformAgents,
-		...publishedPlatformAgents.filter((agent) => agent.status !== 'published'),
-	].slice(0, 4);
+	const topOperationsAgents = topOperationsAgentsForDisplay(
+		readyPlatformAgents,
+		blockedOrPartialPlatformAgents,
+		publishedPlatformAgents,
+	);
 	const operationsAgentIssueText = (agent: EnterprisePublishedAgent) => {
 		return formatOperationsAgentIssueText(agent, {
 			archived: t('platform.operations.archivedIssue'),
