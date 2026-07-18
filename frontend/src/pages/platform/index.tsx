@@ -84,7 +84,6 @@ import type { PlatformConsoleItem } from './components/PlatformConsolePanel';
 import type { RolloutPathStep } from './components/RolloutPath';
 import { RunsViewPage } from './components/RunsViewPage';
 import type { RuntimeStatusItem } from './components/RuntimeStatusPanel';
-import type { TenantOverviewItem } from './components/TenantWorkspacePanel';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
 import { SettingsViewPage } from './components/SettingsViewPage';
 import { TenantsViewPage } from './components/TenantsViewPage';
@@ -131,6 +130,7 @@ import {
 	pendingWorkflowRunApprovals,
 	recentTriggerSchedules,
 	topOperationsAgentsForDisplay,
+	tenantOverviewItemsForWorkspace,
 	toolPolicySummaryForGovernance,
 	triggerOpsStatsForSummary,
 	triggerOpsSummaryText,
@@ -1075,49 +1075,21 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const recentAuditEvents =
 		dashboard?.recent_audit_events ?? auditEvents.slice(0, 4);
 	const auditEventCount = dashboard?.audit_event_count ?? auditEvents.length;
-	const tenantOverviewItems = useMemo<TenantOverviewItem[]>(() => {
-		const tenants = new Set<string>();
-		tenantWorkspaces.forEach(([tenant]) => tenants.add(tenant));
-		enterpriseIdentities.forEach((identity) => tenants.add(identity.tenant));
-		activePlatformAgents.forEach((agent) => tenants.add(agent.tenant));
-		pendingApprovals.forEach((approval) => tenants.add(approval.tenant));
-		auditEvents.forEach((event) => {
-			if (event.tenant) {
-				tenants.add(event.tenant);
-			}
-		});
-		workflowRuns.forEach((run) => tenants.add(run.tenant));
-
-		return Array.from(tenants)
-			.sort()
-			.map((tenant) => {
-				const workspace = tenantWorkspaceByName.get(tenant);
-				const identities = enterpriseIdentities.filter(
-					(identity) => identity.tenant === tenant,
-				);
-				const roles = new Set(identities.map((identity) => identity.role).filter(Boolean));
-				const sampleQuestion =
-					workspace?.sample_questions[0] ??
-					identities.find((identity) => identity.sample_questions.length > 0)
-						?.sample_questions[0] ??
-					'';
-
-				return {
-					tenant,
-					source: workspace?.source ?? t('platform.tenantWorkspace.localSource'),
-					identityCount: identities.length,
-					roleCount: roles.size,
-					agentCount: activePlatformAgents.filter((agent) => agent.tenant === tenant)
-						.length,
-					pendingApprovalCount: pendingApprovals.filter(
-						(approval) => approval.tenant === tenant,
-					).length,
-					auditEventCount: auditEvents.filter((event) => event.tenant === tenant).length,
-					workflowRunCount: workflowRuns.filter((run) => run.tenant === tenant).length,
-					sampleQuestion,
-					representativeIdentity: identities[0] ?? null,
-				};
-			});
+	const tenantOverviewItems = useMemo(() => {
+		return tenantOverviewItemsForWorkspace(
+			{
+				tenantWorkspaces,
+				tenantWorkspaceByName,
+				enterpriseIdentities,
+				activePlatformAgents,
+				pendingApprovals,
+				auditEvents,
+				workflowRuns,
+			},
+			{
+				localSource: t('platform.tenantWorkspace.localSource'),
+			},
+		);
 	}, [
 		activePlatformAgents,
 		auditEvents,

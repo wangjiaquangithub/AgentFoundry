@@ -7,13 +7,16 @@ import type {
 	EnterpriseIdentity,
 	EnterprisePlatformGovernanceResponse,
 	EnterprisePublishedAgent,
+	EnterpriseTenantWorkspace,
 	EnterpriseToolCatalogItem,
+	EnterpriseWorkflowRunHistoryItem,
 	EnterpriseWorkflowTemplate,
 	ScheduleRecord,
 } from '@/api';
 import type { AccessControlStat } from './components/AccessControlPanel';
 import type { GovernanceHealthItem } from './components/GovernanceHealthPanel';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
+import type { TenantOverviewItem } from './components/TenantWorkspacePanel';
 import type { TriggerOpsStat } from './components/TriggerOpsPanel';
 import type { WorkflowOpsStat } from './components/WorkflowOpsPanel';
 import type { HealthState } from './components/common';
@@ -127,6 +130,66 @@ export function agentModelLabel(
 	noModelLabel: string,
 ) {
 	return modelCredentialLabel(agent?.model_config_id, credentialById, noModelLabel);
+}
+
+export function tenantOverviewItemsForWorkspace(
+	values: {
+		tenantWorkspaces: Array<[string, EnterpriseTenantWorkspace]>;
+		tenantWorkspaceByName: Map<string, EnterpriseTenantWorkspace>;
+		enterpriseIdentities: EnterpriseIdentity[];
+		activePlatformAgents: EnterprisePublishedAgent[];
+		pendingApprovals: EnterpriseApprovalRequestItem[];
+		auditEvents: EnterpriseAuditEvent[];
+		workflowRuns: EnterpriseWorkflowRunHistoryItem[];
+	},
+	labels: {
+		localSource: string;
+	},
+): TenantOverviewItem[] {
+	const tenants = new Set<string>();
+	values.tenantWorkspaces.forEach(([tenant]) => tenants.add(tenant));
+	values.enterpriseIdentities.forEach((identity) => tenants.add(identity.tenant));
+	values.activePlatformAgents.forEach((agent) => tenants.add(agent.tenant));
+	values.pendingApprovals.forEach((approval) => tenants.add(approval.tenant));
+	values.auditEvents.forEach((event) => {
+		if (event.tenant) {
+			tenants.add(event.tenant);
+		}
+	});
+	values.workflowRuns.forEach((run) => tenants.add(run.tenant));
+
+	return Array.from(tenants)
+		.sort()
+		.map((tenant) => {
+			const workspace = values.tenantWorkspaceByName.get(tenant);
+			const identities = values.enterpriseIdentities.filter(
+				(identity) => identity.tenant === tenant,
+			);
+			const roles = new Set(identities.map((identity) => identity.role).filter(Boolean));
+			const sampleQuestion =
+				workspace?.sample_questions[0] ??
+				identities.find((identity) => identity.sample_questions.length > 0)
+					?.sample_questions[0] ??
+				'';
+
+			return {
+				tenant,
+				source: workspace?.source ?? labels.localSource,
+				identityCount: identities.length,
+				roleCount: roles.size,
+				agentCount: values.activePlatformAgents.filter((agent) => agent.tenant === tenant)
+					.length,
+				pendingApprovalCount: values.pendingApprovals.filter(
+					(approval) => approval.tenant === tenant,
+				).length,
+				auditEventCount: values.auditEvents.filter((event) => event.tenant === tenant)
+					.length,
+				workflowRunCount: values.workflowRuns.filter((run) => run.tenant === tenant)
+					.length,
+				sampleQuestion,
+				representativeIdentity: identities[0] ?? null,
+			};
+		});
 }
 
 export function formatOperationsAgentIssueText(
