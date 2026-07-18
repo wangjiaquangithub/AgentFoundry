@@ -55,7 +55,6 @@ interface WorkflowsViewPageProps {
 	workflowInputLabel: (key: string) => string;
 	workflowStatusLabelKey: (status?: string) => string;
 	workflowStatusClassName: (status?: string) => string;
-	formatTimestamp: (value?: string) => string;
 	summarizeAuditObject: (value?: Record<string, unknown>) => string;
 	t: Translate;
 }
@@ -93,7 +92,6 @@ export function WorkflowsViewPage({
 	workflowInputLabel,
 	workflowStatusLabelKey,
 	workflowStatusClassName,
-	formatTimestamp,
 	summarizeAuditObject,
 	t,
 }: WorkflowsViewPageProps) {
@@ -176,7 +174,6 @@ export function WorkflowsViewPage({
 						workflowInputLabel={workflowInputLabel}
 						workflowStatusLabelKey={workflowStatusLabelKey}
 						workflowStatusClassName={workflowStatusClassName}
-						formatTimestamp={formatTimestamp}
 						summarizeAuditObject={summarizeAuditObject}
 						t={t}
 					/>

@@ -4985,7 +4985,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				workflowInputLabel={workflowInputLabel}
 				workflowStatusLabelKey={workflowStatusLabelKey}
 				workflowStatusClassName={workflowStatusClassName}
-				formatTimestamp={formatTimestamp}
 				summarizeAuditObject={summarizeAuditObject}
 				t={t}
 			/>

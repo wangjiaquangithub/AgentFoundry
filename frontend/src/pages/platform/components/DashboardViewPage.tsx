@@ -2529,7 +2529,6 @@ export function DashboardViewPage({
 						workflowInputLabel={workflowInputLabel}
 						workflowStatusLabelKey={workflowStatusLabelKey}
 						workflowStatusClassName={workflowStatusClassName}
-						formatTimestamp={formatTimestamp}
 						summarizeAuditObject={summarizeAuditObject}
 						t={t}
 					/>
