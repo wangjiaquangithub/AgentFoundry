@@ -96,6 +96,7 @@ import {
 } from './platform-icons';
 import {
 	agentReleasePipelineLabels,
+	agentManagementRequestLabels,
 	agentRoutingLabels,
 	agentRunnerLabels,
 	agentRunnerRequestLabels,
@@ -420,6 +421,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const configManagementRequestText = configManagementRequestLabels(t);
 	const connectorRequestText = connectorRequestLabels(t);
 	const agentRunnerRequestText = agentRunnerRequestLabels(t);
+	const agentManagementRequestText = agentManagementRequestLabels(t);
 	const memberRequestText = memberRequestLabels(t);
 	const tenantGovernanceRequestText = tenantGovernanceRequestLabels(t);
 	const toolCatalogRequestText = toolCatalogRequestLabels(t);
@@ -1453,7 +1455,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setPlatformAgents(response);
 		} catch (error) {
 			setPlatformAgentsError(
-				error instanceof Error ? error.message : t('platform.agentManagement.loadError'),
+				error instanceof Error ? error.message : agentManagementRequestText.loadError,
 			);
 		} finally {
 			setPlatformAgentsLoading(false);
@@ -2248,8 +2250,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				error instanceof Error
 					? error.message
 					: editingAgentId
-						? t('platform.agentManagement.updateError')
-						: t('platform.agentManagement.publishError'),
+						? agentManagementRequestText.updateError
+						: agentManagementRequestText.publishError,
 			);
 		} finally {
 			setPublishingTemplateId(null);
@@ -2292,7 +2294,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setPlatformAgentsError(
 				error instanceof Error
 					? error.message
-					: t('platform.agentManagement.publishError'),
+					: agentManagementRequestText.publishError,
 			);
 			window.setTimeout(scrollToAgentManagement, 0);
 		} finally {
@@ -2396,7 +2398,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			await refetchOpsTasks();
 		} catch (error) {
 			setPlatformAgentsError(
-				error instanceof Error ? error.message : t('platform.agentManagement.archiveError'),
+				error instanceof Error ? error.message : agentManagementRequestText.archiveError,
 			);
 		} finally {
 			setArchivingAgentId(null);
@@ -2431,7 +2433,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			await refetchOpsTasks();
 		} catch (error) {
 			setPlatformAgentsError(
-				error instanceof Error ? error.message : t('platform.agentManagement.bindModelError'),
+				error instanceof Error ? error.message : agentManagementRequestText.bindModelError,
 			);
 		} finally {
 			setBindingAgentModelId(null);
@@ -2468,7 +2470,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setPlatformAgentsError(
 				error instanceof Error
 					? error.message
-					: t('platform.agentManagement.bindKnowledgeError'),
+					: agentManagementRequestText.bindKnowledgeError,
 			);
 		} finally {
 			setBindingAgentKnowledgeId(null);
@@ -2479,7 +2481,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		const template = agentTemplates.find((item) => item.id === agent.template_id);
 		const templateTools = template?.tools ?? [];
 		if (!template || templateTools.length === 0) {
-			setPlatformAgentsError(t('platform.agentManagement.bindToolsError'));
+			setPlatformAgentsError(agentManagementRequestText.bindToolsError);
 			return;
 		}
 
@@ -2504,7 +2506,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			await refetchOpsTasks();
 		} catch (error) {
 			setPlatformAgentsError(
-				error instanceof Error ? error.message : t('platform.agentManagement.bindToolsError'),
+				error instanceof Error ? error.message : agentManagementRequestText.bindToolsError,
 			);
 		} finally {
 			setBindingAgentToolsId(null);
@@ -2535,7 +2537,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setPlatformAgentsError(
 				error instanceof Error
 					? error.message
-					: t('platform.agentManagement.enableMemoryError'),
+					: agentManagementRequestText.enableMemoryError,
 			);
 		} finally {
 			setEnablingAgentMemoryId(null);
@@ -2566,7 +2568,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setPlatformAgentsError(
 				error instanceof Error
 					? error.message
-					: t('platform.agentManagement.enableWorkflowError'),
+					: agentManagementRequestText.enableWorkflowError,
 			);
 		} finally {
 			setEnablingAgentWorkflowId(null);

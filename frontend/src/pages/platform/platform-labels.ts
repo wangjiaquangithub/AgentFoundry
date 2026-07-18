@@ -51,6 +51,18 @@ export const agentRunnerRequestLabels = (t: PlatformTranslate) => ({
 	approvalRequiredCreated: t('platform.agentRunner.approvalRequiredCreated'),
 });
 
+export const agentManagementRequestLabels = (t: PlatformTranslate) => ({
+	loadError: t('platform.agentManagement.loadError'),
+	updateError: t('platform.agentManagement.updateError'),
+	publishError: t('platform.agentManagement.publishError'),
+	archiveError: t('platform.agentManagement.archiveError'),
+	bindModelError: t('platform.agentManagement.bindModelError'),
+	bindKnowledgeError: t('platform.agentManagement.bindKnowledgeError'),
+	bindToolsError: t('platform.agentManagement.bindToolsError'),
+	enableMemoryError: t('platform.agentManagement.enableMemoryError'),
+	enableWorkflowError: t('platform.agentManagement.enableWorkflowError'),
+});
+
 export const connectorOperationsLabels = (t: PlatformTranslate) => ({
 	baseUrlRequired: t('platform.connectors.validationBaseUrlRequired'),
 	baseUrlProtocol: t('platform.connectors.validationBaseUrlProtocol'),
