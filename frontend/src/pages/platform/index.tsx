@@ -25,7 +25,6 @@ import { useNavigate } from 'react-router-dom';
 
 import {
 	platformApi,
-	type CredentialView,
 	type EnterpriseIdentity,
 	type EnterpriseAgentPublishRequest,
 	type EnterpriseAgentTemplate,
@@ -55,7 +54,6 @@ import {
 	type EnterpriseWorkflowRunHistoryItem,
 	type EnterpriseWorkflowRunResponse,
 	type EnterpriseWorkflowTemplate,
-	type KnowledgeBaseView,
 	type ScheduleRecord,
 } from '@/api';
 import { ApiError } from '@/api/client';
@@ -106,7 +104,9 @@ import { WorkflowsViewPage } from './components/WorkflowsViewPage';
 import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import {
+	credentialLabel,
 	defaultEnterpriseWorkflowInputs,
+	knowledgeBaseLabel,
 	normalizeWorkflowInputs,
 	shortResourceId,
 } from './platform-utils';
@@ -254,15 +254,6 @@ const defaultMemberForm: MemberFormState = {
 	role: '',
 	status: 'active',
 };
-
-function credentialLabel(credential: CredentialView) {
-	const name = credential.data.name;
-	return typeof name === 'string' && name.trim() ? name : credential.id;
-}
-
-function knowledgeBaseLabel(knowledgeBase: KnowledgeBaseView) {
-	return knowledgeBase.name || knowledgeBase.id;
-}
 
 function scheduleSortTime(schedule: ScheduleRecord) {
 	const timestamp = Date.parse(schedule.updated_at || schedule.created_at || schedule.data.started_at);
@@ -5122,7 +5113,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			creatingApproval={creatingApproval}
 			creatingRunApproval={creatingRunApproval}
 			credentialById={credentialById}
-			credentialLabel={credentialLabel}
 			credentials={credentials}
 			credentialsLoading={credentialsLoading}
 			currentIdentityLabel={currentIdentityLabel}
@@ -5210,7 +5200,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			inspectedAppCenterAgent={inspectedAppCenterAgent}
 			inspectedAppCenterTemplate={inspectedAppCenterTemplate}
 			knowledgeBaseById={knowledgeBaseById}
-			knowledgeBaseLabel={knowledgeBaseLabel}
 			knowledgeBases={knowledgeBases}
 			lastPublishedAgent={lastPublishedAgent}
 			launchpadPrimaryStep={launchpadPrimaryStep}

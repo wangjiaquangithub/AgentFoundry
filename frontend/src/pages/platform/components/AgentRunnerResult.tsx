@@ -19,6 +19,7 @@ import type {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { knowledgeBaseLabel } from '../platform-utils';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -43,10 +44,6 @@ function AgentRunnerNotice({ children }: { children: string }) {
 			<span className="min-w-0 break-words">{children}</span>
 		</div>
 	);
-}
-
-function knowledgeBaseLabel(knowledgeBase: KnowledgeBaseView) {
-	return knowledgeBase.name || knowledgeBase.id;
 }
 
 function scoreText(score: unknown) {

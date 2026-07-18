@@ -32,6 +32,17 @@ export function shortResourceId(id: string) {
 	return id.length > 12 ? `${id.slice(0, 8)}...${id.slice(-4)}` : id;
 }
 
+export function credentialLabel(credential: { id?: unknown; data?: { name?: unknown } }) {
+	const name = credential.data?.name;
+	return typeof name === 'string' && name.trim() ? name : String(credential.id ?? '');
+}
+
+export function knowledgeBaseLabel(knowledgeBase: { id?: unknown; name?: unknown }) {
+	return typeof knowledgeBase.name === 'string' && knowledgeBase.name
+		? knowledgeBase.name
+		: String(knowledgeBase.id ?? '');
+}
+
 export function normalizeWorkflowInputs(
 	inputs?: Record<string, unknown>,
 ): Record<string, string> {

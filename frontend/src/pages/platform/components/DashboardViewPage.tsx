@@ -60,7 +60,9 @@ import { WorkflowRunnerPanel } from './WorkflowRunnerPanel';
 import { PlatformNotice, StateBadge } from './common';
 import {
 	countArrayField,
+	credentialLabel,
 	formatTimestamp,
+	knowledgeBaseLabel,
 	normalizeWorkflowInputs,
 } from '../platform-utils';
 
@@ -151,7 +153,6 @@ export function DashboardViewPage({
 	creatingApproval,
 	creatingRunApproval,
 	credentialById,
-	credentialLabel,
 	credentials,
 	credentialsLoading,
 	currentIdentityLabel,
@@ -239,7 +240,6 @@ export function DashboardViewPage({
 	inspectedAppCenterAgent,
 	inspectedAppCenterTemplate,
 	knowledgeBaseById,
-	knowledgeBaseLabel,
 	knowledgeBases,
 	lastPublishedAgent,
 	launchpadPrimaryStep,
@@ -2338,8 +2338,6 @@ export function DashboardViewPage({
 					handleEnableAgentWorkflow={handleEnableAgentWorkflow}
 					handleArchiveAgent={handleArchiveAgent}
 					handlePrimePublishedAgent={handlePrimePublishedAgent}
-					credentialLabel={credentialLabel}
-					knowledgeBaseLabel={knowledgeBaseLabel}
 					agentAccessAllowed={agentAccessAllowed}
 					t={t}
 					cn={cn}

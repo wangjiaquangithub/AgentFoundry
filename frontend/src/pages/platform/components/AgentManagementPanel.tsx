@@ -33,7 +33,12 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { formatTimestamp, shortResourceId } from '../platform-utils';
+import {
+	credentialLabel,
+	formatTimestamp,
+	knowledgeBaseLabel,
+	shortResourceId,
+} from '../platform-utils';
 import { PlatformNotice, StateBadge, type HealthState } from './common';
 
 type AgentManagementPanelProps = {
@@ -135,8 +140,6 @@ export function AgentManagementPanel(props: AgentManagementPanelProps) {
 		handleEnableAgentWorkflow,
 		handleArchiveAgent,
 		handlePrimePublishedAgent,
-		credentialLabel,
-		knowledgeBaseLabel,
 		agentAccessAllowed,
 		t,
 		cn,
