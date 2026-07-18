@@ -133,6 +133,7 @@ import {
 	tenantGovernanceRequestLabels,
 	tenantWorkspaceOperationsLabels,
 	toolCatalogRequestLabels,
+	toolRunnerRequestLabels,
 	triggerOperationsStatLabels,
 	triggerOperationsSummaryLabels,
 	workbenchIndicatorLabels,
@@ -424,6 +425,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const toolCatalogRequestText = toolCatalogRequestLabels(t);
 	const scenarioRequestText = scenarioRequestLabels(t);
 	const opsTasksRequestText = opsTasksRequestLabels(t);
+	const toolRunnerRequestText = toolRunnerRequestLabels(t);
 	const workflowRunnerRequestText = workflowRunnerRequestLabels(t);
 	const hasErrors = Boolean(
 		agentsError ||
@@ -2683,7 +2685,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					approvalRequired.message,
 				);
 				if (created) {
-					setToolRunError(t('platform.toolRunner.approvalRequiredCreated'));
+					setToolRunError(toolRunnerRequestText.approvalRequiredCreated);
 				}
 				return;
 			}

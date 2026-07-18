@@ -25,6 +25,10 @@ export const selectedToolRunnerLabels = (t: PlatformTranslate) => ({
 	notConfiguredForAgent: t('platform.toolRunner.notConfiguredForAgent'),
 });
 
+export const toolRunnerRequestLabels = (t: PlatformTranslate) => ({
+	approvalRequiredCreated: t('platform.toolRunner.approvalRequiredCreated'),
+});
+
 export const agentRoutingLabels = (t: PlatformTranslate) => ({
 	model: t('platform.agentRunner.routingModel'),
 	rules: t('platform.agentRunner.routingRules'),
