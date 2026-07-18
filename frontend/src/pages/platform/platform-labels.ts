@@ -167,6 +167,10 @@ export const publishDraftLabels = (t: PlatformTranslate) => ({
 	noKnowledge: t('platform.agentManagement.releaseNoKnowledge'),
 });
 
+export const selectedIdentityLabels = (t: PlatformTranslate) => ({
+	accessLabel: (key: string) => t(key),
+});
+
 export const workflowOperationsLabels = (t: PlatformTranslate) => ({
 	templates: t('platform.workflowOps.templates'),
 	enabled: t('platform.workflowOps.enabled'),

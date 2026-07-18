@@ -118,6 +118,7 @@ import {
 	publishDraftLabels,
 	rolloutPathStepLabels,
 	runtimeStatusLabels,
+	selectedIdentityLabels,
 	selectedToolRunnerLabels,
 	triggerOperationsStatLabels,
 	triggerOperationsSummaryLabels,
@@ -546,7 +547,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		governanceWorkspaces: governance?.tenant_workspaces,
 		connectorWorkspaces: connectors?.tenant_workspaces,
 		username,
-		accessLabel: (key) => t(key),
+		...selectedIdentityLabels(t),
 	});
 	const selectedIdentity = selectedIdentityState.selectedIdentity;
 	const selectedRunAgentAccessAllowed = selectedIdentityState.selectedRunAgentAccessAllowed;
