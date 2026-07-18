@@ -124,7 +124,6 @@ export function DashboardViewPage({
 	bindingAgentToolsId,
 	blockedOrPartialPlatformAgents,
 	capabilities,
-	cn,
 	completedWorkflowRunCount,
 	configManagementRef,
 	connectorCenterRef,
