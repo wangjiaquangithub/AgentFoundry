@@ -3091,6 +3091,54 @@ export function workflowOpsStatsForSummary(
 	];
 }
 
+export function workflowOperationsStateForStatus(values: {
+	workflowTemplates: EnterpriseWorkflowTemplate[];
+	workflowOptions: Array<{ value: string; label: string }>;
+	selectedWorkflowType: string;
+	selectedWorkflowTemplate?: EnterpriseWorkflowTemplate | null;
+	recentWorkflowRuns: EnterpriseWorkflowRunHistoryItem[];
+	workflowRunCount: number;
+	pendingApprovals: EnterpriseApprovalRequestItem[];
+	labels: Parameters<typeof workflowOpsStatsForSummary>[1];
+}) {
+	const workflowPendingApprovals = pendingWorkflowRunApprovals(values.pendingApprovals);
+	const enabledWorkflowTemplates = enabledEnterpriseWorkflowTemplates(values.workflowTemplates);
+	const selectedWorkflowOption = values.workflowOptions.find(
+		(workflow) => workflow.value === values.selectedWorkflowType,
+	);
+	const selectedWorkflowName =
+		values.selectedWorkflowTemplate?.name ??
+		selectedWorkflowOption?.label ??
+		values.selectedWorkflowType;
+	const selectedWorkflowSteps = values.selectedWorkflowTemplate?.steps ?? [];
+	const selectedWorkflowLastRun =
+		values.recentWorkflowRuns.find(
+			(run) => run.workflow_type === values.selectedWorkflowType,
+		) ??
+		values.recentWorkflowRuns[0] ??
+		null;
+	const workflowOpsStats = workflowOpsStatsForSummary(
+		{
+			workflowTemplateCount: values.workflowTemplates.length,
+			workflowOptionCount: values.workflowOptions.length,
+			enabledWorkflowTemplateCount: enabledWorkflowTemplates.length,
+			workflowRunCount: values.workflowRunCount,
+			workflowPendingApprovalCount: workflowPendingApprovals.length,
+		},
+		values.labels,
+	);
+
+	return {
+		workflowPendingApprovals,
+		enabledWorkflowTemplates,
+		selectedWorkflowOption,
+		selectedWorkflowName,
+		selectedWorkflowSteps,
+		selectedWorkflowLastRun,
+		workflowOpsStats,
+	};
+}
+
 export function scheduleSortTime(schedule: ScheduleRecord) {
 	const timestamp = Date.parse(schedule.updated_at || schedule.created_at || schedule.data.started_at);
 	return Number.isNaN(timestamp) ? 0 : timestamp;

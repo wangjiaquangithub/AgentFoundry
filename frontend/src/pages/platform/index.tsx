@@ -102,7 +102,6 @@ import {
 	dashboardOperationsStateForStatus,
 	dashboardTodoItemsForStatus,
 	defaultEnterpriseWorkflowInputs,
-	enabledEnterpriseWorkflowTemplates,
 	enabledTriggerSchedules,
 	firstAgentGuidePrimaryStepForSteps,
 	firstAgentGuideStepsForStatus,
@@ -122,7 +121,6 @@ import {
 	operationsHeadlineText,
 	orchestrationPrimaryStepForSteps,
 	orchestrationWorkbenchStepsForStatus,
-	pendingWorkflowRunApprovals,
 	publishReleaseIssuesForDraft,
 	platformMembersByUserId,
 	platformOverviewStatsForSummary,
@@ -149,7 +147,7 @@ import {
 	workbenchReadinessItemsForStatus,
 	workbenchRiskItemsForStatus,
 	workflowTemplateByTypeForTemplates,
-	workflowOpsStatsForSummary,
+	workflowOperationsStateForStatus,
 	type AgentWizardStep,
 } from './platform-utils';
 
@@ -1249,35 +1247,26 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		selectedIdentityGovernanceActivity.selectedIdentityFailedAuditEvents;
 	const selectedIdentityRecentAuditEvents =
 		selectedIdentityGovernanceActivity.selectedIdentityRecentAuditEvents;
-	const workflowPendingApprovals = pendingWorkflowRunApprovals(pendingApprovals);
-	const enabledWorkflowTemplates = enabledEnterpriseWorkflowTemplates(workflowTemplates);
-	const selectedWorkflowOption = workflowOptions.find(
-		(workflow) => workflow.value === selectedWorkflowType,
-	);
-	const selectedWorkflowName =
-		selectedWorkflowTemplate?.name ??
-		selectedWorkflowOption?.label ??
-		selectedWorkflowType;
-	const selectedWorkflowSteps = selectedWorkflowTemplate?.steps ?? [];
-	const selectedWorkflowLastRun =
-		recentWorkflowRuns.find((run) => run.workflow_type === selectedWorkflowType) ??
-		recentWorkflowRuns[0] ??
-		null;
-	const workflowOpsStats = workflowOpsStatsForSummary(
-		{
-			workflowTemplateCount: workflowTemplates.length,
-			workflowOptionCount: workflowOptions.length,
-			enabledWorkflowTemplateCount: enabledWorkflowTemplates.length,
-			workflowRunCount,
-			workflowPendingApprovalCount: workflowPendingApprovals.length,
-		},
-		{
+	const workflowOperationsState = workflowOperationsStateForStatus({
+		workflowTemplates,
+		workflowOptions,
+		selectedWorkflowType,
+		selectedWorkflowTemplate,
+		recentWorkflowRuns,
+		workflowRunCount,
+		pendingApprovals,
+		labels: {
 			templates: t('platform.workflowOps.templates'),
 			enabled: t('platform.workflowOps.enabled'),
 			runs: t('platform.workflowOps.runs'),
 			approvals: t('platform.workflowOps.approvals'),
 		},
-	);
+	});
+	const workflowPendingApprovals = workflowOperationsState.workflowPendingApprovals;
+	const selectedWorkflowName = workflowOperationsState.selectedWorkflowName;
+	const selectedWorkflowSteps = workflowOperationsState.selectedWorkflowSteps;
+	const selectedWorkflowLastRun = workflowOperationsState.selectedWorkflowLastRun;
+	const workflowOpsStats = workflowOperationsState.workflowOpsStats;
 	const enabledSchedules = enabledTriggerSchedules(schedules);
 	const agentSourceSchedules = triggerSchedulesBySource(schedules, 'AGENT');
 	const userSourceSchedules = triggerSchedulesBySource(schedules, 'USER');
