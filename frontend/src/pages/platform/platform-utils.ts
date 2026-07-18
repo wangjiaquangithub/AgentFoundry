@@ -156,6 +156,12 @@ export function agentReadinessState(
 	return agent ? agent.readiness?.status ?? 'partial' : 'todo';
 }
 
+export function agentReadinessIssues(
+	agent?: Pick<EnterprisePublishedAgent, 'readiness'> | null,
+) {
+	return agent?.readiness?.issues.map((issue) => issue.message).filter(Boolean) ?? [];
+}
+
 export function agentIsReady(agent?: Pick<EnterprisePublishedAgent, 'readiness'> | null) {
 	return agentReadinessState(agent) === 'ready';
 }

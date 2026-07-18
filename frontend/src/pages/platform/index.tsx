@@ -106,6 +106,7 @@ import {
 	agentAccessAllowed,
 	agentAccessRestricted,
 	agentIsReady,
+	agentReadinessIssues,
 	agentReadinessState,
 	agentResourceSummary,
 	agentRunnerAccessLabelKey,
@@ -1352,9 +1353,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const inspectedAppCenterTemplateTools = inspectedAppCenterTemplate?.tools ?? [];
 	const inspectedAppCenterAgentReadiness: HealthState =
 		inspectedAppCenterAgent?.readiness?.status ?? 'partial';
-	const inspectedAppCenterAgentIssues =
-		inspectedAppCenterAgent?.readiness?.issues.map((issue) => issue.message).filter(Boolean) ??
-		[];
+	const inspectedAppCenterAgentIssues = agentReadinessIssues(inspectedAppCenterAgent);
 	const inspectedAppCenterAgentModel = modelCredentialLabel(
 		inspectedAppCenterAgent?.model_config_id,
 		credentialById,
