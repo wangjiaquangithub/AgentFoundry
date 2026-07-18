@@ -4783,7 +4783,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				memoryOperationsHitCount={memoryOperationsHitCount}
 				memoryOperationsSavedCount={memoryOperationsSavedCount}
 				onNavigate={navigate}
-				formatTimestamp={formatTimestamp}
 				t={t}
 			/>
 		);

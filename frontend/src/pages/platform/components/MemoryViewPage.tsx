@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+import { formatTimestamp } from '../platform-utils';
 import type { MemoryOperationsItem } from './MemoryOperationsPanel';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -14,7 +15,6 @@ interface MemoryViewPageProps {
 	memoryOperationsHitCount: number;
 	memoryOperationsSavedCount: number;
 	onNavigate: (to: string) => void;
-	formatTimestamp: (value?: string) => string;
 	t: Translate;
 }
 
@@ -24,7 +24,6 @@ export function MemoryViewPage({
 	memoryOperationsHitCount,
 	memoryOperationsSavedCount,
 	onNavigate,
-	formatTimestamp,
 	t,
 }: MemoryViewPageProps) {
 	return (
