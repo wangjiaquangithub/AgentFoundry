@@ -93,13 +93,16 @@ export function agentAccessAllowed(
 }
 
 export function agentAccessRestricted(
-	agent: Pick<EnterprisePublishedAgent, 'allowed_user_ids' | 'allowed_roles'>,
+	agent: { allowed_user_ids?: string[] | null; allowed_roles?: string[] | null },
 ) {
 	return (agent.allowed_user_ids?.length ?? 0) > 0 || (agent.allowed_roles?.length ?? 0) > 0;
 }
 
 export function agentRunnerAccessLabelKey(
-	agent: Pick<EnterprisePublishedAgent, 'allowed_user_ids' | 'allowed_roles'> | null | undefined,
+	agent:
+		| { allowed_user_ids?: string[] | null; allowed_roles?: string[] | null }
+		| null
+		| undefined,
 	allowed: boolean,
 ) {
 	if (!agent) {

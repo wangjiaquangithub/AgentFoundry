@@ -34,6 +34,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import {
+	agentAccessRestricted,
 	credentialLabel,
 	formatTimestamp,
 	knowledgeBaseLabel,
@@ -1189,8 +1190,7 @@ export function AgentManagementPanel(props: AgentManagementPanelProps) {
 										const agentAllowedRoles = agent.allowed_roles ?? [];
 										const accessSummary = agent.access_summary;
 										const isAgentAccessRestricted =
-											agentAllowedUserIds.length > 0 ||
-											agentAllowedRoles.length > 0;
+											agentAccessRestricted(agent);
 									const isCurrentIdentityAllowedForAgent = agentAccessAllowed(
 										agent,
 										selectedIdentity,
