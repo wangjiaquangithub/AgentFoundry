@@ -72,7 +72,6 @@ import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
 import { MemoryViewPage } from './components/MemoryViewPage';
 import type { MemberFormState } from './components/MembersPanel';
 import { RunsViewPage } from './components/RunsViewPage';
-import type { RuntimeStatusItem } from './components/RuntimeStatusPanel';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
 import { SettingsViewPage } from './components/SettingsViewPage';
 import { TenantsViewPage } from './components/TenantsViewPage';
@@ -119,10 +118,12 @@ import {
 	orchestrationWorkbenchStepsForStatus,
 	pendingWorkflowRunApprovals,
 	publishReleaseIssuesForDraft,
+	platformOverviewStatsForSummary,
 	platformMemberTenantSummariesForMembers,
 	platformConsoleItemsForDisplay,
 	recentTriggerSchedules,
 	rolloutPathStepsForStatus,
+	runtimeStatusItemsForStatus,
 	topOperationsAgentsForDisplay,
 	tenantOverviewItemsForWorkspace,
 	toolPolicySummaryForGovernance,
@@ -840,75 +841,57 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		? `${selectedIdentity.display_name} / ${selectedIdentity.tenant}`
 		: username;
 
-	const stats = [
+	const stats = platformOverviewStatsForSummary(
 		{
-			label: t('platform.stats.agents'),
-			value: platformAgents?.agents.length ?? agents.length,
-			helper: t('platform.stats.agentsHelper'),
-			icon: BotMessageSquare,
-			loading: platformAgentsLoading || agentsLoading,
+			platformAgentCount: platformAgents?.agents.length,
+			agentCount: agents.length,
+			credentialCount: credentials.length,
+			knowledgeBaseCount: knowledgeBases.length,
+			workflowTemplateCount: workflowTemplates.length,
+			scheduleCount: schedules.length,
+			loading: {
+				agents: platformAgentsLoading || agentsLoading,
+				credentials: credentialsLoading,
+				knowledgeBases: knowledgeLoading,
+				workflows: workflowTemplatesLoading || schedulesLoading,
+			},
 		},
 		{
-			label: t('platform.stats.credentials'),
-			value: credentials.length,
-			helper: t('platform.stats.credentialsHelper'),
-			icon: KeyRound,
-			loading: credentialsLoading,
+			icons: {
+				agents: BotMessageSquare,
+				credentials: KeyRound,
+				knowledgeBases: LibraryBig,
+				workflows: Workflow,
+			},
+			labels: {
+				label: (key) => t(`platform.stats.${key}`),
+				helper: (key) => t(`platform.stats.${key}Helper`),
+			},
 		},
-		{
-			label: t('platform.stats.knowledgeBases'),
-			value: knowledgeBases.length,
-			helper: t('platform.stats.knowledgeBasesHelper'),
-			icon: LibraryBig,
-			loading: knowledgeLoading,
-		},
-		{
-			label: t('platform.stats.workflows'),
-			value: workflowTemplates.length || schedules.length,
-			helper: t('platform.stats.workflowsHelper'),
-			icon: Workflow,
-			loading: workflowTemplatesLoading || schedulesLoading,
-		},
-	];
+	);
 
-	const runtimeItems: RuntimeStatusItem[] = [
+	const runtimeItems = runtimeStatusItemsForStatus(
 		{
-			label: t('platform.runtime.platform'),
-			value: platformStatus
-				? `${platformStatus.platform.name} ${platformStatus.platform.version}`
-				: t('platform.runtime.unavailable'),
-			icon: Server,
+			platformStatus,
+			currentIdentityLabel,
 		},
 		{
-			label: t('platform.runtime.userTenant'),
-			value: currentIdentityLabel,
-			icon: UserRound,
+			icons: {
+				platform: Server,
+				userTenant: UserRound,
+				connector: Network,
+				dataDir: HardDrive,
+				auditPath: FileClock,
+				auditStatus: ShieldCheck,
+			},
+			labels: {
+				label: (key) => t(`platform.runtime.${key}`),
+				unavailable: t('platform.runtime.unavailable'),
+				enabled: t('platform.runtime.enabled'),
+				disabled: t('platform.runtime.disabled'),
+			},
 		},
-		{
-			label: t('platform.runtime.connector'),
-			value: platformStatus?.connector.name || t('platform.runtime.unavailable'),
-			icon: Network,
-		},
-		{
-			label: t('platform.runtime.dataDir'),
-			value: platformStatus?.storage.data_dir || t('platform.runtime.unavailable'),
-			icon: HardDrive,
-		},
-		{
-			label: t('platform.runtime.auditPath'),
-			value: platformStatus?.storage.audit_log_path || t('platform.runtime.unavailable'),
-			icon: FileClock,
-		},
-		{
-			label: t('platform.runtime.auditStatus'),
-			value: platformStatus
-				? platformStatus.audit.enabled
-					? t('platform.runtime.enabled')
-					: t('platform.runtime.disabled')
-				: t('platform.runtime.unavailable'),
-			icon: ShieldCheck,
-		},
-	];
+	);
 
 	const policyDecisions = useMemo(
 		() => platformStatus?.tool_policy.decisions ?? [],

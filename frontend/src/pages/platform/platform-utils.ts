@@ -8,6 +8,7 @@ import type {
 	EnterpriseIdentity,
 	EnterprisePlatformMember,
 	EnterprisePlatformGovernanceResponse,
+	EnterprisePlatformStatusResponse,
 	EnterprisePublishedAgent,
 	EnterpriseTenantWorkspace,
 	EnterpriseToolCatalogItem,
@@ -26,6 +27,7 @@ import type { PlatformMemberTenantSummary } from './components/MembersPanel';
 import type { OrchestrationWorkbenchStep } from './components/OrchestrationWorkbenchPanel';
 import type { PlatformConsoleItem } from './components/PlatformConsolePanel';
 import type { RolloutPathStep } from './components/RolloutPath';
+import type { RuntimeStatusItem } from './components/RuntimeStatusPanel';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
 import type { TenantOverviewItem } from './components/TenantWorkspacePanel';
 import type { TriggerOpsStat } from './components/TriggerOpsPanel';
@@ -39,7 +41,7 @@ import type {
 	WorkbenchIndicator,
 } from './components/WorkbenchStatusPanel';
 import type { WorkflowOpsStat } from './components/WorkflowOpsPanel';
-import type { HealthState } from './components/common';
+import type { HealthState, StatCardProps } from './components/common';
 
 export const defaultEnterpriseWorkflowInputs: Record<string, string> = {
 	policy_keyword: 'remote',
@@ -172,6 +174,122 @@ export function connectorDraftIssuesForDraft(
 		!values.ticketPath.trim().startsWith('/') ? labels.ticketPath : null,
 		!values.metricsPath.trim().startsWith('/') ? labels.metricsPath : null,
 	].filter(Boolean) as string[];
+}
+
+type PlatformOverviewStatKey = 'agents' | 'credentials' | 'knowledgeBases' | 'workflows';
+
+export function platformOverviewStatsForSummary(
+	values: {
+		platformAgentCount?: number;
+		agentCount: number;
+		credentialCount: number;
+		knowledgeBaseCount: number;
+		workflowTemplateCount: number;
+		scheduleCount: number;
+		loading: Record<PlatformOverviewStatKey, boolean>;
+	},
+	options: {
+		icons: Record<PlatformOverviewStatKey, ComponentType<{ className?: string }>>;
+		labels: {
+			label: (key: PlatformOverviewStatKey) => string;
+			helper: (key: PlatformOverviewStatKey) => string;
+		};
+	},
+): StatCardProps[] {
+	const items: Array<{ key: PlatformOverviewStatKey; value: number; loading: boolean }> = [
+		{
+			key: 'agents',
+			value: values.platformAgentCount ?? values.agentCount,
+			loading: values.loading.agents,
+		},
+		{
+			key: 'credentials',
+			value: values.credentialCount,
+			loading: values.loading.credentials,
+		},
+		{
+			key: 'knowledgeBases',
+			value: values.knowledgeBaseCount,
+			loading: values.loading.knowledgeBases,
+		},
+		{
+			key: 'workflows',
+			value: values.workflowTemplateCount || values.scheduleCount,
+			loading: values.loading.workflows,
+		},
+	];
+
+	return items.map((item) => ({
+		label: options.labels.label(item.key),
+		value: item.value,
+		helper: options.labels.helper(item.key),
+		icon: options.icons[item.key],
+		loading: item.loading,
+	}));
+}
+
+type RuntimeStatusItemKey =
+	| 'platform'
+	| 'userTenant'
+	| 'connector'
+	| 'dataDir'
+	| 'auditPath'
+	| 'auditStatus';
+
+export function runtimeStatusItemsForStatus(
+	values: {
+		platformStatus: EnterprisePlatformStatusResponse | null | undefined;
+		currentIdentityLabel: string;
+	},
+	options: {
+		icons: Record<RuntimeStatusItemKey, ComponentType<{ className?: string }>>;
+		labels: {
+			label: (key: RuntimeStatusItemKey) => string;
+			unavailable: string;
+			enabled: string;
+			disabled: string;
+		};
+	},
+): RuntimeStatusItem[] {
+	const platformStatus = values.platformStatus;
+	const items: Array<{ key: RuntimeStatusItemKey; value: string }> = [
+		{
+			key: 'platform',
+			value: platformStatus
+				? `${platformStatus.platform.name} ${platformStatus.platform.version}`
+				: options.labels.unavailable,
+		},
+		{
+			key: 'userTenant',
+			value: values.currentIdentityLabel,
+		},
+		{
+			key: 'connector',
+			value: platformStatus?.connector.name || options.labels.unavailable,
+		},
+		{
+			key: 'dataDir',
+			value: platformStatus?.storage.data_dir || options.labels.unavailable,
+		},
+		{
+			key: 'auditPath',
+			value: platformStatus?.storage.audit_log_path || options.labels.unavailable,
+		},
+		{
+			key: 'auditStatus',
+			value: platformStatus
+				? platformStatus.audit.enabled
+					? options.labels.enabled
+					: options.labels.disabled
+				: options.labels.unavailable,
+		},
+	];
+
+	return items.map((item) => ({
+		label: options.labels.label(item.key),
+		value: item.value,
+		icon: options.icons[item.key],
+	}));
 }
 
 export function agentKnowledgeBaseLabels(
