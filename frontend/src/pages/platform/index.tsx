@@ -115,6 +115,7 @@ import {
 	launchpadStepLabels,
 	platformConsoleItemLabels,
 	platformOverviewStatLabels,
+	publishDraftLabels,
 	rolloutPathStepLabels,
 	runtimeStatusLabels,
 	selectedToolRunnerLabels,
@@ -536,18 +537,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			hasSelectedTemplate: Boolean(selectedTemplate),
 			credentialById,
 		},
-		{
-			noneConfigured: t('platform.agentManagement.noneConfigured'),
-			accessOpen: t('platform.agentManagement.accessOpen'),
-			accessRestricted: (values) =>
-				t('platform.agentManagement.releaseAccessRestricted', values),
-			runtimeSummary: (values) =>
-				t('platform.agentManagement.releaseRuntimeSummary', values),
-			enabled: t('platform.agentManagement.enabled'),
-			disabled: t('platform.agentManagement.disabled'),
-			missingModel: t('platform.agentManagement.releaseMissingModel'),
-			noKnowledge: t('platform.agentManagement.releaseNoKnowledge'),
-		},
+		publishDraftLabels(t),
 	);
 	const selectedIdentityState = selectedIdentityStateForStatus({
 		enterpriseIdentities,

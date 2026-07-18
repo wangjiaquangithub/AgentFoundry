@@ -154,6 +154,19 @@ export const agentSetupStepLabels = (t: PlatformTranslate) => ({
 	disabled: t('platform.agentManagement.disabled'),
 });
 
+export const publishDraftLabels = (t: PlatformTranslate) => ({
+	noneConfigured: t('platform.agentManagement.noneConfigured'),
+	accessOpen: t('platform.agentManagement.accessOpen'),
+	accessRestricted: (values: { users: number; roles: number }) =>
+		t('platform.agentManagement.releaseAccessRestricted', values),
+	runtimeSummary: (values: { memory: string; workflow: string }) =>
+		t('platform.agentManagement.releaseRuntimeSummary', values),
+	enabled: t('platform.agentManagement.enabled'),
+	disabled: t('platform.agentManagement.disabled'),
+	missingModel: t('platform.agentManagement.releaseMissingModel'),
+	noKnowledge: t('platform.agentManagement.releaseNoKnowledge'),
+});
+
 export const workflowOperationsLabels = (t: PlatformTranslate) => ({
 	templates: t('platform.workflowOps.templates'),
 	enabled: t('platform.workflowOps.enabled'),
