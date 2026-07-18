@@ -71,6 +71,7 @@ import { ToolsViewPage } from './components/ToolsViewPage';
 import { WorkflowsViewPage } from './components/WorkflowsViewPage';
 import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
+import { usePlatformPageRefs } from './platform-page-refs';
 import {
 	agentSampleQuestions,
 	defaultAgentQuestion,
@@ -174,20 +175,31 @@ export type PlatformView =
 export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const navigate = useNavigate();
 	const { t } = useTranslation();
-	const membersRef = useRef<HTMLElement | null>(null);
-	const agentManagementRef = useRef<HTMLElement | null>(null);
-	const agentRunnerRef = useRef<HTMLElement | null>(null);
-	const connectorCenterRef = useRef<HTMLElement | null>(null);
-	const governanceRef = useRef<HTMLElement | null>(null);
-	const workflowRunnerRef = useRef<HTMLElement | null>(null);
-	const toolRunnerRef = useRef<HTMLElement | null>(null);
-	const memoryOperationsRef = useRef<HTMLElement | null>(null);
-	const configManagementRef = useRef<HTMLElement | null>(null);
-	const agentTemplateStepRef = useRef<HTMLDivElement | null>(null);
-	const agentModelStepRef = useRef<HTMLDivElement | null>(null);
-	const agentKnowledgeStepRef = useRef<HTMLDivElement | null>(null);
-	const agentToolsStepRef = useRef<HTMLDivElement | null>(null);
-	const agentRuntimeStepRef = useRef<HTMLDivElement | null>(null);
+	const {
+		membersRef,
+		agentManagementRef,
+		agentRunnerRef,
+		connectorCenterRef,
+		governanceRef,
+		workflowRunnerRef,
+		toolRunnerRef,
+		memoryOperationsRef,
+		configManagementRef,
+		agentTemplateStepRef,
+		agentModelStepRef,
+		agentKnowledgeStepRef,
+		agentToolsStepRef,
+		agentRuntimeStepRef,
+		scrollToAgentManagement,
+		scrollToMembers,
+		scrollToAgentRunner,
+		scrollToConnectorCenter,
+		scrollToGovernance,
+		scrollToWorkflowRunner,
+		scrollToToolRunner,
+		scrollToMemoryOperations,
+		scrollToConfigManagement,
+	} = usePlatformPageRefs();
 	const connectorDefaultsAppliedRef = useRef(false);
 	const [agentQuestion, setAgentQuestion] = useState(defaultAgentQuestion);
 	const [runningAgent, setRunningAgent] = useState(false);
@@ -1949,42 +1961,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			allowed_user_ids: current.allowed_user_ids.filter((userId) => validUserIds.has(userId)),
 			allowed_roles: current.allowed_roles.filter((role) => validRoles.has(role)),
 		}));
-	}
-
-	function scrollToAgentManagement() {
-		agentManagementRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-	}
-
-	function scrollToMembers() {
-		membersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-	}
-
-	function scrollToAgentRunner() {
-		agentRunnerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-	}
-
-	function scrollToConnectorCenter() {
-		connectorCenterRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-	}
-
-	function scrollToGovernance() {
-		governanceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-	}
-
-	function scrollToWorkflowRunner() {
-		workflowRunnerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-	}
-
-	function scrollToToolRunner() {
-		toolRunnerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-	}
-
-	function scrollToMemoryOperations() {
-		memoryOperationsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-	}
-
-	function scrollToConfigManagement() {
-		configManagementRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 	}
 
 	function handleOperationAction(target?: string) {
