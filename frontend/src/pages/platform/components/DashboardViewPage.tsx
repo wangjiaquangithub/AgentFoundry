@@ -727,8 +727,6 @@ export function DashboardViewPage({
 					onRunAgent={scrollToAgentRunner}
 					onRunWorkflow={scrollToWorkflowRunner}
 					onOpenGovernance={scrollToGovernance}
-					workflowStatusLabelKey={workflowStatusLabelKey}
-					workflowStatusClassName={workflowStatusClassName}
 					labels={{
 						eyebrow: t('platform.monitoring.eyebrow'),
 						title: t('platform.monitoring.title'),
