@@ -67,6 +67,7 @@ import { AgentsViewPage } from './components/AgentsViewPage';
 import type { ApprovalFormState } from './components/ApprovalsPanel';
 import { ApprovalsViewPage } from './components/ApprovalsViewPage';
 import type { AppCenterSelection } from './components/AppCenterPanel';
+import type { CapabilityItem } from './components/CapabilitiesPanel';
 import type { MonitoringAgentTurn } from './components/MonitoringSnapshotPanel';
 import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
 import { MemoryViewPage } from './components/MemoryViewPage';
@@ -173,17 +174,6 @@ function approvalRequiredDetail(
 	if (!('message' in detail) || typeof detail.message !== 'string') return null;
 	if (!('target' in detail) || typeof detail.target !== 'string') return null;
 	return detail as EnterpriseApprovalRequiredDetail;
-}
-
-interface Capability {
-	title: string;
-	description: string;
-	metric: string;
-	actionLabel: string;
-	status: string;
-	state: HealthState;
-	icon: ComponentType<{ className?: string }>;
-	onClick: () => void;
 }
 
 interface EnterpriseAgentConversationTurn extends MonitoringAgentTurn {}
@@ -3470,7 +3460,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		});
 	}
 
-	const capabilities: Capability[] = [
+	const capabilities: CapabilityItem[] = [
 		{
 			title: t('platform.capabilities.model.title'),
 			description: t('platform.capabilities.model.description'),
