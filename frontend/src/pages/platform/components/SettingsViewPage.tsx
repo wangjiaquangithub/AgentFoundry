@@ -32,7 +32,6 @@ interface SettingsViewPageProps {
 	onImportPlatformConfig: () => void | Promise<void>;
 	onPlatformConfigImportModeChange: Dispatch<SetStateAction<'merge' | 'replace'>>;
 	onPlatformConfigImportTextChange: Dispatch<SetStateAction<string>>;
-	formatTimestamp: (value?: string) => string;
 	t: Translate;
 }
 
@@ -56,7 +55,6 @@ export function SettingsViewPage({
 	onImportPlatformConfig,
 	onPlatformConfigImportModeChange,
 	onPlatformConfigImportTextChange,
-	formatTimestamp,
 	t,
 }: SettingsViewPageProps) {
 	return (
@@ -174,7 +172,6 @@ export function SettingsViewPage({
 						onImportPlatformConfig={onImportPlatformConfig}
 						onPlatformConfigImportModeChange={onPlatformConfigImportModeChange}
 						onPlatformConfigImportTextChange={onPlatformConfigImportTextChange}
-						formatTimestamp={formatTimestamp}
 						t={t}
 					/>
 				</section>

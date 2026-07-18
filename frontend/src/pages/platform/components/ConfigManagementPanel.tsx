@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
+import { formatTimestamp } from '../platform-utils';
 import { PlatformNotice } from './common';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -30,7 +31,6 @@ interface ConfigManagementPanelProps {
 	onImportPlatformConfig: () => void | Promise<void>;
 	onPlatformConfigImportModeChange: Dispatch<SetStateAction<'merge' | 'replace'>>;
 	onPlatformConfigImportTextChange: Dispatch<SetStateAction<string>>;
-	formatTimestamp: (value?: string) => string;
 	t: Translate;
 }
 
@@ -47,7 +47,6 @@ export function ConfigManagementPanel({
 	onImportPlatformConfig,
 	onPlatformConfigImportModeChange,
 	onPlatformConfigImportTextChange,
-	formatTimestamp,
 	t,
 }: ConfigManagementPanelProps) {
 	return (

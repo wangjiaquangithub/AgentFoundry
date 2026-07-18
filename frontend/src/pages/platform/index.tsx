@@ -4810,7 +4810,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				onImportPlatformConfig={handleImportPlatformConfig}
 				onPlatformConfigImportModeChange={setPlatformConfigImportMode}
 				onPlatformConfigImportTextChange={setPlatformConfigImportText}
-				formatTimestamp={formatTimestamp}
 				t={t}
 			/>
 		);
