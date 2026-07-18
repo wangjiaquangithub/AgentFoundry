@@ -187,6 +187,11 @@ import {
 } from './platform-labels';
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
+	agentDefaultModelPatch,
+	agentKnowledgeBasesPatch,
+	agentMemoryEnabledPatch,
+	agentTemplateToolsPatch,
+	agentWorkflowEnabledPatch,
 	buildAgentConfigurationPayloadFromForm,
 	createDefaultPublishForm,
 	publishFormFromPublishedAgent,
@@ -2339,16 +2344,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setBindingAgentModelId(agent.id);
 		setPlatformAgentsError(null);
 		try {
-			const response = await platformApi.updateAgent(agent.id, {
-				model_config_id: modelConfigId,
-			});
+			const patch = agentDefaultModelPatch(modelConfigId);
+			const response = await platformApi.updateAgent(agent.id, patch);
 			if (selectedRunAgentId === agent.id || !selectedRunAgentId) {
 				setSelectedRunAgentId(response.agent.id);
 			}
 			if (editingAgentId === agent.id) {
-				setPublishForm((current) =>
-					publishFormWithPatch(current, { model_config_id: modelConfigId }),
-				);
+				setPublishForm((current) => publishFormWithPatch(current, patch));
 			}
 			await refetchPlatformAgents();
 			await refetchPlatform();
@@ -2373,16 +2375,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setBindingAgentKnowledgeId(agent.id);
 		setPlatformAgentsError(null);
 		try {
-			const response = await platformApi.updateAgent(agent.id, {
-				knowledge_base_ids: knowledgeBaseIds,
-			});
+			const patch = agentKnowledgeBasesPatch(knowledgeBaseIds);
+			const response = await platformApi.updateAgent(agent.id, patch);
 			if (selectedRunAgentId === agent.id || !selectedRunAgentId) {
 				setSelectedRunAgentId(response.agent.id);
 			}
 			if (editingAgentId === agent.id) {
-				setPublishForm((current) =>
-					publishFormWithPatch(current, { knowledge_base_ids: knowledgeBaseIds }),
-				);
+				setPublishForm((current) => publishFormWithPatch(current, patch));
 			}
 			await refetchPlatformAgents();
 			await refetchPlatform();
@@ -2410,16 +2409,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setBindingAgentToolsId(agent.id);
 		setPlatformAgentsError(null);
 		try {
-			const response = await platformApi.updateAgent(agent.id, {
-				tools: templateTools,
-			});
+			const patch = agentTemplateToolsPatch(templateTools);
+			const response = await platformApi.updateAgent(agent.id, patch);
 			if (selectedRunAgentId === agent.id || !selectedRunAgentId) {
 				setSelectedRunAgentId(response.agent.id);
 			}
 			if (editingAgentId === agent.id) {
-				setPublishForm((current) =>
-					publishFormWithPatch(current, { tools: [...template.tools] }),
-				);
+				setPublishForm((current) => publishFormWithPatch(current, patch));
 			}
 			await refetchPlatformAgents();
 			await refetchPlatform();
@@ -2438,14 +2434,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setEnablingAgentMemoryId(agent.id);
 		setPlatformAgentsError(null);
 		try {
-			const response = await platformApi.updateAgent(agent.id, {
-				memory_enabled: true,
-			});
+			const patch = agentMemoryEnabledPatch();
+			const response = await platformApi.updateAgent(agent.id, patch);
 			if (selectedRunAgentId === agent.id || !selectedRunAgentId) {
 				setSelectedRunAgentId(response.agent.id);
 			}
 			if (editingAgentId === agent.id) {
-				setPublishForm((current) => publishFormWithPatch(current, { memory_enabled: true }));
+				setPublishForm((current) => publishFormWithPatch(current, patch));
 			}
 			await refetchPlatformAgents();
 			await refetchPlatform();
@@ -2466,14 +2461,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setEnablingAgentWorkflowId(agent.id);
 		setPlatformAgentsError(null);
 		try {
-			const response = await platformApi.updateAgent(agent.id, {
-				workflow_enabled: true,
-			});
+			const patch = agentWorkflowEnabledPatch();
+			const response = await platformApi.updateAgent(agent.id, patch);
 			if (selectedRunAgentId === agent.id || !selectedRunAgentId) {
 				setSelectedRunAgentId(response.agent.id);
 			}
 			if (editingAgentId === agent.id) {
-				setPublishForm((current) => publishFormWithPatch(current, { workflow_enabled: true }));
+				setPublishForm((current) => publishFormWithPatch(current, patch));
 			}
 			await refetchPlatformAgents();
 			await refetchPlatform();

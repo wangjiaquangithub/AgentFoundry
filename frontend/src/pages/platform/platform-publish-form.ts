@@ -1,4 +1,5 @@
 import type {
+	EnterpriseAgentUpdateRequest,
 	EnterpriseAgentPublishRequest,
 	EnterpriseAgentTemplate,
 	EnterprisePublishedAgent,
@@ -23,6 +24,7 @@ export type PublishFormPatch = Partial<
 		| 'workflow_enabled'
 	>
 >;
+export type AgentQuickConfigurationPatch = PublishFormPatch & EnterpriseAgentUpdateRequest;
 
 export type DefaultPublishFormOptions = {
 	template: EnterpriseAgentTemplate;
@@ -132,5 +134,39 @@ export function publishFormWithPatch(
 	return {
 		...current,
 		...patch,
+	};
+}
+
+export function agentDefaultModelPatch(
+	modelConfigId: string,
+): AgentQuickConfigurationPatch {
+	return {
+		model_config_id: modelConfigId,
+	};
+}
+
+export function agentKnowledgeBasesPatch(
+	knowledgeBaseIds: string[],
+): AgentQuickConfigurationPatch {
+	return {
+		knowledge_base_ids: knowledgeBaseIds,
+	};
+}
+
+export function agentTemplateToolsPatch(tools: string[]): AgentQuickConfigurationPatch {
+	return {
+		tools: [...tools],
+	};
+}
+
+export function agentMemoryEnabledPatch(): AgentQuickConfigurationPatch {
+	return {
+		memory_enabled: true,
+	};
+}
+
+export function agentWorkflowEnabledPatch(): AgentQuickConfigurationPatch {
+	return {
+		workflow_enabled: true,
 	};
 }
