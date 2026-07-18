@@ -87,6 +87,24 @@ export const defaultToolInputs: Record<string, string> = {
 
 export const defaultSelectedWorkflowType = 'daily_ops_brief';
 
+export const defaultEnterpriseWorkflowInputs: Record<string, string> = {
+	policy_keyword: 'remote',
+	ticket_id: 'INC-1001',
+	department: 'engineering',
+};
+
+export const enterpriseWorkflowFallbackOptions = [
+	{ value: 'daily_ops_brief', labelKey: 'dailyOpsBrief' },
+	{ value: 'ticket_followup', labelKey: 'ticketFollowup' },
+	{ value: 'policy_review', labelKey: 'policyReview' },
+];
+
+export const workflowInputLabelKeys: Record<string, string> = {
+	policy_keyword: 'policyKeyword',
+	ticket_id: 'ticketId',
+	department: 'department',
+};
+
 export const defaultApprovalForm: ApprovalFormState = {
 	request_type: 'tool_run',
 	tool_name: 'enterprise_lookup_policy',

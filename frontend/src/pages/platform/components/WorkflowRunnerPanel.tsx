@@ -18,10 +18,10 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
+import { workflowInputLabelKeys } from '../platform-defaults';
 import {
 	formatTimestamp,
 	workflowInputLabel,
-	workflowInputLabelKeys,
 	workflowStatusClassName,
 	workflowStatusLabelKey,
 } from '../platform-utils';
