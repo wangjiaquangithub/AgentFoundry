@@ -23,6 +23,7 @@ import type { LaunchpadStep } from './components/LaunchpadPanel';
 import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
 import type { MonitoringStat } from './components/MonitoringSnapshotPanel';
 import type { PlatformMemberTenantSummary } from './components/MembersPanel';
+import type { OrchestrationWorkbenchStep } from './components/OrchestrationWorkbenchPanel';
 import type { PlatformConsoleItem } from './components/PlatformConsolePanel';
 import type { RolloutPathStep } from './components/RolloutPath';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
@@ -478,6 +479,14 @@ type RolloutPathStepKey =
 	| 'config';
 type FirstAgentGuideStepKey = 'model' | 'agent' | 'run' | 'governance';
 type PlatformConsoleItemKey = 'agents' | 'resources' | 'run' | 'governance';
+type OrchestrationWorkbenchStepKey =
+	| 'template'
+	| 'model'
+	| 'knowledge'
+	| 'tools'
+	| 'policy'
+	| 'publish'
+	| 'operate';
 
 export function workbenchReadinessItemsForStatus(
 	values: {
@@ -887,6 +896,144 @@ export function platformConsoleItemsForDisplay(options: {
 		icon: options.icons[key],
 		onClick: options.actions[key],
 	}));
+}
+
+export function orchestrationWorkbenchStepsForStatus(
+	values: {
+		selectedTemplateName?: string;
+		credentialCount: number;
+		selectedKnowledgeBaseCount: number;
+		knowledgeBaseCount: number;
+		selectedToolCount: number;
+		availableToolCount: number;
+		allowedUserCount: number;
+		allowedRoleCount: number;
+		activeAgentCount: number;
+		hasSelectedTemplate: boolean;
+		auditEventCount: number;
+		pendingApprovalCount: number;
+		hasSelectedRunAgent: boolean;
+		setupStates: {
+			template: HealthState;
+			model: HealthState;
+			knowledge: HealthState;
+			tools: HealthState;
+			policy: HealthState;
+		};
+	},
+	options: {
+		icons: Record<OrchestrationWorkbenchStepKey, ComponentType<{ className?: string }>>;
+		actions: Record<OrchestrationWorkbenchStepKey, () => void>;
+		labels: {
+			title: (key: OrchestrationWorkbenchStepKey) => string;
+			description: (key: OrchestrationWorkbenchStepKey) => string;
+			action: (key: OrchestrationWorkbenchStepKey) => string;
+			templateEmpty: string;
+			modelReady: (count: number) => string;
+			modelEmpty: string;
+			selectedKnowledge: (count: number) => string;
+			knowledgeReady: (count: number) => string;
+			toolsSelected: (count: number) => string;
+			toolsReady: (count: number) => string;
+			policyDetail: (counts: { users: number; roles: number }) => string;
+			publishReady: (count: number) => string;
+			publishEmpty: string;
+			operateReady: (count: number) => string;
+			operatePending: (count: number) => string;
+			operateEmpty: string;
+		};
+	},
+): OrchestrationWorkbenchStep[] {
+	const steps: Array<{
+		key: OrchestrationWorkbenchStepKey;
+		detail: string;
+		state: HealthState;
+	}> = [
+		{
+			key: 'template',
+			detail: values.selectedTemplateName ?? options.labels.templateEmpty,
+			state: values.setupStates.template,
+		},
+		{
+			key: 'model',
+			detail:
+				values.credentialCount > 0
+					? options.labels.modelReady(values.credentialCount)
+					: options.labels.modelEmpty,
+			state: values.credentialCount > 0 ? values.setupStates.model : 'blocked',
+		},
+		{
+			key: 'knowledge',
+			detail:
+				values.selectedKnowledgeBaseCount > 0
+					? options.labels.selectedKnowledge(values.selectedKnowledgeBaseCount)
+					: options.labels.knowledgeReady(values.knowledgeBaseCount),
+			state: values.setupStates.knowledge,
+		},
+		{
+			key: 'tools',
+			detail:
+				values.selectedToolCount > 0
+					? options.labels.toolsSelected(values.selectedToolCount)
+					: options.labels.toolsReady(values.availableToolCount),
+			state: values.setupStates.tools,
+		},
+		{
+			key: 'policy',
+			detail: options.labels.policyDetail({
+				users: values.allowedUserCount,
+				roles: values.allowedRoleCount,
+			}),
+			state: values.setupStates.policy,
+		},
+		{
+			key: 'publish',
+			detail:
+				values.activeAgentCount > 0
+					? options.labels.publishReady(values.activeAgentCount)
+					: options.labels.publishEmpty,
+			state: values.activeAgentCount > 0
+				? 'ready'
+				: values.hasSelectedTemplate
+					? 'todo'
+					: 'blocked',
+		},
+		{
+			key: 'operate',
+			detail:
+				values.auditEventCount > 0
+					? options.labels.operateReady(values.auditEventCount)
+					: values.pendingApprovalCount > 0
+						? options.labels.operatePending(values.pendingApprovalCount)
+						: options.labels.operateEmpty,
+			state:
+				values.auditEventCount > 0
+					? 'ready'
+					: values.hasSelectedRunAgent || values.pendingApprovalCount > 0
+						? 'partial'
+						: 'todo',
+		},
+	];
+
+	return steps.map((step) => ({
+		key: step.key,
+		title: options.labels.title(step.key),
+		description: options.labels.description(step.key),
+		detail: step.detail,
+		state: step.state,
+		icon: options.icons[step.key],
+		onClick: options.actions[step.key],
+		actionLabel: options.labels.action(step.key),
+	}));
+}
+
+export function orchestrationPrimaryStepForSteps(steps: OrchestrationWorkbenchStep[]) {
+	return (
+		steps.find((step) => step.state === 'blocked') ??
+		steps.find((step) => step.state === 'todo') ??
+		steps.find((step) => step.state === 'partial') ??
+		steps[steps.length - 1]
+	);
 }
 
 export function workbenchIndicatorsForStatus(

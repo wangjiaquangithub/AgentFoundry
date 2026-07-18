@@ -71,7 +71,6 @@ import type { MonitoringAgentTurn } from './components/MonitoringSnapshotPanel';
 import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
 import { MemoryViewPage } from './components/MemoryViewPage';
 import type { MemberFormState } from './components/MembersPanel';
-import type { OrchestrationWorkbenchStep } from './components/OrchestrationWorkbenchPanel';
 import { RunsViewPage } from './components/RunsViewPage';
 import type { RuntimeStatusItem } from './components/RuntimeStatusPanel';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
@@ -115,6 +114,8 @@ import {
 	governanceHealthItemsForSummary,
 	monitoringStatsForSummary,
 	operationsHeadlineText,
+	orchestrationPrimaryStepForSteps,
+	orchestrationWorkbenchStepsForStatus,
 	pendingWorkflowRunApprovals,
 	platformMemberTenantSummariesForMembers,
 	platformConsoleItemsForDisplay,
@@ -3984,129 +3985,86 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	);
 	const firstAgentGuidePrimaryStep =
 		firstAgentGuidePrimaryStepForSteps(firstAgentGuideSteps);
-	const orchestrationWorkbenchSteps = [
+	const orchestrationWorkbenchSteps = orchestrationWorkbenchStepsForStatus(
 		{
-			key: 'template',
-			title: t('platform.orchestration.template.title'),
-			description: t('platform.orchestration.template.description'),
-			detail: selectedTemplate
-				? selectedTemplate.name
-				: t('platform.orchestration.template.empty'),
-			state: agentSetupSteps[0].state,
-			icon: ListChecks,
-			onClick: handleStartPublishing,
-			actionLabel: t('platform.orchestration.template.action'),
+			selectedTemplateName: selectedTemplate?.name,
+			credentialCount: credentials.length,
+			selectedKnowledgeBaseCount: publishForm.knowledge_base_ids.length,
+			knowledgeBaseCount: knowledgeBases.length,
+			selectedToolCount: publishForm.tools.length,
+			availableToolCount: availableToolItems.length,
+			allowedUserCount: publishForm.allowed_user_ids.length,
+			allowedRoleCount: publishForm.allowed_roles.length,
+			activeAgentCount: activePlatformAgents.length,
+			hasSelectedTemplate: Boolean(selectedTemplate),
+			auditEventCount,
+			pendingApprovalCount: pendingApprovals.length,
+			hasSelectedRunAgent: Boolean(selectedRunAgent),
+			setupStates: {
+				template: agentSetupSteps[0].state,
+				model: agentSetupSteps[1].state,
+				knowledge: agentSetupSteps[2].state,
+				tools: agentSetupSteps[3].state,
+				policy: agentSetupSteps[4].state,
+			},
 		},
 		{
-			key: 'model',
-			title: t('platform.orchestration.model.title'),
-			description: t('platform.orchestration.model.description'),
-			detail:
-				credentials.length > 0
-					? t('platform.orchestration.model.ready', { count: credentials.length })
-					: t('platform.orchestration.model.empty'),
-			state: credentials.length > 0 ? agentSetupSteps[1].state : 'blocked',
-			icon: KeyRound,
-			onClick: () => navigate('/credential'),
-			actionLabel: t('platform.orchestration.model.action'),
+			icons: {
+				template: ListChecks,
+				model: KeyRound,
+				knowledge: LibraryBig,
+				tools: Boxes,
+				policy: ShieldCheck,
+				publish: BotMessageSquare,
+				operate: Workflow,
+			},
+			actions: {
+				template: handleStartPublishing,
+				model: () => navigate('/credential'),
+				knowledge:
+					knowledgeBases.length === 0
+						? () => navigate('/knowledge')
+						: handleNextAgentSetupStep,
+				tools: handleNextAgentSetupStep,
+				policy: handleNextAgentSetupStep,
+				publish: handleStartPublishing,
+				operate: selectedRunAgent ? scrollToAgentRunner : scrollToWorkflowRunner,
+			},
+			labels: {
+				title: (key) => t(`platform.orchestration.${key}.title`),
+				description: (key) => t(`platform.orchestration.${key}.description`),
+				action: (key) => t(`platform.orchestration.${key}.action`),
+				templateEmpty: t('platform.orchestration.template.empty'),
+				modelReady: (count) => t('platform.orchestration.model.ready', { count }),
+				modelEmpty: t('platform.orchestration.model.empty'),
+				selectedKnowledge: (count) =>
+					t('platform.agentManagement.selectedKnowledge', { count }),
+				knowledgeReady: (count) =>
+					t('platform.orchestration.knowledge.ready', { count }),
+				toolsSelected: (count) =>
+					t('platform.agentManagement.wizard.toolsSelected', { count }),
+				toolsReady: (count) => t('platform.orchestration.tools.ready', { count }),
+				policyDetail: (counts) =>
+					t('platform.orchestration.policy.detail', {
+						users: counts.users,
+						roles: counts.roles,
+					}),
+				publishReady: (count) =>
+					t('platform.orchestration.publish.ready', { count }),
+				publishEmpty: t('platform.orchestration.publish.empty'),
+				operateReady: (count) =>
+					t('platform.orchestration.operate.ready', { count }),
+				operatePending: (count) =>
+					t('platform.orchestration.operate.pending', { count }),
+				operateEmpty: t('platform.orchestration.operate.empty'),
+			},
 		},
-		{
-			key: 'knowledge',
-			title: t('platform.orchestration.knowledge.title'),
-			description: t('platform.orchestration.knowledge.description'),
-			detail:
-				publishForm.knowledge_base_ids.length > 0
-					? t('platform.agentManagement.selectedKnowledge', {
-							count: publishForm.knowledge_base_ids.length,
-						})
-					: t('platform.orchestration.knowledge.ready', {
-							count: knowledgeBases.length,
-						}),
-			state: agentSetupSteps[2].state,
-			icon: LibraryBig,
-			onClick:
-				knowledgeBases.length === 0
-					? () => navigate('/knowledge')
-					: handleNextAgentSetupStep,
-			actionLabel: t('platform.orchestration.knowledge.action'),
-		},
-		{
-			key: 'tools',
-			title: t('platform.orchestration.tools.title'),
-			description: t('platform.orchestration.tools.description'),
-			detail:
-				publishForm.tools.length > 0
-					? t('platform.agentManagement.wizard.toolsSelected', {
-							count: publishForm.tools.length,
-						})
-					: t('platform.orchestration.tools.ready', {
-							count: availableToolItems.length,
-						}),
-			state: agentSetupSteps[3].state,
-			icon: Boxes,
-			onClick: handleNextAgentSetupStep,
-			actionLabel: t('platform.orchestration.tools.action'),
-		},
-		{
-			key: 'policy',
-			title: t('platform.orchestration.policy.title'),
-			description: t('platform.orchestration.policy.description'),
-			detail: t('platform.orchestration.policy.detail', {
-				users: publishForm.allowed_user_ids.length,
-				roles: publishForm.allowed_roles.length,
-			}),
-			state: agentSetupSteps[4].state,
-			icon: ShieldCheck,
-			onClick: handleNextAgentSetupStep,
-			actionLabel: t('platform.orchestration.policy.action'),
-		},
-		{
-			key: 'publish',
-			title: t('platform.orchestration.publish.title'),
-			description: t('platform.orchestration.publish.description'),
-			detail:
-				activePlatformAgents.length > 0
-					? t('platform.orchestration.publish.ready', {
-							count: activePlatformAgents.length,
-						})
-					: t('platform.orchestration.publish.empty'),
-			state:
-				activePlatformAgents.length > 0 ? 'ready' : selectedTemplate ? 'todo' : 'blocked',
-			icon: BotMessageSquare,
-			onClick: handleStartPublishing,
-			actionLabel: t('platform.orchestration.publish.action'),
-		},
-		{
-			key: 'operate',
-			title: t('platform.orchestration.operate.title'),
-			description: t('platform.orchestration.operate.description'),
-			detail:
-				auditEventCount > 0
-					? t('platform.orchestration.operate.ready', { count: auditEventCount })
-					: pendingApprovals.length > 0
-						? t('platform.orchestration.operate.pending', {
-								count: pendingApprovals.length,
-							})
-						: t('platform.orchestration.operate.empty'),
-			state:
-				auditEventCount > 0
-					? 'ready'
-					: selectedRunAgent || pendingApprovals.length > 0
-						? 'partial'
-						: 'todo',
-			icon: Workflow,
-			onClick: selectedRunAgent ? scrollToAgentRunner : scrollToWorkflowRunner,
-			actionLabel: t('platform.orchestration.operate.action'),
-		},
-	] satisfies OrchestrationWorkbenchStep[];
+	);
 	const orchestrationReadyCount = orchestrationWorkbenchSteps.filter(
 		(step) => step.state === 'ready',
 	).length;
 	const orchestrationPrimaryStep =
-		orchestrationWorkbenchSteps.find((step) => step.state === 'blocked') ??
-		orchestrationWorkbenchSteps.find((step) => step.state === 'todo') ??
-		orchestrationWorkbenchSteps.find((step) => step.state === 'partial') ??
-		orchestrationWorkbenchSteps[orchestrationWorkbenchSteps.length - 1];
+		orchestrationPrimaryStepForSteps(orchestrationWorkbenchSteps);
 	const recentAgentTurns = Object.values(agentConversations)
 		.flat()
 		.sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
