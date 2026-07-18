@@ -97,6 +97,7 @@ import {
 import {
 	agentReleasePipelineLabels,
 	agentRoutingLabels,
+	agentSetupStepLabels,
 	appCenterAgentDisplayLabels,
 	appCenterDetailHealthLabels,
 	appCenterDetailResourcesLabels,
@@ -458,27 +459,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				runtime: agentRuntimeStepRef,
 			},
 		},
-		{
-			templateTitle: t('platform.agentManagement.wizard.template'),
-			templateMissing: t('platform.agentManagement.wizard.templateMissing'),
-			modelTitle: t('platform.agentManagement.wizard.model'),
-			modelMissing: t('platform.agentManagement.wizard.modelMissing'),
-			noModel: t('platform.agentManagement.noModel'),
-			knowledgeTitle: t('platform.agentManagement.wizard.knowledge'),
-			selectedKnowledge: (count) =>
-				t('platform.agentManagement.selectedKnowledge', { count }),
-			knowledgeMissing: t('platform.agentManagement.wizard.knowledgeMissing'),
-			noKnowledge: t('platform.agentManagement.noKnowledge'),
-			toolsTitle: t('platform.agentManagement.wizard.tools'),
-			toolsSelected: (count) =>
-				t('platform.agentManagement.wizard.toolsSelected', { count }),
-			toolsMissing: t('platform.agentManagement.wizard.toolsMissing'),
-			runtimeTitle: t('platform.agentManagement.wizard.runtime'),
-			runtimeDetail: (values) =>
-				t('platform.agentManagement.wizard.runtimeDetail', values),
-			enabled: t('platform.agentManagement.enabled'),
-			disabled: t('platform.agentManagement.disabled'),
-		},
+		agentSetupStepLabels(t),
 	);
 	const nextAgentSetupStep = nextAgentSetupStepForSteps(agentSetupSteps);
 	const primaryAgentSampleQuestion = agentSampleQuestions[0];
