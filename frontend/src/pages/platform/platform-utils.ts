@@ -5,9 +5,11 @@ import type {
 	EnterpriseIdentity,
 	EnterprisePlatformGovernanceResponse,
 	EnterprisePublishedAgent,
+	EnterpriseWorkflowTemplate,
 } from '@/api';
 import type { AccessControlStat } from './components/AccessControlPanel';
 import type { GovernanceHealthItem } from './components/GovernanceHealthPanel';
+import type { WorkflowOpsStat } from './components/WorkflowOpsPanel';
 import type { HealthState } from './components/common';
 
 export const defaultEnterpriseWorkflowInputs: Record<string, string> = {
@@ -723,6 +725,56 @@ export function governanceHealthItemsForSummary(
 			icon: icons.auditEvents,
 		},
 	] satisfies GovernanceHealthItem[];
+}
+
+export function pendingWorkflowRunApprovals(
+	approvals: EnterpriseApprovalRequestItem[],
+): EnterpriseApprovalRequestItem[] {
+	return approvals.filter((approval) => approval.request_type === 'workflow_run');
+}
+
+export function enabledEnterpriseWorkflowTemplates(
+	templates: EnterpriseWorkflowTemplate[],
+): EnterpriseWorkflowTemplate[] {
+	return templates.filter((template) => template.enabled);
+}
+
+export function workflowOpsStatsForSummary(
+	values: {
+		workflowTemplateCount: number;
+		workflowOptionCount: number;
+		enabledWorkflowTemplateCount: number;
+		workflowRunCount: number;
+		workflowPendingApprovalCount: number;
+	},
+	labels: {
+		templates: string;
+		enabled: string;
+		runs: string;
+		approvals: string;
+	},
+): WorkflowOpsStat[] {
+	return [
+		{
+			label: labels.templates,
+			value: values.workflowTemplateCount || values.workflowOptionCount,
+		},
+		{
+			label: labels.enabled,
+			value:
+				values.workflowTemplateCount > 0
+					? values.enabledWorkflowTemplateCount
+					: values.workflowOptionCount,
+		},
+		{
+			label: labels.runs,
+			value: values.workflowRunCount,
+		},
+		{
+			label: labels.approvals,
+			value: values.workflowPendingApprovalCount,
+		},
+	];
 }
 
 export function templateDetailIssues(

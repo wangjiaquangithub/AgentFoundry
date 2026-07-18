@@ -120,13 +120,16 @@ import {
 	appCenterSelectionState,
 	appCenterTemplateDetailResourceValues,
 	defaultEnterpriseWorkflowInputs,
+	enabledEnterpriseWorkflowTemplates,
 	formatOperationsAgentIssueText,
 	knowledgeBaseLabels,
 	modelCredentialLabel,
 	normalizeWorkflowInputs,
 	governanceHealthItemsForSummary,
 	operationsHeadlineText,
+	pendingWorkflowRunApprovals,
 	topOperationsAgentsForDisplay,
+	workflowOpsStatsForSummary,
 } from './platform-utils';
 
 export type PlatformView =
@@ -1579,12 +1582,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			auditEvents: FileClock,
 		},
 	);
-	const workflowPendingApprovals = pendingApprovals.filter(
-		(approval) => approval.request_type === 'workflow_run',
-	);
-	const enabledWorkflowTemplates = workflowTemplates.filter(
-		(template) => template.enabled,
-	);
+	const workflowPendingApprovals = pendingWorkflowRunApprovals(pendingApprovals);
+	const enabledWorkflowTemplates = enabledEnterpriseWorkflowTemplates(workflowTemplates);
 	const selectedWorkflowOption = workflowOptions.find(
 		(workflow) => workflow.value === selectedWorkflowType,
 	);
@@ -1597,27 +1596,21 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		recentWorkflowRuns.find((run) => run.workflow_type === selectedWorkflowType) ??
 		recentWorkflowRuns[0] ??
 		null;
-	const workflowOpsStats = [
+	const workflowOpsStats = workflowOpsStatsForSummary(
 		{
-			label: t('platform.workflowOps.templates'),
-			value: workflowTemplates.length || workflowOptions.length,
+			workflowTemplateCount: workflowTemplates.length,
+			workflowOptionCount: workflowOptions.length,
+			enabledWorkflowTemplateCount: enabledWorkflowTemplates.length,
+			workflowRunCount,
+			workflowPendingApprovalCount: workflowPendingApprovals.length,
 		},
 		{
-			label: t('platform.workflowOps.enabled'),
-			value:
-				workflowTemplates.length > 0
-					? enabledWorkflowTemplates.length
-					: workflowOptions.length,
+			templates: t('platform.workflowOps.templates'),
+			enabled: t('platform.workflowOps.enabled'),
+			runs: t('platform.workflowOps.runs'),
+			approvals: t('platform.workflowOps.approvals'),
 		},
-		{
-			label: t('platform.workflowOps.runs'),
-			value: workflowRunCount,
-		},
-		{
-			label: t('platform.workflowOps.approvals'),
-			value: workflowPendingApprovals.length,
-		},
-	];
+	);
 	const enabledSchedules = schedules.filter((schedule) => schedule.data.enabled);
 	const agentSourceSchedules = schedules.filter((schedule) => schedule.data.source === 'AGENT');
 	const userSourceSchedules = schedules.filter((schedule) => schedule.data.source === 'USER');
