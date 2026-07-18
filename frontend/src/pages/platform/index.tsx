@@ -94,6 +94,12 @@ import {
 	workbenchQuickActionIcons,
 	workbenchReadinessIcons,
 } from './platform-icons';
+import {
+	agentRoutingLabels,
+	platformOverviewStatLabels,
+	runtimeStatusLabels,
+	selectedToolRunnerLabels,
+} from './platform-labels';
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
 	buildAgentConfigurationPayloadFromForm,
@@ -570,10 +576,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 		{
 			icons: platformOverviewStatIcons,
-			labels: {
-				label: (key) => t(`platform.stats.${key}`),
-				helper: (key) => t(`platform.stats.${key}Helper`),
-			},
+			labels: platformOverviewStatLabels(t),
 		},
 	);
 
@@ -584,12 +587,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 		{
 			icons: runtimeStatusIcons,
-			labels: {
-				label: (key) => t(`platform.runtime.${key}`),
-				unavailable: t('platform.runtime.unavailable'),
-				enabled: t('platform.runtime.enabled'),
-				disabled: t('platform.runtime.disabled'),
-			},
+			labels: runtimeStatusLabels(t),
 		},
 	);
 
@@ -609,9 +607,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		toolInputs,
 		toolInputConfig: enterpriseToolInputConfig,
 		policyDecisions,
-		labels: {
-			notConfiguredForAgent: t('platform.toolRunner.notConfiguredForAgent'),
-		},
+		labels: selectedToolRunnerLabels(t),
 	});
 	const selectedToolCatalogItem = selectedToolRunnerState.selectedToolCatalogItem;
 	const selectedToolConfig = selectedToolRunnerState.selectedToolConfig;
@@ -622,10 +618,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const selectedToolReason = selectedToolRunnerState.selectedToolReason;
 	const { agentRoutingLabel, agentRoutingText } = agentRoutingDisplayStateForResult(
 		agentRunResult,
-		{
-			model: t('platform.agentRunner.routingModel'),
-			rules: t('platform.agentRunner.routingRules'),
-		},
+		agentRoutingLabels(t),
 	);
 	const connectorOperationsState = connectorOperationsStateForStatus({
 		connectors,
