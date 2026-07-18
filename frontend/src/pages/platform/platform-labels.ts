@@ -158,3 +158,15 @@ export const auditStatsLabels = (t: PlatformTranslate) => ({
 	failures: t('platform.audit.summaryFailures'),
 	avgDuration: t('platform.audit.summaryAvgDuration'),
 });
+
+export const launchpadStepLabels = (t: PlatformTranslate) => ({
+	title: (key: string) => t(`platform.launchpad.${key}.title`),
+	description: (key: string) => t(`platform.launchpad.${key}.description`),
+	action: (key: string) => t(`platform.launchpad.${key}.action`),
+});
+
+export const platformConsoleItemLabels = (t: PlatformTranslate) => ({
+	title: (key: string) => t(`platform.console.${key}`),
+	description: (key: string) => t(`platform.console.${key}Description`),
+	action: (key: string) => t(`platform.console.${key}Action`),
+});

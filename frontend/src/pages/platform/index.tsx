@@ -106,6 +106,8 @@ import {
 	connectorOperationsLabels,
 	dashboardTodoLabels,
 	operationsHeadlineLabels,
+	launchpadStepLabels,
+	platformConsoleItemLabels,
 	platformOverviewStatLabels,
 	runtimeStatusLabels,
 	selectedToolRunnerLabels,
@@ -2830,11 +2832,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			icons: launchpadStepIcons,
 			actions: launchpadTargetActions,
 			fallbackAction: scrollToGovernance,
-			labels: {
-				title: (key) => t(`platform.launchpad.${key}.title`),
-				description: (key) => t(`platform.launchpad.${key}.description`),
-				action: (key) => t(`platform.launchpad.${key}.action`),
-			},
+			labels: launchpadStepLabels(t),
 		},
 	);
 	const launchpadReadyCount = readyLaunchpadStepCountForSteps(launchpadSteps);
@@ -2848,11 +2846,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const platformConsoleItems = platformConsoleItemsForDisplay({
 		icons: platformConsoleIcons,
 		actions: platformConsoleNavigationActions(platformNavigationHandlers),
-		labels: {
-			title: (key) => t(`platform.console.${key}`),
-			description: (key) => t(`platform.console.${key}Description`),
-			action: (key) => t(`platform.console.${key}Action`),
-		},
+		labels: platformConsoleItemLabels(t),
 	});
 	const workbenchIndicators = workbenchIndicatorsForStatus(
 		{
