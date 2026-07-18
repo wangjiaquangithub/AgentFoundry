@@ -128,6 +128,7 @@ import {
 	workbenchReadinessLabels,
 	workbenchRiskLabels,
 	workflowOperationsLabels,
+	workflowSelectionLabels,
 } from './platform-labels';
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
@@ -635,7 +636,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const connectorRuntimeSourceText = connectorOperationsState.connectorRuntimeSourceText;
 	const workflowSelectionState = workflowSelectionStateForTemplates(
 		{ workflowTemplates, selectedWorkflowType },
-		{ fallbackLabel: (labelKey) => t(`platform.workflowRunner.${labelKey}`) },
+		workflowSelectionLabels(t),
 	);
 	const selectedWorkflowTemplate = workflowSelectionState.selectedWorkflowTemplate;
 	const workflowOptions = workflowSelectionState.workflowOptions;
