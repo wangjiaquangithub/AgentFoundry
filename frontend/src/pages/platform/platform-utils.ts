@@ -175,6 +175,17 @@ export function formatAgentRuntimeLabel(
 	});
 }
 
+export function templateDetailIssues(
+	hasCredentials: boolean,
+	hasKnowledgeBases: boolean,
+	labels: { missingModel: string; missingKnowledge: string },
+) {
+	return [
+		hasCredentials ? null : labels.missingModel,
+		hasKnowledgeBases ? null : labels.missingKnowledge,
+	].filter(Boolean) as string[];
+}
+
 export function agentRunnerAccessLabelKey(
 	agent:
 		| { allowed_user_ids?: string[] | null; allowed_roles?: string[] | null }

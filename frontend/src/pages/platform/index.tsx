@@ -119,6 +119,7 @@ import {
 	modelCredentialLabel,
 	normalizeWorkflowInputs,
 	resourceListLabel,
+	templateDetailIssues,
 } from './platform-utils';
 
 export type PlatformView =
@@ -1454,10 +1455,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const appCenterDetailIssues = inspectedAppCenterAgent
 		? inspectedAppCenterAgentIssues
 		: inspectedAppCenterTemplate
-			? [
-					credentials.length === 0 ? t('platform.dashboard.todoModel') : null,
-					knowledgeBases.length === 0 ? t('platform.agentManagement.noKnowledge') : null,
-				].filter(Boolean) as string[]
+			? templateDetailIssues(credentials.length > 0, knowledgeBases.length > 0, {
+					missingModel: t('platform.dashboard.todoModel'),
+					missingKnowledge: t('platform.agentManagement.noKnowledge'),
+				})
 			: [];
 	const appCenterDetailStatus: HealthState = inspectedAppCenterAgent
 		? inspectedAppCenterAgentReadiness
