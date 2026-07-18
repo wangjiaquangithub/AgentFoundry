@@ -628,25 +628,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		publishTenant,
 		publishAccessMembers,
 		publishRoleOptions,
-	} = useMemo(
-		() =>
-			publishAccessStateForStatus({
-				tenant: publishForm.tenant,
-				currentUserTenant: platformStatus?.current_user.tenant,
-				members: platformMembers?.members ?? [],
-				configuredRoles: platformMembers?.roles ?? [],
-				allowedUserIds: publishForm.allowed_user_ids,
-				allowedRoles: publishForm.allowed_roles,
-			}),
-		[
-			platformMembers?.members,
-			platformMembers?.roles,
-			platformStatus?.current_user.tenant,
-			publishForm.allowed_roles,
-			publishForm.allowed_user_ids,
-			publishForm.tenant,
-		],
-	);
+	} = publishAccessStateForStatus({
+		tenant: publishForm.tenant,
+		currentUserTenant: platformStatus?.current_user.tenant,
+		members: platformMembers?.members ?? [],
+		configuredRoles: platformMembers?.roles ?? [],
+		allowedUserIds: publishForm.allowed_user_ids,
+		allowedRoles: publishForm.allowed_roles,
+	});
 	const {
 		publishSelectedModelLabel,
 		publishAccessScopeSummary,
