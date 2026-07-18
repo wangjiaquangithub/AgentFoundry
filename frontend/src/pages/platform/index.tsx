@@ -85,6 +85,17 @@ import {
 	auditFiltersForTenant,
 	failedAuditFiltersForIdentity,
 } from './platform-filter-builders';
+import {
+	firstAgentGuideNavigationActions,
+	launchpadNavigationActions,
+	platformConsoleNavigationActions,
+	rolloutPathNavigationActions,
+	workbenchIndicatorNavigationActions,
+	workbenchPrimaryNavigationActions,
+	workbenchQuickNavigationActions,
+	workbenchReadinessNavigationActions,
+	workbenchRiskNavigationActions,
+} from './platform-navigation-actions';
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
 	buildAgentConfigurationPayloadFromForm,
@@ -2943,18 +2954,22 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	});
 
-	const launchpadTargetActions = launchpadTargetActionsForNavigation({
-		members: scrollToMembers,
-		credentials: () => navigate('/credential'),
-		agents: handleStartPublishing,
-		knowledge: () => navigate('/knowledge'),
-		run: scrollToAgentRunner,
-		tools: scrollToToolRunner,
-		memory: scrollToMemoryOperations,
-		connectors: scrollToConnectorCenter,
-		governance: scrollToGovernance,
-		workflows: scrollToWorkflowRunner,
-	});
+	const platformNavigationHandlers = {
+		navigate,
+		handleStartPublishing,
+		handleQuickPublishAgent,
+		scrollToAgentRunner,
+		scrollToConfigManagement,
+		scrollToConnectorCenter,
+		scrollToGovernance,
+		scrollToMemoryOperations,
+		scrollToMembers,
+		scrollToToolRunner,
+		scrollToWorkflowRunner,
+	};
+	const launchpadTargetActions = launchpadTargetActionsForNavigation(
+		launchpadNavigationActions(platformNavigationHandlers),
+	);
 	const activeMemberCount =
 		activePlatformMemberCountForMembers(platformMembers?.members ?? []);
 	const launchpadSteps = launchpadStepsForStatus(
@@ -3002,12 +3017,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			run: Play,
 			governance: ShieldCheck,
 		},
-		actions: {
-			agents: handleStartPublishing,
-			resources: scrollToConnectorCenter,
-			run: scrollToAgentRunner,
-			governance: scrollToGovernance,
-		},
+		actions: platformConsoleNavigationActions(platformNavigationHandlers),
 		labels: {
 			title: (key) => t(`platform.console.${key}`),
 			description: (key) => t(`platform.console.${key}Description`),
@@ -3032,12 +3042,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				workflows: Workflow,
 				memory: Brain,
 			},
-			actions: {
-				agents: scrollToAgentRunner,
-				approvals: scrollToGovernance,
-				workflows: scrollToWorkflowRunner,
-				memory: scrollToMemoryOperations,
-			},
+			actions: workbenchIndicatorNavigationActions(platformNavigationHandlers),
 			labels: {
 				readyAgents: t('platform.workbench.indicators.readyAgents'),
 				readyAgentsHelper: t('platform.workbench.indicators.readyAgentsHelper'),
@@ -3067,13 +3072,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				governance: ShieldCheck,
 				memory: Brain,
 			},
-			actions: {
-				run: scrollToAgentRunner,
-				publish: handleStartPublishing,
-				workflow: scrollToWorkflowRunner,
-				governance: scrollToGovernance,
-				memory: scrollToMemoryOperations,
-			},
+			actions: workbenchPrimaryNavigationActions(platformNavigationHandlers),
 			labels: {
 				runTitle: t('platform.workbench.actions.run.title'),
 				runDescriptionReady: (agent) =>
@@ -3117,14 +3116,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				agents: BotMessageSquare,
 				workflows: Workflow,
 			},
-			actions: {
-				credentials: () => navigate('/credential'),
-				knowledge: () => navigate('/knowledge'),
-				connectors: scrollToConnectorCenter,
-				members: scrollToMembers,
-				agents: handleStartPublishing,
-				workflows: scrollToWorkflowRunner,
-			},
+			actions: workbenchReadinessNavigationActions(platformNavigationHandlers),
 			labels: {
 				title: (key) => t(`platform.workbench.readiness.${key}.title`),
 				modelDescription: (count) =>
@@ -3151,12 +3143,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			readyAgentCount: readyPlatformAgents.length,
 		},
 		{
-			actions: {
-				governance: scrollToGovernance,
-				connectors: scrollToConnectorCenter,
-				workflows: scrollToWorkflowRunner,
-				agents: handleStartPublishing,
-			},
+			actions: workbenchRiskNavigationActions(platformNavigationHandlers),
 			labels: {
 				errors: t('platform.workbench.risks.errors'),
 				connectorDraft: (count) =>
@@ -3177,14 +3164,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			governance: ShieldCheck,
 			tools: Boxes,
 		},
-		actions: {
-			connectors: scrollToConnectorCenter,
-			publish: handleStartPublishing,
-			run: scrollToAgentRunner,
-			workflow: scrollToWorkflowRunner,
-			governance: scrollToGovernance,
-			tools: scrollToToolRunner,
-		},
+		actions: workbenchQuickNavigationActions(platformNavigationHandlers),
 		labels: {
 			connectors: t('platform.workbench.quickActions.connectors'),
 			publish: t('platform.workbench.quickActions.publish'),
@@ -3215,14 +3195,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				governance: ShieldCheck,
 				config: Upload,
 			},
-			actions: {
-				model: () => navigate('/credential'),
-				knowledge: () => navigate('/knowledge'),
-				agent: handleStartPublishing,
-				run: scrollToAgentRunner,
-				governance: scrollToGovernance,
-				config: scrollToConfigManagement,
-			},
+			actions: rolloutPathNavigationActions(platformNavigationHandlers),
 			labels: {
 				title: (key) => t(`platform.workbench.rolloutPath.steps.${key}.title`),
 				description: (key) =>
@@ -3248,12 +3221,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				run: Play,
 				governance: ShieldCheck,
 			},
-			actions: {
-				model: () => navigate('/credential'),
-				agent: () => void handleQuickPublishAgent(),
-				run: scrollToAgentRunner,
-				governance: scrollToGovernance,
-			},
+			actions: firstAgentGuideNavigationActions(platformNavigationHandlers),
 			labels: {
 				title: (key) => t(`platform.workbench.firstAgentGuide.steps.${key}.title`),
 				action: (key) => t(`platform.workbench.firstAgentGuide.steps.${key}.action`),
