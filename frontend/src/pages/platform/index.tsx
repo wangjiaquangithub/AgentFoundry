@@ -20,7 +20,7 @@ import {
 	Workflow,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {
@@ -808,32 +808,19 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		workflowRuns,
 		auditEvents,
 	});
-	const tenantWorkspaceOperationsState = useMemo(
-		() =>
-			tenantWorkspaceOperationsStateForStatus(
-				{
-					connectors,
-					enterpriseIdentities,
-					activePlatformAgents,
-					pendingApprovals,
-					auditEvents,
-					workflowRuns,
-					members: platformMembers?.members ?? [],
-				},
-				{
-					localSource: t('platform.tenantWorkspace.localSource'),
-				},
-			),
-		[
-			activePlatformAgents,
-			auditEvents,
+	const tenantWorkspaceOperationsState = tenantWorkspaceOperationsStateForStatus(
+		{
 			connectors,
 			enterpriseIdentities,
+			activePlatformAgents,
 			pendingApprovals,
-			t,
+			auditEvents,
 			workflowRuns,
-			platformMembers?.members,
-		],
+			members: platformMembers?.members ?? [],
+		},
+		{
+			localSource: t('platform.tenantWorkspace.localSource'),
+		},
 	);
 	const tenantWorkspaces = tenantWorkspaceOperationsState.tenantWorkspaces;
 	const tenantOverviewItems = tenantWorkspaceOperationsState.tenantOverviewItems;
