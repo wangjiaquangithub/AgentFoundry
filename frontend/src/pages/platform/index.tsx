@@ -105,6 +105,10 @@ import {
 	type AppCenterSelection,
 } from './components/AppCenterPanel';
 import { FirstAgentGuide, type FirstAgentGuideStep } from './components/FirstAgentGuide';
+import {
+	GovernanceHealthPanel,
+	type GovernanceHealthItem,
+} from './components/GovernanceHealthPanel';
 import { LaunchpadPanel, type LaunchpadStep } from './components/LaunchpadPanel';
 import {
 	MonitoringSnapshotPanel,
@@ -1995,13 +1999,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 						: 'todo',
 			icon: FileClock,
 		},
-	] satisfies Array<{
-		label: string;
-		value: number;
-		helper: string;
-		state: HealthState;
-		icon: ComponentType<{ className?: string }>;
-	}>;
+	] satisfies GovernanceHealthItem[];
 	const workflowPendingApprovals = pendingApprovals.filter(
 		(approval) => approval.request_type === 'workflow_run',
 	);
@@ -8058,72 +8056,21 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					}}
 				/>
 
-				<section className="grid gap-4 rounded-lg border bg-background p-4">
-					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-						<div className="min-w-0">
-							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-								<ShieldCheck className="size-4" />
-								<span>{t('platform.governanceHealth.eyebrow')}</span>
-							</div>
-							<h2 className="text-base font-semibold">
-								{t('platform.governanceHealth.title')}
-							</h2>
-							<p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-								{t('platform.governanceHealth.description')}
-							</p>
-						</div>
-						<div className="flex flex-wrap gap-2 lg:justify-end">
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={() => void refetchGovernance()}
-								disabled={governanceLoading}
-							>
-								<RefreshCcw className={cn('size-4', governanceLoading && 'animate-spin')} />
-								{t('platform.governanceHealth.refresh')}
-							</Button>
-							<Button type="button" size="sm" onClick={scrollToGovernance}>
-								<ArrowRight className="size-4" />
-								{t('platform.governanceHealth.openDetails')}
-							</Button>
-						</div>
-					</div>
-
-					{governanceError ? <PlatformNotice>{governanceError}</PlatformNotice> : null}
-
-					<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-						{governanceHealthItems.map((item) => {
-							const Icon = item.icon;
-							return (
-								<div key={item.label} className="rounded-lg border bg-muted/20 p-3">
-									<div className="flex items-start justify-between gap-3">
-										<div className="min-w-0">
-											<div className="text-xs text-muted-foreground">
-												{item.label}
-											</div>
-											<div className="mt-1 text-2xl font-semibold tabular-nums">
-												{item.value}
-											</div>
-										</div>
-										<div className="rounded-md border bg-background p-2 text-muted-foreground">
-											<Icon className="size-4" />
-										</div>
-									</div>
-									<div className="mt-3 flex items-center justify-between gap-3">
-										<p className="min-w-0 text-xs leading-5 text-muted-foreground">
-											{item.helper}
-										</p>
-										<StateBadge
-											state={item.state}
-											label={t(`platform.launchpad.${item.state}`)}
-										/>
-									</div>
-								</div>
-							);
-						})}
-					</div>
-				</section>
+				<GovernanceHealthPanel
+					items={governanceHealthItems}
+					error={governanceError}
+					loading={governanceLoading}
+					onRefresh={() => void refetchGovernance()}
+					onOpenDetails={scrollToGovernance}
+					labels={{
+						eyebrow: t('platform.governanceHealth.eyebrow'),
+						title: t('platform.governanceHealth.title'),
+						description: t('platform.governanceHealth.description'),
+						refresh: t('platform.governanceHealth.refresh'),
+						openDetails: t('platform.governanceHealth.openDetails'),
+						stateLabel: (state) => t(`platform.launchpad.${state}`),
+					}}
+				/>
 
 				<section className="grid gap-4 rounded-lg border bg-background p-4">
 					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
