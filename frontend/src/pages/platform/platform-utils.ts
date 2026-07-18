@@ -7,11 +7,13 @@ import type {
 	EnterpriseIdentity,
 	EnterprisePlatformGovernanceResponse,
 	EnterprisePublishedAgent,
+	EnterpriseToolCatalogItem,
 	EnterpriseWorkflowTemplate,
 	ScheduleRecord,
 } from '@/api';
 import type { AccessControlStat } from './components/AccessControlPanel';
 import type { GovernanceHealthItem } from './components/GovernanceHealthPanel';
+import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
 import type { TriggerOpsStat } from './components/TriggerOpsPanel';
 import type { WorkflowOpsStat } from './components/WorkflowOpsPanel';
 import type { HealthState } from './components/common';
@@ -735,6 +737,28 @@ export function pendingWorkflowRunApprovals(
 	approvals: EnterpriseApprovalRequestItem[],
 ): EnterpriseApprovalRequestItem[] {
 	return approvals.filter((approval) => approval.request_type === 'workflow_run');
+}
+
+export function toolPolicySummaryForGovernance(
+	availableToolItems: EnterpriseToolCatalogItem[],
+	toolPolicyDraft: Record<string, ToolPolicyDraftValue>,
+	pendingToolNames: Set<string>,
+) {
+	const effectiveAllowed = availableToolItems.filter((tool) => tool.allowed).length;
+	const effectiveDenied = availableToolItems.length - effectiveAllowed;
+	const draftAllow = Object.values(toolPolicyDraft).filter((value) => value === 'allow').length;
+	const draftDeny = Object.values(toolPolicyDraft).filter((value) => value === 'deny').length;
+	const draftInherit = Math.max(availableToolItems.length - draftAllow - draftDeny, 0);
+	const pending = availableToolItems.filter((tool) => pendingToolNames.has(tool.name)).length;
+
+	return {
+		effectiveAllowed,
+		effectiveDenied,
+		draftAllow,
+		draftDeny,
+		draftInherit,
+		pending,
+	};
 }
 
 export function enabledEnterpriseWorkflowTemplates(

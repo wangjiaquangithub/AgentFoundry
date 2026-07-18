@@ -131,6 +131,7 @@ import {
 	pendingWorkflowRunApprovals,
 	recentTriggerSchedules,
 	topOperationsAgentsForDisplay,
+	toolPolicySummaryForGovernance,
 	triggerOpsStatsForSummary,
 	triggerOpsSummaryText,
 	triggerSchedulesBySource,
@@ -1505,23 +1506,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		[selectedIdentityPendingApprovals],
 	);
 	const toolPolicySummary = useMemo(() => {
-		const effectiveAllowed = availableToolItems.filter((tool) => tool.allowed).length;
-		const effectiveDenied = availableToolItems.length - effectiveAllowed;
-		const draftAllow = Object.values(toolPolicyDraft).filter((value) => value === 'allow').length;
-		const draftDeny = Object.values(toolPolicyDraft).filter((value) => value === 'deny').length;
-		const draftInherit = Math.max(availableToolItems.length - draftAllow - draftDeny, 0);
-		const pending = availableToolItems.filter((tool) =>
-			selectedIdentityPendingToolNames.has(tool.name),
-		).length;
-
-		return {
-			effectiveAllowed,
-			effectiveDenied,
-			draftAllow,
-			draftDeny,
-			draftInherit,
-			pending,
-		};
+		return toolPolicySummaryForGovernance(
+			availableToolItems,
+			toolPolicyDraft,
+			selectedIdentityPendingToolNames,
+		);
 	}, [availableToolItems, selectedIdentityPendingToolNames, toolPolicyDraft]);
 	const selectedIdentityFailedAuditEvents = selectedIdentity
 		? auditEvents.filter(
