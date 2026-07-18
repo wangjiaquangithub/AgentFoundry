@@ -3131,6 +3131,18 @@ export function dashboardFallbackStateForStatus(values: {
 	};
 }
 
+export function platformDashboardSourceStateForStatus(values: {
+	platformStatus?: EnterprisePlatformStatusResponse | null;
+}) {
+	const dashboard = values.platformStatus?.dashboard;
+
+	return {
+		dashboard,
+		dashboardOperations: dashboard?.operations,
+		dashboardRiskTools: dashboard?.risk_tools,
+	};
+}
+
 export function identityAccessRowsForGovernance(
 	enterpriseIdentities: EnterpriseIdentity[],
 	pendingApprovals: EnterpriseApprovalRequestItem[],

@@ -116,6 +116,7 @@ import {
 	orchestrationWorkbenchStepsForStatus,
 	publishAccessStateForStatus,
 	publishDraftStateForStatus,
+	platformDashboardSourceStateForStatus,
 	platformOverviewStatsForSummary,
 	platformAgentInventoryStateForStatus,
 	platformConsoleItemsForDisplay,
@@ -818,8 +819,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const selectedWorkflowTemplate = workflowSelectionState.selectedWorkflowTemplate;
 	const workflowOptions = workflowSelectionState.workflowOptions;
 	const selectedWorkflowDisabled = workflowSelectionState.selectedWorkflowDisabled;
-	const dashboard = platformStatus?.dashboard;
-	const dashboardOperations = dashboard?.operations;
+	const dashboardSourceState = platformDashboardSourceStateForStatus({ platformStatus });
+	const dashboard = dashboardSourceState.dashboard;
+	const dashboardOperations = dashboardSourceState.dashboardOperations;
+	const dashboardRiskTools = dashboardSourceState.dashboardRiskTools;
 	const {
 		pendingApprovals,
 		approvedApprovalCount,
@@ -878,7 +881,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const memoryOperationsSavedCount = memoryOperationsState.savedCount;
 	const dashboardOperationsState = dashboardOperationsStateForStatus({
 		dashboardOperations,
-		dashboardRiskTools: dashboard?.risk_tools,
+		dashboardRiskTools,
 		availableToolItems,
 	});
 	const riskToolItems = dashboardOperationsState.riskToolItems;
