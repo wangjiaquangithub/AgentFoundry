@@ -118,6 +118,7 @@ import {
 import { OpsTasksPanel } from './components/OpsTasksPanel';
 import { PlatformDashboardOverview } from './components/PlatformDashboardOverview';
 import { RolloutPath, type RolloutPathStep } from './components/RolloutPath';
+import { ScenariosPanel } from './components/ScenariosPanel';
 import {
 	WorkbenchReadinessPanel,
 	type WorkbenchQuickAction,
@@ -7956,137 +7957,38 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					}}
 				/>
 
-				<section className="grid gap-4 rounded-lg border bg-background p-4">
-					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-						<div className="min-w-0">
-							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-								<Workflow className="size-4" />
-								<span>{t('platform.scenarios.eyebrow')}</span>
-							</div>
-							<h2 className="text-base font-semibold">
-								{t('platform.scenarios.title')}
-							</h2>
-							<p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-								{t('platform.scenarios.description')}
-							</p>
-						</div>
-						<div className="flex flex-wrap gap-2 lg:justify-end">
-							<Badge variant="outline">
-								{t('platform.scenarios.total', { count: scenarios.length })}
-							</Badge>
-							<Badge variant="outline">
-								{t('platform.scenarios.readyCount', {
-									count: scenarios.filter((item) => item.status === 'ready').length,
-								})}
-							</Badge>
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={() => void refetchScenarios()}
-							>
-								<RefreshCcw className="size-4" />
-								{t('platform.scenarios.refresh')}
-							</Button>
-						</div>
-					</div>
-
-					{scenariosError ? (
-						<PlatformNotice>{scenariosError}</PlatformNotice>
-					) : null}
-
-					{scenariosLoading ? (
-						<div className="grid gap-3 md:grid-cols-3">
-							{[0, 1, 2].map((item) => (
-								<Skeleton key={item} className="h-48 rounded-lg" />
-							))}
-						</div>
-					) : scenarios.length === 0 ? (
-						<div className="rounded-lg border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground">
-							{t('platform.scenarios.empty')}
-						</div>
-					) : (
-						<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-							{scenarios.map((scenario) => {
-								const statusLabel =
-									scenario.status === 'ready'
-										? t('platform.scenarios.ready')
-										: scenario.status === 'partial'
-											? t('platform.scenarios.partial')
-											: t('platform.scenarios.blocked');
-								const lastRunLabel = scenario.last_run
-									? t('platform.scenarios.lastRun', {
-											status: scenario.last_run.status,
-											time: formatTimestamp(
-												scenario.last_run.finished_at ||
-													scenario.last_run.started_at,
-											),
-										})
-									: t('platform.scenarios.neverRun');
-
-								return (
-									<div
-										key={scenario.scenario_id}
-										className="grid content-between gap-4 rounded-lg border bg-muted/10 p-3"
-									>
-										<div className="grid gap-3">
-											<div className="flex items-start justify-between gap-3">
-												<div className="flex size-9 items-center justify-center rounded-lg border bg-background">
-													<Workflow className="size-4 text-muted-foreground" />
-												</div>
-												<StateBadge state={scenario.status} label={statusLabel} />
-											</div>
-											<div className="min-w-0">
-												<h3 className="text-sm font-medium">{scenario.name}</h3>
-												<p className="mt-1 line-clamp-3 text-xs leading-5 text-muted-foreground">
-													{scenario.description}
-												</p>
-											</div>
-											<div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-												<Badge variant="outline">
-													{t('platform.scenarios.toolCount', {
-														count: scenario.tools.length,
-													})}
-												</Badge>
-												<Badge variant="outline">
-													{t('platform.scenarios.runCount', {
-														count: scenario.run_count,
-													})}
-												</Badge>
-												<Badge variant="outline">
-													{scenario.approval_required
-														? t('platform.scenarios.approvalRequired')
-														: t('platform.scenarios.noApproval')}
-												</Badge>
-												{scenario.pending_approval_count > 0 ? (
-													<Badge variant="outline">
-														{t('platform.scenarios.pendingApprovals', {
-															count: scenario.pending_approval_count,
-														})}
-													</Badge>
-												) : null}
-											</div>
-											<p className="text-xs text-muted-foreground">
-												{lastRunLabel}
-											</p>
-										</div>
-										<Button
-											type="button"
-											size="sm"
-											onClick={() => void handleRunScenario(scenario)}
-											disabled={runningWorkflow || scenario.status === 'blocked'}
-										>
-											<Play className="size-4" />
-											{runningWorkflow
-												? t('platform.scenarios.running')
-												: t('platform.scenarios.run')}
-										</Button>
-									</div>
-								);
-							})}
-						</div>
-					)}
-				</section>
+				<ScenariosPanel
+					scenarios={scenarios}
+					loading={scenariosLoading}
+					error={scenariosError}
+					runningWorkflow={runningWorkflow}
+					onRefresh={() => void refetchScenarios()}
+					onRunScenario={(scenario) => void handleRunScenario(scenario)}
+					formatTimestamp={formatTimestamp}
+					labels={{
+						eyebrow: t('platform.scenarios.eyebrow'),
+						title: t('platform.scenarios.title'),
+						description: t('platform.scenarios.description'),
+						total: (count) => t('platform.scenarios.total', { count }),
+						readyCount: (count) => t('platform.scenarios.readyCount', { count }),
+						refresh: t('platform.scenarios.refresh'),
+						empty: t('platform.scenarios.empty'),
+						ready: t('platform.scenarios.ready'),
+						partial: t('platform.scenarios.partial'),
+						blocked: t('platform.scenarios.blocked'),
+						lastRun: (status, time) =>
+							t('platform.scenarios.lastRun', { status, time }),
+						neverRun: t('platform.scenarios.neverRun'),
+						toolCount: (count) => t('platform.scenarios.toolCount', { count }),
+						runCount: (count) => t('platform.scenarios.runCount', { count }),
+						approvalRequired: t('platform.scenarios.approvalRequired'),
+						noApproval: t('platform.scenarios.noApproval'),
+						pendingApprovals: (count) =>
+							t('platform.scenarios.pendingApprovals', { count }),
+						running: t('platform.scenarios.running'),
+						run: t('platform.scenarios.run'),
+					}}
+				/>
 
 				<section className="grid gap-4 rounded-lg border bg-background p-4">
 					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
