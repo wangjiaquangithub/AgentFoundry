@@ -82,6 +82,10 @@ export const appCenterOperationsLabels = (t: PlatformTranslate) => ({
 		t('platform.agentManagement.ops.needsSetupTotalHelper', { count }),
 });
 
+export const auditRequestLabels = (t: PlatformTranslate) => ({
+	loadError: t('platform.audit.loadError'),
+});
+
 export const appCenterAgentDisplayLabels = (t: PlatformTranslate) => ({
 	archivedIssue: t('platform.operations.archivedIssue'),
 	missingIssue: t('platform.operations.missingIssue'),

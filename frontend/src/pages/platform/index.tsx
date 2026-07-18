@@ -104,6 +104,7 @@ import {
 	appCenterDetailResourcesLabels,
 	appCenterDetailResourceValueLabels,
 	appCenterOperationsLabels,
+	auditRequestLabels,
 	auditStatsLabels,
 	connectorOperationsLabels,
 	connectorRequestLabels,
@@ -406,6 +407,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	});
 	const serverUrl = platformConnectionState.serverUrl;
 	const username = platformConnectionState.username;
+	const auditRequestText = auditRequestLabels(t);
 	const connectorRequestText = connectorRequestLabels(t);
 	const hasErrors = Boolean(
 		agentsError ||
@@ -1000,7 +1002,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setGovernance(response);
 		} catch (error) {
 			setGovernanceError(
-				error instanceof Error ? error.message : t('platform.audit.loadError'),
+				error instanceof Error ? error.message : auditRequestText.loadError,
 			);
 		} finally {
 			setGovernanceLoading(false);
@@ -1419,7 +1421,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setAuditEvents(response.events);
 			setAuditSummary(response.summary);
 		} catch (error) {
-			setAuditError(error instanceof Error ? error.message : t('platform.audit.loadError'));
+			setAuditError(error instanceof Error ? error.message : auditRequestText.loadError);
 		} finally {
 			setAuditLoading(false);
 		}
