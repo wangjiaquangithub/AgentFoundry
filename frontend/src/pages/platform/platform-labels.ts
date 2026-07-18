@@ -60,3 +60,46 @@ export const appCenterAgentDisplayLabels = (t: PlatformTranslate) => ({
 	agentResources: (values: { model: string; knowledge: number; tools: number }) =>
 		t('platform.appCenter.agentResources', values),
 });
+
+export const appCenterDetailResourceValueLabels = (t: PlatformTranslate) => ({
+	noModel: t('platform.appCenter.noModel'),
+	access: {
+		restricted: ({ users, roles }: { users: number; roles: number }) =>
+			t('platform.appCenter.restrictedAccess', { users, roles }),
+		open: t('platform.appCenter.tenantAccess'),
+	},
+	runtime: {
+		value: ({ memory, workflow }: { memory: string; workflow: string }) =>
+			t('platform.appCenter.runtimeValue', { memory, workflow }),
+		enabled: t('platform.agentManagement.enabled'),
+		disabled: t('platform.agentManagement.disabled'),
+	},
+});
+
+export const appCenterDetailResourcesLabels = (t: PlatformTranslate) => ({
+	model: t('platform.appCenter.model'),
+	knowledgeBases: t('platform.appCenter.knowledgeBases'),
+	tools: t('platform.appCenter.tools'),
+	runtime: t('platform.appCenter.runtime'),
+	access: t('platform.appCenter.access'),
+	none: t('platform.appCenter.none'),
+	availableModels: (count: number) => t('platform.appCenter.availableModels', { count }),
+	noModel: t('platform.appCenter.noModel'),
+	availableKnowledgeBases: (count: number) =>
+		t('platform.appCenter.availableKnowledgeBases', { count }),
+	templateRuntime: t('platform.appCenter.templateRuntime'),
+});
+
+export const appCenterDetailHealthLabels = (t: PlatformTranslate) => ({
+	missingModel: t('platform.dashboard.todoModel'),
+	missingKnowledge: t('platform.agentManagement.noKnowledge'),
+});
+
+export const operationsHeadlineLabels = (t: PlatformTranslate) => ({
+	empty: t('platform.operations.headlineEmpty'),
+	needsWork: ({ count }: { count: number }) =>
+		t('platform.operations.headlineNeedsWork', { count }),
+	approvals: ({ count }: { count: number }) =>
+		t('platform.operations.headlineApprovals', { count }),
+	ready: t('platform.operations.headlineReady'),
+});

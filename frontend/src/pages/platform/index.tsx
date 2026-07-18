@@ -97,9 +97,13 @@ import {
 import {
 	agentRoutingLabels,
 	appCenterAgentDisplayLabels,
+	appCenterDetailHealthLabels,
+	appCenterDetailResourcesLabels,
+	appCenterDetailResourceValueLabels,
 	appCenterOperationsLabels,
 	connectorOperationsLabels,
 	dashboardTodoLabels,
+	operationsHeadlineLabels,
 	platformOverviewStatLabels,
 	runtimeStatusLabels,
 	selectedToolRunnerLabels,
@@ -744,39 +748,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		knowledgeBaseById,
 		modelCount: credentials.length,
 		knowledgeBaseCount: knowledgeBases.length,
-		labels: {
-			noModel: t('platform.appCenter.noModel'),
-			access: {
-				restricted: ({ users, roles }) =>
-					t('platform.appCenter.restrictedAccess', { users, roles }),
-				open: t('platform.appCenter.tenantAccess'),
-			},
-			runtime: {
-				value: ({ memory, workflow }) =>
-					t('platform.appCenter.runtimeValue', { memory, workflow }),
-				enabled: t('platform.agentManagement.enabled'),
-				disabled: t('platform.agentManagement.disabled'),
-			},
-		},
+		labels: appCenterDetailResourceValueLabels(t),
 	});
 	const appCenterDetailResources = appCenterDetailResourcesForSelection(
 		{
 			agent: inspectedAppCenterResourceValues.agent,
 			template: inspectedAppCenterResourceValues.template,
 		},
-		{
-			model: t('platform.appCenter.model'),
-			knowledgeBases: t('platform.appCenter.knowledgeBases'),
-			tools: t('platform.appCenter.tools'),
-			runtime: t('platform.appCenter.runtime'),
-			access: t('platform.appCenter.access'),
-			none: t('platform.appCenter.none'),
-			availableModels: (count) => t('platform.appCenter.availableModels', { count }),
-			noModel: t('platform.appCenter.noModel'),
-			availableKnowledgeBases: (count) =>
-				t('platform.appCenter.availableKnowledgeBases', { count }),
-			templateRuntime: t('platform.appCenter.templateRuntime'),
-		},
+		appCenterDetailResourcesLabels(t),
 	);
 	const appCenterDetailHealth = appCenterDetailHealthState({
 		hasAgent: Boolean(inspectedAppCenterAgent),
@@ -785,10 +764,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		hasTemplate: Boolean(inspectedAppCenterTemplate),
 		hasCredentials: credentials.length > 0,
 		hasKnowledgeBases: knowledgeBases.length > 0,
-		labels: {
-			missingModel: t('platform.dashboard.todoModel'),
-			missingKnowledge: t('platform.agentManagement.noKnowledge'),
-		},
+		labels: appCenterDetailHealthLabels(t),
 	});
 	const appCenterDetailIssues = appCenterDetailHealth.issues;
 	const appCenterDetailStatus = appCenterDetailHealth.status;
@@ -798,12 +774,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			blockedOrPartialAgentCount: blockedOrPartialPlatformAgents.length,
 			pendingApprovalCount: pendingApprovals.length,
 		},
-		{
-			empty: t('platform.operations.headlineEmpty'),
-			needsWork: ({ count }) => t('platform.operations.headlineNeedsWork', { count }),
-			approvals: ({ count }) => t('platform.operations.headlineApprovals', { count }),
-			ready: t('platform.operations.headlineReady'),
-		},
+		operationsHeadlineLabels(t),
 	);
 	const agentReleasePipeline = agentReleasePipelineForStatus(
 		{
