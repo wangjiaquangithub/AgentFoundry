@@ -111,6 +111,7 @@ import {
 	OrchestrationWorkbenchPanel,
 	type OrchestrationWorkbenchStep,
 } from './components/OrchestrationWorkbenchPanel';
+import { OpsTasksPanel } from './components/OpsTasksPanel';
 import { PlatformDashboardOverview } from './components/PlatformDashboardOverview';
 import { RolloutPath, type RolloutPathStep } from './components/RolloutPath';
 import {
@@ -7907,126 +7908,29 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					}}
 				/>
 
-				<section className="grid gap-4 rounded-lg border bg-background p-4">
-					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-						<div className="min-w-0">
-							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-								<ListChecks className="size-4" />
-								<span>{t('platform.opsTasks.eyebrow')}</span>
-							</div>
-							<h2 className="text-base font-semibold">
-								{t('platform.opsTasks.title')}
-							</h2>
-							<p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-								{t('platform.opsTasks.description')}
-							</p>
-						</div>
-						<div className="flex flex-wrap gap-2 lg:justify-end">
-							<Badge variant="outline">
-								{t('platform.opsTasks.total', {
-									count: opsTasksSummary?.total_count ?? opsTasks.length,
-								})}
-							</Badge>
-							<Badge variant="outline">
-								{t('platform.opsTasks.errors', {
-									count: opsTasksSummary?.error_count ?? 0,
-								})}
-							</Badge>
-							<Badge variant="outline">
-								{t('platform.opsTasks.warnings', {
-									count: opsTasksSummary?.warning_count ?? 0,
-								})}
-							</Badge>
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={() => void refetchOpsTasks()}
-								disabled={opsTasksLoading}
-							>
-								<RefreshCcw
-									className={cn('size-4', opsTasksLoading && 'animate-spin')}
-								/>
-								{t('platform.opsTasks.refresh')}
-							</Button>
-						</div>
-					</div>
-
-					{opsTasksError ? <PlatformNotice>{opsTasksError}</PlatformNotice> : null}
-
-					{opsTasksLoading ? (
-						<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-							{[0, 1, 2].map((item) => (
-								<Skeleton key={item} className="h-36 rounded-lg" />
-							))}
-						</div>
-					) : opsTasks.length === 0 ? (
-						<div className="rounded-lg border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground">
-							{t('platform.opsTasks.empty')}
-						</div>
-					) : (
-						<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-							{opsTasks.map((task) => {
-								const taskState: HealthState =
-									task.severity === 'error'
-										? 'blocked'
-										: task.severity === 'warning'
-											? 'partial'
-											: 'ready';
-								const evidence = summarizeAuditObject(task.evidence);
-								const isResolving = resolvingOpsTaskCode === task.code;
-								const actionLabel =
-									task.action?.type === 'resolve'
-										? task.action.label || t('platform.opsTasks.resolve')
-										: t('platform.opsTasks.action');
-
-								return (
-									<div
-										key={task.task_id}
-										className="grid content-between gap-3 rounded-lg border bg-muted/10 p-3"
-									>
-										<div className="grid gap-2">
-											<div className="flex items-start justify-between gap-3">
-												<div className="min-w-0">
-													<h3 className="text-sm font-medium">{task.title}</h3>
-													<p className="mt-1 text-xs leading-5 text-muted-foreground">
-														{task.description}
-													</p>
-												</div>
-												<StateBadge state={taskState} label={task.severity} />
-											</div>
-											<div className="flex flex-wrap gap-2">
-												{typeof task.count === 'number' ? (
-													<Badge variant="outline">{task.count}</Badge>
-												) : null}
-												<Badge variant="secondary">{task.target}</Badge>
-											</div>
-											{evidence ? (
-												<p className="text-xs leading-5 text-muted-foreground">
-													{evidence}
-												</p>
-											) : null}
-										</div>
-										<Button
-											type="button"
-											size="sm"
-											variant="outline"
-											onClick={() => void handleResolveOpsTask(task)}
-											disabled={isResolving}
-										>
-											{isResolving ? t('platform.opsTasks.resolving') : actionLabel}
-											{isResolving ? (
-												<RefreshCcw className="size-4 animate-spin" />
-											) : (
-												<ArrowRight className="size-4" />
-											)}
-										</Button>
-									</div>
-								);
-							})}
-						</div>
-					)}
-				</section>
+				<OpsTasksPanel
+					tasks={opsTasks}
+					summary={opsTasksSummary}
+					loading={opsTasksLoading}
+					error={opsTasksError}
+					resolvingTaskCode={resolvingOpsTaskCode}
+					onRefresh={() => void refetchOpsTasks()}
+					onResolveTask={(task) => void handleResolveOpsTask(task)}
+					summarizeAuditObject={summarizeAuditObject}
+					labels={{
+						eyebrow: t('platform.opsTasks.eyebrow'),
+						title: t('platform.opsTasks.title'),
+						description: t('platform.opsTasks.description'),
+						total: (count) => t('platform.opsTasks.total', { count }),
+						errors: (count) => t('platform.opsTasks.errors', { count }),
+						warnings: (count) => t('platform.opsTasks.warnings', { count }),
+						refresh: t('platform.opsTasks.refresh'),
+						empty: t('platform.opsTasks.empty'),
+						resolve: t('platform.opsTasks.resolve'),
+						action: t('platform.opsTasks.action'),
+						resolving: t('platform.opsTasks.resolving'),
+					}}
+				/>
 
 				<section className="grid gap-4 rounded-lg border bg-background p-4">
 					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
