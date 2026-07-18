@@ -111,6 +111,17 @@ export function publishFormForTenantChange(values: {
 	};
 }
 
+export function publishFormForPreparedTenant(values: {
+	current: PublishFormState;
+	tenant: string;
+	templateForm?: PublishFormState | null;
+}): PublishFormState {
+	return {
+		...(values.templateForm ?? values.current),
+		tenant: values.tenant,
+	};
+}
+
 export function publishFormFromPublishedAgent(
 	agent: EnterprisePublishedAgent,
 ): PublishFormState {

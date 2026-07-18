@@ -201,6 +201,7 @@ import {
 	defaultPublishFormForTemplate,
 	publishFormFromPublishedAgent,
 	publishFormForListToggle,
+	publishFormForPreparedTenant,
 	publishFormForTenantChange,
 	publishFormWithPatch,
 	type PublishListFormKey,
@@ -2026,19 +2027,19 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	function handlePrepareTenantAgent(tenant: string) {
 		if (defaultAgentTemplate) {
-			const nextForm = buildDefaultPublishForm(defaultAgentTemplate);
 			setEditingAgentId(null);
 			setSelectedTemplateId(defaultAgentTemplate.id);
-			setPublishForm({
-				...nextForm,
-				tenant,
-			});
-		} else {
-			setPublishForm((current) => ({
-				...current,
-				tenant,
-			}));
 		}
+
+		setPublishForm((current) =>
+			publishFormForPreparedTenant({
+				current,
+				tenant,
+				templateForm: defaultAgentTemplate
+					? buildDefaultPublishForm(defaultAgentTemplate)
+					: null,
+			}),
+		);
 
 		window.setTimeout(scrollToAgentManagement, 0);
 	}
