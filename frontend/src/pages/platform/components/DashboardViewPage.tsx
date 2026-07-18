@@ -127,7 +127,6 @@ export function DashboardViewPage({
 	approvalForm,
 	approvalLoading,
 	approvalRequests,
-	approvalStatusClassName,
 	approvalSummary,
 	approvedApprovalCount,
 	archivingAgentId,
@@ -2559,7 +2558,6 @@ export function DashboardViewPage({
 					onApproveAndRun={handleApproveAndRun}
 					onDecideApproval={handleDecideApproval}
 					onUseApproval={handleUseApproval}
-					approvalStatusClassName={approvalStatusClassName}
 					summarizeAuditObject={summarizeAuditObject}
 					t={t}
 				/>

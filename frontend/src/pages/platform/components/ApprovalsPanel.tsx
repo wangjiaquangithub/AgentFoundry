@@ -28,7 +28,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { formatTimestamp } from '../platform-utils';
+import { approvalStatusClassName, formatTimestamp } from '../platform-utils';
 import { PlatformNotice } from './common';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -96,7 +96,6 @@ interface ApprovalsPanelProps {
 		decision: 'approved' | 'rejected',
 	) => void | Promise<void>;
 	onUseApproval: (approval: EnterpriseApprovalRequestItem) => void;
-	approvalStatusClassName: (status?: string) => string;
 	summarizeAuditObject: (value?: Record<string, unknown>) => string;
 	t: Translate;
 }
@@ -130,7 +129,6 @@ export function ApprovalsPanel({
 	onApproveAndRun,
 	onDecideApproval,
 	onUseApproval,
-	approvalStatusClassName,
 	summarizeAuditObject,
 	t,
 }: ApprovalsPanelProps) {

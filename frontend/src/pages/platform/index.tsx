@@ -106,7 +106,6 @@ import { WorkflowsViewPage } from './components/WorkflowsViewPage';
 import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import {
-	approvalStatusClassName,
 	defaultEnterpriseWorkflowInputs,
 	normalizeWorkflowInputs,
 	shortResourceId,
@@ -4881,7 +4880,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				onApproveAndRun={handleApproveAndRun}
 				onDecideApproval={handleDecideApproval}
 				onUseApproval={handleUseApproval}
-				approvalStatusClassName={approvalStatusClassName}
 				summarizeAuditObject={summarizeAuditObject}
 				t={t}
 			/>
@@ -5097,7 +5095,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			approvalForm={approvalForm}
 			approvalLoading={approvalLoading}
 			approvalRequests={approvalRequests}
-			approvalStatusClassName={approvalStatusClassName}
 			approvalSummary={approvalSummary}
 			approvedApprovalCount={approvedApprovalCount}
 			archivingAgentId={archivingAgentId}

@@ -68,7 +68,6 @@ interface ApprovalsViewPageProps {
 		decision: 'approved' | 'rejected',
 	) => void | Promise<void>;
 	onUseApproval: (approval: EnterpriseApprovalRequestItem) => void;
-	approvalStatusClassName: (status?: string) => string;
 	summarizeAuditObject: (value?: Record<string, unknown>) => string;
 	t: Translate;
 }
@@ -101,7 +100,6 @@ export function ApprovalsViewPage({
 	onApproveAndRun,
 	onDecideApproval,
 	onUseApproval,
-	approvalStatusClassName,
 	summarizeAuditObject,
 	t,
 }: ApprovalsViewPageProps) {
@@ -180,7 +178,6 @@ export function ApprovalsViewPage({
 					onApproveAndRun={onApproveAndRun}
 					onDecideApproval={onDecideApproval}
 					onUseApproval={onUseApproval}
-					approvalStatusClassName={approvalStatusClassName}
 					summarizeAuditObject={summarizeAuditObject}
 					t={t}
 				/>
