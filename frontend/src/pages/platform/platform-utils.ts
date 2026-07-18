@@ -2213,6 +2213,46 @@ export function pendingWorkflowRunApprovals(
 	return approvals.filter((approval) => approval.request_type === 'workflow_run');
 }
 
+export function selectedIdentityGovernanceActivityForIdentity(values: {
+	selectedIdentity?: EnterpriseIdentity;
+	pendingApprovals: EnterpriseApprovalRequestItem[];
+	auditEvents: EnterpriseAuditEvent[];
+}) {
+	const selectedIdentityPendingApprovals = values.selectedIdentity
+		? values.pendingApprovals.filter(
+				(approval) => approval.user_id === values.selectedIdentity?.user_id,
+			)
+		: [];
+	const selectedIdentityPendingToolNames = new Set(
+		selectedIdentityPendingApprovals
+			.filter((approval) => approval.request_type === 'tool_run')
+			.map((approval) => approval.tool_name)
+			.filter((toolName): toolName is string => Boolean(toolName)),
+	);
+	const selectedIdentityFailedAuditEvents = values.selectedIdentity
+		? values.auditEvents.filter(
+				(event) =>
+					event.user_id === values.selectedIdentity?.user_id &&
+					event.tenant === values.selectedIdentity?.tenant &&
+					event.success === false,
+			)
+		: [];
+	const selectedIdentityRecentAuditEvents = values.selectedIdentity
+		? values.auditEvents.filter(
+				(event) =>
+					event.user_id === values.selectedIdentity?.user_id &&
+					event.tenant === values.selectedIdentity?.tenant,
+			)
+		: [];
+
+	return {
+		selectedIdentityPendingApprovals,
+		selectedIdentityPendingToolNames,
+		selectedIdentityFailedAuditEvents,
+		selectedIdentityRecentAuditEvents,
+	};
+}
+
 export function toolPolicySummaryForGovernance(
 	availableToolItems: EnterpriseToolCatalogItem[],
 	toolPolicyDraft: Record<string, ToolPolicyDraftValue>,

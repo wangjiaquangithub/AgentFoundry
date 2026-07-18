@@ -129,6 +129,7 @@ import {
 	recentTriggerSchedules,
 	rolloutPathStepsForStatus,
 	runtimeStatusItemsForStatus,
+	selectedIdentityGovernanceActivityForIdentity,
 	topOperationsAgentsForDisplay,
 	tenantOverviewItemsForWorkspace,
 	toolPolicySummaryForGovernance,
@@ -1299,19 +1300,19 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		pendingApprovals,
 		governance,
 	);
-	const selectedIdentityPendingApprovals = selectedIdentity
-		? pendingApprovals.filter((approval) => approval.user_id === selectedIdentity.user_id)
-		: [];
-	const selectedIdentityPendingToolNames = useMemo(
+	const selectedIdentityGovernanceActivity = useMemo(
 		() =>
-			new Set(
-				selectedIdentityPendingApprovals
-					.filter((approval) => approval.request_type === 'tool_run')
-					.map((approval) => approval.tool_name)
-					.filter((toolName): toolName is string => Boolean(toolName)),
-			),
-		[selectedIdentityPendingApprovals],
+			selectedIdentityGovernanceActivityForIdentity({
+				selectedIdentity,
+				pendingApprovals,
+				auditEvents,
+			}),
+		[auditEvents, pendingApprovals, selectedIdentity],
 	);
+	const selectedIdentityPendingApprovals =
+		selectedIdentityGovernanceActivity.selectedIdentityPendingApprovals;
+	const selectedIdentityPendingToolNames =
+		selectedIdentityGovernanceActivity.selectedIdentityPendingToolNames;
 	const toolPolicySummary = useMemo(() => {
 		return toolPolicySummaryForGovernance(
 			availableToolItems,
@@ -1319,21 +1320,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			selectedIdentityPendingToolNames,
 		);
 	}, [availableToolItems, selectedIdentityPendingToolNames, toolPolicyDraft]);
-	const selectedIdentityFailedAuditEvents = selectedIdentity
-		? auditEvents.filter(
-				(event) =>
-					event.user_id === selectedIdentity.user_id &&
-					event.tenant === selectedIdentity.tenant &&
-					event.success === false,
-			)
-		: [];
-	const selectedIdentityRecentAuditEvents = selectedIdentity
-		? auditEvents.filter(
-				(event) =>
-					event.user_id === selectedIdentity.user_id &&
-					event.tenant === selectedIdentity.tenant,
-			)
-		: [];
+	const selectedIdentityFailedAuditEvents =
+		selectedIdentityGovernanceActivity.selectedIdentityFailedAuditEvents;
+	const selectedIdentityRecentAuditEvents =
+		selectedIdentityGovernanceActivity.selectedIdentityRecentAuditEvents;
 	const riskyIdentityCount =
 		governance?.summary.risky_identity_count ??
 		identityAccessRows.filter((row) => row.risk > 0).length;
