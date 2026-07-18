@@ -100,6 +100,7 @@ import {
 } from './components/AgentManagementOverview';
 import { AgentRunnerConversation } from './components/AgentRunnerConversation';
 import { AgentRunnerResult } from './components/AgentRunnerResult';
+import { FirstAgentGuide, type FirstAgentGuideStep } from './components/FirstAgentGuide';
 import { PlatformDashboardOverview } from './components/PlatformDashboardOverview';
 import {
 	PlatformNotice,
@@ -4799,21 +4800,12 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		title: t(`platform.workbench.firstAgentGuide.steps.${step.key}.title`),
 		actionLabel: t(`platform.workbench.firstAgentGuide.steps.${step.key}.action`),
 		state: step.state as HealthState,
-	})) satisfies Array<{
-		key: string;
-		title: string;
-		detail: string;
-		actionLabel: string;
-		icon: ComponentType<{ className?: string }>;
-		state: HealthState;
-		onClick: () => void;
-	}>;
+	})) satisfies FirstAgentGuideStep[];
 	const firstAgentGuidePrimaryStep =
 		firstAgentGuideSteps.find((step) => step.state === 'blocked') ??
 		firstAgentGuideSteps.find((step) => step.state === 'todo') ??
 		firstAgentGuideSteps.find((step) => step.state === 'partial') ??
 		firstAgentGuideSteps[firstAgentGuideSteps.length - 1];
-	const FirstAgentGuidePrimaryIcon = firstAgentGuidePrimaryStep.icon;
 	const orchestrationWorkbenchSteps = [
 		{
 			key: 'template',
@@ -7761,87 +7753,22 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 						</div>
 					</div>
 
-					<div className="grid gap-3 rounded-lg border bg-muted/10 p-3">
-						<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-							<div className="min-w-0">
-								<h3 className="text-sm font-medium">
-									{t('platform.workbench.firstAgentGuide.title')}
-								</h3>
-								<p className="mt-1 text-xs leading-5 text-muted-foreground">
-									{t('platform.workbench.firstAgentGuide.description')}
-								</p>
-							</div>
-							<Button
-								type="button"
-								size="sm"
-								onClick={firstAgentGuidePrimaryStep.onClick}
-								disabled={
-									firstAgentGuidePrimaryStep.key === 'agent' && Boolean(publishingTemplateId)
-								}
-							>
-								<FirstAgentGuidePrimaryIcon
-									className={cn(
-										'size-4',
-										firstAgentGuidePrimaryStep.key === 'agent' &&
-											publishingTemplateId &&
-											'animate-pulse',
-									)}
-								/>
-								{firstAgentGuidePrimaryStep.key === 'agent' && publishingTemplateId
-									? t('platform.agentManagement.publishing')
-									: firstAgentGuidePrimaryStep.actionLabel}
-							</Button>
-						</div>
-						<div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-							{firstAgentGuideSteps.map((step, index) => {
-								const StepIcon = step.icon;
-								const done = step.state === 'ready';
-
-								return (
-									<button
-										key={step.key}
-										type="button"
-										onClick={step.onClick}
-										className="grid min-h-28 gap-2 rounded-lg border bg-background p-3 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-									>
-										<div className="flex items-start justify-between gap-3">
-											<div className="flex items-center gap-2">
-												<div
-													className={cn(
-														'grid size-8 place-items-center rounded-md border',
-														done ? 'bg-primary text-primary-foreground' : 'bg-muted/20',
-													)}
-												>
-													{done ? (
-														<CheckCircle2 className="size-4" />
-													) : (
-														<StepIcon className="size-4 text-muted-foreground" />
-													)}
-												</div>
-												<span className="text-xs font-medium text-muted-foreground">
-													{index + 1}
-												</span>
-											</div>
-											<StateBadge
-												state={step.state}
-												label={t(`platform.launchpad.${step.state}`)}
-											/>
-										</div>
-										<div className="min-w-0">
-											<h4 className="text-xs font-medium">{step.title}</h4>
-											<p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
-												{step.detail}
-											</p>
-										</div>
-										<div className="mt-auto flex items-center gap-1 text-xs font-medium text-primary">
-											<span>{step.actionLabel}</span>
-											<ArrowRight className="size-3" />
-										</div>
-									</button>
-								);
-							})}
-						</div>
-					</div>
+					<FirstAgentGuide
+						steps={firstAgentGuideSteps}
+						primaryStep={firstAgentGuidePrimaryStep}
+						publishingTemplateId={publishingTemplateId}
+						labels={{
+							title: t('platform.workbench.firstAgentGuide.title'),
+							description: t('platform.workbench.firstAgentGuide.description'),
+							publishing: t('platform.agentManagement.publishing'),
+							states: {
+								ready: t('platform.launchpad.ready'),
+								partial: t('platform.launchpad.partial'),
+								todo: t('platform.launchpad.todo'),
+								blocked: t('platform.launchpad.blocked'),
+							},
+						}}
+					/>
 
 					<div className="grid gap-3 rounded-lg border bg-muted/10 p-3">
 						<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
