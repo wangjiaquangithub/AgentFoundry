@@ -1347,6 +1347,12 @@ export function orchestrationPrimaryStepForSteps(steps: OrchestrationWorkbenchSt
 	);
 }
 
+export function readyOrchestrationWorkbenchStepCountForSteps(
+	steps: OrchestrationWorkbenchStep[],
+) {
+	return steps.filter((step) => step.state === 'ready').length;
+}
+
 export function workbenchIndicatorsForStatus(
 	values: {
 		activeAgentCount: number;

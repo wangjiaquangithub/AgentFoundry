@@ -127,6 +127,7 @@ import {
 	platformOverviewStatsForSummary,
 	platformMemberTenantSummariesForMembers,
 	platformConsoleItemsForDisplay,
+	readyOrchestrationWorkbenchStepCountForSteps,
 	recentTriggerSchedules,
 	rolloutPathStepsForStatus,
 	runtimeStatusItemsForStatus,
@@ -3990,9 +3991,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			},
 		},
 	);
-	const orchestrationReadyCount = orchestrationWorkbenchSteps.filter(
-		(step) => step.state === 'ready',
-	).length;
+	const orchestrationReadyCount = readyOrchestrationWorkbenchStepCountForSteps(
+		orchestrationWorkbenchSteps,
+	);
 	const orchestrationPrimaryStep =
 		orchestrationPrimaryStepForSteps(orchestrationWorkbenchSteps);
 	const monitoringActivitySummary = monitoringActivitySummaryForStatus({
