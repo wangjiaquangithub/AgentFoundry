@@ -56,6 +56,12 @@ export const defaultEnterpriseWorkflowInputs: Record<string, string> = {
 	department: 'engineering',
 };
 
+export const enterpriseWorkflowFallbackOptions = [
+	{ value: 'daily_ops_brief', labelKey: 'dailyOpsBrief' },
+	{ value: 'ticket_followup', labelKey: 'ticketFollowup' },
+	{ value: 'policy_review', labelKey: 'policyReview' },
+];
+
 export const workflowInputLabelKeys: Record<string, string> = {
 	policy_keyword: 'policyKeyword',
 	ticket_id: 'ticketId',
@@ -574,6 +580,44 @@ export function tenantWorkspaceByNameForEntries(
 
 export function workflowTemplateByTypeForTemplates(templates: EnterpriseWorkflowTemplate[]) {
 	return new Map(templates.map((template) => [template.workflow_type, template]));
+}
+
+export function workflowSelectionStateForTemplates(
+	values: {
+		workflowTemplates: EnterpriseWorkflowTemplate[];
+		selectedWorkflowType: string;
+	},
+	labels: {
+		fallbackLabel: (labelKey: string) => string;
+	},
+) {
+	const workflowTemplateByType = workflowTemplateByTypeForTemplates(values.workflowTemplates);
+	const selectedWorkflowTemplate =
+		workflowTemplateByType.get(values.selectedWorkflowType) ?? null;
+	const workflowOptions =
+		values.workflowTemplates.length > 0
+			? values.workflowTemplates.map((template) => ({
+					value: template.workflow_type,
+					label: template.name,
+					enabled: template.enabled,
+					defaultInputs: template.default_inputs,
+				}))
+			: enterpriseWorkflowFallbackOptions.map((workflow) => ({
+					value: workflow.value,
+					label: labels.fallbackLabel(workflow.labelKey),
+					enabled: true,
+					defaultInputs: defaultEnterpriseWorkflowInputs,
+				}));
+	const selectedWorkflowDisabled = Boolean(
+		selectedWorkflowTemplate && !selectedWorkflowTemplate.enabled,
+	);
+
+	return {
+		workflowTemplateByType,
+		selectedWorkflowTemplate,
+		workflowOptions,
+		selectedWorkflowDisabled,
+	};
 }
 
 export function publishReleaseIssuesForDraft(

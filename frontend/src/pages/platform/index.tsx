@@ -139,7 +139,7 @@ import {
 	workbenchQuickActionsForStatus,
 	workbenchReadinessItemsForStatus,
 	workbenchRiskItemsForStatus,
-	workflowTemplateByTypeForTemplates,
+	workflowSelectionStateForTemplates,
 	workflowOperationsStateForStatus,
 	type AgentWizardStep,
 } from './platform-utils';
@@ -218,12 +218,6 @@ const enterpriseToolInputConfig: Record<
 		defaultValue: 'engineering',
 	},
 };
-
-const enterpriseWorkflowOptions = [
-	{ value: 'daily_ops_brief', labelKey: 'dailyOpsBrief' },
-	{ value: 'ticket_followup', labelKey: 'ticketFollowup' },
-	{ value: 'policy_review', labelKey: 'policyReview' },
-];
 
 const agentSampleQuestions = [
 	'请查询 remote 政策、INC-1001 工单状态，并总结 engineering 部门指标。',
@@ -823,31 +817,17 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const connectorTestPassed = connectorOperationsState.connectorTestPassed;
 	const connectorRuntimeState = connectorOperationsState.connectorRuntimeState;
 	const connectorRuntimeSourceText = connectorOperationsState.connectorRuntimeSourceText;
-	const workflowTemplateByType = useMemo(
-		() => workflowTemplateByTypeForTemplates(workflowTemplates),
-		[workflowTemplates],
+	const workflowSelectionState = useMemo(
+		() =>
+			workflowSelectionStateForTemplates(
+				{ workflowTemplates, selectedWorkflowType },
+				{ fallbackLabel: (labelKey) => t(`platform.workflowRunner.${labelKey}`) },
+			),
+		[t, workflowTemplates, selectedWorkflowType],
 	);
-	const selectedWorkflowTemplate = workflowTemplateByType.get(selectedWorkflowType) ?? null;
-	const workflowOptions = useMemo(() => {
-		if (workflowTemplates.length > 0) {
-			return workflowTemplates.map((template) => ({
-				value: template.workflow_type,
-				label: template.name,
-				enabled: template.enabled,
-				defaultInputs: template.default_inputs,
-			}));
-		}
-
-		return enterpriseWorkflowOptions.map((workflow) => ({
-			value: workflow.value,
-			label: t(`platform.workflowRunner.${workflow.labelKey}`),
-			enabled: true,
-			defaultInputs: defaultEnterpriseWorkflowInputs,
-		}));
-	}, [t, workflowTemplates]);
-	const selectedWorkflowDisabled = Boolean(
-		selectedWorkflowTemplate && !selectedWorkflowTemplate.enabled,
-	);
+	const selectedWorkflowTemplate = workflowSelectionState.selectedWorkflowTemplate;
+	const workflowOptions = workflowSelectionState.workflowOptions;
+	const selectedWorkflowDisabled = workflowSelectionState.selectedWorkflowDisabled;
 	const dashboard = platformStatus?.dashboard;
 	const dashboardOperations = dashboard?.operations;
 	const {
