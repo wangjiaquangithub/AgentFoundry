@@ -100,6 +100,10 @@ import {
 } from './components/AgentManagementOverview';
 import { AgentRunnerConversation } from './components/AgentRunnerConversation';
 import { AgentRunnerResult } from './components/AgentRunnerResult';
+import {
+	AppCenterPanel,
+	type AppCenterSelection,
+} from './components/AppCenterPanel';
 import { FirstAgentGuide, type FirstAgentGuideStep } from './components/FirstAgentGuide';
 import { LaunchpadPanel, type LaunchpadStep } from './components/LaunchpadPanel';
 import {
@@ -137,7 +141,6 @@ import {
 } from './components/common';
 import { WorkflowRunnerPanel } from './components/WorkflowRunnerPanel';
 
-type AppCenterSelection = { type: 'template' | 'agent'; id: string };
 type ToolPolicyDraftValue = 'allow' | 'deny' | 'inherit';
 export type PlatformView =
 	| 'dashboard'
@@ -7990,414 +7993,70 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					}}
 				/>
 
-				<section className="grid gap-4 rounded-lg border bg-background p-4">
-					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-						<div className="min-w-0">
-							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-								<BotMessageSquare className="size-4" />
-								<span>{t('platform.appCenter.eyebrow')}</span>
-							</div>
-							<h2 className="text-base font-semibold">
-								{t('platform.appCenter.title')}
-							</h2>
-							<p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-								{t('platform.appCenter.description')}
-							</p>
-						</div>
-						<div className="flex flex-wrap gap-2 lg:justify-end">
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={scrollToGovernance}
-							>
-								<ShieldCheck className="size-4" />
-								{t('platform.appCenter.reviewApprovals')}
-							</Button>
-							<Button
-								type="button"
-								size="sm"
-								onClick={handleAppCenterPrimaryAction}
-								disabled={appCenterPrimaryDisabled}
-							>
-								<Play className="size-4" />
-								{appCenterPrimaryLabel}
-							</Button>
-						</div>
-					</div>
-
-					<div className="grid gap-3 lg:grid-cols-3">
-						<div className="grid content-start gap-3 rounded-lg border bg-muted/20 p-3">
-							<div className="flex items-center justify-between gap-3">
-								<h3 className="text-sm font-medium">
-									{t('platform.appCenter.templates')}
-								</h3>
-								<Badge variant="outline">
-									{agentTemplates.length}
-								</Badge>
-							</div>
-							{agentTemplates.length === 0 ? (
-								<div className="rounded-lg border border-dashed bg-background p-4 text-sm text-muted-foreground">
-									{t('platform.appCenter.emptyTemplates')}
-								</div>
-							) : (
-								agentTemplates.slice(0, 3).map((template) => {
-									const templateTools = template.tools ?? [];
-									const isSelected =
-										inspectedAppCenterTemplate?.id === template.id &&
-										!inspectedAppCenterAgent;
-
-									return (
-									<div
-										key={template.id}
-										role="button"
-										tabIndex={0}
-										className={cn(
-											'grid gap-3 rounded-lg border bg-background p-3 text-left transition hover:border-primary/50',
-											isSelected && 'border-primary/60 bg-primary/5',
-										)}
-										onClick={() =>
-											setSelectedAppCenterItem({
-												type: 'template',
-												id: template.id,
-											})
-										}
-										onKeyDown={(event) => {
-											if (event.key === 'Enter' || event.key === ' ') {
-												event.preventDefault();
-												setSelectedAppCenterItem({
-													type: 'template',
-													id: template.id,
-												});
-											}
-										}}
-									>
-										<div className="min-w-0">
-											<div className="flex items-center justify-between gap-3">
-												<span className="truncate text-sm font-medium">
-													{template.name}
-												</span>
-												<span className="shrink-0 text-xs text-muted-foreground">
-													{t('platform.appCenter.templateTools', {
-														count: templateTools.length,
-													})}
-												</span>
-											</div>
-											<p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
-												{template.description}
-											</p>
-										</div>
-										<Button
-											type="button"
-											size="sm"
-											variant="outline"
-											onClick={(event) => {
-												event.stopPropagation();
-												setSelectedAppCenterItem({
-													type: 'template',
-													id: template.id,
-												});
-												handleConfigureTemplate(template);
-												window.setTimeout(scrollToAgentManagement, 0);
-											}}
-										>
-											<ListChecks className="size-4" />
-											{t('platform.appCenter.configureTemplate')}
-										</Button>
-									</div>
-									);
-								})
-							)}
-						</div>
-
-						<div className="grid content-start gap-3 rounded-lg border bg-muted/20 p-3">
-							<div className="flex items-center justify-between gap-3">
-								<h3 className="text-sm font-medium">
-									{t('platform.appCenter.published')}
-								</h3>
-								<Badge variant="outline">
-									{activePlatformAgents.length}
-								</Badge>
-							</div>
-							{appCenterAgents.length === 0 ? (
-								<div className="rounded-lg border border-dashed bg-background p-4 text-sm text-muted-foreground">
-									{t('platform.appCenter.emptyAgents')}
-								</div>
-							) : (
-								appCenterAgents.map((agent) => {
-									const readinessState: HealthState =
-										agent.readiness?.status ?? 'partial';
-									const isReady = readinessState === 'ready';
-
-									return (
-										<div
-											key={agent.id}
-											role="button"
-											tabIndex={0}
-											className={cn(
-												'grid gap-3 rounded-lg border bg-background p-3 text-left transition hover:border-primary/50',
-												inspectedAppCenterAgent?.id === agent.id &&
-													'border-primary/60 bg-primary/5',
-											)}
-											onClick={() =>
-												setSelectedAppCenterItem({
-													type: 'agent',
-													id: agent.id,
-												})
-											}
-											onKeyDown={(event) => {
-												if (event.key === 'Enter' || event.key === ' ') {
-													event.preventDefault();
-													setSelectedAppCenterItem({
-														type: 'agent',
-														id: agent.id,
-													});
-												}
-											}}
-										>
-											<div className="min-w-0">
-												<div className="flex flex-wrap items-center gap-2">
-													<span className="min-w-0 truncate text-sm font-medium">
-														{agent.name}
-													</span>
-													<StateBadge
-														state={readinessState}
-														label={t(
-															`platform.agentManagement.readiness.${readinessState}`,
-														)}
-													/>
-												</div>
-												<p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
-													{agentResourceText(agent)}
-												</p>
-											</div>
-											<Button
-												type="button"
-												size="sm"
-												variant={isReady ? 'default' : 'outline'}
-												onClick={(event) => {
-													event.stopPropagation();
-													setSelectedAppCenterItem({
-														type: 'agent',
-														id: agent.id,
-													});
-													if (isReady) {
-														setSelectedRunAgentId(agent.id);
-														handlePrimeAgentRunner();
-														return;
-													}
-													handleEditAgent(agent);
-													window.setTimeout(scrollToAgentManagement, 0);
-												}}
-											>
-												{isReady ? (
-													<Play className="size-4" />
-												) : (
-													<Pencil className="size-4" />
-												)}
-												{isReady
-													? t('platform.appCenter.run')
-													: t('platform.appCenter.fix')}
-											</Button>
-										</div>
-									);
-								})
-							)}
-						</div>
-
-						<div className="grid content-start gap-3 rounded-lg border bg-muted/20 p-3">
-							<div className="flex items-center justify-between gap-3">
-								<h3 className="text-sm font-medium">
-									{t('platform.appCenter.governance')}
-								</h3>
-								<StateBadge
-									state={
-										readyPlatformAgents.length > 0 && pendingApprovals.length === 0
-											? 'ready'
-											: 'partial'
-									}
-									label={
-										readyPlatformAgents.length > 0 && pendingApprovals.length === 0
-											? t('platform.appCenter.loopReady')
-											: t('platform.appCenter.loopNeedsWork')
-									}
-								/>
-							</div>
-							<div className="grid grid-cols-2 gap-2">
-								<div className="rounded-lg border bg-background p-3">
-									<div className="text-xs text-muted-foreground">
-										{t('platform.appCenter.readyApps')}
-									</div>
-									<div className="mt-1 text-2xl font-semibold tabular-nums">
-										{readyPlatformAgents.length}
-									</div>
-								</div>
-								<div className="rounded-lg border bg-background p-3">
-									<div className="text-xs text-muted-foreground">
-										{t('platform.appCenter.pendingApprovals')}
-									</div>
-									<div className="mt-1 text-2xl font-semibold tabular-nums">
-										{pendingApprovals.length}
-									</div>
-								</div>
-							</div>
-							{pendingApprovals.length === 0 ? (
-								<div className="rounded-lg border border-dashed bg-background p-4 text-sm text-muted-foreground">
-									{t('platform.operations.emptyApprovals')}
-								</div>
-							) : (
-								pendingApprovals.slice(0, 2).map((approval) => (
-									<button
-										key={approval.approval_id}
-										type="button"
-										className="grid gap-1 rounded-lg border bg-background p-3 text-left text-sm transition hover:border-primary/50"
-										onClick={() => handleUseApproval(approval)}
-									>
-										<span className="truncate font-medium">
-											{approval.tool_name ||
-												approval.workflow_type ||
-												approval.request_type}
-										</span>
-										<span className="truncate text-xs text-muted-foreground">
-											{approval.user_id} · {approval.tenant}
-										</span>
-									</button>
-								))
-							)}
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={scrollToGovernance}
-							>
-								<ArrowRight className="size-4" />
-								{t('platform.appCenter.reviewApprovals')}
-							</Button>
-						</div>
-					</div>
-
-					<div className="grid gap-4 rounded-lg border bg-muted/20 p-4 lg:grid-cols-[1.2fr_0.8fr]">
-						<div className="min-w-0">
-							<div className="flex flex-wrap items-center gap-2">
-								<Badge variant="outline">
-									{inspectedAppCenterAgent
-										? t('platform.appCenter.selectedAgent')
-										: inspectedAppCenterTemplate
-											? t('platform.appCenter.selectedTemplate')
-											: t('platform.appCenter.details')}
-								</Badge>
-								{inspectedAppCenterAgent || inspectedAppCenterTemplate ? (
-									<StateBadge
-										state={appCenterDetailStatus}
-										label={
-											inspectedAppCenterAgent
-												? t(
-														`platform.agentManagement.readiness.${appCenterDetailStatus}`,
-													)
-												: appCenterDetailStatus === 'ready'
-													? t('platform.appCenter.readyToPublish')
-													: t('platform.appCenter.needsConfiguration')
-										}
-									/>
-								) : null}
-							</div>
-							<h3 className="mt-3 text-base font-semibold">
-								{inspectedAppCenterAgent?.name ??
-									inspectedAppCenterTemplate?.name ??
-									t('platform.appCenter.selectToInspect')}
-							</h3>
-							<p className="mt-1 text-sm leading-6 text-muted-foreground">
-								{inspectedAppCenterAgent?.description ??
-									inspectedAppCenterTemplate?.description ??
-									t('platform.appCenter.selectToInspectHelper')}
-							</p>
-
-							<div className="mt-4 grid gap-2 sm:grid-cols-2">
-								{appCenterDetailResources.map((resource) => {
-									const Icon = resource.icon;
-
-									return (
-										<div
-											key={resource.label}
-											className="grid gap-2 rounded-lg border bg-background p-3"
-										>
-											<div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-												<Icon className="size-4" />
-												<span>{resource.label}</span>
-											</div>
-											<div className="line-clamp-2 text-sm">
-												{resource.value}
-											</div>
-										</div>
-									);
-								})}
-							</div>
-						</div>
-
-						<div className="grid content-start gap-3">
-							<div className="rounded-lg border bg-background p-3">
-								<div className="flex items-center gap-2 text-sm font-medium">
-									<ListChecks className="size-4 text-muted-foreground" />
-									{t('platform.appCenter.readiness')}
-								</div>
-								{appCenterDetailIssues.length === 0 ? (
-									<div className="mt-3 flex items-center gap-2 text-sm text-emerald-700">
-										<CheckCircle2 className="size-4" />
-										{t('platform.appCenter.noIssues')}
-									</div>
-								) : (
-									<ul className="mt-3 grid gap-2 text-sm text-muted-foreground">
-										{appCenterDetailIssues.map((issue) => (
-											<li key={issue} className="flex items-start gap-2">
-												<AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" />
-												<span>{issue}</span>
-											</li>
-										))}
-									</ul>
-								)}
-							</div>
-
-							<div className="grid gap-2">
-								<Button
-									type="button"
-									size="sm"
-									onClick={handleAppCenterDetailPrimaryAction}
-									disabled={!inspectedAppCenterAgent && !inspectedAppCenterTemplate}
-								>
-									{inspectedAppCenterAgent &&
-									(inspectedAppCenterAgent.readiness?.status ?? 'partial') ===
-										'ready' ? (
-										<Play className="size-4" />
-									) : (
-										<Pencil className="size-4" />
-									)}
-									{inspectedAppCenterAgent
-										? (inspectedAppCenterAgent.readiness?.status ?? 'partial') ===
-											'ready'
-											? t('platform.appCenter.runSelected')
-											: t('platform.appCenter.editConfiguration')
-										: t('platform.appCenter.publishFromTemplate')}
-								</Button>
-								<Button
-									type="button"
-									size="sm"
-									variant="outline"
-									onClick={handleAppCenterDetailSecondaryAction}
-									disabled={!inspectedAppCenterAgent && pendingApprovals.length === 0}
-								>
-									{inspectedAppCenterAgent ? (
-										<ListChecks className="size-4" />
-									) : (
-										<ShieldCheck className="size-4" />
-									)}
-									{inspectedAppCenterAgent
-										? t('platform.appCenter.viewInManagement')
-										: t('platform.appCenter.reviewApprovals')}
-								</Button>
-							</div>
-						</div>
-					</div>
-				</section>
+				<AppCenterPanel
+					agentTemplates={agentTemplates}
+					activePlatformAgents={activePlatformAgents}
+					readyPlatformAgents={readyPlatformAgents}
+					pendingApprovals={pendingApprovals}
+					appCenterAgents={appCenterAgents}
+					inspectedAppCenterAgent={inspectedAppCenterAgent}
+					inspectedAppCenterTemplate={inspectedAppCenterTemplate}
+					appCenterPrimaryLabel={appCenterPrimaryLabel}
+					appCenterPrimaryDisabled={appCenterPrimaryDisabled}
+					appCenterDetailResources={appCenterDetailResources}
+					appCenterDetailIssues={appCenterDetailIssues}
+					appCenterDetailStatus={appCenterDetailStatus}
+					agentResourceText={agentResourceText}
+					onOpenGovernance={scrollToGovernance}
+					onPrimaryAction={handleAppCenterPrimaryAction}
+					setSelectedAppCenterItem={setSelectedAppCenterItem}
+					onConfigureTemplate={handleConfigureTemplate}
+					onOpenAgentManagement={scrollToAgentManagement}
+					setSelectedRunAgentId={setSelectedRunAgentId}
+					onPrimeAgentRunner={handlePrimeAgentRunner}
+					onEditAgent={handleEditAgent}
+					onUseApproval={handleUseApproval}
+					onDetailPrimaryAction={handleAppCenterDetailPrimaryAction}
+					onDetailSecondaryAction={handleAppCenterDetailSecondaryAction}
+					labels={{
+						eyebrow: t('platform.appCenter.eyebrow'),
+						title: t('platform.appCenter.title'),
+						description: t('platform.appCenter.description'),
+						reviewApprovals: t('platform.appCenter.reviewApprovals'),
+						templates: t('platform.appCenter.templates'),
+						emptyTemplates: t('platform.appCenter.emptyTemplates'),
+						templateTools: (count) =>
+							t('platform.appCenter.templateTools', { count }),
+						configureTemplate: t('platform.appCenter.configureTemplate'),
+						published: t('platform.appCenter.published'),
+						emptyAgents: t('platform.appCenter.emptyAgents'),
+						run: t('platform.appCenter.run'),
+						fix: t('platform.appCenter.fix'),
+						governance: t('platform.appCenter.governance'),
+						loopReady: t('platform.appCenter.loopReady'),
+						loopNeedsWork: t('platform.appCenter.loopNeedsWork'),
+						readyApps: t('platform.appCenter.readyApps'),
+						pendingApprovals: t('platform.appCenter.pendingApprovals'),
+						emptyApprovals: t('platform.operations.emptyApprovals'),
+						selectedAgent: t('platform.appCenter.selectedAgent'),
+						selectedTemplate: t('platform.appCenter.selectedTemplate'),
+						details: t('platform.appCenter.details'),
+						readinessLabel: (state) =>
+							t(`platform.agentManagement.readiness.${state}`),
+						readyToPublish: t('platform.appCenter.readyToPublish'),
+						needsConfiguration: t('platform.appCenter.needsConfiguration'),
+						selectToInspect: t('platform.appCenter.selectToInspect'),
+						selectToInspectHelper: t(
+							'platform.appCenter.selectToInspectHelper',
+						),
+						readiness: t('platform.appCenter.readiness'),
+						noIssues: t('platform.appCenter.noIssues'),
+						runSelected: t('platform.appCenter.runSelected'),
+						editConfiguration: t('platform.appCenter.editConfiguration'),
+						publishFromTemplate: t('platform.appCenter.publishFromTemplate'),
+						viewInManagement: t('platform.appCenter.viewInManagement'),
+					}}
+				/>
 
 				<section className="grid gap-4 rounded-lg border bg-background p-4">
 					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
