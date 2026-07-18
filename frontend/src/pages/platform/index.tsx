@@ -100,6 +100,7 @@ import {
 	auditStatsForSummary,
 	blockedOrPartialPlatformAgentsForReadiness,
 	connectorDraftIssuesForDraft,
+	dashboardOperationsSummaryForOperations,
 	dashboardRiskToolItemsForStatus,
 	dashboardTodoItemsForStatus,
 	defaultEnterpriseWorkflowInputs,
@@ -1066,12 +1067,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		dashboardRiskTools: dashboard?.risk_tools,
 		availableToolItems,
 	});
-	const workflowStatusCounts = dashboardOperations?.workflow_status_counts ?? {};
-	const completedWorkflowRunCount = workflowStatusCounts.completed ?? 0;
-	const partialWorkflowRunCount = workflowStatusCounts.partial ?? 0;
-	const failedWorkflowRunCount = workflowStatusCounts.failed ?? 0;
-	const governedWorkflowItems = dashboardOperations?.governed_workflows ?? [];
-	const recommendedOperationActions = dashboardOperations?.recommended_actions ?? [];
+	const dashboardOperationsSummary =
+		dashboardOperationsSummaryForOperations(dashboardOperations);
+	const completedWorkflowRunCount = dashboardOperationsSummary.completedWorkflowRunCount;
+	const partialWorkflowRunCount = dashboardOperationsSummary.partialWorkflowRunCount;
+	const failedWorkflowRunCount = dashboardOperationsSummary.failedWorkflowRunCount;
+	const governedWorkflowItems = dashboardOperationsSummary.governedWorkflowItems;
+	const recommendedOperationActions =
+		dashboardOperationsSummary.recommendedOperationActions;
 	const dashboardTodoItems = dashboardTodoItemsForStatus(
 		{
 			credentialCount: credentials.length,

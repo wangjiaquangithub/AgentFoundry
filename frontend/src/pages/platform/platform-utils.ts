@@ -7,6 +7,7 @@ import type {
 	EnterpriseAuditQueryResponse,
 	EnterpriseIdentity,
 	EnterprisePlatformMember,
+	EnterprisePlatformOperations,
 	EnterprisePlatformDashboardRiskTool,
 	EnterprisePlatformGovernanceResponse,
 	EnterprisePlatformStatusResponse,
@@ -640,6 +641,20 @@ export function memoryOperationsSummaryForItems(items: MemoryOperationsItem[]) {
 			savedCount: 0,
 		},
 	);
+}
+
+export function dashboardOperationsSummaryForOperations(
+	operations?: EnterprisePlatformOperations,
+) {
+	const workflowStatusCounts = operations?.workflow_status_counts ?? {};
+
+	return {
+		completedWorkflowRunCount: workflowStatusCounts.completed ?? 0,
+		partialWorkflowRunCount: workflowStatusCounts.partial ?? 0,
+		failedWorkflowRunCount: workflowStatusCounts.failed ?? 0,
+		governedWorkflowItems: operations?.governed_workflows ?? [],
+		recommendedOperationActions: operations?.recommended_actions ?? [],
+	};
 }
 
 export function blockedOrPartialPlatformAgentsForReadiness(values: {
