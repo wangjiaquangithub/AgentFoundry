@@ -83,7 +83,6 @@ import { TenantsViewPage } from './components/TenantsViewPage';
 import { ToolsViewPage } from './components/ToolsViewPage';
 import type {
 	WorkbenchQuickAction,
-	WorkbenchReadinessItem,
 	WorkbenchRiskItem,
 } from './components/WorkbenchReadinessPanel';
 import { WorkflowsViewPage } from './components/WorkflowsViewPage';
@@ -132,6 +131,7 @@ import {
 	triggerSchedulesBySource,
 	workbenchActionsForStatus,
 	workbenchIndicatorsForStatus,
+	workbenchReadinessItemsForStatus,
 	workflowOpsStatsForSummary,
 } from './platform-utils';
 
@@ -3818,79 +3818,52 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			},
 		},
 	);
-	const workbenchReadinessItems = [
+	const workbenchReadinessItems = workbenchReadinessItemsForStatus(
 		{
-			key: 'model',
-			title: t('platform.workbench.readiness.model.title'),
-			description: t('platform.workbench.readiness.model.description', {
-				count: credentials.length,
-			}),
-			state: credentials.length > 0 ? 'ready' : 'blocked',
-			icon: KeyRound,
-			onClick: () => navigate('/credential'),
+			credentialCount: credentials.length,
+			knowledgeBaseCount: knowledgeBases.length,
+			savedConnectorConfigCount: savedConnectorConfigs.length,
+			connectorDraftIssueCount: connectorDraftIssues.length,
+			savedConnectorConfigEnabled: Boolean(connectors?.runtime.saved_config_enabled),
+			activeMemberCount,
+			readyAgentCount: readyPlatformAgents.length,
+			activeAgentCount: activePlatformAgents.length,
+			workflowTemplateCount: workflowTemplates.length,
 		},
 		{
-			key: 'knowledge',
-			title: t('platform.workbench.readiness.knowledge.title'),
-			description: t('platform.workbench.readiness.knowledge.description', {
-				count: knowledgeBases.length,
-			}),
-			state: knowledgeBases.length > 0 ? 'ready' : 'blocked',
-			icon: LibraryBig,
-			onClick: () => navigate('/knowledge'),
+			icons: {
+				model: KeyRound,
+				knowledge: LibraryBig,
+				connectors: Network,
+				members: UserRound,
+				agents: BotMessageSquare,
+				workflows: Workflow,
+			},
+			actions: {
+				credentials: () => navigate('/credential'),
+				knowledge: () => navigate('/knowledge'),
+				connectors: scrollToConnectorCenter,
+				members: scrollToMembers,
+				agents: handleStartPublishing,
+				workflows: scrollToWorkflowRunner,
+			},
+			labels: {
+				title: (key) => t(`platform.workbench.readiness.${key}.title`),
+				modelDescription: (count) =>
+					t('platform.workbench.readiness.model.description', { count }),
+				knowledgeDescription: (count) =>
+					t('platform.workbench.readiness.knowledge.description', { count }),
+				connectorsDescription: (count) =>
+					t('platform.workbench.readiness.connectors.description', { count }),
+				membersDescription: (count) =>
+					t('platform.workbench.readiness.members.description', { count }),
+				agentsDescription: (ready, total) =>
+					t('platform.workbench.readiness.agents.description', { ready, total }),
+				workflowsDescription: (count) =>
+					t('platform.workbench.readiness.workflows.description', { count }),
+			},
 		},
-		{
-			key: 'connectors',
-			title: t('platform.workbench.readiness.connectors.title'),
-			description: t('platform.workbench.readiness.connectors.description', {
-				count: savedConnectorConfigs.length,
-			}),
-			state:
-				connectorDraftIssues.length > 0
-					? 'blocked'
-					: savedConnectorConfigs.length > 0 || connectors?.runtime.saved_config_enabled
-						? 'ready'
-						: 'partial',
-			icon: Network,
-			onClick: scrollToConnectorCenter,
-		},
-		{
-			key: 'members',
-			title: t('platform.workbench.readiness.members.title'),
-			description: t('platform.workbench.readiness.members.description', {
-				count: activeMemberCount,
-			}),
-			state: activeMemberCount > 0 ? 'ready' : 'blocked',
-			icon: UserRound,
-			onClick: scrollToMembers,
-		},
-		{
-			key: 'agents',
-			title: t('platform.workbench.readiness.agents.title'),
-			description: t('platform.workbench.readiness.agents.description', {
-				ready: readyPlatformAgents.length,
-				total: activePlatformAgents.length,
-			}),
-			state:
-				readyPlatformAgents.length > 0
-					? 'ready'
-					: activePlatformAgents.length > 0
-						? 'partial'
-						: 'blocked',
-			icon: BotMessageSquare,
-			onClick: handleStartPublishing,
-		},
-		{
-			key: 'workflows',
-			title: t('platform.workbench.readiness.workflows.title'),
-			description: t('platform.workbench.readiness.workflows.description', {
-				count: workflowTemplates.length,
-			}),
-			state: workflowTemplates.length > 0 ? 'ready' : 'partial',
-			icon: Workflow,
-			onClick: scrollToWorkflowRunner,
-		},
-	] satisfies WorkbenchReadinessItem[];
+	);
 	const workbenchRiskItems = [
 		hasErrors
 			? {

@@ -25,6 +25,7 @@ import type { PlatformMemberTenantSummary } from './components/MembersPanel';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
 import type { TenantOverviewItem } from './components/TenantWorkspacePanel';
 import type { TriggerOpsStat } from './components/TriggerOpsPanel';
+import type { WorkbenchReadinessItem } from './components/WorkbenchReadinessPanel';
 import type {
 	WorkbenchActionCard,
 	WorkbenchIndicator,
@@ -439,6 +440,111 @@ export function launchpadStepsForStatus(
 
 type WorkbenchIndicatorKey = 'agents' | 'approvals' | 'workflows' | 'memory';
 type WorkbenchActionKey = 'run' | 'workflow' | 'governance' | 'memory';
+type WorkbenchReadinessKey =
+	| 'model'
+	| 'knowledge'
+	| 'connectors'
+	| 'members'
+	| 'agents'
+	| 'workflows';
+type WorkbenchReadinessTarget =
+	| 'credentials'
+	| 'knowledge'
+	| 'connectors'
+	| 'members'
+	| 'agents'
+	| 'workflows';
+
+export function workbenchReadinessItemsForStatus(
+	values: {
+		credentialCount: number;
+		knowledgeBaseCount: number;
+		savedConnectorConfigCount: number;
+		connectorDraftIssueCount: number;
+		savedConnectorConfigEnabled: boolean;
+		activeMemberCount: number;
+		readyAgentCount: number;
+		activeAgentCount: number;
+		workflowTemplateCount: number;
+	},
+	options: {
+		icons: Record<WorkbenchReadinessKey, ComponentType<{ className?: string }>>;
+		actions: Record<WorkbenchReadinessTarget, () => void>;
+		labels: {
+			title: (key: WorkbenchReadinessKey) => string;
+			modelDescription: (count: number) => string;
+			knowledgeDescription: (count: number) => string;
+			connectorsDescription: (count: number) => string;
+			membersDescription: (count: number) => string;
+			agentsDescription: (ready: number, total: number) => string;
+			workflowsDescription: (count: number) => string;
+		};
+	},
+): WorkbenchReadinessItem[] {
+	return [
+		{
+			key: 'model',
+			title: options.labels.title('model'),
+			description: options.labels.modelDescription(values.credentialCount),
+			state: values.credentialCount > 0 ? 'ready' : 'blocked',
+			icon: options.icons.model,
+			onClick: options.actions.credentials,
+		},
+		{
+			key: 'knowledge',
+			title: options.labels.title('knowledge'),
+			description: options.labels.knowledgeDescription(values.knowledgeBaseCount),
+			state: values.knowledgeBaseCount > 0 ? 'ready' : 'blocked',
+			icon: options.icons.knowledge,
+			onClick: options.actions.knowledge,
+		},
+		{
+			key: 'connectors',
+			title: options.labels.title('connectors'),
+			description: options.labels.connectorsDescription(values.savedConnectorConfigCount),
+			state:
+				values.connectorDraftIssueCount > 0
+					? 'blocked'
+					: values.savedConnectorConfigCount > 0 || values.savedConnectorConfigEnabled
+						? 'ready'
+						: 'partial',
+			icon: options.icons.connectors,
+			onClick: options.actions.connectors,
+		},
+		{
+			key: 'members',
+			title: options.labels.title('members'),
+			description: options.labels.membersDescription(values.activeMemberCount),
+			state: values.activeMemberCount > 0 ? 'ready' : 'blocked',
+			icon: options.icons.members,
+			onClick: options.actions.members,
+		},
+		{
+			key: 'agents',
+			title: options.labels.title('agents'),
+			description: options.labels.agentsDescription(
+				values.readyAgentCount,
+				values.activeAgentCount,
+			),
+			state:
+				values.readyAgentCount > 0
+					? 'ready'
+					: values.activeAgentCount > 0
+						? 'partial'
+						: 'blocked',
+			icon: options.icons.agents,
+			onClick: options.actions.agents,
+		},
+		{
+			key: 'workflows',
+			title: options.labels.title('workflows'),
+			description: options.labels.workflowsDescription(values.workflowTemplateCount),
+			state: values.workflowTemplateCount > 0 ? 'ready' : 'partial',
+			icon: options.icons.workflows,
+			onClick: options.actions.workflows,
+		},
+	];
+}
 
 export function workbenchIndicatorsForStatus(
 	values: {
