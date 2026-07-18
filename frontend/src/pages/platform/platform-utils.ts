@@ -347,6 +347,53 @@ export function activePlatformMemberCountForMembers(members: EnterprisePlatformM
 	return members.filter((member) => member.status !== 'inactive').length;
 }
 
+export function platformMembersByUserId(members: EnterprisePlatformMember[]) {
+	return new Map(members.map((member) => [member.user_id, member]));
+}
+
+export function publishAccessMembersForSelection(values: {
+	activeMembers: EnterprisePlatformMember[];
+	memberByUserId: Map<string, EnterprisePlatformMember>;
+	allowedUserIds: string[];
+	tenant: string;
+}) {
+	const memberById = platformMembersByUserId(values.activeMembers);
+	values.allowedUserIds.forEach((userId) => {
+		if (!memberById.has(userId)) {
+			const existingMember = values.memberByUserId.get(userId);
+			memberById.set(userId, {
+				user_id: userId,
+				tenant: existingMember?.tenant ?? values.tenant,
+				display_name: existingMember?.display_name ?? userId,
+				role: existingMember?.role ?? '',
+				status: existingMember?.status ?? 'inactive',
+				source: existingMember?.source,
+				updated_at: existingMember?.updated_at,
+				updated_by: existingMember?.updated_by,
+			});
+		}
+	});
+	return Array.from(memberById.values()).sort((left, right) =>
+		(left.display_name || left.user_id).localeCompare(right.display_name || right.user_id),
+	);
+}
+
+export function publishRoleOptionsForMembers(values: {
+	activeMembers: EnterprisePlatformMember[];
+	configuredRoles: string[];
+	selectedRoles: string[];
+}) {
+	return Array.from(
+		new Set([
+			...values.activeMembers.map((member) => member.role).filter(Boolean),
+			...values.configuredRoles.filter((role) =>
+				values.activeMembers.some((member) => member.role === role),
+			),
+			...values.selectedRoles,
+		]),
+	).sort();
+}
+
 export function publishReleaseIssuesForDraft(
 	values: {
 		modelConfigId?: string | null;

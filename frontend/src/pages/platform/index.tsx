@@ -132,9 +132,12 @@ import {
 	orchestrationWorkbenchStepsForStatus,
 	pendingWorkflowRunApprovals,
 	publishReleaseIssuesForDraft,
+	platformMembersByUserId,
 	platformOverviewStatsForSummary,
 	platformMemberTenantSummariesForMembers,
 	platformConsoleItemsForDisplay,
+	publishAccessMembersForSelection,
+	publishRoleOptionsForMembers,
 	readyLaunchpadStepCountForSteps,
 	readyOrchestrationWorkbenchStepCountForSteps,
 	readyPlatformAgentsForAgents,
@@ -694,41 +697,26 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		[platformMembers?.members, publishTenant],
 	);
 	const platformMemberById = useMemo(
-		() => new Map((platformMembers?.members ?? []).map((member) => [member.user_id, member])),
+		() => platformMembersByUserId(platformMembers?.members ?? []),
 		[platformMembers?.members],
 	);
-	const publishAccessMembers = useMemo(() => {
-		const memberById = new Map(activePlatformMembers.map((member) => [member.user_id, member]));
-		publishForm.allowed_user_ids.forEach((userId) => {
-			if (!memberById.has(userId)) {
-				const existingMember = platformMemberById.get(userId);
-				memberById.set(userId, {
-					user_id: userId,
-					tenant: existingMember?.tenant ?? publishTenant,
-					display_name: existingMember?.display_name ?? userId,
-					role: existingMember?.role ?? '',
-					status: existingMember?.status ?? 'inactive',
-					source: existingMember?.source,
-					updated_at: existingMember?.updated_at,
-					updated_by: existingMember?.updated_by,
-				});
-			}
-		});
-		return Array.from(memberById.values()).sort((left, right) =>
-			(left.display_name || left.user_id).localeCompare(right.display_name || right.user_id),
-		);
-	}, [activePlatformMembers, platformMemberById, publishForm.allowed_user_ids, publishTenant]);
+	const publishAccessMembers = useMemo(
+		() =>
+			publishAccessMembersForSelection({
+				activeMembers: activePlatformMembers,
+				memberByUserId: platformMemberById,
+				allowedUserIds: publishForm.allowed_user_ids,
+				tenant: publishTenant,
+			}),
+		[activePlatformMembers, platformMemberById, publishForm.allowed_user_ids, publishTenant],
+	);
 	const publishRoleOptions = useMemo(
 		() =>
-			Array.from(
-				new Set([
-					...activePlatformMembers.map((member) => member.role).filter(Boolean),
-					...(platformMembers?.roles ?? []).filter((role) =>
-						activePlatformMembers.some((member) => member.role === role),
-					),
-					...publishForm.allowed_roles,
-				]),
-			).sort(),
+			publishRoleOptionsForMembers({
+				activeMembers: activePlatformMembers,
+				configuredRoles: platformMembers?.roles ?? [],
+				selectedRoles: publishForm.allowed_roles,
+			}),
 		[activePlatformMembers, platformMembers?.roles, publishForm.allowed_roles],
 	);
 	const publishSelectedModelLabel = modelCredentialLabel(
