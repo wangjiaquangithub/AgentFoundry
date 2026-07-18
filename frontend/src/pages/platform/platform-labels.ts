@@ -12,6 +12,11 @@ export const runtimeStatusLabels = (t: PlatformTranslate) => ({
 	disabled: t('platform.runtime.disabled'),
 });
 
+export const platformConnectionLabels = (t: PlatformTranslate) => ({
+	notConfigured: t('platform.connection.notConfigured'),
+	anonymous: t('platform.connection.anonymous'),
+});
+
 export const platformRuntimeConfigLabels = (t: PlatformTranslate) => ({
 	unavailable: t('platform.runtime.unavailable'),
 });

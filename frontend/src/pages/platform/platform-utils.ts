@@ -409,6 +409,21 @@ export function platformResourceLookupStateForStatus(values: {
 	};
 }
 
+export function platformConnectionStateForStatus(values: {
+	currentUserId?: string | null;
+	storedServerUrl?: string | null;
+	storedUsername?: string | null;
+	labels: {
+		notConfigured: string;
+		anonymous: string;
+	};
+}) {
+	return {
+		serverUrl: values.storedServerUrl || values.labels.notConfigured,
+		username: values.currentUserId || values.storedUsername || values.labels.anonymous,
+	};
+}
+
 export function platformRuntimeConfigStateForStatus(values: {
 	platformStatus?: EnterprisePlatformStatusResponse | null;
 	governance?: EnterprisePlatformGovernanceResponse | null;

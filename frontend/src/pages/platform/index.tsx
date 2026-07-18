@@ -114,6 +114,7 @@ import {
 	orchestrationWorkbenchStepLabels,
 	operationsHeadlineLabels,
 	launchpadStepLabels,
+	platformConnectionLabels,
 	platformConsoleItemLabels,
 	platformOverviewStatLabels,
 	platformRuntimeConfigLabels,
@@ -202,6 +203,7 @@ import {
 	platformDashboardSourceStateForStatus,
 	platformOverviewStatsForSummary,
 	platformAgentInventoryStateForStatus,
+	platformConnectionStateForStatus,
 	platformConsoleItemsForDisplay,
 	platformResourceLookupStateForStatus,
 	platformRuntimeConfigStateForStatus,
@@ -395,11 +397,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const [enablingAgentWorkflowId, setEnablingAgentWorkflowId] = useState<string | null>(null);
 	const [publishForm, setPublishForm] = useState<PublishFormState>(defaultPublishForm);
 
-	const serverUrl = localStorage.getItem('server_url') || t('platform.connection.notConfigured');
-	const username =
-		platformStatus?.current_user.user_id ||
-		localStorage.getItem('username') ||
-		t('platform.connection.anonymous');
+	const platformConnectionState = platformConnectionStateForStatus({
+		currentUserId: platformStatus?.current_user.user_id,
+		storedServerUrl: localStorage.getItem('server_url'),
+		storedUsername: localStorage.getItem('username'),
+		labels: platformConnectionLabels(t),
+	});
+	const serverUrl = platformConnectionState.serverUrl;
+	const username = platformConnectionState.username;
 	const hasErrors = Boolean(
 		agentsError ||
 		credentialsError ||
