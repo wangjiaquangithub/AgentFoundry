@@ -34,7 +34,21 @@ From this repository:
 Open:
 
 ```text
-http://127.0.0.1:5173
+http://127.0.0.1:5176
+```
+
+Platform routes:
+
+```text
+/platform            Dashboard overview
+/platform/agents     Agent templates, publishing, and management
+/platform/tools      Tool catalog and tool runner
+/platform/workflows  Workflow templates and runner
+/platform/approvals  Human approval and governance queue
+/platform/runs       Agent run console and history
+/platform/tenants    Tenant workspace, connectors, and members
+/platform/memory     Long-term memory operations
+/platform/settings   Runtime, audit, config, and capability views
 ```
 
 Use these setup values in the frontend if prompted:
@@ -64,4 +78,4 @@ AGENTSCOPE_DIR=/path/to/agentscope ./scripts/start_agentfoundry.sh
 
 ## Current Status
 
-This is a runnable enterprise Agent platform prototype, not a production SaaS platform yet. The next productization steps are splitting the single workbench into module routes, adding persistent platform storage, and formalizing deployment.
+This is a runnable enterprise Agent platform prototype, not a production SaaS platform yet. The platform console is now split into route-level management pages while reusing the current state model. The next productization steps are adding persistent platform storage, formalizing deployment, and extracting large route sections into maintainable feature modules.

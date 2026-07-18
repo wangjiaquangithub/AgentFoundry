@@ -1,12 +1,20 @@
 import {
 	BotMessageSquare,
+	Bot,
+	Boxes,
+	Brain,
 	Calendars,
 	Compass,
+	GitBranch,
 	KeyRound,
 	Languages,
 	LayoutDashboard,
 	LibraryBig,
+	PlayCircle,
 	Settings,
+	ShieldCheck,
+	UsersRound,
+	Wrench,
 } from 'lucide-react';
 import { useOnborda } from 'onborda';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -49,6 +57,18 @@ export function AppSidebar() {
 		i18n.changeLanguage(next);
 	};
 
+	const platformItems = [
+		{ key: 'platform-dashboard', label: '平台总览', path: '/platform', icon: LayoutDashboard },
+		{ key: 'platform-agents', label: 'Agent 管理', path: '/platform/agents', icon: Bot },
+		{ key: 'platform-tools', label: '工具目录', path: '/platform/tools', icon: Wrench },
+		{ key: 'platform-workflows', label: '工作流', path: '/platform/workflows', icon: GitBranch },
+		{ key: 'platform-approvals', label: '审批治理', path: '/platform/approvals', icon: ShieldCheck },
+		{ key: 'platform-runs', label: '运行台', path: '/platform/runs', icon: PlayCircle },
+		{ key: 'platform-tenants', label: '租户成员', path: '/platform/tenants', icon: UsersRound },
+		{ key: 'platform-memory', label: '长期记忆', path: '/platform/memory', icon: Brain },
+		{ key: 'platform-settings', label: '平台设置', path: '/platform/settings', icon: Boxes },
+	];
+
 	return (
 		<Sidebar collapsible="none" className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r">
 			<SidebarHeader>
@@ -60,18 +80,25 @@ export function AppSidebar() {
 				<SidebarGroup>
 					<SidebarGroupContent>
 						<SidebarMenu>
-							<SidebarMenuItem key={'platform'}>
-								<SidebarMenuButton
-									tooltip={{ children: t('common.platform'), hidden: false }}
-									isActive={
-										location.pathname === '/' || location.pathname === '/platform'
-									}
-									onClick={() => navigate('/platform')}
-									className="px-2.5 md:px-2"
-								>
-									<LayoutDashboard />
-								</SidebarMenuButton>
-							</SidebarMenuItem>
+							{platformItems.map((item) => {
+								const Icon = item.icon;
+								const isActive =
+									location.pathname === item.path ||
+									(item.path === '/platform' && location.pathname === '/');
+
+								return (
+									<SidebarMenuItem key={item.key}>
+										<SidebarMenuButton
+											tooltip={{ children: item.label, hidden: false }}
+											isActive={isActive}
+											onClick={() => navigate(item.path)}
+											className="px-2.5 md:px-2"
+										>
+											<Icon />
+										</SidebarMenuButton>
+									</SidebarMenuItem>
+								);
+							})}
 							<SidebarMenuItem key={'chat'}>
 								<SidebarMenuButton
 									tooltip={{ children: t('common.chat'), hidden: false }}

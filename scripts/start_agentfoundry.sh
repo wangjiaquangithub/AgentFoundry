@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 AGENTSCOPE_DIR="${AGENTSCOPE_DIR:-$(cd "$ROOT_DIR/../agentscope" && pwd)}"
 BACKEND_PORT="${BACKEND_PORT:-8000}"
-FRONTEND_PORT="${FRONTEND_PORT:-5173}"
+FRONTEND_PORT="${FRONTEND_PORT:-5176}"
 REDIS_HOST="${REDIS_HOST:-127.0.0.1}"
 REDIS_PORT="${REDIS_PORT:-6379}"
 REDIS_CONTAINER_NAME="${REDIS_CONTAINER_NAME:-agentfoundry-redis}"
@@ -22,6 +22,10 @@ command_exists() {
 
 port_open() {
 	nc -z "$1" "$2" >/dev/null 2>&1
+}
+
+agentfoundry_frontend_open() {
+	curl -fsS "http://127.0.0.1:$1" 2>/dev/null | grep -q '<title>AgentFoundry</title>'
 }
 
 wait_for_port() {
@@ -155,8 +159,13 @@ if ! port_open 127.0.0.1 "$FRONTEND_PORT"; then
 	) >/tmp/agentscope-enterprise-frontend.log 2>&1 &
 	PIDS+=("$!")
 	wait_for_port 127.0.0.1 "$FRONTEND_PORT" "Frontend"
+elif agentfoundry_frontend_open "$FRONTEND_PORT"; then
+	log "using existing AgentFoundry frontend at http://127.0.0.1:$FRONTEND_PORT"
 else
-	log "using existing frontend at http://127.0.0.1:$FRONTEND_PORT"
+	log "port $FRONTEND_PORT is already in use, but it is not serving AgentFoundry."
+	log "Stop that process or choose another port, for example:"
+	log "  FRONTEND_PORT=5177 ./scripts/start_agentfoundry.sh"
+	exit 1
 fi
 
 cat <<EOF

@@ -19,7 +19,19 @@ Frontend console
 - shadcn/radix-style UI components
 - lucide icons
 
-The first platform surface is `/platform`, a workbench that validates the full enterprise loop before the product is split into dedicated module pages.
+The platform console uses route-level pages for the main enterprise operations:
+
+- `/platform`: dashboard overview and operational launchpad
+- `/platform/agents`: Agent templates, publishing, and management
+- `/platform/tools`: tool catalog, policy checks, and tool runner
+- `/platform/workflows`: workflow templates, triggers, and runner
+- `/platform/approvals`: human approval and governance queue
+- `/platform/runs`: Agent run console and history
+- `/platform/tenants`: tenant workspace, connectors, access, and members
+- `/platform/memory`: long-term memory operations
+- `/platform/settings`: runtime governance, audit, config, and capabilities
+
+The first implementation keeps the existing platform state model in one page component and gates top-level sections by route. That reduces migration risk while making the console navigable. The next frontend step is extracting each route group into feature modules.
 
 ## Backend
 

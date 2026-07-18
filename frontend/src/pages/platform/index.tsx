@@ -31,7 +31,7 @@ import {
 	X,
 	XCircle,
 } from 'lucide-react';
-import type { ComponentType, RefObject } from 'react';
+import type { ComponentType, ReactNode, RefObject } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -94,10 +94,27 @@ import { useSchedules } from '@/hooks/useSchedules';
 import { useTranslation } from '@/i18n/useI18n';
 import { cn } from '@/lib/utils';
 import { getFrequencyLabel, parseCronExpression } from '../schedule/schedule-utils';
+import {
+	AgentManagementOverview,
+	AgentTemplateList,
+} from './components/AgentManagementOverview';
+import { AgentRunnerConversation } from './components/AgentRunnerConversation';
+import { AgentRunnerResult } from './components/AgentRunnerResult';
+import { WorkflowRunnerPanel } from './components/WorkflowRunnerPanel';
 
 type HealthState = 'ready' | 'partial' | 'todo' | 'blocked';
 type AppCenterSelection = { type: 'template' | 'agent'; id: string };
 type ToolPolicyDraftValue = 'allow' | 'deny' | 'inherit';
+export type PlatformView =
+	| 'dashboard'
+	| 'agents'
+	| 'tools'
+	| 'workflows'
+	| 'approvals'
+	| 'runs'
+	| 'tenants'
+	| 'memory'
+	| 'settings';
 
 interface StatCardProps {
 	label: string;
@@ -510,7 +527,7 @@ function StateBadge({ state, label }: { state: HealthState; label: string }) {
 	);
 }
 
-function PlatformNotice({ children, className }: { children: string; className?: string }) {
+function PlatformNotice({ children, className }: { children: ReactNode; className?: string }) {
 	return (
 		<div
 			className={cn(
@@ -524,7 +541,7 @@ function PlatformNotice({ children, className }: { children: string; className?:
 	);
 }
 
-export function PlatformPage() {
+export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const navigate = useNavigate();
 	const { t } = useTranslation();
 	const membersRef = useRef<HTMLElement | null>(null);
@@ -5045,6 +5062,2682 @@ export function PlatformPage() {
 		helper: string;
 		icon: ComponentType<{ className?: string }>;
 	}>;
+
+	if (view === 'tenants') {
+		return (
+			<main className="h-full overflow-y-auto bg-background">
+				<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 lg:px-8">
+					<section className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
+						<div className="min-w-0">
+							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+								<Building2 className="size-4" />
+								<span>{t('platform.members.organizationOverview')}</span>
+							</div>
+							<h1 className="text-2xl font-semibold tracking-normal">
+								成员与租户治理
+							</h1>
+							<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+								按租户查看成员、角色、已绑定 Agent、审批和连接器工作区，先把多租户隔离关系管清楚。
+							</p>
+						</div>
+						<div className="flex flex-wrap gap-2 lg:justify-end">
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={() => void refetchMembers()}
+								disabled={platformMembersLoading}
+							>
+								<RefreshCcw
+									className={cn(platformMembersLoading && 'animate-spin')}
+								/>
+								{t('platform.actions.refreshStatus')}
+							</Button>
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={() => void refetchConnectors()}
+								disabled={connectorsLoading}
+							>
+								<Network className={cn(connectorsLoading && 'animate-pulse')} />
+								{t('platform.connectors.title')}
+							</Button>
+						</div>
+					</section>
+
+					{platformMembersError ? <PlatformNotice>{platformMembersError}</PlatformNotice> : null}
+					{connectorsError ? <PlatformNotice>{connectorsError}</PlatformNotice> : null}
+
+					<section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+						{[
+							{
+								label: t('platform.members.tenantGroups'),
+								value: platformMemberTenantSummaries.length,
+								icon: Building2,
+							},
+							{
+								label: t('platform.members.activeMembers'),
+								value: activeMemberCount,
+								icon: UserRound,
+							},
+							{
+								label: t('platform.members.roles'),
+								value: platformMembers?.roles.length ?? 0,
+								icon: ShieldCheck,
+							},
+							{
+								label: t('platform.members.boundAgents'),
+								value: activePlatformAgents.length,
+								icon: BotMessageSquare,
+							},
+							{
+								label: t('platform.members.pendingApprovals'),
+								value: pendingApprovals.length,
+								icon: Clock3,
+							},
+						].map((item) => {
+							const Icon = item.icon;
+							return (
+								<Card key={item.label} size="sm" className="rounded-lg shadow-none">
+									<CardHeader className="grid-cols-[1fr_auto] items-start gap-3">
+										<CardTitle className="text-sm text-muted-foreground">
+											{item.label}
+										</CardTitle>
+										<Icon className="size-4 text-muted-foreground" />
+									</CardHeader>
+									<CardContent>
+										<div className="text-2xl font-semibold tabular-nums">
+											{item.value}
+										</div>
+									</CardContent>
+								</Card>
+							);
+						})}
+					</section>
+
+					<section className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
+						<Card className="rounded-lg shadow-none">
+							<CardHeader>
+								<CardTitle className="text-base">
+									{t('platform.members.groupedListTitle')}
+								</CardTitle>
+							</CardHeader>
+							<CardContent>
+								{platformMembersLoading && !platformMembers ? (
+									<div className="grid gap-3">
+										<Skeleton className="h-24 rounded-lg" />
+										<Skeleton className="h-24 rounded-lg" />
+									</div>
+								) : platformMemberTenantSummaries.length ? (
+									<div className="grid gap-3">
+										{platformMemberTenantSummaries.map((tenantSummary) => (
+											<div
+												key={tenantSummary.tenant}
+												className="grid gap-3 rounded-lg border bg-muted/10 p-3"
+											>
+												<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+													<div className="min-w-0">
+														<div className="flex flex-wrap items-center gap-2">
+															<h3 className="text-sm font-semibold">
+																{tenantSummary.tenant}
+															</h3>
+															<Badge variant="secondary">
+																{tenantSummary.activeMemberCount}{' '}
+																{t('platform.members.activeMembers')}
+															</Badge>
+															{tenantSummary.inactiveMemberCount > 0 ? (
+																<Badge variant="outline">
+																	{tenantSummary.inactiveMemberCount}{' '}
+																	{t('platform.members.inactiveMembers')}
+																</Badge>
+															) : null}
+														</div>
+														<div className="mt-2 flex flex-wrap gap-1">
+															<Badge variant="outline">
+																{t('platform.members.roles')}:{' '}
+																{tenantSummary.roleNames.length}
+															</Badge>
+															<Badge variant="outline">
+																{t('platform.members.boundAgents')}:{' '}
+																{tenantSummary.agentCount}
+															</Badge>
+															<Badge variant="outline">
+																{t('platform.members.pendingApprovals')}:{' '}
+																{tenantSummary.pendingApprovalCount}
+															</Badge>
+															<Badge variant="outline">
+																{t('platform.members.auditEvents')}:{' '}
+																{tenantSummary.auditEventCount}
+															</Badge>
+														</div>
+													</div>
+													<Button
+														type="button"
+														size="sm"
+														variant="outline"
+														onClick={() => navigate('/platform/agents')}
+													>
+														<BotMessageSquare className="size-4" />
+														{t('platform.nav.agents')}
+													</Button>
+												</div>
+												<div className="grid gap-2 md:grid-cols-2">
+													{tenantSummary.members.slice(0, 6).map((member) => (
+														<div
+															key={`${tenantSummary.tenant}-${member.user_id}`}
+															className="rounded-md border bg-background p-3"
+														>
+															<div className="truncate text-sm font-medium">
+																{member.display_name || member.user_id}
+															</div>
+															<div className="mt-1 truncate font-mono text-xs text-muted-foreground">
+																{member.user_id}
+															</div>
+															<div className="mt-2 flex flex-wrap gap-1">
+																<Badge variant="outline">{member.role}</Badge>
+																<Badge
+																	variant={
+																		member.status === 'inactive'
+																			? 'outline'
+																			: 'secondary'
+																	}
+																>
+																	{member.status === 'inactive'
+																		? t('platform.members.inactive')
+																		: t('platform.members.active')}
+																</Badge>
+															</div>
+														</div>
+													))}
+												</div>
+											</div>
+										))}
+									</div>
+								) : (
+									<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+										{t('platform.members.empty')}
+									</div>
+								)}
+							</CardContent>
+						</Card>
+
+						<Card className="rounded-lg shadow-none">
+							<CardHeader>
+								<CardTitle className="text-base">
+									{t('platform.connectors.tenantPreview')}
+								</CardTitle>
+							</CardHeader>
+							<CardContent className="grid gap-3">
+								{tenantWorkspaces.length ? (
+									tenantWorkspaces.map(([tenant, workspace]) => (
+										<div key={tenant} className="rounded-lg border bg-muted/10 p-3">
+											<div className="flex items-start justify-between gap-3">
+												<div className="min-w-0">
+													<div className="truncate text-sm font-semibold">
+														{tenant}
+													</div>
+													<div className="mt-1 truncate text-xs text-muted-foreground">
+														{workspace.source}
+													</div>
+												</div>
+												<Badge variant="outline">
+													{
+														enterpriseIdentities.filter(
+															(identity) => identity.tenant === tenant,
+														).length
+													}{' '}
+													{t('platform.connectors.identities')}
+												</Badge>
+											</div>
+											<div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+												<div className="rounded-md border bg-background p-2">
+													{t('platform.connectors.policies')}:{' '}
+													{workspace.policies.length}
+												</div>
+												<div className="rounded-md border bg-background p-2">
+													{t('platform.connectors.tickets')}:{' '}
+													{workspace.tickets.length}
+												</div>
+												<div className="rounded-md border bg-background p-2">
+													{t('platform.connectors.departments')}:{' '}
+													{workspace.departments.length}
+												</div>
+												<div className="rounded-md border bg-background p-2">
+													{t('platform.connectors.tools')}:{' '}
+													{countArrayField(workspace, 'tools')}
+												</div>
+											</div>
+										</div>
+									))
+								) : (
+									<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+										{t('platform.connectors.empty')}
+									</div>
+								)}
+							</CardContent>
+						</Card>
+					</section>
+				</div>
+			</main>
+		);
+	}
+
+	if (view === 'memory') {
+		return (
+			<main className="h-full overflow-y-auto bg-background">
+				<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 lg:px-8">
+					<section className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
+						<div className="min-w-0">
+							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+								<Brain className="size-4" />
+								<span>{t('platform.memoryOps.eyebrow')}</span>
+							</div>
+							<h1 className="text-2xl font-semibold tracking-normal">
+								{t('platform.memoryOps.title')}
+							</h1>
+							<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+								{t('platform.memoryOps.description')}
+							</p>
+						</div>
+						<div className="flex flex-wrap gap-2 lg:justify-end">
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={() => navigate('/platform/agents')}
+							>
+								<Play className="size-4" />
+								{t('platform.memoryOps.runAgent')}
+							</Button>
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={() => navigate('/platform/runs')}
+							>
+								<FileClock className="size-4" />
+								{t('platform.nav.runs')}
+							</Button>
+						</div>
+					</section>
+
+					<section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+						{[
+							{
+								label: t('platform.memoryOps.loadedRuns'),
+								value: memoryOperationsRunCount,
+								icon: FileClock,
+							},
+							{
+								label: t('platform.memoryOps.memoryHits'),
+								value: memoryOperationsHitCount,
+								icon: Brain,
+							},
+							{
+								label: t('platform.memoryOps.memoryWrites'),
+								value: memoryOperationsSavedCount,
+								icon: Database,
+							},
+							{
+								label: t('platform.memoryOps.activeScopes'),
+								value: memoryOperationsItems.length,
+								icon: ShieldCheck,
+							},
+						].map((item) => {
+							const Icon = item.icon;
+							return (
+								<Card key={item.label} size="sm" className="rounded-lg shadow-none">
+									<CardHeader className="grid-cols-[1fr_auto] items-start gap-3">
+										<CardTitle className="text-sm text-muted-foreground">
+											{item.label}
+										</CardTitle>
+										<Icon className="size-4 text-muted-foreground" />
+									</CardHeader>
+									<CardContent>
+										<div className="text-2xl font-semibold tabular-nums">
+											{item.value}
+										</div>
+									</CardContent>
+								</Card>
+							);
+						})}
+					</section>
+
+					<section className="grid gap-3">
+						{memoryOperationsItems.length === 0 ? (
+							<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+								{t('platform.memoryOps.empty')}
+							</div>
+						) : (
+							<div className="grid gap-3 xl:grid-cols-2">
+								{memoryOperationsItems.map((item) => (
+									<Card key={item.key} className="rounded-lg shadow-none">
+										<CardHeader className="grid-cols-[1fr_auto] items-start gap-3">
+											<div className="min-w-0">
+												<CardTitle className="truncate text-sm">
+													{item.agentName}
+												</CardTitle>
+												<div className="mt-2 flex flex-wrap gap-1">
+													<Badge variant="secondary">{item.tenant}</Badge>
+													<Badge variant="outline">{item.userId}</Badge>
+													<Badge variant="outline">{item.agentId}</Badge>
+												</div>
+											</div>
+											<div className="shrink-0 text-right text-xs text-muted-foreground">
+												<div>{t('platform.memoryOps.latestRun')}</div>
+												<div className="mt-1 tabular-nums">
+													{formatTimestamp(item.latestAt)}
+												</div>
+											</div>
+										</CardHeader>
+										<CardContent className="grid gap-3">
+											<div className="grid grid-cols-3 gap-2">
+												{[
+													{
+														label: t('platform.memoryOps.runs'),
+														value: item.runCount,
+													},
+													{
+														label: t('platform.memoryOps.hits'),
+														value: item.memoryHitCount,
+													},
+													{
+														label: t('platform.memoryOps.writes'),
+														value: item.memorySavedCount,
+													},
+												].map((metric) => (
+													<div
+														key={metric.label}
+														className="rounded-md border bg-muted/10 px-3 py-2"
+													>
+														<div className="truncate text-xs text-muted-foreground">
+															{metric.label}
+														</div>
+														<div className="mt-1 text-lg font-semibold tabular-nums">
+															{metric.value}
+														</div>
+													</div>
+												))}
+											</div>
+											<div className="grid gap-2 text-sm">
+												<div className="rounded-md border bg-muted/10 p-3">
+													<div className="mb-1 text-xs text-muted-foreground">
+														{t('platform.agentRunner.question')}
+													</div>
+													<p className="line-clamp-2">{item.latestQuestion}</p>
+												</div>
+												<div className="rounded-md border bg-muted/10 p-3">
+													<div className="mb-1 text-xs text-muted-foreground">
+														{t('platform.agentRunner.answer')}
+													</div>
+													<p className="line-clamp-3 text-muted-foreground">
+														{item.latestAnswer}
+													</p>
+												</div>
+											</div>
+											{item.sources.length ? (
+												<div className="flex flex-wrap gap-1">
+													{item.sources.map((source) => (
+														<Badge key={source} variant="outline">
+															{source}
+														</Badge>
+													))}
+												</div>
+											) : null}
+										</CardContent>
+									</Card>
+								))}
+							</div>
+						)}
+					</section>
+				</div>
+			</main>
+		);
+	}
+
+	if (view === 'settings') {
+		return (
+			<main className="h-full overflow-y-auto bg-background">
+				<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 lg:px-8">
+					<section className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
+						<div className="min-w-0">
+							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+								<Server className="size-4" />
+								<span>{t('platform.configManagement.title')}</span>
+							</div>
+							<h1 className="text-2xl font-semibold tracking-normal">
+								平台设置
+							</h1>
+							<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+								查看运行时连接状态，导出或导入平台配置，后续模型、租户策略和运行参数都收敛到这里。
+							</p>
+						</div>
+						<div className="flex flex-wrap gap-2 lg:justify-end">
+							<Button
+								size="sm"
+								variant="outline"
+								onClick={() => void refetchPlatform()}
+								disabled={platformLoading}
+							>
+								<RefreshCcw className={cn(platformLoading && 'animate-spin')} />
+								{t('platform.actions.refreshStatus')}
+							</Button>
+							<Button
+								size="sm"
+								variant="outline"
+								onClick={refetchPlatformConfigExport}
+								disabled={platformConfigLoading}
+							>
+								<Upload />
+								{t('platform.configManagement.refresh')}
+							</Button>
+						</div>
+					</section>
+
+					{platformError ? (
+						<PlatformNotice>{t('platform.runtime.error')}</PlatformNotice>
+					) : null}
+					{platformConfigError ? (
+						<PlatformNotice className="border-destructive/30 bg-destructive/10 text-destructive">
+							{platformConfigError}
+						</PlatformNotice>
+					) : null}
+					{platformConfigImportResult ? (
+						<div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-800">
+							{platformConfigImportResult}
+						</div>
+					) : null}
+
+					<section className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+						<Card className="rounded-lg shadow-none">
+							<CardHeader>
+								<CardTitle className="text-base">
+									{t('platform.connection.title')}
+								</CardTitle>
+							</CardHeader>
+							<CardContent className="grid gap-3">
+								<div className="grid gap-2 rounded-lg border bg-muted/10 p-3 text-xs">
+									<div className="flex items-center justify-between gap-3">
+										<span className="text-muted-foreground">
+											{t('platform.connection.server')}
+										</span>
+										<span className="truncate font-mono" title={serverUrl}>
+											{serverUrl}
+										</span>
+									</div>
+									<div className="flex items-center justify-between gap-3">
+										<span className="text-muted-foreground">
+											{t('platform.connection.user')}
+										</span>
+										<span className="truncate font-mono" title={username}>
+											{username}
+										</span>
+									</div>
+									<div className="flex items-center justify-between gap-3">
+										<span className="text-muted-foreground">
+											{t('platform.connection.health')}
+										</span>
+										<StateBadge
+											state={hasErrors ? 'partial' : 'ready'}
+											label={
+												hasErrors
+													? t('platform.status.toConfigure')
+													: t('platform.status.ready')
+											}
+										/>
+									</div>
+								</div>
+								<div className="grid gap-2">
+									{runtimeItems.map((item) => {
+										const Icon = item.icon;
+										return (
+											<div
+												key={item.label}
+												className="grid grid-cols-[auto_7rem_1fr] items-center gap-3 rounded-lg border bg-muted/10 p-3 text-sm"
+											>
+												<Icon className="size-4 text-muted-foreground" />
+												<span className="text-xs text-muted-foreground">
+													{item.label}
+												</span>
+												<span className="min-w-0 truncate font-mono text-xs">
+													{item.value}
+												</span>
+											</div>
+										);
+									})}
+								</div>
+							</CardContent>
+						</Card>
+
+						<Card className="rounded-lg shadow-none">
+							<CardHeader className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+								<div>
+									<CardTitle className="text-base">
+										{t('platform.configManagement.title')}
+									</CardTitle>
+									<p className="mt-1 text-sm text-muted-foreground">
+										{t('platform.configManagement.description')}
+									</p>
+								</div>
+								<div className="flex flex-wrap gap-2">
+									<Button
+										size="sm"
+										variant="outline"
+										onClick={handleCopyPlatformConfig}
+										disabled={!platformConfigExport}
+									>
+										<Copy />
+										{t('platform.configManagement.copyExport')}
+									</Button>
+								</div>
+							</CardHeader>
+							<CardContent className="grid gap-4">
+								<PlatformNotice>
+									{t('platform.configManagement.redactedNotice')}
+								</PlatformNotice>
+								<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+									{platformConfigLoading
+										? Array.from({ length: 6 }).map((_, index) => (
+												<Skeleton key={index} className="h-20 rounded-lg" />
+											))
+										: platformConfigExport
+											? [
+													{
+														label: t('platform.configManagement.members'),
+														value: platformConfigExport.counts.members,
+													},
+													{
+														label: t('platform.configManagement.connectors'),
+														value:
+															platformConfigExport.counts.connector_configs,
+													},
+													{
+														label: t('platform.configManagement.agents'),
+														value: platformConfigExport.counts.agents,
+													},
+													{
+														label: t('platform.configManagement.workflows'),
+														value:
+															platformConfigExport.counts.workflow_templates,
+													},
+													{
+														label: t(
+															'platform.configManagement.toolPolicyTenants',
+														),
+														value:
+															platformConfigExport.counts
+																.tool_policy_tenants,
+													},
+													{
+														label: t(
+															'platform.configManagement.toolPolicyUsers',
+														),
+														value:
+															platformConfigExport.counts
+																.tool_policy_users,
+													},
+												].map((item) => (
+													<div
+														key={item.label}
+														className="rounded-lg border bg-muted/10 p-3"
+													>
+														<div className="truncate text-xs text-muted-foreground">
+															{item.label}
+														</div>
+														<div className="mt-1 text-xl font-semibold tabular-nums">
+															{item.value}
+														</div>
+													</div>
+												))
+											: (
+													<div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground sm:col-span-2 xl:col-span-3">
+														{t('platform.configManagement.empty')}
+													</div>
+												)}
+								</div>
+								<div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+									{platformConfigExport ? (
+										<>
+											<span>
+												{t('platform.configManagement.schemaVersion')}:{' '}
+												{platformConfigExport.schema_version}
+											</span>
+											<span>
+												{t('platform.configManagement.lastExported')}:{' '}
+												{formatTimestamp(platformConfigExport.exported_at)}
+											</span>
+										</>
+									) : null}
+								</div>
+								<div className="flex flex-wrap items-center gap-2">
+									<Select
+										value={platformConfigImportMode}
+										onValueChange={(value) =>
+											setPlatformConfigImportMode(value as 'merge' | 'replace')
+										}
+									>
+										<SelectTrigger className="w-[8rem]">
+											<SelectValue
+												placeholder={t(
+													'platform.configManagement.importMode',
+												)}
+											/>
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="merge">
+												{t('platform.configManagement.merge')}
+											</SelectItem>
+											<SelectItem value="replace">
+												{t('platform.configManagement.replace')}
+											</SelectItem>
+										</SelectContent>
+									</Select>
+									<Button
+										size="sm"
+										onClick={handleImportPlatformConfig}
+										disabled={
+											importingPlatformConfig ||
+											!platformConfigImportText.trim()
+										}
+									>
+										<Upload />
+										{t('platform.configManagement.import')}
+									</Button>
+								</div>
+								<Textarea
+									className="min-h-[18rem] font-mono text-xs"
+									value={platformConfigImportText}
+									onChange={(event) =>
+										setPlatformConfigImportText(event.target.value)
+									}
+									placeholder={t('platform.configManagement.empty')}
+								/>
+							</CardContent>
+						</Card>
+					</section>
+				</div>
+			</main>
+		);
+	}
+
+	if (view === 'tools') {
+		return (
+			<main className="h-full overflow-y-auto bg-background">
+				<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 lg:px-8">
+					<section className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
+						<div className="min-w-0">
+							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+								<Boxes className="size-4" />
+								<span>{t('platform.toolCatalog.title')}</span>
+							</div>
+							<h1 className="text-2xl font-semibold tracking-normal">
+								{t('platform.toolCatalog.title')}
+							</h1>
+							<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+								{t('platform.toolCatalog.description')}
+							</p>
+						</div>
+						<div className="grid min-w-0 gap-2 rounded-lg border bg-muted/20 p-3 text-xs sm:min-w-80">
+							<div className="flex items-center justify-between gap-3">
+								<span className="text-muted-foreground">
+									{t('platform.connection.server')}
+								</span>
+								<span className="truncate font-mono" title={serverUrl}>
+									{serverUrl}
+								</span>
+							</div>
+							<div className="flex items-center justify-between gap-3">
+								<span className="text-muted-foreground">
+									{t('platform.connection.user')}
+								</span>
+								<span className="truncate font-mono" title={username}>
+									{username}
+								</span>
+							</div>
+							<div className="flex items-center justify-between gap-3">
+								<span className="text-muted-foreground">
+									{t('platform.connection.health')}
+								</span>
+								<StateBadge
+									state={hasErrors ? 'partial' : 'ready'}
+									label={
+										hasErrors
+											? t('platform.connection.partial')
+											: t('platform.connection.connected')
+									}
+								/>
+							</div>
+						</div>
+					</section>
+
+					<section ref={configManagementRef} className="flex flex-col gap-3">
+						<div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+							<div>
+								<h2 className="text-base font-semibold">
+									{t('platform.toolCatalog.title')}
+								</h2>
+								<p className="text-sm text-muted-foreground">
+									{t('platform.toolCatalog.description')}
+								</p>
+							</div>
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={() => void refetchToolCatalog()}
+								disabled={toolCatalogLoading}
+							>
+								<RefreshCcw className={cn(toolCatalogLoading && 'animate-spin')} />
+								{t('platform.audit.refresh')}
+							</Button>
+						</div>
+
+						{toolCatalogLoading ? (
+							<div className="grid gap-3 lg:grid-cols-3">
+								<Skeleton className="h-48 w-full" />
+								<Skeleton className="h-48 w-full" />
+								<Skeleton className="h-48 w-full" />
+							</div>
+						) : toolCatalogError ? (
+							<PlatformNotice>{toolCatalogError}</PlatformNotice>
+						) : availableToolItems.length === 0 ? (
+							<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+								{t('platform.toolCatalog.empty')}
+							</div>
+						) : (
+							<div className="grid gap-3 lg:grid-cols-3">
+								{availableToolItems.map((tool) => {
+									const statItems = [
+										{
+											label: t('platform.toolCatalog.calls'),
+											value: String(tool.stats.calls ?? 0),
+										},
+										{
+											label: t('platform.toolCatalog.successes'),
+											value: String(tool.stats.successes ?? 0),
+										},
+										{
+											label: t('platform.toolCatalog.failures'),
+											value: String(tool.stats.failures ?? 0),
+										},
+										{
+											label: t('platform.toolCatalog.avgDuration'),
+											value:
+												tool.stats.avg_duration_ms === null ||
+												tool.stats.avg_duration_ms === undefined
+													? '-'
+													: `${Math.round(tool.stats.avg_duration_ms)} ms`,
+										},
+										{
+											label: t('platform.toolCatalog.lastCalled'),
+											value: tool.stats.last_called_at
+												? formatTimestamp(tool.stats.last_called_at)
+												: t('platform.toolCatalog.neverCalled'),
+										},
+									];
+
+									return (
+										<Card
+											key={tool.name}
+											size="sm"
+											className="rounded-lg shadow-none"
+										>
+											<CardHeader className="grid-cols-[auto_1fr_auto] items-start gap-3">
+												<div className="flex size-8 items-center justify-center rounded-lg border bg-background">
+													<Boxes className="size-4 text-muted-foreground" />
+												</div>
+												<div className="min-w-0">
+													<CardTitle className="truncate font-mono text-sm">
+														{tool.name}
+													</CardTitle>
+													<p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+														{tool.description}
+													</p>
+												</div>
+												<Badge
+													variant={tool.allowed ? 'outline' : 'destructive'}
+													className={cn(
+														tool.allowed &&
+															'border-emerald-500/30 bg-emerald-500/10 text-emerald-700',
+													)}
+												>
+													{tool.allowed ? (
+														<CheckCircle2 className="size-3" />
+													) : (
+														<XCircle className="size-3" />
+													)}
+													{tool.allowed
+														? t('platform.policy.allowed')
+														: t('platform.policy.denied')}
+												</Badge>
+											</CardHeader>
+											<CardContent className="grid gap-4 text-xs">
+												{tool.reason ? (
+													<p className="break-words text-muted-foreground">
+														{tool.reason}
+													</p>
+												) : null}
+												<div className="grid gap-2">
+													<div className="grid grid-cols-[6rem_1fr] gap-2">
+														<span className="text-muted-foreground">
+															{t('platform.toolCatalog.inputKey')}
+														</span>
+														<span className="min-w-0 truncate font-mono">
+															{tool.input_key}
+														</span>
+													</div>
+													<div className="grid grid-cols-[6rem_1fr] gap-2">
+														<span className="text-muted-foreground">
+															{t('platform.toolCatalog.defaultInput')}
+														</span>
+														<span className="min-w-0 truncate font-mono">
+															{tool.default_input || '-'}
+														</span>
+													</div>
+													<div className="grid grid-cols-[6rem_1fr] gap-2">
+														<span className="text-muted-foreground">
+															{t('platform.toolCatalog.configuredBy')}
+														</span>
+														{tool.configured_by_agents.length > 0 ? (
+															<div className="flex min-w-0 flex-wrap gap-1">
+																{tool.configured_by_agents.map(
+																	(agentId) => {
+																		const agent =
+																			publishedPlatformAgents.find(
+																				(item) =>
+																					item.id === agentId,
+																			);
+
+																		return (
+																			<Badge
+																				key={agentId}
+																				variant="outline"
+																				className="max-w-full truncate font-normal"
+																			>
+																				{agent?.name ?? agentId}
+																			</Badge>
+																		);
+																	},
+																)}
+															</div>
+														) : (
+															<span className="min-w-0 text-muted-foreground">
+																{t(
+																	'platform.toolCatalog.notConfigured',
+																)}
+															</span>
+														)}
+													</div>
+												</div>
+												<div className="grid gap-2 sm:grid-cols-2">
+													{statItems.map((item) => (
+														<div
+															key={item.label}
+															className="rounded-lg border bg-background p-2"
+														>
+															<div className="text-muted-foreground">
+																{item.label}
+															</div>
+															<div
+																className="mt-1 truncate font-mono font-medium"
+																title={item.value}
+															>
+																{item.value}
+															</div>
+														</div>
+													))}
+												</div>
+											</CardContent>
+										</Card>
+									);
+								})}
+							</div>
+						)}
+					</section>
+
+					<section
+						ref={toolRunnerRef}
+						className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(360px,1.05fr)]"
+					>
+						<div className="flex flex-col gap-3">
+							<div className="flex items-start gap-2">
+								<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/20">
+									<Code2 className="size-4 text-muted-foreground" />
+								</div>
+								<div className="min-w-0">
+									<h2 className="text-base font-semibold">
+										{t('platform.toolRunner.title')}
+									</h2>
+									<p className="text-sm text-muted-foreground">
+										{t('platform.toolRunner.description')}
+									</p>
+								</div>
+							</div>
+
+							<div className="grid gap-4 rounded-lg border bg-muted/10 p-4">
+								<div className="grid gap-2">
+									<label className="text-xs font-medium text-muted-foreground">
+										{t('platform.toolRunner.selectTool')}
+									</label>
+									<Select
+										value={selectedToolName}
+										onValueChange={(value) => {
+											setSelectedToolName(value);
+											setToolRunError(null);
+										}}
+										disabled={toolCatalogLoading || availableToolItems.length === 0}
+									>
+										<SelectTrigger className="w-full font-mono">
+											<SelectValue
+												placeholder={t('platform.toolRunner.selectTool')}
+											/>
+										</SelectTrigger>
+										<SelectContent>
+											{availableToolItems.map((tool) => (
+												<SelectItem key={tool.name} value={tool.name}>
+													{tool.name}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+
+								<div className="grid gap-2">
+									<label className="text-xs font-medium text-muted-foreground">
+										{selectedToolConfig
+											? t(`platform.toolRunner.${selectedToolConfig.labelKey}`)
+											: (selectedToolCatalogItem?.input_key ??
+												t('platform.toolRunner.input'))}
+									</label>
+									<Input
+										value={selectedToolInputValue}
+										onChange={(event) =>
+											setToolInputs((current) => ({
+												...current,
+												[selectedToolName]: event.target.value,
+											}))
+										}
+										disabled={!selectedToolInputKey}
+									/>
+								</div>
+
+								<div className="grid gap-2">
+									<label className="text-xs font-medium text-muted-foreground">
+										{t('platform.toolRunner.approvalId')}
+									</label>
+									<Input
+										value={toolApprovalId}
+										onChange={(event) => setToolApprovalId(event.target.value)}
+										placeholder={t('platform.toolRunner.approvalIdPlaceholder')}
+										className="font-mono"
+									/>
+								</div>
+
+								<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+									<div className="min-w-0">
+										{selectedToolCatalogItem || selectedToolDecision ? (
+											<Badge
+												variant={
+													selectedToolAllowed ? 'outline' : 'destructive'
+												}
+												className={cn(
+													selectedToolAllowed &&
+														'border-emerald-500/30 bg-emerald-500/10 text-emerald-700',
+												)}
+											>
+												{selectedToolAllowed
+													? t('platform.policy.allowed')
+													: t('platform.policy.denied')}
+											</Badge>
+										) : null}
+										{selectedToolReason ? (
+											<p className="mt-2 text-xs text-muted-foreground">
+												{selectedToolReason}
+											</p>
+										) : null}
+										{(selectedToolCatalogItem || selectedToolDecision) &&
+										!selectedToolAllowed ? (
+											<p className="mt-2 text-xs text-destructive">
+												{t('platform.toolRunner.notAllowed')}
+											</p>
+										) : null}
+									</div>
+									<div className="flex flex-wrap justify-end gap-2">
+										<Button
+											variant="outline"
+											onClick={() => void handleCreateRunApproval('tool_run')}
+											disabled={
+												creatingRunApproval === 'tool_run' ||
+												Boolean(platformError) ||
+												!selectedToolInputKey ||
+												!selectedToolAllowed
+											}
+										>
+											<ListChecks
+												className={cn(
+													creatingRunApproval === 'tool_run' &&
+														'animate-pulse',
+												)}
+											/>
+											{creatingRunApproval === 'tool_run'
+												? t('platform.toolRunner.requestingApproval')
+												: t('platform.toolRunner.requestApproval')}
+										</Button>
+										<Button
+											onClick={handleRunEnterpriseTool}
+											disabled={
+												runningTool ||
+												Boolean(platformError) ||
+												!selectedToolInputKey ||
+												!selectedToolAllowed
+											}
+										>
+											<Play className={cn(runningTool && 'animate-pulse')} />
+											{runningTool
+												? t('platform.toolRunner.running')
+												: t('platform.toolRunner.run')}
+										</Button>
+									</div>
+								</div>
+
+								{toolRunError ? (
+									<div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+										{t('platform.toolRunner.error')} {toolRunError}
+									</div>
+								) : null}
+							</div>
+						</div>
+
+						<div className="flex flex-col gap-3">
+							<div className="flex items-center gap-2">
+								<Code2 className="size-4 text-muted-foreground" />
+								<h3 className="text-sm font-semibold">
+									{t('platform.toolRunner.result')}
+								</h3>
+							</div>
+							{toolRunResult ? (
+								<pre className="min-h-72 overflow-auto rounded-lg border bg-muted/20 p-4 text-xs leading-5">
+									{JSON.stringify(toolRunResult, null, 2)}
+								</pre>
+							) : (
+								<div className="flex min-h-72 items-center rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+									{t('platform.toolRunner.emptyResult')}
+								</div>
+							)}
+						</div>
+					</section>
+				</div>
+			</main>
+		);
+	}
+
+	if (view === 'approvals') {
+		return (
+			<main className="h-full overflow-y-auto bg-background">
+				<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 lg:px-8">
+					<section className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
+						<div className="min-w-0">
+							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+								<ShieldCheck className="size-4" />
+								<span>{t('platform.approvals.title')}</span>
+							</div>
+							<h1 className="text-2xl font-semibold tracking-normal">
+								{t('platform.approvals.title')}
+							</h1>
+							<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+								{t('platform.approvals.description')}
+							</p>
+						</div>
+						<div className="grid min-w-0 gap-2 rounded-lg border bg-muted/20 p-3 text-xs sm:min-w-80">
+							<div className="flex items-center justify-between gap-3">
+								<span className="text-muted-foreground">
+									{t('platform.connection.server')}
+								</span>
+								<span className="truncate font-mono" title={serverUrl}>
+									{serverUrl}
+								</span>
+							</div>
+							<div className="flex items-center justify-between gap-3">
+								<span className="text-muted-foreground">
+									{t('platform.connection.user')}
+								</span>
+								<span className="truncate font-mono" title={username}>
+									{username}
+								</span>
+							</div>
+							<div className="flex items-center justify-between gap-3">
+								<span className="text-muted-foreground">
+									{t('platform.connection.health')}
+								</span>
+								<StateBadge
+									state={hasErrors ? 'partial' : 'ready'}
+									label={
+										hasErrors
+											? t('platform.connection.partial')
+											: t('platform.connection.connected')
+									}
+								/>
+							</div>
+						</div>
+					</section>
+
+					<section className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(360px,1.1fr)]">
+						<div className="flex flex-col gap-3">
+							<div className="flex items-start gap-2">
+								<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/20">
+									<ListChecks className="size-4 text-muted-foreground" />
+								</div>
+								<div className="min-w-0">
+									<h2 className="text-base font-semibold">
+										{t('platform.approvals.createTitle')}
+									</h2>
+									<p className="text-sm text-muted-foreground">
+										{t('platform.approvals.createDescription')}
+									</p>
+								</div>
+							</div>
+
+							<div className="grid gap-4 rounded-lg border bg-muted/10 p-4">
+								<div className="grid gap-3 md:grid-cols-2">
+									<div className="grid gap-2">
+										<label className="text-xs font-medium text-muted-foreground">
+											{t('platform.approvals.requestType')}
+										</label>
+										<Select
+											value={approvalForm.request_type}
+											onValueChange={(value) =>
+												setApprovalForm((current) => ({
+													...current,
+													request_type: value as EnterpriseApprovalRequestType,
+												}))
+											}
+										>
+											<SelectTrigger>
+												<SelectValue />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="tool_run">
+													{t('platform.approvals.toolRun')}
+												</SelectItem>
+												<SelectItem value="workflow_run">
+													{t('platform.approvals.workflowRun')}
+												</SelectItem>
+												<SelectItem value="agent_action">
+													{t('platform.approvals.agentAction')}
+												</SelectItem>
+											</SelectContent>
+										</Select>
+									</div>
+
+									{approvalForm.request_type === 'workflow_run' ? (
+										<div className="grid gap-2">
+											<label className="text-xs font-medium text-muted-foreground">
+												{t('platform.approvals.target')}
+											</label>
+											<Select
+												value={approvalForm.workflow_type}
+												onValueChange={(value) =>
+													setApprovalForm((current) => ({
+														...current,
+														workflow_type: value,
+													}))
+												}
+											>
+												<SelectTrigger>
+													<SelectValue />
+												</SelectTrigger>
+												<SelectContent>
+													{workflowOptions.map((workflow) => (
+														<SelectItem
+															key={workflow.value}
+															value={workflow.value}
+														>
+															{workflow.label}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										</div>
+									) : approvalForm.request_type === 'tool_run' ? (
+										<div className="grid gap-2">
+											<label className="text-xs font-medium text-muted-foreground">
+												{t('platform.approvals.target')}
+											</label>
+											<Select
+												value={approvalForm.tool_name}
+												onValueChange={(value) =>
+													setApprovalForm((current) => ({
+														...current,
+														tool_name: value,
+														input_key:
+															enterpriseToolInputConfig[value]?.inputKey ||
+															current.input_key,
+														input_value:
+															enterpriseToolInputConfig[value]?.defaultValue ||
+															current.input_value,
+													}))
+												}
+											>
+												<SelectTrigger>
+													<SelectValue />
+												</SelectTrigger>
+												<SelectContent>
+													{availableToolItems.map((tool) => (
+														<SelectItem key={tool.name} value={tool.name}>
+															{tool.name}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										</div>
+									) : (
+										<div className="grid gap-2">
+											<label className="text-xs font-medium text-muted-foreground">
+												{t('platform.approvals.agent')}
+											</label>
+											<Input
+												value={approvalForm.agent_id}
+												placeholder={selectedRunAgentId || 'platform-console'}
+												onChange={(event) =>
+													setApprovalForm((current) => ({
+														...current,
+														agent_id: event.target.value,
+													}))
+												}
+											/>
+										</div>
+									)}
+								</div>
+
+								<div className="grid gap-3 md:grid-cols-2">
+									<div className="grid gap-2">
+										<label className="text-xs font-medium text-muted-foreground">
+											{t('platform.approvals.inputKey')}
+										</label>
+										<Input
+											value={approvalForm.input_key}
+											onChange={(event) =>
+												setApprovalForm((current) => ({
+													...current,
+													input_key: event.target.value,
+												}))
+											}
+										/>
+									</div>
+									<div className="grid gap-2">
+										<label className="text-xs font-medium text-muted-foreground">
+											{t('platform.approvals.inputValue')}
+										</label>
+										<Input
+											value={approvalForm.input_value}
+											onChange={(event) =>
+												setApprovalForm((current) => ({
+													...current,
+													input_value: event.target.value,
+												}))
+											}
+										/>
+									</div>
+								</div>
+
+								<div className="grid gap-2">
+									<label className="text-xs font-medium text-muted-foreground">
+										{t('platform.approvals.reason')}
+									</label>
+									<Textarea
+										value={approvalForm.reason}
+										onChange={(event) =>
+											setApprovalForm((current) => ({
+												...current,
+												reason: event.target.value,
+											}))
+										}
+									/>
+								</div>
+
+								<div className="grid gap-3 md:grid-cols-2">
+									<div className="grid gap-2">
+										<label className="text-xs font-medium text-muted-foreground">
+											{t('platform.approvals.user')}
+										</label>
+										<Input
+											value={approvalForm.user_id}
+											placeholder={selectedIdentityUserId || username}
+											onChange={(event) =>
+												setApprovalForm((current) => ({
+													...current,
+													user_id: event.target.value,
+												}))
+											}
+										/>
+									</div>
+									<div className="grid gap-2">
+										<label className="text-xs font-medium text-muted-foreground">
+											{t('platform.approvals.agent')}
+										</label>
+										<Input
+											value={approvalForm.agent_id}
+											placeholder={selectedRunAgentId || 'platform-console'}
+											onChange={(event) =>
+												setApprovalForm((current) => ({
+													...current,
+													agent_id: event.target.value,
+												}))
+											}
+										/>
+									</div>
+								</div>
+
+								<div className="flex justify-end">
+									<Button onClick={handleCreateApproval} disabled={creatingApproval}>
+										<ListChecks className={cn(creatingApproval && 'animate-pulse')} />
+										{creatingApproval
+											? t('platform.approvals.creating')
+											: t('platform.approvals.create')}
+									</Button>
+								</div>
+							</div>
+						</div>
+
+						<div className="flex flex-col gap-3">
+							<div className="flex items-start justify-between gap-3">
+								<div>
+									<h3 className="text-sm font-semibold">
+										{t('platform.approvals.listTitle')}
+									</h3>
+									<p className="text-xs text-muted-foreground">
+										{t('platform.approvals.listDescription')}
+									</p>
+								</div>
+								<Button
+									type="button"
+									size="sm"
+									variant="outline"
+									onClick={() => void refetchApprovals()}
+									disabled={approvalLoading}
+								>
+									<RefreshCcw className={cn(approvalLoading && 'animate-spin')} />
+									{t('platform.approvals.refresh')}
+								</Button>
+							</div>
+
+							<div className="grid gap-2 sm:grid-cols-4">
+								<div className="rounded-lg border bg-muted/10 p-3">
+									<div className="text-xs text-muted-foreground">
+										{t('platform.approvals.total')}
+									</div>
+									<div className="mt-1 text-lg font-semibold">
+										{approvalSummary.total}
+									</div>
+								</div>
+								<div className="rounded-lg border bg-amber-500/10 p-3">
+									<div className="text-xs text-amber-800">
+										{t('platform.approvals.pending')}
+									</div>
+									<div className="mt-1 text-lg font-semibold text-amber-900">
+										{approvalSummary.pending}
+									</div>
+								</div>
+								<div className="rounded-lg border bg-emerald-500/10 p-3">
+									<div className="text-xs text-emerald-800">
+										{t('platform.approvals.approved')}
+									</div>
+									<div className="mt-1 text-lg font-semibold text-emerald-900">
+										{approvalSummary.approved}
+									</div>
+								</div>
+								<div className="rounded-lg border bg-red-500/10 p-3">
+									<div className="text-xs text-red-800">
+										{t('platform.approvals.rejected')}
+									</div>
+									<div className="mt-1 text-lg font-semibold text-red-900">
+										{approvalSummary.rejected}
+									</div>
+								</div>
+							</div>
+
+							<div className="grid gap-3 rounded-lg border bg-muted/10 p-3 md:grid-cols-2 xl:grid-cols-[repeat(5,minmax(0,1fr))_auto]">
+								<div className="grid gap-2">
+									<label className="text-xs font-medium text-muted-foreground">
+										{t('platform.approvals.filterStatus')}
+									</label>
+									<Select
+										value={approvalFilters.status || ALL_APPROVAL_STATUSES_VALUE}
+										onValueChange={(value) =>
+											setApprovalFilters((current) => ({
+												...current,
+												status:
+													value === ALL_APPROVAL_STATUSES_VALUE ? '' : value,
+											}))
+										}
+									>
+										<SelectTrigger className="w-full">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value={ALL_APPROVAL_STATUSES_VALUE}>
+												{t('platform.approvals.allStatuses')}
+											</SelectItem>
+											<SelectItem value="pending">
+												{t('platform.approvals.pending')}
+											</SelectItem>
+											<SelectItem value="approved">
+												{t('platform.approvals.approved')}
+											</SelectItem>
+											<SelectItem value="rejected">
+												{t('platform.approvals.rejected')}
+											</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+								<div className="grid gap-2">
+									<label className="text-xs font-medium text-muted-foreground">
+										{t('platform.approvals.filterTenant')}
+									</label>
+									<Input
+										value={approvalFilters.tenant}
+										onChange={(event) =>
+											setApprovalFilters((current) => ({
+												...current,
+												tenant: event.target.value,
+											}))
+										}
+										placeholder={platformStatus?.current_user.tenant || 'default'}
+									/>
+								</div>
+								<div className="grid gap-2">
+									<label className="text-xs font-medium text-muted-foreground">
+										{t('platform.approvals.filterUser')}
+									</label>
+									<Input
+										value={approvalFilters.user_id}
+										onChange={(event) =>
+											setApprovalFilters((current) => ({
+												...current,
+												user_id: event.target.value,
+											}))
+										}
+										placeholder={platformStatus?.current_user.user_id || username}
+									/>
+								</div>
+								<div className="grid gap-2">
+									<label className="text-xs font-medium text-muted-foreground">
+										{t('platform.approvals.filterAgent')}
+									</label>
+									<Select
+										value={approvalFilters.agent_id || ALL_AGENTS_VALUE}
+										onValueChange={(value) =>
+											setApprovalFilters((current) => ({
+												...current,
+												agent_id: value === ALL_AGENTS_VALUE ? '' : value,
+											}))
+										}
+									>
+										<SelectTrigger className="w-full">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value={ALL_AGENTS_VALUE}>
+												{t('platform.approvals.allAgents')}
+											</SelectItem>
+											{activePlatformAgents.map((agent) => (
+												<SelectItem key={agent.id} value={agent.id}>
+													{agent.name}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+								<div className="grid gap-2">
+									<label className="text-xs font-medium text-muted-foreground">
+										{t('platform.approvals.filterLimit')}
+									</label>
+									<Input
+										type="number"
+										min={1}
+										max={200}
+										value={approvalFilters.limit}
+										onChange={(event) =>
+											setApprovalFilters((current) => ({
+												...current,
+												limit: event.target.value,
+											}))
+										}
+									/>
+								</div>
+								<Button
+									type="button"
+									size="sm"
+									className="self-end"
+									onClick={() => void refetchApprovals()}
+									disabled={approvalLoading}
+								>
+									<ListChecks />
+									{t('platform.approvals.applyFilters')}
+								</Button>
+							</div>
+
+							{approvalError ? <PlatformNotice>{approvalError}</PlatformNotice> : null}
+
+							{approvalLoading ? (
+								<div className="grid gap-2">
+									{[0, 1, 2].map((item) => (
+										<Skeleton key={item} className="h-32 rounded-lg" />
+									))}
+								</div>
+							) : approvalRequests.length === 0 ? (
+								<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+									{t('platform.approvals.empty')}
+								</div>
+							) : (
+								<div className="grid gap-2">
+									{approvalRequests.map((approval) => {
+										const target =
+											approval.tool_name ||
+											approval.workflow_type ||
+											approval.agent_id ||
+											approval.request_type;
+										const isDeciding = decidingApprovalId === approval.approval_id;
+										const isContinuing =
+											continuingApprovalId === approval.approval_id;
+										const canApproveAndRun =
+											approval.status === 'pending' &&
+											((approval.request_type === 'tool_run' &&
+												Boolean(approval.tool_name)) ||
+												(approval.request_type === 'workflow_run' &&
+													Boolean(approval.workflow_type)));
+										const canUseApproval =
+											approval.status === 'approved' &&
+											((approval.request_type === 'tool_run' &&
+												Boolean(approval.tool_name)) ||
+												(approval.request_type === 'workflow_run' &&
+													Boolean(approval.workflow_type)));
+
+										return (
+											<div
+												key={approval.approval_id}
+												className="rounded-lg border bg-background p-3"
+											>
+												<div className="flex flex-wrap items-start justify-between gap-3">
+													<div className="min-w-0">
+														<div className="flex flex-wrap items-center gap-2">
+															<Badge
+																variant="outline"
+																className={cn(
+																	approvalStatusClassName(approval.status),
+																)}
+															>
+																{t(`platform.approvals.${approval.status}`)}
+															</Badge>
+															<Badge variant="secondary">
+																{t(
+																	`platform.approvals.${approval.request_type === 'tool_run' ? 'toolRun' : approval.request_type === 'workflow_run' ? 'workflowRun' : 'agentAction'}`,
+																)}
+															</Badge>
+															<span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
+																{target}
+															</span>
+														</div>
+														<p className="mt-2 text-sm">
+															{approval.reason || '-'}
+														</p>
+													</div>
+													{approval.status === 'pending' ? (
+														<div className="flex shrink-0 gap-2">
+															{canApproveAndRun ? (
+																<Button
+																	type="button"
+																	size="sm"
+																	onClick={() =>
+																		void handleApproveAndRun(approval)
+																	}
+																	disabled={isDeciding || isContinuing}
+																>
+																	<Play
+																		className={cn(
+																			isContinuing && 'animate-pulse',
+																		)}
+																	/>
+																	{isContinuing
+																		? t(
+																				'platform.approvals.approvingAndRunning',
+																			)
+																		: t('platform.approvals.approveAndRun')}
+																</Button>
+															) : null}
+															<Button
+																type="button"
+																size="sm"
+																variant="outline"
+																onClick={() =>
+																	void handleDecideApproval(
+																		approval.approval_id,
+																		'approved',
+																	)
+																}
+																disabled={isDeciding || isContinuing}
+															>
+																<CheckCircle2
+																	className={cn(
+																		isDeciding && 'animate-pulse',
+																	)}
+																/>
+																{isDeciding
+																	? t('platform.approvals.approving')
+																	: t('platform.approvals.approve')}
+															</Button>
+															<Button
+																type="button"
+																size="sm"
+																variant="outline"
+																onClick={() =>
+																	void handleDecideApproval(
+																		approval.approval_id,
+																		'rejected',
+																	)
+																}
+																disabled={isDeciding || isContinuing}
+															>
+																<XCircle
+																	className={cn(
+																		isDeciding && 'animate-pulse',
+																	)}
+																/>
+																{isDeciding
+																	? t('platform.approvals.rejecting')
+																	: t('platform.approvals.reject')}
+															</Button>
+														</div>
+													) : canUseApproval ? (
+														<Button
+															type="button"
+															size="sm"
+															variant="outline"
+															onClick={() => handleUseApproval(approval)}
+														>
+															<ArrowRight />
+															{t('platform.approvals.useForRun')}
+														</Button>
+													) : null}
+												</div>
+
+												<div className="mt-3 grid gap-1 text-xs text-muted-foreground">
+													<div className="flex flex-wrap gap-1">
+														<span>{t('platform.approvals.approvalId')}:</span>
+														<span className="break-all font-mono">
+															{approval.approval_id}
+														</span>
+													</div>
+													<div className="flex flex-wrap gap-1">
+														<span>{t('platform.audit.inputs')}:</span>
+														<span>{summarizeAuditObject(approval.inputs)}</span>
+													</div>
+													<div className="flex flex-wrap gap-1">
+														<span>{t('platform.approvals.requestedBy')}:</span>
+														<span className="font-mono">
+															{approval.requested_by} / {approval.user_id}
+														</span>
+													</div>
+													<div className="flex flex-wrap gap-1">
+														<span>{t('platform.approvals.requestedAt')}:</span>
+														<span>{formatTimestamp(approval.requested_at)}</span>
+													</div>
+													{approval.decided_at ? (
+														<div className="flex flex-wrap gap-1">
+															<span>{t('platform.approvals.decidedAt')}:</span>
+															<span>{formatTimestamp(approval.decided_at)}</span>
+														</div>
+													) : null}
+													{approval.decided_by ? (
+														<div className="flex flex-wrap gap-1">
+															<span>{t('platform.approvals.decidedBy')}:</span>
+															<span className="font-mono">
+																{approval.decided_by}
+															</span>
+														</div>
+													) : null}
+													{approval.decision_note ? (
+														<div className="flex flex-wrap gap-1">
+															<span>{t('platform.approvals.decisionNote')}:</span>
+															<span>{approval.decision_note}</span>
+														</div>
+													) : null}
+												</div>
+											</div>
+										);
+									})}
+								</div>
+							)}
+						</div>
+					</section>
+				</div>
+			</main>
+		);
+	}
+
+	if (view === 'runs') {
+		return (
+			<main className="h-full overflow-y-auto bg-background">
+				<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 lg:px-8">
+					<section className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
+						<div className="min-w-0">
+							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+								<Activity className="size-4" />
+								<span>{t('platform.monitoring.eyebrow')}</span>
+							</div>
+							<h1 className="text-2xl font-semibold tracking-normal">
+								{t('platform.monitoring.title')}
+							</h1>
+							<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+								{t('platform.monitoring.description')}
+							</p>
+						</div>
+						<div className="flex flex-wrap gap-2 lg:justify-end">
+							<StateBadge
+								state={monitoringHealthState}
+								label={t(
+									`platform.agentManagement.wizard.states.${monitoringHealthState}`,
+								)}
+							/>
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={() =>
+									void Promise.all([
+										refetchPlatform(),
+										refetchAgentRuns(),
+										refetchWorkflowRuns(),
+										refetchAuditEvents(),
+										refetchApprovals(),
+										refetchGovernance(),
+									])
+								}
+								disabled={monitoringLoading}
+							>
+								<RefreshCcw
+									className={cn('size-4', monitoringLoading && 'animate-spin')}
+								/>
+								{t('platform.monitoring.refresh')}
+							</Button>
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={() => navigate('/platform/agents')}
+							>
+								<BotMessageSquare className="size-4" />
+								{t('platform.monitoring.runAgent')}
+							</Button>
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={() => navigate('/platform/workflows')}
+							>
+								<Workflow className="size-4" />
+								{t('platform.monitoring.runWorkflow')}
+							</Button>
+							<Button type="button" size="sm" onClick={() => navigate('/platform/approvals')}>
+								<ShieldCheck className="size-4" />
+								{t('platform.monitoring.openGovernance')}
+							</Button>
+						</div>
+					</section>
+
+					<section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+						{monitoringStats.map((stat) => {
+							const StatIcon = stat.icon;
+							return (
+								<div key={stat.label} className="grid gap-3 rounded-lg border bg-muted/10 p-3">
+									<div className="flex items-center justify-between gap-3">
+										<div className="text-sm font-medium">{stat.label}</div>
+										<div className="grid size-8 place-items-center rounded-md border bg-background">
+											<StatIcon className="size-4 text-muted-foreground" />
+										</div>
+									</div>
+									<div className="text-2xl font-semibold tracking-normal">{stat.value}</div>
+									<p className="text-xs leading-5 text-muted-foreground">{stat.helper}</p>
+								</div>
+							);
+						})}
+					</section>
+
+					<section className="grid gap-3 lg:grid-cols-3">
+						<div className="grid content-start gap-3 rounded-lg border bg-muted/10 p-3">
+							<div>
+								<h2 className="text-sm font-medium">
+									{t('platform.monitoring.recentAgentRuns')}
+								</h2>
+								<p className="mt-1 text-xs leading-5 text-muted-foreground">
+									{t('platform.monitoring.recentAgentRunsHelper')}
+								</p>
+							</div>
+							{recentAgentTurns.length === 0 ? (
+								<div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
+									{t('platform.monitoring.emptyAgentRuns')}
+								</div>
+							) : (
+								<div className="grid gap-2">
+									{recentAgentTurns.map((turn) => (
+										<button
+											key={turn.id}
+											type="button"
+											onClick={() => {
+												setSelectedRunAgentId(turn.agentId);
+												setAgentRunResult(turn.response);
+												navigate('/platform/agents');
+											}}
+											className="rounded-md border bg-background p-3 text-left text-xs transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+										>
+											<div className="flex items-center justify-between gap-2">
+												<span className="truncate font-medium">{turn.question}</span>
+												<span className="shrink-0 text-muted-foreground">
+													{formatTimestamp(turn.createdAt)}
+												</span>
+											</div>
+											<p className="mt-1 line-clamp-2 leading-5 text-muted-foreground">
+												{turn.answer}
+											</p>
+										</button>
+									))}
+								</div>
+							)}
+						</div>
+
+						<div className="grid content-start gap-3 rounded-lg border bg-muted/10 p-3">
+							<div>
+								<h2 className="text-sm font-medium">
+									{t('platform.monitoring.recentWorkflowRuns')}
+								</h2>
+								<p className="mt-1 text-xs leading-5 text-muted-foreground">
+									{t('platform.monitoring.recentWorkflowRunsHelper')}
+								</p>
+							</div>
+							{recentWorkflowRuns.length === 0 ? (
+								<div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
+									{t('platform.monitoring.emptyWorkflowRuns')}
+								</div>
+							) : (
+								<div className="grid gap-2">
+									{recentWorkflowRuns.slice(0, 6).map((run) => (
+										<button
+											key={run.run_id}
+											type="button"
+											onClick={() => navigate('/platform/workflows')}
+											className="rounded-md border bg-background p-3 text-left text-xs transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+										>
+											<div className="flex items-center justify-between gap-2">
+												<span className="truncate font-medium">{run.workflow_name}</span>
+												<Badge
+													variant="outline"
+													className={workflowStatusClassName(run.status)}
+												>
+													{t(
+														`platform.workflowRunner.${workflowStatusLabelKey(run.status)}`,
+													)}
+												</Badge>
+											</div>
+											<p className="mt-1 line-clamp-2 leading-5 text-muted-foreground">
+												{run.summary || formatTimestamp(run.finished_at || run.started_at)}
+											</p>
+										</button>
+									))}
+								</div>
+							)}
+						</div>
+
+						<div className="grid content-start gap-3 rounded-lg border bg-muted/10 p-3">
+							<div>
+								<h2 className="text-sm font-medium">
+									{t('platform.monitoring.recentAudit')}
+								</h2>
+								<p className="mt-1 text-xs leading-5 text-muted-foreground">
+									{t('platform.monitoring.recentAuditHelper')}
+								</p>
+							</div>
+							{recentAuditEvents.length === 0 ? (
+								<div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
+									{t('platform.monitoring.emptyAudit')}
+								</div>
+							) : (
+								<div className="grid gap-2">
+									{recentAuditEvents.slice(0, 6).map((event, index) => (
+										<div
+											key={event.event_id ?? `${event.timestamp}-${index}`}
+											className="rounded-md border bg-background p-3 text-xs"
+										>
+											<div className="flex items-center justify-between gap-2">
+												<span className="truncate font-medium">
+													{event.tool_name ||
+														event.event_type ||
+														t('platform.monitoring.auditEvent')}
+												</span>
+												<Badge
+													variant="outline"
+													className={
+														event.success === false
+															? ''
+															: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700'
+													}
+												>
+													{event.success === false
+														? t('platform.monitoring.failure')
+														: t('platform.monitoring.success')}
+												</Badge>
+											</div>
+											<p className="mt-1 truncate text-muted-foreground">
+												{event.user_id || '-'} · {event.tenant || '-'} ·{' '}
+												{formatTimestamp(event.timestamp)}
+											</p>
+										</div>
+									))}
+								</div>
+							)}
+						</div>
+					</section>
+
+					<section className="flex flex-col gap-3">
+						<div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+							<div>
+								<h2 className="text-base font-semibold">{t('platform.audit.title')}</h2>
+								<p className="text-sm text-muted-foreground">
+									{t('platform.audit.description')}
+								</p>
+							</div>
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={() => void refetchAuditEvents()}
+								disabled={auditLoading}
+							>
+								<RefreshCcw className={cn(auditLoading && 'animate-spin')} />
+								{t('platform.audit.refresh')}
+							</Button>
+						</div>
+
+						<div className="grid gap-3 rounded-lg border bg-muted/10 p-3 md:grid-cols-2 xl:grid-cols-[repeat(6,minmax(0,1fr))_auto]">
+							<div className="grid gap-2">
+								<label className="text-xs font-medium text-muted-foreground">
+									{t('platform.audit.filterTenant')}
+								</label>
+								<Input
+									value={auditFilters.tenant}
+									onChange={(event) =>
+										setAuditFilters((current) => ({
+											...current,
+											tenant: event.target.value,
+										}))
+									}
+									placeholder={platformStatus?.current_user.tenant || 'default'}
+								/>
+							</div>
+							<div className="grid gap-2">
+								<label className="text-xs font-medium text-muted-foreground">
+									{t('platform.audit.filterUser')}
+								</label>
+								<Input
+									value={auditFilters.user_id}
+									onChange={(event) =>
+										setAuditFilters((current) => ({
+											...current,
+											user_id: event.target.value,
+										}))
+									}
+									placeholder={platformStatus?.current_user.user_id || username}
+								/>
+							</div>
+							<div className="grid gap-2">
+								<label className="text-xs font-medium text-muted-foreground">
+									{t('platform.audit.filterAgent')}
+								</label>
+								<Select
+									value={auditFilters.agent_id || ALL_AGENTS_VALUE}
+									onValueChange={(value) =>
+										setAuditFilters((current) => ({
+											...current,
+											agent_id: value === ALL_AGENTS_VALUE ? '' : value,
+										}))
+									}
+								>
+									<SelectTrigger className="w-full">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value={ALL_AGENTS_VALUE}>
+											{t('platform.audit.allAgents')}
+										</SelectItem>
+										{activePlatformAgents.map((agent) => (
+											<SelectItem key={agent.id} value={agent.id}>
+												{agent.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="grid gap-2">
+								<label className="text-xs font-medium text-muted-foreground">
+									{t('platform.audit.filterTool')}
+								</label>
+								<Select
+									value={auditFilters.tool_name || ALL_TOOLS_VALUE}
+									onValueChange={(value) =>
+										setAuditFilters((current) => ({
+											...current,
+											tool_name: value === ALL_TOOLS_VALUE ? '' : value,
+										}))
+									}
+								>
+									<SelectTrigger className="w-full">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value={ALL_TOOLS_VALUE}>
+											{t('platform.audit.allTools')}
+										</SelectItem>
+										{availableToolItems.map((tool) => (
+											<SelectItem key={tool.name} value={tool.name}>
+												{tool.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="grid gap-2">
+								<label className="text-xs font-medium text-muted-foreground">
+									{t('platform.audit.filterStatus')}
+								</label>
+								<Select
+									value={auditFilters.success || ALL_AUDIT_STATUSES_VALUE}
+									onValueChange={(value) =>
+										setAuditFilters((current) => ({
+											...current,
+											success: value === ALL_AUDIT_STATUSES_VALUE ? '' : value,
+										}))
+									}
+								>
+									<SelectTrigger className="w-full">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value={ALL_AUDIT_STATUSES_VALUE}>
+											{t('platform.audit.allStatuses')}
+										</SelectItem>
+										<SelectItem value="true">{t('platform.audit.success')}</SelectItem>
+										<SelectItem value="false">{t('platform.audit.failure')}</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="grid gap-2">
+								<label className="text-xs font-medium text-muted-foreground">
+									{t('platform.audit.filterLimit')}
+								</label>
+								<Input
+									type="number"
+									min={1}
+									max={200}
+									value={auditFilters.limit}
+									onChange={(event) =>
+										setAuditFilters((current) => ({
+											...current,
+											limit: event.target.value,
+										}))
+									}
+								/>
+							</div>
+							<Button
+								type="button"
+								size="sm"
+								className="self-end"
+								onClick={() => void refetchAuditEvents()}
+								disabled={auditLoading}
+							>
+								<ListChecks />
+								{t('platform.audit.applyFilters')}
+							</Button>
+						</div>
+
+						{auditLoading ? (
+							<div className="grid gap-3 lg:grid-cols-2">
+								<Skeleton className="h-28 w-full" />
+								<Skeleton className="h-28 w-full" />
+							</div>
+						) : auditError ? (
+							<PlatformNotice>{auditError}</PlatformNotice>
+						) : auditEvents.length === 0 ? (
+							<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+								{t('platform.audit.empty')}
+							</div>
+						) : (
+							<>
+								<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+									{auditStats.map((stat) => (
+										<div key={stat.label} className="rounded-lg border bg-card p-3">
+											<div className="text-xs text-muted-foreground">{stat.label}</div>
+											<div className="mt-1 font-mono text-xl font-semibold">
+												{stat.value}
+											</div>
+										</div>
+									))}
+								</div>
+								<div className="grid gap-3 lg:grid-cols-2">
+									{auditEvents.map((event: EnterpriseAuditEvent, index) => {
+										const inputsSummary = summarizeAuditObject(event.inputs);
+										const resultSummary = summarizeAuditObject(event.result);
+										const statusLabel =
+											event.success === true
+												? t('platform.audit.success')
+												: event.success === false
+													? t('platform.audit.failure')
+													: t('platform.audit.unknown');
+
+										return (
+											<Card
+												key={
+													event.event_id ||
+													`${event.timestamp}-${event.tool_name}-${index}`
+												}
+												size="sm"
+												className="rounded-lg shadow-none"
+											>
+												<CardHeader className="grid-cols-[auto_1fr_auto] gap-3">
+													<div
+														className={cn(
+															'flex size-8 items-center justify-center rounded-lg border bg-background',
+															event.success === false &&
+																'border-destructive/30',
+														)}
+													>
+														{event.success === false ? (
+															<XCircle className="size-4 text-destructive" />
+														) : (
+															<CheckCircle2 className="size-4 text-emerald-700" />
+														)}
+													</div>
+													<div className="min-w-0">
+														<CardTitle className="truncate font-mono text-sm">
+															{event.tool_name ||
+																t('platform.audit.unknownTool')}
+														</CardTitle>
+														<p className="mt-1 truncate text-xs text-muted-foreground">
+															{formatTimestamp(event.timestamp)}
+														</p>
+													</div>
+													<Badge
+														variant={
+															event.success === false ? 'destructive' : 'outline'
+														}
+														className={cn(
+															event.success !== false &&
+																'border-emerald-500/30 bg-emerald-500/10 text-emerald-700',
+														)}
+													>
+														{statusLabel}
+													</Badge>
+												</CardHeader>
+												<CardContent className="grid gap-2 text-xs">
+													<div className="grid grid-cols-[7rem_1fr] gap-2">
+														<span className="text-muted-foreground">
+															{t('platform.audit.user')}
+														</span>
+														<span className="min-w-0 truncate font-mono">
+															{event.user_id || '-'} / {event.tenant || '-'}
+														</span>
+													</div>
+													<div className="grid grid-cols-[7rem_1fr] gap-2">
+														<span className="text-muted-foreground">
+															{t('platform.audit.connector')}
+														</span>
+														<span className="min-w-0 truncate font-mono">
+															{event.connector || '-'}
+														</span>
+													</div>
+													<div className="grid grid-cols-[7rem_1fr] gap-2">
+														<span className="text-muted-foreground">
+															{t('platform.audit.duration')}
+														</span>
+														<span className="font-mono">
+															{event.duration_ms ?? '-'} ms
+														</span>
+													</div>
+													{inputsSummary ? (
+														<div className="grid grid-cols-[7rem_1fr] gap-2">
+															<span className="text-muted-foreground">
+																{t('platform.audit.inputs')}
+															</span>
+															<span className="min-w-0 break-words font-mono">
+																{inputsSummary}
+															</span>
+														</div>
+													) : null}
+													{resultSummary ? (
+														<div className="grid grid-cols-[7rem_1fr] gap-2">
+															<span className="text-muted-foreground">
+																{t('platform.audit.result')}
+															</span>
+															<span className="min-w-0 break-words font-mono">
+																{resultSummary}
+															</span>
+														</div>
+													) : null}
+													{event.error?.message ? (
+														<div className="grid grid-cols-[7rem_1fr] gap-2 text-destructive">
+															<span>{t('common.error')}</span>
+															<span className="min-w-0 break-words">
+																{event.error.message}
+															</span>
+														</div>
+													) : null}
+												</CardContent>
+											</Card>
+										);
+									})}
+								</div>
+							</>
+						)}
+					</section>
+				</div>
+			</main>
+		);
+	}
+
+	if (view === 'workflows') {
+		return (
+			<main className="h-full overflow-y-auto bg-background">
+				<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 lg:px-8">
+					<section className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
+						<div className="min-w-0">
+							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+								<Workflow className="size-4" />
+								<span>{t('platform.workflowRunner.title')}</span>
+							</div>
+							<h1 className="text-2xl font-semibold tracking-normal">
+								{t('platform.workflowRunner.title')}
+							</h1>
+							<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+								{t('platform.workflowRunner.description')}
+							</p>
+						</div>
+						<div className="grid min-w-0 gap-2 rounded-lg border bg-muted/20 p-3 text-xs sm:min-w-80">
+							<div className="flex items-center justify-between gap-3">
+								<span className="text-muted-foreground">
+									{t('platform.connection.server')}
+								</span>
+								<span className="truncate font-mono" title={serverUrl}>
+									{serverUrl}
+								</span>
+							</div>
+							<div className="flex items-center justify-between gap-3">
+								<span className="text-muted-foreground">
+									{t('platform.connection.user')}
+								</span>
+								<span className="truncate font-mono" title={username}>
+									{username}
+								</span>
+							</div>
+							<div className="flex items-center justify-between gap-3">
+								<span className="text-muted-foreground">
+									{t('platform.connection.health')}
+								</span>
+								<StateBadge
+									state={hasErrors ? 'partial' : 'ready'}
+									label={
+										hasErrors
+											? t('platform.connection.partial')
+											: t('platform.connection.connected')
+									}
+								/>
+							</div>
+						</div>
+					</section>
+
+					<section ref={workflowRunnerRef}>
+						<WorkflowRunnerPanel
+							selectedWorkflowType={selectedWorkflowType}
+							workflowOptions={workflowOptions}
+							selectedWorkflowTemplate={selectedWorkflowTemplate}
+							workflowInputs={workflowInputs}
+							workflowInputLabelKeys={workflowInputLabelKeys}
+							workflowApprovalId={workflowApprovalId}
+							workflowRunError={workflowRunError}
+							workflowRunResult={workflowRunResult}
+							runningWorkflow={runningWorkflow}
+							workflowTemplatesLoading={workflowTemplatesLoading}
+							workflowTemplatesError={workflowTemplatesError}
+							workflowTemplates={workflowTemplates}
+							selectedWorkflowDisabled={selectedWorkflowDisabled}
+							savingWorkflowType={savingWorkflowType}
+							creatingRunApproval={creatingRunApproval}
+							platformError={platformError ? String(platformError) : null}
+							workflowRunsLoading={workflowRunsLoading}
+							workflowRunsError={workflowRunsError}
+							workflowRuns={workflowRuns}
+							onWorkflowTypeChange={(value) => {
+								setSelectedWorkflowType(value);
+								setWorkflowRunError(null);
+								const nextWorkflow = workflowOptions.find(
+									(workflow) => workflow.value === value,
+								);
+								setWorkflowInputs(
+									normalizeWorkflowInputs(nextWorkflow?.defaultInputs),
+								);
+							}}
+							onWorkflowInputChange={(key, value) =>
+								setWorkflowInputs((current) => ({
+									...current,
+									[key]: value,
+								}))
+							}
+							onWorkflowApprovalIdChange={setWorkflowApprovalId}
+							onRequestApproval={() => void handleCreateRunApproval('workflow_run')}
+							onRunWorkflow={() => void handleRunEnterpriseWorkflow()}
+							onToggleWorkflowTemplate={(template, checked) =>
+								void handleToggleWorkflowTemplate(template, checked)
+							}
+							workflowInputLabel={workflowInputLabel}
+							workflowStatusLabelKey={workflowStatusLabelKey}
+							workflowStatusClassName={workflowStatusClassName}
+							formatTimestamp={formatTimestamp}
+							summarizeAuditObject={summarizeAuditObject}
+							t={t}
+						/>
+					</section>
+				</div>
+			</main>
+		);
+	}
+
+	if (view === 'agents') {
+		return (
+			<main className="h-full overflow-y-auto bg-background">
+				<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 lg:px-8">
+					<section className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
+						<div className="min-w-0">
+							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+								<BotMessageSquare className="size-4" />
+								<span>{t('platform.agentManagement.title')}</span>
+							</div>
+							<h1 className="text-2xl font-semibold tracking-normal">
+								{t('platform.agentManagement.title')}
+							</h1>
+							<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+								{t('platform.agentManagement.description')}
+							</p>
+						</div>
+						<div className="flex flex-wrap gap-2 lg:justify-end">
+							<Button
+								size="sm"
+								variant="outline"
+								onClick={() => void refetchPlatformAgents()}
+								disabled={platformAgentsLoading}
+							>
+								<RefreshCcw className={cn(platformAgentsLoading && 'animate-spin')} />
+								{t('platform.actions.refreshStatus')}
+							</Button>
+							<Button
+								size="sm"
+								onClick={scrollToAgentRunner}
+								disabled={!selectedRunAgent}
+							>
+								<Play />
+								{t('platform.agentManagement.runAgent')}
+							</Button>
+						</div>
+					</section>
+
+					{platformAgentsError ? (
+						<PlatformNotice>{t('platform.agentManagement.loadError')}</PlatformNotice>
+					) : null}
+
+					<section ref={agentManagementRef} className="grid gap-6">
+						<AgentManagementOverview
+							agentOpsSummary={agentOpsSummary}
+							agentReleasePipeline={agentReleasePipeline}
+							nextAgentSetupStep={nextAgentSetupStep}
+							selectedRunAgent={selectedRunAgent}
+							selectedRunAgentReadinessState={selectedRunAgentReadinessState}
+							selectedRunAgentReadinessLabel={selectedRunAgentReadinessLabel}
+							selectedRunAgentModelLabel={selectedRunAgentModelLabel}
+							selectedRunAgentKnowledgeCount={selectedRunAgentKnowledgeCount}
+							selectedRunAgentToolCount={selectedRunAgentToolCount}
+							labels={{
+								pipelineTitle: t('platform.agentManagement.pipeline.title'),
+								pipelineDescription: t('platform.agentManagement.pipeline.description'),
+								nextAction: t('platform.agentManagement.wizard.nextAction'),
+								readyAction: t('platform.agentManagement.wizard.readyAction'),
+								noRuntimeAgent: t('platform.agentManagement.ops.noRuntimeAgent'),
+								noRuntimeAgentHint: t('platform.agentManagement.ops.noRuntimeAgentHint'),
+								modelCredential: t('platform.agentManagement.modelCredential'),
+								knowledgeBases: t('platform.agentManagement.knowledgeBases'),
+								tools: t('platform.agentManagement.tools'),
+								memory: t('platform.agentManagement.memory'),
+								workflow: t('platform.agentManagement.workflow'),
+								enabled: t('platform.agentManagement.enabled'),
+								disabled: t('platform.agentManagement.disabled'),
+								runAgent: t('platform.agentManagement.runAgent'),
+								runWorkflow: t('platform.agentManagement.runWorkflow'),
+								edit: t('platform.agentManagement.edit'),
+								openGovernance: t('platform.agentManagement.ops.openGovernance'),
+								states: {
+									ready: t('platform.agentManagement.wizard.states.ready'),
+									partial: t('platform.agentManagement.wizard.states.partial'),
+									todo: t('platform.agentManagement.wizard.states.todo'),
+									blocked: t('platform.agentManagement.wizard.states.blocked'),
+								},
+							}}
+							onNextAgentSetupStep={handleNextAgentSetupStep}
+							onRunAgent={scrollToAgentRunner}
+							onRunWorkflow={handlePrimeAgentWorkflow}
+							onEditAgent={handleEditAgent}
+							onOpenGovernance={scrollToGovernance}
+						/>
+					</section>
+
+					<section className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(360px,1.1fr)]">
+						<div ref={agentTemplateStepRef} className="grid gap-3">
+							<AgentTemplateList
+								templates={agentTemplates}
+								selectedTemplateId={selectedTemplateId}
+								loading={platformAgentsLoading}
+								hasLoaded={Boolean(platformAgents)}
+								publishingTemplateId={publishingTemplateId}
+								labels={{
+									title: t('platform.agentManagement.templates'),
+									empty: t('platform.agentManagement.emptyTemplates'),
+									configure: t('platform.agentManagement.configureTemplate'),
+								}}
+								onConfigureTemplate={handleConfigureTemplate}
+							/>
+						</div>
+
+						<section ref={agentRunnerRef} className="grid gap-4 rounded-lg border bg-muted/10 p-4">
+							<div className="flex items-start gap-2">
+								<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background">
+									<BotMessageSquare className="size-4 text-muted-foreground" />
+								</div>
+								<div className="min-w-0">
+									<h2 className="text-base font-semibold">
+										{t('platform.agentRunner.title')}
+									</h2>
+									<p className="text-sm text-muted-foreground">
+										{t('platform.agentRunner.description')}
+									</p>
+								</div>
+							</div>
+
+							<div className="grid gap-2">
+								<label className="text-xs font-medium text-muted-foreground">
+									{t('platform.agentRunner.instance')}
+								</label>
+								<Select
+									value={selectedRunAgentId}
+									onValueChange={handleSelectRunAgent}
+									disabled={activePlatformAgents.length === 0}
+								>
+									<SelectTrigger className="w-full">
+										<SelectValue placeholder={t('platform.agentRunner.selectInstance')} />
+									</SelectTrigger>
+									<SelectContent>
+										{activePlatformAgents.map((agent) => (
+											<SelectItem key={agent.id} value={agent.id}>
+												{agent.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+
+							{activePlatformAgents.length === 0 ? (
+								<div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+									{t('platform.agentRunner.noInstances')}
+								</div>
+							) : selectedRunAgent ? (
+								<div className="flex flex-wrap gap-2">
+									<Badge variant="outline" className="max-w-full font-mono">
+										{selectedRunAgent.tenant}
+									</Badge>
+									<Badge variant="outline" className="max-w-full truncate">
+										{t('platform.agentManagement.modelCredential')}: {selectedRunAgentModelLabel}
+									</Badge>
+									<Badge variant="outline">
+										{t('platform.agentRunner.knowledgeCount', {
+											count: selectedRunAgentKnowledgeLabels.length,
+										})}
+									</Badge>
+									<Badge variant="outline">
+										{t('platform.agentRunner.toolsCount', {
+											count: selectedRunAgentToolCount,
+										})}
+									</Badge>
+									<Badge
+										variant="outline"
+										className={cn(
+											!selectedRunAgentAccessAllowed &&
+												'border-red-500/30 bg-red-500/10 text-red-700',
+										)}
+									>
+										{selectedRunAgentAccessLabel}
+									</Badge>
+								</div>
+							) : null}
+
+							<div className="grid gap-2">
+								<label className="text-xs font-medium text-muted-foreground">
+									{t('platform.agentRunner.question')}
+								</label>
+								<Textarea
+									value={agentQuestion}
+									onChange={(event) => {
+										setAgentQuestion(event.target.value);
+										setAgentRunError(null);
+									}}
+									placeholder={t('platform.agentRunner.placeholder')}
+									className="min-h-28 resize-y"
+								/>
+							</div>
+
+							<div className="grid gap-2">
+								<label className="text-xs font-medium text-muted-foreground">
+									{t('platform.agentRunner.approvalId')}
+								</label>
+								<Input
+									value={agentApprovalId}
+									onChange={(event) => {
+										setAgentApprovalId(event.target.value);
+										setAgentRunError(null);
+									}}
+									placeholder={t('platform.agentRunner.approvalIdPlaceholder')}
+									className="font-mono"
+								/>
+							</div>
+
+							<div className="grid gap-2">
+								<div className="text-xs font-medium text-muted-foreground">
+									{t('platform.agentRunner.samples')}
+								</div>
+								<div className="flex flex-wrap gap-2">
+									{agentSampleQuestions.map((sample) => (
+										<Button
+											key={sample}
+											type="button"
+											size="sm"
+											variant="outline"
+											onClick={() => {
+												setAgentQuestion(sample);
+												setAgentRunError(null);
+											}}
+										>
+											{sample}
+										</Button>
+									))}
+								</div>
+							</div>
+
+							<AgentRunnerConversation
+								turns={selectedAgentConversation}
+								activeResponse={agentRunResult}
+								loading={agentRunsLoading}
+								error={agentRunsError}
+								labels={{
+									title: t('platform.agentRunner.conversation'),
+									clear: t('platform.agentRunner.clearConversation'),
+									loading: t('common.loading'),
+									empty: t('platform.agentRunner.conversationEmpty'),
+									selectedTool: t('platform.agentRunner.selectedTool'),
+									notRouted: t('platform.agentRunner.notRouted'),
+								}}
+								onClear={handleClearAgentConversation}
+								onSelectTurn={(turn) =>
+									void handleSelectAgentRun(turn as EnterpriseAgentConversationTurn)
+								}
+							/>
+
+							<div className="flex justify-end">
+								<Button
+									onClick={handleRunEnterpriseAgent}
+									disabled={
+										runningAgent ||
+										!agentQuestion.trim() ||
+										!selectedRunAgentId ||
+										!selectedRunAgentAccessAllowed
+									}
+								>
+									<Play className={cn(runningAgent && 'animate-pulse')} />
+									{runningAgent
+										? t('platform.agentRunner.running')
+										: t('platform.agentRunner.run')}
+								</Button>
+							</div>
+
+							{agentRunError ? (
+								<div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+									{t('platform.agentRunner.error')} {agentRunError}
+								</div>
+							) : null}
+						</section>
+					</section>
+
+					<section className="grid gap-3">
+						<AgentRunnerResult
+							result={agentRunResult}
+							toolCalls={agentToolCalls}
+							toolCallBadgeText={agentToolCallBadgeText}
+							routingLabel={agentRoutingLabel}
+							routingText={agentRoutingText}
+							connectorSourceText={agentRunConnectorSourceText}
+							modelLabel={agentRunModelLabel}
+							knowledgeLabels={agentRunKnowledgeLabels}
+							knowledgeBaseById={knowledgeBaseById}
+							onInspectAudit={handleInspectAgentRunAudit}
+							t={t}
+						/>
+					</section>
+				</div>
+			</main>
+		);
+	}
 
 	return (
 		<main className="h-full overflow-y-auto bg-background">
