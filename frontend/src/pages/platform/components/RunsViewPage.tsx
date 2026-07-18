@@ -316,7 +316,6 @@ export function RunsViewPage({
 					auditStats={auditStats}
 					onAuditFiltersChange={onAuditFiltersChange}
 					onRefetchAuditEvents={onRefetchAuditEvents}
-					formatTimestamp={formatTimestamp}
 					summarizeAuditObject={summarizeAuditObject}
 					t={t}
 				/>

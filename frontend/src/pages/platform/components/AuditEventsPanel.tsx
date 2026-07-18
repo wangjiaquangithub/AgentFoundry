@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { formatTimestamp } from '../platform-utils';
 import { PlatformNotice } from './common';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -54,7 +55,6 @@ interface AuditEventsPanelProps {
 	auditStats: AuditStatItem[];
 	onAuditFiltersChange: Dispatch<SetStateAction<AuditFilters>>;
 	onRefetchAuditEvents: () => void | Promise<void>;
-	formatTimestamp: (value?: string) => string;
 	summarizeAuditObject: (value?: Record<string, unknown>) => string;
 	t: Translate;
 }
@@ -72,7 +72,6 @@ export function AuditEventsPanel({
 	auditStats,
 	onAuditFiltersChange,
 	onRefetchAuditEvents,
-	formatTimestamp,
 	summarizeAuditObject,
 	t,
 }: AuditEventsPanelProps) {

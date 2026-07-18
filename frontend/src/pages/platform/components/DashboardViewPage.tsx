@@ -2622,7 +2622,6 @@ export function DashboardViewPage({
 					auditStats={auditStats}
 					onAuditFiltersChange={setAuditFilters}
 					onRefetchAuditEvents={refetchAuditEvents}
-					formatTimestamp={formatTimestamp}
 					summarizeAuditObject={summarizeAuditObject}
 					t={t}
 				/>
