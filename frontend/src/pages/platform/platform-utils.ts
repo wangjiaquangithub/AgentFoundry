@@ -330,6 +330,17 @@ export function memoryOperationsItemsForConversations(values: {
 	});
 }
 
+export function blockedOrPartialPlatformAgentsForReadiness(values: {
+	activePlatformAgents: EnterprisePublishedAgent[];
+	readyPlatformAgents: EnterprisePublishedAgent[];
+}): EnterprisePublishedAgent[] {
+	const readyAgentIds = new Set(
+		values.readyPlatformAgents.map((agent) => agent.id),
+	);
+
+	return values.activePlatformAgents.filter((agent) => !readyAgentIds.has(agent.id));
+}
+
 export function dashboardTodoItemsForStatus(
 	values: {
 		credentialCount: number;

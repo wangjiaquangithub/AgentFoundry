@@ -115,6 +115,7 @@ import {
 	appCenterSelectionState,
 	appCenterTemplateDetailResourceValues,
 	auditStatsForSummary,
+	blockedOrPartialPlatformAgentsForReadiness,
 	dashboardTodoItemsForStatus,
 	defaultEnterpriseWorkflowInputs,
 	enabledEnterpriseWorkflowTemplates,
@@ -1155,10 +1156,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			errors: t('platform.dashboard.todoErrors'),
 		},
 	);
-	const blockedOrPartialPlatformAgents = activePlatformAgents.filter(
-		(agent) =>
-			!readyPlatformAgents.some((readyAgent) => readyAgent.id === agent.id),
-	);
+	const blockedOrPartialPlatformAgents = blockedOrPartialPlatformAgentsForReadiness({
+		activePlatformAgents,
+		readyPlatformAgents,
+	});
 	const appCenterAgents = appCenterAgentsForDisplay(
 		readyPlatformAgents,
 		blockedOrPartialPlatformAgents,
