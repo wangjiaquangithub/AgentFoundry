@@ -104,7 +104,6 @@ import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import {
 	agentAccessAllowed,
-	agentAccessRestricted,
 	agentIsReady,
 	agentKnowledgeBaseLabels,
 	agentModelLabel,
@@ -113,6 +112,7 @@ import {
 	agentResourceSummary,
 	agentRunnerAccessLabelKey,
 	defaultEnterpriseWorkflowInputs,
+	formatAgentAccessLabel,
 	formatOperationsAgentIssueText,
 	knowledgeBaseLabels,
 	modelCredentialLabel,
@@ -1363,15 +1363,17 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		inspectedAppCenterAgent,
 		knowledgeBaseById,
 	);
-	const inspectedAppCenterAgentAccess = agentAccessRestricted({
-		allowed_user_ids: inspectedAppCenterAgentAllowedUserIds,
-		allowed_roles: inspectedAppCenterAgentAllowedRoles,
-	})
-		? t('platform.appCenter.restrictedAccess', {
-				users: inspectedAppCenterAgentAllowedUserIds.length,
-				roles: inspectedAppCenterAgentAllowedRoles.length,
-			})
-			: t('platform.appCenter.tenantAccess');
+	const inspectedAppCenterAgentAccess = formatAgentAccessLabel(
+		{
+			allowed_user_ids: inspectedAppCenterAgentAllowedUserIds,
+			allowed_roles: inspectedAppCenterAgentAllowedRoles,
+		},
+		{
+			restricted: ({ users, roles }) =>
+				t('platform.appCenter.restrictedAccess', { users, roles }),
+			open: t('platform.appCenter.tenantAccess'),
+		},
+	);
 	const appCenterDetailResources = inspectedAppCenterAgent
 		? [
 				{

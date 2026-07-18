@@ -149,6 +149,18 @@ export function agentAccessRestricted(
 	return (agent.allowed_user_ids?.length ?? 0) > 0 || (agent.allowed_roles?.length ?? 0) > 0;
 }
 
+export function formatAgentAccessLabel(
+	agent: { allowed_user_ids?: string[] | null; allowed_roles?: string[] | null },
+	labels: { restricted: (counts: { users: number; roles: number }) => string; open: string },
+) {
+	const allowedUsers = agent.allowed_user_ids ?? [];
+	const allowedRoles = agent.allowed_roles ?? [];
+
+	return agentAccessRestricted(agent)
+		? labels.restricted({ users: allowedUsers.length, roles: allowedRoles.length })
+		: labels.open;
+}
+
 export function agentRunnerAccessLabelKey(
 	agent:
 		| { allowed_user_ids?: string[] | null; allowed_roles?: string[] | null }
