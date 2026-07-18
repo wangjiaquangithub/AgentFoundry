@@ -2,6 +2,8 @@ import type {
 	AgentView,
 	EnterpriseAgentTemplate,
 	EnterpriseApprovalRequestItem,
+	EnterpriseAuditEvent,
+	EnterpriseAuditQueryResponse,
 	EnterpriseIdentity,
 	EnterprisePlatformGovernanceResponse,
 	EnterprisePublishedAgent,
@@ -858,6 +860,46 @@ export function triggerOpsSummaryText(
 	}
 
 	return labels.active({ count: values.enabledScheduleCount });
+}
+
+export function auditStatsForSummary(
+	values: {
+		auditSummary?: EnterpriseAuditQueryResponse['summary'] | null;
+		auditEvents: EnterpriseAuditEvent[];
+	},
+	labels: {
+		returned: string;
+		successes: string;
+		failures: string;
+		avgDuration: string;
+	},
+): Array<{ label: string; value: string | number }> {
+	return [
+		{
+			label: labels.returned,
+			value: values.auditSummary?.total_returned ?? values.auditEvents.length,
+		},
+		{
+			label: labels.successes,
+			value:
+				values.auditSummary?.successes ??
+				values.auditEvents.filter((event) => event.success === true).length,
+		},
+		{
+			label: labels.failures,
+			value:
+				values.auditSummary?.failures ??
+				values.auditEvents.filter((event) => event.success === false).length,
+		},
+		{
+			label: labels.avgDuration,
+			value:
+				values.auditSummary?.avg_duration_ms === null ||
+				values.auditSummary?.avg_duration_ms === undefined
+					? '-'
+					: `${Math.round(values.auditSummary.avg_duration_ms)} ms`,
+		},
+	];
 }
 
 export function templateDetailIssues(

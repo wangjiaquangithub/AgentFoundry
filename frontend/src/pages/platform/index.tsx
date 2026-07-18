@@ -118,6 +118,7 @@ import {
 	appCenterAgentsForDisplay,
 	appCenterSelectionState,
 	appCenterTemplateDetailResourceValues,
+	auditStatsForSummary,
 	defaultEnterpriseWorkflowInputs,
 	enabledEnterpriseWorkflowTemplates,
 	enabledTriggerSchedules,
@@ -1639,32 +1640,18 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			active: ({ count }) => t('platform.triggerOps.summaryActive', { count }),
 		},
 	);
-	const auditStats = [
+	const auditStats = auditStatsForSummary(
 		{
-			label: t('platform.audit.summaryReturned'),
-			value: auditSummary?.total_returned ?? auditEvents.length,
+			auditSummary,
+			auditEvents,
 		},
 		{
-			label: t('platform.audit.summarySuccesses'),
-			value:
-				auditSummary?.successes ??
-				auditEvents.filter((event) => event.success === true).length,
+			returned: t('platform.audit.summaryReturned'),
+			successes: t('platform.audit.summarySuccesses'),
+			failures: t('platform.audit.summaryFailures'),
+			avgDuration: t('platform.audit.summaryAvgDuration'),
 		},
-		{
-			label: t('platform.audit.summaryFailures'),
-			value:
-				auditSummary?.failures ??
-				auditEvents.filter((event) => event.success === false).length,
-		},
-		{
-			label: t('platform.audit.summaryAvgDuration'),
-			value:
-				auditSummary?.avg_duration_ms === null ||
-				auditSummary?.avg_duration_ms === undefined
-					? '-'
-					: `${Math.round(auditSummary.avg_duration_ms)} ms`,
-		},
-	];
+	);
 	useEffect(() => {
 		void refetchConnectors();
 		void refetchGovernance();
