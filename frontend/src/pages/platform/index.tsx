@@ -5335,7 +5335,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			monitoringHealthState={monitoringHealthState}
 			monitoringLoading={monitoringLoading}
 			monitoringStats={monitoringStats}
-			navigate={navigate}
 			nextAgentSetupStep={nextAgentSetupStep}
 			nextStepMode={nextStepMode}
 			nextStepPrimaryDisabled={nextStepPrimaryDisabled}

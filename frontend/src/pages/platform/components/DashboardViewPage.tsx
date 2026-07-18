@@ -14,6 +14,7 @@ import {
 	ShieldCheck,
 	XCircle,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -256,7 +257,6 @@ export function DashboardViewPage({
 	monitoringHealthState,
 	monitoringLoading,
 	monitoringStats,
-	navigate,
 	nextAgentSetupStep,
 	nextStepMode,
 	nextStepPrimaryDisabled,
@@ -459,6 +459,7 @@ export function DashboardViewPage({
 	workflowTemplatesError,
 	workflowTemplatesLoading,
 }: DashboardViewPageProps) {
+	const navigate = useNavigate();
 	const NextStepIcon =
 		nextStepMode === 'model'
 			? KeyRound
