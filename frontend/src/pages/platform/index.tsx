@@ -503,25 +503,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	const agentTemplates = platformAgents?.templates ?? [];
 	const publishedPlatformAgents = platformAgents?.agents ?? [];
-	const platformAgentInventoryState = useMemo(
-		() =>
-			platformAgentInventoryStateForStatus({
-				agents,
-				agentTemplates,
-				publishedPlatformAgents,
-				selectedRunAgentId,
-				lastPublishedAgentId,
-				selectedTemplateId,
-			}),
-		[
-			agents,
-			agentTemplates,
-			publishedPlatformAgents,
-			selectedRunAgentId,
-			lastPublishedAgentId,
-			selectedTemplateId,
-		],
-	);
+	const platformAgentInventoryState = platformAgentInventoryStateForStatus({
+		agents,
+		agentTemplates,
+		publishedPlatformAgents,
+		selectedRunAgentId,
+		lastPublishedAgentId,
+		selectedTemplateId,
+	});
 	const featuredAgents = platformAgentInventoryState.featuredAgents;
 	const activePlatformAgents = platformAgentInventoryState.activePlatformAgents;
 	const archivedPlatformAgents = platformAgentInventoryState.archivedPlatformAgents;
