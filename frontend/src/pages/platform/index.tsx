@@ -80,8 +80,6 @@ import { WorkflowsViewPage } from './components/WorkflowsViewPage';
 import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import {
-	accessControlStatsForGovernance,
-	accessTenantSummariesForGovernance,
 	activePlatformAgentsForAgents,
 	agentAccessAllowed,
 	appCenterDetailHealthState,
@@ -92,7 +90,6 @@ import {
 	agentReadinessState,
 	agentReleasePipelineForStatus,
 	archivedPlatformAgentsForAgents,
-	identityAccessRowsForGovernance,
 	agentResourceSummary,
 	agentRunnerAccessLabelKey,
 	agentSetupStepsForStatus,
@@ -110,6 +107,7 @@ import {
 	firstAgentGuidePrimaryStepForSteps,
 	firstAgentGuideStepsForStatus,
 	formatOperationsAgentIssueText,
+	governanceOperationsStateForStatus,
 	knowledgeBaseLabels,
 	launchpadPrimaryStepForSteps,
 	launchpadStateForCounts,
@@ -119,7 +117,6 @@ import {
 	modelCredentialLabel,
 	nextAgentSetupStepForSteps,
 	normalizeWorkflowInputs,
-	governanceHealthItemsForSummary,
 	monitoringActivitySummaryForStatus,
 	monitoringStatsForSummary,
 	operationsHeadlineText,
@@ -1193,16 +1190,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		state: HealthState;
 		icon: ComponentType<{ className?: string }>;
 	}>;
-	const identityAccessRows = identityAccessRowsForGovernance(
-		enterpriseIdentities,
-		pendingApprovals,
-		governance,
-	);
-	const accessTenantSummaries = accessTenantSummariesForGovernance(
-		enterpriseIdentities,
-		pendingApprovals,
-		governance,
-	);
 	const selectedIdentityGovernanceActivity = useMemo(
 		() =>
 			selectedIdentityGovernanceActivityForIdentity({
@@ -1216,43 +1203,19 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		selectedIdentityGovernanceActivity.selectedIdentityPendingApprovals;
 	const selectedIdentityPendingToolNames =
 		selectedIdentityGovernanceActivity.selectedIdentityPendingToolNames;
-	const toolPolicySummary = useMemo(() => {
-		return toolPolicySummaryForGovernance(
-			availableToolItems,
-			toolPolicyDraft,
-			selectedIdentityPendingToolNames,
-		);
-	}, [availableToolItems, selectedIdentityPendingToolNames, toolPolicyDraft]);
-	const selectedIdentityFailedAuditEvents =
-		selectedIdentityGovernanceActivity.selectedIdentityFailedAuditEvents;
-	const selectedIdentityRecentAuditEvents =
-		selectedIdentityGovernanceActivity.selectedIdentityRecentAuditEvents;
-	const riskyIdentityCount =
-		governance?.summary.risky_identity_count ??
-		identityAccessRows.filter((row) => row.risk > 0).length;
-	const accessControlStats = accessControlStatsForGovernance(
-		{
-			identityCount: enterpriseIdentities.length,
-			tenantCount: accessTenantSummaries.length,
-			riskyIdentityCount,
-			selectedIdentityPendingApprovalCount: selectedIdentityPendingApprovals.length,
-		},
-		{
+	const governanceOperationsState = governanceOperationsStateForStatus({
+		enterpriseIdentities,
+		pendingApprovals,
+		governance,
+		auditEventCount,
+		selectedIdentityPendingApprovalCount: selectedIdentityPendingApprovals.length,
+		accessLabels: {
 			identities: t('platform.accessControl.identities'),
 			tenants: t('platform.accessControl.tenants'),
 			riskyIdentities: t('platform.accessControl.riskyIdentities'),
 			pendingApprovals: t('platform.accessControl.pendingApprovals'),
 		},
-	);
-	const governanceHealthItems = governanceHealthItemsForSummary(
-		{
-			governanceSummary: governance?.summary,
-			tenantCount: accessTenantSummaries.length,
-			identityCount: enterpriseIdentities.length,
-			pendingApprovalCount: pendingApprovals.length,
-			auditEventCount,
-		},
-		{
+		healthLabels: {
 			tenants: t('platform.governanceHealth.tenants'),
 			tenantsHelper: t('platform.governanceHealth.tenantsHelper'),
 			identities: t('platform.governanceHealth.identities'),
@@ -1264,13 +1227,28 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			auditEventsFailedHelper: ({ count }) =>
 				t('platform.governanceHealth.auditEventsFailedHelper', { count }),
 		},
-		{
+		icons: {
 			tenants: Building2,
 			identities: UserRound,
 			pendingApprovals: AlertTriangle,
 			auditEvents: FileClock,
 		},
-	);
+	});
+	const identityAccessRows = governanceOperationsState.identityAccessRows;
+	const accessTenantSummaries = governanceOperationsState.accessTenantSummaries;
+	const accessControlStats = governanceOperationsState.accessControlStats;
+	const governanceHealthItems = governanceOperationsState.governanceHealthItems;
+	const toolPolicySummary = useMemo(() => {
+		return toolPolicySummaryForGovernance(
+			availableToolItems,
+			toolPolicyDraft,
+			selectedIdentityPendingToolNames,
+		);
+	}, [availableToolItems, selectedIdentityPendingToolNames, toolPolicyDraft]);
+	const selectedIdentityFailedAuditEvents =
+		selectedIdentityGovernanceActivity.selectedIdentityFailedAuditEvents;
+	const selectedIdentityRecentAuditEvents =
+		selectedIdentityGovernanceActivity.selectedIdentityRecentAuditEvents;
 	const workflowPendingApprovals = pendingWorkflowRunApprovals(pendingApprovals);
 	const enabledWorkflowTemplates = enabledEnterpriseWorkflowTemplates(workflowTemplates);
 	const selectedWorkflowOption = workflowOptions.find(

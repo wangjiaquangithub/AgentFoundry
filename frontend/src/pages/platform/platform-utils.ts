@@ -2926,6 +2926,59 @@ export function governanceHealthItemsForSummary(
 	] satisfies GovernanceHealthItem[];
 }
 
+export function governanceOperationsStateForStatus(values: {
+	enterpriseIdentities: EnterpriseIdentity[];
+	pendingApprovals: EnterpriseApprovalRequestItem[];
+	governance?: EnterprisePlatformGovernanceResponse | null;
+	auditEventCount: number;
+	selectedIdentityPendingApprovalCount: number;
+	accessLabels: Parameters<typeof accessControlStatsForGovernance>[1];
+	healthLabels: Parameters<typeof governanceHealthItemsForSummary>[1];
+	icons: Parameters<typeof governanceHealthItemsForSummary>[2];
+}) {
+	const identityAccessRows = identityAccessRowsForGovernance(
+		values.enterpriseIdentities,
+		values.pendingApprovals,
+		values.governance,
+	);
+	const accessTenantSummaries = accessTenantSummariesForGovernance(
+		values.enterpriseIdentities,
+		values.pendingApprovals,
+		values.governance,
+	);
+	const riskyIdentityCount =
+		values.governance?.summary.risky_identity_count ??
+		identityAccessRows.filter((row) => row.risk > 0).length;
+	const accessControlStats = accessControlStatsForGovernance(
+		{
+			identityCount: values.enterpriseIdentities.length,
+			tenantCount: accessTenantSummaries.length,
+			riskyIdentityCount,
+			selectedIdentityPendingApprovalCount: values.selectedIdentityPendingApprovalCount,
+		},
+		values.accessLabels,
+	);
+	const governanceHealthItems = governanceHealthItemsForSummary(
+		{
+			governanceSummary: values.governance?.summary,
+			tenantCount: accessTenantSummaries.length,
+			identityCount: values.enterpriseIdentities.length,
+			pendingApprovalCount: values.pendingApprovals.length,
+			auditEventCount: values.auditEventCount,
+		},
+		values.healthLabels,
+		values.icons,
+	);
+
+	return {
+		identityAccessRows,
+		accessTenantSummaries,
+		riskyIdentityCount,
+		accessControlStats,
+		governanceHealthItems,
+	};
+}
+
 export function pendingWorkflowRunApprovals(
 	approvals: EnterpriseApprovalRequestItem[],
 ): EnterpriseApprovalRequestItem[] {
