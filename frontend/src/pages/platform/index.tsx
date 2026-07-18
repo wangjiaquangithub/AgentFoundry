@@ -103,7 +103,6 @@ import { WorkflowsViewPage } from './components/WorkflowsViewPage';
 import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import {
-	credentialLabel,
 	defaultEnterpriseWorkflowInputs,
 	knowledgeBaseLabel,
 	modelCredentialLabel,
@@ -587,13 +586,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		{
 			key: 'model',
 			title: t('platform.agentManagement.wizard.model'),
-			detail: publishForm.model_config_id
-				? credentialById.get(publishForm.model_config_id)
-					? credentialLabel(credentialById.get(publishForm.model_config_id)!)
-					: publishForm.model_config_id
-				: credentials.length > 0
+			detail: modelCredentialLabel(
+				publishForm.model_config_id,
+				credentialById,
+				credentials.length > 0
 					? t('platform.agentManagement.wizard.modelMissing')
 					: t('platform.agentManagement.noModel'),
+			),
 			state: publishForm.model_config_id
 				? 'ready'
 				: credentials.length > 0
@@ -1358,11 +1357,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const agentResourceText = (agent: EnterprisePublishedAgent) => {
 		const knowledgeBaseIds = agent.knowledge_base_ids ?? [];
 		const tools = agent.tools ?? [];
-		const model = agent.model_config_id
-			? credentialById.get(agent.model_config_id)
-				? credentialLabel(credentialById.get(agent.model_config_id)!)
-				: agent.model_config_id
-			: t('platform.appCenter.noModel');
+		const model = modelCredentialLabel(
+			agent.model_config_id,
+			credentialById,
+			t('platform.appCenter.noModel'),
+		);
 
 		return t('platform.appCenter.agentResources', {
 			model,
@@ -1383,11 +1382,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const inspectedAppCenterAgentIssues =
 		inspectedAppCenterAgent?.readiness?.issues.map((issue) => issue.message).filter(Boolean) ??
 		[];
-	const inspectedAppCenterAgentModel = inspectedAppCenterAgent?.model_config_id
-		? credentialById.get(inspectedAppCenterAgent.model_config_id)
-			? credentialLabel(credentialById.get(inspectedAppCenterAgent.model_config_id)!)
-			: inspectedAppCenterAgent.model_config_id
-		: t('platform.appCenter.noModel');
+	const inspectedAppCenterAgentModel = modelCredentialLabel(
+		inspectedAppCenterAgent?.model_config_id,
+		credentialById,
+		t('platform.appCenter.noModel'),
+	);
 	const inspectedAppCenterAgentKnowledge =
 		inspectedAppCenterAgentKnowledgeBaseIds.map((knowledgeBaseId) => {
 			const knowledgeBase = knowledgeBaseById.get(knowledgeBaseId);
@@ -1519,11 +1518,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		{
 			key: 'model',
 			title: t('platform.agentManagement.pipeline.model'),
-			detail: publishForm.model_config_id
-				? credentialById.get(publishForm.model_config_id)
-					? credentialLabel(credentialById.get(publishForm.model_config_id)!)
-					: publishForm.model_config_id
-				: t('platform.agentManagement.pipeline.modelDetail'),
+			detail: modelCredentialLabel(
+				publishForm.model_config_id,
+				credentialById,
+				t('platform.agentManagement.pipeline.modelDetail'),
+			),
 			state: agentSetupSteps[1].state,
 			icon: KeyRound,
 		},
