@@ -7,7 +7,6 @@ import {
 	Boxes,
 	Brain,
 	Building2,
-	CalendarClock,
 	CheckCircle2,
 	Clock3,
 	Code2,
@@ -151,6 +150,7 @@ import {
 } from './components/common';
 import { WorkflowRunnerPanel } from './components/WorkflowRunnerPanel';
 import { WorkflowOpsPanel } from './components/WorkflowOpsPanel';
+import { TriggerOpsPanel } from './components/TriggerOpsPanel';
 
 type ToolPolicyDraftValue = 'allow' | 'deny' | 'inherit';
 export type PlatformView =
@@ -8270,184 +8270,52 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					}}
 				/>
 
-				<section className="grid gap-4 rounded-lg border bg-muted/10 p-4">
-					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-						<div className="min-w-0">
-							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-								<CalendarClock className="size-4" />
-								<span>{t('platform.triggerOps.eyebrow')}</span>
-							</div>
-							<h2 className="text-base font-semibold">
-								{t('platform.triggerOps.title')}
-							</h2>
-							<p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-								{t('platform.triggerOps.description')}
-							</p>
-						</div>
-						<div className="flex flex-wrap gap-2 lg:justify-end">
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={() => navigate('/schedule')}
-							>
-								<CalendarClock className="size-4" />
-								{t('platform.triggerOps.createSchedule')}
-							</Button>
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={() => handleCreateRunApproval('workflow_run')}
-								disabled={creatingRunApproval === 'workflow_run'}
-							>
-								<ShieldCheck className="size-4" />
-								{t('platform.triggerOps.requestApproval')}
-							</Button>
-							<Button
-								type="button"
-								size="sm"
-								onClick={handleRunEnterpriseWorkflow}
-								disabled={runningWorkflow || selectedWorkflowDisabled}
-							>
-								<Play className="size-4" />
-								{runningWorkflow
-									? t('platform.workflowOps.running')
-									: t('platform.triggerOps.runWorkflow')}
-							</Button>
-						</div>
-					</div>
-
-					<div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-						{triggerOpsStats.map((item) => (
-							<div key={item.label} className="rounded-md border bg-background px-3 py-2">
-								<div className="text-xs text-muted-foreground">{item.label}</div>
-								<div className="mt-1 text-lg font-semibold tabular-nums">
-									{item.value}
-								</div>
-							</div>
-						))}
-					</div>
-
-					<div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.85fr)]">
-						<div className="grid content-start gap-3 rounded-lg border bg-background p-3">
-							<div className="flex items-start justify-between gap-3">
-								<div className="min-w-0">
-									<h3 className="text-sm font-medium">
-										{t('platform.triggerOps.triggerPlan')}
-									</h3>
-									<p className="mt-1 text-xs leading-5 text-muted-foreground">
-										{triggerOpsSummary}
-									</p>
-								</div>
-								<Badge variant="secondary">
-									{selectedWorkflowName}
-								</Badge>
-							</div>
-							<div className="grid gap-2">
-								<div className="flex items-center justify-between gap-3 rounded-md bg-muted/30 px-2 py-1.5 text-xs">
-									<span className="min-w-0 truncate">
-										{t('platform.triggerOps.manualTrigger')}
-									</span>
-									<Button
-										type="button"
-										size="sm"
-										variant="ghost"
-										onClick={scrollToWorkflowRunner}
-									>
-										{t('platform.triggerOps.configureWorkflow')}
-										<ArrowRight className="size-4" />
-									</Button>
-								</div>
-								<div className="flex items-center justify-between gap-3 rounded-md bg-muted/30 px-2 py-1.5 text-xs">
-									<span className="min-w-0 truncate">
-										{t('platform.triggerOps.approvalGate')}
-									</span>
-									<Button
-										type="button"
-										size="sm"
-										variant="ghost"
-										onClick={scrollToGovernance}
-									>
-										{t('platform.triggerOps.viewGovernance')}
-										<ArrowRight className="size-4" />
-									</Button>
-								</div>
-							</div>
-						</div>
-
-						<div className="grid content-start gap-3 rounded-lg border bg-background p-3">
-							<div className="flex items-center justify-between gap-3">
-								<h3 className="text-sm font-medium">
-									{t('platform.triggerOps.recentSchedules')}
-								</h3>
-								<Button
-									type="button"
-									size="sm"
-									variant="ghost"
-									onClick={() => navigate('/schedule')}
-								>
-									{t('platform.triggerOps.openSchedules')}
-									<ArrowRight className="size-4" />
-								</Button>
-							</div>
-							{schedulesLoading ? (
-								<div className="grid gap-2">
-									<Skeleton className="h-12 w-full" />
-									<Skeleton className="h-12 w-full" />
-								</div>
-							) : schedulesError ? (
-								<div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
-									{t('platform.triggerOps.loadFailed')}
-								</div>
-							) : recentSchedules.length === 0 ? (
-								<div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
-									{t('platform.triggerOps.noSchedules')}
-								</div>
-							) : (
-								<div className="grid gap-2">
-									{recentSchedules.map((schedule) => {
-										const parsed = parseCronExpression(
-											schedule.data.cron_expression,
-											schedule.data.started_at,
-										);
-										return (
-											<div
-												key={schedule.id}
-												className="grid gap-1 rounded-md bg-muted/30 px-2 py-1.5 text-xs"
-											>
-												<div className="flex items-center justify-between gap-3">
-													<span className="min-w-0 truncate font-medium">
-														{schedule.data.name}
-													</span>
-													<Badge variant={schedule.data.enabled ? 'outline' : 'secondary'}>
-														{schedule.data.enabled
-															? t('platform.triggerOps.enabledStatus')
-															: t('common.disabled')}
-													</Badge>
-												</div>
-												<div className="flex flex-wrap gap-x-3 gap-y-1 text-muted-foreground">
-													<span>
-														{getFrequencyLabel(parsed, t)} · {parsed.time}
-													</span>
-													<span>{schedule.data.source}</span>
-													<span className="min-w-0 truncate">
-														{scheduleAgentLabel(schedule)}
-													</span>
-												</div>
-												<div className="text-muted-foreground">
-													{t('platform.triggerOps.updatedAt', {
-														time: formatTimestamp(schedule.updated_at),
-													})}
-												</div>
-											</div>
-										);
-									})}
-								</div>
-							)}
-						</div>
-					</div>
-				</section>
+				<TriggerOpsPanel
+					stats={triggerOpsStats}
+					triggerOpsSummary={triggerOpsSummary}
+					selectedWorkflowName={selectedWorkflowName}
+					recentSchedules={recentSchedules}
+					schedulesLoading={schedulesLoading}
+					schedulesError={schedulesError}
+					creatingRunApproval={creatingRunApproval}
+					runningWorkflow={runningWorkflow}
+					selectedWorkflowDisabled={selectedWorkflowDisabled}
+					onOpenSchedules={() => navigate('/schedule')}
+					onCreateRunApproval={handleCreateRunApproval}
+					onRunWorkflow={handleRunEnterpriseWorkflow}
+					onScrollToWorkflowRunner={scrollToWorkflowRunner}
+					onScrollToGovernance={scrollToGovernance}
+					scheduleFrequencyLabel={(schedule) => {
+						const parsed = parseCronExpression(
+							schedule.data.cron_expression,
+							schedule.data.started_at,
+						);
+						return `${getFrequencyLabel(parsed, t)} · ${parsed.time}`;
+					}}
+					scheduleAgentLabel={scheduleAgentLabel}
+					formatTimestamp={formatTimestamp}
+					labels={{
+						eyebrow: t('platform.triggerOps.eyebrow'),
+						title: t('platform.triggerOps.title'),
+						description: t('platform.triggerOps.description'),
+						createSchedule: t('platform.triggerOps.createSchedule'),
+						requestApproval: t('platform.triggerOps.requestApproval'),
+						running: t('platform.workflowOps.running'),
+						runWorkflow: t('platform.triggerOps.runWorkflow'),
+						triggerPlan: t('platform.triggerOps.triggerPlan'),
+						manualTrigger: t('platform.triggerOps.manualTrigger'),
+						configureWorkflow: t('platform.triggerOps.configureWorkflow'),
+						approvalGate: t('platform.triggerOps.approvalGate'),
+						viewGovernance: t('platform.triggerOps.viewGovernance'),
+						recentSchedules: t('platform.triggerOps.recentSchedules'),
+						openSchedules: t('platform.triggerOps.openSchedules'),
+						loadFailed: t('platform.triggerOps.loadFailed'),
+						noSchedules: t('platform.triggerOps.noSchedules'),
+						enabledStatus: t('platform.triggerOps.enabledStatus'),
+						disabled: t('common.disabled'),
+						updatedAt: (time) => t('platform.triggerOps.updatedAt', { time }),
+					}}
+				/>
 
 				<section className="grid gap-4 rounded-lg border bg-muted/10 p-4">
 					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
