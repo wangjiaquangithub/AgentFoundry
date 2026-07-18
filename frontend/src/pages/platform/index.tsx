@@ -115,6 +115,9 @@ import {
 	triggerOperationsSummaryLabels,
 	workbenchIndicatorLabels,
 	workbenchPrimaryActionLabels,
+	workbenchQuickActionLabels,
+	workbenchReadinessLabels,
+	workbenchRiskLabels,
 	workflowOperationsLabels,
 } from './platform-labels';
 import { runPlatformOperationAction } from './platform-operation-actions';
@@ -2898,21 +2901,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		{
 			icons: workbenchReadinessIcons,
 			actions: workbenchReadinessNavigationActions(platformNavigationHandlers),
-			labels: {
-				title: (key) => t(`platform.workbench.readiness.${key}.title`),
-				modelDescription: (count) =>
-					t('platform.workbench.readiness.model.description', { count }),
-				knowledgeDescription: (count) =>
-					t('platform.workbench.readiness.knowledge.description', { count }),
-				connectorsDescription: (count) =>
-					t('platform.workbench.readiness.connectors.description', { count }),
-				membersDescription: (count) =>
-					t('platform.workbench.readiness.members.description', { count }),
-				agentsDescription: (ready, total) =>
-					t('platform.workbench.readiness.agents.description', { ready, total }),
-				workflowsDescription: (count) =>
-					t('platform.workbench.readiness.workflows.description', { count }),
-			},
+			labels: workbenchReadinessLabels(t),
 		},
 	);
 	const workbenchRiskItems = workbenchRiskItemsForStatus(
@@ -2925,28 +2914,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 		{
 			actions: workbenchRiskNavigationActions(platformNavigationHandlers),
-			labels: {
-				errors: t('platform.workbench.risks.errors'),
-				connectorDraft: (count) =>
-					t('platform.workbench.risks.connectorDraft', { count }),
-				approvals: (count) => t('platform.workbench.risks.approvals', { count }),
-				workflowFailures: (count) =>
-					t('platform.workbench.risks.workflowFailures', { count }),
-				agents: t('platform.workbench.risks.agents'),
-			},
+			labels: workbenchRiskLabels(t),
 		},
 	);
 	const workbenchQuickActions = workbenchQuickActionsForStatus({
 		icons: workbenchQuickActionIcons,
 		actions: workbenchQuickNavigationActions(platformNavigationHandlers),
-		labels: {
-			connectors: t('platform.workbench.quickActions.connectors'),
-			publish: t('platform.workbench.quickActions.publish'),
-			run: t('platform.workbench.quickActions.run'),
-			workflow: t('platform.workbench.quickActions.workflow'),
-			governance: t('platform.workbench.quickActions.governance'),
-			tools: t('platform.workbench.quickActions.tools'),
-		},
+		labels: workbenchQuickActionLabels(t),
 	});
 	const rolloutPathSteps = rolloutPathStepsForStatus(
 		{

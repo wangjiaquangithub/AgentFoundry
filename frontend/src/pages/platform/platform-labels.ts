@@ -208,3 +208,38 @@ export const workbenchPrimaryActionLabels = (t: PlatformTranslate) => ({
 		t('platform.workbench.actions.memory.description', { count }),
 	memoryAction: t('platform.workbench.actions.memory.action'),
 });
+
+export const workbenchReadinessLabels = (t: PlatformTranslate) => ({
+	title: (key: string) => t(`platform.workbench.readiness.${key}.title`),
+	modelDescription: (count: number) =>
+		t('platform.workbench.readiness.model.description', { count }),
+	knowledgeDescription: (count: number) =>
+		t('platform.workbench.readiness.knowledge.description', { count }),
+	connectorsDescription: (count: number) =>
+		t('platform.workbench.readiness.connectors.description', { count }),
+	membersDescription: (count: number) =>
+		t('platform.workbench.readiness.members.description', { count }),
+	agentsDescription: (ready: number, total: number) =>
+		t('platform.workbench.readiness.agents.description', { ready, total }),
+	workflowsDescription: (count: number) =>
+		t('platform.workbench.readiness.workflows.description', { count }),
+});
+
+export const workbenchRiskLabels = (t: PlatformTranslate) => ({
+	errors: t('platform.workbench.risks.errors'),
+	connectorDraft: (count: number) =>
+		t('platform.workbench.risks.connectorDraft', { count }),
+	approvals: (count: number) => t('platform.workbench.risks.approvals', { count }),
+	workflowFailures: (count: number) =>
+		t('platform.workbench.risks.workflowFailures', { count }),
+	agents: t('platform.workbench.risks.agents'),
+});
+
+export const workbenchQuickActionLabels = (t: PlatformTranslate) => ({
+	connectors: t('platform.workbench.quickActions.connectors'),
+	publish: t('platform.workbench.quickActions.publish'),
+	run: t('platform.workbench.quickActions.run'),
+	workflow: t('platform.workbench.quickActions.workflow'),
+	governance: t('platform.workbench.quickActions.governance'),
+	tools: t('platform.workbench.quickActions.tools'),
+});
