@@ -1,5 +1,4 @@
 import {
-	Activity,
 	AlertTriangle,
 	BotMessageSquare,
 	Boxes,
@@ -66,7 +65,6 @@ import {
 import { ApiError } from '@/api/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
 	Select,
@@ -140,6 +138,7 @@ import {
 import { PlatformDashboardOverview } from './components/PlatformDashboardOverview';
 import { PolicySubagentsPanel } from './components/PolicySubagentsPanel';
 import { RolloutPath, type RolloutPathStep } from './components/RolloutPath';
+import { RunsViewPage } from './components/RunsViewPage';
 import {
 	RuntimeStatusPanel,
 	type RuntimeStatusItem,
@@ -315,10 +314,6 @@ function agentAccessAllowed(
 	}
 	return allowedUsers.includes(identity.user_id) || allowedRoles.includes(identity.role);
 }
-
-const ALL_AGENTS_VALUE = '__all_agents__';
-const ALL_TOOLS_VALUE = '__all_tools__';
-const ALL_AUDIT_STATUSES_VALUE = '__all_statuses__';
 
 const defaultApprovalForm: ApprovalFormState = {
 	request_type: 'tool_run',
@@ -5064,531 +5059,51 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 	if (view === 'runs') {
 		return (
-			<main className="h-full overflow-y-auto bg-background">
-				<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 lg:px-8">
-					<section className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
-						<div className="min-w-0">
-							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-								<Activity className="size-4" />
-								<span>{t('platform.monitoring.eyebrow')}</span>
-							</div>
-							<h1 className="text-2xl font-semibold tracking-normal">
-								{t('platform.monitoring.title')}
-							</h1>
-							<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-								{t('platform.monitoring.description')}
-							</p>
-						</div>
-						<div className="flex flex-wrap gap-2 lg:justify-end">
-							<StateBadge
-								state={monitoringHealthState}
-								label={t(
-									`platform.agentManagement.wizard.states.${monitoringHealthState}`,
-								)}
-							/>
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={() =>
-									void Promise.all([
-										refetchPlatform(),
-										refetchAgentRuns(),
-										refetchWorkflowRuns(),
-										refetchAuditEvents(),
-										refetchApprovals(),
-										refetchGovernance(),
-									])
-								}
-								disabled={monitoringLoading}
-							>
-								<RefreshCcw
-									className={cn('size-4', monitoringLoading && 'animate-spin')}
-								/>
-								{t('platform.monitoring.refresh')}
-							</Button>
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={() => navigate('/platform/agents')}
-							>
-								<BotMessageSquare className="size-4" />
-								{t('platform.monitoring.runAgent')}
-							</Button>
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={() => navigate('/platform/workflows')}
-							>
-								<Workflow className="size-4" />
-								{t('platform.monitoring.runWorkflow')}
-							</Button>
-							<Button type="button" size="sm" onClick={() => navigate('/platform/approvals')}>
-								<ShieldCheck className="size-4" />
-								{t('platform.monitoring.openGovernance')}
-							</Button>
-						</div>
-					</section>
-
-					<section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-						{monitoringStats.map((stat) => {
-							const StatIcon = stat.icon;
-							return (
-								<div key={stat.label} className="grid gap-3 rounded-lg border bg-muted/10 p-3">
-									<div className="flex items-center justify-between gap-3">
-										<div className="text-sm font-medium">{stat.label}</div>
-										<div className="grid size-8 place-items-center rounded-md border bg-background">
-											<StatIcon className="size-4 text-muted-foreground" />
-										</div>
-									</div>
-									<div className="text-2xl font-semibold tracking-normal">{stat.value}</div>
-									<p className="text-xs leading-5 text-muted-foreground">{stat.helper}</p>
-								</div>
-							);
-						})}
-					</section>
-
-					<section className="grid gap-3 lg:grid-cols-3">
-						<div className="grid content-start gap-3 rounded-lg border bg-muted/10 p-3">
-							<div>
-								<h2 className="text-sm font-medium">
-									{t('platform.monitoring.recentAgentRuns')}
-								</h2>
-								<p className="mt-1 text-xs leading-5 text-muted-foreground">
-									{t('platform.monitoring.recentAgentRunsHelper')}
-								</p>
-							</div>
-							{recentAgentTurns.length === 0 ? (
-								<div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
-									{t('platform.monitoring.emptyAgentRuns')}
-								</div>
-							) : (
-								<div className="grid gap-2">
-									{recentAgentTurns.map((turn) => (
-										<button
-											key={turn.id}
-											type="button"
-											onClick={() => {
-												setSelectedRunAgentId(turn.agentId);
-												setAgentRunResult(turn.response);
-												navigate('/platform/agents');
-											}}
-											className="rounded-md border bg-background p-3 text-left text-xs transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-										>
-											<div className="flex items-center justify-between gap-2">
-												<span className="truncate font-medium">{turn.question}</span>
-												<span className="shrink-0 text-muted-foreground">
-													{formatTimestamp(turn.createdAt)}
-												</span>
-											</div>
-											<p className="mt-1 line-clamp-2 leading-5 text-muted-foreground">
-												{turn.answer}
-											</p>
-										</button>
-									))}
-								</div>
-							)}
-						</div>
-
-						<div className="grid content-start gap-3 rounded-lg border bg-muted/10 p-3">
-							<div>
-								<h2 className="text-sm font-medium">
-									{t('platform.monitoring.recentWorkflowRuns')}
-								</h2>
-								<p className="mt-1 text-xs leading-5 text-muted-foreground">
-									{t('platform.monitoring.recentWorkflowRunsHelper')}
-								</p>
-							</div>
-							{recentWorkflowRuns.length === 0 ? (
-								<div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
-									{t('platform.monitoring.emptyWorkflowRuns')}
-								</div>
-							) : (
-								<div className="grid gap-2">
-									{recentWorkflowRuns.slice(0, 6).map((run) => (
-										<button
-											key={run.run_id}
-											type="button"
-											onClick={() => navigate('/platform/workflows')}
-											className="rounded-md border bg-background p-3 text-left text-xs transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-										>
-											<div className="flex items-center justify-between gap-2">
-												<span className="truncate font-medium">{run.workflow_name}</span>
-												<Badge
-													variant="outline"
-													className={workflowStatusClassName(run.status)}
-												>
-													{t(
-														`platform.workflowRunner.${workflowStatusLabelKey(run.status)}`,
-													)}
-												</Badge>
-											</div>
-											<p className="mt-1 line-clamp-2 leading-5 text-muted-foreground">
-												{run.summary || formatTimestamp(run.finished_at || run.started_at)}
-											</p>
-										</button>
-									))}
-								</div>
-							)}
-						</div>
-
-						<div className="grid content-start gap-3 rounded-lg border bg-muted/10 p-3">
-							<div>
-								<h2 className="text-sm font-medium">
-									{t('platform.monitoring.recentAudit')}
-								</h2>
-								<p className="mt-1 text-xs leading-5 text-muted-foreground">
-									{t('platform.monitoring.recentAuditHelper')}
-								</p>
-							</div>
-							{recentAuditEvents.length === 0 ? (
-								<div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
-									{t('platform.monitoring.emptyAudit')}
-								</div>
-							) : (
-								<div className="grid gap-2">
-									{recentAuditEvents.slice(0, 6).map((event, index) => (
-										<div
-											key={event.event_id ?? `${event.timestamp}-${index}`}
-											className="rounded-md border bg-background p-3 text-xs"
-										>
-											<div className="flex items-center justify-between gap-2">
-												<span className="truncate font-medium">
-													{event.tool_name ||
-														event.event_type ||
-														t('platform.monitoring.auditEvent')}
-												</span>
-												<Badge
-													variant="outline"
-													className={
-														event.success === false
-															? ''
-															: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700'
-													}
-												>
-													{event.success === false
-														? t('platform.monitoring.failure')
-														: t('platform.monitoring.success')}
-												</Badge>
-											</div>
-											<p className="mt-1 truncate text-muted-foreground">
-												{event.user_id || '-'} · {event.tenant || '-'} ·{' '}
-												{formatTimestamp(event.timestamp)}
-											</p>
-										</div>
-									))}
-								</div>
-							)}
-						</div>
-					</section>
-
-					<section className="flex flex-col gap-3">
-						<div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-							<div>
-								<h2 className="text-base font-semibold">{t('platform.audit.title')}</h2>
-								<p className="text-sm text-muted-foreground">
-									{t('platform.audit.description')}
-								</p>
-							</div>
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={() => void refetchAuditEvents()}
-								disabled={auditLoading}
-							>
-								<RefreshCcw className={cn(auditLoading && 'animate-spin')} />
-								{t('platform.audit.refresh')}
-							</Button>
-						</div>
-
-						<div className="grid gap-3 rounded-lg border bg-muted/10 p-3 md:grid-cols-2 xl:grid-cols-[repeat(6,minmax(0,1fr))_auto]">
-							<div className="grid gap-2">
-								<label className="text-xs font-medium text-muted-foreground">
-									{t('platform.audit.filterTenant')}
-								</label>
-								<Input
-									value={auditFilters.tenant}
-									onChange={(event) =>
-										setAuditFilters((current) => ({
-											...current,
-											tenant: event.target.value,
-										}))
-									}
-									placeholder={platformStatus?.current_user.tenant || 'default'}
-								/>
-							</div>
-							<div className="grid gap-2">
-								<label className="text-xs font-medium text-muted-foreground">
-									{t('platform.audit.filterUser')}
-								</label>
-								<Input
-									value={auditFilters.user_id}
-									onChange={(event) =>
-										setAuditFilters((current) => ({
-											...current,
-											user_id: event.target.value,
-										}))
-									}
-									placeholder={platformStatus?.current_user.user_id || username}
-								/>
-							</div>
-							<div className="grid gap-2">
-								<label className="text-xs font-medium text-muted-foreground">
-									{t('platform.audit.filterAgent')}
-								</label>
-								<Select
-									value={auditFilters.agent_id || ALL_AGENTS_VALUE}
-									onValueChange={(value) =>
-										setAuditFilters((current) => ({
-											...current,
-											agent_id: value === ALL_AGENTS_VALUE ? '' : value,
-										}))
-									}
-								>
-									<SelectTrigger className="w-full">
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value={ALL_AGENTS_VALUE}>
-											{t('platform.audit.allAgents')}
-										</SelectItem>
-										{activePlatformAgents.map((agent) => (
-											<SelectItem key={agent.id} value={agent.id}>
-												{agent.name}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</div>
-							<div className="grid gap-2">
-								<label className="text-xs font-medium text-muted-foreground">
-									{t('platform.audit.filterTool')}
-								</label>
-								<Select
-									value={auditFilters.tool_name || ALL_TOOLS_VALUE}
-									onValueChange={(value) =>
-										setAuditFilters((current) => ({
-											...current,
-											tool_name: value === ALL_TOOLS_VALUE ? '' : value,
-										}))
-									}
-								>
-									<SelectTrigger className="w-full">
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value={ALL_TOOLS_VALUE}>
-											{t('platform.audit.allTools')}
-										</SelectItem>
-										{availableToolItems.map((tool) => (
-											<SelectItem key={tool.name} value={tool.name}>
-												{tool.name}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</div>
-							<div className="grid gap-2">
-								<label className="text-xs font-medium text-muted-foreground">
-									{t('platform.audit.filterStatus')}
-								</label>
-								<Select
-									value={auditFilters.success || ALL_AUDIT_STATUSES_VALUE}
-									onValueChange={(value) =>
-										setAuditFilters((current) => ({
-											...current,
-											success: value === ALL_AUDIT_STATUSES_VALUE ? '' : value,
-										}))
-									}
-								>
-									<SelectTrigger className="w-full">
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value={ALL_AUDIT_STATUSES_VALUE}>
-											{t('platform.audit.allStatuses')}
-										</SelectItem>
-										<SelectItem value="true">{t('platform.audit.success')}</SelectItem>
-										<SelectItem value="false">{t('platform.audit.failure')}</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-							<div className="grid gap-2">
-								<label className="text-xs font-medium text-muted-foreground">
-									{t('platform.audit.filterLimit')}
-								</label>
-								<Input
-									type="number"
-									min={1}
-									max={200}
-									value={auditFilters.limit}
-									onChange={(event) =>
-										setAuditFilters((current) => ({
-											...current,
-											limit: event.target.value,
-										}))
-									}
-								/>
-							</div>
-							<Button
-								type="button"
-								size="sm"
-								className="self-end"
-								onClick={() => void refetchAuditEvents()}
-								disabled={auditLoading}
-							>
-								<ListChecks />
-								{t('platform.audit.applyFilters')}
-							</Button>
-						</div>
-
-						{auditLoading ? (
-							<div className="grid gap-3 lg:grid-cols-2">
-								<Skeleton className="h-28 w-full" />
-								<Skeleton className="h-28 w-full" />
-							</div>
-						) : auditError ? (
-							<PlatformNotice>{auditError}</PlatformNotice>
-						) : auditEvents.length === 0 ? (
-							<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-								{t('platform.audit.empty')}
-							</div>
-						) : (
-							<>
-								<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-									{auditStats.map((stat) => (
-										<div key={stat.label} className="rounded-lg border bg-card p-3">
-											<div className="text-xs text-muted-foreground">{stat.label}</div>
-											<div className="mt-1 font-mono text-xl font-semibold">
-												{stat.value}
-											</div>
-										</div>
-									))}
-								</div>
-								<div className="grid gap-3 lg:grid-cols-2">
-									{auditEvents.map((event: EnterpriseAuditEvent, index) => {
-										const inputsSummary = summarizeAuditObject(event.inputs);
-										const resultSummary = summarizeAuditObject(event.result);
-										const statusLabel =
-											event.success === true
-												? t('platform.audit.success')
-												: event.success === false
-													? t('platform.audit.failure')
-													: t('platform.audit.unknown');
-
-										return (
-											<Card
-												key={
-													event.event_id ||
-													`${event.timestamp}-${event.tool_name}-${index}`
-												}
-												size="sm"
-												className="rounded-lg shadow-none"
-											>
-												<CardHeader className="grid-cols-[auto_1fr_auto] gap-3">
-													<div
-														className={cn(
-															'flex size-8 items-center justify-center rounded-lg border bg-background',
-															event.success === false &&
-																'border-destructive/30',
-														)}
-													>
-														{event.success === false ? (
-															<XCircle className="size-4 text-destructive" />
-														) : (
-															<CheckCircle2 className="size-4 text-emerald-700" />
-														)}
-													</div>
-													<div className="min-w-0">
-														<CardTitle className="truncate font-mono text-sm">
-															{event.tool_name ||
-																t('platform.audit.unknownTool')}
-														</CardTitle>
-														<p className="mt-1 truncate text-xs text-muted-foreground">
-															{formatTimestamp(event.timestamp)}
-														</p>
-													</div>
-													<Badge
-														variant={
-															event.success === false ? 'destructive' : 'outline'
-														}
-														className={cn(
-															event.success !== false &&
-																'border-emerald-500/30 bg-emerald-500/10 text-emerald-700',
-														)}
-													>
-														{statusLabel}
-													</Badge>
-												</CardHeader>
-												<CardContent className="grid gap-2 text-xs">
-													<div className="grid grid-cols-[7rem_1fr] gap-2">
-														<span className="text-muted-foreground">
-															{t('platform.audit.user')}
-														</span>
-														<span className="min-w-0 truncate font-mono">
-															{event.user_id || '-'} / {event.tenant || '-'}
-														</span>
-													</div>
-													<div className="grid grid-cols-[7rem_1fr] gap-2">
-														<span className="text-muted-foreground">
-															{t('platform.audit.connector')}
-														</span>
-														<span className="min-w-0 truncate font-mono">
-															{event.connector || '-'}
-														</span>
-													</div>
-													<div className="grid grid-cols-[7rem_1fr] gap-2">
-														<span className="text-muted-foreground">
-															{t('platform.audit.duration')}
-														</span>
-														<span className="font-mono">
-															{event.duration_ms ?? '-'} ms
-														</span>
-													</div>
-													{inputsSummary ? (
-														<div className="grid grid-cols-[7rem_1fr] gap-2">
-															<span className="text-muted-foreground">
-																{t('platform.audit.inputs')}
-															</span>
-															<span className="min-w-0 break-words font-mono">
-																{inputsSummary}
-															</span>
-														</div>
-													) : null}
-													{resultSummary ? (
-														<div className="grid grid-cols-[7rem_1fr] gap-2">
-															<span className="text-muted-foreground">
-																{t('platform.audit.result')}
-															</span>
-															<span className="min-w-0 break-words font-mono">
-																{resultSummary}
-															</span>
-														</div>
-													) : null}
-													{event.error?.message ? (
-														<div className="grid grid-cols-[7rem_1fr] gap-2 text-destructive">
-															<span>{t('common.error')}</span>
-															<span className="min-w-0 break-words">
-																{event.error.message}
-															</span>
-														</div>
-													) : null}
-												</CardContent>
-											</Card>
-										);
-									})}
-								</div>
-							</>
-						)}
-					</section>
-				</div>
-			</main>
+			<RunsViewPage
+				monitoringHealthState={monitoringHealthState}
+				monitoringLoading={monitoringLoading}
+				monitoringStats={monitoringStats}
+				recentAgentTurns={recentAgentTurns}
+				recentWorkflowRuns={recentWorkflowRuns}
+				recentAuditEvents={recentAuditEvents}
+				auditFilters={auditFilters}
+				auditLoading={auditLoading}
+				auditError={auditError}
+				auditEvents={auditEvents}
+				auditStats={auditStats}
+				activePlatformAgents={activePlatformAgents}
+				availableToolItems={availableToolItems}
+				currentTenant={platformStatus?.current_user.tenant}
+				currentUserId={platformStatus?.current_user.user_id}
+				username={username}
+				onRefreshMonitoring={async () => {
+					await Promise.all([
+						refetchPlatform(),
+						refetchAgentRuns(),
+						refetchWorkflowRuns(),
+						refetchAuditEvents(),
+						refetchApprovals(),
+						refetchGovernance(),
+					]);
+				}}
+				onSelectAgentTurn={(turn) => {
+					setSelectedRunAgentId(turn.agentId);
+					setAgentRunResult(turn.response);
+					navigate('/platform/agents');
+				}}
+				onRunAgent={() => navigate('/platform/agents')}
+				onRunWorkflow={() => navigate('/platform/workflows')}
+				onOpenGovernance={() => navigate('/platform/approvals')}
+				onAuditFiltersChange={setAuditFilters}
+				onRefetchAuditEvents={refetchAuditEvents}
+				formatTimestamp={formatTimestamp}
+				workflowStatusClassName={workflowStatusClassName}
+				workflowStatusLabelKey={workflowStatusLabelKey}
+				summarizeAuditObject={summarizeAuditObject}
+				t={t}
+			/>
 		);
 	}
-
 	if (view === 'workflows') {
 		return (
 			<main className="h-full overflow-y-auto bg-background">
