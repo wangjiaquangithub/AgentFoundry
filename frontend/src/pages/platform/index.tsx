@@ -125,6 +125,10 @@ import {
 } from './components/OrchestrationWorkbenchPanel';
 import { OperationsPanel } from './components/OperationsPanel';
 import { OpsTasksPanel } from './components/OpsTasksPanel';
+import {
+	PlatformConsolePanel,
+	type PlatformConsoleItem,
+} from './components/PlatformConsolePanel';
 import { PlatformDashboardOverview } from './components/PlatformDashboardOverview';
 import { RolloutPath, type RolloutPathStep } from './components/RolloutPath';
 import { ScenariosPanel } from './components/ScenariosPanel';
@@ -4357,14 +4361,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			icon: ShieldCheck,
 			onClick: scrollToGovernance,
 		},
-	] satisfies Array<{
-		key: string;
-		title: string;
-		description: string;
-		actionLabel: string;
-		icon: ComponentType<{ className?: string }>;
-		onClick: () => void;
-	}>;
+	] satisfies PlatformConsoleItem[];
 	const workbenchIndicators = [
 		{
 			key: 'agents',
@@ -8395,47 +8392,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					}}
 				/>
 
-				<section className="grid gap-4 rounded-lg border bg-muted/10 p-4">
-					<div className="min-w-0">
-						<h2 className="text-base font-semibold">
-							{t('platform.console.title')}
-						</h2>
-						<p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-							{t('platform.console.description')}
-						</p>
-					</div>
-					<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-						{platformConsoleItems.map((item) => {
-							const Icon = item.icon;
-
-							return (
-								<div
-									key={item.key}
-									className="grid gap-3 rounded-lg border bg-background p-3"
-								>
-									<div className="flex size-9 items-center justify-center rounded-lg border bg-muted/30">
-										<Icon className="size-4 text-muted-foreground" />
-									</div>
-									<div className="min-w-0">
-										<h3 className="text-sm font-medium">{item.title}</h3>
-										<p className="mt-1 text-xs leading-5 text-muted-foreground">
-											{item.description}
-										</p>
-									</div>
-									<Button
-										type="button"
-										size="sm"
-										variant="outline"
-										onClick={item.onClick}
-									>
-										{item.actionLabel}
-										<ArrowRight className="size-4" />
-									</Button>
-								</div>
-							);
-						})}
-					</div>
-				</section>
+				<PlatformConsolePanel
+					items={platformConsoleItems}
+					labels={{
+						title: t('platform.console.title'),
+						description: t('platform.console.description'),
+					}}
+				/>
 
 				<section className="grid gap-4 rounded-lg border bg-muted/10 p-4">
 					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
