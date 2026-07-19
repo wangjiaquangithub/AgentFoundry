@@ -153,6 +153,16 @@ export function approvalDecisionPayload(
 	};
 }
 
+export function approvalDecisionPayloadFromRequestText(
+	decision: 'approved' | 'rejected',
+	options: { username: string; text: ApprovalDecisionLabels },
+): EnterpriseApprovalDecisionRequest {
+	return approvalDecisionPayload(decision, {
+		username: options.username,
+		labels: options.text,
+	});
+}
+
 export function approvalContinuationState(approval: EnterpriseApprovalRequestItem) {
 	const canContinueAgentRun =
 		approval.request_type === 'tool_run' &&

@@ -80,7 +80,7 @@ import {
 	approvalContinuationState,
 	approvalCreatePayloadFromForm,
 	approvalCreatePayloadFromRun,
-	approvalDecisionPayload,
+	approvalDecisionPayloadFromRequestText,
 	approvalAgentContinuationTarget,
 	approvalAgentUsageTarget,
 	approvalFormWithReasonReset,
@@ -1598,12 +1598,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setDecidingApprovalId(approvalId);
 		setApprovalError(null);
 		try {
-			const request = approvalDecisionPayload(decision, {
+			const request = approvalDecisionPayloadFromRequestText(decision, {
 				username,
-				labels: {
-					approved: approvalRequestText.approved,
-					rejected: approvalRequestText.rejected,
-				},
+				text: approvalRequestText,
 			});
 			const response =
 				decision === 'approved'
@@ -1636,12 +1633,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		try {
 			const response = await platformApi.approveApproval(
 				approval.approval_id,
-				approvalDecisionPayload('approved', {
+				approvalDecisionPayloadFromRequestText('approved', {
 					username,
-					labels: {
-						approved: approvalRequestText.approved,
-						rejected: approvalRequestText.rejected,
-					},
+					text: approvalRequestText,
 				}),
 			);
 			setApprovalRequests((current) =>
