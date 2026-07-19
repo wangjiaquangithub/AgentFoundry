@@ -220,6 +220,18 @@ export function agentTemplateToolsPatch(tools: string[]): AgentQuickConfiguratio
 	};
 }
 
+export function agentTemplateToolsForPublishedAgent(values: {
+	agent: EnterprisePublishedAgent;
+	templates: EnterpriseAgentTemplate[];
+}): string[] | null {
+	const template = values.templates.find(
+		(item) => item.id === values.agent.template_id,
+	);
+	const tools = template?.tools ?? [];
+
+	return tools.length > 0 ? tools : null;
+}
+
 export function agentMemoryEnabledPatch(): AgentQuickConfigurationPatch {
 	return {
 		memory_enabled: true,

@@ -225,6 +225,7 @@ import {
 	agentKnowledgeBasesPatch,
 	agentMemoryEnabledPatch,
 	agentPublishPayloadFromForm,
+	agentTemplateToolsForPublishedAgent,
 	agentTemplateToolsPatch,
 	agentWorkflowEnabledPatch,
 	availableKnowledgeBaseIds,
@@ -2369,9 +2370,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleBindTemplateTools(agent: EnterprisePublishedAgent) {
-		const template = agentTemplates.find((item) => item.id === agent.template_id);
-		const templateTools = template?.tools ?? [];
-		if (!template || templateTools.length === 0) {
+		const templateTools = agentTemplateToolsForPublishedAgent({
+			agent,
+			templates: agentTemplates,
+		});
+		if (!templateTools) {
 			setPlatformAgentsError(agentManagementRequestText.bindToolsError);
 			return;
 		}
