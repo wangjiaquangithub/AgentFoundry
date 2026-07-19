@@ -9,13 +9,13 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-import { AgentManagementPanel } from './AgentManagementPanel';
 import { AgentQuickStartPanel } from './AgentQuickStartPanel';
 import { AgentRunnerPanel } from './AgentRunnerPanel';
 import { ApprovalsPanel } from './ApprovalsPanel';
 import { AuditEventsPanel } from './AuditEventsPanel';
 import { CapabilitiesPanel } from './CapabilitiesPanel';
 import { ConfigManagementPanel } from './ConfigManagementPanel';
+import { DashboardAgentManagementSection } from './DashboardAgentManagementSection';
 import { DashboardAgentRunNowSection } from './DashboardAgentRunNowSection';
 import { DashboardApplicationSection } from './DashboardApplicationSection';
 import { DashboardConnectorsSection } from './DashboardConnectorsSection';
@@ -791,7 +791,7 @@ export function DashboardViewPage({
 					setMemberForm={setMemberForm}
 					updatingMemberId={updatingMemberId}
 				/>
-				<AgentManagementPanel
+				<DashboardAgentManagementSection
 					agentManagementRef={agentManagementRef}
 					agentTemplateStepRef={agentTemplateStepRef}
 					agentModelStepRef={agentModelStepRef}
