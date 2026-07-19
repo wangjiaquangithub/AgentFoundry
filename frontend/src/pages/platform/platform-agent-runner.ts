@@ -282,6 +282,38 @@ export function enterpriseWorkflowRunPayload(values: {
 	};
 }
 
+export function workflowRunTargetForRequest(values: {
+	options?: {
+		workflowType?: string;
+		inputs?: Record<string, unknown>;
+		userId?: string;
+		agentId?: string;
+		approvalId?: string;
+	};
+	selectedWorkflowType: string;
+	workflowInputs: Record<string, string>;
+	selectedIdentityUserId: string;
+	selectedRunAgentId: string;
+	workflowApprovalId: string;
+}): {
+	workflowType: string;
+	inputs: Record<string, unknown>;
+	userId: string;
+	agentId: string;
+	approvalId: string;
+} {
+	return {
+		workflowType: values.options?.workflowType ?? values.selectedWorkflowType,
+		inputs: values.options?.inputs ?? values.workflowInputs,
+		userId: values.options?.userId ?? values.selectedIdentityUserId,
+		agentId: values.options?.agentId ?? values.selectedRunAgentId,
+		approvalId: runApprovalIdFromInput(
+			values.options?.approvalId,
+			values.workflowApprovalId,
+		),
+	};
+}
+
 export function scenarioWorkflowRunTarget(values: {
 	scenario: EnterprisePlatformScenario;
 	workflowTemplates: EnterpriseWorkflowTemplate[];

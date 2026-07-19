@@ -73,6 +73,7 @@ import {
 	workflowInputsForSelectedOption,
 	workflowSelectionForAvailableTemplates,
 	workflowInputsWithValue,
+	workflowRunTargetForRequest,
 	type AgentConversationMap,
 } from './platform-agent-runner';
 import {
@@ -2590,11 +2591,15 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		agentId?: string;
 		approvalId?: string;
 	}) {
-		const workflowType = options?.workflowType ?? selectedWorkflowType;
-		const inputs = options?.inputs ?? workflowInputs;
-		const userId = options?.userId ?? selectedIdentityUserId;
-		const agentId = options?.agentId ?? selectedRunAgentId;
-		const approvalId = runApprovalIdFromInput(options?.approvalId, workflowApprovalId);
+		const { workflowType, inputs, userId, agentId, approvalId } =
+			workflowRunTargetForRequest({
+				options,
+				selectedWorkflowType,
+				workflowInputs,
+				selectedIdentityUserId,
+				selectedRunAgentId,
+				workflowApprovalId,
+			});
 
 		setRunningWorkflow(true);
 		setWorkflowRunError(null);
