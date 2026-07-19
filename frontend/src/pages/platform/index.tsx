@@ -132,7 +132,6 @@ import {
 	capabilityNavigationActions,
 	firstAgentGuideNavigationActions,
 	launchpadNavigationActions,
-	nextStepPrimaryAction,
 	orchestrationWorkbenchNavigationActions,
 	platformConsoleNavigationActions,
 	rolloutPathNavigationActions,
@@ -140,7 +139,7 @@ import {
 	runAppCenterDetailPrimaryAction,
 	runAppCenterDetailSecondaryAction,
 	runAppCenterPrimaryAction,
-	runNextStepPrimaryAction,
+	runNextStepPrimaryRequestAction,
 	workbenchIndicatorNavigationActions,
 	workbenchPrimaryNavigationActions,
 	workbenchQuickNavigationActions,
@@ -2154,8 +2153,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleNextStepPrimaryAction() {
-		const action = nextStepPrimaryAction(nextStepMode);
-		runNextStepPrimaryAction(action, {
+		runNextStepPrimaryRequestAction(nextStepMode, {
 			navigate,
 			handleQuickPublishAgent,
 			scrollToAgentManagement,

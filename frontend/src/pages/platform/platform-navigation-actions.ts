@@ -194,6 +194,13 @@ export function runNextStepPrimaryAction(
 	handlers.handlePrimeAgentRunner();
 }
 
+export function runNextStepPrimaryRequestAction(
+	nextStepMode: AgentRunnerNextStepMode,
+	handlers: NextStepPrimaryActionHandlers,
+) {
+	runNextStepPrimaryAction(nextStepPrimaryAction(nextStepMode), handlers);
+}
+
 export type AppCenterPrimaryActionHandlers = {
 	navigate: NavigateHandler;
 	selectAndPrimeAgent: (agentId: string) => void;
