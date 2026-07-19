@@ -158,7 +158,7 @@ import {
 } from './platform-labels';
 import { createPlatformDashboardPageState } from './platform-dashboard-state';
 import { createPlatformLaunchpadPageState } from './platform-launchpad-state';
-import { platformMonitoringDisplayStateForStatus } from './platform-monitoring-display';
+import { createPlatformMonitoringPageState } from './platform-monitoring-state';
 import { createPlatformOnboardingPageState } from './platform-onboarding-state';
 import { createPlatformOrchestrationPageState } from './platform-orchestration-state';
 import { createPlatformWorkbenchPageState } from './platform-workbench-state';
@@ -1647,8 +1647,12 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			labels: orchestrationWorkbenchStepLabels(t),
 		},
 	});
-	const monitoringDisplay = platformMonitoringDisplayStateForStatus(
-		{
+	const {
+		monitoringActivitySummary,
+		monitoringLoading,
+		monitoringStats,
+	} = createPlatformMonitoringPageState({
+		monitoring: {
 			platformLoading,
 			agentRunsLoading,
 			workflowRunsLoading,
@@ -1665,16 +1669,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			auditEventCount,
 			pendingApprovalCount: pendingApprovals.length,
 		},
-		{
+		monitoringOptions: {
 			icons: monitoringStatIcons,
 			labels: monitoringStatLabels(t),
 		},
-	);
-	const {
-		activitySummary: monitoringActivitySummary,
-		loading: monitoringLoading,
-		stats: monitoringStats,
-	} = monitoringDisplay;
+	});
 
 	if (view === 'tenants') {
 		return (
