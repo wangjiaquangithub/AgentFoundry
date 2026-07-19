@@ -157,7 +157,10 @@ import {
 	workflowSelectionLabels,
 } from './platform-labels';
 import { createPlatformDashboardPageState } from './platform-dashboard-state';
-import { createPlatformDashboardViewProps } from './platform-dashboard-view-props';
+import {
+	createPlatformDashboardTenantAccessViewProps,
+	createPlatformDashboardViewProps,
+} from './platform-dashboard-view-props';
 import { createPlatformLaunchpadPageState } from './platform-launchpad-state';
 import { createPlatformMonitoringPageState } from './platform-monitoring-state';
 import { createPlatformOnboardingPageState } from './platform-onboarding-state';
@@ -1987,10 +1990,16 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	return (
 		<DashboardViewPage
 			{...createPlatformDashboardViewProps({
-				accessControlStats: accessControlStats,
-				accessTenantSummaries: accessTenantSummaries,
+				...createPlatformDashboardTenantAccessViewProps({
+					accessControlStats,
+					accessTenantSummaries,
+					activeMemberCount,
+					identityAccessRows,
+					platformMemberTenantSummaries,
+					tenantOverviewItems,
+					tenantWorkspaces,
+				}),
 				activeConnectorTenant: activeConnectorTenant,
-				activeMemberCount: activeMemberCount,
 				activePlatformAgents: activePlatformAgents,
 				activeSavedConnectorConfig: activeSavedConnectorConfig,
 				agentAccessAllowed: platformAgentAccessAllowedForDisplay,
@@ -2149,7 +2158,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				handleUseIdentity: handleUseIdentity,
 				handleUseTenant: handleUseTenant,
 				hasErrors: hasErrors,
-				identityAccessRows: identityAccessRows,
 				importingPlatformConfig: importingPlatformConfig,
 				inspectedAppCenterAgent: inspectedAppCenterAgent,
 				inspectedAppCenterTemplate: inspectedAppCenterTemplate,
@@ -2198,7 +2206,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				platformConsoleItems: platformConsoleItems,
 				platformError: platformError,
 				platformLoading: platformLoading,
-				platformMemberTenantSummaries: platformMemberTenantSummaries,
 				platformMembers: platformMembers,
 				platformMembersError: platformMembersError,
 				platformMembersLoading: platformMembersLoading,
@@ -2325,8 +2332,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				subagentTemplates: subagentTemplates,
 				summarizeAuditObject: platformSummarizeAuditObject,
 				t: t,
-				tenantOverviewItems: tenantOverviewItems,
-				tenantWorkspaces: tenantWorkspaces,
 				testingConnector: testingConnector,
 				toolApprovalId: toolApprovalId,
 				toolCatalogError: toolCatalogError,
