@@ -238,15 +238,14 @@ import {
 } from './platform-agent-quick-config';
 import {
 	agentArchiveTarget,
-	agentEditCancelTarget,
 	agentEditDraft,
 	agentPublishRequestTarget,
 	defaultPublishFormForTemplate,
 	publishFormWithPatch,
 	quickPublishTarget,
 	runAgentArchiveAction,
+	runAgentEditCancelAction,
 	runAgentEditDraftAction,
-	runAgentEditCancelTargetAction,
 	runAgentPublishAction,
 	runPrepareTenantAgentAction,
 	runPublishListToggleAction,
@@ -2090,8 +2089,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleCancelEdit() {
-		const target = agentEditCancelTarget(selectedTemplate);
-		runAgentEditCancelTargetAction(target, {
+		runAgentEditCancelAction(selectedTemplate, {
 			clearEditingAgent: () => setEditingAgentId(null),
 			configureTemplate: handleConfigureTemplate,
 		});

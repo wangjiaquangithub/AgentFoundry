@@ -536,6 +536,14 @@ export function runAgentEditCancelTargetAction(
 	}
 }
 
+export function runAgentEditCancelAction(
+	selectedTemplate: EnterpriseAgentTemplate | null | undefined,
+	handlers: AgentEditCancelTargetActionHandlers,
+) {
+	const target = agentEditCancelTarget(selectedTemplate);
+	runAgentEditCancelTargetAction(target, handlers);
+}
+
 export function publishFormForListToggle(values: {
 	current: PublishFormState;
 	key: PublishListFormKey;
