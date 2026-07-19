@@ -83,6 +83,59 @@ export type ApprovalDecisionActionHandlers = {
 	handleError: (error: unknown) => void;
 };
 
+export type ApprovalApproveAndContinueActionHandlers = {
+	setContinuingApprovalId: (approvalId: string | null) => void;
+	clearApprovalError: () => void;
+	approveApproval: (
+		approvalId: string,
+		payload: EnterpriseApprovalDecisionRequest,
+	) =>
+		| EnterpriseApprovalDecisionResponse
+		| Promise<EnterpriseApprovalDecisionResponse>;
+	setApprovalRequests: (
+		update: (
+			current: EnterpriseApprovalRequestItem[],
+		) => EnterpriseApprovalRequestItem[],
+	) => void;
+	refreshDependentViews: () => void | Promise<void>;
+	selectIdentityUser: (userId: string) => void;
+	selectRunAgent: (agentId: string) => void;
+	setAgentApprovalId: (approvalId: string) => void;
+	setAgentQuestion: (question: string) => void;
+	scrollToAgentRunner: NavigationHandler;
+	runAgent: (options: {
+		agentId?: string;
+		question?: string;
+		userId?: string;
+		approvalId?: string;
+	}) => void | Promise<void>;
+	selectToolName: (toolName: string) => void;
+	patchToolInputs: (
+		updater: (current: Record<string, string>) => Record<string, string>,
+	) => void;
+	setToolApprovalId: (approvalId: string) => void;
+	scrollToToolRunner: NavigationHandler;
+	runTool: (options: {
+		toolName?: string;
+		inputs?: Record<string, unknown>;
+		userId?: string;
+		agentId?: string;
+		approvalId?: string;
+	}) => void | Promise<void>;
+	selectWorkflowType: (workflowType: string) => void;
+	setWorkflowInputs: (inputs: Record<string, string>) => void;
+	setWorkflowApprovalId: (approvalId: string) => void;
+	scrollToWorkflowRunner: NavigationHandler;
+	runWorkflow: (options: {
+		workflowType?: string;
+		inputs?: Record<string, unknown>;
+		userId?: string;
+		agentId?: string;
+		approvalId?: string;
+	}) => void | Promise<void>;
+	handleError: (error: unknown) => void;
+};
+
 export interface ApprovalDecisionLabels {
 	approved: string;
 	rejected: string;
@@ -338,6 +391,90 @@ export async function runApprovalDecisionAction(
 		handlers.handleError(error);
 	} finally {
 		handlers.setDecidingApprovalId(null);
+	}
+}
+
+export async function runApprovalApproveAndContinueAction(
+	values: {
+		approval: EnterpriseApprovalRequestItem;
+		agentQuestion: string;
+		inputConfig?: ApprovalToolInputConfig;
+		username: string;
+		text: ApprovalDecisionLabels;
+	},
+	handlers: ApprovalApproveAndContinueActionHandlers,
+) {
+	const { approval } = values;
+	const { canContinue, canContinueAgentRun, canContinueToolRun, canContinueWorkflowRun } =
+		approvalContinuationState(approval);
+
+	if (!canContinue) {
+		return;
+	}
+
+	handlers.setContinuingApprovalId(approval.approval_id);
+	handlers.clearApprovalError();
+	try {
+		const response = await handlers.approveApproval(
+			approval.approval_id,
+			approvalDecisionPayloadFromRequestText('approved', {
+				username: values.username,
+				text: values.text,
+			}),
+		);
+		handlers.setApprovalRequests((current) =>
+			replaceApprovalRequest(current, response.approval),
+		);
+		await handlers.refreshDependentViews();
+
+		if (canContinueAgentRun && approval.tool_name) {
+			const target = approvalAgentContinuationTarget(
+				approval,
+				values.agentQuestion,
+			);
+
+			handlers.selectIdentityUser(target.userId);
+			handlers.selectRunAgent(target.agentId);
+			handlers.setAgentApprovalId(target.approvalId);
+			handlers.setAgentQuestion(target.question);
+			handlers.scrollToAgentRunner();
+			await handlers.runAgent(target);
+			return;
+		}
+
+		if (canContinueToolRun && approval.tool_name) {
+			const target = approvalToolContinuationTarget(
+				approval,
+				values.inputConfig,
+			);
+
+			handlers.selectIdentityUser(target.userId);
+			handlers.selectRunAgent(target.agentId);
+			handlers.selectToolName(target.toolName);
+			handlers.patchToolInputs((current) =>
+				approvalToolInputsPatch(current, target.toolName, target.inputValue),
+			);
+			handlers.setToolApprovalId(target.approvalId);
+			handlers.scrollToToolRunner();
+			await handlers.runTool(target);
+			return;
+		}
+
+		if (canContinueWorkflowRun && approval.workflow_type) {
+			const target = approvalWorkflowContinuationTarget(approval);
+
+			handlers.selectIdentityUser(target.userId);
+			handlers.selectRunAgent(target.agentId);
+			handlers.selectWorkflowType(target.workflowType);
+			handlers.setWorkflowInputs(target.inputs);
+			handlers.setWorkflowApprovalId(target.approvalId);
+			handlers.scrollToWorkflowRunner();
+			await handlers.runWorkflow(target);
+		}
+	} catch (error) {
+		handlers.handleError(error);
+	} finally {
+		handlers.setContinuingApprovalId(null);
 	}
 }
 
