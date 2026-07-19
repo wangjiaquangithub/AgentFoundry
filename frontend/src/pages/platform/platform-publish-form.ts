@@ -451,6 +451,12 @@ export type PublishListToggleActionHandlers = {
 	) => void;
 };
 
+export type PublishTenantChangeActionHandlers = {
+	setPublishForm: (
+		updater: (current: PublishFormState) => PublishFormState,
+	) => void;
+};
+
 export function runAgentEditCancelTargetAction(
 	target: AgentEditCancelTarget,
 	handlers: AgentEditCancelTargetActionHandlers,
@@ -492,6 +498,24 @@ export function runPublishListToggleAction(
 			key: values.key,
 			value: values.value,
 			checked: values.checked,
+		}),
+	);
+}
+
+export function runPublishTenantChangeAction(
+	values: {
+		tenant: string;
+		currentUserTenant?: string;
+		members: EnterprisePlatformMember[];
+	},
+	handlers: PublishTenantChangeActionHandlers,
+) {
+	handlers.setPublishForm((current) =>
+		publishFormForTenantChange({
+			current,
+			tenant: values.tenant,
+			currentUserTenant: values.currentUserTenant,
+			members: values.members,
 		}),
 	);
 }

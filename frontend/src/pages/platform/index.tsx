@@ -255,7 +255,6 @@ import {
 	agentPublishRequestTarget,
 	defaultPublishFormForTemplate,
 	preparedTenantAgentTarget,
-	publishFormForTenantChange,
 	publishFormWithPatch,
 	publishedAgentPrimeTarget,
 	quickPublishTarget,
@@ -263,6 +262,7 @@ import {
 	runAgentEditCancelTargetAction,
 	runPreparedTenantAgentTargetAction,
 	runPublishListToggleAction,
+	runPublishTenantChangeAction,
 	runStartPublishingTargetAction,
 	runTemplateConfigureAction,
 	startPublishingTarget,
@@ -1762,13 +1762,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handlePublishTenantChange(value: string) {
-		setPublishForm((current) =>
-			publishFormForTenantChange({
-				current,
+		runPublishTenantChangeAction(
+			{
 				tenant: value,
 				currentUserTenant: platformStatus?.current_user.tenant,
 				members: platformMembers?.members ?? [],
-			}),
+			},
+			{ setPublishForm },
 		);
 	}
 
