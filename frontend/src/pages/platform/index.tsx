@@ -61,7 +61,7 @@ import {
 	runAgentRunHistoryDetailAction,
 	runAgentRunHistorySelectionAction,
 	runClearAgentConversationSuccessAction,
-	runEnterpriseToolAction,
+	runEnterpriseToolRequestAction,
 	runEnterpriseWorkflowAction,
 	runOpenMemoryOperationAgentAction,
 	runPrimeAgentWorkflowAction,
@@ -72,7 +72,6 @@ import {
 	runUseTenantAgentRunnerAction,
 	scenarioWorkflowRunTarget,
 	selectedRunAgentIdForAvailableAgents,
-	toolRunRequestTarget,
 	workflowInputsForSelectedOption,
 	workflowSelectionForAvailableTemplates,
 	workflowInputsWithValue,
@@ -2479,32 +2478,33 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		agentId?: string;
 		approvalId?: string;
 	}) {
-		const target = toolRunRequestTarget({
-			options,
-			selectedToolName,
-			selectedToolInputKey,
-			selectedToolInputValue,
-			selectedIdentityUserId,
-			selectedRunAgentId,
-			toolApprovalId,
-		});
-
-		await runEnterpriseToolAction(target, {
-			setRunning: setRunningTool,
-			clearError: () => setToolRunError(null),
-			runTool: platformApi.runTool,
-			setResult: setToolRunResult,
-			refreshDependentViews: async () => {
-				await refetchPlatform();
-				await refetchToolCatalog();
-				await refetchAuditEvents();
-				await refetchOpsTasks();
+		await runEnterpriseToolRequestAction(
+			{
+				options,
+				selectedToolName,
+				selectedToolInputKey,
+				selectedToolInputValue,
+				selectedIdentityUserId,
+				selectedRunAgentId,
+				toolApprovalId,
 			},
-			createApproval: (message) => handleCreateRunApproval('tool_run', message),
-			setApprovalRequiredError: () =>
-				setToolRunError(toolRunnerRequestText.approvalRequiredCreated),
-			setError: setToolRunError,
-		});
+			{
+				setRunning: setRunningTool,
+				clearError: () => setToolRunError(null),
+				runTool: platformApi.runTool,
+				setResult: setToolRunResult,
+				refreshDependentViews: async () => {
+					await refetchPlatform();
+					await refetchToolCatalog();
+					await refetchAuditEvents();
+					await refetchOpsTasks();
+				},
+				createApproval: (message) => handleCreateRunApproval('tool_run', message),
+				setApprovalRequiredError: () =>
+					setToolRunError(toolRunnerRequestText.approvalRequiredCreated),
+				setError: setToolRunError,
+			},
+		);
 	}
 
 	async function handleRunEnterpriseTool() {

@@ -853,6 +853,14 @@ export async function runEnterpriseToolAction(
 	}
 }
 
+export async function runEnterpriseToolRequestAction(
+	values: Parameters<typeof toolRunRequestTarget>[0],
+	handlers: EnterpriseToolRunActionHandlers,
+) {
+	const target = toolRunRequestTarget(values);
+	await runEnterpriseToolAction(target, handlers);
+}
+
 export function enterpriseWorkflowRunPayload(values: {
 	workflowType: string;
 	inputs: Record<string, unknown>;
