@@ -28,14 +28,12 @@ import { DashboardTenantAccessSection } from './DashboardTenantAccessSection';
 import { DashboardTenantGovernancePanelSection } from './DashboardTenantGovernancePanelSection';
 import { DashboardWorkbenchSection } from './DashboardWorkbenchSection';
 import { DashboardWorkflowAutomationSection } from './DashboardWorkflowAutomationSection';
+import { DashboardWorkflowRunnerSection } from './DashboardWorkflowRunnerSection';
 import { PlatformDashboardOverview } from './PlatformDashboardOverview';
 import { PolicySubagentsPanel } from './PolicySubagentsPanel';
 import { RuntimeStatusPanel } from './RuntimeStatusPanel';
 import { ToolCatalogPanel } from './ToolCatalogPanel';
 import { ToolRunnerPanel } from './ToolRunnerPanel';
-import { WorkflowRunnerPanel } from './WorkflowRunnerPanel';
-import { workflowInputsWithValue } from '../platform-agent-runner';
-import { normalizeWorkflowInputs } from '../platform-utils';
 import { cn } from '@/lib/utils';
 
 interface DashboardViewPageProps {
@@ -977,51 +975,36 @@ export function DashboardViewPage({
 					t={t}
 				/>
 
-				<section ref={workflowRunnerRef}>
-					<WorkflowRunnerPanel
-						selectedWorkflowType={selectedWorkflowType}
-						workflowOptions={workflowOptions}
-						selectedWorkflowTemplate={selectedWorkflowTemplate}
-						workflowInputs={workflowInputs}
-						workflowApprovalId={workflowApprovalId}
-						workflowRunError={workflowRunError}
-						workflowRunResult={workflowRunResult}
-						runningWorkflow={runningWorkflow}
-						workflowTemplatesLoading={workflowTemplatesLoading}
-						workflowTemplatesError={workflowTemplatesError}
-						workflowTemplates={workflowTemplates}
-						selectedWorkflowDisabled={selectedWorkflowDisabled}
-						savingWorkflowType={savingWorkflowType}
-						creatingRunApproval={creatingRunApproval}
-						platformError={platformError ? String(platformError) : null}
-						workflowRunsLoading={workflowRunsLoading}
-						workflowRunsError={workflowRunsError}
-						workflowRuns={workflowRuns}
-						onWorkflowTypeChange={(value) => {
-							setSelectedWorkflowType(value);
-							setWorkflowRunError(null);
-							const nextWorkflow = workflowOptions.find(
-								(workflow) => workflow.value === value,
-							);
-							setWorkflowInputs(
-								normalizeWorkflowInputs(nextWorkflow?.defaultInputs),
-							);
-						}}
-						onWorkflowInputChange={(key, value) =>
-							setWorkflowInputs((current) =>
-								workflowInputsWithValue(current, key, value),
-							)
-						}
-						onWorkflowApprovalIdChange={setWorkflowApprovalId}
-						onRequestApproval={() => void handleCreateRunApproval('workflow_run')}
-						onRunWorkflow={() => void handleRunEnterpriseWorkflow()}
-						onToggleWorkflowTemplate={(template, checked) =>
-							void handleToggleWorkflowTemplate(template, checked)
-						}
-						summarizeAuditObject={summarizeAuditObject}
-						t={t}
-					/>
-				</section>
+				<DashboardWorkflowRunnerSection
+					t={t}
+					creatingRunApproval={creatingRunApproval}
+					handleCreateRunApproval={handleCreateRunApproval}
+					handleRunEnterpriseWorkflow={handleRunEnterpriseWorkflow}
+					handleToggleWorkflowTemplate={handleToggleWorkflowTemplate}
+					platformError={platformError}
+					runningWorkflow={runningWorkflow}
+					savingWorkflowType={savingWorkflowType}
+					selectedWorkflowDisabled={selectedWorkflowDisabled}
+					selectedWorkflowTemplate={selectedWorkflowTemplate}
+					selectedWorkflowType={selectedWorkflowType}
+					setSelectedWorkflowType={setSelectedWorkflowType}
+					setWorkflowApprovalId={setWorkflowApprovalId}
+					setWorkflowInputs={setWorkflowInputs}
+					setWorkflowRunError={setWorkflowRunError}
+					summarizeAuditObject={summarizeAuditObject}
+					workflowApprovalId={workflowApprovalId}
+					workflowInputs={workflowInputs}
+					workflowOptions={workflowOptions}
+					workflowRunError={workflowRunError}
+					workflowRunResult={workflowRunResult}
+					workflowRunnerRef={workflowRunnerRef}
+					workflowRuns={workflowRuns}
+					workflowRunsError={workflowRunsError}
+					workflowRunsLoading={workflowRunsLoading}
+					workflowTemplates={workflowTemplates}
+					workflowTemplatesError={workflowTemplatesError}
+					workflowTemplatesLoading={workflowTemplatesLoading}
+				/>
 
 				<ApprovalsPanel
 					approvalForm={approvalForm}
