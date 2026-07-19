@@ -210,9 +210,9 @@ import { platformConnectionDisplayStateForStatus } from './platform-connection-d
 import {
 	platformAuditStatsDisplayStateForSummary,
 	platformGovernanceDisplayStateForStatus,
-	platformSelectedIdentityDisplayStateForStatus,
 	platformSummarizeAuditObject,
 } from './platform-governance-display';
+import { createPlatformSelectedIdentityPageState } from './platform-selected-identity-state';
 import {
 	platformAgentReleasePipelineDisplayStateForStatus,
 	platformPublishDisplayStateForStatus,
@@ -557,7 +557,15 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		publishReleaseIssues,
 		publishBlocked,
 	} = publishDisplay.draftState;
-	const selectedIdentityState = platformSelectedIdentityDisplayStateForStatus({
+	const {
+		selectedIdentity,
+		selectedRunAgentAccessAllowed,
+		selectedRunAgentAccessLabel,
+		selectedIdentityAllowedTools,
+		selectedIdentityDeniedTools,
+		selectedIdentityWorkspace,
+		currentIdentityLabel,
+	} = createPlatformSelectedIdentityPageState({
 		enterpriseIdentities,
 		selectedIdentityUserId,
 		selectedRunAgent,
@@ -566,13 +574,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		username,
 		...selectedIdentityLabels(t),
 	});
-	const selectedIdentity = selectedIdentityState.selectedIdentity;
-	const selectedRunAgentAccessAllowed = selectedIdentityState.selectedRunAgentAccessAllowed;
-	const selectedRunAgentAccessLabel = selectedIdentityState.selectedRunAgentAccessLabel;
-	const selectedIdentityAllowedTools = selectedIdentityState.selectedIdentityAllowedTools;
-	const selectedIdentityDeniedTools = selectedIdentityState.selectedIdentityDeniedTools;
-	const selectedIdentityWorkspace = selectedIdentityState.selectedIdentityWorkspace;
-	const currentIdentityLabel = selectedIdentityState.currentIdentityLabel;
 
 	const overviewDisplay = platformOverviewDisplayStateForStatus({
 		stats: {
