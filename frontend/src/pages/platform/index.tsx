@@ -105,6 +105,10 @@ import {
 	memberShouldActivate,
 } from './platform-member-helpers';
 import {
+	opsTaskActionTarget,
+	opsTaskResolvePatch,
+} from './platform-ops-task-helpers';
+import {
 	approvalFiltersForIdentity,
 	approvalFiltersForTenant,
 	auditFiltersForAgentRunEvidence,
@@ -1747,20 +1751,22 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleResolveOpsTask(task: EnterprisePlatformOpsTask) {
-		if (task.action?.type !== 'resolve') {
-			handleOperationAction(task.target);
+		const actionTarget = opsTaskActionTarget(task);
+		if (actionTarget.type === 'operation') {
+			handleOperationAction(actionTarget.target);
 			return;
 		}
 
-		setResolvingOpsTaskCode(task.code);
+		setResolvingOpsTaskCode(actionTarget.code);
 		setOpsTasksError(null);
 		try {
-			const response = await platformApi.resolveOpsTask(task.code);
-			if (response.workflows) {
-				setWorkflowTemplates(response.workflows);
+			const response = await platformApi.resolveOpsTask(actionTarget.code);
+			const patch = opsTaskResolvePatch(response);
+			if (patch.workflows) {
+				setWorkflowTemplates(patch.workflows);
 			}
-			setOpsTasks(response.ops_tasks.tasks);
-			setOpsTasksSummary(response.ops_tasks.summary);
+			setOpsTasks(patch.tasks);
+			setOpsTasksSummary(patch.summary);
 			await refetchPlatform();
 			await refetchScenarios();
 		} catch (error) {
