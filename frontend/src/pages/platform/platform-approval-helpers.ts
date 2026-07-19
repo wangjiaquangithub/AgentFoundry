@@ -194,6 +194,17 @@ export function approvalAgentContinuationTarget(
 	};
 }
 
+export function approvalAgentUsageTarget(
+	approval: EnterpriseApprovalRequestItem,
+) {
+	return {
+		agentId: approval.agent_id,
+		questionFromCurrent: (currentQuestion: string) =>
+			approvalAgentQuestionFromInputs(approval.inputs, currentQuestion),
+		approvalId: approval.approval_id,
+	};
+}
+
 export function approvalWorkflowContinuationTarget(approval: EnterpriseApprovalRequestItem) {
 	return {
 		workflowType: approval.workflow_type ?? '',

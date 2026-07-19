@@ -69,8 +69,7 @@ import {
 	approvalCreatePayloadFromRun,
 	approvalDecisionPayload,
 	approvalAgentContinuationTarget,
-	approvalAgentQuestionFromInputs,
-	approvalInputForTool,
+	approvalAgentUsageTarget,
 	approvalQueryFromFilters,
 	approvalToolFormPatch,
 	approvalToolContinuationTarget,
@@ -1823,36 +1822,37 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 		if (approval.request_type === 'tool_run' && approval.tool_name) {
 			if (approval.agent_id && approval.agent_id !== 'platform-console') {
-				setSelectedRunAgentId(approval.agent_id);
-				setAgentApprovalId(approval.approval_id);
-				setAgentQuestion((current) =>
-					approvalAgentQuestionFromInputs(approval.inputs, current),
-				);
+				const target = approvalAgentUsageTarget(approval);
+
+				setSelectedRunAgentId(target.agentId);
+				setAgentApprovalId(target.approvalId);
+				setAgentQuestion(target.questionFromCurrent);
 				setAgentRunError(null);
 				window.setTimeout(scrollToAgentRunner, 0);
 				return;
 			}
 
-			const toolConfig = enterpriseToolInputConfig[approval.tool_name];
-			const { inputValue } = approvalInputForTool(
-				approval.inputs,
-				toolConfig?.inputKey,
+			const target = approvalToolContinuationTarget(
+				approval,
+				enterpriseToolInputConfig[approval.tool_name],
 			);
 
-			setSelectedToolName(approval.tool_name);
+			setSelectedToolName(target.toolName);
 			setToolInputs((current) =>
-				approvalToolInputsPatch(current, approval.tool_name!, inputValue),
+				approvalToolInputsPatch(current, target.toolName, target.inputValue),
 			);
-			setToolApprovalId(approval.approval_id);
+			setToolApprovalId(target.approvalId);
 			setToolRunError(null);
 			window.setTimeout(scrollToToolRunner, 0);
 			return;
 		}
 
 		if (approval.request_type === 'workflow_run' && approval.workflow_type) {
-			setSelectedWorkflowType(approval.workflow_type);
-			setWorkflowInputs(normalizeWorkflowInputs(approval.inputs));
-			setWorkflowApprovalId(approval.approval_id);
+			const target = approvalWorkflowContinuationTarget(approval);
+
+			setSelectedWorkflowType(target.workflowType);
+			setWorkflowInputs(target.inputs);
+			setWorkflowApprovalId(target.approvalId);
 			setWorkflowRunError(null);
 			window.setTimeout(scrollToWorkflowRunner, 0);
 		}
