@@ -5,6 +5,12 @@ import type { ApprovalFiltersState, AuditFiltersState } from './platform-default
 type ApprovalFilterPatch = Partial<ApprovalFiltersState>;
 type AuditFilterPatch = Partial<AuditFiltersState>;
 type NavigationHandler = () => void;
+type AgentRunEvidence = {
+	tenant: string;
+	user_id: string;
+	agent_id: string;
+	audit_filter: { tool_names?: unknown };
+};
 
 export function mergeAuditFilters(
 	current: AuditFiltersState,
@@ -85,12 +91,9 @@ export function auditFiltersForMemoryOperation(
 	};
 }
 
-export function auditFiltersForAgentRunEvidence(evidence: {
-	tenant: string;
-	user_id: string;
-	agent_id: string;
-	audit_filter: { tool_names?: unknown };
-}): AuditFilterPatch {
+export function auditFiltersForAgentRunEvidence(
+	evidence: AgentRunEvidence,
+): AuditFilterPatch {
 	const toolNames = evidence.audit_filter.tool_names;
 	const firstToolName = Array.isArray(toolNames) ? toolNames[0] : '';
 
@@ -100,6 +103,12 @@ export function auditFiltersForAgentRunEvidence(evidence: {
 		agent_id: evidence.agent_id,
 		tool_name: firstToolName ? String(firstToolName) : '',
 	};
+}
+
+export function agentRunEvidenceAuditTarget(
+	evidence: AgentRunEvidence | null | undefined,
+): AuditFilterPatch | null {
+	return evidence ? auditFiltersForAgentRunEvidence(evidence) : null;
 }
 
 export type AuditFilterTargetActionHandlers = {
@@ -119,6 +128,17 @@ export function runAuditFilterTargetAction(
 	handlers.patchAuditFilters((previous) => mergeAuditFilters(previous, filters));
 	void handlers.refetchAuditEvents(filters);
 	handlers.scrollToGovernance();
+}
+
+export function runAgentRunEvidenceAuditTargetAction(
+	target: AuditFilterPatch | null,
+	handlers: AuditFilterTargetActionHandlers,
+) {
+	if (!target) {
+		return;
+	}
+
+	runAuditFilterTargetAction(target, handlers);
 }
 
 export type ApprovalFilterTargetActionHandlers = {

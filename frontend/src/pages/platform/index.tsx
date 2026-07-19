@@ -137,14 +137,15 @@ import {
 	opsTaskResolvePatch,
 } from './platform-ops-task-helpers';
 import {
+	agentRunEvidenceAuditTarget,
 	approvalFiltersForIdentity,
 	approvalFiltersForTenant,
-	auditFiltersForAgentRunEvidence,
 	auditFiltersForIdentity,
 	auditFiltersForMemoryOperation,
 	auditFiltersForTenant,
 	auditQueryFromFilters,
 	failedAuditFiltersForIdentity,
+	runAgentRunEvidenceAuditTargetAction,
 	runApprovalFilterTargetAction,
 	runAuditFilterTargetAction,
 } from './platform-filter-builders';
@@ -2091,12 +2092,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleInspectAgentRunAudit() {
-		if (!agentRunEvidence) {
-			return;
-		}
-
-		const filters = auditFiltersForAgentRunEvidence(agentRunEvidence);
-		runAuditFilterTargetAction(filters, {
+		const target = agentRunEvidenceAuditTarget(agentRunEvidence);
+		runAgentRunEvidenceAuditTargetAction(target, {
 			patchAuditFilters: setAuditFilters,
 			refetchAuditEvents,
 			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
