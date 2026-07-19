@@ -293,6 +293,14 @@ export async function runAgentTemplateToolsBindAction(
 	}
 }
 
+export async function runAgentTemplateToolsBindRequestAction(
+	values: Parameters<typeof agentTemplateToolsBindTarget>[0],
+	handlers: AgentTemplateToolsBindActionHandlers,
+) {
+	const target = agentTemplateToolsBindTarget(values);
+	await runAgentTemplateToolsBindAction(target, handlers);
+}
+
 export function agentCapabilityEnabledPatch(
 	capability: AgentCapabilityKey,
 ): AgentQuickConfigurationPatch {

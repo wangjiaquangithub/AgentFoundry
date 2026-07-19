@@ -227,11 +227,10 @@ import { runPlatformOperationAction } from './platform-operation-actions';
 import {
 	agentCapabilityEnableTarget,
 	agentQuickConfigurationSyncResult,
-	agentTemplateToolsBindTarget,
 	runAgentCapabilityEnableAction,
 	runAgentDefaultModelBindRequestAction,
 	runAgentKnowledgeBasesBindRequestAction,
-	runAgentTemplateToolsBindAction,
+	runAgentTemplateToolsBindRequestAction,
 	type AgentQuickConfigurationPatch,
 } from './platform-agent-quick-config';
 import {
@@ -2345,31 +2344,32 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleBindTemplateTools(agent: EnterprisePublishedAgent) {
-		const target = agentTemplateToolsBindTarget({
-			agent,
-			templates: agentTemplates,
-		});
-
-		await runAgentTemplateToolsBindAction(target, {
-			setBindingAgent: setBindingAgentToolsId,
-			clearError: () => setPlatformAgentsError(null),
-			updateAgent: platformApi.updateAgent,
-			syncQuickConfiguration: syncAgentQuickConfiguration,
-			refreshDependentViews: async () => {
-				await refetchPlatformAgents();
-				await refetchPlatform();
-				await refetchToolCatalog();
-				await refetchOpsTasks();
+		await runAgentTemplateToolsBindRequestAction(
+			{
+				agent,
+				templates: agentTemplates,
 			},
-			handleEmptyTemplateTools: () =>
-				setPlatformAgentsError(agentManagementRequestText.bindToolsError),
-			handleError: (error) =>
-				setPlatformAgentsError(
-					error instanceof Error
-						? error.message
-						: agentManagementRequestText.bindToolsError,
-				),
-		});
+			{
+				setBindingAgent: setBindingAgentToolsId,
+				clearError: () => setPlatformAgentsError(null),
+				updateAgent: platformApi.updateAgent,
+				syncQuickConfiguration: syncAgentQuickConfiguration,
+				refreshDependentViews: async () => {
+					await refetchPlatformAgents();
+					await refetchPlatform();
+					await refetchToolCatalog();
+					await refetchOpsTasks();
+				},
+				handleEmptyTemplateTools: () =>
+					setPlatformAgentsError(agentManagementRequestText.bindToolsError),
+				handleError: (error) =>
+					setPlatformAgentsError(
+						error instanceof Error
+							? error.message
+							: agentManagementRequestText.bindToolsError,
+					),
+			},
+		);
 	}
 
 	async function handleEnableAgentMemory(agent: EnterprisePublishedAgent) {
