@@ -177,6 +177,17 @@ type DashboardWorkflowsViewProps = Pick<
 	| 'workflowTemplatesLoading'
 >;
 
+type DashboardMemoryOperationsViewProps = Pick<
+	DashboardViewPageProps,
+	| 'handleInspectMemoryOperationAudit'
+	| 'handleOpenMemoryOperation'
+	| 'memoryOperationsHitCount'
+	| 'memoryOperationsItems'
+	| 'memoryOperationsRef'
+	| 'memoryOperationsRunCount'
+	| 'memoryOperationsSavedCount'
+>;
+
 export function createPlatformDashboardViewProps(
 	props: DashboardViewPageProps,
 ): DashboardViewPageProps {
@@ -210,6 +221,12 @@ export function createPlatformDashboardToolsViewProps(
 export function createPlatformDashboardWorkflowsViewProps(
 	props: DashboardWorkflowsViewProps,
 ): DashboardWorkflowsViewProps {
+	return props;
+}
+
+export function createPlatformDashboardMemoryOperationsViewProps(
+	props: DashboardMemoryOperationsViewProps,
+): DashboardMemoryOperationsViewProps {
 	return props;
 }
 
