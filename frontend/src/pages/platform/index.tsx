@@ -272,6 +272,7 @@ import { platformGovernanceDisplayStateForStatus } from './platform-governance-d
 import { platformPublishDisplayStateForStatus } from './platform-publish-display';
 import { platformResourceDisplayStateForStatus } from './platform-resource-display';
 import { platformRuntimeDisplayStateForStatus } from './platform-runtime-display';
+import { platformToolRunnerDisplayStateForStatus } from './platform-tool-runner-display';
 import {
 	agentAccessAllowed,
 	agentRoutingDisplayStateForResult,
@@ -286,9 +287,7 @@ import {
 	platformConsoleItemsForDisplay,
 	runtimeStatusItemsForStatus,
 	selectedIdentityStateForStatus,
-	selectedToolRunnerStateForStatus,
 	summarizeAuditObject,
-	toolCatalogStateForStatus,
 	workflowSelectionStateForTemplates,
 	type AgentWizardStep,
 	type EnterpriseAgentConversationTurn,
@@ -676,22 +675,24 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	const subagentTemplates = platformRuntimeConfigState.subagentTemplates;
 	const toolPolicyMode = platformRuntimeConfigState.toolPolicyMode;
+	const toolRunnerDisplay = platformToolRunnerDisplayStateForStatus({
+		catalog: {
+			platformStatus,
+			toolCatalog,
+			toolInputConfig: enterpriseToolInputConfig,
+		},
+		selectedTool: {
+			selectedToolName,
+			toolInputs,
+			toolInputConfig: enterpriseToolInputConfig,
+			labels: selectedToolRunnerLabels(t),
+		},
+	});
 	const {
 		policyDecisions,
 		availableToolItems,
-	} = toolCatalogStateForStatus({
-		platformStatus,
-		toolCatalog,
-		toolInputConfig: enterpriseToolInputConfig,
-	});
-	const selectedToolRunnerState = selectedToolRunnerStateForStatus({
-		availableToolItems,
-		selectedToolName,
-		toolInputs,
-		toolInputConfig: enterpriseToolInputConfig,
-		policyDecisions,
-		labels: selectedToolRunnerLabels(t),
-	});
+	} = toolRunnerDisplay.catalogState;
+	const selectedToolRunnerState = toolRunnerDisplay.selectedToolRunnerState;
 	const selectedToolCatalogItem = selectedToolRunnerState.selectedToolCatalogItem;
 	const selectedToolConfig = selectedToolRunnerState.selectedToolConfig;
 	const selectedToolDecision = selectedToolRunnerState.selectedToolDecision;
