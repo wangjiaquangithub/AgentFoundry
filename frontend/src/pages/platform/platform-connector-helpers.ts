@@ -1,5 +1,6 @@
 import type {
 	EnterpriseConnectorConfigSaveRequest,
+	EnterpriseConnectorConfigSaveResponse,
 	EnterpriseConnectorSavedConfig,
 	EnterpriseConnectorTestRequest,
 	EnterpriseConnectorTestResponse,
@@ -30,6 +31,29 @@ export type ConnectorTestActionHandlers = {
 		payload: EnterpriseConnectorTestRequest,
 	) => EnterpriseConnectorTestResponse | Promise<EnterpriseConnectorTestResponse>;
 	setConnectorTestResult: (result: EnterpriseConnectorTestResponse) => void;
+	handleError: (error: unknown) => void;
+};
+
+export type ConnectorSaveActionHandlers = {
+	setSavingConnectorConfig: (saving: boolean) => void;
+	clearMessages: () => void;
+	handleValidationError: (error: string) => void;
+	saveConnectorConfig: (
+		payload: EnterpriseConnectorConfigSaveRequest,
+	) =>
+		| EnterpriseConnectorConfigSaveResponse
+		| Promise<EnterpriseConnectorConfigSaveResponse>;
+	setConnectors: (
+		update: (
+			previous: EnterprisePlatformConnectorsResponse | null,
+		) => EnterprisePlatformConnectorsResponse | null,
+	) => void;
+	setConnectorTestForm: (
+		update: (previous: ConnectorTestFormState) => ConnectorTestFormState,
+	) => void;
+	setConnectorSaveSuccess: (message: string) => void;
+	saveSuccessMessage: (tenant: string) => string;
+	refreshDependentViews: () => void | Promise<void>;
 	handleError: (error: unknown) => void;
 };
 
@@ -215,5 +239,45 @@ export async function runConnectorTestAction(
 		return null;
 	} finally {
 		handlers.setTestingConnector(false);
+	}
+}
+
+export async function runConnectorSaveAction(
+	values: {
+		form: ConnectorTestFormState;
+		draftIssues: string[];
+		baseUrlRequiredMessage: string;
+	},
+	handlers: ConnectorSaveActionHandlers,
+) {
+	const baseUrl = connectorBaseUrlFromForm(values.form);
+	const validationError = connectorDraftValidationError({
+		baseUrl,
+		draftIssues: values.draftIssues,
+		baseUrlRequiredMessage: values.baseUrlRequiredMessage,
+	});
+	if (validationError) {
+		handlers.handleValidationError(validationError);
+		return;
+	}
+
+	handlers.setSavingConnectorConfig(true);
+	handlers.clearMessages();
+	try {
+		const response = await handlers.saveConnectorConfig(
+			connectorSavePayloadFromForm(values.form, baseUrl),
+		);
+		handlers.setConnectors((previous) =>
+			connectorsWithSavedConfigs(previous, response.saved_configs),
+		);
+		handlers.setConnectorTestForm(connectorFormWithoutToken);
+		handlers.setConnectorSaveSuccess(
+			handlers.saveSuccessMessage(response.config.tenant),
+		);
+		await handlers.refreshDependentViews();
+	} catch (error) {
+		handlers.handleError(error);
+	} finally {
+		handlers.setSavingConnectorConfig(false);
 	}
 }
