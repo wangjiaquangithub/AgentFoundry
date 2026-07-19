@@ -62,13 +62,10 @@ import {
 	type AgentConversationMap,
 } from './platform-agent-runner';
 import {
+	createPlatformApprovalHandlers,
 	runApprovalApproveAndContinueAction,
-	runApprovalCreateAction,
-	runApprovalDecisionAction,
 	runApprovalLoadAction,
 	runApprovalRunCreateAction,
-	runPlatformApprovalUsageTargetAction,
-	runPrimeToolApprovalAction,
 	type PlatformApprovalRunType,
 } from './platform-approval-helpers';
 import { runPlatformAgentLoadAction } from './platform-agent-management-helpers';
@@ -1437,33 +1434,52 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		);
 	}
 
-	async function handleCreateApproval() {
-		await runApprovalCreateAction(
-			{
-				form: approvalForm,
-				defaults: {
-					selectedIdentityUserId,
-					selectedRunAgentId,
-					username,
-				},
-				defaultReason: defaultApprovalForm.reason,
-			},
-			{
-				setCreatingApproval,
-				clearApprovalError: () => setApprovalError(null),
-				createApproval: platformApi.createApproval,
-				setApprovalRequests,
-				refreshDependentViews: refetchApprovalDependencies,
-				resetApprovalReason: setApprovalForm,
-				handleError: (error) =>
-					setApprovalError(
-						error instanceof Error
-							? error.message
-							: approvalRequestText.createError,
-					),
-			},
-		);
-	}
+	const {
+		handleCreateApproval,
+		handleDecideApproval,
+		handlePrimeToolApproval,
+		handleUseApproval,
+	} = createPlatformApprovalHandlers(
+		{
+			approvalForm,
+			defaultApprovalReason: defaultApprovalForm.reason,
+			defaultApprovalInputValue: defaultApprovalForm.input_value,
+			selectedIdentityUserId,
+			selectedRunAgentId,
+			username,
+			availableToolItems,
+			toolInputConfig: enterpriseToolInputConfig,
+			text: approvalRequestText,
+		},
+		{
+			setCreatingApproval,
+			setApprovalError,
+			createApproval: platformApi.createApproval,
+			approveApproval: platformApi.approveApproval,
+			rejectApproval: platformApi.rejectApproval,
+			setApprovalRequests,
+			refreshDependentViews: refetchApprovalDependencies,
+			setApprovalForm,
+			setDecidingApprovalId,
+			selectIdentityUser: setSelectedIdentityUserId,
+			selectRunAgent: setSelectedRunAgentId,
+			setAgentApprovalId,
+			setAgentQuestion,
+			clearAgentRunError: () => setAgentRunError(null),
+			scrollToAgentRunner,
+			selectToolName: setSelectedToolName,
+			patchToolInputs: setToolInputs,
+			setToolApprovalId,
+			clearToolRunError: () => setToolRunError(null),
+			scrollToToolRunner,
+			selectWorkflowType: setSelectedWorkflowType,
+			setWorkflowInputs,
+			setWorkflowApprovalId,
+			clearWorkflowRunError: () => setWorkflowRunError(null),
+			scrollToWorkflowRunner,
+			scrollToGovernance,
+		},
+	);
 
 	async function handleCreateRunApproval(
 		requestType: PlatformApprovalRunType,
@@ -1508,34 +1524,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 						setWorkflowRunError(message);
 					}
 				},
-			},
-		);
-	}
-
-	async function handleDecideApproval(
-		approvalId: string,
-		decision: 'approved' | 'rejected',
-	) {
-		await runApprovalDecisionAction(
-			{
-				approvalId,
-				decision,
-				username,
-				text: approvalRequestText,
-			},
-			{
-				setDecidingApprovalId,
-				clearApprovalError: () => setApprovalError(null),
-				approveApproval: platformApi.approveApproval,
-				rejectApproval: platformApi.rejectApproval,
-				setApprovalRequests,
-				refreshDependentViews: refetchApprovalDependencies,
-				handleError: (error) =>
-					setApprovalError(
-						error instanceof Error
-							? error.message
-							: approvalRequestText.decisionError,
-					),
 			},
 		);
 	}
@@ -1641,27 +1629,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		});
 	}
 
-	function handlePrimeToolApproval(agent: EnterprisePublishedAgent, toolName: string) {
-		runPrimeToolApprovalAction({
-			agent,
-			inputConfig: enterpriseToolInputConfig[toolName],
-			catalogItems: availableToolItems,
-			toolName,
-			reason: approvalRequestText.agentToolApprovalReason({
-				agent: agent.name,
-				tool: toolName,
-			}),
-			defaultInputValue: defaultApprovalForm.input_value,
-			selectedIdentityUserId,
-			username,
-		}, {
-			selectIdentityUser: setSelectedIdentityUserId,
-			patchApprovalForm: setApprovalForm,
-			clearApprovalError: () => setApprovalError(null),
-			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
-		});
-	}
-
 	function handlePrimeAgentWorkflow(agent: EnterprisePublishedAgent) {
 		runPrimeAgentWorkflowAction({
 			agent,
@@ -1678,33 +1645,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			clearWorkflowRunError: () => setWorkflowRunError(null),
 			scrollToWorkflowRunner: () => window.setTimeout(scrollToWorkflowRunner, 0),
 		});
-	}
-
-	function handleUseApproval(approval: EnterpriseApprovalRequestItem) {
-		runPlatformApprovalUsageTargetAction(
-			{
-				approval,
-				toolInputConfig: enterpriseToolInputConfig,
-			},
-			{
-				selectIdentityUser: setSelectedIdentityUserId,
-				selectRunAgent: setSelectedRunAgentId,
-				setAgentApprovalId,
-				setAgentQuestion,
-				clearAgentRunError: () => setAgentRunError(null),
-				scrollToAgentRunner,
-				selectToolName: setSelectedToolName,
-				patchToolInputs: setToolInputs,
-				setToolApprovalId,
-				clearToolRunError: () => setToolRunError(null),
-				scrollToToolRunner,
-				selectWorkflowType: setSelectedWorkflowType,
-				setWorkflowInputs,
-				setWorkflowApprovalId,
-				clearWorkflowRunError: () => setWorkflowRunError(null),
-				scrollToWorkflowRunner,
-			},
-		);
 	}
 
 	function handleUseIdentity(identity: EnterpriseIdentity) {

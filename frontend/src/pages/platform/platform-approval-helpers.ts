@@ -168,6 +168,73 @@ export interface ApprovalToolCatalogItem {
 	default_input?: string;
 }
 
+export type PlatformApprovalRequestText = ApprovalDecisionLabels & {
+	createError: string;
+	decisionError: string;
+	agentToolApprovalReason: (values: { agent: string; tool: string }) => string;
+};
+
+export type PlatformApprovalHandlerValues = {
+	approvalForm: ApprovalFormState;
+	defaultApprovalReason: string;
+	defaultApprovalInputValue: string;
+	selectedIdentityUserId: string;
+	selectedRunAgentId: string;
+	username: string;
+	availableToolItems: ApprovalToolCatalogItem[];
+	toolInputConfig: Record<string, ApprovalToolInputConfig>;
+	text: PlatformApprovalRequestText;
+};
+
+export type PlatformApprovalHandlerActions = {
+	setCreatingApproval: (creating: boolean) => void;
+	setApprovalError: (message: string | null) => void;
+	createApproval: (
+		payload: EnterpriseApprovalCreateRequest,
+	) => EnterpriseApprovalsResponse | Promise<EnterpriseApprovalsResponse>;
+	approveApproval: (
+		approvalId: string,
+		payload: EnterpriseApprovalDecisionRequest,
+	) =>
+		| EnterpriseApprovalDecisionResponse
+		| Promise<EnterpriseApprovalDecisionResponse>;
+	rejectApproval: (
+		approvalId: string,
+		payload: EnterpriseApprovalDecisionRequest,
+	) =>
+		| EnterpriseApprovalDecisionResponse
+		| Promise<EnterpriseApprovalDecisionResponse>;
+	setApprovalRequests: (
+		update: (
+			current: EnterpriseApprovalRequestItem[],
+		) => EnterpriseApprovalRequestItem[],
+	) => void;
+	refreshDependentViews: () => void | Promise<void>;
+	setApprovalForm: (
+		update: (current: ApprovalFormState) => ApprovalFormState,
+	) => void;
+	setDecidingApprovalId: (approvalId: string | null) => void;
+	selectIdentityUser: (userId: string) => void;
+	selectRunAgent: (agentId: string) => void;
+	setAgentApprovalId: (approvalId: string) => void;
+	setAgentQuestion: (question: StringStateValue) => void;
+	clearAgentRunError: NavigationHandler;
+	scrollToAgentRunner: NavigationHandler;
+	selectToolName: (toolName: string) => void;
+	patchToolInputs: (
+		updater: (current: Record<string, string>) => Record<string, string>,
+	) => void;
+	setToolApprovalId: (approvalId: string) => void;
+	clearToolRunError: NavigationHandler;
+	scrollToToolRunner: NavigationHandler;
+	selectWorkflowType: (workflowType: string) => void;
+	setWorkflowInputs: (inputs: Record<string, string>) => void;
+	setWorkflowApprovalId: (approvalId: string) => void;
+	clearWorkflowRunError: NavigationHandler;
+	scrollToWorkflowRunner: NavigationHandler;
+	scrollToGovernance: NavigationHandler;
+};
+
 export function approvalQueryFromFilters(filters: ApprovalFiltersState) {
 	const limitValue = Number.parseInt(filters.limit, 10);
 
@@ -891,4 +958,122 @@ export function runPlatformApprovalUsageTargetAction(
 				window.setTimeout(handlers.scrollToWorkflowRunner, 0),
 		},
 	);
+}
+
+export function createPlatformApprovalHandlers(
+	values: PlatformApprovalHandlerValues,
+	actions: PlatformApprovalHandlerActions,
+) {
+	async function handleCreateApproval() {
+		await runApprovalCreateAction(
+			{
+				form: values.approvalForm,
+				defaults: {
+					selectedIdentityUserId: values.selectedIdentityUserId,
+					selectedRunAgentId: values.selectedRunAgentId,
+					username: values.username,
+				},
+				defaultReason: values.defaultApprovalReason,
+			},
+			{
+				setCreatingApproval: actions.setCreatingApproval,
+				clearApprovalError: () => actions.setApprovalError(null),
+				createApproval: actions.createApproval,
+				setApprovalRequests: actions.setApprovalRequests,
+				refreshDependentViews: actions.refreshDependentViews,
+				resetApprovalReason: actions.setApprovalForm,
+				handleError: (error) =>
+					actions.setApprovalError(
+						error instanceof Error ? error.message : values.text.createError,
+					),
+			},
+		);
+	}
+
+	async function handleDecideApproval(
+		approvalId: string,
+		decision: 'approved' | 'rejected',
+	) {
+		await runApprovalDecisionAction(
+			{
+				approvalId,
+				decision,
+				username: values.username,
+				text: values.text,
+			},
+			{
+				setDecidingApprovalId: actions.setDecidingApprovalId,
+				clearApprovalError: () => actions.setApprovalError(null),
+				approveApproval: actions.approveApproval,
+				rejectApproval: actions.rejectApproval,
+				setApprovalRequests: actions.setApprovalRequests,
+				refreshDependentViews: actions.refreshDependentViews,
+				handleError: (error) =>
+					actions.setApprovalError(
+						error instanceof Error ? error.message : values.text.decisionError,
+					),
+			},
+		);
+	}
+
+	function handlePrimeToolApproval(
+		agent: EnterprisePublishedAgent,
+		toolName: string,
+	) {
+		runPrimeToolApprovalAction(
+			{
+				agent,
+				inputConfig: values.toolInputConfig[toolName],
+				catalogItems: values.availableToolItems,
+				toolName,
+				reason: values.text.agentToolApprovalReason({
+					agent: agent.name,
+					tool: toolName,
+				}),
+				defaultInputValue: values.defaultApprovalInputValue,
+				selectedIdentityUserId: values.selectedIdentityUserId,
+				username: values.username,
+			},
+			{
+				selectIdentityUser: actions.selectIdentityUser,
+				patchApprovalForm: actions.setApprovalForm,
+				clearApprovalError: () => actions.setApprovalError(null),
+				scrollToGovernance: () => window.setTimeout(actions.scrollToGovernance, 0),
+			},
+		);
+	}
+
+	function handleUseApproval(approval: EnterpriseApprovalRequestItem) {
+		runPlatformApprovalUsageTargetAction(
+			{
+				approval,
+				toolInputConfig: values.toolInputConfig,
+			},
+			{
+				selectIdentityUser: actions.selectIdentityUser,
+				selectRunAgent: actions.selectRunAgent,
+				setAgentApprovalId: actions.setAgentApprovalId,
+				setAgentQuestion: actions.setAgentQuestion,
+				clearAgentRunError: actions.clearAgentRunError,
+				scrollToAgentRunner: actions.scrollToAgentRunner,
+				selectToolName: actions.selectToolName,
+				patchToolInputs: actions.patchToolInputs,
+				setToolApprovalId: actions.setToolApprovalId,
+				clearToolRunError: actions.clearToolRunError,
+				scrollToToolRunner: actions.scrollToToolRunner,
+				selectWorkflowType: actions.selectWorkflowType,
+				setWorkflowInputs: actions.setWorkflowInputs,
+				setWorkflowApprovalId: actions.setWorkflowApprovalId,
+				clearWorkflowRunError: actions.clearWorkflowRunError,
+				scrollToWorkflowRunner: actions.scrollToWorkflowRunner,
+			},
+		);
+	}
+
+	return {
+		handleCreateApproval,
+		handleDecideApproval,
+		handlePrimeToolApproval,
+		handleUseApproval,
+	};
 }
