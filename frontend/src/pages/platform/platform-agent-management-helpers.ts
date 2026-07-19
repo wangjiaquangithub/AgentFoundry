@@ -25,3 +25,28 @@ export async function runPlatformAgentLoadAction(
 		handlers.setLoading(false);
 	}
 }
+
+export type PlatformAgentManagementHandlerValues = {
+	loadErrorMessage: string;
+};
+
+export type PlatformAgentManagementHandlerActions = PlatformAgentLoadActionHandlers;
+
+export function createPlatformAgentManagementHandlers(
+	values: PlatformAgentManagementHandlerValues,
+	actions: PlatformAgentManagementHandlerActions,
+) {
+	async function refetchPlatformAgents() {
+		await runPlatformAgentLoadAction(values.loadErrorMessage, {
+			setLoading: actions.setLoading,
+			clearError: actions.clearError,
+			loadPlatformAgents: actions.loadPlatformAgents,
+			setPlatformAgents: actions.setPlatformAgents,
+			setError: actions.setError,
+		});
+	}
+
+	return {
+		refetchPlatformAgents,
+	};
+}

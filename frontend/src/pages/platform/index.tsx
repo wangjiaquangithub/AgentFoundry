@@ -57,7 +57,7 @@ import {
 	createPlatformApprovalHandlers,
 	runApprovalLoadAction,
 } from './platform-approval-helpers';
-import { runPlatformAgentLoadAction } from './platform-agent-management-helpers';
+import { createPlatformAgentManagementHandlers } from './platform-agent-management-helpers';
 import {
 	connectorFormWithPlatformDefaults,
 	createPlatformConnectorHandlers,
@@ -1217,15 +1217,18 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		);
 	}
 
-	async function refetchPlatformAgents() {
-		await runPlatformAgentLoadAction(agentManagementRequestText.loadError, {
+	const { refetchPlatformAgents } = createPlatformAgentManagementHandlers(
+		{
+			loadErrorMessage: agentManagementRequestText.loadError,
+		},
+		{
 			setLoading: setPlatformAgentsLoading,
 			clearError: () => setPlatformAgentsError(null),
 			loadPlatformAgents: platformApi.agents,
 			setPlatformAgents,
 			setError: setPlatformAgentsError,
-		});
-	}
+		},
+	);
 
 	async function refetchWorkflowTemplates() {
 		await runWorkflowTemplateLoadAction(
