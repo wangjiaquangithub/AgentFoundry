@@ -1,4 +1,5 @@
 import type {
+	CredentialView,
 	EnterpriseAgentTemplate,
 	EnterpriseAgentUpdateRequest,
 	EnterpriseAgentUpdateResponse,
@@ -108,6 +109,22 @@ export type AgentQuickConfigurationSyncHandlers = {
 	setPublishForm: (
 		updater: (current: PublishFormState) => PublishFormState,
 	) => void;
+};
+export type PlatformAgentQuickConfigurationRequestText = {
+	bindModelError: string;
+	bindKnowledgeError: string;
+	bindToolsError: string;
+	enableMemoryError: string;
+	enableWorkflowError: string;
+};
+export type PlatformAgentQuickConfigurationHandlers = {
+	handleBindDefaultModel: (agent: EnterprisePublishedAgent) => Promise<void>;
+	handleBindAvailableKnowledge: (
+		agent: EnterprisePublishedAgent,
+	) => Promise<void>;
+	handleBindTemplateTools: (agent: EnterprisePublishedAgent) => Promise<void>;
+	handleEnableAgentMemory: (agent: EnterprisePublishedAgent) => Promise<void>;
+	handleEnableAgentWorkflow: (agent: EnterprisePublishedAgent) => Promise<void>;
 };
 
 export function agentQuickConfigurationSyncResult(values: {
@@ -398,4 +415,129 @@ export async function runAgentCapabilityEnableRequestAction(
 ) {
 	const target = agentCapabilityEnableTarget(values);
 	await runAgentCapabilityEnableAction(target, handlers);
+}
+
+export function createPlatformAgentQuickConfigurationHandlers(values: {
+	credentials: CredentialView[];
+	knowledgeBases: KnowledgeBaseView[];
+	templates: EnterpriseAgentTemplate[];
+	requestText: PlatformAgentQuickConfigurationRequestText;
+	navigateToPath: (path: '/credential' | '/knowledge') => void;
+	setPlatformAgentsError: (message: string | null) => void;
+	setBindingAgentModel: (agentId: string | null) => void;
+	setBindingAgentKnowledge: (agentId: string | null) => void;
+	setBindingAgentTools: (agentId: string | null) => void;
+	setEnablingAgentMemory: (agentId: string | null) => void;
+	setEnablingAgentWorkflow: (agentId: string | null) => void;
+	updateAgent: (
+		agentId: string,
+		patch: AgentQuickConfigurationPatch,
+	) => EnterpriseAgentUpdateResponse | Promise<EnterpriseAgentUpdateResponse>;
+	syncQuickConfiguration: (
+		agentId: string,
+		updatedAgentId: string,
+		patch: AgentQuickConfigurationPatch,
+	) => void;
+	refreshDependentViews: () => void | Promise<void>;
+}): PlatformAgentQuickConfigurationHandlers {
+	const commonHandlers = {
+		clearError: () => values.setPlatformAgentsError(null),
+		updateAgent: values.updateAgent,
+		syncQuickConfiguration: values.syncQuickConfiguration,
+		refreshDependentViews: values.refreshDependentViews,
+	};
+
+	return {
+		handleBindDefaultModel: async (agent) => {
+			await runAgentDefaultModelBindRequestAction(
+				{
+					agent,
+					modelConfigId: values.credentials[0]?.id,
+				},
+				{
+					...commonHandlers,
+					navigateToPath: values.navigateToPath,
+					setBindingAgent: values.setBindingAgentModel,
+					handleError: (error) =>
+						values.setPlatformAgentsError(
+							error instanceof Error
+								? error.message
+								: values.requestText.bindModelError,
+						),
+				},
+			);
+		},
+		handleBindAvailableKnowledge: async (agent) => {
+			await runAgentKnowledgeBasesBindRequestAction(
+				{ agent, knowledgeBases: values.knowledgeBases },
+				{
+					...commonHandlers,
+					navigateToPath: values.navigateToPath,
+					setBindingAgent: values.setBindingAgentKnowledge,
+					handleError: (error) =>
+						values.setPlatformAgentsError(
+							error instanceof Error
+								? error.message
+								: values.requestText.bindKnowledgeError,
+						),
+				},
+			);
+		},
+		handleBindTemplateTools: async (agent) => {
+			await runAgentTemplateToolsBindRequestAction(
+				{
+					agent,
+					templates: values.templates,
+				},
+				{
+					...commonHandlers,
+					setBindingAgent: values.setBindingAgentTools,
+					handleEmptyTemplateTools: () =>
+						values.setPlatformAgentsError(values.requestText.bindToolsError),
+					handleError: (error) =>
+						values.setPlatformAgentsError(
+							error instanceof Error
+								? error.message
+								: values.requestText.bindToolsError,
+						),
+				},
+			);
+		},
+		handleEnableAgentMemory: async (agent) => {
+			await runAgentCapabilityEnableRequestAction(
+				{
+					agent,
+					capability: 'memory',
+				},
+				{
+					...commonHandlers,
+					setEnablingAgent: values.setEnablingAgentMemory,
+					handleError: (error) =>
+						values.setPlatformAgentsError(
+							error instanceof Error
+								? error.message
+								: values.requestText.enableMemoryError,
+						),
+				},
+			);
+		},
+		handleEnableAgentWorkflow: async (agent) => {
+			await runAgentCapabilityEnableRequestAction(
+				{
+					agent,
+					capability: 'workflow',
+				},
+				{
+					...commonHandlers,
+					setEnablingAgent: values.setEnablingAgentWorkflow,
+					handleError: (error) =>
+						values.setPlatformAgentsError(
+							error instanceof Error
+								? error.message
+								: values.requestText.enableWorkflowError,
+						),
+				},
+			);
+		},
+	};
 }

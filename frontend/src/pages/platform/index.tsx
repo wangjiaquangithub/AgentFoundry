@@ -232,11 +232,8 @@ import {
 import { platformWorkflowDisplayStateForStatus } from './platform-workflow-display';
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
-	runAgentCapabilityEnableRequestAction,
-	runAgentDefaultModelBindRequestAction,
-	runAgentKnowledgeBasesBindRequestAction,
+	createPlatformAgentQuickConfigurationHandlers,
 	runPlatformAgentQuickConfigurationSyncAction,
-	runAgentTemplateToolsBindRequestAction,
 	type AgentQuickConfigurationPatch,
 } from './platform-agent-quick-config';
 import {
@@ -2163,110 +2160,28 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			},
 		);
 
-	async function handleBindDefaultModel(agent: EnterprisePublishedAgent) {
-		await runAgentDefaultModelBindRequestAction({
-			agent,
-			modelConfigId: credentials[0]?.id,
-		}, {
-			navigateToPath: navigate,
-			setBindingAgent: setBindingAgentModelId,
-			clearError: () => setPlatformAgentsError(null),
-			updateAgent: platformApi.updateAgent,
-			syncQuickConfiguration: syncAgentQuickConfiguration,
-			refreshDependentViews: refetchAgentManagementDependencies,
-			handleError: (error) =>
-				setPlatformAgentsError(
-					error instanceof Error
-						? error.message
-						: agentManagementRequestText.bindModelError,
-				),
-		});
-	}
-
-	async function handleBindAvailableKnowledge(agent: EnterprisePublishedAgent) {
-		await runAgentKnowledgeBasesBindRequestAction({ agent, knowledgeBases }, {
-			navigateToPath: navigate,
-			setBindingAgent: setBindingAgentKnowledgeId,
-			clearError: () => setPlatformAgentsError(null),
-			updateAgent: platformApi.updateAgent,
-			syncQuickConfiguration: syncAgentQuickConfiguration,
-			refreshDependentViews: refetchAgentManagementDependencies,
-			handleError: (error) =>
-				setPlatformAgentsError(
-					error instanceof Error
-						? error.message
-						: agentManagementRequestText.bindKnowledgeError,
-				),
-		});
-	}
-
-	async function handleBindTemplateTools(agent: EnterprisePublishedAgent) {
-		await runAgentTemplateToolsBindRequestAction(
-			{
-				agent,
-				templates: agentTemplates,
-			},
-			{
-				setBindingAgent: setBindingAgentToolsId,
-				clearError: () => setPlatformAgentsError(null),
-				updateAgent: platformApi.updateAgent,
-				syncQuickConfiguration: syncAgentQuickConfiguration,
-				refreshDependentViews: refetchAgentManagementDependencies,
-				handleEmptyTemplateTools: () =>
-					setPlatformAgentsError(agentManagementRequestText.bindToolsError),
-				handleError: (error) =>
-					setPlatformAgentsError(
-						error instanceof Error
-							? error.message
-							: agentManagementRequestText.bindToolsError,
-					),
-			},
-		);
-	}
-
-	async function handleEnableAgentMemory(agent: EnterprisePublishedAgent) {
-		await runAgentCapabilityEnableRequestAction(
-			{
-				agent,
-				capability: 'memory',
-			},
-			{
-				setEnablingAgent: setEnablingAgentMemoryId,
-				clearError: () => setPlatformAgentsError(null),
-				updateAgent: platformApi.updateAgent,
-				syncQuickConfiguration: syncAgentQuickConfiguration,
-				refreshDependentViews: refetchAgentManagementDependencies,
-				handleError: (error) =>
-					setPlatformAgentsError(
-						error instanceof Error
-							? error.message
-							: agentManagementRequestText.enableMemoryError,
-					),
-			},
-		);
-	}
-
-	async function handleEnableAgentWorkflow(agent: EnterprisePublishedAgent) {
-		await runAgentCapabilityEnableRequestAction(
-			{
-				agent,
-				capability: 'workflow',
-			},
-			{
-				setEnablingAgent: setEnablingAgentWorkflowId,
-				clearError: () => setPlatformAgentsError(null),
-				updateAgent: platformApi.updateAgent,
-				syncQuickConfiguration: syncAgentQuickConfiguration,
-				refreshDependentViews: refetchAgentManagementDependencies,
-				handleError: (error) =>
-					setPlatformAgentsError(
-						error instanceof Error
-							? error.message
-							: agentManagementRequestText.enableWorkflowError,
-					),
-			},
-		);
-	}
+	const {
+		handleBindAvailableKnowledge,
+		handleBindDefaultModel,
+		handleBindTemplateTools,
+		handleEnableAgentMemory,
+		handleEnableAgentWorkflow,
+	} = createPlatformAgentQuickConfigurationHandlers({
+		credentials,
+		knowledgeBases,
+		templates: agentTemplates,
+		requestText: agentManagementRequestText,
+		navigateToPath: navigate,
+		setPlatformAgentsError,
+		setBindingAgentModel: setBindingAgentModelId,
+		setBindingAgentKnowledge: setBindingAgentKnowledgeId,
+		setBindingAgentTools: setBindingAgentToolsId,
+		setEnablingAgentMemory: setEnablingAgentMemoryId,
+		setEnablingAgentWorkflow: setEnablingAgentWorkflowId,
+		updateAgent: platformApi.updateAgent,
+		syncQuickConfiguration: syncAgentQuickConfiguration,
+		refreshDependentViews: refetchAgentManagementDependencies,
+	});
 
 	async function runEnterpriseAgent(options?: {
 		agentId?: string;
