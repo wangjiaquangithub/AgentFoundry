@@ -34,6 +34,7 @@ import { DashboardOperationalHealthSection } from './DashboardOperationalHealthS
 import { DashboardOpsPanel } from './DashboardOpsPanel';
 import { DashboardOperationsSnapshotSection } from './DashboardOperationsSnapshotSection';
 import { DashboardTenantAccessSection } from './DashboardTenantAccessSection';
+import { DashboardWorkflowAutomationSection } from './DashboardWorkflowAutomationSection';
 import { DashboardWorkbenchSection } from './DashboardWorkbenchSection';
 import { LaunchpadPanel } from './LaunchpadPanel';
 import { MembersPanel } from './MembersPanel';
@@ -45,15 +46,11 @@ import { RuntimeStatusPanel } from './RuntimeStatusPanel';
 import { TenantGovernancePanel } from './TenantGovernancePanel';
 import { ToolCatalogPanel } from './ToolCatalogPanel';
 import { ToolRunnerPanel } from './ToolRunnerPanel';
-import { TriggerOpsPanel } from './TriggerOpsPanel';
-import { WorkflowOpsPanel } from './WorkflowOpsPanel';
 import { WorkflowRunnerPanel } from './WorkflowRunnerPanel';
 import { PlatformNotice, StateBadge } from './common';
-import { getFrequencyLabel, parseCronExpression } from '../../schedule/schedule-utils';
 import {
 	countArrayField,
 	credentialLabel,
-	formatScheduleAgentLabel,
 	formatTimestamp,
 	knowledgeBaseLabel,
 	normalizeWorkflowInputs,
@@ -710,97 +707,30 @@ export function DashboardViewPage({
 					handleInspectIdentityFailures={handleInspectIdentityFailures}
 				/>
 
-				<WorkflowOpsPanel
-					stats={workflowOpsStats}
-					selectedWorkflowName={selectedWorkflowName}
-					selectedWorkflowTemplate={selectedWorkflowTemplate}
-					selectedWorkflowSteps={selectedWorkflowSteps}
+				<DashboardWorkflowAutomationSection
+					t={t}
+					activePlatformAgents={activePlatformAgents}
+					agents={agents}
+					creatingRunApproval={creatingRunApproval}
+					handleCreateRunApproval={handleCreateRunApproval}
+					handleRunEnterpriseWorkflow={handleRunEnterpriseWorkflow}
+					handleUseApproval={handleUseApproval}
+					navigate={navigate}
+					recentSchedules={recentSchedules}
+					runningWorkflow={runningWorkflow}
+					schedulesError={schedulesError}
+					schedulesLoading={schedulesLoading}
+					scrollToGovernance={scrollToGovernance}
+					scrollToWorkflowRunner={scrollToWorkflowRunner}
 					selectedWorkflowDisabled={selectedWorkflowDisabled}
 					selectedWorkflowLastRun={selectedWorkflowLastRun}
-					workflowPendingApprovals={workflowPendingApprovals}
-					creatingRunApproval={creatingRunApproval}
-					runningWorkflow={runningWorkflow}
-					onCreateRunApproval={handleCreateRunApproval}
-					onRunWorkflow={handleRunEnterpriseWorkflow}
-					onScrollToWorkflowRunner={scrollToWorkflowRunner}
-					onScrollToGovernance={scrollToGovernance}
-					onUseApproval={handleUseApproval}
-					labels={{
-						eyebrow: t('platform.workflowOps.eyebrow'),
-						title: t('platform.workflowOps.title'),
-						description: t('platform.workflowOps.description'),
-						requestingApproval: t('platform.workflowOps.requestingApproval'),
-						requestApproval: t('platform.workflowOps.requestApproval'),
-						running: t('platform.workflowOps.running'),
-						runCurrent: t('platform.workflowOps.runCurrent'),
-						fallbackDescription: t('platform.workflowOps.fallbackDescription'),
-						disabled: t('platform.workflowRunner.disabled'),
-						enabled: t('platform.workflowRunner.enabled'),
-						stepPreview: t('platform.workflowOps.stepPreview'),
-						noSteps: t('platform.workflowOps.noSteps'),
-						editInputs: t('platform.workflowOps.editInputs'),
-						viewAudit: t('platform.workflowOps.viewAudit'),
-						latestRun: t('platform.workflowOps.latestRun'),
-						history: t('platform.workflowOps.history'),
-						status: (key) => t(`platform.workflowRunner.${key}`),
-						noRuns: t('platform.workflowOps.noRuns'),
-						approvalQueue: t('platform.workflowOps.approvalQueue'),
-						review: t('platform.workflowOps.review'),
-						noApprovals: t('platform.workflowOps.noApprovals'),
-					}}
-				/>
-
-				<TriggerOpsPanel
-					stats={triggerOpsStats}
-					triggerOpsSummary={triggerOpsSummary}
 					selectedWorkflowName={selectedWorkflowName}
-					recentSchedules={recentSchedules}
-					schedulesLoading={schedulesLoading}
-					schedulesError={schedulesError}
-					creatingRunApproval={creatingRunApproval}
-					runningWorkflow={runningWorkflow}
-					selectedWorkflowDisabled={selectedWorkflowDisabled}
-					onOpenSchedules={() => navigate('/schedule')}
-					onCreateRunApproval={handleCreateRunApproval}
-					onRunWorkflow={handleRunEnterpriseWorkflow}
-					onScrollToWorkflowRunner={scrollToWorkflowRunner}
-					onScrollToGovernance={scrollToGovernance}
-					scheduleFrequencyLabel={(schedule) => {
-						const parsed = parseCronExpression(
-							schedule.data.cron_expression,
-							schedule.data.started_at,
-						);
-						return `${getFrequencyLabel(parsed, t)} · ${parsed.time}`;
-					}}
-					scheduleAgentLabel={(schedule) =>
-						formatScheduleAgentLabel(
-							schedule,
-							activePlatformAgents,
-							agents,
-							t('platform.triggerOps.unknownAgent'),
-						)
-					}
-					labels={{
-						eyebrow: t('platform.triggerOps.eyebrow'),
-						title: t('platform.triggerOps.title'),
-						description: t('platform.triggerOps.description'),
-						createSchedule: t('platform.triggerOps.createSchedule'),
-						requestApproval: t('platform.triggerOps.requestApproval'),
-						running: t('platform.workflowOps.running'),
-						runWorkflow: t('platform.triggerOps.runWorkflow'),
-						triggerPlan: t('platform.triggerOps.triggerPlan'),
-						manualTrigger: t('platform.triggerOps.manualTrigger'),
-						configureWorkflow: t('platform.triggerOps.configureWorkflow'),
-						approvalGate: t('platform.triggerOps.approvalGate'),
-						viewGovernance: t('platform.triggerOps.viewGovernance'),
-						recentSchedules: t('platform.triggerOps.recentSchedules'),
-						openSchedules: t('platform.triggerOps.openSchedules'),
-						loadFailed: t('platform.triggerOps.loadFailed'),
-						noSchedules: t('platform.triggerOps.noSchedules'),
-						enabledStatus: t('platform.triggerOps.enabledStatus'),
-						disabled: t('common.disabled'),
-						updatedAt: (time) => t('platform.triggerOps.updatedAt', { time }),
-					}}
+					selectedWorkflowSteps={selectedWorkflowSteps}
+					selectedWorkflowTemplate={selectedWorkflowTemplate}
+					triggerOpsStats={triggerOpsStats}
+					triggerOpsSummary={triggerOpsSummary}
+					workflowOpsStats={workflowOpsStats}
+					workflowPendingApprovals={workflowPendingApprovals}
 				/>
 
 				<DashboardOpsPanel
