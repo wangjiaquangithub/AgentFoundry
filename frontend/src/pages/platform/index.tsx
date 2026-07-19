@@ -140,8 +140,8 @@ import {
 	auditFiltersForTenant,
 	auditQueryFromFilters,
 	failedAuditFiltersForIdentity,
-	mergeApprovalFilters,
-	mergeAuditFilters,
+	runApprovalFilterTargetAction,
+	runAuditFilterTargetAction,
 } from './platform-filter-builders';
 import {
 	agentSetupStepAction,
@@ -1962,23 +1962,29 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	function handleInspectIdentityAudit(identity: EnterpriseIdentity) {
 		const filters = auditFiltersForIdentity(identity);
-		setAuditFilters((previous) => mergeAuditFilters(previous, filters));
-		void refetchAuditEvents(filters);
-		window.setTimeout(scrollToGovernance, 0);
+		runAuditFilterTargetAction(filters, {
+			patchAuditFilters: setAuditFilters,
+			refetchAuditEvents,
+			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
+		});
 	}
 
 	function handleInspectIdentityApprovals(identity: EnterpriseIdentity) {
 		const filters = approvalFiltersForIdentity(identity);
-		setApprovalFilters((previous) => mergeApprovalFilters(previous, filters));
-		void refetchApprovals(filters);
-		window.setTimeout(scrollToGovernance, 0);
+		runApprovalFilterTargetAction(filters, {
+			patchApprovalFilters: setApprovalFilters,
+			refetchApprovals,
+			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
+		});
 	}
 
 	function handleInspectIdentityFailures(identity: EnterpriseIdentity) {
 		const filters = failedAuditFiltersForIdentity(identity);
-		setAuditFilters((previous) => mergeAuditFilters(previous, filters));
-		void refetchAuditEvents(filters);
-		window.setTimeout(scrollToGovernance, 0);
+		runAuditFilterTargetAction(filters, {
+			patchAuditFilters: setAuditFilters,
+			refetchAuditEvents,
+			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
+		});
 	}
 
 	function handleUseTenant(tenant: string) {
@@ -1997,9 +2003,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	function handleInspectTenantAudit(tenant: string) {
 		const filters = auditFiltersForTenant(tenant);
-		setAuditFilters((previous) => mergeAuditFilters(previous, filters));
-		void refetchAuditEvents(filters);
-		window.setTimeout(scrollToGovernance, 0);
+		runAuditFilterTargetAction(filters, {
+			patchAuditFilters: setAuditFilters,
+			refetchAuditEvents,
+			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
+		});
 	}
 
 	function handleOpenMemoryOperation(item: MemoryOperationsItem) {
@@ -2021,16 +2029,20 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	function handleInspectMemoryOperationAudit(item: MemoryOperationsItem) {
 		const filters = auditFiltersForMemoryOperation(item);
-		setAuditFilters((previous) => mergeAuditFilters(previous, filters));
-		void refetchAuditEvents(filters);
-		window.setTimeout(scrollToGovernance, 0);
+		runAuditFilterTargetAction(filters, {
+			patchAuditFilters: setAuditFilters,
+			refetchAuditEvents,
+			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
+		});
 	}
 
 	function handleInspectTenantApprovals(tenant: string) {
 		const filters = approvalFiltersForTenant(tenant);
-		setApprovalFilters((previous) => mergeApprovalFilters(previous, filters));
-		void refetchApprovals(filters);
-		window.setTimeout(scrollToGovernance, 0);
+		runApprovalFilterTargetAction(filters, {
+			patchApprovalFilters: setApprovalFilters,
+			refetchApprovals,
+			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
+		});
 	}
 
 	function handlePrepareTenantAgent(tenant: string) {
@@ -2058,9 +2070,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		}
 
 		const filters = auditFiltersForAgentRunEvidence(agentRunEvidence);
-		setAuditFilters((previous) => mergeAuditFilters(previous, filters));
-		void refetchAuditEvents(filters);
-		window.setTimeout(scrollToGovernance, 0);
+		runAuditFilterTargetAction(filters, {
+			patchAuditFilters: setAuditFilters,
+			refetchAuditEvents,
+			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
+		});
 	}
 
 	function handleStartPublishing() {

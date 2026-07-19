@@ -4,6 +4,7 @@ import type { ApprovalFiltersState, AuditFiltersState } from './platform-default
 
 type ApprovalFilterPatch = Partial<ApprovalFiltersState>;
 type AuditFilterPatch = Partial<AuditFiltersState>;
+type NavigationHandler = () => void;
 
 export function mergeAuditFilters(
 	current: AuditFiltersState,
@@ -99,4 +100,44 @@ export function auditFiltersForAgentRunEvidence(evidence: {
 		agent_id: evidence.agent_id,
 		tool_name: firstToolName ? String(firstToolName) : '',
 	};
+}
+
+export type AuditFilterTargetActionHandlers = {
+	patchAuditFilters: (
+		updater: (current: AuditFiltersState) => AuditFiltersState,
+	) => void;
+	refetchAuditEvents: (
+		filters: AuditFilterPatch,
+	) => void | Promise<void>;
+	scrollToGovernance: NavigationHandler;
+};
+
+export function runAuditFilterTargetAction(
+	filters: AuditFilterPatch,
+	handlers: AuditFilterTargetActionHandlers,
+) {
+	handlers.patchAuditFilters((previous) => mergeAuditFilters(previous, filters));
+	void handlers.refetchAuditEvents(filters);
+	handlers.scrollToGovernance();
+}
+
+export type ApprovalFilterTargetActionHandlers = {
+	patchApprovalFilters: (
+		updater: (current: ApprovalFiltersState) => ApprovalFiltersState,
+	) => void;
+	refetchApprovals: (
+		filters: ApprovalFilterPatch,
+	) => void | Promise<void>;
+	scrollToGovernance: NavigationHandler;
+};
+
+export function runApprovalFilterTargetAction(
+	filters: ApprovalFilterPatch,
+	handlers: ApprovalFilterTargetActionHandlers,
+) {
+	handlers.patchApprovalFilters((previous) =>
+		mergeApprovalFilters(previous, filters),
+	);
+	void handlers.refetchApprovals(filters);
+	handlers.scrollToGovernance();
 }
