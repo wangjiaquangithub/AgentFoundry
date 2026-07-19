@@ -53,12 +53,15 @@ import { usePlatformPageRefs } from './platform-page-refs';
 import {
 	agentWorkflowPrimeInputs,
 	agentConversationTurnFromRunResponse,
+	agentRunResultAfterHistoryRefresh,
+	clearAgentConversationTurns,
 	clearAgentRunsParams,
 	enterpriseAgentRunPayload,
 	enterpriseToolRunPayload,
 	enterpriseWorkflowRunPayload,
 	latestAgentRunResponse,
 	mergeAgentConversationTurn,
+	replaceAgentConversationTurns,
 	scenarioWorkflowRunTarget,
 	selectedToolInputs,
 	type AgentConversationMap,
@@ -1359,19 +1362,16 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				limit: 20,
 			});
 			const turns = response.runs.map(mapAgentRunToConversationTurn);
-			setAgentConversations((current) => ({
-				...current,
-				[agentId]: turns,
-			}));
-			setAgentRunResult((current) => {
-				if (
-					current?.agent_id === agentId &&
-					turns.some((turn) => turn.response.turn_id === current.turn_id)
-				) {
-					return current;
-				}
-				return turns[0]?.response ?? null;
-			});
+			setAgentConversations((current) =>
+				replaceAgentConversationTurns({
+					agentConversations: current,
+					agentId,
+					turns,
+				}),
+			);
+			setAgentRunResult((current) =>
+				agentRunResultAfterHistoryRefresh({ current, agentId, turns }),
+			);
 		} catch (error) {
 			setAgentRunsError(
 				error instanceof Error ? error.message : agentRunnerRequestText.historyLoadError,
@@ -1917,10 +1917,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setAgentRunsError(null);
 		try {
 			await platformApi.clearAgentRuns(clearAgentRunsParams({ agentId, userId }));
-			setAgentConversations((current) => ({
-				...current,
-				[agentId]: [],
-			}));
+			setAgentConversations((current) =>
+				clearAgentConversationTurns(current, agentId),
+			);
 			setAgentRunResult(null);
 			setAgentRunError(null);
 		} catch (error) {

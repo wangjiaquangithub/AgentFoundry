@@ -43,6 +43,45 @@ export function latestAgentRunResponse(
 	return agentConversations[agentId]?.[0]?.response ?? null;
 }
 
+export function replaceAgentConversationTurns(values: {
+	agentConversations: AgentConversationMap;
+	agentId: string;
+	turns: EnterpriseAgentConversationTurn[];
+}): AgentConversationMap {
+	return {
+		...values.agentConversations,
+		[values.agentId]: values.turns,
+	};
+}
+
+export function clearAgentConversationTurns(
+	agentConversations: AgentConversationMap,
+	agentId: string,
+): AgentConversationMap {
+	return replaceAgentConversationTurns({
+		agentConversations,
+		agentId,
+		turns: [],
+	});
+}
+
+export function agentRunResultAfterHistoryRefresh(values: {
+	current: EnterpriseAgentRunResponse | null;
+	agentId: string;
+	turns: EnterpriseAgentConversationTurn[];
+}): EnterpriseAgentRunResponse | null {
+	if (
+		values.current?.agent_id === values.agentId &&
+		values.turns.some(
+			(turn) => turn.response.turn_id === values.current?.turn_id,
+		)
+	) {
+		return values.current;
+	}
+
+	return values.turns[0]?.response ?? null;
+}
+
 export function mergeAgentConversationTurn(
 	agentConversations: AgentConversationMap,
 	turn: EnterpriseAgentConversationTurn,
