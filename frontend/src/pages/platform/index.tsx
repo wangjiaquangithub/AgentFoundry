@@ -265,6 +265,7 @@ import {
 	type PublishFormState,
 } from './platform-defaults';
 import { platformAppCenterDisplayStateForStatus } from './platform-app-center-display';
+import { platformConnectorDisplayStateForStatus } from './platform-connector-display';
 import { platformGovernanceDisplayStateForStatus } from './platform-governance-display';
 import {
 	agentAccessAllowed,
@@ -279,7 +280,6 @@ import {
 	appCenterDetailResourceValuesForSelection,
 	auditStatsForSummary,
 	capabilityItemsForStatus,
-	connectorOperationsStateForStatus,
 	mapAgentRunToConversationTurn,
 	memoryOperationsStateForConversations,
 	nextAgentSetupStepForSteps,
@@ -706,12 +706,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		agentRunResult,
 		agentRoutingLabels(t),
 	);
-	const connectorOperationsState = connectorOperationsStateForStatus({
+	const connectorDisplay = platformConnectorDisplayStateForStatus({
 		connectors,
 		form: connectorTestForm,
 		testResult: connectorTestResult,
 		labels: connectorOperationsLabels(t),
 	});
+	const connectorOperationsState = connectorDisplay.operationsState;
 	const connectorState = connectorOperationsState.connectorState;
 	const savedConnectorConfigs = connectorOperationsState.savedConnectorConfigs;
 	const activeConnectorTenant = connectorOperationsState.activeConnectorTenant;
