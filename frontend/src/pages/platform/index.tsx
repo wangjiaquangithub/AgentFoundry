@@ -55,10 +55,7 @@ import {
 } from './platform-agent-runner';
 import {
 	createPlatformApprovalHandlers,
-	runApprovalApproveAndContinueAction,
 	runApprovalLoadAction,
-	runApprovalRunCreateAction,
-	type PlatformApprovalRunType,
 } from './platform-approval-helpers';
 import { runPlatformAgentLoadAction } from './platform-agent-management-helpers';
 import {
@@ -1318,24 +1315,34 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	const {
+		handleApproveAndRun,
 		handleCreateApproval,
+		handleCreateRunApproval,
 		handleDecideApproval,
 		handlePrimeToolApproval,
 		handleUseApproval,
 	} = createPlatformApprovalHandlers(
 		{
 			approvalForm,
+			agentQuestion,
 			defaultApprovalReason: defaultApprovalForm.reason,
 			defaultApprovalInputValue: defaultApprovalForm.input_value,
 			selectedIdentityUserId,
 			selectedRunAgentId,
+			selectedToolInputKey,
+			selectedToolInputValue,
+			selectedToolName,
+			selectedWorkflowType,
 			username,
 			availableToolItems,
 			toolInputConfig: enterpriseToolInputConfig,
+			workflowInputs,
 			text: approvalRequestText,
 		},
 		{
 			setCreatingApproval,
+			setCreatingRunApproval,
+			setContinuingApprovalId,
 			setApprovalError,
 			createApproval: platformApi.createApproval,
 			approveApproval: platformApi.approveApproval,
@@ -1350,110 +1357,24 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setAgentQuestion,
 			clearAgentRunError: () => setAgentRunError(null),
 			scrollToAgentRunner,
+			runAgent: (options) => runEnterpriseAgent(options),
 			selectToolName: setSelectedToolName,
 			patchToolInputs: setToolInputs,
 			setToolApprovalId,
 			clearToolRunError: () => setToolRunError(null),
+			setToolRunError,
 			scrollToToolRunner,
+			runTool: (options) => runEnterpriseTool(options),
 			selectWorkflowType: setSelectedWorkflowType,
 			setWorkflowInputs,
 			setWorkflowApprovalId,
 			clearWorkflowRunError: () => setWorkflowRunError(null),
+			setWorkflowRunError,
 			scrollToWorkflowRunner,
+			runWorkflow: (options) => runEnterpriseWorkflow(options),
 			scrollToGovernance,
 		},
 	);
-
-	async function handleCreateRunApproval(
-		requestType: PlatformApprovalRunType,
-		reason?: string,
-	): Promise<boolean> {
-		return runApprovalRunCreateAction(
-			{
-				requestType,
-				reason,
-				runApprovalReason: approvalRequestText.runApprovalReason,
-				selectedToolInputKey,
-				selectedToolInputValue,
-				workflowInputs,
-				selectedIdentityUserId,
-				selectedRunAgentId,
-				selectedToolName,
-				selectedWorkflowType,
-				username,
-			},
-			{
-				setCreatingRunApproval,
-				clearApprovalError: () => setApprovalError(null),
-				createApproval: platformApi.createApproval,
-				setApprovalRequests,
-				clearRunError: (type) => {
-					if (type === 'tool_run') {
-						setToolRunError(null);
-					} else {
-						setWorkflowRunError(null);
-					}
-				},
-				refreshDependentViews: refetchApprovalDependencies,
-				scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
-				handleError: (type, error) => {
-					const message =
-						error instanceof Error
-							? error.message
-							: approvalRequestText.createError;
-					if (type === 'tool_run') {
-						setToolRunError(message);
-					} else {
-						setWorkflowRunError(message);
-					}
-				},
-			},
-		);
-	}
-
-	async function handleApproveAndRun(approval: EnterpriseApprovalRequestItem) {
-		await runApprovalApproveAndContinueAction(
-			{
-				approval,
-				agentQuestion,
-				inputConfig: approval.tool_name
-					? enterpriseToolInputConfig[approval.tool_name]
-					: undefined,
-				username,
-				text: approvalRequestText,
-			},
-			{
-				setContinuingApprovalId,
-				clearApprovalError: () => setApprovalError(null),
-				approveApproval: platformApi.approveApproval,
-				setApprovalRequests,
-				refreshDependentViews: refetchApprovalDependencies,
-				selectIdentityUser: setSelectedIdentityUserId,
-				selectRunAgent: setSelectedRunAgentId,
-				setAgentApprovalId,
-				setAgentQuestion,
-				scrollToAgentRunner: () => window.setTimeout(scrollToAgentRunner, 0),
-				runAgent: runEnterpriseAgent,
-				selectToolName: setSelectedToolName,
-				patchToolInputs: setToolInputs,
-				setToolApprovalId,
-				scrollToToolRunner: () => window.setTimeout(scrollToToolRunner, 0),
-				runTool: runEnterpriseTool,
-				selectWorkflowType: setSelectedWorkflowType,
-				setWorkflowInputs,
-				setWorkflowApprovalId,
-				scrollToWorkflowRunner: () =>
-					window.setTimeout(scrollToWorkflowRunner, 0),
-				runWorkflow: runEnterpriseWorkflow,
-				handleError: (error) =>
-					setApprovalError(
-						error instanceof Error
-							? error.message
-							: approvalRequestText.approveAndRunError,
-					),
-			},
-		);
-	}
 
 	async function refetchOpsTaskResolveDependencies() {
 		await refetchPlatform();
