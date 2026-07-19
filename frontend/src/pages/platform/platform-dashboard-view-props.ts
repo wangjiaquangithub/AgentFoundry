@@ -42,6 +42,22 @@ type DashboardAgentRunnerViewProps = Pick<
 	| 'setAgentRunResult'
 >;
 
+type DashboardAppCenterViewProps = Pick<
+	DashboardViewPageProps,
+	| 'agentResourceText'
+	| 'appCenterAgents'
+	| 'appCenterDetailIssues'
+	| 'appCenterDetailResources'
+	| 'appCenterDetailStatus'
+	| 'appCenterPrimaryDisabled'
+	| 'handleAppCenterDetailPrimaryAction'
+	| 'handleAppCenterDetailSecondaryAction'
+	| 'handleAppCenterPrimaryAction'
+	| 'inspectedAppCenterAgent'
+	| 'inspectedAppCenterTemplate'
+	| 'setSelectedAppCenterItem'
+>;
+
 type DashboardApprovalsViewProps = Pick<
 	DashboardViewPageProps,
 	| 'approvalError'
@@ -218,6 +234,12 @@ export function createPlatformDashboardViewProps(
 export function createPlatformDashboardAgentRunnerViewProps(
 	props: DashboardAgentRunnerViewProps,
 ): DashboardAgentRunnerViewProps {
+	return props;
+}
+
+export function createPlatformDashboardAppCenterViewProps(
+	props: DashboardAppCenterViewProps,
+): DashboardAppCenterViewProps {
 	return props;
 }
 
