@@ -81,9 +81,11 @@ import {
 } from './platform-approval-helpers';
 import {
 	connectorFormPatchFromSavedConfig,
+	connectorFormWithoutToken,
 	connectorFormWithPlatformDefaults,
 	connectorSavePayloadFromForm,
 	connectorTestPayloadFromForm,
+	connectorsWithSavedConfigs,
 } from './platform-connector-helpers';
 import {
 	formatPlatformConfigExport,
@@ -1222,17 +1224,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				connectorSavePayloadFromForm(connectorTestForm, baseUrl),
 			);
 			setConnectors((previous) =>
-				previous
-					? {
-							...previous,
-							saved_configs: response.saved_configs,
-						}
-					: previous,
+				connectorsWithSavedConfigs(previous, response.saved_configs),
 			);
-			setConnectorTestForm((previous) => ({
-				...previous,
-				token: '',
-			}));
+			setConnectorTestForm(connectorFormWithoutToken);
 			setConnectorSaveSuccess(
 				connectorRequestText.saveSuccessWithTenant(response.config.tenant),
 			);

@@ -75,6 +75,27 @@ export function connectorFormWithPlatformDefaults(values: {
 	};
 }
 
+export function connectorsWithSavedConfigs(
+	current: EnterprisePlatformConnectorsResponse | null,
+	savedConfigs: EnterprisePlatformConnectorsResponse['saved_configs'],
+) {
+	return current
+		? {
+				...current,
+				saved_configs: savedConfigs,
+			}
+		: current;
+}
+
+export function connectorFormWithoutToken(
+	form: ConnectorTestFormState,
+): ConnectorTestFormState {
+	return {
+		...form,
+		token: '',
+	};
+}
+
 export function connectorSavePayloadFromForm(
 	form: ConnectorTestFormState,
 	baseUrl: string,
