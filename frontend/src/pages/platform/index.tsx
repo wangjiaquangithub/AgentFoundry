@@ -242,14 +242,13 @@ import {
 	agentEditDraft,
 	agentPublishRequestTarget,
 	defaultPublishFormForTemplate,
-	preparedTenantAgentTarget,
 	publishFormWithPatch,
 	quickPublishTarget,
 	runAgentArchiveAction,
 	runAgentEditDraftAction,
 	runAgentEditCancelTargetAction,
 	runAgentPublishAction,
-	runPreparedTenantAgentTargetAction,
+	runPrepareTenantAgentAction,
 	runPublishListToggleAction,
 	runPublishTenantChangeAction,
 	runQuickPublishAction,
@@ -2022,15 +2021,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handlePrepareTenantAgent(tenant: string) {
-		const target = preparedTenantAgentTarget({
-			defaultTemplate: defaultAgentTemplate,
-			currentUserTenant: platformStatus?.current_user.tenant,
-			credentials,
-			knowledgeBases,
-		});
-		runPreparedTenantAgentTargetAction(
-			target,
-			{ tenant },
+		runPrepareTenantAgentAction(
+			{
+				defaultTemplate: defaultAgentTemplate,
+				currentUserTenant: platformStatus?.current_user.tenant,
+				credentials,
+				knowledgeBases,
+				tenant,
+			},
 			{
 				clearEditingAgent: () => setEditingAgentId(null),
 				selectTemplate: setSelectedTemplateId,

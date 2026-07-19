@@ -394,6 +394,17 @@ export function runPreparedTenantAgentTargetAction(
 	handlers.scrollToAgentManagement();
 }
 
+export function runPrepareTenantAgentAction(
+	values: Parameters<typeof preparedTenantAgentTarget>[0] & {
+		tenant: string;
+	},
+	handlers: PreparedTenantAgentTargetActionHandlers,
+) {
+	const target = preparedTenantAgentTarget(values);
+
+	runPreparedTenantAgentTargetAction(target, { tenant: values.tenant }, handlers);
+}
+
 export function publishFormFromPublishedAgent(
 	agent: EnterprisePublishedAgent,
 ): PublishFormState {
