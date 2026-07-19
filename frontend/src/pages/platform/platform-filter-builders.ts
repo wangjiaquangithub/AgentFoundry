@@ -5,6 +5,20 @@ import type { ApprovalFiltersState, AuditFiltersState } from './platform-default
 type ApprovalFilterPatch = Partial<ApprovalFiltersState>;
 type AuditFilterPatch = Partial<AuditFiltersState>;
 
+export function mergeAuditFilters(
+	current: AuditFiltersState,
+	patch: AuditFilterPatch,
+): AuditFiltersState {
+	return { ...current, ...patch };
+}
+
+export function mergeApprovalFilters(
+	current: ApprovalFiltersState,
+	patch: ApprovalFilterPatch,
+): ApprovalFiltersState {
+	return { ...current, ...patch };
+}
+
 export function auditFiltersForIdentity(identity: EnterpriseIdentity): AuditFilterPatch {
 	return { tenant: identity.tenant, user_id: identity.user_id };
 }

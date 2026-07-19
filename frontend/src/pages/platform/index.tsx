@@ -116,6 +116,8 @@ import {
 	auditFiltersForMemoryOperation,
 	auditFiltersForTenant,
 	failedAuditFiltersForIdentity,
+	mergeApprovalFilters,
+	mergeAuditFilters,
 } from './platform-filter-builders';
 import {
 	capabilityNavigationActions,
@@ -1938,21 +1940,21 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	function handleInspectIdentityAudit(identity: EnterpriseIdentity) {
 		const filters = auditFiltersForIdentity(identity);
-		setAuditFilters((previous) => ({ ...previous, ...filters }));
+		setAuditFilters((previous) => mergeAuditFilters(previous, filters));
 		void refetchAuditEvents(filters);
 		window.setTimeout(scrollToGovernance, 0);
 	}
 
 	function handleInspectIdentityApprovals(identity: EnterpriseIdentity) {
 		const filters = approvalFiltersForIdentity(identity);
-		setApprovalFilters((previous) => ({ ...previous, ...filters }));
+		setApprovalFilters((previous) => mergeApprovalFilters(previous, filters));
 		void refetchApprovals(filters);
 		window.setTimeout(scrollToGovernance, 0);
 	}
 
 	function handleInspectIdentityFailures(identity: EnterpriseIdentity) {
 		const filters = failedAuditFiltersForIdentity(identity);
-		setAuditFilters((previous) => ({ ...previous, ...filters }));
+		setAuditFilters((previous) => mergeAuditFilters(previous, filters));
 		void refetchAuditEvents(filters);
 		window.setTimeout(scrollToGovernance, 0);
 	}
@@ -1972,7 +1974,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	function handleInspectTenantAudit(tenant: string) {
 		const filters = auditFiltersForTenant(tenant);
-		setAuditFilters((previous) => ({ ...previous, ...filters }));
+		setAuditFilters((previous) => mergeAuditFilters(previous, filters));
 		void refetchAuditEvents(filters);
 		window.setTimeout(scrollToGovernance, 0);
 	}
@@ -1996,14 +1998,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	function handleInspectMemoryOperationAudit(item: MemoryOperationsItem) {
 		const filters = auditFiltersForMemoryOperation(item);
-		setAuditFilters((previous) => ({ ...previous, ...filters }));
+		setAuditFilters((previous) => mergeAuditFilters(previous, filters));
 		void refetchAuditEvents(filters);
 		window.setTimeout(scrollToGovernance, 0);
 	}
 
 	function handleInspectTenantApprovals(tenant: string) {
 		const filters = approvalFiltersForTenant(tenant);
-		setApprovalFilters((previous) => ({ ...previous, ...filters }));
+		setApprovalFilters((previous) => mergeApprovalFilters(previous, filters));
 		void refetchApprovals(filters);
 		window.setTimeout(scrollToGovernance, 0);
 	}
@@ -2033,7 +2035,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		}
 
 		const filters = auditFiltersForAgentRunEvidence(agentRunEvidence);
-		setAuditFilters((previous) => ({ ...previous, ...filters }));
+		setAuditFilters((previous) => mergeAuditFilters(previous, filters));
 		void refetchAuditEvents(filters);
 		window.setTimeout(scrollToGovernance, 0);
 	}
