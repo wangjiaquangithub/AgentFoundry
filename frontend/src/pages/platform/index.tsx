@@ -235,11 +235,11 @@ import {
 	agentDefaultModelPatch,
 	agentKnowledgeBasesBindTarget,
 	agentKnowledgeBasesPatch,
+	agentPublishRequestTarget,
 	agentPublishPayloadFromForm,
 	agentQuickConfigurationSyncResult,
 	agentTemplateToolsBindTarget,
 	agentTemplateToolsPatch,
-	buildAgentConfigurationPayloadFromForm,
 	defaultPublishFormForTemplate,
 	nextPublishedAgentIdAfterArchive,
 	publishFormFromPublishedAgent,
@@ -2090,10 +2090,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		}
 	}
 
-	function buildAgentConfigurationPayload() {
-		return buildAgentConfigurationPayloadFromForm(publishForm);
-	}
-
 	function handleEditAgent(agent: EnterprisePublishedAgent) {
 		setSelectedTemplateId(agent.template_id);
 		setEditingAgentId(agent.id);
@@ -2124,22 +2120,22 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handlePublishAgent() {
-		if (!selectedTemplateId) {
+		const target = agentPublishRequestTarget({
+			selectedTemplateId,
+			editingAgentId,
+			form: publishForm,
+		});
+		if (target.type === 'skip') {
 			return;
 		}
 
-		setPublishingTemplateId(selectedTemplateId);
+		setPublishingTemplateId(target.publishingTemplateId);
 		setPlatformAgentsError(null);
 		try {
-			const payload = buildAgentConfigurationPayload();
-			const response = editingAgentId
-				? await platformApi.updateAgent(editingAgentId, payload)
-				: await platformApi.publishAgent(
-						agentPublishPayloadFromForm({
-							templateId: selectedTemplateId,
-							form: publishForm,
-						}),
-					);
+			const response =
+				target.type === 'update'
+					? await platformApi.updateAgent(target.agentId, target.payload)
+					: await platformApi.publishAgent(target.payload);
 			const publishedAgentId = publishedAgentPrimeTarget(response.agent);
 			if (publishedAgentId) {
 				setLastPublishedAgentId(publishedAgentId);

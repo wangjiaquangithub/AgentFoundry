@@ -41,6 +41,19 @@ export type QuickPublishTarget =
 	| { type: 'navigate'; path: '/credential' }
 	| { type: 'start-publishing' }
 	| { type: 'publish'; template: EnterpriseAgentTemplate };
+export type AgentPublishRequestTarget =
+	| { type: 'skip' }
+	| {
+			type: 'update';
+			agentId: string;
+			publishingTemplateId: string;
+			payload: EnterpriseAgentUpdateRequest;
+	  }
+	| {
+			type: 'publish';
+			publishingTemplateId: string;
+			payload: EnterpriseAgentPublishRequest;
+	  };
 
 export type DefaultPublishFormOptions = {
 	template: EnterpriseAgentTemplate;
@@ -114,6 +127,34 @@ export function agentPublishPayloadFromForm(values: {
 		template_id: values.templateId,
 		...buildAgentConfigurationPayloadFromForm(values.form),
 	};
+}
+
+export function agentPublishRequestTarget(values: {
+	selectedTemplateId: string | null;
+	editingAgentId: string | null;
+	form: PublishFormState;
+}): AgentPublishRequestTarget {
+	if (!values.selectedTemplateId) {
+		return { type: 'skip' };
+	}
+
+	const payload = buildAgentConfigurationPayloadFromForm(values.form);
+
+	return values.editingAgentId
+		? {
+				type: 'update',
+				agentId: values.editingAgentId,
+				publishingTemplateId: values.selectedTemplateId,
+				payload,
+			}
+		: {
+				type: 'publish',
+				publishingTemplateId: values.selectedTemplateId,
+				payload: {
+					template_id: values.selectedTemplateId,
+					...payload,
+				},
+			};
 }
 
 export function publishedAgentPrimeTarget(
