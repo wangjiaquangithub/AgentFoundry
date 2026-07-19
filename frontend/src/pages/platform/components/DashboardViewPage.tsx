@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-import { AuditEventsPanel } from './AuditEventsPanel';
 import { CapabilitiesPanel } from './CapabilitiesPanel';
 import { ConfigManagementPanel } from './ConfigManagementPanel';
 import { DashboardAgentManagementSection } from './DashboardAgentManagementSection';
@@ -18,6 +17,7 @@ import { DashboardAgentRunnerSection } from './DashboardAgentRunnerSection';
 import { DashboardAgentRunNowSection } from './DashboardAgentRunNowSection';
 import { DashboardApplicationSection } from './DashboardApplicationSection';
 import { DashboardApprovalsSection } from './DashboardApprovalsSection';
+import { DashboardAuditEventsSection } from './DashboardAuditEventsSection';
 import { DashboardConnectorsSection } from './DashboardConnectorsSection';
 import { DashboardLaunchOrchestrationSection } from './DashboardLaunchOrchestrationSection';
 import { DashboardMembersSection } from './DashboardMembersSection';
@@ -1030,21 +1030,20 @@ export function DashboardViewPage({
 					handleRunEnterpriseTool={handleRunEnterpriseTool}
 				/>
 
-				<AuditEventsPanel
+				<DashboardAuditEventsSection
+					t={t}
 					auditFilters={auditFilters}
 					activePlatformAgents={activePlatformAgents}
 					availableToolItems={availableToolItems}
-					currentTenant={platformStatus?.current_user.tenant}
-					currentUserId={platformStatus?.current_user.user_id}
+					platformStatus={platformStatus}
 					username={username}
 					auditLoading={auditLoading}
 					auditError={auditError}
 					auditEvents={auditEvents}
 					auditStats={auditStats}
-					onAuditFiltersChange={setAuditFilters}
-					onRefetchAuditEvents={refetchAuditEvents}
+					setAuditFilters={setAuditFilters}
+					refetchAuditEvents={refetchAuditEvents}
 					summarizeAuditObject={summarizeAuditObject}
-					t={t}
 				/>
 
 				<ConfigManagementPanel
