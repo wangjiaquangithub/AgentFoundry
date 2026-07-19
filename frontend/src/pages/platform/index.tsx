@@ -150,6 +150,7 @@ import {
 	orchestrationWorkbenchNavigationActions,
 	platformConsoleNavigationActions,
 	rolloutPathNavigationActions,
+	runAgentSetupStepAction,
 	runAppCenterDetailPrimaryAction,
 	runAppCenterDetailSecondaryAction,
 	runAppCenterPrimaryAction,
@@ -2095,26 +2096,21 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			credentialCount: credentials.length,
 			knowledgeBaseCount: knowledgeBases.length,
 		});
-
-		if (action.type === 'template') {
-			if (action.shouldConfigureDefault && defaultAgentTemplate) {
-				handleConfigureTemplate(defaultAgentTemplate);
-			}
-			window.setTimeout(scrollToAgentManagement, 0);
-			return;
-		}
-
-		if (action.type === 'navigate') {
-			navigate(action.path);
-			return;
-		}
-
-		if (action.type === 'scroll-step') {
-			nextAgentSetupStep?.ref.current?.scrollIntoView({
-				behavior: 'smooth',
-				block: 'center',
-			});
-		}
+		runAgentSetupStepAction(action, {
+			configureDefaultTemplate: () => {
+				if (defaultAgentTemplate) {
+					handleConfigureTemplate(defaultAgentTemplate);
+				}
+			},
+			navigate,
+			scrollToAgentManagement: () => window.setTimeout(scrollToAgentManagement, 0),
+			scrollToCurrentStep: () => {
+				nextAgentSetupStep?.ref.current?.scrollIntoView({
+					behavior: 'smooth',
+					block: 'center',
+				});
+			},
+		});
 	}
 
 	function handleEditAgent(agent: EnterprisePublishedAgent) {

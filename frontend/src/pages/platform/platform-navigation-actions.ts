@@ -64,6 +64,35 @@ export function agentSetupStepAction(values: {
 	return { type: 'scroll-step' };
 }
 
+export type AgentSetupStepActionHandlers = {
+	configureDefaultTemplate: NavigationHandler;
+	navigate: NavigateHandler;
+	scrollToAgentManagement: NavigationHandler;
+	scrollToCurrentStep: NavigationHandler;
+};
+
+export function runAgentSetupStepAction(
+	action: AgentSetupStepAction,
+	handlers: AgentSetupStepActionHandlers,
+) {
+	if (action.type === 'template') {
+		if (action.shouldConfigureDefault) {
+			handlers.configureDefaultTemplate();
+		}
+		handlers.scrollToAgentManagement();
+		return;
+	}
+
+	if (action.type === 'navigate') {
+		handlers.navigate(action.path);
+		return;
+	}
+
+	if (action.type === 'scroll-step') {
+		handlers.scrollToCurrentStep();
+	}
+}
+
 export function appCenterPrimaryAction(values: {
 	credentialCount: number;
 	readyAgentId?: string;
