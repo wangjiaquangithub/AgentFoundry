@@ -254,7 +254,6 @@ import {
 	defaultPublishFormForTemplate,
 	preparedTenantAgentTarget,
 	publishFormWithPatch,
-	publishedAgentPrimeTarget,
 	quickPublishTarget,
 	runAgentEditDraftAction,
 	runAgentEditCancelTargetAction,
@@ -262,6 +261,7 @@ import {
 	runPreparedTenantAgentTargetAction,
 	runPublishListToggleAction,
 	runPublishTenantChangeAction,
+	runQuickPublishAction,
 	runStartPublishingTargetAction,
 	runTemplateConfigureAction,
 	startPublishingTarget,
@@ -2194,43 +2194,32 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			credentials,
 			knowledgeBases,
 		});
-		if (target.type === 'navigate') {
-			navigate(target.path);
-			return;
-		}
-
-		if (target.type === 'start-publishing') {
-			handleStartPublishing();
-			return;
-		}
-
-		setEditingAgentId(null);
-		setSelectedTemplateId(target.templateId);
-		setPublishForm(target.form);
-		setPublishingTemplateId(target.templateId);
-		setPlatformAgentsError(null);
-
-		try {
-			const response = await platformApi.publishAgent(target.payload);
-			const publishedAgentId = publishedAgentPrimeTarget(response.agent);
-			if (publishedAgentId) {
-				setLastPublishedAgentId(publishedAgentId);
-				handlePrimePublishedAgent(publishedAgentId);
-			}
-			await refetchPlatformAgents();
-			await refetchPlatform();
-			await refetchToolCatalog();
-			await refetchOpsTasks();
-		} catch (error) {
-			setPlatformAgentsError(
-				error instanceof Error
-					? error.message
-					: agentManagementRequestText.publishError,
-			);
-			window.setTimeout(scrollToAgentManagement, 0);
-		} finally {
-			setPublishingTemplateId(null);
-		}
+		await runQuickPublishAction(target, {
+			navigateToPath: navigate,
+			startPublishing: handleStartPublishing,
+			clearEditingAgent: () => setEditingAgentId(null),
+			selectTemplate: setSelectedTemplateId,
+			setPublishForm,
+			setPublishingTemplate: setPublishingTemplateId,
+			clearError: () => setPlatformAgentsError(null),
+			publishAgent: platformApi.publishAgent,
+			setLastPublishedAgent: setLastPublishedAgentId,
+			primePublishedAgent: handlePrimePublishedAgent,
+			refreshDependentViews: async () => {
+				await refetchPlatformAgents();
+				await refetchPlatform();
+				await refetchToolCatalog();
+				await refetchOpsTasks();
+			},
+			handleError: (error) => {
+				setPlatformAgentsError(
+					error instanceof Error
+						? error.message
+						: agentManagementRequestText.publishError,
+				);
+			},
+			focusAgentManagement: () => window.setTimeout(scrollToAgentManagement, 0),
+		});
 	}
 
 	function handleNextStepPrimaryAction() {

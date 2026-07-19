@@ -476,6 +476,24 @@ export type AgentPublishActionHandlers = {
 	handleError: (error: unknown, target: AgentPublishRequestTarget) => void;
 };
 
+export type QuickPublishActionHandlers = {
+	navigateToPath: (path: '/credential') => void;
+	startPublishing: () => void;
+	clearEditingAgent: () => void;
+	selectTemplate: (templateId: string) => void;
+	setPublishForm: (form: PublishFormState) => void;
+	setPublishingTemplate: (templateId: string | null) => void;
+	clearError: () => void;
+	publishAgent: (
+		payload: EnterpriseAgentPublishRequest,
+	) => EnterpriseAgentPublishResponse | Promise<EnterpriseAgentPublishResponse>;
+	setLastPublishedAgent: (agentId: string) => void;
+	primePublishedAgent: (agentId: string) => void;
+	refreshDependentViews: () => void | Promise<void>;
+	handleError: (error: unknown) => void;
+	focusAgentManagement: () => void;
+};
+
 export function runAgentEditCancelTargetAction(
 	target: AgentEditCancelTarget,
 	handlers: AgentEditCancelTargetActionHandlers,
@@ -563,6 +581,42 @@ export async function runAgentPublishAction(
 		await handlers.refreshDependentViews();
 	} catch (error) {
 		handlers.handleError(error, target);
+	} finally {
+		handlers.setPublishingTemplate(null);
+	}
+}
+
+export async function runQuickPublishAction(
+	target: QuickPublishTarget,
+	handlers: QuickPublishActionHandlers,
+) {
+	if (target.type === 'navigate') {
+		handlers.navigateToPath(target.path);
+		return;
+	}
+
+	if (target.type === 'start-publishing') {
+		handlers.startPublishing();
+		return;
+	}
+
+	handlers.clearEditingAgent();
+	handlers.selectTemplate(target.templateId);
+	handlers.setPublishForm(target.form);
+	handlers.setPublishingTemplate(target.templateId);
+	handlers.clearError();
+
+	try {
+		const response = await handlers.publishAgent(target.payload);
+		const publishedAgentId = publishedAgentPrimeTarget(response.agent);
+		if (publishedAgentId) {
+			handlers.setLastPublishedAgent(publishedAgentId);
+			handlers.primePublishedAgent(publishedAgentId);
+		}
+		await handlers.refreshDependentViews();
+	} catch (error) {
+		handlers.handleError(error);
+		handlers.focusAgentManagement();
 	} finally {
 		handlers.setPublishingTemplate(null);
 	}
