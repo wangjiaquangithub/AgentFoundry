@@ -57,12 +57,20 @@ export type MemberStatusToggleActionHandlers = {
 export type PlatformMemberHandlerValues = {
 	memberForm: MemberFormState;
 	text: {
+		loadError: string;
 		userRequired: string;
 		saveError: string;
 	};
 };
 
 export type PlatformMemberHandlerActions = {
+	setLoading: (loading: boolean) => void;
+	clearLoadError: () => void;
+	loadMembers: () =>
+		| EnterprisePlatformMembersResponse
+		| Promise<EnterprisePlatformMembersResponse>;
+	setMembers: (members: EnterprisePlatformMembersResponse) => void;
+	setLoadError: (message: string) => void;
 	setMemberForm: (form: MemberFormState) => void;
 	setSavingMember: (saving: boolean) => void;
 	clearError: () => void;
@@ -205,6 +213,16 @@ export function createPlatformMemberHandlers(
 	values: PlatformMemberHandlerValues,
 	actions: PlatformMemberHandlerActions,
 ) {
+	async function refetchMembers() {
+		await runMemberLoadAction(values.text.loadError, {
+			setLoading: actions.setLoading,
+			clearError: actions.clearLoadError,
+			loadMembers: actions.loadMembers,
+			setMembers: actions.setMembers,
+			setError: actions.setLoadError,
+		});
+	}
+
 	async function handleSaveMember() {
 		await runMemberSaveAction(values.memberForm, {
 			setSavingMember: actions.setSavingMember,
@@ -241,6 +259,7 @@ export function createPlatformMemberHandlers(
 	}
 
 	return {
+		refetchMembers,
 		handleSaveMember,
 		handleEditMember,
 		handleToggleMemberStatus,

@@ -72,7 +72,6 @@ import {
 import { runToolCatalogLoadAction } from './platform-tool-catalog-helpers';
 import {
 	createPlatformMemberHandlers,
-	runMemberLoadAction,
 } from './platform-member-helpers';
 import {
 	createPlatformGovernanceHandlers,
@@ -1021,16 +1020,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			},
 		);
 
-	async function refetchMembers() {
-		await runMemberLoadAction(memberRequestText.loadError, {
-			setLoading: setPlatformMembersLoading,
-			clearError: () => setPlatformMembersError(null),
-			loadMembers: platformApi.members,
-			setMembers: setPlatformMembers,
-			setError: setPlatformMembersError,
-		});
-	}
-
 	async function refreshMemberDependentViews() {
 		await Promise.all([
 			refetchMembers(),
@@ -1041,6 +1030,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	const {
+		refetchMembers,
 		handleSaveMember,
 		handleEditMember,
 		handleToggleMemberStatus,
@@ -1050,6 +1040,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			text: memberRequestText,
 		},
 		{
+			setLoading: setPlatformMembersLoading,
+			clearLoadError: () => setPlatformMembersError(null),
+			loadMembers: platformApi.members,
+			setMembers: setPlatformMembers,
+			setLoadError: setPlatformMembersError,
 			setMemberForm,
 			setSavingMember,
 			clearError: () => setPlatformMembersError(null),
