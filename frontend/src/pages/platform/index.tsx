@@ -266,6 +266,7 @@ import {
 } from './platform-defaults';
 import { platformAppCenterDisplayStateForStatus } from './platform-app-center-display';
 import { platformConnectorDisplayStateForStatus } from './platform-connector-display';
+import { platformConnectionDisplayStateForStatus } from './platform-connection-display';
 import { platformGovernanceDisplayStateForStatus } from './platform-governance-display';
 import {
 	agentAccessAllowed,
@@ -288,7 +289,6 @@ import {
 	publishDraftStateForStatus,
 	platformOverviewStatsForSummary,
 	platformAgentInventoryStateForStatus,
-	platformConnectionStateForStatus,
 	platformConsoleItemsForDisplay,
 	platformResourceLookupStateForStatus,
 	platformRuntimeConfigStateForStatus,
@@ -471,12 +471,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const [enablingAgentWorkflowId, setEnablingAgentWorkflowId] = useState<string | null>(null);
 	const [publishForm, setPublishForm] = useState<PublishFormState>(defaultPublishForm);
 
-	const platformConnectionState = platformConnectionStateForStatus({
+	const platformConnectionDisplay = platformConnectionDisplayStateForStatus({
 		currentUserId: platformStatus?.current_user.user_id,
 		storedServerUrl: localStorage.getItem('server_url'),
 		storedUsername: localStorage.getItem('username'),
 		labels: platformConnectionLabels(t),
 	});
+	const platformConnectionState = platformConnectionDisplay.connectionState;
 	const serverUrl = platformConnectionState.serverUrl;
 	const username = platformConnectionState.username;
 	const auditRequestText = auditRequestLabels(t);
