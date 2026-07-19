@@ -238,7 +238,6 @@ import {
 	agentPublishRequestTarget,
 	agentQuickConfigurationSyncResult,
 	agentTemplateToolsBindTarget,
-	agentTemplateToolsPatch,
 	defaultPublishFormForTemplate,
 	preparedTenantAgentTarget,
 	publishFormForListToggle,
@@ -2451,9 +2450,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setBindingAgentToolsId(agent.id);
 		setPlatformAgentsError(null);
 		try {
-			const patch = agentTemplateToolsPatch(target.tools);
-			const response = await platformApi.updateAgent(agent.id, patch);
-			syncAgentQuickConfiguration(agent.id, response.agent.id, patch);
+			const response = await platformApi.updateAgent(target.agentId, target.patch);
+			syncAgentQuickConfiguration(agent.id, response.agent.id, target.patch);
 			await refetchPlatformAgents();
 			await refetchPlatform();
 			await refetchToolCatalog();

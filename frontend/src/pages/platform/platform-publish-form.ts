@@ -43,7 +43,11 @@ export type AgentKnowledgeBasesBindTarget =
 	  };
 export type AgentTemplateToolsBindTarget =
 	| { type: 'error' }
-	| { type: 'bind'; tools: string[] };
+	| {
+			type: 'bind';
+			agentId: string;
+			patch: AgentQuickConfigurationPatch;
+	  };
 export type AgentCapabilityKey = 'memory' | 'workflow';
 export type AgentCapabilityEnableTarget = {
 	agentId: string;
@@ -497,7 +501,13 @@ export function agentTemplateToolsBindTarget(values: {
 }): AgentTemplateToolsBindTarget {
 	const tools = agentTemplateToolsForPublishedAgent(values);
 
-	return tools ? { type: 'bind', tools } : { type: 'error' };
+	return tools
+		? {
+				type: 'bind',
+				agentId: values.agent.id,
+				patch: agentTemplateToolsPatch(tools),
+			}
+		: { type: 'error' };
 }
 
 export function agentCapabilityEnabledPatch(
