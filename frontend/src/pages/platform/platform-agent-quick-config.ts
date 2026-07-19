@@ -226,6 +226,14 @@ export async function runAgentKnowledgeBasesBindAction(
 	}
 }
 
+export async function runAgentKnowledgeBasesBindRequestAction(
+	values: Parameters<typeof agentKnowledgeBasesBindTarget>[0],
+	handlers: AgentKnowledgeBasesBindActionHandlers,
+) {
+	const target = agentKnowledgeBasesBindTarget(values);
+	await runAgentKnowledgeBasesBindAction(target, handlers);
+}
+
 export function agentTemplateToolsPatch(tools: string[]): AgentQuickConfigurationPatch {
 	return {
 		tools: [...tools],

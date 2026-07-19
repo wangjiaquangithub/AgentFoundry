@@ -226,12 +226,11 @@ import {
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
 	agentCapabilityEnableTarget,
-	agentKnowledgeBasesBindTarget,
 	agentQuickConfigurationSyncResult,
 	agentTemplateToolsBindTarget,
 	runAgentCapabilityEnableAction,
 	runAgentDefaultModelBindRequestAction,
-	runAgentKnowledgeBasesBindAction,
+	runAgentKnowledgeBasesBindRequestAction,
 	runAgentTemplateToolsBindAction,
 	type AgentQuickConfigurationPatch,
 } from './platform-agent-quick-config';
@@ -2324,9 +2323,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleBindAvailableKnowledge(agent: EnterprisePublishedAgent) {
-		const target = agentKnowledgeBasesBindTarget({ agent, knowledgeBases });
-
-		await runAgentKnowledgeBasesBindAction(target, {
+		await runAgentKnowledgeBasesBindRequestAction({ agent, knowledgeBases }, {
 			navigateToPath: navigate,
 			setBindingAgent: setBindingAgentKnowledgeId,
 			clearError: () => setPlatformAgentsError(null),
