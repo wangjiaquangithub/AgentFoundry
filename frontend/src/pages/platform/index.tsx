@@ -168,7 +168,7 @@ import {
 	platformWorkbenchConsoleItemsDisplayState,
 	platformWorkbenchDisplayStateForStatus,
 } from './platform-workbench-display';
-import { platformWorkflowDisplayStateForStatus } from './platform-workflow-display';
+import { createPlatformWorkflowPageState } from './platform-workflow-state';
 import {
 	createPlatformAgentQuickConfigurationHandlers,
 	createPlatformAgentQuickConfigurationSyncHandler,
@@ -798,7 +798,19 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			icons: governanceHealthIcons,
 		},
 	});
-	const workflowDisplay = platformWorkflowDisplayStateForStatus({
+	const {
+		selectedWorkflowTemplate,
+		workflowOptions,
+		selectedWorkflowDisabled,
+		workflowPendingApprovals,
+		selectedWorkflowName,
+		selectedWorkflowSteps,
+		selectedWorkflowLastRun,
+		workflowOpsStats,
+		recentSchedules,
+		triggerOpsStats,
+		triggerOpsSummary,
+	} = createPlatformWorkflowPageState({
 		selection: {
 			values: { workflowTemplates, selectedWorkflowType },
 			labels: workflowSelectionLabels(t),
@@ -817,20 +829,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			summaryLabels: triggerOperationsSummaryLabels(t),
 		},
 	});
-	const workflowSelectionState = workflowDisplay.selectionState;
-	const selectedWorkflowTemplate = workflowSelectionState.selectedWorkflowTemplate;
-	const workflowOptions = workflowSelectionState.workflowOptions;
-	const selectedWorkflowDisabled = workflowSelectionState.selectedWorkflowDisabled;
-	const workflowOperationsState = workflowDisplay.operationsState;
-	const workflowPendingApprovals = workflowOperationsState.workflowPendingApprovals;
-	const selectedWorkflowName = workflowOperationsState.selectedWorkflowName;
-	const selectedWorkflowSteps = workflowOperationsState.selectedWorkflowSteps;
-	const selectedWorkflowLastRun = workflowOperationsState.selectedWorkflowLastRun;
-	const workflowOpsStats = workflowOperationsState.workflowOpsStats;
-	const triggerOperationsState = workflowDisplay.triggerState;
-	const recentSchedules = triggerOperationsState.recentSchedules;
-	const triggerOpsStats = triggerOperationsState.triggerOpsStats;
-	const triggerOpsSummary = triggerOperationsState.triggerOpsSummary;
 	const auditStats = platformAuditStatsDisplayStateForSummary(
 		{
 			auditSummary,
