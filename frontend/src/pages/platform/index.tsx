@@ -70,6 +70,7 @@ import {
 	runAgentWorkflowPrimeTargetAction,
 	runClearAgentConversationSuccessAction,
 	runEnterpriseToolAction,
+	runEnterpriseWorkflowAction,
 	runIdentityAgentRunnerTargetAction,
 	runMemoryOperationAgentRunTargetAction,
 	runPublishedAgentRunnerTargetAction,
@@ -297,7 +298,6 @@ import {
 	agentAccessAllowed,
 	agentRoutingDisplayStateForResult,
 	agentRunnerStateForStatus,
-	approvalRequiredDetail,
 	appCenterDetailHealthState,
 	appCenterAgentDisplayStateForStatus,
 	activePlatformMemberCountForMembers,
@@ -2597,33 +2597,24 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			workflowApprovalId,
 		});
 
-		setRunningWorkflow(true);
-		setWorkflowRunError(null);
-		try {
-			const response = await platformApi.runWorkflow(payload);
-			setWorkflowRunResult(response);
-			await refetchPlatform();
-			await refetchToolCatalog();
-			await refetchAuditEvents();
-			await refetchWorkflowRuns();
-			await refetchScenarios();
-			await refetchOpsTasks();
-		} catch (error) {
-			const approvalRequired = approvalRequiredDetail(error, 'workflow_run');
-			if (approvalRequired) {
-				const created = await handleCreateRunApproval(
-					'workflow_run',
-					approvalRequired.message,
-				);
-				if (created) {
-					setWorkflowRunError(workflowRunnerRequestText.approvalRequiredCreated);
-				}
-				return;
-			}
-			setWorkflowRunError(error instanceof Error ? error.message : String(error));
-		} finally {
-			setRunningWorkflow(false);
-		}
+		await runEnterpriseWorkflowAction(payload, {
+			setRunning: setRunningWorkflow,
+			clearError: () => setWorkflowRunError(null),
+			runWorkflow: platformApi.runWorkflow,
+			setResult: setWorkflowRunResult,
+			refreshDependentViews: async () => {
+				await refetchPlatform();
+				await refetchToolCatalog();
+				await refetchAuditEvents();
+				await refetchWorkflowRuns();
+				await refetchScenarios();
+				await refetchOpsTasks();
+			},
+			createApproval: (message) => handleCreateRunApproval('workflow_run', message),
+			setApprovalRequiredError: () =>
+				setWorkflowRunError(workflowRunnerRequestText.approvalRequiredCreated),
+			setError: setWorkflowRunError,
+		});
 	}
 
 	async function handleRunEnterpriseWorkflow() {

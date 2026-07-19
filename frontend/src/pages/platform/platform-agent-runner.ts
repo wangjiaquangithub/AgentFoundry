@@ -7,6 +7,7 @@ import type {
 	EnterpriseToolRunRequest,
 	EnterpriseToolRunResponse,
 	EnterpriseWorkflowRunRequest,
+	EnterpriseWorkflowRunResponse,
 	EnterpriseWorkflowTemplate,
 } from '@/api';
 import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
@@ -809,6 +810,44 @@ export function workflowRunRequestTarget(values: {
 		userId: target.userId,
 		approvalId: target.approvalId,
 	});
+}
+
+export type EnterpriseWorkflowRunActionHandlers = {
+	setRunning: (running: boolean) => void;
+	clearError: () => void;
+	runWorkflow: (
+		payload: EnterpriseWorkflowRunRequest,
+	) => EnterpriseWorkflowRunResponse | Promise<EnterpriseWorkflowRunResponse>;
+	setResult: (response: EnterpriseWorkflowRunResponse) => void;
+	refreshDependentViews: () => void | Promise<void>;
+	createApproval: (message: string) => boolean | Promise<boolean>;
+	setApprovalRequiredError: () => void;
+	setError: (message: string) => void;
+};
+
+export async function runEnterpriseWorkflowAction(
+	payload: EnterpriseWorkflowRunRequest,
+	handlers: EnterpriseWorkflowRunActionHandlers,
+) {
+	handlers.setRunning(true);
+	handlers.clearError();
+	try {
+		const response = await handlers.runWorkflow(payload);
+		handlers.setResult(response);
+		await handlers.refreshDependentViews();
+	} catch (error) {
+		const approvalRequired = approvalRequiredDetail(error, 'workflow_run');
+		if (approvalRequired) {
+			const created = await handlers.createApproval(approvalRequired.message);
+			if (created) {
+				handlers.setApprovalRequiredError();
+			}
+			return;
+		}
+		handlers.setError(error instanceof Error ? error.message : String(error));
+	} finally {
+		handlers.setRunning(false);
+	}
 }
 
 export function scenarioWorkflowRunTarget(values: {
