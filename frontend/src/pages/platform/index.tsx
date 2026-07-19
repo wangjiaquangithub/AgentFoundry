@@ -170,6 +170,7 @@ import {
 	createPlatformDashboardOpsTasksViewProps,
 	createPlatformDashboardOperationsViewProps,
 	createPlatformDashboardPlatformConsoleViewProps,
+	createPlatformDashboardRolloutPathViewProps,
 	createPlatformDashboardScenariosViewProps,
 	createPlatformDashboardTenantAccessViewProps,
 	createPlatformDashboardToolsViewProps,
@@ -2224,6 +2225,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					firstAgentGuidePrimaryStep,
 					firstAgentGuideSteps,
 				}),
+				...createPlatformDashboardRolloutPathViewProps({
+					rolloutPathSteps,
+				}),
 				...createPlatformDashboardLaunchpadViewProps({
 					launchpadPrimaryStep,
 					launchpadReadyCount,
@@ -2383,7 +2387,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				refetchPlatformAgents: refetchPlatformAgents,
 				refetchPlatformConfigExport: refetchPlatformConfigExport,
 				refetchToolCatalog: refetchToolCatalog,
-				rolloutPathSteps: rolloutPathSteps,
 				runtimeItems: runtimeItems,
 				savingMember: savingMember,
 				savingToolPolicy: savingToolPolicy,
