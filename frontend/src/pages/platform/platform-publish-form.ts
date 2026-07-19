@@ -535,6 +535,7 @@ export type PlatformAgentPublishingRequestText = {
 };
 export type PlatformAgentPublishingHandlers = {
 	handleConfigureTemplate: (template: EnterpriseAgentTemplate) => void;
+	handlePrepareTenantAgent: (tenant: string) => void;
 	handlePublishTenantChange: (value: string) => void;
 	handleStartPublishing: () => void;
 	handleEditAgent: (agent: EnterprisePublishedAgent) => void;
@@ -834,6 +835,23 @@ export function createPlatformAgentPublishingHandlers(values: {
 
 	return {
 		handleConfigureTemplate,
+		handlePrepareTenantAgent: (tenant) => {
+			runPrepareTenantAgentAction(
+				{
+					defaultTemplate: values.defaultTemplate,
+					currentUserTenant: values.currentUserTenant,
+					credentials: values.credentials,
+					knowledgeBases: values.knowledgeBases,
+					tenant,
+				},
+				{
+					clearEditingAgent: () => values.setEditingAgent(null),
+					selectTemplate: values.selectTemplate,
+					setPublishForm: values.setPublishForm,
+					scrollToAgentManagement: values.focusAgentManagement,
+				},
+			);
+		},
 		handlePublishTenantChange: (tenant) => {
 			runPublishTenantChangeAction(
 				{

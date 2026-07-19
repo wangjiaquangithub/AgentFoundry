@@ -198,7 +198,6 @@ import {
 } from './platform-agent-quick-config';
 import {
 	createPlatformAgentPublishingHandlers,
-	runPrepareTenantAgentAction,
 } from './platform-publish-form';
 import {
 	agentSampleQuestions,
@@ -1481,24 +1480,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	);
 
-	function handlePrepareTenantAgent(tenant: string) {
-		runPrepareTenantAgentAction(
-			{
-				defaultTemplate: defaultAgentTemplate,
-				currentUserTenant: platformStatus?.current_user.tenant,
-				credentials,
-				knowledgeBases,
-				tenant,
-			},
-			{
-				clearEditingAgent: () => setEditingAgentId(null),
-				selectTemplate: setSelectedTemplateId,
-				setPublishForm,
-				scrollToAgentManagement: () => window.setTimeout(scrollToAgentManagement, 0),
-			},
-		);
-	}
-
 	const {
 		handleInspectIdentityAudit,
 		handleInspectIdentityApprovals,
@@ -1695,6 +1676,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		handleCancelEdit,
 		handleConfigureTemplate,
 		handleEditAgent,
+		handlePrepareTenantAgent,
 		handlePublishAgent,
 		handlePublishTenantChange,
 		handleQuickPublishAgent,
