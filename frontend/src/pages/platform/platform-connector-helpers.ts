@@ -17,6 +17,12 @@ function connectorTimeoutFromForm(form: ConnectorTestFormState) {
 	return Number.isFinite(timeout) && timeout > 0 ? timeout : 5;
 }
 
+export function connectorBaseUrlFromForm(
+	form: ConnectorTestFormState,
+): string {
+	return form.base_url.trim();
+}
+
 export function connectorFormPatchFromSavedConfig(
 	current: ConnectorTestFormState,
 	config: EnterpriseConnectorSavedConfig,

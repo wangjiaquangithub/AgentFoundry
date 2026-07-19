@@ -88,6 +88,7 @@ import {
 	type PlatformApprovalRunType,
 } from './platform-approval-helpers';
 import {
+	connectorBaseUrlFromForm,
 	connectorFormPatchFromSavedConfig,
 	connectorFormWithoutToken,
 	connectorFormWithPlatformDefaults,
@@ -1217,7 +1218,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleSaveConnectorConfig() {
-		const baseUrl = connectorTestForm.base_url.trim();
+		const baseUrl = connectorBaseUrlFromForm(connectorTestForm);
 		if (!baseUrl) {
 			setConnectorSaveError(connectorRequestText.saveBaseUrlRequired);
 			setConnectorSaveSuccess(null);
@@ -1256,7 +1257,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleTestConnector() {
-		const baseUrl = connectorTestForm.base_url.trim();
+		const baseUrl = connectorBaseUrlFromForm(connectorTestForm);
 		if (!baseUrl) {
 			setConnectorTestError(connectorRequestText.testBaseUrlRequired);
 			return null;
