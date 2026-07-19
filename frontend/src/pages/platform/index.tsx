@@ -50,6 +50,7 @@ import { usePlatformPageRefs } from './platform-page-refs';
 import {
 	agentRunResultForSelectedAgent,
 	agentRunResultAfterHistoryRefresh,
+	agentConversationTurnFromRunHistoryItem,
 	runEnterpriseAgentRequestAction,
 	replaceAgentConversationTurns,
 	runAgentRunnerPrimeTargetAction,
@@ -293,7 +294,6 @@ import { platformOverviewDisplayStateForStatus } from './platform-overview-displ
 import {
 	agentAccessAllowed,
 	agentIsReady,
-	mapAgentRunToConversationTurn,
 	summarizeAuditObject,
 	type EnterpriseAgentConversationTurn,
 } from './platform-utils';
@@ -1341,7 +1341,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				user_id: userId || undefined,
 				limit: 20,
 			});
-			const turns = response.runs.map(mapAgentRunToConversationTurn);
+			const turns = response.runs.map(agentConversationTurnFromRunHistoryItem);
 			setAgentConversations((current) =>
 				replaceAgentConversationTurns({
 					agentConversations: current,
@@ -1826,7 +1826,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 		try {
 			const run = await platformApi.agentRun(target.runId);
-			const detailedTurn = mapAgentRunToConversationTurn(run);
+			const detailedTurn = agentConversationTurnFromRunHistoryItem(run);
 			runAgentRunHistoryDetailAction(detailedTurn, {
 				setAgentConversations,
 				setResult: setAgentRunResult,

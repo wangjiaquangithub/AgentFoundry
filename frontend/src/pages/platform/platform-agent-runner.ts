@@ -1,6 +1,7 @@
 import type {
 	EnterpriseAgentRunRequest,
 	EnterpriseAgentRunResponse,
+	EnterpriseAgentRunHistoryItem,
 	EnterpriseIdentity,
 	EnterprisePublishedAgent,
 	EnterprisePlatformScenario,
@@ -16,6 +17,7 @@ import {
 	approvalRequiredDetail,
 	identityForTenant,
 	identityForMemoryOperation,
+	mapAgentRunToConversationTurn,
 	normalizeWorkflowInputs,
 	type EnterpriseAgentConversationTurn,
 } from './platform-utils';
@@ -57,6 +59,12 @@ export function agentConversationTurnFromRunResponse(values: {
 		createdAt: values.createdAt,
 		response: values.response,
 	};
+}
+
+export function agentConversationTurnFromRunHistoryItem(
+	run: EnterpriseAgentRunHistoryItem,
+): EnterpriseAgentConversationTurn {
+	return mapAgentRunToConversationTurn(run);
 }
 
 export function agentRunResponseRequiresApproval(
