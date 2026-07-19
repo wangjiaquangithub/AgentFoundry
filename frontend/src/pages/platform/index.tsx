@@ -75,10 +75,10 @@ import {
 	type EnterpriseAgentConversationTurn,
 } from './platform-agent-runner';
 import {
-	approvalQueryFromFilters,
 	runApprovalApproveAndContinueAction,
 	runApprovalCreateAction,
 	runApprovalDecisionAction,
+	runApprovalLoadAction,
 	runApprovalRunCreateAction,
 	runApprovalUsageTargetAction,
 	runPrimeToolApprovalAction,
@@ -1431,19 +1431,20 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function refetchApprovals(overrides: Partial<typeof approvalFilters> = {}) {
-		setApprovalLoading(true);
-		setApprovalError(null);
-		try {
-			const filters = { ...approvalFilters, ...overrides };
-			const response = await platformApi.approvals(approvalQueryFromFilters(filters));
-			setApprovalRequests(response.approvals);
-		} catch (error) {
-			setApprovalError(
-				error instanceof Error ? error.message : approvalRequestText.loadError,
-			);
-		} finally {
-			setApprovalLoading(false);
-		}
+		await runApprovalLoadAction(
+			{
+				filters: approvalFilters,
+				overrides,
+				loadErrorMessage: approvalRequestText.loadError,
+			},
+			{
+				setLoading: setApprovalLoading,
+				clearError: () => setApprovalError(null),
+				loadApprovals: platformApi.approvals,
+				setApprovalRequests,
+				setError: setApprovalError,
+			},
+		);
 	}
 
 	async function handleCreateApproval() {

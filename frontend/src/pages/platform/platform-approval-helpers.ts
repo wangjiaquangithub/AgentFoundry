@@ -39,6 +39,16 @@ export type ApprovalCreateActionHandlers = {
 	handleError: (error: unknown) => void;
 };
 
+export type ApprovalLoadActionHandlers = {
+	setLoading: (loading: boolean) => void;
+	clearError: () => void;
+	loadApprovals: (
+		params: ReturnType<typeof approvalQueryFromFilters>,
+	) => EnterpriseApprovalsResponse | Promise<EnterpriseApprovalsResponse>;
+	setApprovalRequests: (approvals: EnterpriseApprovalRequestItem[]) => void;
+	setError: (message: string) => void;
+};
+
 export type ApprovalRunCreateActionHandlers = {
 	setCreatingRunApproval: (requestType: PlatformApprovalRunType | null) => void;
 	clearApprovalError: () => void;
@@ -258,6 +268,29 @@ export function approvalFormWithReasonReset(
 		...current,
 		reason: defaultReason,
 	};
+}
+
+export async function runApprovalLoadAction(
+	values: {
+		filters: ApprovalFiltersState;
+		overrides: Partial<ApprovalFiltersState>;
+		loadErrorMessage: string;
+	},
+	handlers: ApprovalLoadActionHandlers,
+) {
+	handlers.setLoading(true);
+	handlers.clearError();
+	try {
+		const filters = { ...values.filters, ...values.overrides };
+		const response = await handlers.loadApprovals(approvalQueryFromFilters(filters));
+		handlers.setApprovalRequests(response.approvals);
+	} catch (error) {
+		handlers.setError(
+			error instanceof Error ? error.message : values.loadErrorMessage,
+		);
+	} finally {
+		handlers.setLoading(false);
+	}
 }
 
 export async function runApprovalCreateAction(
