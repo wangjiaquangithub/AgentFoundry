@@ -41,6 +41,7 @@ import { ToolsViewPage } from './components/ToolsViewPage';
 import { WorkflowsViewPage } from './components/WorkflowsViewPage';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import { usePlatformPageRefs } from './platform-page-refs';
+import { platformPageHasErrors } from './platform-error-state';
 import {
 	createPlatformAgentRunnerEntryHandlers,
 	createPlatformRunnerHandlers,
@@ -423,26 +424,26 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const opsTasksRequestText = opsTasksRequestLabels(t);
 	const toolRunnerRequestText = toolRunnerRequestLabels(t);
 	const workflowRunnerRequestText = workflowRunnerRequestLabels(t);
-	const hasErrors = Boolean(
-		agentsError ||
-		credentialsError ||
-		knowledgeError ||
-		schedulesError ||
-		platformError ||
-		connectorsError ||
-		governanceError ||
-		platformMembersError ||
-		platformAgentsError ||
-		toolCatalogError ||
-		auditError ||
-		workflowTemplatesError ||
-		workflowRunsError ||
-		scenariosError ||
-		opsTasksError ||
-		approvalError ||
-		platformConfigError ||
+	const hasErrors = platformPageHasErrors({
+		agentsError,
+		credentialsError,
+		knowledgeError,
+		schedulesError,
+		platformError,
+		connectorsError,
+		governanceError,
+		platformMembersError,
+		platformAgentsError,
+		toolCatalogError,
+		auditError,
+		workflowTemplatesError,
+		workflowRunsError,
+		scenariosError,
+		opsTasksError,
+		approvalError,
+		platformConfigError,
 		agentRunsError,
-	);
+	});
 
 	const agentTemplates = platformAgents?.templates ?? [];
 	const publishedPlatformAgents = platformAgents?.agents ?? [];
