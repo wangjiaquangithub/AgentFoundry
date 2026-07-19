@@ -312,6 +312,16 @@ type DashboardMonitoringSnapshotViewProps = Pick<
 	| 'recentAgentTurns'
 >;
 
+type DashboardRuntimeStatusViewProps = Pick<
+	DashboardViewPageProps,
+	| 'governanceRef'
+	| 'platformError'
+	| 'platformLoading'
+	| 'platformStatus'
+	| 'refetchPlatform'
+	| 'runtimeItems'
+>;
+
 type DashboardPlatformConsoleViewProps = Pick<
 	DashboardViewPageProps,
 	'platformConsoleItems'
@@ -486,6 +496,12 @@ export function createPlatformDashboardMembersViewProps(
 export function createPlatformDashboardMonitoringSnapshotViewProps(
 	props: DashboardMonitoringSnapshotViewProps,
 ): DashboardMonitoringSnapshotViewProps {
+	return props;
+}
+
+export function createPlatformDashboardRuntimeStatusViewProps(
+	props: DashboardRuntimeStatusViewProps,
+): DashboardRuntimeStatusViewProps {
 	return props;
 }
 
