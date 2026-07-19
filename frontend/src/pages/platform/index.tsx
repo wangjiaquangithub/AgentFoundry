@@ -172,6 +172,7 @@ import {
 	createPlatformDashboardToolsViewProps,
 	createPlatformDashboardTriggerOpsViewProps,
 	createPlatformDashboardViewProps,
+	createPlatformDashboardWorkbenchReadinessViewProps,
 	createPlatformDashboardWorkflowsViewProps,
 } from './platform-dashboard-view-props';
 import { createPlatformLaunchpadPageState } from './platform-launchpad-state';
@@ -2205,6 +2206,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					triggerOpsStats,
 					triggerOpsSummary,
 				}),
+				...createPlatformDashboardWorkbenchReadinessViewProps({
+					workbenchQuickActions,
+					workbenchReadinessItems,
+					workbenchRiskItems,
+				}),
 				...createPlatformDashboardScenariosViewProps({
 					handleRunScenario,
 					refetchScenarios,
@@ -2405,9 +2411,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				username: username,
 				workbenchActions: workbenchActions,
 				workbenchIndicators: workbenchIndicators,
-				workbenchQuickActions: workbenchQuickActions,
-				workbenchReadinessItems: workbenchReadinessItems,
-				workbenchRiskItems: workbenchRiskItems,
 			})}
 		/>
 	);
