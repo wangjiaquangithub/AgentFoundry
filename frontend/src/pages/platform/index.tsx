@@ -233,6 +233,8 @@ import {
 	agentCapabilityEnabledPatch,
 	agentDefaultModelBindTarget,
 	agentDefaultModelPatch,
+	agentEditCancelTarget,
+	agentEditDraft,
 	agentKnowledgeBasesBindTarget,
 	agentKnowledgeBasesPatch,
 	agentPublishRequestTarget,
@@ -242,7 +244,6 @@ import {
 	agentTemplateToolsPatch,
 	defaultPublishFormForTemplate,
 	nextPublishedAgentIdAfterArchive,
-	publishFormFromPublishedAgent,
 	publishFormForListToggle,
 	publishFormForPreparedTenant,
 	publishFormForTenantChange,
@@ -2091,16 +2092,17 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleEditAgent(agent: EnterprisePublishedAgent) {
-		setSelectedTemplateId(agent.template_id);
-		setEditingAgentId(agent.id);
-		setPublishForm(publishFormFromPublishedAgent(agent));
+		const draft = agentEditDraft(agent);
+		setSelectedTemplateId(draft.templateId);
+		setEditingAgentId(draft.editingAgentId);
+		setPublishForm(draft.form);
 	}
 
 	function handleCancelEdit() {
-		const template = selectedTemplate;
+		const target = agentEditCancelTarget(selectedTemplate);
 		setEditingAgentId(null);
-		if (template) {
-			handleConfigureTemplate(template);
+		if (target.type === 'configure-template') {
+			handleConfigureTemplate(target.template);
 		}
 	}
 

@@ -37,6 +37,14 @@ export type AgentTemplateToolsBindTarget =
 	| { type: 'error' }
 	| { type: 'bind'; tools: string[] };
 export type AgentCapabilityKey = 'memory' | 'workflow';
+export type AgentEditDraft = {
+	templateId: string;
+	editingAgentId: string;
+	form: PublishFormState;
+};
+export type AgentEditCancelTarget =
+	| { type: 'clear' }
+	| { type: 'configure-template'; template: EnterpriseAgentTemplate };
 export type QuickPublishTarget =
 	| { type: 'navigate'; path: '/credential' }
 	| { type: 'start-publishing' }
@@ -238,6 +246,22 @@ export function publishFormFromPublishedAgent(
 		memory_enabled: agent.memory_enabled,
 		workflow_enabled: agent.workflow_enabled,
 	};
+}
+
+export function agentEditDraft(agent: EnterprisePublishedAgent): AgentEditDraft {
+	return {
+		templateId: agent.template_id,
+		editingAgentId: agent.id,
+		form: publishFormFromPublishedAgent(agent),
+	};
+}
+
+export function agentEditCancelTarget(
+	selectedTemplate?: EnterpriseAgentTemplate | null,
+): AgentEditCancelTarget {
+	return selectedTemplate
+		? { type: 'configure-template', template: selectedTemplate }
+		: { type: 'clear' };
 }
 
 export function publishFormForListToggle(values: {
