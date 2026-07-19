@@ -1681,6 +1681,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		});
 	}
 
+	async function refetchOpsTaskResolveDependencies() {
+		await refetchPlatform();
+		await refetchScenarios();
+	}
+
 	async function handleResolveOpsTask(task: EnterprisePlatformOpsTask) {
 		await runOpsTaskResolveAction(task, {
 			runOperationAction: handleOperationAction,
@@ -1690,10 +1695,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setWorkflowTemplates,
 			setOpsTasks,
 			setOpsTasksSummary,
-			refreshDependentViews: async () => {
-				await refetchPlatform();
-				await refetchScenarios();
-			},
+			refreshDependentViews: refetchOpsTaskResolveDependencies,
 			handleError: (error) =>
 				setOpsTasksError(
 					error instanceof Error ? error.message : opsTasksRequestText.resolveError,
