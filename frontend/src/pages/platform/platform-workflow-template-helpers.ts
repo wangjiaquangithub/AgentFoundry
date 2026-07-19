@@ -15,6 +15,34 @@ export type WorkflowTemplateToggleActionHandlers = {
 	handleError: (error: unknown) => void;
 };
 
+export type WorkflowTemplateLoadActionHandlers = {
+	setLoading: (loading: boolean) => void;
+	clearError: () => void;
+	loadWorkflowTemplates: () =>
+		| EnterpriseWorkflowTemplatesResponse
+		| Promise<EnterpriseWorkflowTemplatesResponse>;
+	setWorkflowTemplates: (workflows: EnterpriseWorkflowTemplate[]) => void;
+	setError: (message: string) => void;
+};
+
+export async function runWorkflowTemplateLoadAction(
+	loadErrorMessage: string,
+	handlers: WorkflowTemplateLoadActionHandlers,
+) {
+	handlers.setLoading(true);
+	handlers.clearError();
+	try {
+		const response = await handlers.loadWorkflowTemplates();
+		handlers.setWorkflowTemplates(response.workflows);
+	} catch (error) {
+		handlers.setError(
+			error instanceof Error ? error.message : loadErrorMessage,
+		);
+	} finally {
+		handlers.setLoading(false);
+	}
+}
+
 export async function runWorkflowTemplateToggleAction(
 	values: {
 		template: EnterpriseWorkflowTemplate;

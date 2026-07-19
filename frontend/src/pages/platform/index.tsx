@@ -113,7 +113,10 @@ import { runGovernanceLoadAction } from './platform-governance-helpers';
 import {
 	runOpsTaskResolveAction,
 } from './platform-ops-task-helpers';
-import { runWorkflowTemplateToggleAction } from './platform-workflow-template-helpers';
+import {
+	runWorkflowTemplateLoadAction,
+	runWorkflowTemplateToggleAction,
+} from './platform-workflow-template-helpers';
 import {
 	approvalFiltersForIdentity,
 	approvalFiltersForTenant,
@@ -1369,18 +1372,16 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function refetchWorkflowTemplates() {
-		setWorkflowTemplatesLoading(true);
-		setWorkflowTemplatesError(null);
-		try {
-			const response = await platformApi.workflows();
-			setWorkflowTemplates(response.workflows);
-		} catch (error) {
-			setWorkflowTemplatesError(
-				error instanceof Error ? error.message : workflowRunnerRequestText.templatesLoadError,
-			);
-		} finally {
-			setWorkflowTemplatesLoading(false);
-		}
+		await runWorkflowTemplateLoadAction(
+			workflowRunnerRequestText.templatesLoadError,
+			{
+				setLoading: setWorkflowTemplatesLoading,
+				clearError: () => setWorkflowTemplatesError(null),
+				loadWorkflowTemplates: platformApi.workflows,
+				setWorkflowTemplates,
+				setError: setWorkflowTemplatesError,
+			},
+		);
 	}
 
 	async function refetchWorkflowRuns() {
