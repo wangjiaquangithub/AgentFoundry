@@ -42,6 +42,7 @@ import { WorkflowsViewPage } from './components/WorkflowsViewPage';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import { usePlatformPageRefs } from './platform-page-refs';
 import { platformPageHasErrors } from './platform-error-state';
+import { createPlatformRequestTexts } from './platform-request-texts';
 import {
 	createPlatformAgentRunnerEntryHandlers,
 	createPlatformRunnerHandlers,
@@ -117,29 +118,21 @@ import {
 } from './platform-icons';
 import {
 	agentReleasePipelineLabels,
-	agentManagementRequestLabels,
 	agentRoutingLabels,
 	agentRunnerLabels,
-	agentRunnerRequestLabels,
 	agentSetupStepLabels,
-	approvalRequestLabels,
 	appCenterAgentDisplayLabels,
 	appCenterDetailHealthLabels,
 	appCenterDetailResourcesLabels,
 	appCenterDetailResourceValueLabels,
 	appCenterOperationsLabels,
-	auditRequestLabels,
 	auditStatsLabels,
-	configManagementRequestLabels,
 	connectorOperationsLabels,
-	connectorRequestLabels,
 	dashboardTodoLabels,
 	firstAgentGuideStepLabels,
 	governanceAccessLabels,
 	governanceHealthLabels,
-	memberRequestLabels,
 	monitoringStatLabels,
-	opsTasksRequestLabels,
 	orchestrationWorkbenchStepLabels,
 	operationsHeadlineLabels,
 	launchpadStepLabels,
@@ -150,13 +143,9 @@ import {
 	publishDraftLabels,
 	rolloutPathStepLabels,
 	runtimeStatusLabels,
-	scenarioRequestLabels,
 	selectedIdentityLabels,
 	selectedToolRunnerLabels,
-	tenantGovernanceRequestLabels,
 	tenantWorkspaceOperationsLabels,
-	toolCatalogRequestLabels,
-	toolRunnerRequestLabels,
 	triggerOperationsStatLabels,
 	triggerOperationsSummaryLabels,
 	workbenchIndicatorLabels,
@@ -165,7 +154,6 @@ import {
 	workbenchReadinessLabels,
 	workbenchRiskLabels,
 	workflowOperationsLabels,
-	workflowRunnerRequestLabels,
 	workflowSelectionLabels,
 } from './platform-labels';
 import { platformDashboardDisplayStateForStatus } from './platform-dashboard-display';
@@ -411,19 +399,21 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const platformConnectionState = platformConnectionDisplay.connectionState;
 	const serverUrl = platformConnectionState.serverUrl;
 	const username = platformConnectionState.username;
-	const auditRequestText = auditRequestLabels(t);
-	const configManagementRequestText = configManagementRequestLabels(t);
-	const connectorRequestText = connectorRequestLabels(t);
-	const agentRunnerRequestText = agentRunnerRequestLabels(t);
-	const agentManagementRequestText = agentManagementRequestLabels(t);
-	const approvalRequestText = approvalRequestLabels(t);
-	const memberRequestText = memberRequestLabels(t);
-	const tenantGovernanceRequestText = tenantGovernanceRequestLabels(t);
-	const toolCatalogRequestText = toolCatalogRequestLabels(t);
-	const scenarioRequestText = scenarioRequestLabels(t);
-	const opsTasksRequestText = opsTasksRequestLabels(t);
-	const toolRunnerRequestText = toolRunnerRequestLabels(t);
-	const workflowRunnerRequestText = workflowRunnerRequestLabels(t);
+	const {
+		auditRequestText,
+		configManagementRequestText,
+		connectorRequestText,
+		agentRunnerRequestText,
+		agentManagementRequestText,
+		approvalRequestText,
+		memberRequestText,
+		tenantGovernanceRequestText,
+		toolCatalogRequestText,
+		scenarioRequestText,
+		opsTasksRequestText,
+		toolRunnerRequestText,
+		workflowRunnerRequestText,
+	} = createPlatformRequestTexts(t);
 	const hasErrors = platformPageHasErrors({
 		agentsError,
 		credentialsError,
