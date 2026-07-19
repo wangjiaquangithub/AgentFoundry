@@ -167,6 +167,7 @@ import { createPlatformAgentsViewProps } from './platform-agents-view-props';
 import { createPlatformApprovalsViewProps } from './platform-approvals-view-props';
 import { createPlatformMemoryViewProps } from './platform-memory-view-props';
 import { createPlatformRunsViewProps } from './platform-runs-view-props';
+import { createPlatformSettingsViewProps } from './platform-settings-view-props';
 import { createPlatformTenantsViewProps } from './platform-tenants-view-props';
 import { createPlatformWorkflowsViewProps } from './platform-workflows-view-props';
 import {
@@ -1720,26 +1721,28 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	if (view === 'settings') {
 		return (
 			<SettingsViewPage
-				platformLoading={platformLoading}
-				platformError={platformError}
-				platformConfigExport={platformConfigExport}
-				platformConfigLoading={platformConfigLoading}
-				platformConfigError={platformConfigError}
-				platformConfigImportResult={platformConfigImportResult}
-				platformConfigImportMode={platformConfigImportMode}
-				platformConfigImportText={platformConfigImportText}
-				importingPlatformConfig={importingPlatformConfig}
-				serverUrl={serverUrl}
-				username={username}
-				hasErrors={hasErrors}
-				runtimeItems={runtimeItems}
-				onRefreshPlatform={() => void refetchPlatform()}
-				onRefetchPlatformConfigExport={refetchPlatformConfigExport}
-				onCopyPlatformConfig={handleCopyPlatformConfig}
-				onImportPlatformConfig={handleImportPlatformConfig}
-				onPlatformConfigImportModeChange={setPlatformConfigImportMode}
-				onPlatformConfigImportTextChange={setPlatformConfigImportText}
-				t={t}
+				{...createPlatformSettingsViewProps({
+					platformLoading,
+					platformError,
+					platformConfigExport,
+					platformConfigLoading,
+					platformConfigError,
+					platformConfigImportResult,
+					platformConfigImportMode,
+					platformConfigImportText,
+					importingPlatformConfig,
+					serverUrl,
+					username,
+					hasErrors,
+					runtimeItems,
+					onRefreshPlatform: () => void refetchPlatform(),
+					onRefetchPlatformConfigExport: refetchPlatformConfigExport,
+					onCopyPlatformConfig: handleCopyPlatformConfig,
+					onImportPlatformConfig: handleImportPlatformConfig,
+					onPlatformConfigImportModeChange: setPlatformConfigImportMode,
+					onPlatformConfigImportTextChange: setPlatformConfigImportText,
+					t,
+				})}
 			/>
 		);
 	}
