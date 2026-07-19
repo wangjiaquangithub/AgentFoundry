@@ -242,6 +242,22 @@ export function runUseIdentityAgentRunnerAction(
 	runIdentityAgentRunnerTargetAction(target, handlers);
 }
 
+export type PlatformUseIdentityAgentRunnerActionHandlers =
+	Omit<IdentityAgentRunnerTargetActionHandlers, 'scrollToAgentRunner'> & {
+		scrollToAgentRunner: NavigationHandler;
+	};
+
+export function runPlatformUseIdentityAgentRunnerAction(
+	identity: EnterpriseIdentity,
+	fallbackQuestion: string,
+	handlers: PlatformUseIdentityAgentRunnerActionHandlers,
+) {
+	runUseIdentityAgentRunnerAction(identity, fallbackQuestion, {
+		...handlers,
+		scrollToAgentRunner: () => window.setTimeout(handlers.scrollToAgentRunner, 0),
+	});
+}
+
 export function tenantAgentRunnerTarget(values: {
 	enterpriseIdentities: EnterpriseIdentity[];
 	tenant: string;
@@ -280,6 +296,32 @@ export function runUseTenantAgentRunnerAction(
 	const target = tenantAgentRunnerTarget(values);
 
 	runTenantAgentRunnerTargetAction(target, handlers);
+}
+
+export type PlatformUseTenantAgentRunnerActionValues =
+	Parameters<typeof tenantAgentRunnerTarget>[0] & {
+		fallbackQuestion: string;
+	};
+
+export type PlatformUseTenantAgentRunnerActionHandlers =
+	Omit<IdentityAgentRunnerTargetActionHandlers, 'scrollToAgentRunner'> & {
+		scrollToAgentRunner: NavigationHandler;
+	};
+
+export function runPlatformUseTenantAgentRunnerAction(
+	values: PlatformUseTenantAgentRunnerActionValues,
+	handlers: PlatformUseTenantAgentRunnerActionHandlers,
+) {
+	runUseTenantAgentRunnerAction(values, {
+		useIdentity: (identity) =>
+			runUseIdentityAgentRunnerAction(identity, values.fallbackQuestion, {
+				...handlers,
+				scrollToAgentRunner: () =>
+					window.setTimeout(handlers.scrollToAgentRunner, 0),
+			}),
+		clearError: handlers.clearError,
+		scrollToAgentRunner: () => window.setTimeout(handlers.scrollToAgentRunner, 0),
+	});
 }
 
 export function memoryOperationAgentRunTarget(values: {
@@ -334,6 +376,21 @@ export function runOpenMemoryOperationAgentAction(
 	const target = memoryOperationAgentRunTarget(values);
 
 	runMemoryOperationAgentRunTargetAction(target, handlers);
+}
+
+export type PlatformOpenMemoryOperationAgentActionHandlers =
+	Omit<MemoryOperationAgentRunTargetActionHandlers, 'scrollToAgentRunner'> & {
+		scrollToAgentRunner: NavigationHandler;
+	};
+
+export function runPlatformOpenMemoryOperationAgentAction(
+	values: Parameters<typeof memoryOperationAgentRunTarget>[0],
+	handlers: PlatformOpenMemoryOperationAgentActionHandlers,
+) {
+	runOpenMemoryOperationAgentAction(values, {
+		...handlers,
+		scrollToAgentRunner: () => window.setTimeout(handlers.scrollToAgentRunner, 0),
+	});
 }
 
 export function agentRunHistorySelectionTarget(

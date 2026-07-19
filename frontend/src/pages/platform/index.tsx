@@ -56,13 +56,13 @@ import {
 	runClearAgentConversationRequestAction,
 	runEnterpriseToolRequestAction,
 	runEnterpriseWorkflowRequestAction,
-	runOpenMemoryOperationAgentAction,
 	runPrimeAgentWorkflowAction,
 	runPrimePublishedAgentAction,
 	runScenarioWorkflowRequestAction,
 	runSelectAgentForRunAction,
-	runUseIdentityAgentRunnerAction,
-	runUseTenantAgentRunnerAction,
+	runPlatformOpenMemoryOperationAgentAction,
+	runPlatformUseIdentityAgentRunnerAction,
+	runPlatformUseTenantAgentRunnerAction,
 	platformAgentAccessAllowedForDisplay,
 	selectedRunAgentIdForAvailableAgents,
 	workflowInputsForSelectedOption,
@@ -1833,14 +1833,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleUseIdentity(identity: EnterpriseIdentity) {
-		runUseIdentityAgentRunnerAction(
+		runPlatformUseIdentityAgentRunnerAction(
 			identity,
 			primaryAgentSampleQuestion,
 			{
 				selectIdentityUser: setSelectedIdentityUserId,
 				setQuestion: setAgentQuestion,
 				clearError: () => setAgentRunError(null),
-				scrollToAgentRunner: () => window.setTimeout(scrollToAgentRunner, 0),
+				scrollToAgentRunner,
 			},
 		);
 	}
@@ -1870,16 +1870,18 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleUseTenant(tenant: string) {
-		runUseTenantAgentRunnerAction(
+		runPlatformUseTenantAgentRunnerAction(
 			{
 				enterpriseIdentities,
 				tenant,
 				fallbackIdentity: selectedIdentity,
+				fallbackQuestion: primaryAgentSampleQuestion,
 			},
 			{
-				useIdentity: handleUseIdentity,
+				selectIdentityUser: setSelectedIdentityUserId,
+				setQuestion: setAgentQuestion,
 				clearError: () => setAgentRunError(null),
-				scrollToAgentRunner: () => window.setTimeout(scrollToAgentRunner, 0),
+				scrollToAgentRunner,
 			},
 		);
 	}
@@ -1893,7 +1895,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleOpenMemoryOperation(item: MemoryOperationsItem) {
-		runOpenMemoryOperationAgentAction(
+		runPlatformOpenMemoryOperationAgentAction(
 			{
 				enterpriseIdentities,
 				item,
@@ -1905,7 +1907,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				setResult: setAgentRunResult,
 				setQuestion: setAgentQuestion,
 				clearError: () => setAgentRunError(null),
-				scrollToAgentRunner: () => window.setTimeout(scrollToAgentRunner, 0),
+				scrollToAgentRunner,
 			},
 		);
 	}
