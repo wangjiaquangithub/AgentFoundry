@@ -1,11 +1,18 @@
 import {
 	governanceOperationsStateForStatus,
 	selectedIdentityGovernanceDisplayStateForStatus,
+	selectedIdentityStateForStatus,
 } from './platform-utils';
 
 export interface PlatformGovernanceDisplayState {
 	selectedIdentityState: ReturnType<typeof selectedIdentityGovernanceDisplayStateForStatus>;
 	operationsState: ReturnType<typeof governanceOperationsStateForStatus>;
+}
+
+export function platformSelectedIdentityDisplayStateForStatus(
+	values: Parameters<typeof selectedIdentityStateForStatus>[0],
+) {
+	return selectedIdentityStateForStatus(values);
 }
 
 export function platformGovernanceDisplayStateForStatus(values: {

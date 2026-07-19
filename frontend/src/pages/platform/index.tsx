@@ -268,7 +268,10 @@ import { platformAgentRunnerDisplayStateForStatus } from './platform-agent-runne
 import { platformAppCenterDisplayStateForStatus } from './platform-app-center-display';
 import { platformConnectorDisplayStateForStatus } from './platform-connector-display';
 import { platformConnectionDisplayStateForStatus } from './platform-connection-display';
-import { platformGovernanceDisplayStateForStatus } from './platform-governance-display';
+import {
+	platformGovernanceDisplayStateForStatus,
+	platformSelectedIdentityDisplayStateForStatus,
+} from './platform-governance-display';
 import { platformPublishDisplayStateForStatus } from './platform-publish-display';
 import { platformResourceDisplayStateForStatus } from './platform-resource-display';
 import { platformRuntimeDisplayStateForStatus } from './platform-runtime-display';
@@ -285,7 +288,6 @@ import {
 	mapAgentRunToConversationTurn,
 	nextAgentSetupStepForSteps,
 	platformConsoleItemsForDisplay,
-	selectedIdentityStateForStatus,
 	summarizeAuditObject,
 	type AgentWizardStep,
 	type EnterpriseAgentConversationTurn,
@@ -622,7 +624,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		publishReleaseIssues,
 		publishBlocked,
 	} = publishDisplay.draftState;
-	const selectedIdentityState = selectedIdentityStateForStatus({
+	const selectedIdentityState = platformSelectedIdentityDisplayStateForStatus({
 		enterpriseIdentities,
 		selectedIdentityUserId,
 		selectedRunAgent,
