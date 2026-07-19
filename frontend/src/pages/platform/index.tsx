@@ -212,6 +212,7 @@ import {
 	workflowSelectionLabels,
 } from './platform-labels';
 import { platformLaunchpadDisplayStateForStatus } from './platform-launchpad-display';
+import { platformMonitoringDisplayStateForStatus } from './platform-monitoring-display';
 import { platformOnboardingDisplayStateForStatus } from './platform-onboarding-display';
 import { platformOrchestrationDisplayStateForStatus } from './platform-orchestration-display';
 import { platformWorkbenchDisplayStateForStatus } from './platform-workbench-display';
@@ -284,8 +285,6 @@ import {
 	mapAgentRunToConversationTurn,
 	memoryOperationsStateForConversations,
 	nextAgentSetupStepForSteps,
-	monitoringActivitySummaryForStatus,
-	monitoringStatsForSummary,
 	operationsHeadlineText,
 	publishAccessStateForStatus,
 	publishDraftStateForStatus,
@@ -2721,33 +2720,22 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		readyCount: orchestrationReadyCount,
 		steps: orchestrationWorkbenchSteps,
 	} = orchestrationDisplay;
-	const monitoringActivitySummary = monitoringActivitySummaryForStatus({
-		agentConversations,
-		auditSummary,
-		auditEvents,
-		failedWorkflowRunCount,
-		pendingApprovalCount: pendingApprovals.length,
-		partialWorkflowRunCount,
-		workflowRunCount,
-		auditEventCount,
-	});
-	const monitoringLoading =
-		platformLoading ||
-		agentRunsLoading ||
-		workflowRunsLoading ||
-		auditLoading ||
-		approvalLoading ||
-		governanceLoading;
-	const monitoringStats = monitoringStatsForSummary(
+	const monitoringDisplay = platformMonitoringDisplayStateForStatus(
 		{
-			recentAgentTurnCount: monitoringActivitySummary.recentAgentTurns.length,
+			platformLoading,
+			agentRunsLoading,
+			workflowRunsLoading,
+			auditLoading,
+			approvalLoading,
+			governanceLoading,
+			agentConversations,
+			auditSummary,
+			auditEvents,
 			workflowRunCount,
 			completedWorkflowRunCount,
 			partialWorkflowRunCount,
 			failedWorkflowRunCount,
 			auditEventCount,
-			auditSuccessCount: monitoringActivitySummary.auditSuccessCount,
-			auditFailureCount: monitoringActivitySummary.auditFailureCount,
 			pendingApprovalCount: pendingApprovals.length,
 		},
 		{
@@ -2755,6 +2743,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			labels: monitoringStatLabels(t),
 		},
 	);
+	const {
+		activitySummary: monitoringActivitySummary,
+		loading: monitoringLoading,
+		stats: monitoringStats,
+	} = monitoringDisplay;
 
 	if (view === 'tenants') {
 		return (
