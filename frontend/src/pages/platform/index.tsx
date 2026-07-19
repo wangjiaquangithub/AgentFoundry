@@ -217,7 +217,7 @@ import {
 	platformAgentReleasePipelineDisplayStateForStatus,
 	platformPublishDisplayStateForStatus,
 } from './platform-publish-display';
-import { platformResourceDisplayStateForStatus } from './platform-resource-display';
+import { createPlatformResourcePageState } from './platform-resource-state';
 import { platformRuntimeDisplayStateForStatus } from './platform-runtime-display';
 import { platformToolRunnerDisplayStateForStatus } from './platform-tool-runner-display';
 import { platformOverviewDisplayStateForStatus } from './platform-overview-display';
@@ -455,13 +455,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		selectedTemplateId,
 		agentConversations,
 	});
-	const platformResourceDisplay = platformResourceDisplayStateForStatus({
+	const {
+		credentialById,
+		knowledgeBaseById,
+	} = createPlatformResourcePageState({
 		credentials,
 		knowledgeBases,
 	});
-	const platformResourceLookupState = platformResourceDisplay.lookupState;
-	const credentialById = platformResourceLookupState.credentialById;
-	const knowledgeBaseById = platformResourceLookupState.knowledgeBaseById;
 	const agentSetupSteps = platformAgentSetupStepsDisplayStateForStatus(
 		{
 			selectedTemplateName: selectedTemplate?.name,
