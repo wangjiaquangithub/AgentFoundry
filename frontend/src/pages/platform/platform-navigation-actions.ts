@@ -93,6 +93,13 @@ export function runAgentSetupStepAction(
 	}
 }
 
+export function runAgentSetupStepRequestAction(
+	values: Parameters<typeof agentSetupStepAction>[0],
+	handlers: AgentSetupStepActionHandlers,
+) {
+	runAgentSetupStepAction(agentSetupStepAction(values), handlers);
+}
+
 export function appCenterPrimaryAction(values: {
 	credentialCount: number;
 	readyAgentId?: string;

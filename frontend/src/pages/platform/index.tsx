@@ -125,14 +125,13 @@ import {
 	runInspectAgentRunEvidenceAuditAction,
 } from './platform-filter-builders';
 import {
-	agentSetupStepAction,
 	capabilityNavigationActions,
 	firstAgentGuideNavigationActions,
 	launchpadNavigationActions,
 	orchestrationWorkbenchNavigationActions,
 	platformConsoleNavigationActions,
 	rolloutPathNavigationActions,
-	runAgentSetupStepAction,
+	runAgentSetupStepRequestAction,
 	runAppCenterDetailPrimaryRequestAction,
 	runAppCenterDetailSecondaryRequestAction,
 	runAppCenterPrimaryRequestAction,
@@ -2027,14 +2026,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleNextAgentSetupStep() {
-		const action = agentSetupStepAction({
+		runAgentSetupStepRequestAction({
 			nextStep: nextAgentSetupStep,
 			hasSelectedTemplate: Boolean(selectedTemplate),
 			hasDefaultTemplate: Boolean(defaultAgentTemplate),
 			credentialCount: credentials.length,
 			knowledgeBaseCount: knowledgeBases.length,
-		});
-		runAgentSetupStepAction(action, {
+		}, {
 			configureDefaultTemplate: () => {
 				if (defaultAgentTemplate) {
 					handleConfigureTemplate(defaultAgentTemplate);
