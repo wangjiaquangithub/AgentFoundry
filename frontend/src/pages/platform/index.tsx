@@ -70,7 +70,7 @@ import {
 	selectedToolInputs,
 	selectedRunAgentIdForAvailableAgents,
 	workflowInputsForSelectedOption,
-	workflowTypeIsAvailable,
+	workflowSelectionForAvailableTemplates,
 	workflowInputsWithValue,
 	type AgentConversationMap,
 } from './platform-agent-runner';
@@ -289,7 +289,6 @@ import {
 	mapAgentRunToConversationTurn,
 	memoryOperationsStateForConversations,
 	nextAgentSetupStepForSteps,
-	normalizeWorkflowInputs,
 	monitoringActivitySummaryForStatus,
 	monitoringStatsForSummary,
 	operationsHeadlineText,
@@ -1039,14 +1038,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}, [selectedRunAgentId, selectedIdentityUserId]);
 
 	useEffect(() => {
-		if (workflowTemplates.length === 0) {
-			return;
-		}
+		const nextSelection = workflowSelectionForAvailableTemplates({
+			workflowTemplates,
+			selectedWorkflowType,
+		});
 
-		if (!workflowTypeIsAvailable(workflowTemplates, selectedWorkflowType)) {
-			const firstTemplate = workflowTemplates[0];
-			setSelectedWorkflowType(firstTemplate.workflow_type);
-			setWorkflowInputs(normalizeWorkflowInputs(firstTemplate.default_inputs));
+		if (nextSelection) {
+			setSelectedWorkflowType(nextSelection.workflowType);
+			setWorkflowInputs(nextSelection.inputs);
 		}
 	}, [selectedWorkflowType, workflowTemplates]);
 

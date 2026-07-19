@@ -272,6 +272,31 @@ export function workflowTypeIsAvailable(
 	);
 }
 
+export function workflowSelectionForAvailableTemplates(values: {
+	workflowTemplates: EnterpriseWorkflowTemplate[];
+	selectedWorkflowType: string;
+}): {
+	workflowType: string;
+	inputs: Record<string, string>;
+} | null {
+	if (
+		values.workflowTemplates.length === 0 ||
+		workflowTypeIsAvailable(
+			values.workflowTemplates,
+			values.selectedWorkflowType,
+		)
+	) {
+		return null;
+	}
+
+	const firstTemplate = values.workflowTemplates[0];
+
+	return {
+		workflowType: firstTemplate.workflow_type,
+		inputs: normalizeWorkflowInputs(firstTemplate.default_inputs),
+	};
+}
+
 export function workflowInputsWithValue(
 	current: Record<string, string>,
 	key: string,
