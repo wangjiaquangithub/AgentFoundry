@@ -10,7 +10,6 @@ import {
 import { useNavigate } from 'react-router-dom';
 
 import { CapabilitiesPanel } from './CapabilitiesPanel';
-import { ConfigManagementPanel } from './ConfigManagementPanel';
 import { DashboardAgentManagementSection } from './DashboardAgentManagementSection';
 import { DashboardAgentQuickStartSection } from './DashboardAgentQuickStartSection';
 import { DashboardAgentRunnerSection } from './DashboardAgentRunnerSection';
@@ -18,6 +17,7 @@ import { DashboardAgentRunNowSection } from './DashboardAgentRunNowSection';
 import { DashboardApplicationSection } from './DashboardApplicationSection';
 import { DashboardApprovalsSection } from './DashboardApprovalsSection';
 import { DashboardAuditEventsSection } from './DashboardAuditEventsSection';
+import { DashboardConfigManagementSection } from './DashboardConfigManagementSection';
 import { DashboardConnectorsSection } from './DashboardConnectorsSection';
 import { DashboardLaunchOrchestrationSection } from './DashboardLaunchOrchestrationSection';
 import { DashboardMembersSection } from './DashboardMembersSection';
@@ -1046,7 +1046,8 @@ export function DashboardViewPage({
 					summarizeAuditObject={summarizeAuditObject}
 				/>
 
-				<ConfigManagementPanel
+				<DashboardConfigManagementSection
+					t={t}
 					platformConfigExport={platformConfigExport}
 					platformConfigLoading={platformConfigLoading}
 					platformConfigError={platformConfigError}
@@ -1054,12 +1055,11 @@ export function DashboardViewPage({
 					platformConfigImportMode={platformConfigImportMode}
 					platformConfigImportText={platformConfigImportText}
 					importingPlatformConfig={importingPlatformConfig}
-					onRefetchPlatformConfigExport={refetchPlatformConfigExport}
-					onCopyPlatformConfig={handleCopyPlatformConfig}
-					onImportPlatformConfig={handleImportPlatformConfig}
-					onPlatformConfigImportModeChange={setPlatformConfigImportMode}
-					onPlatformConfigImportTextChange={setPlatformConfigImportText}
-					t={t}
+					refetchPlatformConfigExport={refetchPlatformConfigExport}
+					handleCopyPlatformConfig={handleCopyPlatformConfig}
+					handleImportPlatformConfig={handleImportPlatformConfig}
+					setPlatformConfigImportMode={setPlatformConfigImportMode}
+					setPlatformConfigImportText={setPlatformConfigImportText}
 				/>
 
 				<CapabilitiesPanel capabilities={capabilities} t={t} />
