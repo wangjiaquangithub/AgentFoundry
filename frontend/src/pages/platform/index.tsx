@@ -1297,6 +1297,15 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		await refetchOpsTasks();
 	}
 
+	async function refetchToolPolicyDependencies() {
+		await Promise.all([
+			refetchPlatform(),
+			refetchGovernance(),
+			refetchToolCatalog(),
+		]);
+		await refetchOpsTasks();
+	}
+
 	async function handleSaveToolPolicy() {
 		await runToolPolicySaveAction(
 			{ identity: selectedIdentity, draft: toolPolicyDraft },
@@ -1315,14 +1324,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				},
 				setToolPolicySaveSuccess: () =>
 					setToolPolicySaveSuccess(tenantGovernanceRequestText.policySaved),
-				refreshDependentViews: async () => {
-					await Promise.all([
-						refetchPlatform(),
-						refetchGovernance(),
-						refetchToolCatalog(),
-					]);
-					await refetchOpsTasks();
-				},
+				refreshDependentViews: refetchToolPolicyDependencies,
 				handleError: (error) =>
 					setToolPolicySaveError(
 						error instanceof Error
