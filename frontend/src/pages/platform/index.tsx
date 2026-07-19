@@ -1,4 +1,3 @@
-import type { ComponentType } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -46,7 +45,6 @@ import { SettingsViewPage } from './components/SettingsViewPage';
 import { TenantsViewPage } from './components/TenantsViewPage';
 import { ToolsViewPage } from './components/ToolsViewPage';
 import { WorkflowsViewPage } from './components/WorkflowsViewPage';
-import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import { usePlatformPageRefs } from './platform-page-refs';
 import {
@@ -283,7 +281,10 @@ import {
 	platformGovernanceDisplayStateForStatus,
 	platformSelectedIdentityDisplayStateForStatus,
 } from './platform-governance-display';
-import { platformPublishDisplayStateForStatus } from './platform-publish-display';
+import {
+	platformAgentReleasePipelineDisplayStateForStatus,
+	platformPublishDisplayStateForStatus,
+} from './platform-publish-display';
 import { platformResourceDisplayStateForStatus } from './platform-resource-display';
 import { platformRuntimeDisplayStateForStatus } from './platform-runtime-display';
 import { platformToolRunnerDisplayStateForStatus } from './platform-tool-runner-display';
@@ -292,7 +293,6 @@ import {
 	agentAccessAllowed,
 	agentRoutingDisplayStateForResult,
 	agentIsReady,
-	agentReleasePipelineForStatus,
 	mapAgentRunToConversationTurn,
 	summarizeAuditObject,
 	type EnterpriseAgentConversationTurn,
@@ -840,7 +840,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const appCenterDetailIssues = appCenterDetailState.detailIssues;
 	const appCenterDetailStatus = appCenterDetailState.detailStatus;
 	const operationsHeadline = appCenterDetailState.operationsHeadline;
-	const agentReleasePipeline = agentReleasePipelineForStatus(
+	const agentReleasePipeline = platformAgentReleasePipelineDisplayStateForStatus(
 		{
 			selectedTemplate,
 			publishForm,
@@ -853,13 +853,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 		agentReleasePipelineLabels(t),
 		agentReleasePipelineIcons,
-	) satisfies Array<{
-		key: string;
-		title: string;
-		detail: string;
-		state: HealthState;
-		icon: ComponentType<{ className?: string }>;
-	}>;
+	);
 	const governanceDisplay = platformGovernanceDisplayStateForStatus({
 		selectedIdentity: {
 			selectedIdentity,

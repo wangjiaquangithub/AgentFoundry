@@ -1,7 +1,16 @@
 import {
+	agentReleasePipelineForStatus,
 	publishAccessStateForStatus,
 	publishDraftStateForStatus,
 } from './platform-utils';
+
+export function platformAgentReleasePipelineDisplayStateForStatus<TIcon>(
+	values: Parameters<typeof agentReleasePipelineForStatus<TIcon>>[0],
+	labels: Parameters<typeof agentReleasePipelineForStatus<TIcon>>[1],
+	icons: Parameters<typeof agentReleasePipelineForStatus<TIcon>>[2],
+) {
+	return agentReleasePipelineForStatus(values, labels, icons);
+}
 
 export interface PlatformPublishDisplayState {
 	accessState: ReturnType<typeof publishAccessStateForStatus>;
