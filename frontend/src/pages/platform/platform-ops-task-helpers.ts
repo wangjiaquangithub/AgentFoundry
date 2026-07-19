@@ -4,6 +4,10 @@ import type {
 	EnterprisePlatformOpsTaskResolveResponse,
 	EnterpriseWorkflowTemplate,
 } from '@/api';
+import {
+	runPlatformOperationAction,
+	type PlatformOperationActionHandlers,
+} from './platform-operation-actions';
 
 export type OpsTaskActionTarget =
 	| {
@@ -64,6 +68,24 @@ export type OpsTaskLoadActionHandlers = {
 	setError: (message: string) => void;
 };
 
+export type PlatformOpsTaskHandlerValues = {
+	text: {
+		resolveError: string;
+	};
+};
+
+export type PlatformOpsTaskHandlerActions = PlatformOperationActionHandlers & {
+	setResolvingOpsTaskCode: (code: string | null) => void;
+	setOpsTasksError: (message: string | null) => void;
+	resolveOpsTask: (
+		code: string,
+	) => EnterprisePlatformOpsTaskResolveResponse | Promise<EnterprisePlatformOpsTaskResolveResponse>;
+	setWorkflowTemplates: (workflows: EnterpriseWorkflowTemplate[]) => void;
+	setOpsTasks: (tasks: EnterprisePlatformOpsTask[]) => void;
+	setOpsTasksSummary: (summary: EnterprisePlatformOpsTasksResponse['summary']) => void;
+	refreshDependentViews: () => void | Promise<void>;
+};
+
 export async function runOpsTaskLoadAction(
 	loadErrorMessage: string,
 	handlers: OpsTaskLoadActionHandlers,
@@ -81,6 +103,37 @@ export async function runOpsTaskLoadAction(
 	} finally {
 		handlers.setLoading(false);
 	}
+}
+
+export function createPlatformOpsTaskHandlers(
+	values: PlatformOpsTaskHandlerValues,
+	actions: PlatformOpsTaskHandlerActions,
+) {
+	function handleOperationAction(target?: string) {
+		runPlatformOperationAction(target, actions);
+	}
+
+	async function handleResolveOpsTask(task: EnterprisePlatformOpsTask) {
+		await runOpsTaskResolveAction(task, {
+			runOperationAction: handleOperationAction,
+			setResolvingOpsTaskCode: actions.setResolvingOpsTaskCode,
+			clearError: () => actions.setOpsTasksError(null),
+			resolveOpsTask: actions.resolveOpsTask,
+			setWorkflowTemplates: actions.setWorkflowTemplates,
+			setOpsTasks: actions.setOpsTasks,
+			setOpsTasksSummary: actions.setOpsTasksSummary,
+			refreshDependentViews: actions.refreshDependentViews,
+			handleError: (error) =>
+				actions.setOpsTasksError(
+					error instanceof Error ? error.message : values.text.resolveError,
+				),
+		});
+	}
+
+	return {
+		handleOperationAction,
+		handleResolveOpsTask,
+	};
 }
 
 export async function runOpsTaskResolveAction(

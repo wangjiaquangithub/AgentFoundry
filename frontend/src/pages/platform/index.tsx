@@ -96,8 +96,8 @@ import {
 } from './platform-member-helpers';
 import { runGovernanceLoadAction } from './platform-governance-helpers';
 import {
+	createPlatformOpsTaskHandlers,
 	runOpsTaskLoadAction,
-	runOpsTaskResolveAction,
 } from './platform-ops-task-helpers';
 import {
 	createPlatformWorkflowTemplateHandlers,
@@ -216,7 +216,6 @@ import {
 	platformWorkbenchDisplayStateForStatus,
 } from './platform-workbench-display';
 import { platformWorkflowDisplayStateForStatus } from './platform-workflow-display';
-import { runPlatformOperationAction } from './platform-operation-actions';
 import {
 	createPlatformAgentQuickConfigurationHandlers,
 	runPlatformAgentQuickConfigurationSyncAction,
@@ -1572,38 +1571,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		);
 	}
 
-	function handleOperationAction(target?: string) {
-		runPlatformOperationAction(target, {
-			scrollToAgentManagement,
-			scrollToConnectorCenter,
-			scrollToGovernance,
-			scrollToWorkflowRunner,
-			scrollToToolRunner,
-			scrollToMemoryOperations,
-			navigate,
-		});
-	}
-
 	async function refetchOpsTaskResolveDependencies() {
 		await refetchPlatform();
 		await refetchScenarios();
-	}
-
-	async function handleResolveOpsTask(task: EnterprisePlatformOpsTask) {
-		await runOpsTaskResolveAction(task, {
-			runOperationAction: handleOperationAction,
-			setResolvingOpsTaskCode,
-			clearError: () => setOpsTasksError(null),
-			resolveOpsTask: (code) => platformApi.resolveOpsTask(code),
-			setWorkflowTemplates,
-			setOpsTasks,
-			setOpsTasksSummary,
-			refreshDependentViews: refetchOpsTaskResolveDependencies,
-			handleError: (error) =>
-				setOpsTasksError(
-					error instanceof Error ? error.message : opsTasksRequestText.resolveError,
-				),
-		});
 	}
 
 	function handlePrimeAgentWorkflow(agent: EnterprisePublishedAgent) {
@@ -1944,6 +1914,31 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				updateWorkflow: platformApi.updateWorkflow,
 				setWorkflowTemplates,
 				refreshDependentViews: refetchWorkflowTemplateDependencies,
+			},
+		);
+
+	const { handleOperationAction, handleResolveOpsTask } =
+		createPlatformOpsTaskHandlers(
+			{
+				text: {
+					resolveError: opsTasksRequestText.resolveError,
+				},
+			},
+			{
+				scrollToAgentManagement,
+				scrollToConnectorCenter,
+				scrollToGovernance,
+				scrollToWorkflowRunner,
+				scrollToToolRunner,
+				scrollToMemoryOperations,
+				navigate,
+				setResolvingOpsTaskCode,
+				setOpsTasksError,
+				resolveOpsTask: platformApi.resolveOpsTask,
+				setWorkflowTemplates,
+				setOpsTasks,
+				setOpsTasksSummary,
+				refreshDependentViews: refetchOpsTaskResolveDependencies,
 			},
 		);
 
