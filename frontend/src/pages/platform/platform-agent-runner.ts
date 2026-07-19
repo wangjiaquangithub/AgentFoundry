@@ -43,6 +43,18 @@ export function latestAgentRunResponse(
 	return agentConversations[agentId]?.[0]?.response ?? null;
 }
 
+export function agentRunResultForSelectedAgent(values: {
+	current: EnterpriseAgentRunResponse | null;
+	agentConversations: AgentConversationMap;
+	agentId: string;
+}): EnterpriseAgentRunResponse | null {
+	if (values.current?.agent_id === values.agentId) {
+		return values.current;
+	}
+
+	return latestAgentRunResponse(values.agentConversations, values.agentId);
+}
+
 export function replaceAgentConversationTurns(values: {
 	agentConversations: AgentConversationMap;
 	agentId: string;

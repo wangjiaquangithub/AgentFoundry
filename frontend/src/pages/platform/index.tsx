@@ -53,6 +53,7 @@ import { usePlatformPageRefs } from './platform-page-refs';
 import {
 	agentWorkflowPrimeInputs,
 	agentConversationTurnFromRunResponse,
+	agentRunResultForSelectedAgent,
 	agentRunResultAfterHistoryRefresh,
 	clearAgentConversationTurns,
 	clearAgentRunsParams,
@@ -1017,12 +1018,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			return;
 		}
 
-		setAgentRunResult((current) => {
-			if (current?.agent_id === selectedRunAgentId) {
-				return current;
-			}
-			return latestAgentRunResponse(agentConversations, selectedRunAgentId);
-		});
+		setAgentRunResult((current) =>
+			agentRunResultForSelectedAgent({
+				current,
+				agentConversations,
+				agentId: selectedRunAgentId,
+			}),
+		);
 	}, [selectedRunAgentId]);
 
 	useEffect(() => {
