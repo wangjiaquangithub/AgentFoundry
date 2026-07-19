@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-import { CapabilitiesPanel } from './CapabilitiesPanel';
 import { DashboardAgentManagementSection } from './DashboardAgentManagementSection';
 import { DashboardAgentQuickStartSection } from './DashboardAgentQuickStartSection';
 import { DashboardAgentRunnerSection } from './DashboardAgentRunnerSection';
@@ -17,6 +16,7 @@ import { DashboardAgentRunNowSection } from './DashboardAgentRunNowSection';
 import { DashboardApplicationSection } from './DashboardApplicationSection';
 import { DashboardApprovalsSection } from './DashboardApprovalsSection';
 import { DashboardAuditEventsSection } from './DashboardAuditEventsSection';
+import { DashboardCapabilitiesSection } from './DashboardCapabilitiesSection';
 import { DashboardConfigManagementSection } from './DashboardConfigManagementSection';
 import { DashboardConnectorsSection } from './DashboardConnectorsSection';
 import { DashboardLaunchOrchestrationSection } from './DashboardLaunchOrchestrationSection';
@@ -1062,7 +1062,7 @@ export function DashboardViewPage({
 					setPlatformConfigImportText={setPlatformConfigImportText}
 				/>
 
-				<CapabilitiesPanel capabilities={capabilities} t={t} />
+				<DashboardCapabilitiesSection capabilities={capabilities} t={t} />
 			</div>
 		</main>
 	);
