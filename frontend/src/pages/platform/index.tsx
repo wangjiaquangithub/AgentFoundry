@@ -1275,6 +1275,19 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		await refetchOpsTasks();
 	}
 
+	async function refetchRuntimeRunDependencies() {
+		await refetchPlatform();
+		await refetchToolCatalog();
+		await refetchAuditEvents();
+		await refetchOpsTasks();
+	}
+
+	async function refetchWorkflowRunDependencies() {
+		await refetchRuntimeRunDependencies();
+		await refetchWorkflowRuns();
+		await refetchScenarios();
+	}
+
 	async function handleSaveToolPolicy() {
 		await runToolPolicySaveAction(
 			{ identity: selectedIdentity, draft: toolPolicyDraft },
@@ -2319,12 +2332,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				refreshApprovals: refetchApprovals,
 				refreshAgentRuns: (agentId, userId) =>
 					refetchAgentRuns(agentId, userId || username),
-				refreshDependentViews: async () => {
-					await refetchPlatform();
-					await refetchToolCatalog();
-					await refetchAuditEvents();
-					await refetchOpsTasks();
-				},
+				refreshDependentViews: refetchRuntimeRunDependencies,
 				setError: setAgentRunError,
 				now: () => new Date().toISOString(),
 				fallbackId: (agentId) => `${agentId}-${Date.now()}`,
@@ -2358,12 +2366,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				clearError: () => setToolRunError(null),
 				runTool: platformApi.runTool,
 				setResult: setToolRunResult,
-				refreshDependentViews: async () => {
-					await refetchPlatform();
-					await refetchToolCatalog();
-					await refetchAuditEvents();
-					await refetchOpsTasks();
-				},
+				refreshDependentViews: refetchRuntimeRunDependencies,
 				createApproval: (message) => handleCreateRunApproval('tool_run', message),
 				setApprovalRequiredError: () =>
 					setToolRunError(toolRunnerRequestText.approvalRequiredCreated),
@@ -2397,14 +2400,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				clearError: () => setWorkflowRunError(null),
 				runWorkflow: platformApi.runWorkflow,
 				setResult: setWorkflowRunResult,
-				refreshDependentViews: async () => {
-					await refetchPlatform();
-					await refetchToolCatalog();
-					await refetchAuditEvents();
-					await refetchWorkflowRuns();
-					await refetchScenarios();
-					await refetchOpsTasks();
-				},
+				refreshDependentViews: refetchWorkflowRunDependencies,
 				createApproval: (message) =>
 					handleCreateRunApproval('workflow_run', message),
 				setApprovalRequiredError: () =>
