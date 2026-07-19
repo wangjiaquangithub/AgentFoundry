@@ -1,6 +1,7 @@
 import type {
 	EnterpriseAgentRunRequest,
 	EnterpriseAgentRunResponse,
+	EnterpriseIdentity,
 	EnterprisePublishedAgent,
 	EnterprisePlatformScenario,
 	EnterpriseToolRunRequest,
@@ -8,6 +9,7 @@ import type {
 	EnterpriseWorkflowTemplate,
 } from '@/api';
 import {
+	agentAccessAllowed,
 	normalizeWorkflowInputs,
 	type EnterpriseAgentConversationTurn,
 } from './platform-utils';
@@ -163,6 +165,34 @@ export function runQuestionFromInput(
 	formQuestion: string,
 ): string {
 	return (optionQuestion ?? formQuestion).trim();
+}
+
+export function agentRunTargetForRequest(values: {
+	agentId: string;
+	selectedRunAgentId: string;
+	activeAgents: EnterprisePublishedAgent[];
+	selectedRunAgent: EnterprisePublishedAgent | null;
+	userId: string;
+	enterpriseIdentities: EnterpriseIdentity[];
+	selectedIdentity: EnterpriseIdentity | null;
+}): {
+	targetAgent: EnterprisePublishedAgent | null;
+	targetIdentity: EnterpriseIdentity | null;
+	accessAllowed: boolean;
+} {
+	const targetAgent =
+		values.activeAgents.find((agent) => agent.id === values.agentId) ??
+		(values.agentId === values.selectedRunAgentId ? values.selectedRunAgent : null);
+	const targetIdentity =
+		values.enterpriseIdentities.find(
+			(identity) => identity.user_id === values.userId,
+		) ?? values.selectedIdentity;
+
+	return {
+		targetAgent,
+		targetIdentity,
+		accessAllowed: targetAgent ? agentAccessAllowed(targetAgent, targetIdentity) : true,
+	};
 }
 
 export function clearAgentRunsParams(values: {

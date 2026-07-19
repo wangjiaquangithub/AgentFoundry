@@ -56,6 +56,7 @@ import {
 	agentQuestionWithFallback,
 	agentRunResultForSelectedAgent,
 	agentRunResultAfterHistoryRefresh,
+	agentRunTargetForRequest,
 	clearAgentConversationTurns,
 	clearAgentRunsParams,
 	enterpriseAgentRunPayload,
@@ -2465,16 +2466,19 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			options?.approvalId,
 			agentApprovalId,
 		);
-		const targetAgent =
-			activePlatformAgents.find((agent) => agent.id === agentId) ??
-			(agentId === selectedRunAgentId ? selectedRunAgent : null);
-		const targetIdentity =
-			enterpriseIdentities.find((identity) => identity.user_id === userId) ??
-			selectedIdentity;
 		if (!question || !agentId) {
 			return;
 		}
-		if (targetAgent && !agentAccessAllowed(targetAgent, targetIdentity)) {
+		const { accessAllowed } = agentRunTargetForRequest({
+			agentId,
+			selectedRunAgentId,
+			activeAgents: activePlatformAgents,
+			selectedRunAgent,
+			userId,
+			enterpriseIdentities,
+			selectedIdentity,
+		});
+		if (!accessAllowed) {
 			setAgentRunError(agentRunnerRequestText.accessDenied);
 			return;
 		}
