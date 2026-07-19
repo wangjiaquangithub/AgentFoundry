@@ -207,8 +207,8 @@ import { createPlatformGovernancePageState } from './platform-governance-state';
 import { createPlatformSelectedIdentityPageState } from './platform-selected-identity-state';
 import {
 	platformAgentReleasePipelineDisplayStateForStatus,
-	platformPublishDisplayStateForStatus,
 } from './platform-publish-display';
+import { createPlatformPublishPageState } from './platform-publish-state';
 import { createPlatformResourcePageState } from './platform-resource-state';
 import { createPlatformRuntimePageState } from './platform-runtime-state';
 import { createPlatformToolRunnerPageState } from './platform-tool-runner-state';
@@ -516,7 +516,16 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		connectors,
 		labels: platformRuntimeConfigLabels(t),
 	});
-	const publishDisplay = platformPublishDisplayStateForStatus({
+	const {
+		publishTenant,
+		publishAccessMembers,
+		publishRoleOptions,
+		publishSelectedModelLabel,
+		publishAccessScopeSummary,
+		publishRuntimeSummary,
+		publishReleaseIssues,
+		publishBlocked,
+	} = createPlatformPublishPageState({
 		access: {
 			tenant: publishForm.tenant,
 			currentUserTenant: platformStatus?.current_user.tenant,
@@ -537,18 +546,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 		draftLabels: publishDraftLabels(t),
 	});
-	const {
-		publishTenant,
-		publishAccessMembers,
-		publishRoleOptions,
-	} = publishDisplay.accessState;
-	const {
-		publishSelectedModelLabel,
-		publishAccessScopeSummary,
-		publishRuntimeSummary,
-		publishReleaseIssues,
-		publishBlocked,
-	} = publishDisplay.draftState;
 	const {
 		selectedIdentity,
 		selectedRunAgentAccessAllowed,
