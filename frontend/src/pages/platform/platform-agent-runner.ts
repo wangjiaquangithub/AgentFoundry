@@ -590,6 +590,32 @@ export function agentWorkflowPrimeInputs(values: {
 	return normalizeWorkflowInputs(selectedDefaultInputs);
 }
 
+export function agentWorkflowPrimeTarget(values: {
+	agent: EnterprisePublishedAgent;
+	selectedIdentityUserId: string;
+	username: string;
+	selectedWorkflowTemplate: EnterpriseWorkflowTemplate | null;
+	workflowOptions: Array<{
+		value: string;
+		defaultInputs?: Record<string, unknown>;
+	}>;
+	selectedWorkflowType: string;
+}): {
+	agentId: string;
+	userId: string;
+	inputs: Record<string, string>;
+} {
+	return {
+		agentId: values.agent.id,
+		userId: values.selectedIdentityUserId || values.username,
+		inputs: agentWorkflowPrimeInputs({
+			selectedWorkflowTemplate: values.selectedWorkflowTemplate,
+			workflowOptions: values.workflowOptions,
+			selectedWorkflowType: values.selectedWorkflowType,
+		}),
+	};
+}
+
 export function workflowInputsForSelectedOption(
 	workflowOptions: Array<{
 		value: string;
