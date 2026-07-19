@@ -24,6 +24,7 @@ import { DashboardMembersSection } from './DashboardMembersSection';
 import { DashboardOperationalHealthSection } from './DashboardOperationalHealthSection';
 import { DashboardOperationsConsoleSection } from './DashboardOperationsConsoleSection';
 import { DashboardOperationsSnapshotSection } from './DashboardOperationsSnapshotSection';
+import { DashboardPolicySubagentsSection } from './DashboardPolicySubagentsSection';
 import { DashboardRuntimeStatusSection } from './DashboardRuntimeStatusSection';
 import { DashboardTenantAccessSection } from './DashboardTenantAccessSection';
 import { DashboardTenantGovernancePanelSection } from './DashboardTenantGovernancePanelSection';
@@ -31,7 +32,6 @@ import { DashboardWorkbenchSection } from './DashboardWorkbenchSection';
 import { DashboardWorkflowAutomationSection } from './DashboardWorkflowAutomationSection';
 import { DashboardWorkflowRunnerSection } from './DashboardWorkflowRunnerSection';
 import { PlatformDashboardOverview } from './PlatformDashboardOverview';
-import { PolicySubagentsPanel } from './PolicySubagentsPanel';
 import { ToolCatalogPanel } from './ToolCatalogPanel';
 import { ToolRunnerPanel } from './ToolRunnerPanel';
 import { cn } from '@/lib/utils';
@@ -883,29 +883,14 @@ export function DashboardViewPage({
 					navigate={navigate}
 				/>
 
-				<PolicySubagentsPanel
+				<DashboardPolicySubagentsSection
+					t={t}
 					platformLoading={platformLoading}
-					hasPlatformStatus={Boolean(platformStatus)}
+					platformStatus={platformStatus}
 					platformError={platformError}
 					toolPolicyMode={toolPolicyMode}
 					policyDecisions={policyDecisions}
 					subagentTemplates={subagentTemplates}
-					labels={{
-						policyTitle: t('platform.policy.title'),
-						policyDescription: t('platform.policy.description'),
-						policyMode: t('platform.policy.mode'),
-						policyError: t('platform.policy.error'),
-						policyEmpty: t('platform.policy.empty'),
-						policyAllowed: t('platform.policy.allowed'),
-						policyDenied: t('platform.policy.denied'),
-						subagentsTitle: t('platform.subagents.title'),
-						subagentsDescription: t('platform.subagents.description'),
-						subagentsError: t('platform.subagents.error'),
-						subagentsEmpty: t('platform.subagents.empty'),
-						subagentPermission: t('platform.subagents.permission'),
-						subagentOverrideEnabled: t('platform.subagents.overrideEnabled'),
-						subagentOverrideDisabled: t('platform.subagents.overrideDisabled'),
-					}}
 				/>
 
 				<AgentRunnerPanel
