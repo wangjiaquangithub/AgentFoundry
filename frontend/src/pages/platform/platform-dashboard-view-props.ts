@@ -210,7 +210,10 @@ type DashboardAppCenterViewProps = Pick<
 	| 'handleAppCenterPrimaryAction'
 	| 'inspectedAppCenterAgent'
 	| 'inspectedAppCenterTemplate'
+	| 'readyPlatformAgents'
+	| 'scrollToAgentManagement'
 	| 'setSelectedAppCenterItem'
+	| 'setSelectedRunAgentId'
 >;
 
 type DashboardApprovalsViewProps = Pick<
@@ -632,6 +635,9 @@ type DashboardOperationsViewProps = Pick<
 	| 'blockedOrPartialPlatformAgents'
 	| 'operationsAgentIssueText'
 	| 'operationsHeadline'
+	| 'readyPlatformAgents'
+	| 'scrollToAgentManagement'
+	| 'setSelectedRunAgentId'
 	| 'topOperationsAgents'
 >;
 

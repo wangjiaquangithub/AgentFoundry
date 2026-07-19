@@ -2281,6 +2281,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					blockedOrPartialPlatformAgents,
 					operationsAgentIssueText,
 					operationsHeadline,
+					readyPlatformAgents,
+					scrollToAgentManagement,
+					setSelectedRunAgentId,
 					topOperationsAgents,
 				}),
 				...createPlatformDashboardPlatformConsoleViewProps({
@@ -2382,7 +2385,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					handleAppCenterPrimaryAction,
 					inspectedAppCenterAgent,
 					inspectedAppCenterTemplate,
+					readyPlatformAgents,
+					scrollToAgentManagement,
 					setSelectedAppCenterItem,
+					setSelectedRunAgentId,
 				}),
 				...createPlatformDashboardCapabilitiesViewProps({
 					capabilities,
@@ -2593,11 +2599,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					t,
 					username,
 				}),
-				readyPlatformAgents: readyPlatformAgents,
-				scrollToAgentManagement: scrollToAgentManagement,
 				selectedIdentityUserId: selectedIdentityUserId,
 				setSelectedIdentityUserId: setSelectedIdentityUserId,
-				setSelectedRunAgentId: setSelectedRunAgentId,
 				t: t,
 				username: username,
 			})}
