@@ -16,6 +16,17 @@ export type PlatformConfigCopyActionHandlers = {
 	copyText: (text: string) => void | Promise<void>;
 };
 
+export type PlatformConfigLoadActionHandlers = {
+	setLoading: (loading: boolean) => void;
+	clearError: () => void;
+	exportConfig: () =>
+		| EnterprisePlatformConfigExportResponse
+		| Promise<EnterprisePlatformConfigExportResponse>;
+	setExport: (response: EnterprisePlatformConfigExportResponse) => void;
+	setImportText: (updater: (current: string) => string) => void;
+	setError: (message: string) => void;
+};
+
 export type PlatformConfigImportActionHandlers = {
 	setImporting: (importing: boolean) => void;
 	clearError: () => void;
@@ -77,6 +88,28 @@ export function platformConfigImportErrorMessage(
 	}
 
 	return error instanceof Error ? error.message : text.importError;
+}
+
+export async function runPlatformConfigLoadAction(
+	text: PlatformConfigManagementRequestText,
+	handlers: PlatformConfigLoadActionHandlers,
+) {
+	handlers.setLoading(true);
+	handlers.clearError();
+	try {
+		const response = await handlers.exportConfig();
+		handlers.setExport(response);
+		handlers.setImportText((current) =>
+			platformConfigImportTextForExport({
+				exportResponse: response,
+				currentImportText: current,
+			}),
+		);
+	} catch (error) {
+		handlers.setError(platformConfigLoadErrorMessage(error, text));
+	} finally {
+		handlers.setLoading(false);
+	}
 }
 
 export async function runPlatformConfigCopyAction(

@@ -93,10 +93,9 @@ import {
 } from './platform-connector-helpers';
 import {
 	platformConfigImportErrorMessage,
-	platformConfigImportTextForExport,
-	platformConfigLoadErrorMessage,
 	runPlatformConfigCopyAction,
 	runPlatformConfigImportAction,
+	runPlatformConfigLoadAction,
 } from './platform-config-management';
 import {
 	toolPolicyDraftFromDecisions,
@@ -1050,24 +1049,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function refetchPlatformConfigExport() {
-		setPlatformConfigLoading(true);
-		setPlatformConfigError(null);
-		try {
-			const response = await platformApi.exportConfig();
-			setPlatformConfigExport(response);
-			setPlatformConfigImportText((current) =>
-				platformConfigImportTextForExport({
-					exportResponse: response,
-					currentImportText: current,
-				}),
-			);
-		} catch (error) {
-			setPlatformConfigError(
-				platformConfigLoadErrorMessage(error, configManagementRequestText),
-			);
-		} finally {
-			setPlatformConfigLoading(false);
-		}
+		await runPlatformConfigLoadAction(configManagementRequestText, {
+			setLoading: setPlatformConfigLoading,
+			clearError: () => setPlatformConfigError(null),
+			exportConfig: platformApi.exportConfig,
+			setExport: setPlatformConfigExport,
+			setImportText: setPlatformConfigImportText,
+			setError: setPlatformConfigError,
+		});
 	}
 
 	async function handleCopyPlatformConfig() {
