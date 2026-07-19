@@ -46,6 +46,30 @@ export type AgentRunHistorySelectionTarget = {
 	result: EnterpriseAgentRunResponse;
 };
 type NavigationHandler = () => void;
+type StateUpdater<T> = (update: (current: T) => T) => void;
+
+export type EnterpriseAgentRunOptions = {
+	agentId?: string;
+	question?: string;
+	userId?: string;
+	approvalId?: string;
+};
+
+export type EnterpriseToolRunOptions = {
+	toolName?: string;
+	inputs?: Record<string, unknown>;
+	userId?: string;
+	agentId?: string;
+	approvalId?: string;
+};
+
+export type EnterpriseWorkflowRunOptions = {
+	workflowType?: string;
+	inputs?: Record<string, unknown>;
+	userId?: string;
+	agentId?: string;
+	approvalId?: string;
+};
 
 export function platformAgentAccessAllowedForDisplay(
 	agent: Parameters<typeof agentAccessAllowed>[0],
@@ -1248,6 +1272,277 @@ export async function runScenarioWorkflowRequestAction(
 ) {
 	const target = scenarioWorkflowRunTarget(values);
 	await runScenarioWorkflowAction(target, handlers);
+}
+
+export type PlatformRunnerHandlerValues = {
+	agentConversations: AgentConversationMap;
+	agentQuestion: string;
+	selectedRunAgentId: string;
+	selectedIdentityUserId: string;
+	username: string;
+	agentApprovalId: string;
+	activePlatformAgents: EnterprisePublishedAgent[];
+	selectedRunAgent: EnterprisePublishedAgent | null;
+	enterpriseIdentities: EnterpriseIdentity[];
+	selectedIdentity: EnterpriseIdentity | null;
+	primaryAgentSampleQuestion: string;
+	selectedToolName: string;
+	selectedToolInputKey: string;
+	selectedToolInputValue: string;
+	toolApprovalId: string;
+	selectedWorkflowType: string;
+	workflowInputs: Record<string, string>;
+	workflowTemplates: EnterpriseWorkflowTemplate[];
+	workflowApprovalId: string;
+	requestText: {
+		agentHistoryLoadError: string;
+		agentHistoryClearError: string;
+		agentAccessDenied: string;
+		agentApprovalRequiredCreated: string;
+		toolApprovalRequiredCreated: string;
+		workflowApprovalRequiredCreated: string;
+	};
+};
+
+export type PlatformRunnerHandlerActions = {
+	setAgentQuestion: (question: string) => void;
+	setAgentRunError: (message: string | null) => void;
+	setSelectedRunAgentId: (agentId: string) => void;
+	setAgentRunResult: (result: EnterpriseAgentRunResponse | null) => void;
+	setAgentRunsLoading: (loading: boolean) => void;
+	setAgentRunsError: (message: string | null) => void;
+	loadAgentRun: (
+		runId: string,
+	) => EnterpriseAgentRunHistoryItem | Promise<EnterpriseAgentRunHistoryItem>;
+	clearAgentRuns: (params: ClearAgentRunsParams) => unknown | Promise<unknown>;
+	setAgentConversations: StateUpdater<AgentConversationMap>;
+	setRunningAgent: (running: boolean) => void;
+	runAgent: (
+		payload: EnterpriseAgentRunRequest,
+	) => EnterpriseAgentRunResponse | Promise<EnterpriseAgentRunResponse>;
+	refreshApprovals: () => void | Promise<void>;
+	refreshAgentRuns: (agentId: string, userId: string) => void | Promise<void>;
+	refreshRuntimeRunDependencies: () => void | Promise<void>;
+	setRunningTool: (running: boolean) => void;
+	setToolRunError: (message: string | null) => void;
+	runTool: (
+		payload: EnterpriseToolRunRequest,
+	) => EnterpriseToolRunResponse | Promise<EnterpriseToolRunResponse>;
+	setToolRunResult: (result: EnterpriseToolRunResponse) => void;
+	createRunApproval: (
+		type: 'tool_run' | 'workflow_run',
+		message?: string,
+	) => boolean | Promise<boolean>;
+	setRunningWorkflow: (running: boolean) => void;
+	setWorkflowRunError: (message: string | null) => void;
+	runWorkflow: (
+		payload: EnterpriseWorkflowRunRequest,
+	) => EnterpriseWorkflowRunResponse | Promise<EnterpriseWorkflowRunResponse>;
+	setWorkflowRunResult: (result: EnterpriseWorkflowRunResponse) => void;
+	refreshWorkflowRunDependencies: () => void | Promise<void>;
+	setSelectedWorkflowType: (workflowType: string) => void;
+	setWorkflowInputs: (inputs: Record<string, string>) => void;
+	scrollToAgentRunner: NavigationHandler;
+	scrollToWorkflowRunner: NavigationHandler;
+	now: () => string;
+	fallbackId: (agentId: string) => string;
+};
+
+export function createPlatformRunnerHandlers(
+	values: PlatformRunnerHandlerValues,
+	actions: PlatformRunnerHandlerActions,
+) {
+	async function runEnterpriseAgent(options?: EnterpriseAgentRunOptions) {
+		await runEnterpriseAgentRequestAction(
+			{
+				options,
+				selectedRunAgentId: values.selectedRunAgentId,
+				agentQuestion: values.agentQuestion,
+				selectedIdentityUserId: values.selectedIdentityUserId,
+				agentApprovalId: values.agentApprovalId,
+				activeAgents: values.activePlatformAgents,
+				selectedRunAgent: values.selectedRunAgent,
+				enterpriseIdentities: values.enterpriseIdentities,
+				selectedIdentity: values.selectedIdentity,
+			},
+			{
+				setRunning: actions.setRunningAgent,
+				clearError: () => actions.setAgentRunError(null),
+				setAccessDeniedError: () =>
+					actions.setAgentRunError(values.requestText.agentAccessDenied),
+				runAgent: actions.runAgent,
+				setResult: actions.setAgentRunResult,
+				setAgentConversations: actions.setAgentConversations,
+				setApprovalRequiredError: () =>
+					actions.setAgentRunError(
+						values.requestText.agentApprovalRequiredCreated,
+					),
+				refreshApprovals: actions.refreshApprovals,
+				refreshAgentRuns: (agentId, userId) =>
+					actions.refreshAgentRuns(agentId, userId || values.username),
+				refreshDependentViews: actions.refreshRuntimeRunDependencies,
+				setError: actions.setAgentRunError,
+				now: actions.now,
+				fallbackId: actions.fallbackId,
+			},
+		);
+	}
+
+	async function runEnterpriseTool(options?: EnterpriseToolRunOptions) {
+		await runEnterpriseToolRequestAction(
+			{
+				options,
+				selectedToolName: values.selectedToolName,
+				selectedToolInputKey: values.selectedToolInputKey,
+				selectedToolInputValue: values.selectedToolInputValue,
+				selectedIdentityUserId: values.selectedIdentityUserId,
+				selectedRunAgentId: values.selectedRunAgentId,
+				toolApprovalId: values.toolApprovalId,
+			},
+			{
+				setRunning: actions.setRunningTool,
+				clearError: () => actions.setToolRunError(null),
+				runTool: actions.runTool,
+				setResult: actions.setToolRunResult,
+				refreshDependentViews: actions.refreshRuntimeRunDependencies,
+				createApproval: (message) =>
+					actions.createRunApproval('tool_run', message),
+				setApprovalRequiredError: () =>
+					actions.setToolRunError(
+						values.requestText.toolApprovalRequiredCreated,
+					),
+				setError: actions.setToolRunError,
+			},
+		);
+	}
+
+	async function runEnterpriseWorkflow(options?: EnterpriseWorkflowRunOptions) {
+		await runEnterpriseWorkflowRequestAction(
+			{
+				options,
+				selectedWorkflowType: values.selectedWorkflowType,
+				workflowInputs: values.workflowInputs,
+				selectedIdentityUserId: values.selectedIdentityUserId,
+				selectedRunAgentId: values.selectedRunAgentId,
+				workflowApprovalId: values.workflowApprovalId,
+			},
+			{
+				setRunning: actions.setRunningWorkflow,
+				clearError: () => actions.setWorkflowRunError(null),
+				runWorkflow: actions.runWorkflow,
+				setResult: actions.setWorkflowRunResult,
+				refreshDependentViews: actions.refreshWorkflowRunDependencies,
+				createApproval: (message) =>
+					actions.createRunApproval('workflow_run', message),
+				setApprovalRequiredError: () =>
+					actions.setWorkflowRunError(
+						values.requestText.workflowApprovalRequiredCreated,
+					),
+				setError: actions.setWorkflowRunError,
+			},
+		);
+	}
+
+	return {
+		handlePrimeAgentRunner(sample = values.primaryAgentSampleQuestion) {
+			runAgentRunnerPrimeTargetAction(sample, {
+				setQuestion: actions.setAgentQuestion,
+				clearError: () => actions.setAgentRunError(null),
+				scrollToAgentRunner: () =>
+					window.setTimeout(actions.scrollToAgentRunner, 0),
+			});
+		},
+		handlePrimePublishedAgent(
+			agentId: string,
+			sample = values.primaryAgentSampleQuestion,
+		) {
+			runPrimePublishedAgentAction(
+				{
+					agentConversations: values.agentConversations,
+					agentId,
+					currentQuestion: values.agentQuestion,
+					sampleQuestion: sample,
+				},
+				{
+					selectRunAgent: actions.setSelectedRunAgentId,
+					setQuestion: actions.setAgentQuestion,
+					setResult: actions.setAgentRunResult,
+					clearError: () => actions.setAgentRunError(null),
+					scrollToAgentRunner: () =>
+						window.setTimeout(actions.scrollToAgentRunner, 0),
+				},
+			);
+		},
+		handleSelectRunAgent(agentId: string) {
+			runSelectAgentForRunAction(
+				{ agentConversations: values.agentConversations, agentId },
+				{
+					selectRunAgent: actions.setSelectedRunAgentId,
+					setResult: actions.setAgentRunResult,
+					clearError: () => actions.setAgentRunError(null),
+				},
+			);
+		},
+		async handleSelectAgentRun(turn: EnterpriseAgentConversationTurn) {
+			await runAgentRunHistoryDetailLoadAction(
+				{
+					turn,
+					loadErrorMessage: values.requestText.agentHistoryLoadError,
+				},
+				{
+					setQuestion: actions.setAgentQuestion,
+					clearRunError: () => actions.setAgentRunError(null),
+					clearRunsError: () => actions.setAgentRunsError(null),
+					setResult: actions.setAgentRunResult,
+					setRunsLoading: actions.setAgentRunsLoading,
+					loadAgentRun: actions.loadAgentRun,
+					setAgentConversations: actions.setAgentConversations,
+					setRunsError: actions.setAgentRunsError,
+				},
+			);
+		},
+		async handleClearAgentConversation() {
+			await runClearAgentConversationRequestAction(
+				{
+					selectedRunAgentId: values.selectedRunAgentId,
+					selectedIdentityUserId: values.selectedIdentityUserId,
+					username: values.username,
+				},
+				{
+					setRunsLoading: actions.setAgentRunsLoading,
+					clearRunsError: () => actions.setAgentRunsError(null),
+					clearRuns: actions.clearAgentRuns,
+					setAgentConversations: actions.setAgentConversations,
+					clearRunResult: () => actions.setAgentRunResult(null),
+					clearRunError: () => actions.setAgentRunError(null),
+					setRunsError: actions.setAgentRunsError,
+					historyClearErrorMessage: values.requestText.agentHistoryClearError,
+				},
+			);
+		},
+		runEnterpriseAgent,
+		handleRunEnterpriseAgent: () => runEnterpriseAgent(),
+		runEnterpriseTool,
+		handleRunEnterpriseTool: () => runEnterpriseTool(),
+		runEnterpriseWorkflow,
+		handleRunEnterpriseWorkflow: () => runEnterpriseWorkflow(),
+		async handleRunScenario(scenario: EnterprisePlatformScenario) {
+			await runScenarioWorkflowRequestAction(
+				{
+					scenario,
+					workflowTemplates: values.workflowTemplates,
+					currentInputs: values.workflowInputs,
+				},
+				{
+					setWorkflowType: actions.setSelectedWorkflowType,
+					setWorkflowInputs: actions.setWorkflowInputs,
+					scheduleWorkflowRunnerFocus: () =>
+						window.setTimeout(actions.scrollToWorkflowRunner, 0),
+					runWorkflow: runEnterpriseWorkflow,
+				},
+			);
+		},
+	};
 }
 
 export function agentWorkflowPrimeInputs(values: {

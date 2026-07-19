@@ -48,27 +48,18 @@ import { DashboardViewPage } from './components/DashboardViewPage';
 import { usePlatformPageRefs } from './platform-page-refs';
 import {
 	agentRunResultForSelectedAgent,
-	runEnterpriseAgentRequestAction,
-	runAgentRunnerPrimeTargetAction,
-	runAgentRunHistoryDetailLoadAction,
 	runAgentRunHistoryLoadAction,
-	runClearAgentConversationRequestAction,
-	runEnterpriseToolRequestAction,
-	runEnterpriseWorkflowRequestAction,
 	runPrimeAgentWorkflowAction,
-	runPrimePublishedAgentAction,
-	runScenarioWorkflowRequestAction,
-	runSelectAgentForRunAction,
 	runPlatformOpenMemoryOperationAgentAction,
 	runPlatformUseIdentityAgentRunnerAction,
 	runPlatformUseTenantAgentRunnerAction,
+	createPlatformRunnerHandlers,
 	platformAgentAccessAllowedForDisplay,
 	selectedRunAgentIdForAvailableAgents,
 	workflowInputsForSelectedOption,
 	workflowSelectionForAvailableTemplates,
 	workflowInputsWithValue,
 	type AgentConversationMap,
-	type EnterpriseAgentConversationTurn,
 } from './platform-agent-runner';
 import {
 	runApprovalApproveAndContinueAction,
@@ -1616,51 +1607,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		);
 	}
 
-	const {
-		handleArchiveAgent,
-		handleCancelEdit,
-		handleConfigureTemplate,
-		handleEditAgent,
-		handlePublishAgent,
-		handlePublishTenantChange,
-		handleQuickPublishAgent,
-		handleStartPublishing,
-		handleTogglePublishList,
-	} = createPlatformAgentPublishingHandlers({
-		credentials,
-		knowledgeBases,
-		templates: agentTemplates,
-		selectedTemplateId,
-		selectedTemplate,
-		defaultTemplate: defaultAgentTemplate,
-		currentUserTenant: platformStatus?.current_user.tenant,
-		members: platformMembers?.members ?? [],
-		selectedRunAgentId,
-		editingAgentId,
-		form: publishForm,
-		requestText: agentManagementRequestText,
-		navigateToPath: navigate,
-		selectTemplate: setSelectedTemplateId,
-		setEditingAgent: setEditingAgentId,
-		setPublishForm,
-		setPublishingTemplate: setPublishingTemplateId,
-		setArchivingAgent: setArchivingAgentId,
-		setPlatformAgentsError,
-		publishAgent: platformApi.publishAgent,
-		updateAgent: platformApi.updateAgent,
-		archiveAgent: platformApi.archiveAgent,
-		setLastPublishedAgent: setLastPublishedAgentId,
-		primePublishedAgent: handlePrimePublishedAgent,
-		setSelectedRunAgent: setSelectedRunAgentId,
-		clearRunResult: () => {
-			setAgentRunResult(null);
-			setAgentRunError(null);
-		},
-		refreshDependentViews: refetchAgentManagementDependencies,
-		scrollToAgentManagement,
-		focusAgentManagement: () => window.setTimeout(scrollToAgentManagement, 0),
-	});
-
 	function handleOperationAction(target?: string) {
 		runPlatformOperationAction(target, {
 			scrollToAgentManagement,
@@ -1757,73 +1703,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				setWorkflowApprovalId,
 				clearWorkflowRunError: () => setWorkflowRunError(null),
 				scrollToWorkflowRunner,
-			},
-		);
-	}
-
-	function handlePrimeAgentRunner(sample = primaryAgentSampleQuestion) {
-		runAgentRunnerPrimeTargetAction(sample, {
-			setQuestion: setAgentQuestion,
-			clearError: () => setAgentRunError(null),
-			scrollToAgentRunner: () => window.setTimeout(scrollToAgentRunner, 0),
-		});
-	}
-
-	function handlePrimePublishedAgent(agentId: string, sample = primaryAgentSampleQuestion) {
-		runPrimePublishedAgentAction({
-			agentConversations,
-			agentId,
-			currentQuestion: agentQuestion,
-			sampleQuestion: sample,
-		}, {
-			selectRunAgent: setSelectedRunAgentId,
-			setQuestion: setAgentQuestion,
-			setResult: setAgentRunResult,
-			clearError: () => setAgentRunError(null),
-			scrollToAgentRunner: () => window.setTimeout(scrollToAgentRunner, 0),
-		});
-	}
-
-	function handleSelectRunAgent(agentId: string) {
-		runSelectAgentForRunAction({ agentConversations, agentId }, {
-			selectRunAgent: setSelectedRunAgentId,
-			setResult: setAgentRunResult,
-			clearError: () => setAgentRunError(null),
-		});
-	}
-
-	async function handleSelectAgentRun(turn: EnterpriseAgentConversationTurn) {
-		await runAgentRunHistoryDetailLoadAction(
-			{ turn, loadErrorMessage: agentRunnerRequestText.historyLoadError },
-			{
-				setQuestion: setAgentQuestion,
-				clearRunError: () => setAgentRunError(null),
-				clearRunsError: () => setAgentRunsError(null),
-				setResult: setAgentRunResult,
-				setRunsLoading: setAgentRunsLoading,
-				loadAgentRun: platformApi.agentRun,
-				setAgentConversations,
-				setRunsError: setAgentRunsError,
-			},
-		);
-	}
-
-	async function handleClearAgentConversation() {
-		await runClearAgentConversationRequestAction(
-			{
-				selectedRunAgentId,
-				selectedIdentityUserId,
-				username,
-			},
-			{
-				setRunsLoading: setAgentRunsLoading,
-				clearRunsError: () => setAgentRunsError(null),
-				clearRuns: platformApi.clearAgentRuns,
-				setAgentConversations,
-				clearRunResult: () => setAgentRunResult(null),
-				clearRunError: () => setAgentRunError(null),
-				setRunsError: setAgentRunsError,
-				historyClearErrorMessage: agentRunnerRequestText.historyClearError,
 			},
 		);
 	}
@@ -2055,135 +1934,130 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		refreshDependentViews: refetchAgentManagementDependencies,
 	});
 
-	async function runEnterpriseAgent(options?: {
-		agentId?: string;
-		question?: string;
-		userId?: string;
-		approvalId?: string;
-	}) {
-		await runEnterpriseAgentRequestAction(
-			{
-				options,
-				selectedRunAgentId,
-				agentQuestion,
-				selectedIdentityUserId,
-				agentApprovalId,
-				activeAgents: activePlatformAgents,
-				selectedRunAgent,
-				enterpriseIdentities,
-				selectedIdentity,
+	const {
+		handlePrimeAgentRunner,
+		handlePrimePublishedAgent,
+		handleSelectRunAgent,
+		handleSelectAgentRun,
+		handleClearAgentConversation,
+		runEnterpriseAgent,
+		handleRunEnterpriseAgent,
+		runEnterpriseTool,
+		handleRunEnterpriseTool,
+		runEnterpriseWorkflow,
+		handleRunEnterpriseWorkflow,
+		handleRunScenario,
+	} = createPlatformRunnerHandlers(
+		{
+			agentConversations,
+			agentQuestion,
+			selectedRunAgentId,
+			selectedIdentityUserId,
+			username,
+			agentApprovalId,
+			activePlatformAgents,
+			selectedRunAgent,
+			enterpriseIdentities,
+			selectedIdentity,
+			primaryAgentSampleQuestion,
+			selectedToolName,
+			selectedToolInputKey,
+			selectedToolInputValue,
+			toolApprovalId,
+			selectedWorkflowType,
+			workflowInputs,
+			workflowTemplates,
+			workflowApprovalId,
+			requestText: {
+				agentHistoryLoadError: agentRunnerRequestText.historyLoadError,
+				agentHistoryClearError: agentRunnerRequestText.historyClearError,
+				agentAccessDenied: agentRunnerRequestText.accessDenied,
+				agentApprovalRequiredCreated:
+					agentRunnerRequestText.approvalRequiredCreated,
+				toolApprovalRequiredCreated:
+					toolRunnerRequestText.approvalRequiredCreated,
+				workflowApprovalRequiredCreated:
+					workflowRunnerRequestText.approvalRequiredCreated,
 			},
-			{
-				setRunning: setRunningAgent,
-				clearError: () => setAgentRunError(null),
-				setAccessDeniedError: () =>
-					setAgentRunError(agentRunnerRequestText.accessDenied),
-				runAgent: platformApi.runAgent,
-				setResult: setAgentRunResult,
-				setAgentConversations,
-				setApprovalRequiredError: () =>
-					setAgentRunError(agentRunnerRequestText.approvalRequiredCreated),
-				refreshApprovals: refetchApprovals,
-				refreshAgentRuns: (agentId, userId) =>
-					refetchAgentRuns(agentId, userId || username),
-				refreshDependentViews: refetchRuntimeRunDependencies,
-				setError: setAgentRunError,
-				now: () => new Date().toISOString(),
-				fallbackId: (agentId) => `${agentId}-${Date.now()}`,
-			},
-		);
-	}
+		},
+		{
+			setAgentQuestion,
+			setAgentRunError,
+			setSelectedRunAgentId,
+			setAgentRunResult,
+			setAgentRunsLoading,
+			setAgentRunsError,
+			loadAgentRun: platformApi.agentRun,
+			clearAgentRuns: platformApi.clearAgentRuns,
+			setAgentConversations,
+			setRunningAgent,
+			runAgent: platformApi.runAgent,
+			refreshApprovals: refetchApprovals,
+			refreshAgentRuns: refetchAgentRuns,
+			refreshRuntimeRunDependencies: refetchRuntimeRunDependencies,
+			setRunningTool,
+			setToolRunError,
+			runTool: platformApi.runTool,
+			setToolRunResult,
+			createRunApproval: handleCreateRunApproval,
+			setRunningWorkflow,
+			setWorkflowRunError,
+			runWorkflow: platformApi.runWorkflow,
+			setWorkflowRunResult,
+			refreshWorkflowRunDependencies: refetchWorkflowRunDependencies,
+			setSelectedWorkflowType,
+			setWorkflowInputs,
+			scrollToAgentRunner,
+			scrollToWorkflowRunner,
+			now: () => new Date().toISOString(),
+			fallbackId: (agentId) => `${agentId}-${Date.now()}`,
+		},
+	);
 
-	async function handleRunEnterpriseAgent() {
-		await runEnterpriseAgent();
-	}
-
-	async function runEnterpriseTool(options?: {
-		toolName?: string;
-		inputs?: Record<string, unknown>;
-		userId?: string;
-		agentId?: string;
-		approvalId?: string;
-	}) {
-		await runEnterpriseToolRequestAction(
-			{
-				options,
-				selectedToolName,
-				selectedToolInputKey,
-				selectedToolInputValue,
-				selectedIdentityUserId,
-				selectedRunAgentId,
-				toolApprovalId,
-			},
-			{
-				setRunning: setRunningTool,
-				clearError: () => setToolRunError(null),
-				runTool: platformApi.runTool,
-				setResult: setToolRunResult,
-				refreshDependentViews: refetchRuntimeRunDependencies,
-				createApproval: (message) => handleCreateRunApproval('tool_run', message),
-				setApprovalRequiredError: () =>
-					setToolRunError(toolRunnerRequestText.approvalRequiredCreated),
-				setError: setToolRunError,
-			},
-		);
-	}
-
-	async function handleRunEnterpriseTool() {
-		await runEnterpriseTool();
-	}
-
-	async function runEnterpriseWorkflow(options?: {
-		workflowType?: string;
-		inputs?: Record<string, unknown>;
-		userId?: string;
-		agentId?: string;
-		approvalId?: string;
-	}) {
-		await runEnterpriseWorkflowRequestAction(
-			{
-				options,
-				selectedWorkflowType,
-				workflowInputs,
-				selectedIdentityUserId,
-				selectedRunAgentId,
-				workflowApprovalId,
-			},
-			{
-				setRunning: setRunningWorkflow,
-				clearError: () => setWorkflowRunError(null),
-				runWorkflow: platformApi.runWorkflow,
-				setResult: setWorkflowRunResult,
-				refreshDependentViews: refetchWorkflowRunDependencies,
-				createApproval: (message) =>
-					handleCreateRunApproval('workflow_run', message),
-				setApprovalRequiredError: () =>
-					setWorkflowRunError(workflowRunnerRequestText.approvalRequiredCreated),
-				setError: setWorkflowRunError,
-			},
-		);
-	}
-
-	async function handleRunEnterpriseWorkflow() {
-		await runEnterpriseWorkflow();
-	}
-
-	async function handleRunScenario(scenario: EnterprisePlatformScenario) {
-		await runScenarioWorkflowRequestAction(
-			{
-				scenario,
-				workflowTemplates,
-				currentInputs: workflowInputs,
-			},
-			{
-				setWorkflowType: setSelectedWorkflowType,
-				setWorkflowInputs,
-				scheduleWorkflowRunnerFocus: () =>
-					window.setTimeout(scrollToWorkflowRunner, 0),
-				runWorkflow: runEnterpriseWorkflow,
-			},
-		);
-	}
+	const {
+		handleArchiveAgent,
+		handleCancelEdit,
+		handleConfigureTemplate,
+		handleEditAgent,
+		handlePublishAgent,
+		handlePublishTenantChange,
+		handleQuickPublishAgent,
+		handleStartPublishing,
+		handleTogglePublishList,
+	} = createPlatformAgentPublishingHandlers({
+		credentials,
+		knowledgeBases,
+		templates: agentTemplates,
+		selectedTemplateId,
+		selectedTemplate,
+		defaultTemplate: defaultAgentTemplate,
+		currentUserTenant: platformStatus?.current_user.tenant,
+		members: platformMembers?.members ?? [],
+		selectedRunAgentId,
+		editingAgentId,
+		form: publishForm,
+		requestText: agentManagementRequestText,
+		navigateToPath: navigate,
+		selectTemplate: setSelectedTemplateId,
+		setEditingAgent: setEditingAgentId,
+		setPublishForm,
+		setPublishingTemplate: setPublishingTemplateId,
+		setArchivingAgent: setArchivingAgentId,
+		setPlatformAgentsError,
+		publishAgent: platformApi.publishAgent,
+		updateAgent: platformApi.updateAgent,
+		archiveAgent: platformApi.archiveAgent,
+		setLastPublishedAgent: setLastPublishedAgentId,
+		primePublishedAgent: handlePrimePublishedAgent,
+		setSelectedRunAgent: setSelectedRunAgentId,
+		clearRunResult: () => {
+			setAgentRunResult(null);
+			setAgentRunError(null);
+		},
+		refreshDependentViews: refetchAgentManagementDependencies,
+		scrollToAgentManagement,
+		focusAgentManagement: () => window.setTimeout(scrollToAgentManagement, 0),
+	});
 
 	const platformNavigationHandlers = {
 		navigate,
