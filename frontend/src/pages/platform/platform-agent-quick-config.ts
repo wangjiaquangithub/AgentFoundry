@@ -169,6 +169,14 @@ export async function runAgentDefaultModelBindAction(
 	}
 }
 
+export async function runAgentDefaultModelBindRequestAction(
+	values: Parameters<typeof agentDefaultModelBindTarget>[0],
+	handlers: AgentDefaultModelBindActionHandlers,
+) {
+	const target = agentDefaultModelBindTarget(values);
+	await runAgentDefaultModelBindAction(target, handlers);
+}
+
 export function agentKnowledgeBasesPatch(
 	knowledgeBaseIds: string[],
 ): AgentQuickConfigurationPatch {

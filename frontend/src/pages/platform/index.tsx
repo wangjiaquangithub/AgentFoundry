@@ -226,12 +226,11 @@ import {
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
 	agentCapabilityEnableTarget,
-	agentDefaultModelBindTarget,
 	agentKnowledgeBasesBindTarget,
 	agentQuickConfigurationSyncResult,
 	agentTemplateToolsBindTarget,
 	runAgentCapabilityEnableAction,
-	runAgentDefaultModelBindAction,
+	runAgentDefaultModelBindRequestAction,
 	runAgentKnowledgeBasesBindAction,
 	runAgentTemplateToolsBindAction,
 	type AgentQuickConfigurationPatch,
@@ -2300,12 +2299,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleBindDefaultModel(agent: EnterprisePublishedAgent) {
-		const target = agentDefaultModelBindTarget({
+		await runAgentDefaultModelBindRequestAction({
 			agent,
 			modelConfigId: credentials[0]?.id,
-		});
-
-		await runAgentDefaultModelBindAction(target, {
+		}, {
 			navigateToPath: navigate,
 			setBindingAgent: setBindingAgentModelId,
 			clearError: () => setPlatformAgentsError(null),
