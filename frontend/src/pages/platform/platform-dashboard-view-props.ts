@@ -42,6 +42,38 @@ type DashboardAgentRunnerViewProps = Pick<
 	| 'setAgentRunResult'
 >;
 
+type DashboardApprovalsViewProps = Pick<
+	DashboardViewPageProps,
+	| 'approvalError'
+	| 'approvalFilters'
+	| 'approvalForm'
+	| 'approvalLoading'
+	| 'approvalRequests'
+	| 'approvalSummary'
+	| 'approvedApprovalCount'
+	| 'continuingApprovalId'
+	| 'creatingApproval'
+	| 'creatingRunApproval'
+	| 'decidingApprovalId'
+	| 'handleCreateApproval'
+	| 'handleCreateRunApproval'
+	| 'handleDecideApproval'
+	| 'handleInspectIdentityApprovals'
+	| 'handleInspectTenantApprovals'
+	| 'handlePrimeToolApproval'
+	| 'handleUseApproval'
+	| 'pendingApprovals'
+	| 'refetchApprovals'
+	| 'selectedIdentityPendingApprovals'
+	| 'setApprovalFilters'
+	| 'setApprovalForm'
+	| 'setToolApprovalId'
+	| 'setWorkflowApprovalId'
+	| 'toolApprovalId'
+	| 'workflowApprovalId'
+	| 'workflowPendingApprovals'
+>;
+
 export function createPlatformDashboardViewProps(
 	props: DashboardViewPageProps,
 ): DashboardViewPageProps {
@@ -51,6 +83,12 @@ export function createPlatformDashboardViewProps(
 export function createPlatformDashboardAgentRunnerViewProps(
 	props: DashboardAgentRunnerViewProps,
 ): DashboardAgentRunnerViewProps {
+	return props;
+}
+
+export function createPlatformDashboardApprovalsViewProps(
+	props: DashboardApprovalsViewProps,
+): DashboardApprovalsViewProps {
 	return props;
 }
 
