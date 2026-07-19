@@ -217,6 +217,7 @@ import { platformMonitoringDisplayStateForStatus } from './platform-monitoring-d
 import { platformOnboardingDisplayStateForStatus } from './platform-onboarding-display';
 import { platformOrchestrationDisplayStateForStatus } from './platform-orchestration-display';
 import { platformWorkbenchDisplayStateForStatus } from './platform-workbench-display';
+import { platformWorkflowDisplayStateForStatus } from './platform-workflow-display';
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
 	agentQuickConfigurationSyncResult,
@@ -297,9 +298,7 @@ import {
 	summarizeAuditObject,
 	tenantWorkspaceOperationsStateForStatus,
 	toolCatalogStateForStatus,
-	triggerOperationsStateForStatus,
 	workflowSelectionStateForTemplates,
-	workflowOperationsStateForStatus,
 	type AgentWizardStep,
 	type EnterpriseAgentConversationTurn,
 } from './platform-utils';
@@ -910,26 +909,30 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		selectedIdentityGovernanceDisplayState.selectedIdentityFailedAuditEvents;
 	const selectedIdentityRecentAuditEvents =
 		selectedIdentityGovernanceDisplayState.selectedIdentityRecentAuditEvents;
-	const workflowOperationsState = workflowOperationsStateForStatus({
-		workflowTemplates,
-		workflowOptions,
-		selectedWorkflowType,
-		selectedWorkflowTemplate,
-		recentWorkflowRuns,
-		workflowRunCount,
-		pendingApprovals,
-		labels: workflowOperationsLabels(t),
+	const workflowDisplay = platformWorkflowDisplayStateForStatus({
+		operations: {
+			workflowTemplates,
+			workflowOptions,
+			selectedWorkflowType,
+			selectedWorkflowTemplate,
+			recentWorkflowRuns,
+			workflowRunCount,
+			pendingApprovals,
+			labels: workflowOperationsLabels(t),
+		},
+		trigger: {
+			schedules,
+			statLabels: triggerOperationsStatLabels(t),
+			summaryLabels: triggerOperationsSummaryLabels(t),
+		},
 	});
+	const workflowOperationsState = workflowDisplay.operationsState;
 	const workflowPendingApprovals = workflowOperationsState.workflowPendingApprovals;
 	const selectedWorkflowName = workflowOperationsState.selectedWorkflowName;
 	const selectedWorkflowSteps = workflowOperationsState.selectedWorkflowSteps;
 	const selectedWorkflowLastRun = workflowOperationsState.selectedWorkflowLastRun;
 	const workflowOpsStats = workflowOperationsState.workflowOpsStats;
-	const triggerOperationsState = triggerOperationsStateForStatus({
-		schedules,
-		statLabels: triggerOperationsStatLabels(t),
-		summaryLabels: triggerOperationsSummaryLabels(t),
-	});
+	const triggerOperationsState = workflowDisplay.triggerState;
 	const recentSchedules = triggerOperationsState.recentSchedules;
 	const triggerOpsStats = triggerOperationsState.triggerOpsStats;
 	const triggerOpsSummary = triggerOperationsState.triggerOpsSummary;
