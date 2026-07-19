@@ -78,6 +78,7 @@ import {
 import {
 	createPlatformOpsTaskHandlers,
 } from './platform-ops-task-helpers';
+import { createPlatformRefreshDependencyHandlers } from './platform-refresh-dependencies';
 import {
 	createPlatformWorkflowTemplateHandlers,
 } from './platform-workflow-template-helpers';
@@ -970,18 +971,31 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	);
 
-	async function refetchPlatformConfigImportDependencies() {
-		await Promise.all([
-			refetchPlatform(),
-			refetchMembers(),
-			refetchConnectors(),
-			refetchGovernance(),
-			refetchPlatformAgents(),
-			refetchToolCatalog(),
-			refetchWorkflowTemplates(),
-			refetchPlatformConfigExport(),
-		]);
-	}
+	const {
+		refetchAgentManagementDependencies,
+		refetchApprovalDependencies,
+		refetchConnectorConfigDependencies,
+		refetchOpsTaskResolveDependencies,
+		refetchPlatformConfigImportDependencies,
+		refetchRuntimeRunDependencies,
+		refetchToolPolicyDependencies,
+		refetchWorkflowRunDependencies,
+		refetchWorkflowTemplateDependencies,
+		refreshMemberDependentViews,
+	} = createPlatformRefreshDependencyHandlers({
+		refetchPlatform: () => refetchPlatform(),
+		refetchMembers: () => refetchMembers(),
+		refetchConnectors: () => refetchConnectors(),
+		refetchGovernance: () => refetchGovernance(),
+		refetchPlatformAgents: () => refetchPlatformAgents(),
+		refetchToolCatalog: () => refetchToolCatalog(),
+		refetchWorkflowTemplates: () => refetchWorkflowTemplates(),
+		refetchPlatformConfigExport: () => refetchPlatformConfigExport(),
+		refetchOpsTasks: () => refetchOpsTasks(),
+		refetchAuditEvents: () => refetchAuditEvents(),
+		refetchWorkflowRuns: () => refetchWorkflowRuns(),
+		refetchScenarios: () => refetchScenarios(),
+	});
 
 	const {
 		refetchPlatformConfigExport,
@@ -1012,17 +1026,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				setResult: setPlatformConfigImportResult,
 				refreshDependentViews: refetchPlatformConfigImportDependencies,
 				setError: setPlatformConfigError,
-			},
-		);
-
-	async function refreshMemberDependentViews() {
-		await Promise.all([
-			refetchMembers(),
-			refetchGovernance(),
-			refetchToolCatalog(),
-			refetchPlatformAgents(),
-		]);
-	}
+		},
+	);
 
 	const {
 		refetchMembers,
@@ -1058,12 +1063,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			},
 		},
 	);
-
-	async function refetchConnectorConfigDependencies() {
-		await refetchConnectors();
-		await refetchGovernance();
-		await refetchOpsTasks();
-	}
 
 	const {
 		refetchConnectors,
@@ -1113,46 +1112,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setError: setToolCatalogError,
 		},
 	);
-
-	async function refetchAgentManagementDependencies() {
-		await refetchPlatformAgents();
-		await refetchPlatform();
-		await refetchToolCatalog();
-		await refetchOpsTasks();
-	}
-
-	async function refetchRuntimeRunDependencies() {
-		await refetchPlatform();
-		await refetchToolCatalog();
-		await refetchAuditEvents();
-		await refetchOpsTasks();
-	}
-
-	async function refetchWorkflowRunDependencies() {
-		await refetchRuntimeRunDependencies();
-		await refetchWorkflowRuns();
-		await refetchScenarios();
-	}
-
-	async function refetchApprovalDependencies() {
-		await refetchGovernance();
-		await refetchOpsTasks();
-	}
-
-	async function refetchToolPolicyDependencies() {
-		await Promise.all([
-			refetchPlatform(),
-			refetchGovernance(),
-			refetchToolCatalog(),
-		]);
-		await refetchOpsTasks();
-	}
-
-	async function refetchWorkflowTemplateDependencies() {
-		await refetchPlatform();
-		await refetchScenarios();
-		await refetchOpsTasks();
-	}
 
 	const { handleSaveToolPolicy } = createPlatformToolPolicyHandlers(
 		{
@@ -1291,11 +1250,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			scrollToGovernance,
 		},
 	);
-
-	async function refetchOpsTaskResolveDependencies() {
-		await refetchPlatform();
-		await refetchScenarios();
-	}
 
 	const {
 		handleUseIdentity,
