@@ -44,7 +44,6 @@ import { usePlatformPageRefs } from './platform-page-refs';
 import {
 	agentRunResultForSelectedAgent,
 	createPlatformAgentRunnerEntryHandlers,
-	runAgentRunHistoryLoadAction,
 	createPlatformRunnerHandlers,
 	platformAgentAccessAllowedForDisplay,
 	selectedRunAgentIdForAvailableAgents,
@@ -1174,29 +1173,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	);
 
-	async function refetchAgentRuns(
-		agentId = selectedRunAgentId,
-		userId = selectedIdentityUserId || username,
-	) {
-		await runAgentRunHistoryLoadAction(
-			{
-				agentId,
-				userId,
-				limit: 20,
-				loadErrorMessage: agentRunnerRequestText.historyLoadError,
-			},
-			{
-				setRunsLoading: setAgentRunsLoading,
-				clearRunsError: () => setAgentRunsError(null),
-				clearRunResult: () => setAgentRunResult(null),
-				loadAgentRuns: platformApi.agentRuns,
-				setAgentConversations,
-				setRunResult: setAgentRunResult,
-				setRunsError: setAgentRunsError,
-			},
-		);
-	}
-
 	const { refetchAuditEvents } = createPlatformAuditHandlers(
 		{
 			filters: auditFilters,
@@ -1422,6 +1398,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	});
 
 	const {
+		refetchAgentRuns,
 		handlePrimeAgentRunner,
 		handlePrimePublishedAgent,
 		handleSelectRunAgent,
@@ -1477,13 +1454,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setAgentRunResult,
 			setAgentRunsLoading,
 			setAgentRunsError,
+			loadAgentRuns: platformApi.agentRuns,
 			loadAgentRun: platformApi.agentRun,
 			clearAgentRuns: platformApi.clearAgentRuns,
 			setAgentConversations,
 			setRunningAgent,
 			runAgent: platformApi.runAgent,
 			refreshApprovals: refetchApprovals,
-			refreshAgentRuns: refetchAgentRuns,
 			refreshRuntimeRunDependencies: refetchRuntimeRunDependencies,
 			setRunningTool,
 			setToolRunError,

@@ -47,6 +47,7 @@ export type AgentRunHistorySelectionTarget = {
 };
 type NavigationHandler = () => void;
 type StateUpdater<T> = (update: (current: T) => T) => void;
+type StateSetter<T> = (value: T | ((current: T) => T)) => void;
 
 export type EnterpriseAgentRunOptions = {
 	agentId?: string;
@@ -1388,9 +1389,14 @@ export type PlatformRunnerHandlerActions = {
 	setAgentRunError: (message: string | null) => void;
 	setSelectedRunAgentId: (agentId: string) => void;
 	setSelectedIdentityUserId: (userId: string) => void;
-	setAgentRunResult: (result: EnterpriseAgentRunResponse | null) => void;
+	setAgentRunResult: StateSetter<EnterpriseAgentRunResponse | null>;
 	setAgentRunsLoading: (loading: boolean) => void;
 	setAgentRunsError: (message: string | null) => void;
+	loadAgentRuns: (params: {
+		agent_id: string;
+		user_id?: string;
+		limit: number;
+	}) => EnterpriseAgentRunsResponse | Promise<EnterpriseAgentRunsResponse>;
 	loadAgentRun: (
 		runId: string,
 	) => EnterpriseAgentRunHistoryItem | Promise<EnterpriseAgentRunHistoryItem>;
@@ -1401,7 +1407,6 @@ export type PlatformRunnerHandlerActions = {
 		payload: EnterpriseAgentRunRequest,
 	) => EnterpriseAgentRunResponse | Promise<EnterpriseAgentRunResponse>;
 	refreshApprovals: () => void | Promise<void>;
-	refreshAgentRuns: (agentId: string, userId: string) => void | Promise<void>;
 	refreshRuntimeRunDependencies: () => void | Promise<void>;
 	setRunningTool: (running: boolean) => void;
 	setToolRunError: (message: string | null) => void;
@@ -1433,6 +1438,29 @@ export function createPlatformRunnerHandlers(
 	values: PlatformRunnerHandlerValues,
 	actions: PlatformRunnerHandlerActions,
 ) {
+	async function refetchAgentRuns(
+		agentId = values.selectedRunAgentId,
+		userId = values.selectedIdentityUserId || values.username,
+	) {
+		await runAgentRunHistoryLoadAction(
+			{
+				agentId,
+				userId,
+				limit: 20,
+				loadErrorMessage: values.requestText.agentHistoryLoadError,
+			},
+			{
+				setRunsLoading: actions.setAgentRunsLoading,
+				clearRunsError: () => actions.setAgentRunsError(null),
+				clearRunResult: () => actions.setAgentRunResult(null),
+				loadAgentRuns: actions.loadAgentRuns,
+				setAgentConversations: actions.setAgentConversations,
+				setRunResult: actions.setAgentRunResult,
+				setRunsError: actions.setAgentRunsError,
+			},
+		);
+	}
+
 	async function runEnterpriseAgent(options?: EnterpriseAgentRunOptions) {
 		await runEnterpriseAgentRequestAction(
 			{
@@ -1460,7 +1488,7 @@ export function createPlatformRunnerHandlers(
 					),
 				refreshApprovals: actions.refreshApprovals,
 				refreshAgentRuns: (agentId, userId) =>
-					actions.refreshAgentRuns(agentId, userId || values.username),
+					refetchAgentRuns(agentId, userId || values.username),
 				refreshDependentViews: actions.refreshRuntimeRunDependencies,
 				setError: actions.setAgentRunError,
 				now: actions.now,
@@ -1525,6 +1553,7 @@ export function createPlatformRunnerHandlers(
 	}
 
 	return {
+		refetchAgentRuns,
 		handlePrimeAgentRunner(sample = values.primaryAgentSampleQuestion) {
 			runAgentRunnerPrimeTargetAction(sample, {
 				setQuestion: actions.setAgentQuestion,
