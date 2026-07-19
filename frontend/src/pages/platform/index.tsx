@@ -228,7 +228,7 @@ import {
 } from './platform-labels';
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
-	agentCapabilityEnabledPatch,
+	agentCapabilityEnableTarget,
 	agentArchiveSyncTarget,
 	agentArchiveTarget,
 	agentDefaultModelBindTarget,
@@ -2471,12 +2471,16 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleEnableAgentMemory(agent: EnterprisePublishedAgent) {
+		const target = agentCapabilityEnableTarget({
+			agent,
+			capability: 'memory',
+		});
+
 		setEnablingAgentMemoryId(agent.id);
 		setPlatformAgentsError(null);
 		try {
-			const patch = agentCapabilityEnabledPatch('memory');
-			const response = await platformApi.updateAgent(agent.id, patch);
-			syncAgentQuickConfiguration(agent.id, response.agent.id, patch);
+			const response = await platformApi.updateAgent(target.agentId, target.patch);
+			syncAgentQuickConfiguration(agent.id, response.agent.id, target.patch);
 			await refetchPlatformAgents();
 			await refetchPlatform();
 			await refetchToolCatalog();
@@ -2493,12 +2497,16 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleEnableAgentWorkflow(agent: EnterprisePublishedAgent) {
+		const target = agentCapabilityEnableTarget({
+			agent,
+			capability: 'workflow',
+		});
+
 		setEnablingAgentWorkflowId(agent.id);
 		setPlatformAgentsError(null);
 		try {
-			const patch = agentCapabilityEnabledPatch('workflow');
-			const response = await platformApi.updateAgent(agent.id, patch);
-			syncAgentQuickConfiguration(agent.id, response.agent.id, patch);
+			const response = await platformApi.updateAgent(target.agentId, target.patch);
+			syncAgentQuickConfiguration(agent.id, response.agent.id, target.patch);
 			await refetchPlatformAgents();
 			await refetchPlatform();
 			await refetchToolCatalog();

@@ -37,6 +37,10 @@ export type AgentTemplateToolsBindTarget =
 	| { type: 'error' }
 	| { type: 'bind'; tools: string[] };
 export type AgentCapabilityKey = 'memory' | 'workflow';
+export type AgentCapabilityEnableTarget = {
+	agentId: string;
+	patch: AgentQuickConfigurationPatch;
+};
 export type AgentEditDraft = {
 	templateId: string;
 	editingAgentId: string;
@@ -484,4 +488,14 @@ export function agentCapabilityEnabledPatch(
 	return capability === 'memory'
 		? { memory_enabled: true }
 		: { workflow_enabled: true };
+}
+
+export function agentCapabilityEnableTarget(values: {
+	agent: EnterprisePublishedAgent;
+	capability: AgentCapabilityKey;
+}): AgentCapabilityEnableTarget {
+	return {
+		agentId: values.agent.id,
+		patch: agentCapabilityEnabledPatch(values.capability),
+	};
 }
