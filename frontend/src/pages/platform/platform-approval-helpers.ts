@@ -287,3 +287,34 @@ export function approvalToolFormPatch(
 		agent_id: options.agentId,
 	};
 }
+
+export function approvalToolCatalogItemForName(
+	catalogItems: ApprovalToolCatalogItem[],
+	toolName: string,
+) {
+	return catalogItems.find((tool) => tool.name === toolName);
+}
+
+export function primedToolApprovalFormPatch(
+	current: ApprovalFormState,
+	options: {
+		agentId: string;
+		inputConfig?: ApprovalToolInputConfig;
+		catalogItems: ApprovalToolCatalogItem[];
+		reason: string;
+		toolName: string;
+		defaults: ApprovalToolInputDefaults;
+	},
+): ApprovalFormState {
+	return approvalToolFormPatch(current, {
+		agentId: options.agentId,
+		inputConfig: options.inputConfig,
+		catalogItem: approvalToolCatalogItemForName(
+			options.catalogItems,
+			options.toolName,
+		),
+		toolName: options.toolName,
+		reason: options.reason,
+		defaults: options.defaults,
+	});
+}

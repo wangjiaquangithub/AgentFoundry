@@ -85,10 +85,10 @@ import {
 	approvalAgentUsageTarget,
 	approvalFormWithReasonReset,
 	approvalQueryFromFilters,
-	approvalToolFormPatch,
 	approvalToolContinuationTarget,
 	approvalToolInputsPatch,
 	approvalWorkflowContinuationTarget,
+	primedToolApprovalFormPatch,
 	prependApprovalRequest,
 	replaceApprovalRequest,
 	type PlatformApprovalRunType,
@@ -1784,14 +1784,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	function handlePrimeToolApproval(agent: EnterprisePublishedAgent, toolName: string) {
 		const toolConfig = enterpriseToolInputConfig[toolName];
-		const catalogItem = availableToolItems.find((tool) => tool.name === toolName);
 
 		setSelectedIdentityUserId(selectedIdentityUserId || username);
 		setApprovalForm((current) =>
-			approvalToolFormPatch(current, {
+			primedToolApprovalFormPatch(current, {
 				agentId: agent.id,
 				inputConfig: toolConfig,
-				catalogItem,
+				catalogItems: availableToolItems,
 				toolName,
 				reason: approvalRequestText.agentToolApprovalReason({
 					agent: agent.name,
