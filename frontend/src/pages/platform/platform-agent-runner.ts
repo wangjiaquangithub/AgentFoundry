@@ -44,6 +44,13 @@ export type AgentRunHistorySelectionTarget = {
 };
 type NavigationHandler = () => void;
 
+export function platformAgentAccessAllowedForDisplay(
+	agent: Parameters<typeof agentAccessAllowed>[0],
+	identity?: Parameters<typeof agentAccessAllowed>[1],
+) {
+	return agentAccessAllowed(agent, identity);
+}
+
 export function agentConversationTurnFromRunResponse(values: {
 	response: EnterpriseAgentRunResponse;
 	agentId: string;

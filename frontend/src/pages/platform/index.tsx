@@ -66,6 +66,7 @@ import {
 	runSelectAgentForRunAction,
 	runUseIdentityAgentRunnerAction,
 	runUseTenantAgentRunnerAction,
+	platformAgentAccessAllowedForDisplay,
 	selectedRunAgentIdForAvailableAgents,
 	workflowInputsForSelectedOption,
 	workflowSelectionForAvailableTemplates,
@@ -293,10 +294,7 @@ import { platformResourceDisplayStateForStatus } from './platform-resource-displ
 import { platformRuntimeDisplayStateForStatus } from './platform-runtime-display';
 import { platformToolRunnerDisplayStateForStatus } from './platform-tool-runner-display';
 import { platformOverviewDisplayStateForStatus } from './platform-overview-display';
-import {
-	agentAccessAllowed,
-	type EnterpriseAgentConversationTurn,
-} from './platform-utils';
+import type { EnterpriseAgentConversationTurn } from './platform-utils';
 import type { PlatformView } from './platform-view';
 
 export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
@@ -3035,7 +3033,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			activeMemberCount={activeMemberCount}
 			activePlatformAgents={activePlatformAgents}
 			activeSavedConnectorConfig={activeSavedConnectorConfig}
-			agentAccessAllowed={agentAccessAllowed}
+			agentAccessAllowed={platformAgentAccessAllowedForDisplay}
 			agentApprovalId={agentApprovalId}
 			agentKnowledgeStepRef={agentKnowledgeStepRef}
 			agentManagementRef={agentManagementRef}
