@@ -115,6 +115,16 @@ export function replaceApprovalRequest(
 	);
 }
 
+export function approvalFormWithReasonReset(
+	current: ApprovalFormState,
+	defaultReason: string,
+): ApprovalFormState {
+	return {
+		...current,
+		reason: defaultReason,
+	};
+}
+
 export function approvalDecisionPayload(
 	decision: 'approved' | 'rejected',
 	options: { username: string; labels: ApprovalDecisionLabels },

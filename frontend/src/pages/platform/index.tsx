@@ -73,6 +73,7 @@ import {
 	approvalDecisionPayload,
 	approvalAgentContinuationTarget,
 	approvalAgentUsageTarget,
+	approvalFormWithReasonReset,
 	approvalQueryFromFilters,
 	approvalToolFormPatch,
 	approvalToolContinuationTarget,
@@ -1517,10 +1518,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			);
 			await refetchGovernance();
 			await refetchOpsTasks();
-			setApprovalForm((current) => ({
-				...current,
-				reason: defaultApprovalForm.reason,
-			}));
+			setApprovalForm((current) =>
+				approvalFormWithReasonReset(current, defaultApprovalForm.reason),
+			);
 		} catch (error) {
 			setApprovalError(
 				error instanceof Error ? error.message : approvalRequestText.createError,
