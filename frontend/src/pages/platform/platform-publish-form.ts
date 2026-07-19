@@ -445,6 +445,12 @@ export type AgentEditCancelTargetActionHandlers = {
 	configureTemplate: (template: EnterpriseAgentTemplate) => void;
 };
 
+export type PublishListToggleActionHandlers = {
+	setPublishForm: (
+		updater: (current: PublishFormState) => PublishFormState,
+	) => void;
+};
+
 export function runAgentEditCancelTargetAction(
 	target: AgentEditCancelTarget,
 	handlers: AgentEditCancelTargetActionHandlers,
@@ -470,6 +476,24 @@ export function publishFormForListToggle(values: {
 		...values.current,
 		[values.key]: nextValues,
 	};
+}
+
+export function runPublishListToggleAction(
+	values: {
+		key: PublishListFormKey;
+		value: string;
+		checked: boolean;
+	},
+	handlers: PublishListToggleActionHandlers,
+) {
+	handlers.setPublishForm((current) =>
+		publishFormForListToggle({
+			current,
+			key: values.key,
+			value: values.value,
+			checked: values.checked,
+		}),
+	);
 }
 
 export function publishFormWithPatch(

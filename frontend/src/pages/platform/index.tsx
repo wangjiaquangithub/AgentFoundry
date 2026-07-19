@@ -255,7 +255,6 @@ import {
 	agentPublishRequestTarget,
 	defaultPublishFormForTemplate,
 	preparedTenantAgentTarget,
-	publishFormForListToggle,
 	publishFormForTenantChange,
 	publishFormWithPatch,
 	publishedAgentPrimeTarget,
@@ -263,6 +262,7 @@ import {
 	runAgentEditDraftAction,
 	runAgentEditCancelTargetAction,
 	runPreparedTenantAgentTargetAction,
+	runPublishListToggleAction,
 	runStartPublishingTargetAction,
 	runTemplateConfigureAction,
 	startPublishingTarget,
@@ -2151,13 +2151,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		value: string,
 		checked: boolean,
 	) {
-		setPublishForm((current) =>
-			publishFormForListToggle({
-				current,
+		runPublishListToggleAction(
+			{
 				key,
 				value,
 				checked,
-			}),
+			},
+			{ setPublishForm },
 		);
 	}
 
