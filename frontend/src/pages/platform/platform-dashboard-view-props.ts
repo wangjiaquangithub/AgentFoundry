@@ -210,6 +210,26 @@ type DashboardMemoryOperationsViewProps = Pick<
 	| 'memoryOperationsSavedCount'
 >;
 
+type DashboardMembersViewProps = Pick<
+	DashboardViewPageProps,
+	| 'activeMemberCount'
+	| 'activePlatformAgents'
+	| 'handleEditMember'
+	| 'handleSaveMember'
+	| 'handleToggleMemberStatus'
+	| 'memberForm'
+	| 'membersRef'
+	| 'pendingApprovals'
+	| 'platformMemberTenantSummaries'
+	| 'platformMembers'
+	| 'platformMembersError'
+	| 'platformMembersLoading'
+	| 'refetchMembers'
+	| 'savingMember'
+	| 'setMemberForm'
+	| 'updatingMemberId'
+>;
+
 type DashboardMonitoringSnapshotViewProps = Pick<
 	DashboardViewPageProps,
 	| 'monitoringHealthState'
@@ -374,6 +394,12 @@ export function createPlatformDashboardWorkflowsViewProps(
 export function createPlatformDashboardMemoryOperationsViewProps(
 	props: DashboardMemoryOperationsViewProps,
 ): DashboardMemoryOperationsViewProps {
+	return props;
+}
+
+export function createPlatformDashboardMembersViewProps(
+	props: DashboardMembersViewProps,
+): DashboardMembersViewProps {
 	return props;
 }
 
