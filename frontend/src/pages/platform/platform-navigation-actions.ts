@@ -21,6 +21,10 @@ export type AppCenterDetailPrimaryAction =
 	| { type: 'edit-agent' }
 	| { type: 'configure-template' };
 
+export type AppCenterDetailSecondaryAction =
+	| { type: 'edit-agent' }
+	| { type: 'scroll-governance' };
+
 export function agentSetupStepAction(values: {
 	nextStep: AgentWizardStep | null;
 	hasSelectedTemplate: boolean;
@@ -89,6 +93,12 @@ export function appCenterDetailPrimaryAction(values: {
 	}
 
 	return { type: 'none' };
+}
+
+export function appCenterDetailSecondaryAction(values: {
+	hasAgent: boolean;
+}): AppCenterDetailSecondaryAction {
+	return values.hasAgent ? { type: 'edit-agent' } : { type: 'scroll-governance' };
 }
 
 export type PlatformNavigationActionHandlers = {

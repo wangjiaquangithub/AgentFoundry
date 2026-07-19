@@ -143,6 +143,7 @@ import {
 import {
 	agentSetupStepAction,
 	appCenterDetailPrimaryAction,
+	appCenterDetailSecondaryAction,
 	appCenterPrimaryAction,
 	capabilityNavigationActions,
 	firstAgentGuideNavigationActions,
@@ -2281,7 +2282,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleAppCenterDetailSecondaryAction() {
-		if (inspectedAppCenterAgent) {
+		const action = appCenterDetailSecondaryAction({
+			hasAgent: Boolean(inspectedAppCenterAgent),
+		});
+
+		if (action.type === 'edit-agent' && inspectedAppCenterAgent) {
 			handleEditAgent(inspectedAppCenterAgent);
 			window.setTimeout(scrollToAgentManagement, 0);
 			return;
