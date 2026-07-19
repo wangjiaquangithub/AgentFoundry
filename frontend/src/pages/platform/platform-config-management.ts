@@ -1,5 +1,6 @@
 import type {
 	EnterprisePlatformConfigExportResponse,
+	EnterprisePlatformConfigImportRequest,
 	EnterprisePlatformConfigImportResponse,
 } from '@/api';
 
@@ -8,6 +9,25 @@ export type PlatformConfigManagementRequestText = {
 	importSuccess: (values: { members: number; agents: number }) => string;
 	parseError: string;
 	importError: string;
+};
+
+export type PlatformConfigCopyActionHandlers = {
+	setImportText: (text: string) => void;
+	copyText: (text: string) => void | Promise<void>;
+};
+
+export type PlatformConfigImportActionHandlers = {
+	setImporting: (importing: boolean) => void;
+	clearError: () => void;
+	clearResult: () => void;
+	importConfig: (
+		request: EnterprisePlatformConfigImportRequest,
+	) =>
+		| EnterprisePlatformConfigImportResponse
+		| Promise<EnterprisePlatformConfigImportResponse>;
+	setResult: (message: string) => void;
+	refreshDependentViews: () => void | Promise<void>;
+	handleError: (error: unknown) => void;
 };
 
 export function formatPlatformConfigExport(
@@ -57,4 +77,45 @@ export function platformConfigImportErrorMessage(
 	}
 
 	return error instanceof Error ? error.message : text.importError;
+}
+
+export async function runPlatformConfigCopyAction(
+	config: EnterprisePlatformConfigExportResponse | null,
+	handlers: PlatformConfigCopyActionHandlers,
+) {
+	if (!config) {
+		return;
+	}
+
+	const text = formatPlatformConfigExport(config);
+	handlers.setImportText(text);
+	await handlers.copyText(text);
+}
+
+export async function runPlatformConfigImportAction(
+	values: {
+		importText: string;
+		importMode: EnterprisePlatformConfigImportRequest['mode'];
+		text: PlatformConfigManagementRequestText;
+	},
+	handlers: PlatformConfigImportActionHandlers,
+) {
+	handlers.setImporting(true);
+	handlers.clearError();
+	handlers.clearResult();
+	try {
+		const parsed = parsePlatformConfigImportText(values.importText);
+		const response = await handlers.importConfig({
+			mode: values.importMode,
+			config: parsed,
+		});
+		handlers.setResult(
+			platformConfigImportSuccessMessage(response, values.text),
+		);
+		await handlers.refreshDependentViews();
+	} catch (error) {
+		handlers.handleError(error);
+	} finally {
+		handlers.setImporting(false);
+	}
 }

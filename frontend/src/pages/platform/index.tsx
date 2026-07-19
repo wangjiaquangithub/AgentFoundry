@@ -104,12 +104,11 @@ import {
 	runConnectorTestAction,
 } from './platform-connector-helpers';
 import {
-	formatPlatformConfigExport,
-	parsePlatformConfigImportText,
 	platformConfigImportErrorMessage,
-	platformConfigImportSuccessMessage,
 	platformConfigImportTextForExport,
 	platformConfigLoadErrorMessage,
+	runPlatformConfigCopyAction,
+	runPlatformConfigImportAction,
 } from './platform-config-management';
 import {
 	toolPolicyDraftFromDecisions,
@@ -1129,47 +1128,50 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleCopyPlatformConfig() {
-		if (!platformConfigExport) {
-			return;
-		}
-
-		const text = formatPlatformConfigExport(platformConfigExport);
-		setPlatformConfigImportText(text);
-		if (navigator.clipboard) {
-			await navigator.clipboard.writeText(text);
-		}
+		await runPlatformConfigCopyAction(platformConfigExport, {
+			setImportText: setPlatformConfigImportText,
+			copyText: async (text) => {
+				if (navigator.clipboard) {
+					await navigator.clipboard.writeText(text);
+				}
+			},
+		});
 	}
 
 	async function handleImportPlatformConfig() {
-		setImportingPlatformConfig(true);
-		setPlatformConfigError(null);
-		setPlatformConfigImportResult(null);
-		try {
-			const parsed = parsePlatformConfigImportText(platformConfigImportText);
-			const response = await platformApi.importConfig({
-				mode: platformConfigImportMode,
-				config: parsed,
-			});
-			setPlatformConfigImportResult(
-				platformConfigImportSuccessMessage(response, configManagementRequestText),
-			);
-			await Promise.all([
-				refetchPlatform(),
-				refetchMembers(),
-				refetchConnectors(),
-				refetchGovernance(),
-				refetchPlatformAgents(),
-				refetchToolCatalog(),
-				refetchWorkflowTemplates(),
-				refetchPlatformConfigExport(),
-			]);
-		} catch (error) {
-			setPlatformConfigError(
-				platformConfigImportErrorMessage(error, configManagementRequestText),
-			);
-		} finally {
-			setImportingPlatformConfig(false);
-		}
+		await runPlatformConfigImportAction(
+			{
+				importText: platformConfigImportText,
+				importMode: platformConfigImportMode,
+				text: configManagementRequestText,
+			},
+			{
+				setImporting: setImportingPlatformConfig,
+				clearError: () => setPlatformConfigError(null),
+				clearResult: () => setPlatformConfigImportResult(null),
+				importConfig: platformApi.importConfig,
+				setResult: setPlatformConfigImportResult,
+				refreshDependentViews: async () => {
+					await Promise.all([
+						refetchPlatform(),
+						refetchMembers(),
+						refetchConnectors(),
+						refetchGovernance(),
+						refetchPlatformAgents(),
+						refetchToolCatalog(),
+						refetchWorkflowTemplates(),
+						refetchPlatformConfigExport(),
+					]);
+				},
+				handleError: (error) =>
+					setPlatformConfigError(
+						platformConfigImportErrorMessage(
+							error,
+							configManagementRequestText,
+						),
+					),
+			},
+		);
 	}
 
 	async function refetchMembers() {
