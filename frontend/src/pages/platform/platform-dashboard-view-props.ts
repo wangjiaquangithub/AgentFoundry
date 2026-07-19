@@ -188,6 +188,18 @@ type DashboardMemoryOperationsViewProps = Pick<
 	| 'memoryOperationsSavedCount'
 >;
 
+type DashboardOpsTasksViewProps = Pick<
+	DashboardViewPageProps,
+	| 'handleResolveOpsTask'
+	| 'opsTasks'
+	| 'opsTasksError'
+	| 'opsTasksLoading'
+	| 'opsTasksSummary'
+	| 'refetchOpsTasks'
+	| 'resolvingOpsTaskCode'
+	| 'summarizeAuditObject'
+>;
+
 export function createPlatformDashboardViewProps(
 	props: DashboardViewPageProps,
 ): DashboardViewPageProps {
@@ -227,6 +239,12 @@ export function createPlatformDashboardWorkflowsViewProps(
 export function createPlatformDashboardMemoryOperationsViewProps(
 	props: DashboardMemoryOperationsViewProps,
 ): DashboardMemoryOperationsViewProps {
+	return props;
+}
+
+export function createPlatformDashboardOpsTasksViewProps(
+	props: DashboardOpsTasksViewProps,
+): DashboardOpsTasksViewProps {
 	return props;
 }
 
