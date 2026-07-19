@@ -15,6 +15,10 @@ export type MemberStatusToggleAction =
 			userId: string;
 	  };
 
+export type MemberEditActionHandlers = {
+	setMemberForm: (form: MemberFormState) => void;
+};
+
 export function memberUserIdFromForm(form: MemberFormState): string {
 	return form.user_id.trim();
 }
@@ -42,6 +46,13 @@ export function memberFormFromMember(
 		role: member.role || '',
 		status: member.status === 'inactive' ? 'inactive' : 'active',
 	};
+}
+
+export function runMemberEditAction(
+	member: EnterprisePlatformMember,
+	handlers: MemberEditActionHandlers,
+) {
+	handlers.setMemberForm(memberFormFromMember(member));
 }
 
 export function memberStatusToggleAction(

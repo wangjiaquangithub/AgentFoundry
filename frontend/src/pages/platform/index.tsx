@@ -125,7 +125,7 @@ import {
 } from './platform-tool-policy-helpers';
 import {
 	memberCreatePayloadFromForm,
-	memberFormFromMember,
+	runMemberEditAction,
 	memberStatusToggleAction,
 	memberUserIdFromForm,
 } from './platform-member-helpers';
@@ -1221,7 +1221,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleEditMember(member: EnterprisePlatformMember) {
-		setMemberForm(memberFormFromMember(member));
+		runMemberEditAction(member, { setMemberForm });
 	}
 
 	async function handleToggleMemberStatus(member: EnterprisePlatformMember) {
