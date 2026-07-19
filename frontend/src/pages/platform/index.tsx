@@ -112,6 +112,7 @@ import {
 	memberCreatePayloadFromForm,
 	memberFormFromMember,
 	memberShouldActivate,
+	memberUserIdFromForm,
 } from './platform-member-helpers';
 import {
 	opsTaskActionTarget,
@@ -1163,7 +1164,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleSaveMember() {
-		const userId = memberForm.user_id.trim();
+		const userId = memberUserIdFromForm(memberForm);
 		if (!userId) {
 			setPlatformMembersError(memberRequestText.userRequired);
 			return;

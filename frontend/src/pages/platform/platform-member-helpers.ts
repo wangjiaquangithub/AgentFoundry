@@ -4,6 +4,10 @@ import type {
 } from '@/api';
 import type { MemberFormState } from './platform-defaults';
 
+export function memberUserIdFromForm(form: MemberFormState): string {
+	return form.user_id.trim();
+}
+
 export function memberCreatePayloadFromForm(
 	form: MemberFormState,
 	userId: string,
