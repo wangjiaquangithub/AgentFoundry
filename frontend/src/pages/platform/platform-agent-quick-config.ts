@@ -152,6 +152,28 @@ export function runAgentQuickConfigurationSyncAction(
 	}
 }
 
+export function runPlatformAgentQuickConfigurationSyncAction(
+	values: {
+		agentId: string;
+		updatedAgentId: string;
+		patch: AgentQuickConfigurationPatch;
+	},
+	pageState: {
+		editingAgentId: string | null;
+		selectedRunAgentId: string;
+	},
+	handlers: AgentQuickConfigurationSyncHandlers,
+) {
+	runAgentQuickConfigurationSyncAction(
+		{
+			...values,
+			editingAgentId: pageState.editingAgentId,
+			selectedRunAgentId: pageState.selectedRunAgentId,
+		},
+		handlers,
+	);
+}
+
 export function agentDefaultModelPatch(
 	modelConfigId: string,
 ): AgentQuickConfigurationPatch {

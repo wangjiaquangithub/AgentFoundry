@@ -235,7 +235,7 @@ import {
 	runAgentCapabilityEnableRequestAction,
 	runAgentDefaultModelBindRequestAction,
 	runAgentKnowledgeBasesBindRequestAction,
-	runAgentQuickConfigurationSyncAction,
+	runPlatformAgentQuickConfigurationSyncAction,
 	runAgentTemplateToolsBindRequestAction,
 	type AgentQuickConfigurationPatch,
 } from './platform-agent-quick-config';
@@ -2147,13 +2147,15 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		updatedAgentId: string,
 		patch: AgentQuickConfigurationPatch,
 	) =>
-		runAgentQuickConfigurationSyncAction(
+		runPlatformAgentQuickConfigurationSyncAction(
 			{
 				agentId,
-				editingAgentId,
 				patch,
-				selectedRunAgentId,
 				updatedAgentId,
+			},
+			{
+				editingAgentId,
+				selectedRunAgentId,
 			},
 			{
 				setSelectedRunAgent: setSelectedRunAgentId,
