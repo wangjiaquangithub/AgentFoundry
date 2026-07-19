@@ -161,10 +161,7 @@ import { createPlatformLaunchpadPageState } from './platform-launchpad-state';
 import { platformMonitoringDisplayStateForStatus } from './platform-monitoring-display';
 import { platformOnboardingDisplayStateForStatus } from './platform-onboarding-display';
 import { platformOrchestrationDisplayStateForStatus } from './platform-orchestration-display';
-import {
-	platformWorkbenchConsoleItemsDisplayState,
-	platformWorkbenchDisplayStateForStatus,
-} from './platform-workbench-display';
+import { createPlatformWorkbenchPageState } from './platform-workbench-state';
 import { createPlatformWorkflowPageState } from './platform-workflow-state';
 import {
 	createPlatformAgentQuickConfigurationHandlers,
@@ -1521,13 +1518,20 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	});
 
-	const platformConsoleItems = platformWorkbenchConsoleItemsDisplayState({
-		icons: platformConsoleIcons,
-		actions: platformConsoleNavigationActions(platformNavigationHandlers),
-		labels: platformConsoleItemLabels(t),
-	});
-	const workbenchDisplay = platformWorkbenchDisplayStateForStatus(
-		{
+	const {
+		platformConsoleItems,
+		workbenchActions,
+		workbenchIndicators,
+		workbenchQuickActions,
+		workbenchReadinessItems,
+		workbenchRiskItems,
+	} = createPlatformWorkbenchPageState({
+		consoleItems: {
+			icons: platformConsoleIcons,
+			actions: platformConsoleNavigationActions(platformNavigationHandlers),
+			labels: platformConsoleItemLabels(t),
+		},
+		workbench: {
 			activeAgentCount: activePlatformAgents.length,
 			readyAgentCount: readyPlatformAgents.length,
 			pendingApprovalCount: pendingApprovals.length,
@@ -1547,7 +1551,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			activeMemberCount,
 			hasErrors,
 		},
-		{
+		workbenchOptions: {
 			indicator: {
 				icons: workbenchIndicatorIcons,
 				actions: workbenchIndicatorNavigationActions(platformNavigationHandlers),
@@ -1576,14 +1580,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				labels: workbenchQuickActionLabels(t),
 			},
 		},
-	);
-	const {
-		actions: workbenchActions,
-		indicators: workbenchIndicators,
-		quickActions: workbenchQuickActions,
-		readinessItems: workbenchReadinessItems,
-		riskItems: workbenchRiskItems,
-	} = workbenchDisplay;
+	});
 	const onboardingDisplay = platformOnboardingDisplayStateForStatus(
 		{
 			credentialCount: credentials.length,
