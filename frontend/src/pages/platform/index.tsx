@@ -2601,7 +2601,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					t,
 					username,
 				}),
-				setSelectedIdentityUserId: setSelectedIdentityUserId,
 				t: t,
 				username: username,
 			})}
