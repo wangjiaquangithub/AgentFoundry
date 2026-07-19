@@ -68,6 +68,7 @@ import {
 	approvalCreatePayloadFromForm,
 	approvalCreatePayloadFromRun,
 	approvalDecisionPayload,
+	approvalAgentContinuationTarget,
 	approvalAgentQuestionFromInputs,
 	approvalInputForTool,
 	approvalQueryFromFilters,
@@ -1642,23 +1643,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			await refetchOpsTasks();
 
 			if (canContinueAgentRun && approval.tool_name) {
-				const question = approvalAgentQuestionFromInputs(
-					approval.inputs,
-					agentQuestion,
-					{ trimFallback: true },
-				);
+				const target = approvalAgentContinuationTarget(approval, agentQuestion);
 
-				setSelectedIdentityUserId(approval.user_id);
-				setSelectedRunAgentId(approval.agent_id);
-				setAgentApprovalId(approval.approval_id);
-				setAgentQuestion(question);
+				setSelectedIdentityUserId(target.userId);
+				setSelectedRunAgentId(target.agentId);
+				setAgentApprovalId(target.approvalId);
+				setAgentQuestion(target.question);
 				window.setTimeout(scrollToAgentRunner, 0);
-				await runEnterpriseAgent({
-					agentId: approval.agent_id,
-					question,
-					userId: approval.user_id,
-					approvalId: approval.approval_id,
-				});
+				await runEnterpriseAgent(target);
 				return;
 			}
 

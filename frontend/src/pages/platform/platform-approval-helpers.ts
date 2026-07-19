@@ -176,6 +176,24 @@ export function approvalAgentQuestionFromInputs(
 			: fallbackQuestion;
 }
 
+export function approvalAgentContinuationTarget(
+	approval: EnterpriseApprovalRequestItem,
+	fallbackQuestion: string,
+) {
+	const question = approvalAgentQuestionFromInputs(
+		approval.inputs,
+		fallbackQuestion,
+		{ trimFallback: true },
+	);
+
+	return {
+		agentId: approval.agent_id,
+		question,
+		userId: approval.user_id,
+		approvalId: approval.approval_id,
+	};
+}
+
 export function approvalWorkflowContinuationTarget(approval: EnterpriseApprovalRequestItem) {
 	return {
 		workflowType: approval.workflow_type ?? '',
