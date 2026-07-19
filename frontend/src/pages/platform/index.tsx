@@ -200,10 +200,12 @@ import { createPlatformAppCenterPageState } from './platform-app-center-state';
 import { createPlatformConnectorPageState } from './platform-connector-state';
 import { createPlatformConnectionPageState } from './platform-connection-state';
 import {
-	platformAuditStatsDisplayStateForSummary,
 	platformSummarizeAuditObject,
 } from './platform-governance-display';
-import { createPlatformGovernancePageState } from './platform-governance-state';
+import {
+	createPlatformAuditStatsPageState,
+	createPlatformGovernancePageState,
+} from './platform-governance-state';
 import { createPlatformSelectedIdentityPageState } from './platform-selected-identity-state';
 import {
 	createPlatformAgentReleasePipelinePageState,
@@ -818,13 +820,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			summaryLabels: triggerOperationsSummaryLabels(t),
 		},
 	});
-	const auditStats = platformAuditStatsDisplayStateForSummary(
-		{
+	const auditStats = createPlatformAuditStatsPageState({
+		audit: {
 			auditSummary,
 			auditEvents,
 		},
-		auditStatsLabels(t),
-	);
+		labels: auditStatsLabels(t),
+	});
 	usePlatformDataLoadEffects(
 		{
 			selectedIdentityUserId,

@@ -1,8 +1,17 @@
-import { platformGovernanceDisplayStateForStatus } from './platform-governance-display';
+import {
+	platformAuditStatsDisplayStateForSummary,
+	platformGovernanceDisplayStateForStatus,
+} from './platform-governance-display';
 
 type PlatformGovernanceDisplayValues = Parameters<
 	typeof platformGovernanceDisplayStateForStatus
 >[0];
+type PlatformAuditStatsValues = Parameters<
+	typeof platformAuditStatsDisplayStateForSummary
+>[0];
+type PlatformAuditStatsLabels = Parameters<
+	typeof platformAuditStatsDisplayStateForSummary
+>[1];
 
 export function createPlatformGovernancePageState(
 	values: PlatformGovernanceDisplayValues,
@@ -27,4 +36,11 @@ export function createPlatformGovernancePageState(
 		selectedIdentityRecentAuditEvents:
 			selectedIdentityGovernanceDisplayState.selectedIdentityRecentAuditEvents,
 	};
+}
+
+export function createPlatformAuditStatsPageState(values: {
+	audit: PlatformAuditStatsValues;
+	labels: PlatformAuditStatsLabels;
+}) {
+	return platformAuditStatsDisplayStateForSummary(values.audit, values.labels);
 }
