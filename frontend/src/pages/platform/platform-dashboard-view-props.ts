@@ -240,6 +240,15 @@ type DashboardWorkbenchStatusViewProps = Pick<
 	| 'workbenchIndicators'
 >;
 
+type DashboardLaunchpadViewProps = Pick<
+	DashboardViewPageProps,
+	| 'launchpadPrimaryStep'
+	| 'launchpadReadyCount'
+	| 'launchpadState'
+	| 'launchpadSteps'
+	| 'launchpadTotalCount'
+>;
+
 type DashboardOpsTasksViewProps = Pick<
 	DashboardViewPageProps,
 	| 'handleResolveOpsTask'
@@ -344,6 +353,12 @@ export function createPlatformDashboardWorkbenchReadinessViewProps(
 export function createPlatformDashboardWorkbenchStatusViewProps(
 	props: DashboardWorkbenchStatusViewProps,
 ): DashboardWorkbenchStatusViewProps {
+	return props;
+}
+
+export function createPlatformDashboardLaunchpadViewProps(
+	props: DashboardLaunchpadViewProps,
+): DashboardLaunchpadViewProps {
 	return props;
 }
 
