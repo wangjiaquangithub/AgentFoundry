@@ -285,6 +285,7 @@ import {
 	platformSummarizeAuditObject,
 } from './platform-governance-display';
 import {
+	platformAgentIsReadyForDisplay,
 	platformAgentReleasePipelineDisplayStateForStatus,
 	platformPublishDisplayStateForStatus,
 } from './platform-publish-display';
@@ -294,7 +295,6 @@ import { platformToolRunnerDisplayStateForStatus } from './platform-tool-runner-
 import { platformOverviewDisplayStateForStatus } from './platform-overview-display';
 import {
 	agentAccessAllowed,
-	agentIsReady,
 	type EnterpriseAgentConversationTurn,
 } from './platform-utils';
 import type { PlatformView } from './platform-view';
@@ -2149,7 +2149,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		runAppCenterDetailPrimaryRequestAction({
 			agentId: inspectedAppCenterAgent?.id,
 			agentIsReady: Boolean(
-				inspectedAppCenterAgent && agentIsReady(inspectedAppCenterAgent),
+				inspectedAppCenterAgent &&
+					platformAgentIsReadyForDisplay(inspectedAppCenterAgent),
 			),
 			hasTemplate: Boolean(inspectedAppCenterTemplate),
 		}, {

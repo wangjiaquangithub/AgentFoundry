@@ -1,4 +1,5 @@
 import {
+	agentIsReady,
 	agentReleasePipelineForStatus,
 	publishAccessStateForStatus,
 	publishDraftStateForStatus,
@@ -10,6 +11,12 @@ export function platformAgentReleasePipelineDisplayStateForStatus<TIcon>(
 	icons: Parameters<typeof agentReleasePipelineForStatus<TIcon>>[2],
 ) {
 	return agentReleasePipelineForStatus(values, labels, icons);
+}
+
+export function platformAgentIsReadyForDisplay(
+	agent: Parameters<typeof agentIsReady>[0],
+) {
+	return agentIsReady(agent);
 }
 
 export interface PlatformPublishDisplayState {
