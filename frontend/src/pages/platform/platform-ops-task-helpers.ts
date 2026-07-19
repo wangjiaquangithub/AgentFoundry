@@ -70,13 +70,18 @@ export type OpsTaskLoadActionHandlers = {
 
 export type PlatformOpsTaskHandlerValues = {
 	text: {
+		loadError: string;
 		resolveError: string;
 	};
 };
 
 export type PlatformOpsTaskHandlerActions = PlatformOperationActionHandlers & {
+	setOpsTasksLoading: (loading: boolean) => void;
 	setResolvingOpsTaskCode: (code: string | null) => void;
 	setOpsTasksError: (message: string | null) => void;
+	loadOpsTasks: () =>
+		| EnterprisePlatformOpsTasksResponse
+		| Promise<EnterprisePlatformOpsTasksResponse>;
 	resolveOpsTask: (
 		code: string,
 	) => EnterprisePlatformOpsTaskResolveResponse | Promise<EnterprisePlatformOpsTaskResolveResponse>;
@@ -109,6 +114,20 @@ export function createPlatformOpsTaskHandlers(
 	values: PlatformOpsTaskHandlerValues,
 	actions: PlatformOpsTaskHandlerActions,
 ) {
+	async function refetchOpsTasks() {
+		await runOpsTaskLoadAction(
+			values.text.loadError,
+			{
+				setLoading: actions.setOpsTasksLoading,
+				clearError: () => actions.setOpsTasksError(null),
+				loadOpsTasks: actions.loadOpsTasks,
+				setOpsTasks: actions.setOpsTasks,
+				setOpsTasksSummary: actions.setOpsTasksSummary,
+				setError: actions.setOpsTasksError,
+			},
+		);
+	}
+
 	function handleOperationAction(target?: string) {
 		runPlatformOperationAction(target, actions);
 	}
@@ -131,6 +150,7 @@ export function createPlatformOpsTaskHandlers(
 	}
 
 	return {
+		refetchOpsTasks,
 		handleOperationAction,
 		handleResolveOpsTask,
 	};

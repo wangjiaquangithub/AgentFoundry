@@ -79,7 +79,6 @@ import {
 } from './platform-governance-helpers';
 import {
 	createPlatformOpsTaskHandlers,
-	runOpsTaskLoadAction,
 } from './platform-ops-task-helpers';
 import {
 	createPlatformWorkflowTemplateHandlers,
@@ -1256,20 +1255,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	);
 
-	async function refetchOpsTasks() {
-		await runOpsTaskLoadAction(
-			opsTasksRequestText.loadError,
-			{
-				setLoading: setOpsTasksLoading,
-				clearError: () => setOpsTasksError(null),
-				loadOpsTasks: platformApi.opsTasks,
-				setOpsTasks,
-				setOpsTasksSummary,
-				setError: setOpsTasksError,
-			},
-		);
-	}
-
 	async function refetchApprovals(overrides: Partial<typeof approvalFilters> = {}) {
 		await runApprovalLoadAction(
 			{
@@ -1542,10 +1527,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			},
 		);
 
-	const { handleOperationAction, handleResolveOpsTask } =
+	const { refetchOpsTasks, handleOperationAction, handleResolveOpsTask } =
 		createPlatformOpsTaskHandlers(
 			{
 				text: {
+					loadError: opsTasksRequestText.loadError,
 					resolveError: opsTasksRequestText.resolveError,
 				},
 			},
@@ -1557,8 +1543,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				scrollToToolRunner,
 				scrollToMemoryOperations,
 				navigate,
+				setOpsTasksLoading,
 				setResolvingOpsTaskCode,
 				setOpsTasksError,
+				loadOpsTasks: platformApi.opsTasks,
 				resolveOpsTask: platformApi.resolveOpsTask,
 				setWorkflowTemplates,
 				setOpsTasks,
