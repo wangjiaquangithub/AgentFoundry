@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {
@@ -42,13 +42,10 @@ import { WorkflowsViewPage } from './components/WorkflowsViewPage';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import { usePlatformPageRefs } from './platform-page-refs';
 import {
-	agentRunResultForSelectedAgent,
 	createPlatformAgentRunnerEntryHandlers,
 	createPlatformRunnerHandlers,
 	platformAgentAccessAllowedForDisplay,
-	selectedRunAgentIdForAvailableAgents,
 	workflowInputsForSelectedOption,
-	workflowSelectionForAvailableTemplates,
 	workflowInputsWithValue,
 	type AgentConversationMap,
 } from './platform-agent-runner';
@@ -57,7 +54,6 @@ import {
 } from './platform-approval-helpers';
 import { createPlatformAgentManagementHandlers } from './platform-agent-management-helpers';
 import {
-	connectorFormWithPlatformDefaults,
 	createPlatformConnectorHandlers,
 } from './platform-connector-helpers';
 import {
@@ -65,7 +61,6 @@ import {
 } from './platform-config-management';
 import {
 	createPlatformToolPolicyHandlers,
-	toolPolicyDraftFromDecisions,
 } from './platform-tool-policy-helpers';
 import { createPlatformToolCatalogHandlers } from './platform-tool-catalog-helpers';
 import {
@@ -80,6 +75,7 @@ import {
 } from './platform-ops-task-helpers';
 import { usePlatformDataLoadEffects } from './platform-data-load-effects';
 import { createPlatformRefreshDependencyHandlers } from './platform-refresh-dependencies';
+import { usePlatformSelectionSyncEffects } from './platform-selection-sync-effects';
 import {
 	createPlatformWorkflowTemplateHandlers,
 } from './platform-workflow-template-helpers';
@@ -887,80 +883,35 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	);
 
-	useEffect(() => {
-		setToolPolicyDraft(
-			toolPolicyDraftFromDecisions({
-				tools: availableToolItems,
-				allowedTools: selectedIdentityAllowedTools,
-				deniedTools: selectedIdentityDeniedTools,
-			}),
-		);
-		setToolPolicySaveError(null);
-		setToolPolicySaveSuccess(null);
-	}, [availableToolItems, selectedIdentityAllowedTools, selectedIdentityDeniedTools]);
-
-	useEffect(() => {
-		if (!selectedIdentityUserId && enterpriseIdentities.length) {
-			setSelectedIdentityUserId(enterpriseIdentities[0].user_id);
-		}
-	}, [enterpriseIdentities, selectedIdentityUserId]);
-
-	useEffect(() => {
-		if (!connectors || connectorDefaultsAppliedRef.current) {
-			return;
-		}
-
-		connectorDefaultsAppliedRef.current = true;
-		setConnectorTestForm((previous) =>
-			connectorFormWithPlatformDefaults({
-				current: previous,
-				connectors,
-			}),
-		);
-	}, [connectors]);
-
-	useEffect(() => {
-		const nextAgentId = selectedRunAgentIdForAvailableAgents({
-			currentAgentId: selectedRunAgentId,
-			activeAgents: activePlatformAgents,
-			readyAgents: readyPlatformAgents,
-		});
-
-		if (nextAgentId !== selectedRunAgentId) {
-			setSelectedRunAgentId(nextAgentId);
-		}
-	}, [activePlatformAgents, readyPlatformAgents, selectedRunAgentId]);
-
-	useEffect(() => {
-		if (!selectedRunAgentId) {
-			setAgentRunResult(null);
-			return;
-		}
-
-		setAgentRunResult((current) =>
-			agentRunResultForSelectedAgent({
-				current,
-				agentConversations,
-				agentId: selectedRunAgentId,
-			}),
-		);
-	}, [selectedRunAgentId]);
-
-	useEffect(() => {
-		void refetchAgentRuns();
-	}, [selectedRunAgentId, selectedIdentityUserId]);
-
-	useEffect(() => {
-		const nextSelection = workflowSelectionForAvailableTemplates({
-			workflowTemplates,
+	usePlatformSelectionSyncEffects(
+		{
+			activePlatformAgents,
+			agentConversations,
+			availableToolItems,
+			connectorDefaultsAppliedRef,
+			connectors,
+			enterpriseIdentities,
+			readyPlatformAgents,
+			selectedIdentityAllowedTools,
+			selectedIdentityDeniedTools,
+			selectedIdentityUserId,
+			selectedRunAgentId,
 			selectedWorkflowType,
-		});
-
-		if (nextSelection) {
-			setSelectedWorkflowType(nextSelection.workflowType);
-			setWorkflowInputs(nextSelection.inputs);
-		}
-	}, [selectedWorkflowType, workflowTemplates]);
+			workflowTemplates,
+		},
+		{
+			refetchAgentRuns: () => refetchAgentRuns(),
+			setAgentRunResult,
+			setConnectorTestForm,
+			setSelectedIdentityUserId,
+			setSelectedRunAgentId,
+			setSelectedWorkflowType,
+			setToolPolicyDraft,
+			setToolPolicySaveError,
+			setToolPolicySaveSuccess,
+			setWorkflowInputs,
+		},
+	);
 
 	const { refetchGovernance } = createPlatformGovernanceHandlers(
 		{
