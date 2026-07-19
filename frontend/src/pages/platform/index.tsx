@@ -238,7 +238,6 @@ import {
 	agentKnowledgeBasesBindTarget,
 	agentKnowledgeBasesPatch,
 	agentPublishRequestTarget,
-	agentPublishPayloadFromForm,
 	agentQuickConfigurationSyncResult,
 	agentTemplateToolsBindTarget,
 	agentTemplateToolsPatch,
@@ -2190,6 +2189,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			credentialCount: credentials.length,
 			selectedTemplate,
 			defaultTemplate: defaultAgentTemplate,
+			currentUserTenant: platformStatus?.current_user.tenant,
+			credentials,
+			knowledgeBases,
 		});
 		if (target.type === 'navigate') {
 			navigate(target.path);
@@ -2201,21 +2203,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			return;
 		}
 
-		const { template } = target;
-		const defaultForm = buildDefaultPublishForm(template);
 		setEditingAgentId(null);
-		setSelectedTemplateId(template.id);
-		setPublishForm(defaultForm);
-		setPublishingTemplateId(template.id);
+		setSelectedTemplateId(target.templateId);
+		setPublishForm(target.form);
+		setPublishingTemplateId(target.templateId);
 		setPlatformAgentsError(null);
 
 		try {
-			const response = await platformApi.publishAgent(
-				agentPublishPayloadFromForm({
-					templateId: template.id,
-					form: defaultForm,
-				}),
-			);
+			const response = await platformApi.publishAgent(target.payload);
 			const publishedAgentId = publishedAgentPrimeTarget(response.agent);
 			if (publishedAgentId) {
 				setLastPublishedAgentId(publishedAgentId);

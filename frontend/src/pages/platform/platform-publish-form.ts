@@ -48,7 +48,12 @@ export type AgentEditCancelTarget =
 export type QuickPublishTarget =
 	| { type: 'navigate'; path: '/credential' }
 	| { type: 'start-publishing' }
-	| { type: 'publish'; template: EnterpriseAgentTemplate };
+	| {
+			type: 'publish';
+			templateId: string;
+			form: PublishFormState;
+			payload: EnterpriseAgentPublishRequest;
+	  };
 export type PreparedTenantAgentTarget =
 	| { type: 'current' }
 	| {
@@ -226,6 +231,9 @@ export function quickPublishTarget(values: {
 	credentialCount: number;
 	selectedTemplate?: EnterpriseAgentTemplate | null;
 	defaultTemplate?: EnterpriseAgentTemplate | null;
+	currentUserTenant?: string;
+	credentials: CredentialView[];
+	knowledgeBases: KnowledgeBaseView[];
 }): QuickPublishTarget {
 	if (values.credentialCount === 0) {
 		return { type: 'navigate', path: '/credential' };
@@ -233,7 +241,26 @@ export function quickPublishTarget(values: {
 
 	const template = values.selectedTemplate ?? values.defaultTemplate;
 
-	return template ? { type: 'publish', template } : { type: 'start-publishing' };
+	if (!template) {
+		return { type: 'start-publishing' };
+	}
+
+	const form = defaultPublishFormForTemplate({
+		template,
+		currentUserTenant: values.currentUserTenant,
+		credentials: values.credentials,
+		knowledgeBases: values.knowledgeBases,
+	});
+
+	return {
+		type: 'publish',
+		templateId: template.id,
+		form,
+		payload: agentPublishPayloadFromForm({
+			templateId: template.id,
+			form,
+		}),
+	};
 }
 
 export function nextPublishedAgentIdAfterArchive(values: {
