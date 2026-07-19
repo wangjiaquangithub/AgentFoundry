@@ -67,6 +67,7 @@ import {
 	scenarioWorkflowRunTarget,
 	selectedToolInputs,
 	selectedRunAgentIdForAvailableAgents,
+	workflowTypeIsAvailable,
 	workflowInputsWithValue,
 	type AgentConversationMap,
 } from './platform-agent-runner';
@@ -1037,7 +1038,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			return;
 		}
 
-		if (!workflowTemplates.some((template) => template.workflow_type === selectedWorkflowType)) {
+		if (!workflowTypeIsAvailable(workflowTemplates, selectedWorkflowType)) {
 			const firstTemplate = workflowTemplates[0];
 			setSelectedWorkflowType(firstTemplate.workflow_type);
 			setWorkflowInputs(normalizeWorkflowInputs(firstTemplate.default_inputs));

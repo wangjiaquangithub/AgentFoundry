@@ -235,6 +235,15 @@ export function agentWorkflowPrimeInputs(values: {
 	return normalizeWorkflowInputs(selectedDefaultInputs);
 }
 
+export function workflowTypeIsAvailable(
+	workflowTemplates: EnterpriseWorkflowTemplate[],
+	workflowType: string,
+): boolean {
+	return workflowTemplates.some(
+		(template) => template.workflow_type === workflowType,
+	);
+}
+
 export function workflowInputsWithValue(
 	current: Record<string, string>,
 	key: string,
