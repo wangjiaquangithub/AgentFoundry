@@ -151,6 +151,13 @@ export function enterpriseAgentRunPayload(values: {
 	};
 }
 
+export function runApprovalIdFromInput(
+	optionApprovalId: string | undefined,
+	formApprovalId: string,
+): string {
+	return optionApprovalId ?? formApprovalId.trim();
+}
+
 export function clearAgentRunsParams(values: {
 	agentId: string;
 	userId: string;

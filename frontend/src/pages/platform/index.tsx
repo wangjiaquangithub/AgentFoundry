@@ -64,6 +64,7 @@ import {
 	latestAgentRunResponse,
 	mergeAgentConversationTurn,
 	replaceAgentConversationTurns,
+	runApprovalIdFromInput,
 	scenarioWorkflowRunTarget,
 	selectedToolInputs,
 	selectedRunAgentIdForAvailableAgents,
@@ -2463,7 +2464,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		const agentId = options?.agentId ?? selectedRunAgentId;
 		const question = (options?.question ?? agentQuestion).trim();
 		const userId = options?.userId ?? selectedIdentityUserId;
-		const explicitApprovalId = options?.approvalId ?? agentApprovalId.trim();
+		const explicitApprovalId = runApprovalIdFromInput(
+			options?.approvalId,
+			agentApprovalId,
+		);
 		const targetAgent =
 			activePlatformAgents.find((agent) => agent.id === agentId) ??
 			(agentId === selectedRunAgentId ? selectedRunAgent : null);
@@ -2535,7 +2539,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			});
 		const userId = options?.userId ?? selectedIdentityUserId;
 		const agentId = options?.agentId ?? selectedRunAgentId;
-		const approvalId = options?.approvalId ?? toolApprovalId.trim();
+		const approvalId = runApprovalIdFromInput(options?.approvalId, toolApprovalId);
 
 		if (!inputs) {
 			return;
@@ -2589,7 +2593,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		const inputs = options?.inputs ?? workflowInputs;
 		const userId = options?.userId ?? selectedIdentityUserId;
 		const agentId = options?.agentId ?? selectedRunAgentId;
-		const approvalId = options?.approvalId ?? workflowApprovalId.trim();
+		const approvalId = runApprovalIdFromInput(options?.approvalId, workflowApprovalId);
 
 		setRunningWorkflow(true);
 		setWorkflowRunError(null);
