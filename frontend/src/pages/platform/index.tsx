@@ -273,6 +273,7 @@ import { platformAgentInventoryDisplayStateForStatus } from './platform-agent-in
 import {
 	platformAgentRunnerDisplayStateForStatus,
 	platformAgentSetupStepsDisplayStateForStatus,
+	platformNextAgentSetupStepDisplayStateForSteps,
 } from './platform-agent-runner-display';
 import { platformAppCenterDisplayStateForStatus } from './platform-app-center-display';
 import { platformConnectorDisplayStateForStatus } from './platform-connector-display';
@@ -293,7 +294,6 @@ import {
 	agentIsReady,
 	agentReleasePipelineForStatus,
 	mapAgentRunToConversationTurn,
-	nextAgentSetupStepForSteps,
 	summarizeAuditObject,
 	type EnterpriseAgentConversationTurn,
 } from './platform-utils';
@@ -557,7 +557,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 		agentSetupStepLabels(t),
 	);
-	const nextAgentSetupStep = nextAgentSetupStepForSteps(agentSetupSteps);
+	const nextAgentSetupStep = platformNextAgentSetupStepDisplayStateForSteps(agentSetupSteps);
 	const primaryAgentSampleQuestion = agentSampleQuestions[0];
 	const {
 		selectedRunAgentModelLabel,

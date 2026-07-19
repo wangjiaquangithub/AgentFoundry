@@ -1,6 +1,7 @@
 import {
 	agentRunnerStateForStatus,
 	agentSetupStepsForStatus,
+	nextAgentSetupStepForSteps,
 } from './platform-utils';
 
 export function platformAgentSetupStepsDisplayStateForStatus(
@@ -8,6 +9,12 @@ export function platformAgentSetupStepsDisplayStateForStatus(
 	labels: Parameters<typeof agentSetupStepsForStatus>[1],
 ) {
 	return agentSetupStepsForStatus(values, labels);
+}
+
+export function platformNextAgentSetupStepDisplayStateForSteps(
+	steps: Parameters<typeof nextAgentSetupStepForSteps>[0],
+) {
+	return nextAgentSetupStepForSteps(steps);
 }
 
 export interface PlatformAgentRunnerDisplayState {
