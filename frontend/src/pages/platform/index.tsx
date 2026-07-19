@@ -73,6 +73,7 @@ import {
 	approvalQueryFromFilters,
 	approvalToolFormPatch,
 	approvalToolInputsPatch,
+	approvalWorkflowContinuationTarget,
 	prependApprovalRequest,
 	replaceApprovalRequest,
 	type PlatformApprovalRunType,
@@ -1686,21 +1687,15 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			}
 
 			if (canContinueWorkflowRun && approval.workflow_type) {
-				const inputs = normalizeWorkflowInputs(approval.inputs);
+				const target = approvalWorkflowContinuationTarget(approval);
 
-				setSelectedIdentityUserId(approval.user_id);
-				setSelectedRunAgentId(approval.agent_id);
-				setSelectedWorkflowType(approval.workflow_type);
-				setWorkflowInputs(inputs);
-				setWorkflowApprovalId(approval.approval_id);
+				setSelectedIdentityUserId(target.userId);
+				setSelectedRunAgentId(target.agentId);
+				setSelectedWorkflowType(target.workflowType);
+				setWorkflowInputs(target.inputs);
+				setWorkflowApprovalId(target.approvalId);
 				window.setTimeout(scrollToWorkflowRunner, 0);
-				await runEnterpriseWorkflow({
-					workflowType: approval.workflow_type,
-					inputs,
-					userId: approval.user_id,
-					agentId: approval.agent_id,
-					approvalId: approval.approval_id,
-				});
+				await runEnterpriseWorkflow(target);
 			}
 		} catch (error) {
 			setApprovalError(

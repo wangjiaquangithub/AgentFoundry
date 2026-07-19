@@ -5,6 +5,7 @@ import type {
 	EnterpriseApprovalRequestType,
 } from '@/api';
 import type { ApprovalFiltersState, ApprovalFormState } from './platform-defaults';
+import { normalizeWorkflowInputs } from './platform-utils';
 
 export type PlatformApprovalRunType = Extract<
 	EnterpriseApprovalRequestType,
@@ -173,6 +174,16 @@ export function approvalAgentQuestionFromInputs(
 		: options.trimFallback
 			? fallbackQuestion.trim()
 			: fallbackQuestion;
+}
+
+export function approvalWorkflowContinuationTarget(approval: EnterpriseApprovalRequestItem) {
+	return {
+		workflowType: approval.workflow_type ?? '',
+		inputs: normalizeWorkflowInputs(approval.inputs),
+		userId: approval.user_id,
+		agentId: approval.agent_id,
+		approvalId: approval.approval_id,
+	};
 }
 
 export function approvalToolInputsPatch(
