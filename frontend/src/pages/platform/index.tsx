@@ -93,6 +93,7 @@ import {
 	approvalToolContinuationTarget,
 	approvalToolInputsPatch,
 	runApprovalCreateAction,
+	runApprovalDecisionAction,
 	runApprovalRunCreateAction,
 	runApprovalUsageTargetAction,
 	runToolApprovalPrimeTargetAction,
@@ -1605,29 +1606,31 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		approvalId: string,
 		decision: 'approved' | 'rejected',
 	) {
-		setDecidingApprovalId(approvalId);
-		setApprovalError(null);
-		try {
-			const request = approvalDecisionPayloadFromRequestText(decision, {
+		await runApprovalDecisionAction(
+			{
+				approvalId,
+				decision,
 				username,
 				text: approvalRequestText,
-			});
-			const response =
-				decision === 'approved'
-					? await platformApi.approveApproval(approvalId, request)
-					: await platformApi.rejectApproval(approvalId, request);
-			setApprovalRequests((current) =>
-				replaceApprovalRequest(current, response.approval),
-			);
-			await refetchGovernance();
-			await refetchOpsTasks();
-		} catch (error) {
-			setApprovalError(
-				error instanceof Error ? error.message : approvalRequestText.decisionError,
-			);
-		} finally {
-			setDecidingApprovalId(null);
-		}
+			},
+			{
+				setDecidingApprovalId,
+				clearApprovalError: () => setApprovalError(null),
+				approveApproval: platformApi.approveApproval,
+				rejectApproval: platformApi.rejectApproval,
+				setApprovalRequests,
+				refreshDependentViews: async () => {
+					await refetchGovernance();
+					await refetchOpsTasks();
+				},
+				handleError: (error) =>
+					setApprovalError(
+						error instanceof Error
+							? error.message
+							: approvalRequestText.decisionError,
+					),
+			},
+		);
 	}
 
 	async function handleApproveAndRun(approval: EnterpriseApprovalRequestItem) {

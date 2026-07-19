@@ -1,6 +1,7 @@
 import type {
 	EnterpriseApprovalCreateRequest,
 	EnterpriseApprovalDecisionRequest,
+	EnterpriseApprovalDecisionResponse,
 	EnterpriseApprovalRequestItem,
 	EnterpriseApprovalRequestType,
 	EnterpriseApprovalsResponse,
@@ -56,6 +57,30 @@ export type ApprovalRunCreateActionHandlers = {
 		requestType: PlatformApprovalRunType,
 		error: unknown,
 	) => void;
+};
+
+export type ApprovalDecisionActionHandlers = {
+	setDecidingApprovalId: (approvalId: string | null) => void;
+	clearApprovalError: () => void;
+	approveApproval: (
+		approvalId: string,
+		payload: EnterpriseApprovalDecisionRequest,
+	) =>
+		| EnterpriseApprovalDecisionResponse
+		| Promise<EnterpriseApprovalDecisionResponse>;
+	rejectApproval: (
+		approvalId: string,
+		payload: EnterpriseApprovalDecisionRequest,
+	) =>
+		| EnterpriseApprovalDecisionResponse
+		| Promise<EnterpriseApprovalDecisionResponse>;
+	setApprovalRequests: (
+		update: (
+			current: EnterpriseApprovalRequestItem[],
+		) => EnterpriseApprovalRequestItem[],
+	) => void;
+	refreshDependentViews: () => void | Promise<void>;
+	handleError: (error: unknown) => void;
 };
 
 export interface ApprovalDecisionLabels {
@@ -283,6 +308,37 @@ export function approvalDecisionPayloadFromRequestText(
 		username: options.username,
 		labels: options.text,
 	});
+}
+
+export async function runApprovalDecisionAction(
+	values: {
+		approvalId: string;
+		decision: 'approved' | 'rejected';
+		username: string;
+		text: ApprovalDecisionLabels;
+	},
+	handlers: ApprovalDecisionActionHandlers,
+) {
+	handlers.setDecidingApprovalId(values.approvalId);
+	handlers.clearApprovalError();
+	try {
+		const request = approvalDecisionPayloadFromRequestText(values.decision, {
+			username: values.username,
+			text: values.text,
+		});
+		const response =
+			values.decision === 'approved'
+				? await handlers.approveApproval(values.approvalId, request)
+				: await handlers.rejectApproval(values.approvalId, request);
+		handlers.setApprovalRequests((current) =>
+			replaceApprovalRequest(current, response.approval),
+		);
+		await handlers.refreshDependentViews();
+	} catch (error) {
+		handlers.handleError(error);
+	} finally {
+		handlers.setDecidingApprovalId(null);
+	}
 }
 
 export function approvalContinuationState(approval: EnterpriseApprovalRequestItem) {
