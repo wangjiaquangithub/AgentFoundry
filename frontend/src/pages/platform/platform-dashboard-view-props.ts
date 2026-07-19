@@ -74,6 +74,37 @@ type DashboardApprovalsViewProps = Pick<
 	| 'workflowPendingApprovals'
 >;
 
+type DashboardConnectorsViewProps = Pick<
+	DashboardViewPageProps,
+	| 'activeConnectorTenant'
+	| 'activeSavedConnectorConfig'
+	| 'connectorCenterRef'
+	| 'connectorDraftIssues'
+	| 'connectorDraftState'
+	| 'connectorRuntimeSourceText'
+	| 'connectorRuntimeState'
+	| 'connectorSaveError'
+	| 'connectorSaveSuccess'
+	| 'connectorState'
+	| 'connectorTestError'
+	| 'connectorTestForm'
+	| 'connectorTestPassed'
+	| 'connectorTestResult'
+	| 'connectors'
+	| 'connectorsError'
+	| 'connectorsLoading'
+	| 'handleSaveConnectorConfig'
+	| 'handleTestAndSaveConnectorConfig'
+	| 'handleTestConnector'
+	| 'loadSavedConnectorConfig'
+	| 'refetchConnectors'
+	| 'savedConnectorConfigs'
+	| 'savingConnectorConfig'
+	| 'scrollToConnectorCenter'
+	| 'setConnectorTestForm'
+	| 'testingConnector'
+>;
+
 export function createPlatformDashboardViewProps(
 	props: DashboardViewPageProps,
 ): DashboardViewPageProps {
@@ -89,6 +120,12 @@ export function createPlatformDashboardAgentRunnerViewProps(
 export function createPlatformDashboardApprovalsViewProps(
 	props: DashboardApprovalsViewProps,
 ): DashboardApprovalsViewProps {
+	return props;
+}
+
+export function createPlatformDashboardConnectorsViewProps(
+	props: DashboardConnectorsViewProps,
+): DashboardConnectorsViewProps {
 	return props;
 }
 
