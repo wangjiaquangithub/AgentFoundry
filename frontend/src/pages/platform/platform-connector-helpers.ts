@@ -23,6 +23,16 @@ export type ConnectorSavedConfigLoadActionHandlers = {
 	setConnectorSaveSuccess: (message: string | null) => void;
 };
 
+export type ConnectorLoadActionHandlers = {
+	setLoading: (loading: boolean) => void;
+	clearError: () => void;
+	loadConnectors: () =>
+		| EnterprisePlatformConnectorsResponse
+		| Promise<EnterprisePlatformConnectorsResponse>;
+	setConnectors: (connectors: EnterprisePlatformConnectorsResponse) => void;
+	setError: (message: string) => void;
+};
+
 export type ConnectorTestActionHandlers = {
 	setTestingConnector: (testing: boolean) => void;
 	clearError: () => void;
@@ -181,6 +191,24 @@ export function runConnectorSavedConfigLoadAction(
 	handlers.setConnectorTestError(null);
 	handlers.setConnectorSaveError(null);
 	handlers.setConnectorSaveSuccess(null);
+}
+
+export async function runConnectorLoadAction(
+	loadErrorMessage: string,
+	handlers: ConnectorLoadActionHandlers,
+) {
+	handlers.setLoading(true);
+	handlers.clearError();
+	try {
+		const response = await handlers.loadConnectors();
+		handlers.setConnectors(response);
+	} catch (error) {
+		handlers.setError(
+			error instanceof Error ? error.message : loadErrorMessage,
+		);
+	} finally {
+		handlers.setLoading(false);
+	}
 }
 
 export function connectorSavePayloadFromForm(

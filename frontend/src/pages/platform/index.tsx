@@ -86,6 +86,7 @@ import {
 } from './platform-approval-helpers';
 import {
 	connectorFormWithPlatformDefaults,
+	runConnectorLoadAction,
 	runConnectorSavedConfigLoadAction,
 	runConnectorSaveAction,
 	runConnectorTestAndSaveAction,
@@ -1020,18 +1021,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}, [selectedWorkflowType, workflowTemplates]);
 
 	async function refetchConnectors() {
-		setConnectorsLoading(true);
-		setConnectorsError(null);
-		try {
-			const response = await platformApi.connectors();
-			setConnectors(response);
-		} catch (error) {
-			setConnectorsError(
-				error instanceof Error ? error.message : connectorRequestText.loadError,
-			);
-		} finally {
-			setConnectorsLoading(false);
-		}
+		await runConnectorLoadAction(connectorRequestText.loadError, {
+			setLoading: setConnectorsLoading,
+			clearError: () => setConnectorsError(null),
+			loadConnectors: platformApi.connectors,
+			setConnectors,
+			setError: setConnectorsError,
+		});
 	}
 
 	async function refetchGovernance() {
