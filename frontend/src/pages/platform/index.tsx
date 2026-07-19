@@ -157,6 +157,7 @@ import {
 	workflowSelectionLabels,
 } from './platform-labels';
 import { createPlatformDashboardPageState } from './platform-dashboard-state';
+import { createPlatformDashboardViewProps } from './platform-dashboard-view-props';
 import { createPlatformLaunchpadPageState } from './platform-launchpad-state';
 import { createPlatformMonitoringPageState } from './platform-monitoring-state';
 import { createPlatformOnboardingPageState } from './platform-onboarding-state';
@@ -1985,383 +1986,385 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 	return (
 		<DashboardViewPage
-			accessControlStats={accessControlStats}
-			accessTenantSummaries={accessTenantSummaries}
-			activeConnectorTenant={activeConnectorTenant}
-			activeMemberCount={activeMemberCount}
-			activePlatformAgents={activePlatformAgents}
-			activeSavedConnectorConfig={activeSavedConnectorConfig}
-			agentAccessAllowed={platformAgentAccessAllowedForDisplay}
-			agentApprovalId={agentApprovalId}
-			agentKnowledgeStepRef={agentKnowledgeStepRef}
-			agentManagementRef={agentManagementRef}
-			agentModelStepRef={agentModelStepRef}
-			agentOpsSummary={agentOpsSummary}
-			agentQuestion={agentQuestion}
-			agentReleasePipeline={agentReleasePipeline}
-			agentResourceText={agentResourceText}
-			agentRoutingLabel={agentRoutingLabel}
-			agentRoutingText={agentRoutingText}
-			agentRunConnectorSourceText={agentRunConnectorSourceText}
-			agentRunError={agentRunError}
-			agentRunKnowledgeLabels={agentRunKnowledgeLabels}
-			agentRunModelLabel={agentRunModelLabel}
-			agentRunResult={agentRunResult}
-			agentRunnerRef={agentRunnerRef}
-			agentRunsError={agentRunsError}
-			agentRunsLoading={agentRunsLoading}
-			agents={agents}
-			agentRuntimeStepRef={agentRuntimeStepRef}
-			agentSampleQuestions={agentSampleQuestions}
-			agentSetupSteps={agentSetupSteps}
-			agentTemplateStepRef={agentTemplateStepRef}
-			agentTemplates={agentTemplates}
-			agentToolCallBadgeText={agentToolCallBadgeText}
-			agentToolCalls={agentToolCalls}
-			agentToolsStepRef={agentToolsStepRef}
-			agentsLoading={agentsLoading}
-			appCenterAgents={appCenterAgents}
-			appCenterDetailIssues={appCenterDetailIssues}
-			appCenterDetailResources={appCenterDetailResources}
-			appCenterDetailStatus={appCenterDetailStatus}
-			appCenterPrimaryDisabled={appCenterPrimaryDisabled}
-			approvalError={approvalError}
-			approvalFilters={approvalFilters}
-			approvalForm={approvalForm}
-			approvalLoading={approvalLoading}
-			approvalRequests={approvalRequests}
-			approvalSummary={approvalSummary}
-			approvedApprovalCount={approvedApprovalCount}
-			archivingAgentId={archivingAgentId}
-			auditError={auditError}
-			auditEventCount={auditEventCount}
-			auditEvents={auditEvents}
-			auditFilters={auditFilters}
-			auditLoading={auditLoading}
-			auditStats={auditStats}
-			availableToolItems={availableToolItems}
-			bindingAgentKnowledgeId={bindingAgentKnowledgeId}
-			bindingAgentModelId={bindingAgentModelId}
-			bindingAgentToolsId={bindingAgentToolsId}
-			blockedOrPartialPlatformAgents={blockedOrPartialPlatformAgents}
-			capabilities={capabilities}
-			completedWorkflowRunCount={completedWorkflowRunCount}
-			configManagementRef={configManagementRef}
-			connectorCenterRef={connectorCenterRef}
-			connectorDraftIssues={connectorDraftIssues}
-			connectorDraftState={connectorDraftState}
-			connectorRuntimeSourceText={connectorRuntimeSourceText}
-			connectorRuntimeState={connectorRuntimeState}
-			connectorSaveError={connectorSaveError}
-			connectorSaveSuccess={connectorSaveSuccess}
-			connectorState={connectorState}
-			connectorTestError={connectorTestError}
-			connectorTestForm={connectorTestForm}
-			connectorTestPassed={connectorTestPassed}
-			connectorTestResult={connectorTestResult}
-			connectors={connectors}
-			connectorsError={connectorsError}
-			connectorsLoading={connectorsLoading}
-			continuingApprovalId={continuingApprovalId}
-			creatingApproval={creatingApproval}
-			creatingRunApproval={creatingRunApproval}
-			credentialById={credentialById}
-			credentials={credentials}
-			credentialsLoading={credentialsLoading}
-			currentIdentityLabel={currentIdentityLabel}
-			dashboardOperations={dashboardOperations}
-			dashboardTodoItems={dashboardTodoItems}
-			decidingApprovalId={decidingApprovalId}
-			defaultAgentTemplate={defaultAgentTemplate}
-			editingAgentId={editingAgentId}
-			enablingAgentMemoryId={enablingAgentMemoryId}
-			enablingAgentWorkflowId={enablingAgentWorkflowId}
-			enterpriseIdentities={enterpriseIdentities}
-			enterpriseToolInputConfig={enterpriseToolInputConfig}
-			failedWorkflowRunCount={failedWorkflowRunCount}
-			featuredAgents={featuredAgents}
-			firstAgentGuidePrimaryStep={firstAgentGuidePrimaryStep}
-			firstAgentGuideSteps={firstAgentGuideSteps}
-			governance={governance}
-			governanceError={governanceError}
-			governanceHealthItems={governanceHealthItems}
-			governanceLoading={governanceLoading}
-			governanceRef={governanceRef}
-			governedWorkflowItems={governedWorkflowItems}
-			handleAppCenterDetailPrimaryAction={handleAppCenterDetailPrimaryAction}
-			handleAppCenterDetailSecondaryAction={handleAppCenterDetailSecondaryAction}
-			handleAppCenterPrimaryAction={handleAppCenterPrimaryAction}
-			handleApproveAndRun={handleApproveAndRun}
-			handleArchiveAgent={handleArchiveAgent}
-			handleBindAvailableKnowledge={handleBindAvailableKnowledge}
-			handleBindDefaultModel={handleBindDefaultModel}
-			handleBindTemplateTools={handleBindTemplateTools}
-			handleCancelEdit={handleCancelEdit}
-			handleClearAgentConversation={handleClearAgentConversation}
-			handleConfigureTemplate={handleConfigureTemplate}
-			handleCopyPlatformConfig={handleCopyPlatformConfig}
-			handleCreateApproval={handleCreateApproval}
-			handleCreateRunApproval={handleCreateRunApproval}
-			handleDecideApproval={handleDecideApproval}
-			handleEditAgent={handleEditAgent}
-			handleEditMember={handleEditMember}
-			handleEnableAgentMemory={handleEnableAgentMemory}
-			handleEnableAgentWorkflow={handleEnableAgentWorkflow}
-			handleImportPlatformConfig={handleImportPlatformConfig}
-			handleInspectAgentRunAudit={handleInspectAgentRunAudit}
-			handleInspectIdentityApprovals={handleInspectIdentityApprovals}
-			handleInspectIdentityAudit={handleInspectIdentityAudit}
-			handleInspectIdentityFailures={handleInspectIdentityFailures}
-			handleInspectMemoryOperationAudit={handleInspectMemoryOperationAudit}
-			handleInspectTenantApprovals={handleInspectTenantApprovals}
-			handleInspectTenantAudit={handleInspectTenantAudit}
-			handleNextAgentSetupStep={handleNextAgentSetupStep}
-			handleNextStepPrimaryAction={handleNextStepPrimaryAction}
-			handleOpenMemoryOperation={handleOpenMemoryOperation}
-			handleOperationAction={handleOperationAction}
-			handlePrepareTenantAgent={handlePrepareTenantAgent}
-			handlePrimeAgentRunner={handlePrimeAgentRunner}
-			handlePrimeAgentWorkflow={handlePrimeAgentWorkflow}
-			handlePrimePublishedAgent={handlePrimePublishedAgent}
-			handlePrimeToolApproval={handlePrimeToolApproval}
-			handlePublishAgent={handlePublishAgent}
-			handlePublishTenantChange={handlePublishTenantChange}
-			handleQuickPublishAgent={handleQuickPublishAgent}
-			handleResolveOpsTask={handleResolveOpsTask}
-			handleRunEnterpriseAgent={handleRunEnterpriseAgent}
-			handleRunEnterpriseTool={handleRunEnterpriseTool}
-			handleRunEnterpriseWorkflow={handleRunEnterpriseWorkflow}
-			handleRunScenario={handleRunScenario}
-			handleSaveConnectorConfig={handleSaveConnectorConfig}
-			handleSaveMember={handleSaveMember}
-			handleSaveToolPolicy={handleSaveToolPolicy}
-			handleSelectAgentRun={handleSelectAgentRun}
-			handleSelectRunAgent={handleSelectRunAgent}
-			handleStartPublishing={handleStartPublishing}
-			handleTestAndSaveConnectorConfig={handleTestAndSaveConnectorConfig}
-			handleTestConnector={handleTestConnector}
-			handleToggleMemberStatus={handleToggleMemberStatus}
-			handleTogglePublishList={handleTogglePublishList}
-			handleToggleWorkflowTemplate={handleToggleWorkflowTemplate}
-			handleUseApproval={handleUseApproval}
-			handleUseIdentity={handleUseIdentity}
-			handleUseTenant={handleUseTenant}
-			hasErrors={hasErrors}
-			identityAccessRows={identityAccessRows}
-			importingPlatformConfig={importingPlatformConfig}
-			inspectedAppCenterAgent={inspectedAppCenterAgent}
-			inspectedAppCenterTemplate={inspectedAppCenterTemplate}
-			knowledgeBaseById={knowledgeBaseById}
-			knowledgeBases={knowledgeBases}
-			lastPublishedAgent={lastPublishedAgent}
-			launchpadPrimaryStep={launchpadPrimaryStep}
-			launchpadReadyCount={launchpadReadyCount}
-			launchpadState={launchpadState}
-			launchpadSteps={launchpadSteps}
-			launchpadTotalCount={launchpadTotalCount}
-			loadSavedConnectorConfig={loadSavedConnectorConfig}
-			memberForm={memberForm}
-			membersRef={membersRef}
-			memoryOperationsHitCount={memoryOperationsHitCount}
-			memoryOperationsItems={memoryOperationsItems}
-			memoryOperationsRef={memoryOperationsRef}
-			memoryOperationsRunCount={memoryOperationsRunCount}
-			memoryOperationsSavedCount={memoryOperationsSavedCount}
-			monitoringHealthState={monitoringActivitySummary.healthState}
-			monitoringLoading={monitoringLoading}
-			monitoringStats={monitoringStats}
-			nextAgentSetupStep={nextAgentSetupStep}
-			nextStepMode={nextStepMode}
-			nextStepPrimaryDisabled={nextStepPrimaryDisabled}
-			operationsAgentIssueText={operationsAgentIssueText}
-			operationsHeadline={operationsHeadline}
-			opsTasks={opsTasks}
-			opsTasksError={opsTasksError}
-			opsTasksLoading={opsTasksLoading}
-			opsTasksSummary={opsTasksSummary}
-			orchestrationPrimaryStep={orchestrationPrimaryStep}
-			orchestrationReadyCount={orchestrationReadyCount}
-			orchestrationWorkbenchSteps={orchestrationWorkbenchSteps}
-			partialWorkflowRunCount={partialWorkflowRunCount}
-			pendingApprovals={pendingApprovals}
-			platformAgents={platformAgents}
-			platformAgentsError={platformAgentsError}
-			platformAgentsLoading={platformAgentsLoading}
-			platformConfigError={platformConfigError}
-			platformConfigExport={platformConfigExport}
-			platformConfigImportMode={platformConfigImportMode}
-			platformConfigImportResult={platformConfigImportResult}
-			platformConfigImportText={platformConfigImportText}
-			platformConfigLoading={platformConfigLoading}
-			platformConsoleItems={platformConsoleItems}
-			platformError={platformError}
-			platformLoading={platformLoading}
-			platformMemberTenantSummaries={platformMemberTenantSummaries}
-			platformMembers={platformMembers}
-			platformMembersError={platformMembersError}
-			platformMembersLoading={platformMembersLoading}
-			platformStatus={platformStatus}
-			policyDecisions={policyDecisions}
-			primaryAgentSampleQuestion={primaryAgentSampleQuestion}
-			publishAccessMembers={publishAccessMembers}
-			publishAccessScopeSummary={publishAccessScopeSummary}
-			publishBlocked={publishBlocked}
-			publishForm={publishForm}
-			publishReleaseIssues={publishReleaseIssues}
-			publishRoleOptions={publishRoleOptions}
-			publishRuntimeSummary={publishRuntimeSummary}
-			publishSelectedModelLabel={publishSelectedModelLabel}
-			publishTenant={publishTenant}
-			publishedPlatformAgents={publishedPlatformAgents}
-			publishingTemplateId={publishingTemplateId}
-			readyPlatformAgents={readyPlatformAgents}
-			recentAgentTurns={monitoringActivitySummary.recentAgentTurns}
-			recentAuditEvents={recentAuditEvents}
-			recentSchedules={recentSchedules}
-			recentWorkflowRuns={recentWorkflowRuns}
-			recommendedOperationActions={recommendedOperationActions}
-			refetchAgentRuns={refetchAgentRuns}
-			refetchApprovals={refetchApprovals}
-			refetchAuditEvents={refetchAuditEvents}
-			refetchConnectors={refetchConnectors}
-			refetchGovernance={refetchGovernance}
-			refetchMembers={refetchMembers}
-			refetchOpsTasks={refetchOpsTasks}
-			refetchPlatform={refetchPlatform}
-			refetchPlatformAgents={refetchPlatformAgents}
-			refetchPlatformConfigExport={refetchPlatformConfigExport}
-			refetchScenarios={refetchScenarios}
-			refetchToolCatalog={refetchToolCatalog}
-			refetchWorkflowRuns={refetchWorkflowRuns}
-			resolvingOpsTaskCode={resolvingOpsTaskCode}
-			riskToolItems={riskToolItems}
-			rolloutPathSteps={rolloutPathSteps}
-			runningAgent={runningAgent}
-			runningTool={runningTool}
-			runningWorkflow={runningWorkflow}
-			runtimeItems={runtimeItems}
-			savedConnectorConfigs={savedConnectorConfigs}
-			savingConnectorConfig={savingConnectorConfig}
-			savingMember={savingMember}
-			savingToolPolicy={savingToolPolicy}
-			savingWorkflowType={savingWorkflowType}
-			scenarios={scenarios}
-			scenariosError={scenariosError}
-			scenariosLoading={scenariosLoading}
-			schedulesError={schedulesError}
-			schedulesLoading={schedulesLoading}
-			scrollToAgentManagement={scrollToAgentManagement}
-			scrollToAgentRunner={scrollToAgentRunner}
-			scrollToConnectorCenter={scrollToConnectorCenter}
-			scrollToGovernance={scrollToGovernance}
-			scrollToToolRunner={scrollToToolRunner}
-			scrollToWorkflowRunner={scrollToWorkflowRunner}
-			selectedAgentConversation={selectedAgentConversation}
-			selectedIdentity={selectedIdentity}
-			selectedIdentityAllowedTools={selectedIdentityAllowedTools}
-			selectedIdentityDeniedTools={selectedIdentityDeniedTools}
-			selectedIdentityFailedAuditEvents={selectedIdentityFailedAuditEvents}
-			selectedIdentityPendingApprovals={selectedIdentityPendingApprovals}
-			selectedIdentityPendingToolNames={selectedIdentityPendingToolNames}
-			selectedIdentityRecentAuditEvents={selectedIdentityRecentAuditEvents}
-			selectedIdentityUserId={selectedIdentityUserId}
-			selectedIdentityWorkspace={selectedIdentityWorkspace}
-			selectedRunAgent={selectedRunAgent}
-			selectedRunAgentAccessAllowed={selectedRunAgentAccessAllowed}
-			selectedRunAgentAccessLabel={selectedRunAgentAccessLabel}
-			selectedRunAgentId={selectedRunAgentId}
-			selectedRunAgentKnowledgeCount={selectedRunAgentKnowledgeCount}
-			selectedRunAgentKnowledgeLabels={selectedRunAgentKnowledgeLabels}
-			selectedRunAgentModelLabel={selectedRunAgentModelLabel}
-			selectedRunAgentReadinessLabel={selectedRunAgentReadinessLabel}
-			selectedRunAgentReadinessState={selectedRunAgentReadinessState}
-			selectedRunAgentToolCount={selectedRunAgentToolCount}
-			selectedTemplate={selectedTemplate}
-			selectedTemplateId={selectedTemplateId}
-			selectedToolAllowed={selectedToolAllowed}
-			selectedToolCatalogItem={selectedToolCatalogItem}
-			selectedToolConfig={selectedToolConfig}
-			selectedToolDecision={selectedToolDecision}
-			selectedToolInputKey={selectedToolInputKey}
-			selectedToolInputValue={selectedToolInputValue}
-			selectedToolName={selectedToolName}
-			selectedToolReason={selectedToolReason}
-			selectedWorkflowDisabled={selectedWorkflowDisabled}
-			selectedWorkflowLastRun={selectedWorkflowLastRun}
-			selectedWorkflowName={selectedWorkflowName}
-			selectedWorkflowSteps={selectedWorkflowSteps}
-			selectedWorkflowTemplate={selectedWorkflowTemplate}
-			selectedWorkflowType={selectedWorkflowType}
-			serverUrl={serverUrl}
-			setAgentApprovalId={setAgentApprovalId}
-			setAgentQuestion={setAgentQuestion}
-			setAgentRunError={setAgentRunError}
-			setAgentRunResult={setAgentRunResult}
-			setApprovalFilters={setApprovalFilters}
-			setApprovalForm={setApprovalForm}
-			setAuditFilters={setAuditFilters}
-			setConnectorTestForm={setConnectorTestForm}
-			setMemberForm={setMemberForm}
-			setPlatformConfigImportMode={setPlatformConfigImportMode}
-			setPlatformConfigImportText={setPlatformConfigImportText}
-			setPublishForm={setPublishForm}
-			setSelectedAppCenterItem={setSelectedAppCenterItem}
-			setSelectedIdentityUserId={setSelectedIdentityUserId}
-			setSelectedRunAgentId={setSelectedRunAgentId}
-			setSelectedToolName={setSelectedToolName}
-			setSelectedWorkflowType={setSelectedWorkflowType}
-			setToolApprovalId={setToolApprovalId}
-			setToolInputs={setToolInputs}
-			setToolPolicyDraft={setToolPolicyDraft}
-			setToolPolicySaveError={setToolPolicySaveError}
-			setToolPolicySaveSuccess={setToolPolicySaveSuccess}
-			setToolRunError={setToolRunError}
-			setWorkflowApprovalId={setWorkflowApprovalId}
-			setWorkflowInputs={setWorkflowInputs}
-			setWorkflowRunError={setWorkflowRunError}
-			stats={stats}
-			subagentTemplates={subagentTemplates}
-			summarizeAuditObject={platformSummarizeAuditObject}
-			t={t}
-			tenantOverviewItems={tenantOverviewItems}
-			tenantWorkspaces={tenantWorkspaces}
-			testingConnector={testingConnector}
-			toolApprovalId={toolApprovalId}
-			toolCatalogError={toolCatalogError}
-			toolCatalogLoading={toolCatalogLoading}
-			toolPolicyDraft={toolPolicyDraft}
-			toolPolicyMode={toolPolicyMode}
-			toolPolicySaveError={toolPolicySaveError}
-			toolPolicySaveSuccess={toolPolicySaveSuccess}
-			toolPolicySummary={toolPolicySummary}
-			toolRunError={toolRunError}
-			toolRunResult={toolRunResult}
-			toolRunnerRef={toolRunnerRef}
-			topOperationsAgents={topOperationsAgents}
-			triggerOpsStats={triggerOpsStats}
-			triggerOpsSummary={triggerOpsSummary}
-			updatingMemberId={updatingMemberId}
-			username={username}
-			workbenchActions={workbenchActions}
-			workbenchIndicators={workbenchIndicators}
-			workbenchQuickActions={workbenchQuickActions}
-			workbenchReadinessItems={workbenchReadinessItems}
-			workbenchRiskItems={workbenchRiskItems}
-			workflowApprovalId={workflowApprovalId}
-			workflowInputs={workflowInputs}
-			workflowOpsStats={workflowOpsStats}
-			workflowOptions={workflowOptions}
-			workflowPendingApprovals={workflowPendingApprovals}
-			workflowRunCount={workflowRunCount}
-			workflowRunError={workflowRunError}
-			workflowRunResult={workflowRunResult}
-			workflowRunnerRef={workflowRunnerRef}
-			workflowRuns={workflowRuns}
-			workflowRunsError={workflowRunsError}
-			workflowRunsLoading={workflowRunsLoading}
-			workflowTemplates={workflowTemplates}
-			workflowTemplatesError={workflowTemplatesError}
-			workflowTemplatesLoading={workflowTemplatesLoading}
+			{...createPlatformDashboardViewProps({
+				accessControlStats: accessControlStats,
+				accessTenantSummaries: accessTenantSummaries,
+				activeConnectorTenant: activeConnectorTenant,
+				activeMemberCount: activeMemberCount,
+				activePlatformAgents: activePlatformAgents,
+				activeSavedConnectorConfig: activeSavedConnectorConfig,
+				agentAccessAllowed: platformAgentAccessAllowedForDisplay,
+				agentApprovalId: agentApprovalId,
+				agentKnowledgeStepRef: agentKnowledgeStepRef,
+				agentManagementRef: agentManagementRef,
+				agentModelStepRef: agentModelStepRef,
+				agentOpsSummary: agentOpsSummary,
+				agentQuestion: agentQuestion,
+				agentReleasePipeline: agentReleasePipeline,
+				agentResourceText: agentResourceText,
+				agentRoutingLabel: agentRoutingLabel,
+				agentRoutingText: agentRoutingText,
+				agentRunConnectorSourceText: agentRunConnectorSourceText,
+				agentRunError: agentRunError,
+				agentRunKnowledgeLabels: agentRunKnowledgeLabels,
+				agentRunModelLabel: agentRunModelLabel,
+				agentRunResult: agentRunResult,
+				agentRunnerRef: agentRunnerRef,
+				agentRunsError: agentRunsError,
+				agentRunsLoading: agentRunsLoading,
+				agents: agents,
+				agentRuntimeStepRef: agentRuntimeStepRef,
+				agentSampleQuestions: agentSampleQuestions,
+				agentSetupSteps: agentSetupSteps,
+				agentTemplateStepRef: agentTemplateStepRef,
+				agentTemplates: agentTemplates,
+				agentToolCallBadgeText: agentToolCallBadgeText,
+				agentToolCalls: agentToolCalls,
+				agentToolsStepRef: agentToolsStepRef,
+				agentsLoading: agentsLoading,
+				appCenterAgents: appCenterAgents,
+				appCenterDetailIssues: appCenterDetailIssues,
+				appCenterDetailResources: appCenterDetailResources,
+				appCenterDetailStatus: appCenterDetailStatus,
+				appCenterPrimaryDisabled: appCenterPrimaryDisabled,
+				approvalError: approvalError,
+				approvalFilters: approvalFilters,
+				approvalForm: approvalForm,
+				approvalLoading: approvalLoading,
+				approvalRequests: approvalRequests,
+				approvalSummary: approvalSummary,
+				approvedApprovalCount: approvedApprovalCount,
+				archivingAgentId: archivingAgentId,
+				auditError: auditError,
+				auditEventCount: auditEventCount,
+				auditEvents: auditEvents,
+				auditFilters: auditFilters,
+				auditLoading: auditLoading,
+				auditStats: auditStats,
+				availableToolItems: availableToolItems,
+				bindingAgentKnowledgeId: bindingAgentKnowledgeId,
+				bindingAgentModelId: bindingAgentModelId,
+				bindingAgentToolsId: bindingAgentToolsId,
+				blockedOrPartialPlatformAgents: blockedOrPartialPlatformAgents,
+				capabilities: capabilities,
+				completedWorkflowRunCount: completedWorkflowRunCount,
+				configManagementRef: configManagementRef,
+				connectorCenterRef: connectorCenterRef,
+				connectorDraftIssues: connectorDraftIssues,
+				connectorDraftState: connectorDraftState,
+				connectorRuntimeSourceText: connectorRuntimeSourceText,
+				connectorRuntimeState: connectorRuntimeState,
+				connectorSaveError: connectorSaveError,
+				connectorSaveSuccess: connectorSaveSuccess,
+				connectorState: connectorState,
+				connectorTestError: connectorTestError,
+				connectorTestForm: connectorTestForm,
+				connectorTestPassed: connectorTestPassed,
+				connectorTestResult: connectorTestResult,
+				connectors: connectors,
+				connectorsError: connectorsError,
+				connectorsLoading: connectorsLoading,
+				continuingApprovalId: continuingApprovalId,
+				creatingApproval: creatingApproval,
+				creatingRunApproval: creatingRunApproval,
+				credentialById: credentialById,
+				credentials: credentials,
+				credentialsLoading: credentialsLoading,
+				currentIdentityLabel: currentIdentityLabel,
+				dashboardOperations: dashboardOperations,
+				dashboardTodoItems: dashboardTodoItems,
+				decidingApprovalId: decidingApprovalId,
+				defaultAgentTemplate: defaultAgentTemplate,
+				editingAgentId: editingAgentId,
+				enablingAgentMemoryId: enablingAgentMemoryId,
+				enablingAgentWorkflowId: enablingAgentWorkflowId,
+				enterpriseIdentities: enterpriseIdentities,
+				enterpriseToolInputConfig: enterpriseToolInputConfig,
+				failedWorkflowRunCount: failedWorkflowRunCount,
+				featuredAgents: featuredAgents,
+				firstAgentGuidePrimaryStep: firstAgentGuidePrimaryStep,
+				firstAgentGuideSteps: firstAgentGuideSteps,
+				governance: governance,
+				governanceError: governanceError,
+				governanceHealthItems: governanceHealthItems,
+				governanceLoading: governanceLoading,
+				governanceRef: governanceRef,
+				governedWorkflowItems: governedWorkflowItems,
+				handleAppCenterDetailPrimaryAction: handleAppCenterDetailPrimaryAction,
+				handleAppCenterDetailSecondaryAction: handleAppCenterDetailSecondaryAction,
+				handleAppCenterPrimaryAction: handleAppCenterPrimaryAction,
+				handleApproveAndRun: handleApproveAndRun,
+				handleArchiveAgent: handleArchiveAgent,
+				handleBindAvailableKnowledge: handleBindAvailableKnowledge,
+				handleBindDefaultModel: handleBindDefaultModel,
+				handleBindTemplateTools: handleBindTemplateTools,
+				handleCancelEdit: handleCancelEdit,
+				handleClearAgentConversation: handleClearAgentConversation,
+				handleConfigureTemplate: handleConfigureTemplate,
+				handleCopyPlatformConfig: handleCopyPlatformConfig,
+				handleCreateApproval: handleCreateApproval,
+				handleCreateRunApproval: handleCreateRunApproval,
+				handleDecideApproval: handleDecideApproval,
+				handleEditAgent: handleEditAgent,
+				handleEditMember: handleEditMember,
+				handleEnableAgentMemory: handleEnableAgentMemory,
+				handleEnableAgentWorkflow: handleEnableAgentWorkflow,
+				handleImportPlatformConfig: handleImportPlatformConfig,
+				handleInspectAgentRunAudit: handleInspectAgentRunAudit,
+				handleInspectIdentityApprovals: handleInspectIdentityApprovals,
+				handleInspectIdentityAudit: handleInspectIdentityAudit,
+				handleInspectIdentityFailures: handleInspectIdentityFailures,
+				handleInspectMemoryOperationAudit: handleInspectMemoryOperationAudit,
+				handleInspectTenantApprovals: handleInspectTenantApprovals,
+				handleInspectTenantAudit: handleInspectTenantAudit,
+				handleNextAgentSetupStep: handleNextAgentSetupStep,
+				handleNextStepPrimaryAction: handleNextStepPrimaryAction,
+				handleOpenMemoryOperation: handleOpenMemoryOperation,
+				handleOperationAction: handleOperationAction,
+				handlePrepareTenantAgent: handlePrepareTenantAgent,
+				handlePrimeAgentRunner: handlePrimeAgentRunner,
+				handlePrimeAgentWorkflow: handlePrimeAgentWorkflow,
+				handlePrimePublishedAgent: handlePrimePublishedAgent,
+				handlePrimeToolApproval: handlePrimeToolApproval,
+				handlePublishAgent: handlePublishAgent,
+				handlePublishTenantChange: handlePublishTenantChange,
+				handleQuickPublishAgent: handleQuickPublishAgent,
+				handleResolveOpsTask: handleResolveOpsTask,
+				handleRunEnterpriseAgent: handleRunEnterpriseAgent,
+				handleRunEnterpriseTool: handleRunEnterpriseTool,
+				handleRunEnterpriseWorkflow: handleRunEnterpriseWorkflow,
+				handleRunScenario: handleRunScenario,
+				handleSaveConnectorConfig: handleSaveConnectorConfig,
+				handleSaveMember: handleSaveMember,
+				handleSaveToolPolicy: handleSaveToolPolicy,
+				handleSelectAgentRun: handleSelectAgentRun,
+				handleSelectRunAgent: handleSelectRunAgent,
+				handleStartPublishing: handleStartPublishing,
+				handleTestAndSaveConnectorConfig: handleTestAndSaveConnectorConfig,
+				handleTestConnector: handleTestConnector,
+				handleToggleMemberStatus: handleToggleMemberStatus,
+				handleTogglePublishList: handleTogglePublishList,
+				handleToggleWorkflowTemplate: handleToggleWorkflowTemplate,
+				handleUseApproval: handleUseApproval,
+				handleUseIdentity: handleUseIdentity,
+				handleUseTenant: handleUseTenant,
+				hasErrors: hasErrors,
+				identityAccessRows: identityAccessRows,
+				importingPlatformConfig: importingPlatformConfig,
+				inspectedAppCenterAgent: inspectedAppCenterAgent,
+				inspectedAppCenterTemplate: inspectedAppCenterTemplate,
+				knowledgeBaseById: knowledgeBaseById,
+				knowledgeBases: knowledgeBases,
+				lastPublishedAgent: lastPublishedAgent,
+				launchpadPrimaryStep: launchpadPrimaryStep,
+				launchpadReadyCount: launchpadReadyCount,
+				launchpadState: launchpadState,
+				launchpadSteps: launchpadSteps,
+				launchpadTotalCount: launchpadTotalCount,
+				loadSavedConnectorConfig: loadSavedConnectorConfig,
+				memberForm: memberForm,
+				membersRef: membersRef,
+				memoryOperationsHitCount: memoryOperationsHitCount,
+				memoryOperationsItems: memoryOperationsItems,
+				memoryOperationsRef: memoryOperationsRef,
+				memoryOperationsRunCount: memoryOperationsRunCount,
+				memoryOperationsSavedCount: memoryOperationsSavedCount,
+				monitoringHealthState: monitoringActivitySummary.healthState,
+				monitoringLoading: monitoringLoading,
+				monitoringStats: monitoringStats,
+				nextAgentSetupStep: nextAgentSetupStep,
+				nextStepMode: nextStepMode,
+				nextStepPrimaryDisabled: nextStepPrimaryDisabled,
+				operationsAgentIssueText: operationsAgentIssueText,
+				operationsHeadline: operationsHeadline,
+				opsTasks: opsTasks,
+				opsTasksError: opsTasksError,
+				opsTasksLoading: opsTasksLoading,
+				opsTasksSummary: opsTasksSummary,
+				orchestrationPrimaryStep: orchestrationPrimaryStep,
+				orchestrationReadyCount: orchestrationReadyCount,
+				orchestrationWorkbenchSteps: orchestrationWorkbenchSteps,
+				partialWorkflowRunCount: partialWorkflowRunCount,
+				pendingApprovals: pendingApprovals,
+				platformAgents: platformAgents,
+				platformAgentsError: platformAgentsError,
+				platformAgentsLoading: platformAgentsLoading,
+				platformConfigError: platformConfigError,
+				platformConfigExport: platformConfigExport,
+				platformConfigImportMode: platformConfigImportMode,
+				platformConfigImportResult: platformConfigImportResult,
+				platformConfigImportText: platformConfigImportText,
+				platformConfigLoading: platformConfigLoading,
+				platformConsoleItems: platformConsoleItems,
+				platformError: platformError,
+				platformLoading: platformLoading,
+				platformMemberTenantSummaries: platformMemberTenantSummaries,
+				platformMembers: platformMembers,
+				platformMembersError: platformMembersError,
+				platformMembersLoading: platformMembersLoading,
+				platformStatus: platformStatus,
+				policyDecisions: policyDecisions,
+				primaryAgentSampleQuestion: primaryAgentSampleQuestion,
+				publishAccessMembers: publishAccessMembers,
+				publishAccessScopeSummary: publishAccessScopeSummary,
+				publishBlocked: publishBlocked,
+				publishForm: publishForm,
+				publishReleaseIssues: publishReleaseIssues,
+				publishRoleOptions: publishRoleOptions,
+				publishRuntimeSummary: publishRuntimeSummary,
+				publishSelectedModelLabel: publishSelectedModelLabel,
+				publishTenant: publishTenant,
+				publishedPlatformAgents: publishedPlatformAgents,
+				publishingTemplateId: publishingTemplateId,
+				readyPlatformAgents: readyPlatformAgents,
+				recentAgentTurns: monitoringActivitySummary.recentAgentTurns,
+				recentAuditEvents: recentAuditEvents,
+				recentSchedules: recentSchedules,
+				recentWorkflowRuns: recentWorkflowRuns,
+				recommendedOperationActions: recommendedOperationActions,
+				refetchAgentRuns: refetchAgentRuns,
+				refetchApprovals: refetchApprovals,
+				refetchAuditEvents: refetchAuditEvents,
+				refetchConnectors: refetchConnectors,
+				refetchGovernance: refetchGovernance,
+				refetchMembers: refetchMembers,
+				refetchOpsTasks: refetchOpsTasks,
+				refetchPlatform: refetchPlatform,
+				refetchPlatformAgents: refetchPlatformAgents,
+				refetchPlatformConfigExport: refetchPlatformConfigExport,
+				refetchScenarios: refetchScenarios,
+				refetchToolCatalog: refetchToolCatalog,
+				refetchWorkflowRuns: refetchWorkflowRuns,
+				resolvingOpsTaskCode: resolvingOpsTaskCode,
+				riskToolItems: riskToolItems,
+				rolloutPathSteps: rolloutPathSteps,
+				runningAgent: runningAgent,
+				runningTool: runningTool,
+				runningWorkflow: runningWorkflow,
+				runtimeItems: runtimeItems,
+				savedConnectorConfigs: savedConnectorConfigs,
+				savingConnectorConfig: savingConnectorConfig,
+				savingMember: savingMember,
+				savingToolPolicy: savingToolPolicy,
+				savingWorkflowType: savingWorkflowType,
+				scenarios: scenarios,
+				scenariosError: scenariosError,
+				scenariosLoading: scenariosLoading,
+				schedulesError: schedulesError,
+				schedulesLoading: schedulesLoading,
+				scrollToAgentManagement: scrollToAgentManagement,
+				scrollToAgentRunner: scrollToAgentRunner,
+				scrollToConnectorCenter: scrollToConnectorCenter,
+				scrollToGovernance: scrollToGovernance,
+				scrollToToolRunner: scrollToToolRunner,
+				scrollToWorkflowRunner: scrollToWorkflowRunner,
+				selectedAgentConversation: selectedAgentConversation,
+				selectedIdentity: selectedIdentity,
+				selectedIdentityAllowedTools: selectedIdentityAllowedTools,
+				selectedIdentityDeniedTools: selectedIdentityDeniedTools,
+				selectedIdentityFailedAuditEvents: selectedIdentityFailedAuditEvents,
+				selectedIdentityPendingApprovals: selectedIdentityPendingApprovals,
+				selectedIdentityPendingToolNames: selectedIdentityPendingToolNames,
+				selectedIdentityRecentAuditEvents: selectedIdentityRecentAuditEvents,
+				selectedIdentityUserId: selectedIdentityUserId,
+				selectedIdentityWorkspace: selectedIdentityWorkspace,
+				selectedRunAgent: selectedRunAgent,
+				selectedRunAgentAccessAllowed: selectedRunAgentAccessAllowed,
+				selectedRunAgentAccessLabel: selectedRunAgentAccessLabel,
+				selectedRunAgentId: selectedRunAgentId,
+				selectedRunAgentKnowledgeCount: selectedRunAgentKnowledgeCount,
+				selectedRunAgentKnowledgeLabels: selectedRunAgentKnowledgeLabels,
+				selectedRunAgentModelLabel: selectedRunAgentModelLabel,
+				selectedRunAgentReadinessLabel: selectedRunAgentReadinessLabel,
+				selectedRunAgentReadinessState: selectedRunAgentReadinessState,
+				selectedRunAgentToolCount: selectedRunAgentToolCount,
+				selectedTemplate: selectedTemplate,
+				selectedTemplateId: selectedTemplateId,
+				selectedToolAllowed: selectedToolAllowed,
+				selectedToolCatalogItem: selectedToolCatalogItem,
+				selectedToolConfig: selectedToolConfig,
+				selectedToolDecision: selectedToolDecision,
+				selectedToolInputKey: selectedToolInputKey,
+				selectedToolInputValue: selectedToolInputValue,
+				selectedToolName: selectedToolName,
+				selectedToolReason: selectedToolReason,
+				selectedWorkflowDisabled: selectedWorkflowDisabled,
+				selectedWorkflowLastRun: selectedWorkflowLastRun,
+				selectedWorkflowName: selectedWorkflowName,
+				selectedWorkflowSteps: selectedWorkflowSteps,
+				selectedWorkflowTemplate: selectedWorkflowTemplate,
+				selectedWorkflowType: selectedWorkflowType,
+				serverUrl: serverUrl,
+				setAgentApprovalId: setAgentApprovalId,
+				setAgentQuestion: setAgentQuestion,
+				setAgentRunError: setAgentRunError,
+				setAgentRunResult: setAgentRunResult,
+				setApprovalFilters: setApprovalFilters,
+				setApprovalForm: setApprovalForm,
+				setAuditFilters: setAuditFilters,
+				setConnectorTestForm: setConnectorTestForm,
+				setMemberForm: setMemberForm,
+				setPlatformConfigImportMode: setPlatformConfigImportMode,
+				setPlatformConfigImportText: setPlatformConfigImportText,
+				setPublishForm: setPublishForm,
+				setSelectedAppCenterItem: setSelectedAppCenterItem,
+				setSelectedIdentityUserId: setSelectedIdentityUserId,
+				setSelectedRunAgentId: setSelectedRunAgentId,
+				setSelectedToolName: setSelectedToolName,
+				setSelectedWorkflowType: setSelectedWorkflowType,
+				setToolApprovalId: setToolApprovalId,
+				setToolInputs: setToolInputs,
+				setToolPolicyDraft: setToolPolicyDraft,
+				setToolPolicySaveError: setToolPolicySaveError,
+				setToolPolicySaveSuccess: setToolPolicySaveSuccess,
+				setToolRunError: setToolRunError,
+				setWorkflowApprovalId: setWorkflowApprovalId,
+				setWorkflowInputs: setWorkflowInputs,
+				setWorkflowRunError: setWorkflowRunError,
+				stats: stats,
+				subagentTemplates: subagentTemplates,
+				summarizeAuditObject: platformSummarizeAuditObject,
+				t: t,
+				tenantOverviewItems: tenantOverviewItems,
+				tenantWorkspaces: tenantWorkspaces,
+				testingConnector: testingConnector,
+				toolApprovalId: toolApprovalId,
+				toolCatalogError: toolCatalogError,
+				toolCatalogLoading: toolCatalogLoading,
+				toolPolicyDraft: toolPolicyDraft,
+				toolPolicyMode: toolPolicyMode,
+				toolPolicySaveError: toolPolicySaveError,
+				toolPolicySaveSuccess: toolPolicySaveSuccess,
+				toolPolicySummary: toolPolicySummary,
+				toolRunError: toolRunError,
+				toolRunResult: toolRunResult,
+				toolRunnerRef: toolRunnerRef,
+				topOperationsAgents: topOperationsAgents,
+				triggerOpsStats: triggerOpsStats,
+				triggerOpsSummary: triggerOpsSummary,
+				updatingMemberId: updatingMemberId,
+				username: username,
+				workbenchActions: workbenchActions,
+				workbenchIndicators: workbenchIndicators,
+				workbenchQuickActions: workbenchQuickActions,
+				workbenchReadinessItems: workbenchReadinessItems,
+				workbenchRiskItems: workbenchRiskItems,
+				workflowApprovalId: workflowApprovalId,
+				workflowInputs: workflowInputs,
+				workflowOpsStats: workflowOpsStats,
+				workflowOptions: workflowOptions,
+				workflowPendingApprovals: workflowPendingApprovals,
+				workflowRunCount: workflowRunCount,
+				workflowRunError: workflowRunError,
+				workflowRunResult: workflowRunResult,
+				workflowRunnerRef: workflowRunnerRef,
+				workflowRuns: workflowRuns,
+				workflowRunsError: workflowRunsError,
+				workflowRunsLoading: workflowRunsLoading,
+				workflowTemplates: workflowTemplates,
+				workflowTemplatesError: workflowTemplatesError,
+				workflowTemplatesLoading: workflowTemplatesLoading,
+			})}
 		/>
 	);
 }
