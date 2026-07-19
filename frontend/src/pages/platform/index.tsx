@@ -160,7 +160,7 @@ import { createPlatformDashboardPageState } from './platform-dashboard-state';
 import { createPlatformLaunchpadPageState } from './platform-launchpad-state';
 import { platformMonitoringDisplayStateForStatus } from './platform-monitoring-display';
 import { createPlatformOnboardingPageState } from './platform-onboarding-state';
-import { platformOrchestrationDisplayStateForStatus } from './platform-orchestration-display';
+import { createPlatformOrchestrationPageState } from './platform-orchestration-state';
 import { createPlatformWorkbenchPageState } from './platform-workbench-state';
 import { createPlatformWorkflowPageState } from './platform-workflow-state';
 import {
@@ -1610,8 +1610,12 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			},
 		},
 	});
-	const orchestrationDisplay = platformOrchestrationDisplayStateForStatus(
-		{
+	const {
+		orchestrationPrimaryStep,
+		orchestrationReadyCount,
+		orchestrationWorkbenchSteps,
+	} = createPlatformOrchestrationPageState({
+		orchestration: {
 			selectedTemplateName: selectedTemplate?.name,
 			credentialCount: credentials.length,
 			selectedKnowledgeBaseCount: publishForm.knowledge_base_ids.length,
@@ -1633,7 +1637,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				policy: agentSetupSteps[4].state,
 			},
 		},
-		{
+		orchestrationOptions: {
 			icons: orchestrationWorkbenchIcons,
 			actions: orchestrationWorkbenchNavigationActions(platformNavigationHandlers, {
 				handleNextAgentSetupStep,
@@ -1642,12 +1646,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			}),
 			labels: orchestrationWorkbenchStepLabels(t),
 		},
-	);
-	const {
-		primaryStep: orchestrationPrimaryStep,
-		readyCount: orchestrationReadyCount,
-		steps: orchestrationWorkbenchSteps,
-	} = orchestrationDisplay;
+	});
 	const monitoringDisplay = platformMonitoringDisplayStateForStatus(
 		{
 			platformLoading,
