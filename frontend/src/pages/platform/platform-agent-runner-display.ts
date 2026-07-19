@@ -1,4 +1,14 @@
-import { agentRunnerStateForStatus } from './platform-utils';
+import {
+	agentRunnerStateForStatus,
+	agentSetupStepsForStatus,
+} from './platform-utils';
+
+export function platformAgentSetupStepsDisplayStateForStatus(
+	values: Parameters<typeof agentSetupStepsForStatus>[0],
+	labels: Parameters<typeof agentSetupStepsForStatus>[1],
+) {
+	return agentSetupStepsForStatus(values, labels);
+}
 
 export interface PlatformAgentRunnerDisplayState {
 	runnerState: ReturnType<typeof agentRunnerStateForStatus>;

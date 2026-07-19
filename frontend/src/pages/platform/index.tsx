@@ -270,7 +270,10 @@ import {
 	type PublishFormState,
 } from './platform-defaults';
 import { platformAgentInventoryDisplayStateForStatus } from './platform-agent-inventory-display';
-import { platformAgentRunnerDisplayStateForStatus } from './platform-agent-runner-display';
+import {
+	platformAgentRunnerDisplayStateForStatus,
+	platformAgentSetupStepsDisplayStateForStatus,
+} from './platform-agent-runner-display';
 import { platformAppCenterDisplayStateForStatus } from './platform-app-center-display';
 import { platformConnectorDisplayStateForStatus } from './platform-connector-display';
 import { platformConnectionDisplayStateForStatus } from './platform-connection-display';
@@ -289,11 +292,9 @@ import {
 	agentRoutingDisplayStateForResult,
 	agentIsReady,
 	agentReleasePipelineForStatus,
-	agentSetupStepsForStatus,
 	mapAgentRunToConversationTurn,
 	nextAgentSetupStepForSteps,
 	summarizeAuditObject,
-	type AgentWizardStep,
 	type EnterpriseAgentConversationTurn,
 } from './platform-utils';
 import type { PlatformView } from './platform-view';
@@ -535,7 +536,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const platformResourceLookupState = platformResourceDisplay.lookupState;
 	const credentialById = platformResourceLookupState.credentialById;
 	const knowledgeBaseById = platformResourceLookupState.knowledgeBaseById;
-	const agentSetupSteps: AgentWizardStep[] = agentSetupStepsForStatus(
+	const agentSetupSteps = platformAgentSetupStepsDisplayStateForStatus(
 		{
 			selectedTemplateName: selectedTemplate?.name,
 			modelConfigId: publishForm.model_config_id,
