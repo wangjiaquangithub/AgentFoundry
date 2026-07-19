@@ -69,6 +69,7 @@ import {
 	scenarioWorkflowRunTarget,
 	selectedToolInputs,
 	selectedRunAgentIdForAvailableAgents,
+	workflowInputsForSelectedOption,
 	workflowTypeIsAvailable,
 	workflowInputsWithValue,
 	type AgentConversationMap,
@@ -3094,10 +3095,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				onWorkflowTypeChange={(value) => {
 					setSelectedWorkflowType(value);
 					setWorkflowRunError(null);
-					const nextWorkflow = workflowOptions.find(
-						(workflow) => workflow.value === value,
+					setWorkflowInputs(
+						workflowInputsForSelectedOption(workflowOptions, value),
 					);
-					setWorkflowInputs(normalizeWorkflowInputs(nextWorkflow?.defaultInputs));
 				}}
 				onWorkflowInputChange={(key, value) =>
 					setWorkflowInputs((current) =>

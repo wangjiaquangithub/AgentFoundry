@@ -249,6 +249,20 @@ export function agentWorkflowPrimeInputs(values: {
 	return normalizeWorkflowInputs(selectedDefaultInputs);
 }
 
+export function workflowInputsForSelectedOption(
+	workflowOptions: Array<{
+		value: string;
+		defaultInputs?: Record<string, unknown>;
+	}>,
+	workflowType: string,
+): Record<string, string> {
+	const selectedWorkflow = workflowOptions.find(
+		(workflow) => workflow.value === workflowType,
+	);
+
+	return normalizeWorkflowInputs(selectedWorkflow?.defaultInputs);
+}
+
 export function workflowTypeIsAvailable(
 	workflowTemplates: EnterpriseWorkflowTemplate[],
 	workflowType: string,
