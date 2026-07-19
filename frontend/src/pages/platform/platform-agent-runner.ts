@@ -41,6 +41,14 @@ export function agentConversationTurnFromRunResponse(values: {
 	};
 }
 
+export function agentRunResponseRequiresApproval(
+	response: EnterpriseAgentRunResponse,
+): boolean {
+	return Boolean(
+		response.tool_calls?.some((toolCall) => toolCall.approval_required),
+	);
+}
+
 export function latestAgentRunResponse(
 	agentConversations: AgentConversationMap,
 	agentId: string,

@@ -57,6 +57,7 @@ import {
 	agentRunResultForSelectedAgent,
 	agentRunResultAfterHistoryRefresh,
 	agentRunRequestTarget,
+	agentRunResponseRequiresApproval,
 	agentRunSelectionResult,
 	clearAgentConversationTurns,
 	clearAgentRunsParams,
@@ -2529,10 +2530,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			});
 			setAgentRunResult(response);
 			setAgentConversations((current) => mergeAgentConversationTurn(current, turn, 20));
-			const approvalRequired = response.tool_calls?.some(
-				(toolCall) => toolCall.approval_required,
-			);
-			if (approvalRequired) {
+			if (agentRunResponseRequiresApproval(response)) {
 				setAgentRunError(agentRunnerRequestText.approvalRequiredCreated);
 				await refetchApprovals();
 			}
