@@ -195,3 +195,14 @@ export function agentWorkflowPrimeInputs(values: {
 
 	return normalizeWorkflowInputs(selectedDefaultInputs);
 }
+
+export function workflowInputsWithValue(
+	current: Record<string, string>,
+	key: string,
+	value: string,
+): Record<string, string> {
+	return {
+		...current,
+		[key]: value,
+	};
+}

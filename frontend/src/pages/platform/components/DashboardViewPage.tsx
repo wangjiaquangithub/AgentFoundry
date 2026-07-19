@@ -67,6 +67,7 @@ import {
 	knowledgeBaseLabel,
 	normalizeWorkflowInputs,
 } from '../platform-utils';
+import { workflowInputsWithValue } from '../platform-agent-runner';
 
 interface DashboardViewPageProps {
 	[key: string]: any;
@@ -2503,10 +2504,9 @@ export function DashboardViewPage({
 							);
 						}}
 						onWorkflowInputChange={(key, value) =>
-							setWorkflowInputs((current) => ({
-								...current,
-								[key]: value,
-							}))
+							setWorkflowInputs((current) =>
+								workflowInputsWithValue(current, key, value),
+							)
 						}
 						onWorkflowApprovalIdChange={setWorkflowApprovalId}
 						onRequestApproval={() => void handleCreateRunApproval('workflow_run')}
