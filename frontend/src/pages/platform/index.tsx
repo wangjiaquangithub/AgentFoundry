@@ -219,7 +219,7 @@ import {
 } from './platform-publish-display';
 import { createPlatformResourcePageState } from './platform-resource-state';
 import { createPlatformRuntimePageState } from './platform-runtime-state';
-import { platformToolRunnerDisplayStateForStatus } from './platform-tool-runner-display';
+import { createPlatformToolRunnerPageState } from './platform-tool-runner-state';
 import { createPlatformOverviewPageState } from './platform-overview-state';
 import type { PlatformView } from './platform-view';
 
@@ -606,7 +606,17 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	});
 
-	const toolRunnerDisplay = platformToolRunnerDisplayStateForStatus({
+	const {
+		policyDecisions,
+		availableToolItems,
+		selectedToolCatalogItem,
+		selectedToolConfig,
+		selectedToolDecision,
+		selectedToolInputKey,
+		selectedToolInputValue,
+		selectedToolAllowed,
+		selectedToolReason,
+	} = createPlatformToolRunnerPageState({
 		catalog: {
 			platformStatus,
 			toolCatalog,
@@ -619,18 +629,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			labels: selectedToolRunnerLabels(t),
 		},
 	});
-	const {
-		policyDecisions,
-		availableToolItems,
-	} = toolRunnerDisplay.catalogState;
-	const selectedToolRunnerState = toolRunnerDisplay.selectedToolRunnerState;
-	const selectedToolCatalogItem = selectedToolRunnerState.selectedToolCatalogItem;
-	const selectedToolConfig = selectedToolRunnerState.selectedToolConfig;
-	const selectedToolDecision = selectedToolRunnerState.selectedToolDecision;
-	const selectedToolInputKey = selectedToolRunnerState.selectedToolInputKey;
-	const selectedToolInputValue = selectedToolRunnerState.selectedToolInputValue;
-	const selectedToolAllowed = selectedToolRunnerState.selectedToolAllowed;
-	const selectedToolReason = selectedToolRunnerState.selectedToolReason;
 	const { agentRoutingLabel, agentRoutingText } = platformAgentRoutingDisplayStateForResult(
 		agentRunResult,
 		agentRoutingLabels(t),
