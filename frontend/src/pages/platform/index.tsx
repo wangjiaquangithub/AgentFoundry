@@ -2593,7 +2593,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					username,
 				}),
 				agents: agents,
-				auditEventCount: auditEventCount,
 				readyPlatformAgents: readyPlatformAgents,
 				scrollToAgentManagement: scrollToAgentManagement,
 				selectedIdentityUserId: selectedIdentityUserId,
