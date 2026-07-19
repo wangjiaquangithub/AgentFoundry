@@ -83,7 +83,6 @@ import {
 } from './platform-ops-task-helpers';
 import {
 	createPlatformWorkflowTemplateHandlers,
-	runWorkflowTemplateLoadAction,
 } from './platform-workflow-template-helpers';
 import { runWorkflowRunLoadAction } from './platform-workflow-run-helpers';
 import { runScenarioLoadAction } from './platform-scenario-helpers';
@@ -1230,19 +1229,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	);
 
-	async function refetchWorkflowTemplates() {
-		await runWorkflowTemplateLoadAction(
-			workflowRunnerRequestText.templatesLoadError,
-			{
-				setLoading: setWorkflowTemplatesLoading,
-				clearError: () => setWorkflowTemplatesError(null),
-				loadWorkflowTemplates: platformApi.workflows,
-				setWorkflowTemplates,
-				setError: setWorkflowTemplatesError,
-			},
-		);
-	}
-
 	async function refetchWorkflowRuns() {
 		await runWorkflowRunLoadAction(
 			{
@@ -1540,7 +1526,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	);
 
-	const { handleToggleWorkflowTemplate } =
+	const { refetchWorkflowTemplates, handleToggleWorkflowTemplate } =
 		createPlatformWorkflowTemplateHandlers(
 			{
 				text: {
@@ -1548,8 +1534,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				},
 			},
 			{
+				setWorkflowTemplatesLoading,
 				setSavingWorkflowType,
 				setWorkflowTemplatesError,
+				loadWorkflowTemplates: platformApi.workflows,
 				updateWorkflow: platformApi.updateWorkflow,
 				setWorkflowTemplates,
 				refreshDependentViews: refetchWorkflowTemplateDependencies,

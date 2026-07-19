@@ -32,8 +32,12 @@ export type PlatformWorkflowTemplateHandlerValues = {
 };
 
 export type PlatformWorkflowTemplateHandlerActions = {
+	setWorkflowTemplatesLoading: (loading: boolean) => void;
 	setSavingWorkflowType: (workflowType: string | null) => void;
 	setWorkflowTemplatesError: (message: string | null) => void;
+	loadWorkflowTemplates: () =>
+		| EnterpriseWorkflowTemplatesResponse
+		| Promise<EnterpriseWorkflowTemplatesResponse>;
 	updateWorkflow: (
 		workflowType: string,
 		values: { enabled: boolean },
@@ -64,6 +68,16 @@ export function createPlatformWorkflowTemplateHandlers(
 	values: PlatformWorkflowTemplateHandlerValues,
 	actions: PlatformWorkflowTemplateHandlerActions,
 ) {
+	async function refetchWorkflowTemplates() {
+		await runWorkflowTemplateLoadAction(values.text.templatesLoadError, {
+			setLoading: actions.setWorkflowTemplatesLoading,
+			clearError: () => actions.setWorkflowTemplatesError(null),
+			loadWorkflowTemplates: actions.loadWorkflowTemplates,
+			setWorkflowTemplates: actions.setWorkflowTemplates,
+			setError: actions.setWorkflowTemplatesError,
+		});
+	}
+
 	async function handleToggleWorkflowTemplate(
 		template: EnterpriseWorkflowTemplate,
 		enabled: boolean,
@@ -87,6 +101,7 @@ export function createPlatformWorkflowTemplateHandlers(
 	}
 
 	return {
+		refetchWorkflowTemplates,
 		handleToggleWorkflowTemplate,
 	};
 }
