@@ -129,8 +129,7 @@ import {
 	runMemberStatusToggleAction,
 } from './platform-member-helpers';
 import {
-	opsTaskActionTarget,
-	opsTaskResolvePatch,
+	runOpsTaskResolveAction,
 } from './platform-ops-task-helpers';
 import {
 	agentRunEvidenceAuditTarget,
@@ -1777,31 +1776,23 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleResolveOpsTask(task: EnterprisePlatformOpsTask) {
-		const actionTarget = opsTaskActionTarget(task);
-		if (actionTarget.type === 'operation') {
-			handleOperationAction(actionTarget.target);
-			return;
-		}
-
-		setResolvingOpsTaskCode(actionTarget.code);
-		setOpsTasksError(null);
-		try {
-			const response = await platformApi.resolveOpsTask(actionTarget.code);
-			const patch = opsTaskResolvePatch(response);
-			if (patch.workflows) {
-				setWorkflowTemplates(patch.workflows);
-			}
-			setOpsTasks(patch.tasks);
-			setOpsTasksSummary(patch.summary);
-			await refetchPlatform();
-			await refetchScenarios();
-		} catch (error) {
-			setOpsTasksError(
-				error instanceof Error ? error.message : opsTasksRequestText.resolveError,
-			);
-		} finally {
-			setResolvingOpsTaskCode(null);
-		}
+		await runOpsTaskResolveAction(task, {
+			runOperationAction: handleOperationAction,
+			setResolvingOpsTaskCode,
+			clearError: () => setOpsTasksError(null),
+			resolveOpsTask: (code) => platformApi.resolveOpsTask(code),
+			setWorkflowTemplates,
+			setOpsTasks,
+			setOpsTasksSummary,
+			refreshDependentViews: async () => {
+				await refetchPlatform();
+				await refetchScenarios();
+			},
+			handleError: (error) =>
+				setOpsTasksError(
+					error instanceof Error ? error.message : opsTasksRequestText.resolveError,
+				),
+		});
 	}
 
 	function handlePrimeToolApproval(agent: EnterprisePublishedAgent, toolName: string) {
