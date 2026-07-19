@@ -119,7 +119,6 @@ import {
 } from './platform-ops-task-helpers';
 import { runWorkflowTemplateToggleAction } from './platform-workflow-template-helpers';
 import {
-	agentRunEvidenceAuditTarget,
 	approvalFiltersForIdentity,
 	approvalFiltersForTenant,
 	auditFiltersForIdentity,
@@ -127,9 +126,9 @@ import {
 	auditFiltersForTenant,
 	auditQueryFromFilters,
 	failedAuditFiltersForIdentity,
-	runAgentRunEvidenceAuditTargetAction,
 	runApprovalFilterTargetAction,
 	runAuditFilterTargetAction,
+	runInspectAgentRunEvidenceAuditAction,
 } from './platform-filter-builders';
 import {
 	agentSetupStepAction,
@@ -2042,8 +2041,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleInspectAgentRunAudit() {
-		const target = agentRunEvidenceAuditTarget(agentRunEvidence);
-		runAgentRunEvidenceAuditTargetAction(target, {
+		runInspectAgentRunEvidenceAuditAction(agentRunEvidence, {
 			patchAuditFilters: setAuditFilters,
 			refetchAuditEvents,
 			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),

@@ -141,6 +141,15 @@ export function runAgentRunEvidenceAuditTargetAction(
 	runAuditFilterTargetAction(target, handlers);
 }
 
+export function runInspectAgentRunEvidenceAuditAction(
+	evidence: Parameters<typeof agentRunEvidenceAuditTarget>[0],
+	handlers: AuditFilterTargetActionHandlers,
+) {
+	const target = agentRunEvidenceAuditTarget(evidence);
+
+	runAgentRunEvidenceAuditTargetAction(target, handlers);
+}
+
 export type ApprovalFilterTargetActionHandlers = {
 	patchApprovalFilters: (
 		updater: (current: ApprovalFiltersState) => ApprovalFiltersState,
