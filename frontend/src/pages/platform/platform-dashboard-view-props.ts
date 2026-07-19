@@ -190,6 +190,33 @@ type DashboardApprovalsViewProps = Pick<
 	| 'workflowPendingApprovals'
 >;
 
+type DashboardAccessControlViewProps = Pick<
+	DashboardViewPageProps,
+	| 'accessControlStats'
+	| 'accessTenantSummaries'
+	| 'creatingRunApproval'
+	| 'enterpriseIdentities'
+	| 'governance'
+	| 'governanceError'
+	| 'governanceLoading'
+	| 'handleCreateRunApproval'
+	| 'handleInspectIdentityApprovals'
+	| 'handleInspectIdentityAudit'
+	| 'handleInspectIdentityFailures'
+	| 'handleUseApproval'
+	| 'handleUseIdentity'
+	| 'identityAccessRows'
+	| 'refetchGovernance'
+	| 'selectedIdentity'
+	| 'selectedIdentityAllowedTools'
+	| 'selectedIdentityDeniedTools'
+	| 'selectedIdentityFailedAuditEvents'
+	| 'selectedIdentityPendingApprovals'
+	| 'selectedIdentityRecentAuditEvents'
+	| 'setSelectedIdentityUserId'
+	| 'toolPolicyMode'
+>;
+
 type DashboardConnectorsViewProps = Pick<
 	DashboardViewPageProps,
 	| 'activeConnectorTenant'
@@ -587,6 +614,12 @@ export function createPlatformDashboardAppCenterViewProps(
 export function createPlatformDashboardApprovalsViewProps(
 	props: DashboardApprovalsViewProps,
 ): DashboardApprovalsViewProps {
+	return props;
+}
+
+export function createPlatformDashboardAccessControlViewProps(
+	props: DashboardAccessControlViewProps,
+): DashboardAccessControlViewProps {
 	return props;
 }
 
