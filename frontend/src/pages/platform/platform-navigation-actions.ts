@@ -130,6 +130,117 @@ export function nextStepPrimaryAction(
 	return { type: 'prime-runner' };
 }
 
+export type NextStepPrimaryActionHandlers = {
+	navigate: NavigateHandler;
+	handleQuickPublishAgent: () => void | Promise<void>;
+	scrollToAgentManagement: NavigationHandler;
+	scrollToGovernance: NavigationHandler;
+	handlePrimeAgentRunner: NavigationHandler;
+};
+
+export function runNextStepPrimaryAction(
+	action: NextStepPrimaryAction,
+	handlers: NextStepPrimaryActionHandlers,
+) {
+	if (action.type === 'navigate') {
+		handlers.navigate(action.path);
+		return;
+	}
+
+	if (action.type === 'quick-publish') {
+		void handlers.handleQuickPublishAgent();
+		return;
+	}
+
+	if (action.type === 'scroll-management') {
+		handlers.scrollToAgentManagement();
+		return;
+	}
+
+	if (action.type === 'scroll-governance') {
+		handlers.scrollToGovernance();
+		return;
+	}
+
+	handlers.handlePrimeAgentRunner();
+}
+
+export type AppCenterPrimaryActionHandlers = {
+	navigate: NavigateHandler;
+	selectAndPrimeAgent: (agentId: string) => void;
+	handleQuickPublishAgent: () => void | Promise<void>;
+	scrollToAgentManagement: NavigationHandler;
+};
+
+export function runAppCenterPrimaryAction(
+	action: AppCenterPrimaryAction,
+	handlers: AppCenterPrimaryActionHandlers,
+) {
+	if (action.type === 'navigate') {
+		handlers.navigate(action.path);
+		return;
+	}
+
+	if (action.type === 'select-ready-agent') {
+		handlers.selectAndPrimeAgent(action.agentId);
+		return;
+	}
+
+	if (action.type === 'quick-publish') {
+		void handlers.handleQuickPublishAgent();
+		return;
+	}
+
+	handlers.scrollToAgentManagement();
+}
+
+export type AppCenterDetailPrimaryActionHandlers = {
+	selectAndPrimeAgent: (agentId: string) => void;
+	editAgent: NavigationHandler;
+	configureTemplate: NavigationHandler;
+	scrollToAgentManagement: NavigationHandler;
+};
+
+export function runAppCenterDetailPrimaryAction(
+	action: AppCenterDetailPrimaryAction,
+	handlers: AppCenterDetailPrimaryActionHandlers,
+) {
+	if (action.type === 'select-agent') {
+		handlers.selectAndPrimeAgent(action.agentId);
+		return;
+	}
+
+	if (action.type === 'edit-agent') {
+		handlers.editAgent();
+		handlers.scrollToAgentManagement();
+		return;
+	}
+
+	if (action.type === 'configure-template') {
+		handlers.configureTemplate();
+		handlers.scrollToAgentManagement();
+	}
+}
+
+export type AppCenterDetailSecondaryActionHandlers = {
+	editAgent: NavigationHandler;
+	scrollToAgentManagement: NavigationHandler;
+	scrollToGovernance: NavigationHandler;
+};
+
+export function runAppCenterDetailSecondaryAction(
+	action: AppCenterDetailSecondaryAction,
+	handlers: AppCenterDetailSecondaryActionHandlers,
+) {
+	if (action.type === 'edit-agent') {
+		handlers.editAgent();
+		handlers.scrollToAgentManagement();
+		return;
+	}
+
+	handlers.scrollToGovernance();
+}
+
 export type PlatformNavigationActionHandlers = {
 	navigate: NavigateHandler;
 	handleStartPublishing: NavigationHandler;

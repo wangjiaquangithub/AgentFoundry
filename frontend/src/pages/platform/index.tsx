@@ -150,6 +150,10 @@ import {
 	orchestrationWorkbenchNavigationActions,
 	platformConsoleNavigationActions,
 	rolloutPathNavigationActions,
+	runAppCenterDetailPrimaryAction,
+	runAppCenterDetailSecondaryAction,
+	runAppCenterPrimaryAction,
+	runNextStepPrimaryAction,
 	workbenchIndicatorNavigationActions,
 	workbenchPrimaryNavigationActions,
 	workbenchQuickNavigationActions,
@@ -2233,28 +2237,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	function handleNextStepPrimaryAction() {
 		const action = nextStepPrimaryAction(nextStepMode);
-
-		if (action.type === 'navigate') {
-			navigate(action.path);
-			return;
-		}
-
-		if (action.type === 'quick-publish') {
-			void handleQuickPublishAgent();
-			return;
-		}
-
-		if (action.type === 'scroll-management') {
-			scrollToAgentManagement();
-			return;
-		}
-
-		if (action.type === 'scroll-governance') {
-			scrollToGovernance();
-			return;
-		}
-
-		handlePrimeAgentRunner();
+		runNextStepPrimaryAction(action, {
+			navigate,
+			handleQuickPublishAgent,
+			scrollToAgentManagement,
+			scrollToGovernance,
+			handlePrimeAgentRunner,
+		});
 	}
 
 	function handleAppCenterPrimaryAction() {
@@ -2263,24 +2252,15 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			readyAgentId: readyPlatformAgents[0]?.id,
 			activeAgentCount: activePlatformAgents.length,
 		});
-
-		if (action.type === 'navigate') {
-			navigate(action.path);
-			return;
-		}
-
-		if (action.type === 'select-ready-agent') {
-			setSelectedRunAgentId(action.agentId);
-			handlePrimeAgentRunner();
-			return;
-		}
-
-		if (action.type === 'quick-publish') {
-			void handleQuickPublishAgent();
-			return;
-		}
-
-		scrollToAgentManagement();
+		runAppCenterPrimaryAction(action, {
+			navigate,
+			selectAndPrimeAgent: (agentId) => {
+				setSelectedRunAgentId(agentId);
+				handlePrimeAgentRunner();
+			},
+			handleQuickPublishAgent,
+			scrollToAgentManagement,
+		});
 	}
 
 	function handleAppCenterDetailPrimaryAction() {
@@ -2291,37 +2271,38 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			),
 			hasTemplate: Boolean(inspectedAppCenterTemplate),
 		});
-
-		if (action.type === 'select-agent') {
-			setSelectedRunAgentId(action.agentId);
-			handlePrimeAgentRunner();
-			return;
-		}
-
-		if (action.type === 'edit-agent' && inspectedAppCenterAgent) {
-			handleEditAgent(inspectedAppCenterAgent);
-			window.setTimeout(scrollToAgentManagement, 0);
-			return;
-		}
-
-		if (action.type === 'configure-template' && inspectedAppCenterTemplate) {
-			handleConfigureTemplate(inspectedAppCenterTemplate);
-			window.setTimeout(scrollToAgentManagement, 0);
-		}
+		runAppCenterDetailPrimaryAction(action, {
+			selectAndPrimeAgent: (agentId) => {
+				setSelectedRunAgentId(agentId);
+				handlePrimeAgentRunner();
+			},
+			editAgent: () => {
+				if (inspectedAppCenterAgent) {
+					handleEditAgent(inspectedAppCenterAgent);
+				}
+			},
+			configureTemplate: () => {
+				if (inspectedAppCenterTemplate) {
+					handleConfigureTemplate(inspectedAppCenterTemplate);
+				}
+			},
+			scrollToAgentManagement: () => window.setTimeout(scrollToAgentManagement, 0),
+		});
 	}
 
 	function handleAppCenterDetailSecondaryAction() {
 		const action = appCenterDetailSecondaryAction({
 			hasAgent: Boolean(inspectedAppCenterAgent),
 		});
-
-		if (action.type === 'edit-agent' && inspectedAppCenterAgent) {
-			handleEditAgent(inspectedAppCenterAgent);
-			window.setTimeout(scrollToAgentManagement, 0);
-			return;
-		}
-
-		scrollToGovernance();
+		runAppCenterDetailSecondaryAction(action, {
+			editAgent: () => {
+				if (inspectedAppCenterAgent) {
+					handleEditAgent(inspectedAppCenterAgent);
+				}
+			},
+			scrollToAgentManagement: () => window.setTimeout(scrollToAgentManagement, 0),
+			scrollToGovernance,
+		});
 	}
 
 	async function handleArchiveAgent(agent: EnterprisePublishedAgent) {
