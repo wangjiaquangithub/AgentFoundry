@@ -36,6 +36,7 @@ export type AgentKnowledgeBasesBindTarget =
 export type AgentTemplateToolsBindTarget =
 	| { type: 'error' }
 	| { type: 'bind'; tools: string[] };
+export type AgentCapabilityKey = 'memory' | 'workflow';
 
 export type DefaultPublishFormOptions = {
 	template: EnterpriseAgentTemplate;
@@ -288,14 +289,10 @@ export function agentTemplateToolsBindTarget(values: {
 	return tools ? { type: 'bind', tools } : { type: 'error' };
 }
 
-export function agentMemoryEnabledPatch(): AgentQuickConfigurationPatch {
-	return {
-		memory_enabled: true,
-	};
-}
-
-export function agentWorkflowEnabledPatch(): AgentQuickConfigurationPatch {
-	return {
-		workflow_enabled: true,
-	};
+export function agentCapabilityEnabledPatch(
+	capability: AgentCapabilityKey,
+): AgentQuickConfigurationPatch {
+	return capability === 'memory'
+		? { memory_enabled: true }
+		: { workflow_enabled: true };
 }

@@ -230,16 +230,15 @@ import {
 } from './platform-labels';
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
+	agentCapabilityEnabledPatch,
 	agentDefaultModelBindTarget,
 	agentDefaultModelPatch,
 	agentKnowledgeBasesBindTarget,
 	agentKnowledgeBasesPatch,
-	agentMemoryEnabledPatch,
 	agentPublishPayloadFromForm,
 	agentQuickConfigurationSyncResult,
 	agentTemplateToolsBindTarget,
 	agentTemplateToolsPatch,
-	agentWorkflowEnabledPatch,
 	buildAgentConfigurationPayloadFromForm,
 	defaultPublishFormForTemplate,
 	nextPublishedAgentIdAfterArchive,
@@ -2448,7 +2447,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setEnablingAgentMemoryId(agent.id);
 		setPlatformAgentsError(null);
 		try {
-			const patch = agentMemoryEnabledPatch();
+			const patch = agentCapabilityEnabledPatch('memory');
 			const response = await platformApi.updateAgent(agent.id, patch);
 			syncAgentQuickConfiguration(agent.id, response.agent.id, patch);
 			await refetchPlatformAgents();
@@ -2470,7 +2469,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setEnablingAgentWorkflowId(agent.id);
 		setPlatformAgentsError(null);
 		try {
-			const patch = agentWorkflowEnabledPatch();
+			const patch = agentCapabilityEnabledPatch('workflow');
 			const response = await platformApi.updateAgent(agent.id, patch);
 			syncAgentQuickConfiguration(agent.id, response.agent.id, patch);
 			await refetchPlatformAgents();
