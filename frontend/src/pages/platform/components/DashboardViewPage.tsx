@@ -32,13 +32,12 @@ import { ConfigManagementPanel } from './ConfigManagementPanel';
 import { DashboardApplicationSection } from './DashboardApplicationSection';
 import { DashboardLaunchOrchestrationSection } from './DashboardLaunchOrchestrationSection';
 import { DashboardOperationalHealthSection } from './DashboardOperationalHealthSection';
-import { DashboardOpsPanel } from './DashboardOpsPanel';
+import { DashboardOperationsConsoleSection } from './DashboardOperationsConsoleSection';
 import { DashboardOperationsSnapshotSection } from './DashboardOperationsSnapshotSection';
 import { DashboardTenantAccessSection } from './DashboardTenantAccessSection';
 import { DashboardWorkflowAutomationSection } from './DashboardWorkflowAutomationSection';
 import { DashboardWorkbenchSection } from './DashboardWorkbenchSection';
 import { MembersPanel } from './MembersPanel';
-import { PlatformConsolePanel } from './PlatformConsolePanel';
 import { PlatformDashboardOverview } from './PlatformDashboardOverview';
 import { PolicySubagentsPanel } from './PolicySubagentsPanel';
 import { RuntimeStatusPanel } from './RuntimeStatusPanel';
@@ -692,86 +691,33 @@ export function DashboardViewPage({
 					workflowPendingApprovals={workflowPendingApprovals}
 				/>
 
-				<DashboardOpsPanel
-					dashboardOperations={dashboardOperations}
-					workflowTemplates={workflowTemplates}
+				<DashboardOperationsConsoleSection
+					t={t}
+					NextStepIcon={NextStepIcon}
+					approvedApprovalCount={approvedApprovalCount}
+					auditEventCount={auditEventCount}
 					completedWorkflowRunCount={completedWorkflowRunCount}
-					partialWorkflowRunCount={partialWorkflowRunCount}
+					dashboardOperations={dashboardOperations}
+					dashboardTodoItems={dashboardTodoItems}
 					failedWorkflowRunCount={failedWorkflowRunCount}
 					governedWorkflowItems={governedWorkflowItems}
-					recommendedOperationActions={recommendedOperationActions}
-					pendingApprovals={pendingApprovals}
-					approvedApprovalCount={approvedApprovalCount}
-					workflowRunCount={workflowRunCount}
-					recentWorkflowRuns={recentWorkflowRuns}
-					riskToolItems={riskToolItems}
-					auditEventCount={auditEventCount}
-					recentAuditEvents={recentAuditEvents}
-					dashboardTodoItems={dashboardTodoItems}
+					handleNextStepPrimaryAction={handleNextStepPrimaryAction}
+					handleOperationAction={handleOperationAction}
 					nextStepMode={nextStepMode}
-					nextStepIcon={NextStepIcon}
 					nextStepPrimaryDisabled={nextStepPrimaryDisabled}
-					onOperationAction={handleOperationAction}
-					onNextStepPrimaryAction={handleNextStepPrimaryAction}
-					onScrollToGovernance={scrollToGovernance}
-					onScrollToAgentRunner={scrollToAgentRunner}
-					onScrollToWorkflowRunner={scrollToWorkflowRunner}
-					onScrollToToolRunner={scrollToToolRunner}
-					labels={{
-						eyebrow: t('platform.dashboard.eyebrow'),
-						title: t('platform.dashboard.title'),
-						description: t('platform.dashboard.description'),
-						openAudit: t('platform.dashboard.openAudit'),
-						runAgent: t('platform.dashboard.runAgent'),
-						workflowHealth: t('platform.dashboard.workflowHealth'),
-						workflowHealthDescription: t('platform.dashboard.workflowHealthDescription'),
-						enabledWorkflows: t('platform.dashboard.enabledWorkflows'),
-						completedRuns: t('platform.dashboard.completedRuns'),
-						partialRuns: t('platform.dashboard.partialRuns'),
-						failedRuns: t('platform.dashboard.failedRuns'),
-						noGovernedWorkflows: t('platform.dashboard.noGovernedWorkflows'),
-						workflowApprovalRequired: t('platform.dashboard.workflowApprovalRequired'),
-						ready: t('platform.status.ready'),
-						toConfigure: t('platform.status.toConfigure'),
-						pendingCount: (count) => t('platform.dashboard.pendingCount', { count }),
-						recommendedActions: t('platform.dashboard.recommendedActions'),
-						recommendedActionsDescription: t('platform.dashboard.recommendedActionsDescription'),
-						actionLabel: (code, count) => t(`platform.dashboard.actions.${code}`, { count }),
-						severityLabel: (severity) => t(`platform.dashboard.severity.${severity}`),
-						workflowApprovals: t('platform.dashboard.workflowApprovals'),
-						toolApprovals: t('platform.dashboard.toolApprovals'),
-						pendingApprovals: t('platform.dashboard.pendingApprovals'),
-						pendingApprovalsDescription: (approved) => t('platform.dashboard.pendingApprovalsDescription', { approved }),
-						emptyApprovals: t('platform.dashboard.emptyApprovals'),
-						openApprovals: t('platform.dashboard.openApprovals'),
-						recentRuns: t('platform.dashboard.recentRuns'),
-						recentRunsDescription: t('platform.dashboard.recentRunsDescription'),
-						emptyRuns: t('platform.dashboard.emptyRuns'),
-						workflowStatusLabel: (labelKey) => t(`platform.workflowRunner.${labelKey}`),
-						openWorkflows: t('platform.dashboard.openWorkflows'),
-						riskActions: t('platform.dashboard.riskActions'),
-						riskActionsDescription: t('platform.dashboard.riskActionsDescription'),
-						emptyRiskActions: t('platform.dashboard.emptyRiskActions'),
-						policyReviewWorkflow: t('platform.dashboard.policyReviewWorkflow'),
-						approvalGate: t('platform.dashboard.approvalGate'),
-						openTools: t('platform.dashboard.openTools'),
-						auditTrail: t('platform.dashboard.auditTrail'),
-						auditTrailDescription: t('platform.dashboard.auditTrailDescription'),
-						emptyAudit: t('platform.dashboard.emptyAudit'),
-						auditFailure: t('platform.audit.failure'),
-						auditSuccess: t('platform.audit.success'),
-						todo: t('platform.dashboard.todo'),
-						todoReady: t('platform.dashboard.todoReady'),
-						nextStepAction: (mode) => t(`platform.nextStep.${mode}.action`),
-					}}
-				/>
-
-				<PlatformConsolePanel
-					items={platformConsoleItems}
-					labels={{
-						title: t('platform.console.title'),
-						description: t('platform.console.description'),
-					}}
+					partialWorkflowRunCount={partialWorkflowRunCount}
+					pendingApprovals={pendingApprovals}
+					platformConsoleItems={platformConsoleItems}
+					recentAuditEvents={recentAuditEvents}
+					recentWorkflowRuns={recentWorkflowRuns}
+					recommendedOperationActions={recommendedOperationActions}
+					riskToolItems={riskToolItems}
+					scrollToAgentRunner={scrollToAgentRunner}
+					scrollToGovernance={scrollToGovernance}
+					scrollToToolRunner={scrollToToolRunner}
+					scrollToWorkflowRunner={scrollToWorkflowRunner}
+					workflowRunCount={workflowRunCount}
+					workflowTemplates={workflowTemplates}
 				/>
 
 				<AgentRunNowPanel
