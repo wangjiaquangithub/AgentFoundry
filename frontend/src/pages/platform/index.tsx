@@ -170,6 +170,7 @@ import {
 	createPlatformDashboardScenariosViewProps,
 	createPlatformDashboardTenantAccessViewProps,
 	createPlatformDashboardToolsViewProps,
+	createPlatformDashboardTriggerOpsViewProps,
 	createPlatformDashboardViewProps,
 	createPlatformDashboardWorkflowsViewProps,
 } from './platform-dashboard-view-props';
@@ -2197,6 +2198,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				...createPlatformDashboardPlatformConsoleViewProps({
 					platformConsoleItems,
 				}),
+				...createPlatformDashboardTriggerOpsViewProps({
+					recentSchedules,
+					schedulesError,
+					schedulesLoading,
+					triggerOpsStats,
+					triggerOpsSummary,
+				}),
 				...createPlatformDashboardScenariosViewProps({
 					handleRunScenario,
 					refetchScenarios,
@@ -2347,7 +2355,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				publishingTemplateId: publishingTemplateId,
 				readyPlatformAgents: readyPlatformAgents,
 				recentAuditEvents: recentAuditEvents,
-				recentSchedules: recentSchedules,
 				recommendedOperationActions: recommendedOperationActions,
 				refetchAuditEvents: refetchAuditEvents,
 				refetchGovernance: refetchGovernance,
@@ -2360,8 +2367,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				runtimeItems: runtimeItems,
 				savingMember: savingMember,
 				savingToolPolicy: savingToolPolicy,
-				schedulesError: schedulesError,
-				schedulesLoading: schedulesLoading,
 				scrollToAgentManagement: scrollToAgentManagement,
 				scrollToAgentRunner: scrollToAgentRunner,
 				scrollToGovernance: scrollToGovernance,
@@ -2396,8 +2401,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				stats: stats,
 				subagentTemplates: subagentTemplates,
 				t: t,
-				triggerOpsStats: triggerOpsStats,
-				triggerOpsSummary: triggerOpsSummary,
 				updatingMemberId: updatingMemberId,
 				username: username,
 				workbenchActions: workbenchActions,

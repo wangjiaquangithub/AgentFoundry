@@ -217,6 +217,15 @@ type DashboardPlatformConsoleViewProps = Pick<
 	'platformConsoleItems'
 >;
 
+type DashboardTriggerOpsViewProps = Pick<
+	DashboardViewPageProps,
+	| 'recentSchedules'
+	| 'schedulesError'
+	| 'schedulesLoading'
+	| 'triggerOpsStats'
+	| 'triggerOpsSummary'
+>;
+
 type DashboardOpsTasksViewProps = Pick<
 	DashboardViewPageProps,
 	| 'handleResolveOpsTask'
@@ -303,6 +312,12 @@ export function createPlatformDashboardMonitoringSnapshotViewProps(
 export function createPlatformDashboardPlatformConsoleViewProps(
 	props: DashboardPlatformConsoleViewProps,
 ): DashboardPlatformConsoleViewProps {
+	return props;
+}
+
+export function createPlatformDashboardTriggerOpsViewProps(
+	props: DashboardTriggerOpsViewProps,
+): DashboardTriggerOpsViewProps {
 	return props;
 }
 
