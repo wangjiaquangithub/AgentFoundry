@@ -249,11 +249,13 @@ import {
 	defaultPublishFormForTemplate,
 	preparedTenantAgentTarget,
 	publishFormForListToggle,
-	publishFormForPreparedTenant,
 	publishFormForTenantChange,
 	publishFormWithPatch,
 	publishedAgentPrimeTarget,
 	quickPublishTarget,
+	runAgentEditCancelTargetAction,
+	runPreparedTenantAgentTargetAction,
+	runStartPublishingTargetAction,
 	startPublishingTarget,
 	type PublishListFormKey,
 } from './platform-publish-form';
@@ -2048,21 +2050,16 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			credentials,
 			knowledgeBases,
 		});
-
-		if (target.type === 'template') {
-			setEditingAgentId(null);
-			setSelectedTemplateId(target.templateId);
-		}
-
-		setPublishForm((current) =>
-			publishFormForPreparedTenant({
-				current,
-				tenant,
-				templateForm: target.type === 'template' ? target.templateForm : null,
-			}),
+		runPreparedTenantAgentTargetAction(
+			target,
+			{ tenant },
+			{
+				clearEditingAgent: () => setEditingAgentId(null),
+				selectTemplate: setSelectedTemplateId,
+				setPublishForm,
+				scrollToAgentManagement: () => window.setTimeout(scrollToAgentManagement, 0),
+			},
 		);
-
-		window.setTimeout(scrollToAgentManagement, 0);
 	}
 
 	function handleInspectAgentRunAudit() {
@@ -2081,11 +2078,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			selectedTemplateId,
 			templates: agentTemplates,
 		});
-
-		if (target.type === 'configure-template') {
-			handleConfigureTemplate(target.template);
-		}
-		window.setTimeout(scrollToAgentManagement, 0);
+		runStartPublishingTargetAction(target, {
+			configureTemplate: handleConfigureTemplate,
+			scrollToAgentManagement: () => window.setTimeout(scrollToAgentManagement, 0),
+		});
 	}
 
 	function handleNextAgentSetupStep() {
@@ -2122,10 +2118,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	function handleCancelEdit() {
 		const target = agentEditCancelTarget(selectedTemplate);
-		setEditingAgentId(null);
-		if (target.type === 'configure-template') {
-			handleConfigureTemplate(target.template);
-		}
+		runAgentEditCancelTargetAction(target, {
+			clearEditingAgent: () => setEditingAgentId(null),
+			configureTemplate: handleConfigureTemplate,
+		});
 	}
 
 	function handleTogglePublishList(

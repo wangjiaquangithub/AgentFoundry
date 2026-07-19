@@ -74,6 +74,7 @@ export type AgentArchiveSyncTarget = {
 	shouldClearRunResult: boolean;
 	shouldClearEditingAgent: boolean;
 };
+type NavigationHandler = () => void;
 
 export type DefaultPublishFormOptions = {
 	template: EnterpriseAgentTemplate;
@@ -153,6 +154,22 @@ export function startPublishingTarget(values: {
 	}
 
 	return { type: 'scroll' };
+}
+
+export type StartPublishingTargetActionHandlers = {
+	configureTemplate: (template: EnterpriseAgentTemplate) => void;
+	scrollToAgentManagement: NavigationHandler;
+};
+
+export function runStartPublishingTargetAction(
+	target: StartPublishingTarget,
+	handlers: StartPublishingTargetActionHandlers,
+) {
+	if (target.type === 'configure-template') {
+		handlers.configureTemplate(target.template);
+	}
+
+	handlers.scrollToAgentManagement();
 }
 
 export function buildAgentConfigurationPayloadFromForm(
@@ -326,6 +343,37 @@ export function publishFormForPreparedTenant(values: {
 	};
 }
 
+export type PreparedTenantAgentTargetActionHandlers = {
+	clearEditingAgent: NavigationHandler;
+	selectTemplate: (templateId: string) => void;
+	setPublishForm: (
+		updater: (current: PublishFormState) => PublishFormState,
+	) => void;
+	scrollToAgentManagement: NavigationHandler;
+};
+
+export function runPreparedTenantAgentTargetAction(
+	target: PreparedTenantAgentTarget,
+	values: {
+		tenant: string;
+	},
+	handlers: PreparedTenantAgentTargetActionHandlers,
+) {
+	if (target.type === 'template') {
+		handlers.clearEditingAgent();
+		handlers.selectTemplate(target.templateId);
+	}
+
+	handlers.setPublishForm((current) =>
+		publishFormForPreparedTenant({
+			current,
+			tenant: values.tenant,
+			templateForm: target.type === 'template' ? target.templateForm : null,
+		}),
+	);
+	handlers.scrollToAgentManagement();
+}
+
 export function publishFormFromPublishedAgent(
 	agent: EnterprisePublishedAgent,
 ): PublishFormState {
@@ -357,6 +405,21 @@ export function agentEditCancelTarget(
 	return selectedTemplate
 		? { type: 'configure-template', template: selectedTemplate }
 		: { type: 'clear' };
+}
+
+export type AgentEditCancelTargetActionHandlers = {
+	clearEditingAgent: NavigationHandler;
+	configureTemplate: (template: EnterpriseAgentTemplate) => void;
+};
+
+export function runAgentEditCancelTargetAction(
+	target: AgentEditCancelTarget,
+	handlers: AgentEditCancelTargetActionHandlers,
+) {
+	handlers.clearEditingAgent();
+	if (target.type === 'configure-template') {
+		handlers.configureTemplate(target.template);
+	}
 }
 
 export function publishFormForListToggle(values: {
