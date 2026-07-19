@@ -128,6 +128,7 @@ import {
 	auditFiltersForIdentity,
 	auditFiltersForMemoryOperation,
 	auditFiltersForTenant,
+	auditQueryFromFilters,
 	failedAuditFiltersForIdentity,
 	mergeApprovalFilters,
 	mergeAuditFilters,
@@ -1394,20 +1395,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setAuditError(null);
 		try {
 			const filters = { ...auditFilters, ...overrides };
-			const limitValue = Number.parseInt(filters.limit, 10);
-			const response = await platformApi.audit({
-				tenant: filters.tenant || undefined,
-				user_id: filters.user_id || undefined,
-				agent_id: filters.agent_id || undefined,
-				tool_name: filters.tool_name || undefined,
-				success:
-					filters.success === 'true'
-						? true
-						: filters.success === 'false'
-							? false
-							: undefined,
-				limit: Number.isFinite(limitValue) ? limitValue : 50,
-			});
+			const response = await platformApi.audit(auditQueryFromFilters(filters));
 			setAuditEvents(response.events);
 			setAuditSummary(response.summary);
 		} catch (error) {

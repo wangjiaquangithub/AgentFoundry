@@ -19,6 +19,24 @@ export function mergeApprovalFilters(
 	return { ...current, ...patch };
 }
 
+export function auditQueryFromFilters(filters: AuditFiltersState) {
+	const limitValue = Number.parseInt(filters.limit, 10);
+
+	return {
+		tenant: filters.tenant || undefined,
+		user_id: filters.user_id || undefined,
+		agent_id: filters.agent_id || undefined,
+		tool_name: filters.tool_name || undefined,
+		success:
+			filters.success === 'true'
+				? true
+				: filters.success === 'false'
+					? false
+					: undefined,
+		limit: Number.isFinite(limitValue) ? limitValue : 50,
+	};
+}
+
 export function auditFiltersForIdentity(identity: EnterpriseIdentity): AuditFilterPatch {
 	return { tenant: identity.tenant, user_id: identity.user_id };
 }
