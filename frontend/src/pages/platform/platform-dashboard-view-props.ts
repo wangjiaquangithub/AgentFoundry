@@ -249,6 +249,13 @@ type DashboardLaunchpadViewProps = Pick<
 	| 'launchpadTotalCount'
 >;
 
+type DashboardOrchestrationWorkbenchViewProps = Pick<
+	DashboardViewPageProps,
+	| 'orchestrationPrimaryStep'
+	| 'orchestrationReadyCount'
+	| 'orchestrationWorkbenchSteps'
+>;
+
 type DashboardOpsTasksViewProps = Pick<
 	DashboardViewPageProps,
 	| 'handleResolveOpsTask'
@@ -359,6 +366,12 @@ export function createPlatformDashboardWorkbenchStatusViewProps(
 export function createPlatformDashboardLaunchpadViewProps(
 	props: DashboardLaunchpadViewProps,
 ): DashboardLaunchpadViewProps {
+	return props;
+}
+
+export function createPlatformDashboardOrchestrationWorkbenchViewProps(
+	props: DashboardOrchestrationWorkbenchViewProps,
+): DashboardOrchestrationWorkbenchViewProps {
 	return props;
 }
 
