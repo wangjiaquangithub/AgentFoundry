@@ -135,11 +135,12 @@ import {
 	orchestrationWorkbenchNavigationActions,
 	platformConsoleNavigationActions,
 	rolloutPathNavigationActions,
-	runAgentSetupStepRequestAction,
 	runNextStepPrimaryRequestAction,
+	runPlatformAgentSetupStepRequestAction,
 	runPlatformAppCenterDetailPrimaryRequestAction,
 	runPlatformAppCenterDetailSecondaryRequestAction,
 	runPlatformAppCenterPrimaryRequestAction,
+	runPlatformStartPublishingRequestAction,
 	workbenchIndicatorNavigationActions,
 	workbenchPrimaryNavigationActions,
 	workbenchQuickNavigationActions,
@@ -249,7 +250,6 @@ import {
 	runPublishListToggleAction,
 	runPublishTenantChangeAction,
 	runQuickPublishRequestAction,
-	runStartPublishingAction,
 	runTemplateConfigureAction,
 	type PublishListFormKey,
 } from './platform-publish-form';
@@ -1955,36 +1955,26 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleStartPublishing() {
-		runStartPublishingAction({
+		runPlatformStartPublishingRequestAction({
 			selectedTemplateId,
 			templates: agentTemplates,
 		}, {
 			configureTemplate: handleConfigureTemplate,
-			scrollToAgentManagement: () => window.setTimeout(scrollToAgentManagement, 0),
+			scrollToAgentManagement,
 		});
 	}
 
 	function handleNextAgentSetupStep() {
-		runAgentSetupStepRequestAction({
+		runPlatformAgentSetupStepRequestAction({
 			nextStep: nextAgentSetupStep,
-			hasSelectedTemplate: Boolean(selectedTemplate),
-			hasDefaultTemplate: Boolean(defaultAgentTemplate),
+			selectedTemplate,
+			defaultTemplate: defaultAgentTemplate,
 			credentialCount: credentials.length,
 			knowledgeBaseCount: knowledgeBases.length,
 		}, {
-			configureDefaultTemplate: () => {
-				if (defaultAgentTemplate) {
-					handleConfigureTemplate(defaultAgentTemplate);
-				}
-			},
+			configureTemplate: handleConfigureTemplate,
 			navigate,
-			scrollToAgentManagement: () => window.setTimeout(scrollToAgentManagement, 0),
-			scrollToCurrentStep: () => {
-				nextAgentSetupStep?.ref.current?.scrollIntoView({
-					behavior: 'smooth',
-					block: 'center',
-				});
-			},
+			scrollToAgentManagement,
 		});
 	}
 

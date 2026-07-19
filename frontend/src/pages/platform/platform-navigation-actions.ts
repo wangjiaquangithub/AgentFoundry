@@ -1,4 +1,5 @@
 import type { EnterpriseAgentTemplate, EnterprisePublishedAgent } from '@/api';
+import { runStartPublishingAction } from './platform-publish-form';
 import {
 	agentIsReady,
 	type AgentRunnerNextStepMode,
@@ -103,6 +104,72 @@ export function runAgentSetupStepRequestAction(
 	handlers: AgentSetupStepActionHandlers,
 ) {
 	runAgentSetupStepAction(agentSetupStepAction(values), handlers);
+}
+
+export type PlatformStartPublishingActionValues = {
+	selectedTemplateId: string | null;
+	templates: EnterpriseAgentTemplate[];
+};
+
+export type PlatformStartPublishingActionHandlers = {
+	configureTemplate: (template: EnterpriseAgentTemplate) => void;
+	scrollToAgentManagement: NavigationHandler;
+};
+
+export function runPlatformStartPublishingRequestAction(
+	values: PlatformStartPublishingActionValues,
+	handlers: PlatformStartPublishingActionHandlers,
+) {
+	runStartPublishingAction(values, {
+		configureTemplate: handlers.configureTemplate,
+		scrollToAgentManagement: () =>
+			window.setTimeout(handlers.scrollToAgentManagement, 0),
+	});
+}
+
+export type PlatformAgentSetupStepActionValues = {
+	nextStep: AgentWizardStep | null;
+	selectedTemplate?: EnterpriseAgentTemplate | null;
+	defaultTemplate?: EnterpriseAgentTemplate | null;
+	credentialCount: number;
+	knowledgeBaseCount: number;
+};
+
+export type PlatformAgentSetupStepActionHandlers = {
+	configureTemplate: (template: EnterpriseAgentTemplate) => void;
+	navigate: NavigateHandler;
+	scrollToAgentManagement: NavigationHandler;
+};
+
+export function runPlatformAgentSetupStepRequestAction(
+	values: PlatformAgentSetupStepActionValues,
+	handlers: PlatformAgentSetupStepActionHandlers,
+) {
+	runAgentSetupStepRequestAction(
+		{
+			nextStep: values.nextStep,
+			hasSelectedTemplate: Boolean(values.selectedTemplate),
+			hasDefaultTemplate: Boolean(values.defaultTemplate),
+			credentialCount: values.credentialCount,
+			knowledgeBaseCount: values.knowledgeBaseCount,
+		},
+		{
+			configureDefaultTemplate: () => {
+				if (values.defaultTemplate) {
+					handlers.configureTemplate(values.defaultTemplate);
+				}
+			},
+			navigate: handlers.navigate,
+			scrollToAgentManagement: () =>
+				window.setTimeout(handlers.scrollToAgentManagement, 0),
+			scrollToCurrentStep: () => {
+				values.nextStep?.ref.current?.scrollIntoView({
+					behavior: 'smooth',
+					block: 'center',
+				});
+			},
+		},
+	);
 }
 
 export function appCenterPrimaryAction(values: {
