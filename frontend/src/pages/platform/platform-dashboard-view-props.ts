@@ -240,6 +240,12 @@ type DashboardWorkbenchStatusViewProps = Pick<
 	| 'workbenchIndicators'
 >;
 
+type DashboardFirstAgentGuideViewProps = Pick<
+	DashboardViewPageProps,
+	| 'firstAgentGuidePrimaryStep'
+	| 'firstAgentGuideSteps'
+>;
+
 type DashboardLaunchpadViewProps = Pick<
 	DashboardViewPageProps,
 	| 'launchpadPrimaryStep'
@@ -360,6 +366,12 @@ export function createPlatformDashboardWorkbenchReadinessViewProps(
 export function createPlatformDashboardWorkbenchStatusViewProps(
 	props: DashboardWorkbenchStatusViewProps,
 ): DashboardWorkbenchStatusViewProps {
+	return props;
+}
+
+export function createPlatformDashboardFirstAgentGuideViewProps(
+	props: DashboardFirstAgentGuideViewProps,
+): DashboardFirstAgentGuideViewProps {
 	return props;
 }
 

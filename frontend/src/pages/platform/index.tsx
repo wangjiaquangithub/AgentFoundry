@@ -162,6 +162,7 @@ import {
 	createPlatformDashboardAppCenterViewProps,
 	createPlatformDashboardApprovalsViewProps,
 	createPlatformDashboardConnectorsViewProps,
+	createPlatformDashboardFirstAgentGuideViewProps,
 	createPlatformDashboardLaunchpadViewProps,
 	createPlatformDashboardMemoryOperationsViewProps,
 	createPlatformDashboardMonitoringSnapshotViewProps,
@@ -2219,6 +2220,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					workbenchActions,
 					workbenchIndicators,
 				}),
+				...createPlatformDashboardFirstAgentGuideViewProps({
+					firstAgentGuidePrimaryStep,
+					firstAgentGuideSteps,
+				}),
 				...createPlatformDashboardLaunchpadViewProps({
 					launchpadPrimaryStep,
 					launchpadReadyCount,
@@ -2293,8 +2298,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				enablingAgentWorkflowId: enablingAgentWorkflowId,
 				enterpriseIdentities: enterpriseIdentities,
 				featuredAgents: featuredAgents,
-				firstAgentGuidePrimaryStep: firstAgentGuidePrimaryStep,
-				firstAgentGuideSteps: firstAgentGuideSteps,
 				governance: governance,
 				governanceError: governanceError,
 				governanceHealthItems: governanceHealthItems,
