@@ -183,8 +183,7 @@ import {
 import { platformWorkflowDisplayStateForStatus } from './platform-workflow-display';
 import {
 	createPlatformAgentQuickConfigurationHandlers,
-	runPlatformAgentQuickConfigurationSyncAction,
-	type AgentQuickConfigurationPatch,
+	createPlatformAgentQuickConfigurationSyncHandler,
 } from './platform-agent-quick-config';
 import {
 	createPlatformAgentPublishingHandlers,
@@ -1339,17 +1338,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	);
 
-	const syncAgentQuickConfiguration = (
-		agentId: string,
-		updatedAgentId: string,
-		patch: AgentQuickConfigurationPatch,
-	) =>
-		runPlatformAgentQuickConfigurationSyncAction(
-			{
-				agentId,
-				patch,
-				updatedAgentId,
-			},
+	const syncAgentQuickConfiguration =
+		createPlatformAgentQuickConfigurationSyncHandler(
 			{
 				editingAgentId,
 				selectedRunAgentId,

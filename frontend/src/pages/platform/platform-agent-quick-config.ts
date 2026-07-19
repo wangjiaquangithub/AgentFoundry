@@ -191,6 +191,29 @@ export function runPlatformAgentQuickConfigurationSyncAction(
 	);
 }
 
+export function createPlatformAgentQuickConfigurationSyncHandler(
+	pageState: {
+		editingAgentId: string | null;
+		selectedRunAgentId: string;
+	},
+	handlers: AgentQuickConfigurationSyncHandlers,
+) {
+	return (
+		agentId: string,
+		updatedAgentId: string,
+		patch: AgentQuickConfigurationPatch,
+	) =>
+		runPlatformAgentQuickConfigurationSyncAction(
+			{
+				agentId,
+				patch,
+				updatedAgentId,
+			},
+			pageState,
+			handlers,
+		);
+}
+
 export function agentDefaultModelPatch(
 	modelConfigId: string,
 ): AgentQuickConfigurationPatch {
