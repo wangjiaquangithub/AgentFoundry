@@ -105,8 +105,7 @@ import {
 import {
 	runMemberEditAction,
 	runMemberSaveAction,
-	memberStatusToggleAction,
-	runMemberStatusToggleAction,
+	runMemberStatusToggleRequestAction,
 } from './platform-member-helpers';
 import {
 	runOpsTaskResolveAction,
@@ -1193,8 +1192,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleToggleMemberStatus(member: EnterprisePlatformMember) {
-		const toggleAction = memberStatusToggleAction(member);
-		await runMemberStatusToggleAction(toggleAction, {
+		await runMemberStatusToggleRequestAction(member, {
 			setUpdatingMember: setUpdatingMemberId,
 			clearError: () => setPlatformMembersError(null),
 			activateMember: async (userId, patch) => {

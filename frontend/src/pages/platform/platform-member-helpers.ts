@@ -138,3 +138,10 @@ export async function runMemberStatusToggleAction(
 		handlers.setUpdatingMember(null);
 	}
 }
+
+export async function runMemberStatusToggleRequestAction(
+	member: EnterprisePlatformMember,
+	handlers: MemberStatusToggleActionHandlers,
+) {
+	await runMemberStatusToggleAction(memberStatusToggleAction(member), handlers);
+}
