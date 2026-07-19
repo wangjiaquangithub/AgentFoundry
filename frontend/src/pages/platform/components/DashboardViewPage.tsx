@@ -34,6 +34,7 @@ import { DashboardToolRunnerSection } from './DashboardToolRunnerSection';
 import { DashboardWorkflowAutomationSection } from './DashboardWorkflowAutomationSection';
 import { DashboardWorkflowRunnerSection } from './DashboardWorkflowRunnerSection';
 import { PlatformDashboardOverview } from './PlatformDashboardOverview';
+import { PlatformPageShell } from './common';
 import { cn } from '@/lib/utils';
 
 interface DashboardViewPageProps {
@@ -440,8 +441,7 @@ export function DashboardViewPage({
 					: t('platform.appCenter.fixAgents');
 
 	return (
-		<main className="h-full overflow-y-auto bg-background">
-			<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 lg:px-8">
+		<PlatformPageShell>
 				<PlatformDashboardOverview
 					serverUrl={serverUrl}
 					username={username}
@@ -1063,7 +1063,6 @@ export function DashboardViewPage({
 				/>
 
 				<DashboardCapabilitiesSection capabilities={capabilities} t={t} />
-			</div>
-		</main>
+		</PlatformPageShell>
 	);
 }

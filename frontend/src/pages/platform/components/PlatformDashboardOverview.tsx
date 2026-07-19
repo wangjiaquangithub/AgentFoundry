@@ -3,7 +3,13 @@ import type { ComponentType } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { StateBadge, StatCard, type HealthState, type StatCardProps } from './common';
+import {
+	PlatformConnectionCard,
+	PlatformPageHeader,
+	StatCard,
+	type HealthState,
+	type StatCardProps,
+} from './common';
 
 type NextStepMode = 'model' | 'publish' | 'configure' | 'governance' | 'run';
 
@@ -50,36 +56,26 @@ export function PlatformDashboardOverview({
 }: PlatformDashboardOverviewProps) {
 	return (
 		<>
-			<section className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
-				<div className="min-w-0">
-					<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-						<Building2 className="size-4" />
-						<span>{labels.eyebrow}</span>
-					</div>
-					<h1 className="text-2xl font-semibold tracking-normal">{labels.title}</h1>
-					<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-						{labels.subtitle}
-					</p>
-				</div>
-				<div className="grid min-w-0 gap-2 rounded-lg border bg-muted/20 p-3 text-xs sm:min-w-80">
-					<div className="flex items-center justify-between gap-3">
-						<span className="text-muted-foreground">{labels.server}</span>
-						<span className="truncate font-mono" title={serverUrl}>
-							{serverUrl}
-						</span>
-					</div>
-					<div className="flex items-center justify-between gap-3">
-						<span className="text-muted-foreground">{labels.user}</span>
-						<span className="truncate font-mono" title={username}>
-							{username}
-						</span>
-					</div>
-					<div className="flex items-center justify-between gap-3">
-						<span className="text-muted-foreground">{labels.health}</span>
-						<StateBadge state={connectionState} label={labels.connectionState} />
-					</div>
-				</div>
-			</section>
+			<PlatformPageHeader
+				icon={Building2}
+				eyebrow={labels.eyebrow}
+				title={labels.title}
+				description={labels.subtitle}
+				aside={
+					<PlatformConnectionCard
+						serverUrl={serverUrl}
+						username={username}
+						hasErrors={connectionState !== 'ready'}
+						labels={{
+							server: labels.server,
+							user: labels.user,
+							health: labels.health,
+							connected: labels.connectionState,
+							partial: labels.connectionState,
+						}}
+					/>
+				}
+			/>
 
 			<section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 				{stats.map((stat) => (
