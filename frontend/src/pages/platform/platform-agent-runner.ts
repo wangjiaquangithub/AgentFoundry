@@ -460,6 +460,31 @@ export function workflowRunTargetForRequest(values: {
 	};
 }
 
+export function workflowRunRequestTarget(values: {
+	options?: {
+		workflowType?: string;
+		inputs?: Record<string, unknown>;
+		userId?: string;
+		agentId?: string;
+		approvalId?: string;
+	};
+	selectedWorkflowType: string;
+	workflowInputs: Record<string, string>;
+	selectedIdentityUserId: string;
+	selectedRunAgentId: string;
+	workflowApprovalId: string;
+}): EnterpriseWorkflowRunRequest {
+	const target = workflowRunTargetForRequest(values);
+
+	return enterpriseWorkflowRunPayload({
+		workflowType: target.workflowType,
+		inputs: target.inputs,
+		agentId: target.agentId,
+		userId: target.userId,
+		approvalId: target.approvalId,
+	});
+}
+
 export function scenarioWorkflowRunTarget(values: {
 	scenario: EnterprisePlatformScenario;
 	workflowTemplates: EnterpriseWorkflowTemplate[];

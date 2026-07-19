@@ -60,7 +60,6 @@ import {
 	agentRunSelectionResult,
 	clearAgentConversationTurns,
 	clearAgentRunsParams,
-	enterpriseWorkflowRunPayload,
 	memoryOperationAgentRunTarget,
 	mergeAgentConversationTurn,
 	replaceAgentConversationTurns,
@@ -70,7 +69,7 @@ import {
 	workflowInputsForSelectedOption,
 	workflowSelectionForAvailableTemplates,
 	workflowInputsWithValue,
-	workflowRunTargetForRequest,
+	workflowRunRequestTarget,
 	type AgentConversationMap,
 } from './platform-agent-runner';
 import {
@@ -2611,26 +2610,19 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		agentId?: string;
 		approvalId?: string;
 	}) {
-		const { workflowType, inputs, userId, agentId, approvalId } =
-			workflowRunTargetForRequest({
-				options,
-				selectedWorkflowType,
-				workflowInputs,
-				selectedIdentityUserId,
-				selectedRunAgentId,
-				workflowApprovalId,
-			});
+		const payload = workflowRunRequestTarget({
+			options,
+			selectedWorkflowType,
+			workflowInputs,
+			selectedIdentityUserId,
+			selectedRunAgentId,
+			workflowApprovalId,
+		});
 
 		setRunningWorkflow(true);
 		setWorkflowRunError(null);
 		try {
-			const response = await platformApi.runWorkflow(enterpriseWorkflowRunPayload({
-				workflowType,
-				inputs,
-				agentId,
-				userId,
-				approvalId,
-			}));
+			const response = await platformApi.runWorkflow(payload);
 			setWorkflowRunResult(response);
 			await refetchPlatform();
 			await refetchToolCatalog();
