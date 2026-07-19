@@ -9,13 +9,13 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-import { AgentQuickStartPanel } from './AgentQuickStartPanel';
 import { AgentRunnerPanel } from './AgentRunnerPanel';
 import { ApprovalsPanel } from './ApprovalsPanel';
 import { AuditEventsPanel } from './AuditEventsPanel';
 import { CapabilitiesPanel } from './CapabilitiesPanel';
 import { ConfigManagementPanel } from './ConfigManagementPanel';
 import { DashboardAgentManagementSection } from './DashboardAgentManagementSection';
+import { DashboardAgentQuickStartSection } from './DashboardAgentQuickStartSection';
 import { DashboardAgentRunNowSection } from './DashboardAgentRunNowSection';
 import { DashboardApplicationSection } from './DashboardApplicationSection';
 import { DashboardConnectorsSection } from './DashboardConnectorsSection';
@@ -876,26 +876,11 @@ export function DashboardViewPage({
 					refetchPlatform={refetchPlatform}
 				/>
 
-				<AgentQuickStartPanel
+				<DashboardAgentQuickStartSection
+					t={t}
 					agentsLoading={agentsLoading}
 					featuredAgents={featuredAgents}
-					onNavigate={navigate}
-					labels={{
-						agentsTitle: t('platform.agents.title'),
-						agentsDescription: t('platform.agents.description'),
-						openChat: t('platform.actions.openChat'),
-						emptyAgents: t('platform.agents.empty'),
-						noPrompt: t('platform.agents.noPrompt'),
-						openAgent: t('platform.actions.openAgent'),
-						editable: t('platform.agents.editable'),
-						readOnly: t('common.readOnly'),
-						invitable: t('platform.agents.invitable'),
-						quickActionsTitle: t('platform.quickActions.title'),
-						quickActionsDescription: t('platform.quickActions.description'),
-						configureModel: t('platform.actions.configureModel'),
-						manageKnowledge: t('platform.actions.manageKnowledge'),
-						manageWorkflow: t('platform.actions.manageWorkflow'),
-					}}
+					navigate={navigate}
 				/>
 
 				<PolicySubagentsPanel
