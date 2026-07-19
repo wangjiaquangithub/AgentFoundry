@@ -108,6 +108,7 @@ import {
 	runMemberSaveAction,
 	runMemberStatusToggleRequestAction,
 } from './platform-member-helpers';
+import { runGovernanceLoadAction } from './platform-governance-helpers';
 import {
 	runOpsTaskResolveAction,
 } from './platform-ops-task-helpers';
@@ -1031,18 +1032,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function refetchGovernance() {
-		setGovernanceLoading(true);
-		setGovernanceError(null);
-		try {
-			const response = await platformApi.governance();
-			setGovernance(response);
-		} catch (error) {
-			setGovernanceError(
-				error instanceof Error ? error.message : auditRequestText.loadError,
-			);
-		} finally {
-			setGovernanceLoading(false);
-		}
+		await runGovernanceLoadAction(auditRequestText.loadError, {
+			setLoading: setGovernanceLoading,
+			clearError: () => setGovernanceError(null),
+			loadGovernance: platformApi.governance,
+			setGovernance,
+			setError: setGovernanceError,
+		});
 	}
 
 	async function refetchPlatformConfigExport() {
