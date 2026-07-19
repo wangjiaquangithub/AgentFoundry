@@ -158,6 +158,13 @@ export function runApprovalIdFromInput(
 	return optionApprovalId ?? formApprovalId.trim();
 }
 
+export function runQuestionFromInput(
+	optionQuestion: string | undefined,
+	formQuestion: string,
+): string {
+	return (optionQuestion ?? formQuestion).trim();
+}
+
 export function clearAgentRunsParams(values: {
 	agentId: string;
 	userId: string;

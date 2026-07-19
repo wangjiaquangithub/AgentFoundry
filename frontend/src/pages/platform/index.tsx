@@ -65,6 +65,7 @@ import {
 	mergeAgentConversationTurn,
 	replaceAgentConversationTurns,
 	runApprovalIdFromInput,
+	runQuestionFromInput,
 	scenarioWorkflowRunTarget,
 	selectedToolInputs,
 	selectedRunAgentIdForAvailableAgents,
@@ -2462,7 +2463,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		approvalId?: string;
 	}) {
 		const agentId = options?.agentId ?? selectedRunAgentId;
-		const question = (options?.question ?? agentQuestion).trim();
+		const question = runQuestionFromInput(options?.question, agentQuestion);
 		const userId = options?.userId ?? selectedIdentityUserId;
 		const explicitApprovalId = runApprovalIdFromInput(
 			options?.approvalId,
