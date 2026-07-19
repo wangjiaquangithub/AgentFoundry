@@ -9,7 +9,6 @@ import {
 	type EnterpriseAuditEvent,
 	type EnterpriseAuditQueryResponse,
 	type EnterpriseConnectorTestResponse,
-	type EnterprisePublishedAgent,
 	type EnterprisePlatformAgentsResponse,
 	type EnterprisePlatformConfigExportResponse,
 	type EnterprisePlatformConnectorsResponse,
@@ -46,7 +45,6 @@ import {
 	agentRunResultForSelectedAgent,
 	createPlatformAgentRunnerEntryHandlers,
 	runAgentRunHistoryLoadAction,
-	runPrimeAgentWorkflowAction,
 	createPlatformRunnerHandlers,
 	platformAgentAccessAllowedForDisplay,
 	selectedRunAgentIdForAvailableAgents,
@@ -1463,24 +1461,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		await refetchScenarios();
 	}
 
-	function handlePrimeAgentWorkflow(agent: EnterprisePublishedAgent) {
-		runPrimeAgentWorkflowAction({
-			agent,
-			selectedIdentityUserId,
-			username,
-			selectedWorkflowTemplate,
-			workflowOptions,
-			selectedWorkflowType,
-		}, {
-			selectRunAgent: setSelectedRunAgentId,
-			selectIdentityUser: setSelectedIdentityUserId,
-			setWorkflowInputs,
-			setWorkflowApprovalId,
-			clearWorkflowRunError: () => setWorkflowRunError(null),
-			scrollToWorkflowRunner: () => window.setTimeout(scrollToWorkflowRunner, 0),
-		});
-	}
-
 	const {
 		handleUseIdentity,
 		handleUseTenant,
@@ -1596,6 +1576,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		handleRunEnterpriseTool,
 		runEnterpriseWorkflow,
 		handleRunEnterpriseWorkflow,
+		handlePrimeAgentWorkflow,
 		handleRunScenario,
 	} = createPlatformRunnerHandlers(
 		{
@@ -1615,6 +1596,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			selectedToolInputValue,
 			toolApprovalId,
 			selectedWorkflowType,
+			selectedWorkflowTemplate,
+			workflowOptions,
 			workflowInputs,
 			workflowTemplates,
 			workflowApprovalId,
@@ -1657,6 +1640,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			refreshWorkflowRunDependencies: refetchWorkflowRunDependencies,
 			setSelectedWorkflowType,
 			setWorkflowInputs,
+			setWorkflowApprovalId,
+			setSelectedIdentityUserId,
 			scrollToAgentRunner,
 			scrollToWorkflowRunner,
 			now: () => new Date().toISOString(),

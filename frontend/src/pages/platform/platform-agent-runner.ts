@@ -1365,6 +1365,11 @@ export type PlatformRunnerHandlerValues = {
 	selectedToolInputValue: string;
 	toolApprovalId: string;
 	selectedWorkflowType: string;
+	selectedWorkflowTemplate: EnterpriseWorkflowTemplate | null;
+	workflowOptions: Array<{
+		value: string;
+		defaultInputs?: Record<string, unknown>;
+	}>;
 	workflowInputs: Record<string, string>;
 	workflowTemplates: EnterpriseWorkflowTemplate[];
 	workflowApprovalId: string;
@@ -1382,6 +1387,7 @@ export type PlatformRunnerHandlerActions = {
 	setAgentQuestion: (question: string) => void;
 	setAgentRunError: (message: string | null) => void;
 	setSelectedRunAgentId: (agentId: string) => void;
+	setSelectedIdentityUserId: (userId: string) => void;
 	setAgentRunResult: (result: EnterpriseAgentRunResponse | null) => void;
 	setAgentRunsLoading: (loading: boolean) => void;
 	setAgentRunsError: (message: string | null) => void;
@@ -1416,6 +1422,7 @@ export type PlatformRunnerHandlerActions = {
 	refreshWorkflowRunDependencies: () => void | Promise<void>;
 	setSelectedWorkflowType: (workflowType: string) => void;
 	setWorkflowInputs: (inputs: Record<string, string>) => void;
+	setWorkflowApprovalId: (approvalId: string) => void;
 	scrollToAgentRunner: NavigationHandler;
 	scrollToWorkflowRunner: NavigationHandler;
 	now: () => string;
@@ -1600,6 +1607,27 @@ export function createPlatformRunnerHandlers(
 		handleRunEnterpriseTool: () => runEnterpriseTool(),
 		runEnterpriseWorkflow,
 		handleRunEnterpriseWorkflow: () => runEnterpriseWorkflow(),
+		handlePrimeAgentWorkflow(agent: EnterprisePublishedAgent) {
+			runPrimeAgentWorkflowAction(
+				{
+					agent,
+					selectedIdentityUserId: values.selectedIdentityUserId,
+					username: values.username,
+					selectedWorkflowTemplate: values.selectedWorkflowTemplate,
+					workflowOptions: values.workflowOptions,
+					selectedWorkflowType: values.selectedWorkflowType,
+				},
+				{
+					selectRunAgent: actions.setSelectedRunAgentId,
+					selectIdentityUser: actions.setSelectedIdentityUserId,
+					setWorkflowInputs: actions.setWorkflowInputs,
+					setWorkflowApprovalId: actions.setWorkflowApprovalId,
+					clearWorkflowRunError: () => actions.setWorkflowRunError(null),
+					scrollToWorkflowRunner: () =>
+						window.setTimeout(actions.scrollToWorkflowRunner, 0),
+				},
+			);
+		},
 		async handleRunScenario(scenario: EnterprisePlatformScenario) {
 			await runScenarioWorkflowRequestAction(
 				{
