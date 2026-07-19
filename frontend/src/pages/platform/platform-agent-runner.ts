@@ -22,6 +22,8 @@ import {
 	type EnterpriseAgentConversationTurn,
 } from './platform-utils';
 
+export type { EnterpriseAgentConversationTurn };
+
 export type AgentConversationMap = Record<string, EnterpriseAgentConversationTurn[]>;
 export type ClearAgentRunsParams = {
 	agent_id?: string;

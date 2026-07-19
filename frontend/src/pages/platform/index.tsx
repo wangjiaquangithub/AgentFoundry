@@ -72,6 +72,7 @@ import {
 	workflowSelectionForAvailableTemplates,
 	workflowInputsWithValue,
 	type AgentConversationMap,
+	type EnterpriseAgentConversationTurn,
 } from './platform-agent-runner';
 import {
 	approvalQueryFromFilters,
@@ -294,7 +295,6 @@ import { platformResourceDisplayStateForStatus } from './platform-resource-displ
 import { platformRuntimeDisplayStateForStatus } from './platform-runtime-display';
 import { platformToolRunnerDisplayStateForStatus } from './platform-tool-runner-display';
 import { platformOverviewDisplayStateForStatus } from './platform-overview-display';
-import type { EnterpriseAgentConversationTurn } from './platform-utils';
 import type { PlatformView } from './platform-view';
 
 export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
