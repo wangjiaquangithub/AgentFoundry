@@ -59,6 +59,7 @@ import {
 	agentRunResponseRequiresApproval,
 	clearAgentConversationTurns,
 	clearAgentRunsParams,
+	identityAgentRunnerTarget,
 	memoryOperationAgentRunTarget,
 	mergeAgentConversationTurn,
 	publishedAgentRunnerTarget,
@@ -66,6 +67,7 @@ import {
 	scenarioWorkflowRunTarget,
 	selectedRunAgentIdForAvailableAgents,
 	selectedRunAgentTarget,
+	tenantAgentRunnerTarget,
 	toolRunRequestTarget,
 	workflowInputsForSelectedOption,
 	workflowSelectionForAvailableTemplates,
@@ -295,7 +297,6 @@ import {
 	firstAgentGuidePrimaryStepForSteps,
 	firstAgentGuideStepsForStatus,
 	governanceOperationsStateForStatus,
-	identityForTenant,
 	launchpadPrimaryStepForSteps,
 	launchpadStateForCounts,
 	launchpadStepsForStatus,
@@ -1948,8 +1949,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleUseIdentity(identity: EnterpriseIdentity) {
-		setSelectedIdentityUserId(identity.user_id);
-		setAgentQuestion(identity.sample_questions[0] ?? primaryAgentSampleQuestion);
+		const target = identityAgentRunnerTarget(identity, primaryAgentSampleQuestion);
+
+		setSelectedIdentityUserId(target.userId);
+		setAgentQuestion(target.question);
 		setAgentRunError(null);
 		window.setTimeout(scrollToAgentRunner, 0);
 	}
@@ -1976,14 +1979,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleUseTenant(tenant: string) {
-		const identity = identityForTenant({
+		const target = tenantAgentRunnerTarget({
 			enterpriseIdentities,
 			tenant,
 			fallbackIdentity: selectedIdentity,
 		});
 
-		if (identity) {
-			handleUseIdentity(identity);
+		if (target.identity) {
+			handleUseIdentity(target.identity);
 			return;
 		}
 

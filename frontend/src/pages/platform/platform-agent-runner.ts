@@ -11,6 +11,7 @@ import type {
 import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
 import {
 	agentAccessAllowed,
+	identityForTenant,
 	identityForMemoryOperation,
 	normalizeWorkflowInputs,
 	type EnterpriseAgentConversationTurn,
@@ -96,6 +97,31 @@ export function selectedRunAgentTarget(values: {
 	return {
 		agentId: values.agentId,
 		result: agentRunSelectionResult(values),
+	};
+}
+
+export function identityAgentRunnerTarget(
+	identity: EnterpriseIdentity,
+	fallbackQuestion: string,
+): {
+	userId: string;
+	question: string;
+} {
+	return {
+		userId: identity.user_id,
+		question: identity.sample_questions[0] ?? fallbackQuestion,
+	};
+}
+
+export function tenantAgentRunnerTarget(values: {
+	enterpriseIdentities: EnterpriseIdentity[];
+	tenant: string;
+	fallbackIdentity: EnterpriseIdentity | null;
+}): {
+	identity: EnterpriseIdentity | null;
+} {
+	return {
+		identity: identityForTenant(values),
 	};
 }
 
