@@ -18,6 +18,28 @@ export type ToolPolicySaveActionHandlers = {
 	handleError: (error: unknown) => void;
 };
 
+export type PlatformToolPolicyRequestText = {
+	noIdentity: string;
+	policySaved: string;
+	policySaveError: string;
+};
+
+export type PlatformToolPolicyHandlerValues = {
+	selectedIdentity: EnterpriseIdentity | null;
+	toolPolicyDraft: Record<string, ToolPolicyDraftValue>;
+	text: PlatformToolPolicyRequestText;
+};
+
+export type PlatformToolPolicyHandlerActions = {
+	setSavingToolPolicy: (saving: boolean) => void;
+	setToolPolicySaveError: (error: string | null) => void;
+	setToolPolicySaveSuccess: (message: string | null) => void;
+	updateToolPolicy: (
+		payload: EnterpriseToolPolicyUpdateRequest,
+	) => void | Promise<void>;
+	refreshDependentViews: () => void | Promise<void>;
+};
+
 export function toolPolicyPayloadFromDraft(values: {
 	tenant: string;
 	userId: string;
@@ -86,4 +108,43 @@ export async function runToolPolicySaveAction(
 	} finally {
 		handlers.setSavingToolPolicy(false);
 	}
+}
+
+export function createPlatformToolPolicyHandlers(
+	values: PlatformToolPolicyHandlerValues,
+	actions: PlatformToolPolicyHandlerActions,
+) {
+	async function handleSaveToolPolicy() {
+		await runToolPolicySaveAction(
+			{
+				identity: values.selectedIdentity,
+				draft: values.toolPolicyDraft,
+			},
+			{
+				setSavingToolPolicy: actions.setSavingToolPolicy,
+				clearMessages: () => {
+					actions.setToolPolicySaveError(null);
+					actions.setToolPolicySaveSuccess(null);
+				},
+				handleValidationError: () => {
+					actions.setToolPolicySaveError(values.text.noIdentity);
+					actions.setToolPolicySaveSuccess(null);
+				},
+				updateToolPolicy: actions.updateToolPolicy,
+				setToolPolicySaveSuccess: () =>
+					actions.setToolPolicySaveSuccess(values.text.policySaved),
+				refreshDependentViews: actions.refreshDependentViews,
+				handleError: (error) =>
+					actions.setToolPolicySaveError(
+						error instanceof Error
+							? error.message
+							: values.text.policySaveError,
+					),
+			},
+		);
+	}
+
+	return {
+		handleSaveToolPolicy,
+	};
 }

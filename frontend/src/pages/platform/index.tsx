@@ -77,8 +77,8 @@ import {
 	runPlatformConfigLoadAction,
 } from './platform-config-management';
 import {
+	createPlatformToolPolicyHandlers,
 	toolPolicyDraftFromDecisions,
-	runToolPolicySaveAction,
 } from './platform-tool-policy-helpers';
 import { runToolCatalogLoadAction } from './platform-tool-catalog-helpers';
 import {
@@ -1193,34 +1193,22 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		await refetchOpsTasks();
 	}
 
-	async function handleSaveToolPolicy() {
-		await runToolPolicySaveAction(
-			{ identity: selectedIdentity, draft: toolPolicyDraft },
-			{
-				setSavingToolPolicy,
-				clearMessages: () => {
-					setToolPolicySaveError(null);
-					setToolPolicySaveSuccess(null);
-				},
-				handleValidationError: () => {
-					setToolPolicySaveError(tenantGovernanceRequestText.noIdentity);
-					setToolPolicySaveSuccess(null);
-				},
-				updateToolPolicy: async (payload) => {
-					await platformApi.updateToolPolicy(payload);
-				},
-				setToolPolicySaveSuccess: () =>
-					setToolPolicySaveSuccess(tenantGovernanceRequestText.policySaved),
-				refreshDependentViews: refetchToolPolicyDependencies,
-				handleError: (error) =>
-					setToolPolicySaveError(
-						error instanceof Error
-							? error.message
-							: tenantGovernanceRequestText.policySaveError,
-					),
+	const { handleSaveToolPolicy } = createPlatformToolPolicyHandlers(
+		{
+			selectedIdentity,
+			toolPolicyDraft,
+			text: tenantGovernanceRequestText,
+		},
+		{
+			setSavingToolPolicy,
+			setToolPolicySaveError,
+			setToolPolicySaveSuccess,
+			updateToolPolicy: async (payload) => {
+				await platformApi.updateToolPolicy(payload);
 			},
-		);
-	}
+			refreshDependentViews: refetchToolPolicyDependencies,
+		},
+	);
 
 	async function refetchAgentRuns(
 		agentId = selectedRunAgentId,
