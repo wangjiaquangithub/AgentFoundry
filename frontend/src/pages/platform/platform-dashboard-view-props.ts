@@ -331,6 +331,24 @@ type DashboardGovernanceHealthViewProps = Pick<
 	| 'scrollToGovernance'
 >;
 
+type DashboardTenantWorkspaceViewProps = Pick<
+	DashboardViewPageProps,
+	| 'enterpriseIdentities'
+	| 'handleInspectIdentityAudit'
+	| 'handleInspectTenantApprovals'
+	| 'handleInspectTenantAudit'
+	| 'handlePrepareTenantAgent'
+	| 'handleUseIdentity'
+	| 'handleUseTenant'
+	| 'scrollToConnectorCenter'
+	| 'scrollToGovernance'
+	| 'selectedIdentity'
+	| 'selectedIdentityAllowedTools'
+	| 'selectedIdentityDeniedTools'
+	| 'selectedIdentityWorkspace'
+	| 'tenantOverviewItems'
+>;
+
 type DashboardPlatformConsoleViewProps = Pick<
 	DashboardViewPageProps,
 	'platformConsoleItems'
@@ -517,6 +535,12 @@ export function createPlatformDashboardRuntimeStatusViewProps(
 export function createPlatformDashboardGovernanceHealthViewProps(
 	props: DashboardGovernanceHealthViewProps,
 ): DashboardGovernanceHealthViewProps {
+	return props;
+}
+
+export function createPlatformDashboardTenantWorkspaceViewProps(
+	props: DashboardTenantWorkspaceViewProps,
+): DashboardTenantWorkspaceViewProps {
 	return props;
 }
 
