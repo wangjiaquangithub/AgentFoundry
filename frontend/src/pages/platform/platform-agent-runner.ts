@@ -1015,6 +1015,15 @@ export function runAgentWorkflowPrimeTargetAction(
 	handlers.scrollToWorkflowRunner();
 }
 
+export function runPrimeAgentWorkflowAction(
+	values: Parameters<typeof agentWorkflowPrimeTarget>[0],
+	handlers: AgentWorkflowPrimeTargetActionHandlers,
+) {
+	const target = agentWorkflowPrimeTarget(values);
+
+	runAgentWorkflowPrimeTargetAction(target, handlers);
+}
+
 export function workflowInputsForSelectedOption(
 	workflowOptions: Array<{
 		value: string;

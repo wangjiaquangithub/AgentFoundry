@@ -51,7 +51,6 @@ import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import { usePlatformPageRefs } from './platform-page-refs';
 import {
-	agentWorkflowPrimeTarget,
 	agentRunResultForSelectedAgent,
 	agentRunResultAfterHistoryRefresh,
 	agentRunRequestTarget,
@@ -65,13 +64,13 @@ import {
 	runAgentRunnerPrimeTargetAction,
 	runAgentRunHistoryDetailAction,
 	runAgentRunHistorySelectionAction,
-	runAgentWorkflowPrimeTargetAction,
 	runClearAgentConversationSuccessAction,
 	runEnterpriseToolAction,
 	runEnterpriseWorkflowAction,
 	runIdentityAgentRunnerTargetAction,
 	runMemoryOperationAgentRunTargetAction,
 	runPublishedAgentRunnerTargetAction,
+	runPrimeAgentWorkflowAction,
 	runScenarioWorkflowAction,
 	runSelectedRunAgentTargetAction,
 	runTenantAgentRunnerTargetAction,
@@ -1798,16 +1797,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handlePrimeAgentWorkflow(agent: EnterprisePublishedAgent) {
-		const target = agentWorkflowPrimeTarget({
+		runPrimeAgentWorkflowAction({
 			agent,
 			selectedIdentityUserId,
 			username,
 			selectedWorkflowTemplate,
 			workflowOptions,
 			selectedWorkflowType,
-		});
-
-		runAgentWorkflowPrimeTargetAction(target, {
+		}, {
 			selectRunAgent: setSelectedRunAgentId,
 			selectIdentityUser: setSelectedIdentityUserId,
 			setWorkflowInputs,
