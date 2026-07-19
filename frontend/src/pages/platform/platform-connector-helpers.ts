@@ -78,6 +78,7 @@ export type ConnectorTestAndSaveActionHandlers = {
 };
 
 export type PlatformConnectorRequestText = {
+	loadError: string;
 	saveBaseUrlRequired: string;
 	saveSuccessWithTenant: (tenant: string) => string;
 	saveError: string;
@@ -93,6 +94,15 @@ export type PlatformConnectorHandlerValues = {
 };
 
 export type PlatformConnectorHandlerActions = {
+	setLoading: (loading: boolean) => void;
+	clearLoadError: () => void;
+	loadConnectors: () =>
+		| EnterprisePlatformConnectorsResponse
+		| Promise<EnterprisePlatformConnectorsResponse>;
+	setLoadedConnectors: (
+		connectors: EnterprisePlatformConnectorsResponse,
+	) => void;
+	setLoadError: (message: string) => void;
 	setConnectorTestForm: (
 		update: (previous: ConnectorTestFormState) => ConnectorTestFormState,
 	) => void;
@@ -386,6 +396,16 @@ export function createPlatformConnectorHandlers(
 	values: PlatformConnectorHandlerValues,
 	actions: PlatformConnectorHandlerActions,
 ) {
+	async function refetchConnectors() {
+		await runConnectorLoadAction(values.text.loadError, {
+			setLoading: actions.setLoading,
+			clearError: actions.clearLoadError,
+			loadConnectors: actions.loadConnectors,
+			setConnectors: actions.setLoadedConnectors,
+			setError: actions.setLoadError,
+		});
+	}
+
 	function loadSavedConnectorConfig(config: EnterpriseConnectorSavedConfig) {
 		runConnectorSavedConfigLoadAction(config, {
 			setConnectorTestForm: actions.setConnectorTestForm,
@@ -463,6 +483,7 @@ export function createPlatformConnectorHandlers(
 	}
 
 	return {
+		refetchConnectors,
 		loadSavedConnectorConfig,
 		handleSaveConnectorConfig,
 		handleTestConnector,

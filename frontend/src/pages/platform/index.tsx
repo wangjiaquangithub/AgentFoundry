@@ -61,7 +61,6 @@ import { runPlatformAgentLoadAction } from './platform-agent-management-helpers'
 import {
 	connectorFormWithPlatformDefaults,
 	createPlatformConnectorHandlers,
-	runConnectorLoadAction,
 } from './platform-connector-helpers';
 import {
 	createPlatformConfigManagementHandlers,
@@ -964,16 +963,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		}
 	}, [selectedWorkflowType, workflowTemplates]);
 
-	async function refetchConnectors() {
-		await runConnectorLoadAction(connectorRequestText.loadError, {
-			setLoading: setConnectorsLoading,
-			clearError: () => setConnectorsError(null),
-			loadConnectors: platformApi.connectors,
-			setConnectors,
-			setError: setConnectorsError,
-		});
-	}
-
 	async function refetchGovernance() {
 		await runGovernanceLoadAction(auditRequestText.loadError, {
 			setLoading: setGovernanceLoading,
@@ -1084,6 +1073,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	const {
+		refetchConnectors,
 		loadSavedConnectorConfig,
 		handleSaveConnectorConfig,
 		handleTestConnector,
@@ -1095,6 +1085,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			text: connectorRequestText,
 		},
 		{
+			setLoading: setConnectorsLoading,
+			clearLoadError: () => setConnectorsError(null),
+			loadConnectors: platformApi.connectors,
+			setLoadedConnectors: setConnectors,
+			setLoadError: setConnectorsError,
 			setConnectorTestForm,
 			setConnectorTestResult,
 			setConnectorTestError,
