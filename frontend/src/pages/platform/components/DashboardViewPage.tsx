@@ -31,13 +31,12 @@ import { AuditEventsPanel } from './AuditEventsPanel';
 import { CapabilitiesPanel } from './CapabilitiesPanel';
 import { ConfigManagementPanel } from './ConfigManagementPanel';
 import { DashboardApplicationSection } from './DashboardApplicationSection';
+import { DashboardOperationalHealthSection } from './DashboardOperationalHealthSection';
 import { DashboardOpsPanel } from './DashboardOpsPanel';
 import { DashboardOperationsSnapshotSection } from './DashboardOperationsSnapshotSection';
 import { DashboardWorkbenchSection } from './DashboardWorkbenchSection';
-import { GovernanceHealthPanel } from './GovernanceHealthPanel';
 import { LaunchpadPanel } from './LaunchpadPanel';
 import { MembersPanel } from './MembersPanel';
-import { OperationsPanel } from './OperationsPanel';
 import { OrchestrationWorkbenchPanel } from './OrchestrationWorkbenchPanel';
 import { PlatformConsolePanel } from './PlatformConsolePanel';
 import { PlatformDashboardOverview } from './PlatformDashboardOverview';
@@ -655,59 +654,26 @@ export function DashboardViewPage({
 					handleRunScenario={handleRunScenario}
 				/>
 
-				<GovernanceHealthPanel
-					items={governanceHealthItems}
-					error={governanceError}
-					loading={governanceLoading}
-					onRefresh={() => void refetchGovernance()}
-					onOpenDetails={scrollToGovernance}
-					labels={{
-						eyebrow: t('platform.governanceHealth.eyebrow'),
-						title: t('platform.governanceHealth.title'),
-						description: t('platform.governanceHealth.description'),
-						refresh: t('platform.governanceHealth.refresh'),
-						openDetails: t('platform.governanceHealth.openDetails'),
-						stateLabel: (state) => t(`platform.launchpad.${state}`),
-					}}
-				/>
-
-				<OperationsPanel
-					activeAgents={activePlatformAgents}
-					readyAgents={readyPlatformAgents}
-					blockedOrPartialAgents={blockedOrPartialPlatformAgents}
-					topAgents={topOperationsAgents}
+				<DashboardOperationalHealthSection
+					t={t}
+					governanceHealthItems={governanceHealthItems}
+					governanceError={governanceError}
+					governanceLoading={governanceLoading}
+					refetchGovernance={refetchGovernance}
+					scrollToGovernance={scrollToGovernance}
+					activePlatformAgents={activePlatformAgents}
+					readyPlatformAgents={readyPlatformAgents}
+					blockedOrPartialPlatformAgents={blockedOrPartialPlatformAgents}
+					topOperationsAgents={topOperationsAgents}
 					pendingApprovals={pendingApprovals}
-					headline={operationsHeadline}
-					agentIssueText={operationsAgentIssueText}
-					onManageAgents={scrollToAgentManagement}
-					onOpenGovernance={scrollToGovernance}
-					onRunReadyAgent={handlePrimeAgentRunner}
-					onStartPublishing={handleStartPublishing}
-					onSelectRunAgent={setSelectedRunAgentId}
-					onEditAgent={handleEditAgent}
-					onUseApproval={handleUseApproval}
-					labels={{
-						eyebrow: t('platform.operations.eyebrow'),
-						title: t('platform.operations.title'),
-						manageAgents: t('platform.operations.manageAgents'),
-						runReadyAgent: t('platform.operations.runReadyAgent'),
-						publishAgent: t('platform.operations.publishAgent'),
-						totalAgents: t('platform.operations.totalAgents'),
-						readyAgents: t('platform.operations.readyAgents'),
-						needsConfiguration: t('platform.operations.needsConfiguration'),
-						pendingApprovals: t('platform.operations.pendingApprovals'),
-						agentReadiness: t('platform.operations.agentReadiness'),
-						viewAll: t('platform.operations.viewAll'),
-						emptyAgents: t('platform.operations.emptyAgents'),
-						archived: t('platform.agentManagement.archived'),
-						readiness: (state) =>
-							t(`platform.agentManagement.readiness.${state}`),
-						run: t('platform.operations.run'),
-						configure: t('platform.operations.configure'),
-						humanInLoop: t('platform.operations.humanInLoop'),
-						review: t('platform.operations.review'),
-						emptyApprovals: t('platform.operations.emptyApprovals'),
-					}}
+					operationsHeadline={operationsHeadline}
+					operationsAgentIssueText={operationsAgentIssueText}
+					scrollToAgentManagement={scrollToAgentManagement}
+					handlePrimeAgentRunner={handlePrimeAgentRunner}
+					handleStartPublishing={handleStartPublishing}
+					setSelectedRunAgentId={setSelectedRunAgentId}
+					handleEditAgent={handleEditAgent}
+					handleUseApproval={handleUseApproval}
 				/>
 
 				<TenantWorkspacePanel
