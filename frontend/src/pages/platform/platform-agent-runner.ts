@@ -24,6 +24,7 @@ export type ClearAgentRunsParams = {
 	user_id?: string;
 	session_id?: string;
 };
+type NavigationHandler = () => void;
 
 export function agentConversationTurnFromRunResponse(values: {
 	response: EnterpriseAgentRunResponse;
@@ -87,6 +88,25 @@ export function publishedAgentRunnerTarget(values: {
 	};
 }
 
+export type PublishedAgentRunnerTargetActionHandlers = {
+	selectRunAgent: (agentId: string) => void;
+	setQuestion: (question: string) => void;
+	setResult: (result: EnterpriseAgentRunResponse | null) => void;
+	clearError: NavigationHandler;
+	scrollToAgentRunner: NavigationHandler;
+};
+
+export function runPublishedAgentRunnerTargetAction(
+	target: ReturnType<typeof publishedAgentRunnerTarget>,
+	handlers: PublishedAgentRunnerTargetActionHandlers,
+) {
+	handlers.selectRunAgent(target.agentId);
+	handlers.setQuestion(target.question);
+	handlers.setResult(target.result);
+	handlers.clearError();
+	handlers.scrollToAgentRunner();
+}
+
 export function selectedRunAgentTarget(values: {
 	agentConversations: AgentConversationMap;
 	agentId: string;
@@ -98,6 +118,21 @@ export function selectedRunAgentTarget(values: {
 		agentId: values.agentId,
 		result: agentRunSelectionResult(values),
 	};
+}
+
+export type SelectedRunAgentTargetActionHandlers = {
+	selectRunAgent: (agentId: string) => void;
+	setResult: (result: EnterpriseAgentRunResponse | null) => void;
+	clearError: NavigationHandler;
+};
+
+export function runSelectedRunAgentTargetAction(
+	target: ReturnType<typeof selectedRunAgentTarget>,
+	handlers: SelectedRunAgentTargetActionHandlers,
+) {
+	handlers.selectRunAgent(target.agentId);
+	handlers.setResult(target.result);
+	handlers.clearError();
 }
 
 export function identityAgentRunnerTarget(
@@ -113,6 +148,23 @@ export function identityAgentRunnerTarget(
 	};
 }
 
+export type IdentityAgentRunnerTargetActionHandlers = {
+	selectIdentityUser: (userId: string) => void;
+	setQuestion: (question: string) => void;
+	clearError: NavigationHandler;
+	scrollToAgentRunner: NavigationHandler;
+};
+
+export function runIdentityAgentRunnerTargetAction(
+	target: ReturnType<typeof identityAgentRunnerTarget>,
+	handlers: IdentityAgentRunnerTargetActionHandlers,
+) {
+	handlers.selectIdentityUser(target.userId);
+	handlers.setQuestion(target.question);
+	handlers.clearError();
+	handlers.scrollToAgentRunner();
+}
+
 export function tenantAgentRunnerTarget(values: {
 	enterpriseIdentities: EnterpriseIdentity[];
 	tenant: string;
@@ -123,6 +175,25 @@ export function tenantAgentRunnerTarget(values: {
 	return {
 		identity: identityForTenant(values),
 	};
+}
+
+export type TenantAgentRunnerTargetActionHandlers = {
+	useIdentity: (identity: EnterpriseIdentity) => void;
+	clearError: NavigationHandler;
+	scrollToAgentRunner: NavigationHandler;
+};
+
+export function runTenantAgentRunnerTargetAction(
+	target: ReturnType<typeof tenantAgentRunnerTarget>,
+	handlers: TenantAgentRunnerTargetActionHandlers,
+) {
+	if (target.identity) {
+		handlers.useIdentity(target.identity);
+		return;
+	}
+
+	handlers.clearError();
+	handlers.scrollToAgentRunner();
 }
 
 export function memoryOperationAgentRunTarget(values: {
@@ -144,6 +215,30 @@ export function memoryOperationAgentRunTarget(values: {
 		result: values.item.latestResponse,
 		question: values.item.latestQuestion || values.fallbackQuestion,
 	};
+}
+
+export type MemoryOperationAgentRunTargetActionHandlers = {
+	selectIdentityUser: (userId: string) => void;
+	selectRunAgent: (agentId: string) => void;
+	setResult: (result: EnterpriseAgentRunResponse) => void;
+	setQuestion: (question: string) => void;
+	clearError: NavigationHandler;
+	scrollToAgentRunner: NavigationHandler;
+};
+
+export function runMemoryOperationAgentRunTargetAction(
+	target: ReturnType<typeof memoryOperationAgentRunTarget>,
+	handlers: MemoryOperationAgentRunTargetActionHandlers,
+) {
+	if (target.identity) {
+		handlers.selectIdentityUser(target.identity.user_id);
+	}
+
+	handlers.selectRunAgent(target.agentId);
+	handlers.setResult(target.result);
+	handlers.setQuestion(target.question);
+	handlers.clearError();
+	handlers.scrollToAgentRunner();
 }
 
 export function agentRunResultForSelectedAgent(values: {
