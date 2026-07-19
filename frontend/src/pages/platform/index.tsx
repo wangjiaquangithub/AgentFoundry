@@ -157,10 +157,7 @@ import {
 	workflowSelectionLabels,
 } from './platform-labels';
 import { createPlatformDashboardPageState } from './platform-dashboard-state';
-import {
-	platformCapabilityItemsDisplayStateForStatus,
-	platformLaunchpadDisplayStateForStatus,
-} from './platform-launchpad-display';
+import { createPlatformLaunchpadPageState } from './platform-launchpad-state';
 import { platformMonitoringDisplayStateForStatus } from './platform-monitoring-display';
 import { platformOnboardingDisplayStateForStatus } from './platform-onboarding-display';
 import { platformOrchestrationDisplayStateForStatus } from './platform-orchestration-display';
@@ -1478,27 +1475,34 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		scrollToToolRunner,
 		scrollToWorkflowRunner,
 	});
-	const capabilities = platformCapabilityItemsDisplayStateForStatus({
-		t,
-		counts: {
-			credentials: credentials.length,
-			knowledgeBases: knowledgeBases.length,
-			activeAgents: activePlatformAgents.length,
-			availableTools: availableToolItems.length,
-			workflows: workflowTemplates.length || schedules.length,
-			tenants: platformMemberTenantSummaries.length,
-			pendingApprovals: pendingApprovals.length,
-			auditEvents: auditEventCount,
-			configMembers: platformConfigExport?.counts.members ?? 0,
-			configAgents: platformConfigExport?.counts.agents ?? 0,
+	const {
+		capabilities,
+		activeMemberCount,
+		launchpadPrimaryStep,
+		launchpadReadyCount,
+		launchpadState,
+		launchpadSteps,
+		launchpadTotalCount,
+	} = createPlatformLaunchpadPageState({
+		capabilities: {
+			t,
+			counts: {
+				credentials: credentials.length,
+				knowledgeBases: knowledgeBases.length,
+				activeAgents: activePlatformAgents.length,
+				availableTools: availableToolItems.length,
+				workflows: workflowTemplates.length || schedules.length,
+				tenants: platformMemberTenantSummaries.length,
+				pendingApprovals: pendingApprovals.length,
+				auditEvents: auditEventCount,
+				configMembers: platformConfigExport?.counts.members ?? 0,
+				configAgents: platformConfigExport?.counts.agents ?? 0,
+			},
+			hasConfigExport: Boolean(platformConfigExport),
+			icons: capabilityIcons,
+			actions: capabilityNavigationActions(platformNavigationHandlers),
 		},
-		hasConfigExport: Boolean(platformConfigExport),
-		icons: capabilityIcons,
-		actions: capabilityNavigationActions(platformNavigationHandlers),
-	});
-
-	const launchpadDisplay = platformLaunchpadDisplayStateForStatus(
-		{
+		launchpad: {
 			members: platformMembers?.members ?? [],
 			credentialCount: credentials.length,
 			knowledgeBaseCount: knowledgeBases.length,
@@ -1509,21 +1513,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			auditEventCount,
 			pendingApprovalCount: pendingApprovals.length,
 		},
-		{
+		launchpadOptions: {
 			icons: launchpadStepIcons,
 			navigationActions: launchpadNavigationActions(platformNavigationHandlers),
 			fallbackAction: scrollToGovernance,
 			labels: launchpadStepLabels(t),
 		},
-	);
-	const {
-		activeMemberCount,
-		primaryStep: launchpadPrimaryStep,
-		readyCount: launchpadReadyCount,
-		state: launchpadState,
-		steps: launchpadSteps,
-		totalCount: launchpadTotalCount,
-	} = launchpadDisplay;
+	});
 
 	const platformConsoleItems = platformWorkbenchConsoleItemsDisplayState({
 		icons: platformConsoleIcons,
