@@ -374,6 +374,43 @@ export function runAgentRunHistorySelectionRequestAction(
 	return target;
 }
 
+export type AgentRunHistoryDetailLoadActionHandlers =
+	AgentRunHistorySelectionActionHandlers & {
+		loadAgentRun: (
+			runId: string,
+		) => EnterpriseAgentRunHistoryItem | Promise<EnterpriseAgentRunHistoryItem>;
+		setAgentConversations: (
+			update: (current: AgentConversationMap) => AgentConversationMap,
+		) => void;
+		setRunsError: (message: string) => void;
+	};
+
+export async function runAgentRunHistoryDetailLoadAction(
+	values: {
+		turn: EnterpriseAgentConversationTurn;
+		loadErrorMessage: string;
+	},
+	handlers: AgentRunHistoryDetailLoadActionHandlers,
+) {
+	const target = runAgentRunHistorySelectionRequestAction(values.turn, handlers);
+
+	try {
+		const run = await handlers.loadAgentRun(target.runId);
+		const detailedTurn = agentConversationTurnFromRunHistoryItem(run);
+		runAgentRunHistoryDetailAction(detailedTurn, {
+			setAgentConversations: handlers.setAgentConversations,
+			setResult: handlers.setResult,
+		});
+	} catch (error) {
+		handlers.setRunsError(
+			error instanceof Error ? error.message : values.loadErrorMessage,
+		);
+		handlers.setResult(values.turn.response);
+	} finally {
+		handlers.setRunsLoading(false);
+	}
+}
+
 export function agentRunResultForSelectedAgent(values: {
 	current: EnterpriseAgentRunResponse | null;
 	agentConversations: AgentConversationMap;

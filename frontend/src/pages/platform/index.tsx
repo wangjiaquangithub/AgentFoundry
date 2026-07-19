@@ -49,12 +49,10 @@ import { DashboardViewPage } from './components/DashboardViewPage';
 import { usePlatformPageRefs } from './platform-page-refs';
 import {
 	agentRunResultForSelectedAgent,
-	agentConversationTurnFromRunHistoryItem,
 	runEnterpriseAgentRequestAction,
 	runAgentRunnerPrimeTargetAction,
-	runAgentRunHistoryDetailAction,
+	runAgentRunHistoryDetailLoadAction,
 	runAgentRunHistoryLoadAction,
-	runAgentRunHistorySelectionRequestAction,
 	runClearAgentConversationRequestAction,
 	runEnterpriseToolRequestAction,
 	runEnterpriseWorkflowRequestAction,
@@ -1778,29 +1776,19 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleSelectAgentRun(turn: EnterpriseAgentConversationTurn) {
-		const target = runAgentRunHistorySelectionRequestAction(turn, {
-			setQuestion: setAgentQuestion,
-			clearRunError: () => setAgentRunError(null),
-			clearRunsError: () => setAgentRunsError(null),
-			setResult: setAgentRunResult,
-			setRunsLoading: setAgentRunsLoading,
-		});
-
-		try {
-			const run = await platformApi.agentRun(target.runId);
-			const detailedTurn = agentConversationTurnFromRunHistoryItem(run);
-			runAgentRunHistoryDetailAction(detailedTurn, {
-				setAgentConversations,
+		await runAgentRunHistoryDetailLoadAction(
+			{ turn, loadErrorMessage: agentRunnerRequestText.historyLoadError },
+			{
+				setQuestion: setAgentQuestion,
+				clearRunError: () => setAgentRunError(null),
+				clearRunsError: () => setAgentRunsError(null),
 				setResult: setAgentRunResult,
-			});
-		} catch (error) {
-			setAgentRunsError(
-				error instanceof Error ? error.message : agentRunnerRequestText.historyLoadError,
-			);
-			setAgentRunResult(turn.response);
-		} finally {
-			setAgentRunsLoading(false);
-		}
+				setRunsLoading: setAgentRunsLoading,
+				loadAgentRun: platformApi.agentRun,
+				setAgentConversations,
+				setRunsError: setAgentRunsError,
+			},
+		);
 	}
 
 	async function handleClearAgentConversation() {
