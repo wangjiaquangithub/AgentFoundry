@@ -1,5 +1,45 @@
+import type { AgentWizardStep } from './platform-utils';
+
 type NavigationHandler = () => void;
 type NavigateHandler = (path: string) => void;
+
+export type AgentSetupStepAction =
+	| { type: 'none' }
+	| { type: 'template'; shouldConfigureDefault: boolean }
+	| { type: 'navigate'; path: '/credential' | '/knowledge' }
+	| { type: 'scroll-step' };
+
+export function agentSetupStepAction(values: {
+	nextStep: AgentWizardStep | null;
+	hasSelectedTemplate: boolean;
+	hasDefaultTemplate: boolean;
+	credentialCount: number;
+	knowledgeBaseCount: number;
+}): AgentSetupStepAction {
+	const { nextStep } = values;
+
+	if (!nextStep) {
+		return { type: 'none' };
+	}
+
+	if (nextStep.key === 'template') {
+		return {
+			type: 'template',
+			shouldConfigureDefault:
+				!values.hasSelectedTemplate && values.hasDefaultTemplate,
+		};
+	}
+
+	if (nextStep.key === 'model' && values.credentialCount === 0) {
+		return { type: 'navigate', path: '/credential' };
+	}
+
+	if (nextStep.key === 'knowledge' && values.knowledgeBaseCount === 0) {
+		return { type: 'navigate', path: '/knowledge' };
+	}
+
+	return { type: 'scroll-step' };
+}
 
 export type PlatformNavigationActionHandlers = {
 	navigate: NavigateHandler;

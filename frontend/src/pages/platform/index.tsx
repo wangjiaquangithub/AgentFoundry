@@ -141,6 +141,7 @@ import {
 	mergeAuditFilters,
 } from './platform-filter-builders';
 import {
+	agentSetupStepAction,
 	capabilityNavigationActions,
 	firstAgentGuideNavigationActions,
 	launchpadNavigationActions,
@@ -2055,32 +2056,33 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleNextAgentSetupStep() {
-		if (!nextAgentSetupStep) {
-			return;
-		}
+		const action = agentSetupStepAction({
+			nextStep: nextAgentSetupStep,
+			hasSelectedTemplate: Boolean(selectedTemplate),
+			hasDefaultTemplate: Boolean(defaultAgentTemplate),
+			credentialCount: credentials.length,
+			knowledgeBaseCount: knowledgeBases.length,
+		});
 
-		if (nextAgentSetupStep.key === 'template') {
-			if (!selectedTemplate && defaultAgentTemplate) {
+		if (action.type === 'template') {
+			if (action.shouldConfigureDefault && defaultAgentTemplate) {
 				handleConfigureTemplate(defaultAgentTemplate);
 			}
 			window.setTimeout(scrollToAgentManagement, 0);
 			return;
 		}
 
-		if (nextAgentSetupStep.key === 'model' && credentials.length === 0) {
-			navigate('/credential');
+		if (action.type === 'navigate') {
+			navigate(action.path);
 			return;
 		}
 
-		if (nextAgentSetupStep.key === 'knowledge' && knowledgeBases.length === 0) {
-			navigate('/knowledge');
-			return;
+		if (action.type === 'scroll-step') {
+			nextAgentSetupStep?.ref.current?.scrollIntoView({
+				behavior: 'smooth',
+				block: 'center',
+			});
 		}
-
-		nextAgentSetupStep.ref.current?.scrollIntoView({
-			behavior: 'smooth',
-			block: 'center',
-		});
 	}
 
 	function buildAgentConfigurationPayload() {
