@@ -3,6 +3,7 @@ import type {
 	EnterpriseApprovalDecisionRequest,
 	EnterpriseApprovalRequestItem,
 	EnterpriseApprovalRequestType,
+	EnterprisePublishedAgent,
 } from '@/api';
 import type { ApprovalFiltersState, ApprovalFormState } from './platform-defaults';
 import { normalizeWorkflowInputs } from './platform-utils';
@@ -362,4 +363,34 @@ export function primedToolApprovalFormPatch(
 		reason: options.reason,
 		defaults: options.defaults,
 	});
+}
+
+export function toolApprovalPrimeTarget(values: {
+	agent: EnterprisePublishedAgent;
+	inputConfig?: ApprovalToolInputConfig;
+	catalogItems: ApprovalToolCatalogItem[];
+	reason: string;
+	toolName: string;
+	defaultInputValue: string;
+	selectedIdentityUserId: string;
+	username: string;
+}): {
+	userId: string;
+	formPatch: Parameters<typeof primedToolApprovalFormPatch>[1];
+} {
+	return {
+		userId: values.selectedIdentityUserId || values.username,
+		formPatch: {
+			agentId: values.agent.id,
+			inputConfig: values.inputConfig,
+			catalogItems: values.catalogItems,
+			toolName: values.toolName,
+			reason: values.reason,
+			defaults: {
+				defaultInputValue: values.defaultInputValue,
+				selectedIdentityUserId: values.selectedIdentityUserId,
+				username: values.username,
+			},
+		},
+	};
 }

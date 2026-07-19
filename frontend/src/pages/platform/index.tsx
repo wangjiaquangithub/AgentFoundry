@@ -87,6 +87,7 @@ import {
 	approvalRunInputsFromSelection,
 	approvalToolContinuationTarget,
 	approvalToolInputsPatch,
+	toolApprovalPrimeTarget,
 	approvalUsageKind,
 	approvalWorkflowContinuationTarget,
 	primedToolApprovalFormPatch,
@@ -1789,25 +1790,23 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handlePrimeToolApproval(agent: EnterprisePublishedAgent, toolName: string) {
-		const toolConfig = enterpriseToolInputConfig[toolName];
-
-		setSelectedIdentityUserId(selectedIdentityUserId || username);
-		setApprovalForm((current) =>
-			primedToolApprovalFormPatch(current, {
-				agentId: agent.id,
-				inputConfig: toolConfig,
-				catalogItems: availableToolItems,
-				toolName,
-				reason: approvalRequestText.agentToolApprovalReason({
-					agent: agent.name,
-					tool: toolName,
-				}),
-				defaults: {
-					defaultInputValue: defaultApprovalForm.input_value,
-					selectedIdentityUserId,
-					username,
-				},
+		const target = toolApprovalPrimeTarget({
+			agent,
+			inputConfig: enterpriseToolInputConfig[toolName],
+			catalogItems: availableToolItems,
+			toolName,
+			reason: approvalRequestText.agentToolApprovalReason({
+				agent: agent.name,
+				tool: toolName,
 			}),
+			defaultInputValue: defaultApprovalForm.input_value,
+			selectedIdentityUserId,
+			username,
+		});
+
+		setSelectedIdentityUserId(target.userId);
+		setApprovalForm((current) =>
+			primedToolApprovalFormPatch(current, target.formPatch),
 		);
 		setApprovalError(null);
 		window.setTimeout(scrollToGovernance, 0);
