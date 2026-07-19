@@ -258,6 +258,7 @@ import {
 	quickPublishTarget,
 	runAgentEditDraftAction,
 	runAgentEditCancelTargetAction,
+	runAgentPublishAction,
 	runPreparedTenantAgentTargetAction,
 	runPublishListToggleAction,
 	runPublishTenantChangeAction,
@@ -2158,38 +2159,30 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			editingAgentId,
 			form: publishForm,
 		});
-		if (target.type === 'skip') {
-			return;
-		}
-
-		setPublishingTemplateId(target.publishingTemplateId);
-		setPlatformAgentsError(null);
-		try {
-			const response =
-				target.type === 'update'
-					? await platformApi.updateAgent(target.agentId, target.payload)
-					: await platformApi.publishAgent(target.payload);
-			const publishedAgentId = publishedAgentPrimeTarget(response.agent);
-			if (publishedAgentId) {
-				setLastPublishedAgentId(publishedAgentId);
-				handlePrimePublishedAgent(publishedAgentId);
-			}
-			setEditingAgentId(null);
-			await refetchPlatformAgents();
-			await refetchPlatform();
-			await refetchToolCatalog();
-			await refetchOpsTasks();
-		} catch (error) {
-			setPlatformAgentsError(
-				error instanceof Error
-					? error.message
-					: editingAgentId
-						? agentManagementRequestText.updateError
-						: agentManagementRequestText.publishError,
-			);
-		} finally {
-			setPublishingTemplateId(null);
-		}
+		await runAgentPublishAction(target, {
+			setPublishingTemplate: setPublishingTemplateId,
+			clearError: () => setPlatformAgentsError(null),
+			publishAgent: platformApi.publishAgent,
+			updateAgent: platformApi.updateAgent,
+			setLastPublishedAgent: setLastPublishedAgentId,
+			primePublishedAgent: handlePrimePublishedAgent,
+			clearEditingAgent: () => setEditingAgentId(null),
+			refreshDependentViews: async () => {
+				await refetchPlatformAgents();
+				await refetchPlatform();
+				await refetchToolCatalog();
+				await refetchOpsTasks();
+			},
+			handleError: (error, publishTarget) => {
+				setPlatformAgentsError(
+					error instanceof Error
+						? error.message
+						: publishTarget.type === 'update'
+							? agentManagementRequestText.updateError
+							: agentManagementRequestText.publishError,
+				);
+			},
+		});
 	}
 
 	async function handleQuickPublishAgent() {

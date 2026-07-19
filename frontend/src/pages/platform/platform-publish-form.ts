@@ -1,6 +1,8 @@
 import type {
 	CredentialView,
+	EnterpriseAgentPublishResponse,
 	EnterpriseAgentUpdateRequest,
+	EnterpriseAgentUpdateResponse,
 	EnterpriseAgentPublishRequest,
 	EnterpriseAgentTemplate,
 	EnterprisePublishedAgent,
@@ -457,6 +459,23 @@ export type PublishTenantChangeActionHandlers = {
 	) => void;
 };
 
+export type AgentPublishActionHandlers = {
+	setPublishingTemplate: (templateId: string | null) => void;
+	clearError: () => void;
+	publishAgent: (
+		payload: EnterpriseAgentPublishRequest,
+	) => EnterpriseAgentPublishResponse | Promise<EnterpriseAgentPublishResponse>;
+	updateAgent: (
+		agentId: string,
+		payload: EnterpriseAgentUpdateRequest,
+	) => EnterpriseAgentUpdateResponse | Promise<EnterpriseAgentUpdateResponse>;
+	setLastPublishedAgent: (agentId: string) => void;
+	primePublishedAgent: (agentId: string) => void;
+	clearEditingAgent: () => void;
+	refreshDependentViews: () => void | Promise<void>;
+	handleError: (error: unknown, target: AgentPublishRequestTarget) => void;
+};
+
 export function runAgentEditCancelTargetAction(
 	target: AgentEditCancelTarget,
 	handlers: AgentEditCancelTargetActionHandlers,
@@ -518,6 +537,35 @@ export function runPublishTenantChangeAction(
 			members: values.members,
 		}),
 	);
+}
+
+export async function runAgentPublishAction(
+	target: AgentPublishRequestTarget,
+	handlers: AgentPublishActionHandlers,
+) {
+	if (target.type === 'skip') {
+		return;
+	}
+
+	handlers.setPublishingTemplate(target.publishingTemplateId);
+	handlers.clearError();
+	try {
+		const response =
+			target.type === 'update'
+				? await handlers.updateAgent(target.agentId, target.payload)
+				: await handlers.publishAgent(target.payload);
+		const publishedAgentId = publishedAgentPrimeTarget(response.agent);
+		if (publishedAgentId) {
+			handlers.setLastPublishedAgent(publishedAgentId);
+			handlers.primePublishedAgent(publishedAgentId);
+		}
+		handlers.clearEditingAgent();
+		await handlers.refreshDependentViews();
+	} catch (error) {
+		handlers.handleError(error, target);
+	} finally {
+		handlers.setPublishingTemplate(null);
+	}
 }
 
 export function publishFormWithPatch(
