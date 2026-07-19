@@ -282,6 +282,7 @@ import {
 	platformAuditStatsDisplayStateForSummary,
 	platformGovernanceDisplayStateForStatus,
 	platformSelectedIdentityDisplayStateForStatus,
+	platformSummarizeAuditObject,
 } from './platform-governance-display';
 import {
 	platformAgentReleasePipelineDisplayStateForStatus,
@@ -294,7 +295,6 @@ import { platformOverviewDisplayStateForStatus } from './platform-overview-displ
 import {
 	agentAccessAllowed,
 	agentIsReady,
-	summarizeAuditObject,
 	type EnterpriseAgentConversationTurn,
 } from './platform-utils';
 import type { PlatformView } from './platform-view';
@@ -2866,7 +2866,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				onApproveAndRun={handleApproveAndRun}
 				onDecideApproval={handleDecideApproval}
 				onUseApproval={handleUseApproval}
-				summarizeAuditObject={summarizeAuditObject}
+				summarizeAuditObject={platformSummarizeAuditObject}
 				t={t}
 			/>
 		);
@@ -2910,7 +2910,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				onOpenGovernance={() => navigate('/platform/approvals')}
 				onAuditFiltersChange={setAuditFilters}
 				onRefetchAuditEvents={refetchAuditEvents}
-				summarizeAuditObject={summarizeAuditObject}
+				summarizeAuditObject={platformSummarizeAuditObject}
 				t={t}
 			/>
 		);
@@ -2958,7 +2958,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				onToggleWorkflowTemplate={(template, checked) =>
 					void handleToggleWorkflowTemplate(template, checked)
 				}
-				summarizeAuditObject={summarizeAuditObject}
+				summarizeAuditObject={platformSummarizeAuditObject}
 				t={t}
 			/>
 		);
@@ -3364,7 +3364,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setWorkflowRunError={setWorkflowRunError}
 			stats={stats}
 			subagentTemplates={subagentTemplates}
-			summarizeAuditObject={summarizeAuditObject}
+			summarizeAuditObject={platformSummarizeAuditObject}
 			t={t}
 			tenantOverviewItems={tenantOverviewItems}
 			tenantWorkspaces={tenantWorkspaces}

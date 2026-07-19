@@ -3,6 +3,7 @@ import {
 	governanceOperationsStateForStatus,
 	selectedIdentityGovernanceDisplayStateForStatus,
 	selectedIdentityStateForStatus,
+	summarizeAuditObject,
 } from './platform-utils';
 
 export interface PlatformGovernanceDisplayState {
@@ -21,6 +22,12 @@ export function platformAuditStatsDisplayStateForSummary(
 	labels: Parameters<typeof auditStatsForSummary>[1],
 ) {
 	return auditStatsForSummary(values, labels);
+}
+
+export function platformSummarizeAuditObject(
+	value?: Parameters<typeof summarizeAuditObject>[0],
+) {
+	return summarizeAuditObject(value);
 }
 
 export function platformGovernanceDisplayStateForStatus(values: {
