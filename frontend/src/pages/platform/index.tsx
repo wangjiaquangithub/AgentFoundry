@@ -156,7 +156,7 @@ import {
 	workflowOperationsLabels,
 	workflowSelectionLabels,
 } from './platform-labels';
-import { platformDashboardDisplayStateForStatus } from './platform-dashboard-display';
+import { createPlatformDashboardPageState } from './platform-dashboard-state';
 import {
 	platformCapabilityItemsDisplayStateForStatus,
 	platformLaunchpadDisplayStateForStatus,
@@ -649,7 +649,30 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		testResult: connectorTestResult,
 		labels: connectorOperationsLabels(t),
 	});
-	const dashboardDisplay = platformDashboardDisplayStateForStatus({
+	const {
+		dashboardOperations,
+		pendingApprovals,
+		approvedApprovalCount,
+		approvalSummary,
+		recentWorkflowRuns,
+		workflowRunCount,
+		recentAuditEvents,
+		auditEventCount,
+		tenantWorkspaces,
+		tenantOverviewItems,
+		platformMemberTenantSummaries,
+		memoryOperationsItems,
+		memoryOperationsRunCount,
+		memoryOperationsHitCount,
+		memoryOperationsSavedCount,
+		riskToolItems,
+		completedWorkflowRunCount,
+		partialWorkflowRunCount,
+		failedWorkflowRunCount,
+		governedWorkflowItems,
+		recommendedOperationActions,
+		dashboardTodoItems,
+	} = createPlatformDashboardPageState({
 		source: { platformStatus },
 		fallback: {
 			governance,
@@ -681,35 +704,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 		todoLabels: dashboardTodoLabels(t),
 	});
-	const dashboardSourceState = dashboardDisplay.sourceState;
-	const dashboardOperations = dashboardSourceState.dashboardOperations;
-	const {
-		pendingApprovals,
-		approvedApprovalCount,
-		approvalSummary,
-		recentWorkflowRuns,
-		workflowRunCount,
-		recentAuditEvents,
-		auditEventCount,
-	} = dashboardDisplay.fallbackState;
-	const tenantWorkspaceOperationsState = dashboardDisplay.tenantWorkspaceState;
-	const tenantWorkspaces = tenantWorkspaceOperationsState.tenantWorkspaces;
-	const tenantOverviewItems = tenantWorkspaceOperationsState.tenantOverviewItems;
-	const platformMemberTenantSummaries =
-		tenantWorkspaceOperationsState.platformMemberTenantSummaries;
-	const memoryOperationsState = dashboardDisplay.memoryOperationsState;
-	const memoryOperationsItems = memoryOperationsState.items;
-	const memoryOperationsRunCount = memoryOperationsState.runCount;
-	const memoryOperationsHitCount = memoryOperationsState.hitCount;
-	const memoryOperationsSavedCount = memoryOperationsState.savedCount;
-	const dashboardOperationsState = dashboardDisplay.operationsState;
-	const riskToolItems = dashboardOperationsState.riskToolItems;
-	const completedWorkflowRunCount = dashboardOperationsState.completedWorkflowRunCount;
-	const partialWorkflowRunCount = dashboardOperationsState.partialWorkflowRunCount;
-	const failedWorkflowRunCount = dashboardOperationsState.failedWorkflowRunCount;
-	const governedWorkflowItems = dashboardOperationsState.governedWorkflowItems;
-	const recommendedOperationActions = dashboardOperationsState.recommendedOperationActions;
-	const dashboardTodoItems = dashboardDisplay.todoItems;
 	const appCenterDisplay = platformAppCenterDisplayStateForStatus({
 		operations: {
 			selectedItem: selectedAppCenterItem,
