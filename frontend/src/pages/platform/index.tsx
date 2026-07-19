@@ -9,7 +9,6 @@ import {
 	type EnterpriseApprovalRequestType,
 	type EnterpriseAuditEvent,
 	type EnterpriseAuditQueryResponse,
-	type EnterpriseConnectorSavedConfig,
 	type EnterpriseConnectorTestResponse,
 	type EnterprisePublishedAgent,
 	type EnterprisePlatformAgentsResponse,
@@ -70,11 +69,8 @@ import {
 import { runPlatformAgentLoadAction } from './platform-agent-management-helpers';
 import {
 	connectorFormWithPlatformDefaults,
+	createPlatformConnectorHandlers,
 	runConnectorLoadAction,
-	runConnectorSavedConfigLoadAction,
-	runConnectorSaveAction,
-	runConnectorTestAndSaveAction,
-	runConnectorTestAction,
 } from './platform-connector-helpers';
 import {
 	createPlatformConfigManagementHandlers,
@@ -1106,93 +1102,37 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	);
 
-	function loadSavedConnectorConfig(config: EnterpriseConnectorSavedConfig) {
-		runConnectorSavedConfigLoadAction(config, {
-			setConnectorTestForm,
-			setConnectorTestResult,
-			setConnectorTestError,
-			setConnectorSaveError,
-			setConnectorSaveSuccess,
-		});
-	}
-
 	async function refetchConnectorConfigDependencies() {
 		await refetchConnectors();
 		await refetchGovernance();
 		await refetchOpsTasks();
 	}
 
-	async function handleSaveConnectorConfig() {
-		await runConnectorSaveAction(
-			{
-				form: connectorTestForm,
-				draftIssues: connectorDraftIssues,
-				baseUrlRequiredMessage: connectorRequestText.saveBaseUrlRequired,
-			},
-			{
-				setSavingConnectorConfig,
-				clearMessages: () => {
-					setConnectorSaveError(null);
-					setConnectorSaveSuccess(null);
-				},
-				handleValidationError: (error) => {
-					setConnectorSaveError(error);
-					setConnectorSaveSuccess(null);
-				},
-				saveConnectorConfig: async (payload) =>
-					platformApi.saveConnectorConfig(payload),
-				setConnectors,
-				setConnectorTestForm,
-				setConnectorSaveSuccess,
-				saveSuccessMessage: connectorRequestText.saveSuccessWithTenant,
-				refreshDependentViews: refetchConnectorConfigDependencies,
-				handleError: (error) =>
-					setConnectorSaveError(
-						error instanceof Error
-							? error.message
-							: connectorRequestText.saveError,
-					),
-			},
-		);
-	}
-
-	async function handleTestConnector() {
-		return runConnectorTestAction(
-			{
-				form: connectorTestForm,
-				draftIssues: connectorDraftIssues,
-				baseUrlRequiredMessage: connectorRequestText.testBaseUrlRequired,
-			},
-			{
-				setTestingConnector,
-				clearError: () => setConnectorTestError(null),
-				handleValidationError: setConnectorTestError,
-				testConnector: async (payload) => platformApi.testConnector(payload),
-				setConnectorTestResult,
-				handleError: (error) =>
-					setConnectorTestError(
-						error instanceof Error
-							? error.message
-							: connectorRequestText.testError,
-					),
-			},
-		);
-	}
-
-	async function handleTestAndSaveConnectorConfig() {
-		await runConnectorTestAndSaveAction(
-			{
-				testBeforeSaveRequiredMessage:
-					connectorRequestText.testBeforeSaveRequired,
-			},
-			{
-				testConnector: handleTestConnector,
-				saveConnectorConfig: handleSaveConnectorConfig,
-				clearSaveSuccess: () => setConnectorSaveSuccess(null),
-				setSaveError: setConnectorSaveError,
-			},
-		);
-	}
+	const {
+		loadSavedConnectorConfig,
+		handleSaveConnectorConfig,
+		handleTestConnector,
+		handleTestAndSaveConnectorConfig,
+	} = createPlatformConnectorHandlers(
+		{
+			connectorTestForm,
+			connectorDraftIssues,
+			text: connectorRequestText,
+		},
+		{
+			setConnectorTestForm,
+			setConnectorTestResult,
+			setConnectorTestError,
+			setConnectorSaveError,
+			setConnectorSaveSuccess,
+			setSavingConnectorConfig,
+			saveConnectorConfig: platformApi.saveConnectorConfig,
+			setConnectors,
+			refreshDependentViews: refetchConnectorConfigDependencies,
+			setTestingConnector,
+			testConnector: platformApi.testConnector,
+		},
+	);
 
 	async function refetchToolCatalog() {
 		await runToolCatalogLoadAction(

@@ -77,6 +77,49 @@ export type ConnectorTestAndSaveActionHandlers = {
 	setSaveError: (error: string) => void;
 };
 
+export type PlatformConnectorRequestText = {
+	saveBaseUrlRequired: string;
+	saveSuccessWithTenant: (tenant: string) => string;
+	saveError: string;
+	testBaseUrlRequired: string;
+	testError: string;
+	testBeforeSaveRequired: string;
+};
+
+export type PlatformConnectorHandlerValues = {
+	connectorTestForm: ConnectorTestFormState;
+	connectorDraftIssues: string[];
+	text: PlatformConnectorRequestText;
+};
+
+export type PlatformConnectorHandlerActions = {
+	setConnectorTestForm: (
+		update: (previous: ConnectorTestFormState) => ConnectorTestFormState,
+	) => void;
+	setConnectorTestResult: (
+		result: EnterpriseConnectorTestResponse | null,
+	) => void;
+	setConnectorTestError: (error: string | null) => void;
+	setConnectorSaveError: (error: string | null) => void;
+	setConnectorSaveSuccess: (message: string | null) => void;
+	setSavingConnectorConfig: (saving: boolean) => void;
+	saveConnectorConfig: (
+		payload: EnterpriseConnectorConfigSaveRequest,
+	) =>
+		| EnterpriseConnectorConfigSaveResponse
+		| Promise<EnterpriseConnectorConfigSaveResponse>;
+	setConnectors: (
+		update: (
+			previous: EnterprisePlatformConnectorsResponse | null,
+		) => EnterprisePlatformConnectorsResponse | null,
+	) => void;
+	refreshDependentViews: () => void | Promise<void>;
+	setTestingConnector: (testing: boolean) => void;
+	testConnector: (
+		payload: EnterpriseConnectorTestRequest,
+	) => EnterpriseConnectorTestResponse | Promise<EnterpriseConnectorTestResponse>;
+};
+
 function connectorTimeoutFromForm(form: ConnectorTestFormState) {
 	const timeout = Number.parseFloat(form.timeout_seconds);
 
@@ -337,4 +380,92 @@ export async function runConnectorTestAndSaveAction(
 	}
 
 	await handlers.saveConnectorConfig();
+}
+
+export function createPlatformConnectorHandlers(
+	values: PlatformConnectorHandlerValues,
+	actions: PlatformConnectorHandlerActions,
+) {
+	function loadSavedConnectorConfig(config: EnterpriseConnectorSavedConfig) {
+		runConnectorSavedConfigLoadAction(config, {
+			setConnectorTestForm: actions.setConnectorTestForm,
+			setConnectorTestResult: actions.setConnectorTestResult,
+			setConnectorTestError: actions.setConnectorTestError,
+			setConnectorSaveError: actions.setConnectorSaveError,
+			setConnectorSaveSuccess: actions.setConnectorSaveSuccess,
+		});
+	}
+
+	async function handleSaveConnectorConfig() {
+		await runConnectorSaveAction(
+			{
+				form: values.connectorTestForm,
+				draftIssues: values.connectorDraftIssues,
+				baseUrlRequiredMessage: values.text.saveBaseUrlRequired,
+			},
+			{
+				setSavingConnectorConfig: actions.setSavingConnectorConfig,
+				clearMessages: () => {
+					actions.setConnectorSaveError(null);
+					actions.setConnectorSaveSuccess(null);
+				},
+				handleValidationError: (error) => {
+					actions.setConnectorSaveError(error);
+					actions.setConnectorSaveSuccess(null);
+				},
+				saveConnectorConfig: actions.saveConnectorConfig,
+				setConnectors: actions.setConnectors,
+				setConnectorTestForm: actions.setConnectorTestForm,
+				setConnectorSaveSuccess: actions.setConnectorSaveSuccess,
+				saveSuccessMessage: values.text.saveSuccessWithTenant,
+				refreshDependentViews: actions.refreshDependentViews,
+				handleError: (error) =>
+					actions.setConnectorSaveError(
+						error instanceof Error ? error.message : values.text.saveError,
+					),
+			},
+		);
+	}
+
+	async function handleTestConnector() {
+		return runConnectorTestAction(
+			{
+				form: values.connectorTestForm,
+				draftIssues: values.connectorDraftIssues,
+				baseUrlRequiredMessage: values.text.testBaseUrlRequired,
+			},
+			{
+				setTestingConnector: actions.setTestingConnector,
+				clearError: () => actions.setConnectorTestError(null),
+				handleValidationError: actions.setConnectorTestError,
+				testConnector: actions.testConnector,
+				setConnectorTestResult: actions.setConnectorTestResult,
+				handleError: (error) =>
+					actions.setConnectorTestError(
+						error instanceof Error ? error.message : values.text.testError,
+					),
+			},
+		);
+	}
+
+	async function handleTestAndSaveConnectorConfig() {
+		await runConnectorTestAndSaveAction(
+			{
+				testBeforeSaveRequiredMessage: values.text.testBeforeSaveRequired,
+			},
+			{
+				testConnector: handleTestConnector,
+				saveConnectorConfig: handleSaveConnectorConfig,
+				clearSaveSuccess: () => actions.setConnectorSaveSuccess(null),
+				setSaveError: actions.setConnectorSaveError,
+			},
+		);
+	}
+
+	return {
+		loadSavedConnectorConfig,
+		handleSaveConnectorConfig,
+		handleTestConnector,
+		handleTestAndSaveConnectorConfig,
+	};
 }
