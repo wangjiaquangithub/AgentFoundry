@@ -206,7 +206,7 @@ import {
 } from './platform-agent-runner-display';
 import { platformAppCenterDisplayStateForStatus } from './platform-app-center-display';
 import { createPlatformConnectorPageState } from './platform-connector-state';
-import { platformConnectionDisplayStateForStatus } from './platform-connection-display';
+import { createPlatformConnectionPageState } from './platform-connection-state';
 import {
 	platformAuditStatsDisplayStateForSummary,
 	platformGovernanceDisplayStateForStatus,
@@ -390,15 +390,15 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const [enablingAgentWorkflowId, setEnablingAgentWorkflowId] = useState<string | null>(null);
 	const [publishForm, setPublishForm] = useState<PublishFormState>(defaultPublishForm);
 
-	const platformConnectionDisplay = platformConnectionDisplayStateForStatus({
+	const {
+		serverUrl,
+		username,
+	} = createPlatformConnectionPageState({
 		currentUserId: platformStatus?.current_user.user_id,
 		storedServerUrl: localStorage.getItem('server_url'),
 		storedUsername: localStorage.getItem('username'),
 		labels: platformConnectionLabels(t),
 	});
-	const platformConnectionState = platformConnectionDisplay.connectionState;
-	const serverUrl = platformConnectionState.serverUrl;
-	const username = platformConnectionState.username;
 	const {
 		auditRequestText,
 		configManagementRequestText,
