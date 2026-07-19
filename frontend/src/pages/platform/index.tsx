@@ -218,7 +218,10 @@ import {
 import { platformMonitoringDisplayStateForStatus } from './platform-monitoring-display';
 import { platformOnboardingDisplayStateForStatus } from './platform-onboarding-display';
 import { platformOrchestrationDisplayStateForStatus } from './platform-orchestration-display';
-import { platformWorkbenchDisplayStateForStatus } from './platform-workbench-display';
+import {
+	platformWorkbenchConsoleItemsDisplayState,
+	platformWorkbenchDisplayStateForStatus,
+} from './platform-workbench-display';
 import { platformWorkflowDisplayStateForStatus } from './platform-workflow-display';
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
@@ -289,7 +292,6 @@ import {
 	agentSetupStepsForStatus,
 	mapAgentRunToConversationTurn,
 	nextAgentSetupStepForSteps,
-	platformConsoleItemsForDisplay,
 	summarizeAuditObject,
 	type AgentWizardStep,
 	type EnterpriseAgentConversationTurn,
@@ -2580,7 +2582,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		totalCount: launchpadTotalCount,
 	} = launchpadDisplay;
 
-	const platformConsoleItems = platformConsoleItemsForDisplay({
+	const platformConsoleItems = platformWorkbenchConsoleItemsDisplayState({
 		icons: platformConsoleIcons,
 		actions: platformConsoleNavigationActions(platformNavigationHandlers),
 		labels: platformConsoleItemLabels(t),

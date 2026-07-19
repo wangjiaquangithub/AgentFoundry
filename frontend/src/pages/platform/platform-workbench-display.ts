@@ -8,12 +8,19 @@ import type {
 	WorkbenchRiskItem,
 } from './components/WorkbenchReadinessPanel';
 import {
+	platformConsoleItemsForDisplay,
 	workbenchActionsForStatus,
 	workbenchIndicatorsForStatus,
 	workbenchQuickActionsForStatus,
 	workbenchReadinessItemsForStatus,
 	workbenchRiskItemsForStatus,
 } from './platform-utils';
+
+export function platformWorkbenchConsoleItemsDisplayState(
+	options: Parameters<typeof platformConsoleItemsForDisplay>[0],
+) {
+	return platformConsoleItemsForDisplay(options);
+}
 
 export interface PlatformWorkbenchDisplayState {
 	actions: WorkbenchActionCard[];
