@@ -84,6 +84,7 @@ import {
 	runPrimeToolApprovalAction,
 	type PlatformApprovalRunType,
 } from './platform-approval-helpers';
+import { runPlatformAgentLoadAction } from './platform-agent-management-helpers';
 import {
 	connectorFormWithPlatformDefaults,
 	runConnectorLoadAction,
@@ -1363,18 +1364,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function refetchPlatformAgents() {
-		setPlatformAgentsLoading(true);
-		setPlatformAgentsError(null);
-		try {
-			const response = await platformApi.agents();
-			setPlatformAgents(response);
-		} catch (error) {
-			setPlatformAgentsError(
-				error instanceof Error ? error.message : agentManagementRequestText.loadError,
-			);
-		} finally {
-			setPlatformAgentsLoading(false);
-		}
+		await runPlatformAgentLoadAction(agentManagementRequestText.loadError, {
+			setLoading: setPlatformAgentsLoading,
+			clearError: () => setPlatformAgentsError(null),
+			loadPlatformAgents: platformApi.agents,
+			setPlatformAgents,
+			setError: setPlatformAgentsError,
+		});
 	}
 
 	async function refetchWorkflowTemplates() {
