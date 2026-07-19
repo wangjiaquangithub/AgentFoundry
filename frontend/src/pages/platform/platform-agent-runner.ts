@@ -309,6 +309,15 @@ export function runMemoryOperationAgentRunTargetAction(
 	handlers.scrollToAgentRunner();
 }
 
+export function runOpenMemoryOperationAgentAction(
+	values: Parameters<typeof memoryOperationAgentRunTarget>[0],
+	handlers: MemoryOperationAgentRunTargetActionHandlers,
+) {
+	const target = memoryOperationAgentRunTarget(values);
+
+	runMemoryOperationAgentRunTargetAction(target, handlers);
+}
+
 export function agentRunHistorySelectionTarget(
 	turn: EnterpriseAgentConversationTurn,
 ): AgentRunHistorySelectionTarget {

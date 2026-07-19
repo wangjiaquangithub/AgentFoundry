@@ -56,7 +56,6 @@ import {
 	agentRunRequestTarget,
 	agentRunHistorySelectionTarget,
 	clearAgentConversationTarget,
-	memoryOperationAgentRunTarget,
 	runEnterpriseAgentAction,
 	replaceAgentConversationTurns,
 	runAgentRunnerPrimeTargetAction,
@@ -65,7 +64,7 @@ import {
 	runClearAgentConversationSuccessAction,
 	runEnterpriseToolAction,
 	runEnterpriseWorkflowAction,
-	runMemoryOperationAgentRunTargetAction,
+	runOpenMemoryOperationAgentAction,
 	runPrimeAgentWorkflowAction,
 	runPrimePublishedAgentAction,
 	runScenarioWorkflowAction,
@@ -1988,20 +1987,21 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleOpenMemoryOperation(item: MemoryOperationsItem) {
-		const target = memoryOperationAgentRunTarget({
-			enterpriseIdentities,
-			item,
-			fallbackQuestion: primaryAgentSampleQuestion,
-		});
-
-		runMemoryOperationAgentRunTargetAction(target, {
-			selectIdentityUser: setSelectedIdentityUserId,
-			selectRunAgent: setSelectedRunAgentId,
-			setResult: setAgentRunResult,
-			setQuestion: setAgentQuestion,
-			clearError: () => setAgentRunError(null),
-			scrollToAgentRunner: () => window.setTimeout(scrollToAgentRunner, 0),
-		});
+		runOpenMemoryOperationAgentAction(
+			{
+				enterpriseIdentities,
+				item,
+				fallbackQuestion: primaryAgentSampleQuestion,
+			},
+			{
+				selectIdentityUser: setSelectedIdentityUserId,
+				selectRunAgent: setSelectedRunAgentId,
+				setResult: setAgentRunResult,
+				setQuestion: setAgentQuestion,
+				clearError: () => setAgentRunError(null),
+				scrollToAgentRunner: () => window.setTimeout(scrollToAgentRunner, 0),
+			},
+		);
 	}
 
 	function handleInspectMemoryOperationAudit(item: MemoryOperationsItem) {
