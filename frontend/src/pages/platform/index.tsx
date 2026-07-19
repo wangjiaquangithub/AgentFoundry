@@ -101,6 +101,7 @@ import {
 	connectorFormWithPlatformDefaults,
 	runConnectorSavedConfigLoadAction,
 	runConnectorSaveAction,
+	runConnectorTestAndSaveAction,
 	runConnectorTestAction,
 } from './platform-connector-helpers';
 import {
@@ -1311,16 +1312,18 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleTestAndSaveConnectorConfig() {
-		const response = await handleTestConnector();
-		if (!response) {
-			return;
-		}
-		if (response.status !== 'success') {
-			setConnectorSaveSuccess(null);
-			setConnectorSaveError(connectorRequestText.testBeforeSaveRequired);
-			return;
-		}
-		await handleSaveConnectorConfig();
+		await runConnectorTestAndSaveAction(
+			{
+				testBeforeSaveRequiredMessage:
+					connectorRequestText.testBeforeSaveRequired,
+			},
+			{
+				testConnector: handleTestConnector,
+				saveConnectorConfig: handleSaveConnectorConfig,
+				clearSaveSuccess: () => setConnectorSaveSuccess(null),
+				setSaveError: setConnectorSaveError,
+			},
+		);
 	}
 
 	async function refetchToolCatalog() {

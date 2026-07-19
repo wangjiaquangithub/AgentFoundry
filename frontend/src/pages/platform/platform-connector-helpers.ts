@@ -57,6 +57,16 @@ export type ConnectorSaveActionHandlers = {
 	handleError: (error: unknown) => void;
 };
 
+export type ConnectorTestAndSaveActionHandlers = {
+	testConnector: () =>
+		| EnterpriseConnectorTestResponse
+		| null
+		| Promise<EnterpriseConnectorTestResponse | null>;
+	saveConnectorConfig: () => void | Promise<void>;
+	clearSaveSuccess: () => void;
+	setSaveError: (error: string) => void;
+};
+
 function connectorTimeoutFromForm(form: ConnectorTestFormState) {
 	const timeout = Number.parseFloat(form.timeout_seconds);
 
@@ -280,4 +290,23 @@ export async function runConnectorSaveAction(
 	} finally {
 		handlers.setSavingConnectorConfig(false);
 	}
+}
+
+export async function runConnectorTestAndSaveAction(
+	values: {
+		testBeforeSaveRequiredMessage: string;
+	},
+	handlers: ConnectorTestAndSaveActionHandlers,
+) {
+	const response = await handlers.testConnector();
+	if (!response) {
+		return;
+	}
+	if (response.status !== 'success') {
+		handlers.clearSaveSuccess();
+		handlers.setSaveError(values.testBeforeSaveRequiredMessage);
+		return;
+	}
+
+	await handlers.saveConnectorConfig();
 }
