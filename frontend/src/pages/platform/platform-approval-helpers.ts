@@ -172,6 +172,24 @@ export function approvalContinuationState(approval: EnterpriseApprovalRequestIte
 	};
 }
 
+export type ApprovalUsageKind = 'agent_run' | 'tool_run' | 'workflow_run';
+
+export function approvalUsageKind(
+	approval: EnterpriseApprovalRequestItem,
+): ApprovalUsageKind | null {
+	if (approval.request_type === 'tool_run' && approval.tool_name) {
+		return approval.agent_id && approval.agent_id !== 'platform-console'
+			? 'agent_run'
+			: 'tool_run';
+	}
+
+	if (approval.request_type === 'workflow_run' && approval.workflow_type) {
+		return 'workflow_run';
+	}
+
+	return null;
+}
+
 export function approvalInputForTool(
 	inputs: Record<string, unknown> | undefined,
 	inputKey?: string,

@@ -88,6 +88,7 @@ import {
 	approvalRunInputsFromSelection,
 	approvalToolContinuationTarget,
 	approvalToolInputsPatch,
+	approvalUsageKind,
 	approvalWorkflowContinuationTarget,
 	primedToolApprovalFormPatch,
 	prependApprovalRequest,
@@ -1824,20 +1825,22 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleUseApproval(approval: EnterpriseApprovalRequestItem) {
+		const usageKind = approvalUsageKind(approval);
+
 		setSelectedIdentityUserId(approval.user_id);
 
-		if (approval.request_type === 'tool_run' && approval.tool_name) {
-			if (approval.agent_id && approval.agent_id !== 'platform-console') {
-				const target = approvalAgentUsageTarget(approval);
+		if (usageKind === 'agent_run') {
+			const target = approvalAgentUsageTarget(approval);
 
-				setSelectedRunAgentId(target.agentId);
-				setAgentApprovalId(target.approvalId);
-				setAgentQuestion(target.questionFromCurrent);
-				setAgentRunError(null);
-				window.setTimeout(scrollToAgentRunner, 0);
-				return;
-			}
+			setSelectedRunAgentId(target.agentId);
+			setAgentApprovalId(target.approvalId);
+			setAgentQuestion(target.questionFromCurrent);
+			setAgentRunError(null);
+			window.setTimeout(scrollToAgentRunner, 0);
+			return;
+		}
 
+		if (usageKind === 'tool_run' && approval.tool_name) {
 			const target = approvalToolContinuationTarget(
 				approval,
 				enterpriseToolInputConfig[approval.tool_name],
@@ -1853,7 +1856,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			return;
 		}
 
-		if (approval.request_type === 'workflow_run' && approval.workflow_type) {
+		if (usageKind === 'workflow_run') {
 			const target = approvalWorkflowContinuationTarget(approval);
 
 			setSelectedWorkflowType(target.workflowType);
