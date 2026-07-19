@@ -287,7 +287,6 @@ import {
 	platformConsoleItemsForDisplay,
 	selectedIdentityStateForStatus,
 	summarizeAuditObject,
-	workflowSelectionStateForTemplates,
 	type AgentWizardStep,
 	type EnterpriseAgentConversationTurn,
 } from './platform-utils';
@@ -720,13 +719,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const connectorTestPassed = connectorOperationsState.connectorTestPassed;
 	const connectorRuntimeState = connectorOperationsState.connectorRuntimeState;
 	const connectorRuntimeSourceText = connectorOperationsState.connectorRuntimeSourceText;
-	const workflowSelectionState = workflowSelectionStateForTemplates(
-		{ workflowTemplates, selectedWorkflowType },
-		workflowSelectionLabels(t),
-	);
-	const selectedWorkflowTemplate = workflowSelectionState.selectedWorkflowTemplate;
-	const workflowOptions = workflowSelectionState.workflowOptions;
-	const selectedWorkflowDisabled = workflowSelectionState.selectedWorkflowDisabled;
 	const dashboardDisplay = platformDashboardDisplayStateForStatus({
 		source: { platformStatus },
 		fallback: {
@@ -896,11 +888,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const selectedIdentityRecentAuditEvents =
 		selectedIdentityGovernanceDisplayState.selectedIdentityRecentAuditEvents;
 	const workflowDisplay = platformWorkflowDisplayStateForStatus({
+		selection: {
+			values: { workflowTemplates, selectedWorkflowType },
+			labels: workflowSelectionLabels(t),
+		},
 		operations: {
 			workflowTemplates,
-			workflowOptions,
 			selectedWorkflowType,
-			selectedWorkflowTemplate,
 			recentWorkflowRuns,
 			workflowRunCount,
 			pendingApprovals,
@@ -912,6 +906,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			summaryLabels: triggerOperationsSummaryLabels(t),
 		},
 	});
+	const workflowSelectionState = workflowDisplay.selectionState;
+	const selectedWorkflowTemplate = workflowSelectionState.selectedWorkflowTemplate;
+	const workflowOptions = workflowSelectionState.workflowOptions;
+	const selectedWorkflowDisabled = workflowSelectionState.selectedWorkflowDisabled;
 	const workflowOperationsState = workflowDisplay.operationsState;
 	const workflowPendingApprovals = workflowOperationsState.workflowPendingApprovals;
 	const selectedWorkflowName = workflowOperationsState.selectedWorkflowName;
