@@ -229,15 +229,18 @@ import {
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
 	agentCapabilityEnableTarget,
-	agentArchiveSyncTarget,
-	agentArchiveTarget,
 	agentDefaultModelBindTarget,
-	agentEditCancelTarget,
-	agentEditDraft,
 	agentKnowledgeBasesBindTarget,
-	agentPublishRequestTarget,
 	agentQuickConfigurationSyncResult,
 	agentTemplateToolsBindTarget,
+	type AgentQuickConfigurationPatch,
+} from './platform-agent-quick-config';
+import {
+	agentArchiveSyncTarget,
+	agentArchiveTarget,
+	agentEditCancelTarget,
+	agentEditDraft,
+	agentPublishRequestTarget,
 	defaultPublishFormForTemplate,
 	preparedTenantAgentTarget,
 	publishFormForListToggle,
@@ -247,7 +250,6 @@ import {
 	publishedAgentPrimeTarget,
 	quickPublishTarget,
 	startPublishingTarget,
-	type AgentQuickConfigurationPatch,
 	type PublishListFormKey,
 } from './platform-publish-form';
 import {
