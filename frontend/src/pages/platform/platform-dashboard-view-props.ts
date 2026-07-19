@@ -42,6 +42,12 @@ type DashboardAgentRunnerViewProps = Pick<
 	| 'setAgentRunResult'
 >;
 
+type DashboardAgentQuickStartViewProps = Pick<
+	DashboardViewPageProps,
+	| 'agentsLoading'
+	| 'featuredAgents'
+>;
+
 type DashboardAppCenterViewProps = Pick<
 	DashboardViewPageProps,
 	| 'agentResourceText'
@@ -326,6 +332,12 @@ export function createPlatformDashboardViewProps(
 export function createPlatformDashboardAgentRunnerViewProps(
 	props: DashboardAgentRunnerViewProps,
 ): DashboardAgentRunnerViewProps {
+	return props;
+}
+
+export function createPlatformDashboardAgentQuickStartViewProps(
+	props: DashboardAgentQuickStartViewProps,
+): DashboardAgentQuickStartViewProps {
 	return props;
 }
 

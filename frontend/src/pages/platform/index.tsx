@@ -159,6 +159,7 @@ import {
 import { createPlatformDashboardPageState } from './platform-dashboard-state';
 import {
 	createPlatformDashboardAgentRunnerViewProps,
+	createPlatformDashboardAgentQuickStartViewProps,
 	createPlatformDashboardAppCenterViewProps,
 	createPlatformDashboardApprovalsViewProps,
 	createPlatformDashboardCapabilitiesViewProps,
@@ -2280,6 +2281,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					setPlatformConfigImportMode,
 					setPlatformConfigImportText,
 				}),
+				...createPlatformDashboardAgentQuickStartViewProps({
+					agentsLoading,
+					featuredAgents,
+				}),
 				activePlatformAgents: activePlatformAgents,
 				agentKnowledgeStepRef: agentKnowledgeStepRef,
 				agentManagementRef: agentManagementRef,
@@ -2297,7 +2302,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				agentTemplateStepRef: agentTemplateStepRef,
 				agentTemplates: agentTemplates,
 				agentToolsStepRef: agentToolsStepRef,
-				agentsLoading: agentsLoading,
 				archivingAgentId: archivingAgentId,
 				auditError: auditError,
 				auditEventCount: auditEventCount,
@@ -2319,7 +2323,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				enablingAgentMemoryId: enablingAgentMemoryId,
 				enablingAgentWorkflowId: enablingAgentWorkflowId,
 				enterpriseIdentities: enterpriseIdentities,
-				featuredAgents: featuredAgents,
 				governance: governance,
 				governanceError: governanceError,
 				governanceHealthItems: governanceHealthItems,
