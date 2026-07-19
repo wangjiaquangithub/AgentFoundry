@@ -184,6 +184,8 @@ export function approvalContinuationState(approval: EnterpriseApprovalRequestIte
 }
 
 export type ApprovalUsageKind = 'agent_run' | 'tool_run' | 'workflow_run';
+type NavigationHandler = () => void;
+type StringStateValue = string | ((current: string) => string);
 
 export function approvalUsageKind(
 	approval: EnterpriseApprovalRequestItem,
@@ -423,4 +425,90 @@ export function toolApprovalPrimeTarget(values: {
 			},
 		},
 	};
+}
+
+export type ToolApprovalPrimeTargetActionHandlers = {
+	selectIdentityUser: (userId: string) => void;
+	patchApprovalForm: (
+		updater: (current: ApprovalFormState) => ApprovalFormState,
+	) => void;
+	clearApprovalError: NavigationHandler;
+	scrollToGovernance: NavigationHandler;
+};
+
+export function runToolApprovalPrimeTargetAction(
+	target: ReturnType<typeof toolApprovalPrimeTarget>,
+	handlers: ToolApprovalPrimeTargetActionHandlers,
+) {
+	handlers.selectIdentityUser(target.userId);
+	handlers.patchApprovalForm((current) =>
+		primedToolApprovalFormPatch(current, target.formPatch),
+	);
+	handlers.clearApprovalError();
+	handlers.scrollToGovernance();
+}
+
+export type ApprovalUsageTargetActionHandlers = {
+	selectIdentityUser: (userId: string) => void;
+	selectRunAgent: (agentId: string) => void;
+	setAgentApprovalId: (approvalId: string) => void;
+	setAgentQuestion: (question: StringStateValue) => void;
+	clearAgentRunError: NavigationHandler;
+	scrollToAgentRunner: NavigationHandler;
+	selectToolName: (toolName: string) => void;
+	patchToolInputs: (
+		updater: (current: Record<string, string>) => Record<string, string>,
+	) => void;
+	setToolApprovalId: (approvalId: string) => void;
+	clearToolRunError: NavigationHandler;
+	scrollToToolRunner: NavigationHandler;
+	selectWorkflowType: (workflowType: string) => void;
+	setWorkflowInputs: (inputs: Record<string, string>) => void;
+	setWorkflowApprovalId: (approvalId: string) => void;
+	clearWorkflowRunError: NavigationHandler;
+	scrollToWorkflowRunner: NavigationHandler;
+};
+
+export function runApprovalUsageTargetAction(
+	approval: EnterpriseApprovalRequestItem,
+	inputConfig: ApprovalToolInputConfig | undefined,
+	handlers: ApprovalUsageTargetActionHandlers,
+) {
+	const usageTarget = approvalUsageTarget(approval, inputConfig);
+
+	handlers.selectIdentityUser(approval.user_id);
+
+	if (usageTarget?.kind === 'agent_run') {
+		const { target } = usageTarget;
+
+		handlers.selectRunAgent(target.agentId);
+		handlers.setAgentApprovalId(target.approvalId);
+		handlers.setAgentQuestion(target.questionFromCurrent);
+		handlers.clearAgentRunError();
+		handlers.scrollToAgentRunner();
+		return;
+	}
+
+	if (usageTarget?.kind === 'tool_run') {
+		const { target } = usageTarget;
+
+		handlers.selectToolName(target.toolName);
+		handlers.patchToolInputs((current) =>
+			approvalToolInputsPatch(current, target.toolName, target.inputValue),
+		);
+		handlers.setToolApprovalId(target.approvalId);
+		handlers.clearToolRunError();
+		handlers.scrollToToolRunner();
+		return;
+	}
+
+	if (usageTarget?.kind === 'workflow_run') {
+		const { target } = usageTarget;
+
+		handlers.selectWorkflowType(target.workflowType);
+		handlers.setWorkflowInputs(target.inputs);
+		handlers.setWorkflowApprovalId(target.approvalId);
+		handlers.clearWorkflowRunError();
+		handlers.scrollToWorkflowRunner();
+	}
 }

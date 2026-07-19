@@ -91,10 +91,10 @@ import {
 	approvalRunInputsFromSelection,
 	approvalToolContinuationTarget,
 	approvalToolInputsPatch,
+	runApprovalUsageTargetAction,
+	runToolApprovalPrimeTargetAction,
 	toolApprovalPrimeTarget,
-	approvalUsageTarget,
 	approvalWorkflowContinuationTarget,
-	primedToolApprovalFormPatch,
 	prependApprovalRequest,
 	replaceApprovalRequest,
 	type PlatformApprovalRunType,
@@ -1815,12 +1815,12 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			username,
 		});
 
-		setSelectedIdentityUserId(target.userId);
-		setApprovalForm((current) =>
-			primedToolApprovalFormPatch(current, target.formPatch),
-		);
-		setApprovalError(null);
-		window.setTimeout(scrollToGovernance, 0);
+		runToolApprovalPrimeTargetAction(target, {
+			selectIdentityUser: setSelectedIdentityUserId,
+			patchApprovalForm: setApprovalForm,
+			clearApprovalError: () => setApprovalError(null),
+			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
+		});
 	}
 
 	function handlePrimeAgentWorkflow(agent: EnterprisePublishedAgent) {
@@ -1842,46 +1842,28 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleUseApproval(approval: EnterpriseApprovalRequestItem) {
-		const usageTarget = approvalUsageTarget(
+		runApprovalUsageTargetAction(
 			approval,
 			approval.tool_name ? enterpriseToolInputConfig[approval.tool_name] : undefined,
+			{
+				selectIdentityUser: setSelectedIdentityUserId,
+				selectRunAgent: setSelectedRunAgentId,
+				setAgentApprovalId,
+				setAgentQuestion,
+				clearAgentRunError: () => setAgentRunError(null),
+				scrollToAgentRunner: () => window.setTimeout(scrollToAgentRunner, 0),
+				selectToolName: setSelectedToolName,
+				patchToolInputs: setToolInputs,
+				setToolApprovalId,
+				clearToolRunError: () => setToolRunError(null),
+				scrollToToolRunner: () => window.setTimeout(scrollToToolRunner, 0),
+				selectWorkflowType: setSelectedWorkflowType,
+				setWorkflowInputs,
+				setWorkflowApprovalId,
+				clearWorkflowRunError: () => setWorkflowRunError(null),
+				scrollToWorkflowRunner: () => window.setTimeout(scrollToWorkflowRunner, 0),
+			},
 		);
-
-		setSelectedIdentityUserId(approval.user_id);
-
-		if (usageTarget?.kind === 'agent_run') {
-			const { target } = usageTarget;
-
-			setSelectedRunAgentId(target.agentId);
-			setAgentApprovalId(target.approvalId);
-			setAgentQuestion(target.questionFromCurrent);
-			setAgentRunError(null);
-			window.setTimeout(scrollToAgentRunner, 0);
-			return;
-		}
-
-		if (usageTarget?.kind === 'tool_run') {
-			const { target } = usageTarget;
-
-			setSelectedToolName(target.toolName);
-			setToolInputs((current) =>
-				approvalToolInputsPatch(current, target.toolName, target.inputValue),
-			);
-			setToolApprovalId(target.approvalId);
-			setToolRunError(null);
-			window.setTimeout(scrollToToolRunner, 0);
-			return;
-		}
-
-		if (usageTarget?.kind === 'workflow_run') {
-			const { target } = usageTarget;
-
-			setSelectedWorkflowType(target.workflowType);
-			setWorkflowInputs(target.inputs);
-			setWorkflowApprovalId(target.approvalId);
-			setWorkflowRunError(null);
-			window.setTimeout(scrollToWorkflowRunner, 0);
-		}
 	}
 
 	function handlePrimeAgentRunner(sample = primaryAgentSampleQuestion) {
