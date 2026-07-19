@@ -23,12 +23,12 @@ import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { AgentManagementPanel } from './AgentManagementPanel';
 import { AgentQuickStartPanel } from './AgentQuickStartPanel';
-import { AgentRunNowPanel } from './AgentRunNowPanel';
 import { AgentRunnerPanel } from './AgentRunnerPanel';
 import { ApprovalsPanel } from './ApprovalsPanel';
 import { AuditEventsPanel } from './AuditEventsPanel';
 import { CapabilitiesPanel } from './CapabilitiesPanel';
 import { ConfigManagementPanel } from './ConfigManagementPanel';
+import { DashboardAgentRunNowSection } from './DashboardAgentRunNowSection';
 import { DashboardApplicationSection } from './DashboardApplicationSection';
 import { DashboardLaunchOrchestrationSection } from './DashboardLaunchOrchestrationSection';
 import { DashboardOperationalHealthSection } from './DashboardOperationalHealthSection';
@@ -720,50 +720,23 @@ export function DashboardViewPage({
 					workflowTemplates={workflowTemplates}
 				/>
 
-				<AgentRunNowPanel
-					loading={platformAgentsLoading && !platformAgents}
-					selectedRunAgent={selectedRunAgent}
+				<DashboardAgentRunNowSection
+					t={t}
 					currentIdentityLabel={currentIdentityLabel}
-					selectedRunAgentModelLabel={selectedRunAgentModelLabel}
-					selectedRunAgentKnowledgeCount={selectedRunAgentKnowledgeCount}
-					selectedRunAgentToolCount={selectedRunAgentToolCount}
+					defaultAgentTemplate={defaultAgentTemplate}
+					handlePrimeAgentRunner={handlePrimeAgentRunner}
+					handleQuickPublishAgent={handleQuickPublishAgent}
+					handleStartPublishing={handleStartPublishing}
+					platformAgents={platformAgents}
+					platformAgentsLoading={platformAgentsLoading}
+					platformStatus={platformStatus}
 					primaryAgentSampleQuestion={primaryAgentSampleQuestion}
-					connectorName={platformStatus?.connector.name}
-					hasDefaultAgentTemplate={Boolean(defaultAgentTemplate)}
-					isPublishingTemplate={Boolean(publishingTemplateId)}
-					onPrimeAgentRunner={handlePrimeAgentRunner}
-					onScrollToAgentRunner={scrollToAgentRunner}
-					onStartPublishing={handleStartPublishing}
-					onQuickPublishAgent={() => void handleQuickPublishAgent()}
-					labels={{
-						eyebrow: t('platform.now.eyebrow'),
-						title: t('platform.now.title'),
-						description: t('platform.now.description'),
-						fillSample: t('platform.now.fillSample'),
-						run: t('platform.now.run'),
-						publishAgent: t('platform.now.publishAgent'),
-						currentAgent: t('platform.now.currentAgent'),
-						publishedStatus: t('platform.agentManagement.publishedStatus'),
-						sample: t('platform.now.sample'),
-						currentUser: t('platform.now.currentUser'),
-						model: t('platform.now.model'),
-						knowledge: t('platform.now.knowledge'),
-						knowledgeCount: (count) =>
-							t('platform.agentRunner.knowledgeCount', { count }),
-						tools: t('platform.now.tools'),
-						toolsCount: (count) => t('platform.agentRunner.toolsCount', { count }),
-						memory: t('platform.now.memory'),
-						workflow: t('platform.now.workflow'),
-						enabled: t('platform.runtime.enabled'),
-						disabled: t('platform.runtime.disabled'),
-						connector: t('platform.now.connector'),
-						unavailable: t('platform.runtime.unavailable'),
-						noAgent: t('platform.now.noAgent'),
-						noAgentDescription: t('platform.now.noAgentDescription'),
-						manualPublish: t('platform.now.manualPublish'),
-						publishing: t('platform.agentManagement.publishing'),
-						quickPublish: t('platform.now.quickPublish'),
-					}}
+					publishingTemplateId={publishingTemplateId}
+					scrollToAgentRunner={scrollToAgentRunner}
+					selectedRunAgent={selectedRunAgent}
+					selectedRunAgentKnowledgeCount={selectedRunAgentKnowledgeCount}
+					selectedRunAgentModelLabel={selectedRunAgentModelLabel}
+					selectedRunAgentToolCount={selectedRunAgentToolCount}
 				/>
 
 				<TenantGovernancePanel
