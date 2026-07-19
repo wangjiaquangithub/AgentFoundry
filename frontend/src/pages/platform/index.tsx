@@ -75,8 +75,8 @@ import {
 	runMemberLoadAction,
 } from './platform-member-helpers';
 import {
+	createPlatformGovernanceHandlers,
 	createPlatformGovernanceInspectionHandlers,
-	runGovernanceLoadAction,
 } from './platform-governance-helpers';
 import {
 	createPlatformOpsTaskHandlers,
@@ -963,15 +963,18 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		}
 	}, [selectedWorkflowType, workflowTemplates]);
 
-	async function refetchGovernance() {
-		await runGovernanceLoadAction(auditRequestText.loadError, {
+	const { refetchGovernance } = createPlatformGovernanceHandlers(
+		{
+			loadErrorMessage: auditRequestText.loadError,
+		},
+		{
 			setLoading: setGovernanceLoading,
 			clearError: () => setGovernanceError(null),
 			loadGovernance: platformApi.governance,
 			setGovernance,
 			setError: setGovernanceError,
-		});
-	}
+		},
+	);
 
 	async function refetchPlatformConfigImportDependencies() {
 		await Promise.all([

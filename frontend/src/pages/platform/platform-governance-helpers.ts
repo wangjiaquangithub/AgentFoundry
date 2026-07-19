@@ -39,6 +39,39 @@ export async function runGovernanceLoadAction(
 	}
 }
 
+export type PlatformGovernanceHandlerValues = {
+	loadErrorMessage: string;
+};
+
+export type PlatformGovernanceHandlerActions = {
+	setLoading: (loading: boolean) => void;
+	clearError: () => void;
+	loadGovernance: () =>
+		| EnterprisePlatformGovernanceResponse
+		| Promise<EnterprisePlatformGovernanceResponse>;
+	setGovernance: (governance: EnterprisePlatformGovernanceResponse) => void;
+	setError: (message: string) => void;
+};
+
+export function createPlatformGovernanceHandlers(
+	values: PlatformGovernanceHandlerValues,
+	actions: PlatformGovernanceHandlerActions,
+) {
+	async function refetchGovernance() {
+		await runGovernanceLoadAction(values.loadErrorMessage, {
+			setLoading: actions.setLoading,
+			clearError: actions.clearError,
+			loadGovernance: actions.loadGovernance,
+			setGovernance: actions.setGovernance,
+			setError: actions.setError,
+		});
+	}
+
+	return {
+		refetchGovernance,
+	};
+}
+
 export type PlatformGovernanceInspectionHandlerValues = {
 	agentRunEvidence: Parameters<typeof runInspectAgentRunEvidenceAuditAction>[0];
 };
