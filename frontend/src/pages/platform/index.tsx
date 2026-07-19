@@ -212,6 +212,7 @@ import {
 	workflowSelectionLabels,
 } from './platform-labels';
 import { platformLaunchpadDisplayStateForStatus } from './platform-launchpad-display';
+import { platformOnboardingDisplayStateForStatus } from './platform-onboarding-display';
 import { platformWorkbenchDisplayStateForStatus } from './platform-workbench-display';
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
@@ -278,8 +279,6 @@ import {
 	dashboardFallbackStateForStatus,
 	dashboardOperationsStateForStatus,
 	dashboardTodoItemsForStatus,
-	firstAgentGuidePrimaryStepForSteps,
-	firstAgentGuideStepsForStatus,
 	governanceOperationsStateForStatus,
 	mapAgentRunToConversationTurn,
 	memoryOperationsStateForConversations,
@@ -299,7 +298,6 @@ import {
 	platformResourceLookupStateForStatus,
 	platformRuntimeConfigStateForStatus,
 	readyOrchestrationWorkbenchStepCountForSteps,
-	rolloutPathStepsForStatus,
 	runtimeStatusItemsForStatus,
 	selectedIdentityGovernanceDisplayStateForStatus,
 	selectedIdentityStateForStatus,
@@ -2657,7 +2655,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		readinessItems: workbenchReadinessItems,
 		riskItems: workbenchRiskItems,
 	} = workbenchDisplay;
-	const rolloutPathSteps = rolloutPathStepsForStatus(
+	const onboardingDisplay = platformOnboardingDisplayStateForStatus(
 		{
 			credentialCount: credentials.length,
 			knowledgeBaseCount: knowledgeBases.length,
@@ -2670,29 +2668,23 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			hasPlatformConfigExport: Boolean(platformConfigExport),
 		},
 		{
-			icons: rolloutPathIcons,
-			actions: rolloutPathNavigationActions(platformNavigationHandlers),
-			labels: rolloutPathStepLabels(t),
+			rolloutPath: {
+				icons: rolloutPathIcons,
+				actions: rolloutPathNavigationActions(platformNavigationHandlers),
+				labels: rolloutPathStepLabels(t),
+			},
+			firstAgentGuide: {
+				icons: firstAgentGuideIcons,
+				actions: firstAgentGuideNavigationActions(platformNavigationHandlers),
+				labels: firstAgentGuideStepLabels(t),
+			},
 		},
 	);
-	const firstAgentGuideSteps = firstAgentGuideStepsForStatus(
-		{
-			credentialCount: credentials.length,
-			readyAgentCount: readyPlatformAgents.length,
-			activeAgentCount: activePlatformAgents.length,
-			hasAgentRunResult: Boolean(agentRunResult),
-			hasSelectedRunAgent: Boolean(selectedRunAgent),
-			auditEventCount,
-			pendingApprovalCount: pendingApprovals.length,
-		},
-		{
-			icons: firstAgentGuideIcons,
-			actions: firstAgentGuideNavigationActions(platformNavigationHandlers),
-			labels: firstAgentGuideStepLabels(t),
-		},
-	);
-	const firstAgentGuidePrimaryStep =
-		firstAgentGuidePrimaryStepForSteps(firstAgentGuideSteps);
+	const {
+		firstAgentGuidePrimaryStep,
+		firstAgentGuideSteps,
+		rolloutPathSteps,
+	} = onboardingDisplay;
 	const orchestrationWorkbenchSteps = orchestrationWorkbenchStepsForStatus(
 		{
 			selectedTemplateName: selectedTemplate?.name,
