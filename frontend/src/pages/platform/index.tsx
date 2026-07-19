@@ -227,6 +227,7 @@ import {
 	availableKnowledgeBaseIds,
 	buildAgentConfigurationPayloadFromForm,
 	defaultPublishFormForTemplate,
+	nextPublishedAgentIdAfterArchive,
 	publishFormFromPublishedAgent,
 	publishFormForListToggle,
 	publishFormForPreparedTenant,
@@ -2270,11 +2271,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setPlatformAgentsError(null);
 		try {
 			const response = await platformApi.archiveAgent(agent.id);
-			const nextActiveAgent = response.agents.find(
-				(item) => item.status === 'published' && item.id !== agent.id,
-			);
 			if (selectedRunAgentId === agent.id) {
-				setSelectedRunAgentId(nextActiveAgent?.id ?? '');
+				setSelectedRunAgentId(
+					nextPublishedAgentIdAfterArchive({
+						agents: response.agents,
+						archivedAgentId: agent.id,
+					}),
+				);
 				setAgentRunResult(null);
 				setAgentRunError(null);
 			}

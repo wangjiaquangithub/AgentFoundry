@@ -108,6 +108,18 @@ export function publishedAgentPrimeTarget(
 	return agent.status === 'published' ? agent.id : null;
 }
 
+export function nextPublishedAgentIdAfterArchive(values: {
+	agents: EnterprisePublishedAgent[];
+	archivedAgentId: string;
+}): string {
+	return (
+		values.agents.find(
+			(agent) =>
+				agent.status === 'published' && agent.id !== values.archivedAgentId,
+		)?.id ?? ''
+	);
+}
+
 export function publishFormForTenantChange(values: {
 	current: PublishFormState;
 	tenant: string;
