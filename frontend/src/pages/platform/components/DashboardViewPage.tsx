@@ -30,10 +30,10 @@ import { DashboardTenantAccessSection } from './DashboardTenantAccessSection';
 import { DashboardTenantGovernancePanelSection } from './DashboardTenantGovernancePanelSection';
 import { DashboardWorkbenchSection } from './DashboardWorkbenchSection';
 import { DashboardToolCatalogSection } from './DashboardToolCatalogSection';
+import { DashboardToolRunnerSection } from './DashboardToolRunnerSection';
 import { DashboardWorkflowAutomationSection } from './DashboardWorkflowAutomationSection';
 import { DashboardWorkflowRunnerSection } from './DashboardWorkflowRunnerSection';
 import { PlatformDashboardOverview } from './PlatformDashboardOverview';
-import { ToolRunnerPanel } from './ToolRunnerPanel';
 import { cn } from '@/lib/utils';
 
 interface DashboardViewPageProps {
@@ -1003,8 +1003,9 @@ export function DashboardViewPage({
 					refetchToolCatalog={refetchToolCatalog}
 				/>
 
-				<ToolRunnerPanel
-					sectionRef={toolRunnerRef}
+				<DashboardToolRunnerSection
+					t={t}
+					toolRunnerRef={toolRunnerRef}
 					selectedToolName={selectedToolName}
 					availableToolItems={availableToolItems}
 					toolCatalogLoading={toolCatalogLoading}
@@ -1021,13 +1022,12 @@ export function DashboardViewPage({
 					runningTool={runningTool}
 					toolRunError={toolRunError}
 					toolRunResult={toolRunResult}
-					onSelectedToolNameChange={setSelectedToolName}
-					onToolRunErrorChange={setToolRunError}
-					onToolInputsChange={setToolInputs}
-					onToolApprovalIdChange={setToolApprovalId}
-					onCreateRunApproval={handleCreateRunApproval}
-					onRunEnterpriseTool={handleRunEnterpriseTool}
-					t={t}
+					setSelectedToolName={setSelectedToolName}
+					setToolRunError={setToolRunError}
+					setToolInputs={setToolInputs}
+					setToolApprovalId={setToolApprovalId}
+					handleCreateRunApproval={handleCreateRunApproval}
+					handleRunEnterpriseTool={handleRunEnterpriseTool}
 				/>
 
 				<AuditEventsPanel
