@@ -1,8 +1,16 @@
 import {
+	agentRoutingDisplayStateForResult,
 	agentRunnerStateForStatus,
 	agentSetupStepsForStatus,
 	nextAgentSetupStepForSteps,
 } from './platform-utils';
+
+export function platformAgentRoutingDisplayStateForResult(
+	agentRunResult: Parameters<typeof agentRoutingDisplayStateForResult>[0],
+	labels: Parameters<typeof agentRoutingDisplayStateForResult>[1],
+) {
+	return agentRoutingDisplayStateForResult(agentRunResult, labels);
+}
 
 export function platformAgentSetupStepsDisplayStateForStatus(
 	values: Parameters<typeof agentSetupStepsForStatus>[0],

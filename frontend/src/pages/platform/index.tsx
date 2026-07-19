@@ -269,6 +269,7 @@ import {
 } from './platform-defaults';
 import { platformAgentInventoryDisplayStateForStatus } from './platform-agent-inventory-display';
 import {
+	platformAgentRoutingDisplayStateForResult,
 	platformAgentRunnerDisplayStateForStatus,
 	platformAgentSetupStepsDisplayStateForStatus,
 	platformNextAgentSetupStepDisplayStateForSteps,
@@ -291,7 +292,6 @@ import { platformToolRunnerDisplayStateForStatus } from './platform-tool-runner-
 import { platformOverviewDisplayStateForStatus } from './platform-overview-display';
 import {
 	agentAccessAllowed,
-	agentRoutingDisplayStateForResult,
 	agentIsReady,
 	mapAgentRunToConversationTurn,
 	summarizeAuditObject,
@@ -706,7 +706,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const selectedToolInputValue = selectedToolRunnerState.selectedToolInputValue;
 	const selectedToolAllowed = selectedToolRunnerState.selectedToolAllowed;
 	const selectedToolReason = selectedToolRunnerState.selectedToolReason;
-	const { agentRoutingLabel, agentRoutingText } = agentRoutingDisplayStateForResult(
+	const { agentRoutingLabel, agentRoutingText } = platformAgentRoutingDisplayStateForResult(
 		agentRunResult,
 		agentRoutingLabels(t),
 	);
