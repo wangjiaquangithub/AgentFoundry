@@ -163,6 +163,7 @@ import { createPlatformOnboardingPageState } from './platform-onboarding-state';
 import { createPlatformOrchestrationPageState } from './platform-orchestration-state';
 import { createPlatformWorkbenchPageState } from './platform-workbench-state';
 import { createPlatformWorkflowPageState } from './platform-workflow-state';
+import { createPlatformRunsViewProps } from './platform-runs-view-props';
 import {
 	createPlatformAgentQuickConfigurationHandlers,
 	createPlatformAgentQuickConfigurationSyncHandler,
@@ -1809,44 +1810,46 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	if (view === 'runs') {
 		return (
 			<RunsViewPage
-				monitoringHealthState={monitoringActivitySummary.healthState}
-				monitoringLoading={monitoringLoading}
-				monitoringStats={monitoringStats}
-				recentAgentTurns={monitoringActivitySummary.recentAgentTurns}
-				recentWorkflowRuns={recentWorkflowRuns}
-				recentAuditEvents={recentAuditEvents}
-				auditFilters={auditFilters}
-				auditLoading={auditLoading}
-				auditError={auditError}
-				auditEvents={auditEvents}
-				auditStats={auditStats}
-				activePlatformAgents={activePlatformAgents}
-				availableToolItems={availableToolItems}
-				currentTenant={platformStatus?.current_user.tenant}
-				currentUserId={platformStatus?.current_user.user_id}
-				username={username}
-				onRefreshMonitoring={async () => {
-					await Promise.all([
-						refetchPlatform(),
-						refetchAgentRuns(),
-						refetchWorkflowRuns(),
-						refetchAuditEvents(),
-						refetchApprovals(),
-						refetchGovernance(),
-					]);
-				}}
-				onSelectAgentTurn={(turn) => {
-					setSelectedRunAgentId(turn.agentId);
-					setAgentRunResult(turn.response);
-					navigate('/platform/agents');
-				}}
-				onRunAgent={() => navigate('/platform/agents')}
-				onRunWorkflow={() => navigate('/platform/workflows')}
-				onOpenGovernance={() => navigate('/platform/approvals')}
-				onAuditFiltersChange={setAuditFilters}
-				onRefetchAuditEvents={refetchAuditEvents}
-				summarizeAuditObject={platformSummarizeAuditObject}
-				t={t}
+				{...createPlatformRunsViewProps({
+					monitoringHealthState: monitoringActivitySummary.healthState,
+					monitoringLoading,
+					monitoringStats,
+					recentAgentTurns: monitoringActivitySummary.recentAgentTurns,
+					recentWorkflowRuns,
+					recentAuditEvents,
+					auditFilters,
+					auditLoading,
+					auditError,
+					auditEvents,
+					auditStats,
+					activePlatformAgents,
+					availableToolItems,
+					currentTenant: platformStatus?.current_user.tenant,
+					currentUserId: platformStatus?.current_user.user_id,
+					username,
+					onRefreshMonitoring: async () => {
+						await Promise.all([
+							refetchPlatform(),
+							refetchAgentRuns(),
+							refetchWorkflowRuns(),
+							refetchAuditEvents(),
+							refetchApprovals(),
+							refetchGovernance(),
+						]);
+					},
+					onSelectAgentTurn: (turn) => {
+						setSelectedRunAgentId(turn.agentId);
+						setAgentRunResult(turn.response);
+						navigate('/platform/agents');
+					},
+					onRunAgent: () => navigate('/platform/agents'),
+					onRunWorkflow: () => navigate('/platform/workflows'),
+					onOpenGovernance: () => navigate('/platform/approvals'),
+					onAuditFiltersChange: setAuditFilters,
+					onRefetchAuditEvents: refetchAuditEvents,
+					summarizeAuditObject: platformSummarizeAuditObject,
+					t,
+				})}
 			/>
 		);
 	}
