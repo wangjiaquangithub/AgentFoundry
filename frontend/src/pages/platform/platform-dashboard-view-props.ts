@@ -42,6 +42,47 @@ type DashboardAgentRunnerViewProps = Pick<
 	| 'setAgentRunResult'
 >;
 
+type DashboardAgentRunnerPanelViewProps = Pick<
+	DashboardViewPageProps,
+	| 'activePlatformAgents'
+	| 'agentApprovalId'
+	| 'agentQuestion'
+	| 'agentRoutingLabel'
+	| 'agentRoutingText'
+	| 'agentRunConnectorSourceText'
+	| 'agentRunError'
+	| 'agentRunKnowledgeLabels'
+	| 'agentRunModelLabel'
+	| 'agentRunResult'
+	| 'agentRunnerRef'
+	| 'agentRunsError'
+	| 'agentRunsLoading'
+	| 'agentSampleQuestions'
+	| 'agentToolCallBadgeText'
+	| 'agentToolCalls'
+	| 'handleClearAgentConversation'
+	| 'handleInspectAgentRunAudit'
+	| 'handleRunEnterpriseAgent'
+	| 'handleSelectAgentRun'
+	| 'handleSelectRunAgent'
+	| 'knowledgeBaseById'
+	| 'lastPublishedAgent'
+	| 'runningAgent'
+	| 'scrollToGovernance'
+	| 'selectedAgentConversation'
+	| 'selectedRunAgent'
+	| 'selectedRunAgentAccessAllowed'
+	| 'selectedRunAgentAccessLabel'
+	| 'selectedRunAgentId'
+	| 'selectedRunAgentKnowledgeLabels'
+	| 'selectedRunAgentModelLabel'
+	| 'selectedRunAgentToolCount'
+	| 'setAgentApprovalId'
+	| 'setAgentQuestion'
+	| 'setAgentRunError'
+	| 't'
+>;
+
 type DashboardAgentQuickStartViewProps = Pick<
 	DashboardViewPageProps,
 	| 'agentsLoading'
@@ -584,6 +625,12 @@ export function createPlatformDashboardViewProps(
 export function createPlatformDashboardAgentRunnerViewProps(
 	props: DashboardAgentRunnerViewProps,
 ): DashboardAgentRunnerViewProps {
+	return props;
+}
+
+export function createPlatformDashboardAgentRunnerPanelViewProps(
+	props: DashboardAgentRunnerPanelViewProps,
+): DashboardAgentRunnerPanelViewProps {
 	return props;
 }
 
