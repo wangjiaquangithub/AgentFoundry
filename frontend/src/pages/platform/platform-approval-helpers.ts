@@ -172,12 +172,14 @@ export type PlatformApprovalRequestText = ApprovalDecisionLabels & {
 	approveAndRunError: string;
 	createError: string;
 	decisionError: string;
+	loadError: string;
 	agentToolApprovalReason: (values: { agent: string; tool: string }) => string;
 	runApprovalReason: string;
 };
 
 export type PlatformApprovalHandlerValues = {
 	approvalForm: ApprovalFormState;
+	approvalFilters: ApprovalFiltersState;
 	agentQuestion: string;
 	defaultApprovalReason: string;
 	defaultApprovalInputValue: string;
@@ -195,10 +197,14 @@ export type PlatformApprovalHandlerValues = {
 };
 
 export type PlatformApprovalHandlerActions = {
+	setApprovalLoading: (loading: boolean) => void;
 	setCreatingApproval: (creating: boolean) => void;
 	setCreatingRunApproval: (requestType: PlatformApprovalRunType | null) => void;
 	setContinuingApprovalId: (approvalId: string | null) => void;
 	setApprovalError: (message: string | null) => void;
+	loadApprovals: (
+		params: ReturnType<typeof approvalQueryFromFilters>,
+	) => EnterpriseApprovalsResponse | Promise<EnterpriseApprovalsResponse>;
 	createApproval: (
 		payload: EnterpriseApprovalCreateRequest,
 	) => EnterpriseApprovalsResponse | Promise<EnterpriseApprovalsResponse>;
@@ -996,6 +1002,26 @@ export function createPlatformApprovalHandlers(
 	values: PlatformApprovalHandlerValues,
 	actions: PlatformApprovalHandlerActions,
 ) {
+	async function refetchApprovals(
+		overrides: Partial<ApprovalFiltersState> = {},
+	) {
+		await runApprovalLoadAction(
+			{
+				filters: values.approvalFilters,
+				overrides,
+				loadErrorMessage: values.text.loadError,
+			},
+			{
+				setLoading: actions.setApprovalLoading,
+				clearError: () => actions.setApprovalError(null),
+				loadApprovals: actions.loadApprovals,
+				setApprovalRequests: (approvals) =>
+					actions.setApprovalRequests(() => approvals),
+				setError: actions.setApprovalError,
+			},
+		);
+	}
+
 	async function handleCreateApproval() {
 		await runApprovalCreateAction(
 			{
@@ -1193,6 +1219,7 @@ export function createPlatformApprovalHandlers(
 	}
 
 	return {
+		refetchApprovals,
 		handleApproveAndRun,
 		handleCreateApproval,
 		handleCreateRunApproval,

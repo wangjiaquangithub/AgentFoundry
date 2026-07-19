@@ -54,7 +54,6 @@ import {
 } from './platform-agent-runner';
 import {
 	createPlatformApprovalHandlers,
-	runApprovalLoadAction,
 } from './platform-approval-helpers';
 import { createPlatformAgentManagementHandlers } from './platform-agent-management-helpers';
 import {
@@ -1228,24 +1227,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	);
 
-	async function refetchApprovals(overrides: Partial<typeof approvalFilters> = {}) {
-		await runApprovalLoadAction(
-			{
-				filters: approvalFilters,
-				overrides,
-				loadErrorMessage: approvalRequestText.loadError,
-			},
-			{
-				setLoading: setApprovalLoading,
-				clearError: () => setApprovalError(null),
-				loadApprovals: platformApi.approvals,
-				setApprovalRequests,
-				setError: setApprovalError,
-			},
-		);
-	}
-
 	const {
+		refetchApprovals,
 		handleApproveAndRun,
 		handleCreateApproval,
 		handleCreateRunApproval,
@@ -1255,6 +1238,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	} = createPlatformApprovalHandlers(
 		{
 			approvalForm,
+			approvalFilters,
 			agentQuestion,
 			defaultApprovalReason: defaultApprovalForm.reason,
 			defaultApprovalInputValue: defaultApprovalForm.input_value,
@@ -1271,10 +1255,12 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			text: approvalRequestText,
 		},
 		{
+			setApprovalLoading,
 			setCreatingApproval,
 			setCreatingRunApproval,
 			setContinuingApprovalId,
 			setApprovalError,
+			loadApprovals: platformApi.approvals,
 			createApproval: platformApi.createApproval,
 			approveApproval: platformApi.approveApproval,
 			rejectApproval: platformApi.rejectApproval,
