@@ -48,6 +48,80 @@ type DashboardAgentQuickStartViewProps = Pick<
 	| 'featuredAgents'
 >;
 
+type DashboardAgentManagementViewProps = Pick<
+	DashboardViewPageProps,
+	| 'activePlatformAgents'
+	| 'agentAccessAllowed'
+	| 'agentKnowledgeStepRef'
+	| 'agentManagementRef'
+	| 'agentModelStepRef'
+	| 'agentOpsSummary'
+	| 'agentReleasePipeline'
+	| 'agentRuntimeStepRef'
+	| 'agentSetupSteps'
+	| 'agentTemplateStepRef'
+	| 'agentTemplates'
+	| 'agentToolsStepRef'
+	| 'archivingAgentId'
+	| 'bindingAgentKnowledgeId'
+	| 'bindingAgentModelId'
+	| 'bindingAgentToolsId'
+	| 'credentialById'
+	| 'credentials'
+	| 'credentialsLoading'
+	| 'editingAgentId'
+	| 'enablingAgentMemoryId'
+	| 'enablingAgentWorkflowId'
+	| 'handleArchiveAgent'
+	| 'handleBindAvailableKnowledge'
+	| 'handleBindDefaultModel'
+	| 'handleBindTemplateTools'
+	| 'handleCancelEdit'
+	| 'handleConfigureTemplate'
+	| 'handleEditAgent'
+	| 'handleEnableAgentMemory'
+	| 'handleEnableAgentWorkflow'
+	| 'handleNextAgentSetupStep'
+	| 'handlePrimeAgentWorkflow'
+	| 'handlePrimePublishedAgent'
+	| 'handlePrimeToolApproval'
+	| 'handlePublishAgent'
+	| 'handlePublishTenantChange'
+	| 'handleTogglePublishList'
+	| 'knowledgeBaseById'
+	| 'knowledgeBases'
+	| 'nextAgentSetupStep'
+	| 'platformAgents'
+	| 'platformAgentsError'
+	| 'platformAgentsLoading'
+	| 'platformStatus'
+	| 'publishAccessMembers'
+	| 'publishAccessScopeSummary'
+	| 'publishBlocked'
+	| 'publishForm'
+	| 'publishReleaseIssues'
+	| 'publishRoleOptions'
+	| 'publishRuntimeSummary'
+	| 'publishSelectedModelLabel'
+	| 'publishTenant'
+	| 'publishedPlatformAgents'
+	| 'publishingTemplateId'
+	| 'refetchPlatformAgents'
+	| 'scrollToAgentRunner'
+	| 'scrollToGovernance'
+	| 'selectedIdentity'
+	| 'selectedRunAgent'
+	| 'selectedRunAgentId'
+	| 'selectedRunAgentKnowledgeCount'
+	| 'selectedRunAgentModelLabel'
+	| 'selectedRunAgentReadinessLabel'
+	| 'selectedRunAgentReadinessState'
+	| 'selectedRunAgentToolCount'
+	| 'selectedTemplate'
+	| 'selectedTemplateId'
+	| 'setPublishForm'
+>;
+
 type DashboardAppCenterViewProps = Pick<
 	DashboardViewPageProps,
 	| 'agentResourceText'
@@ -358,6 +432,12 @@ export function createPlatformDashboardAgentRunnerViewProps(
 export function createPlatformDashboardAgentQuickStartViewProps(
 	props: DashboardAgentQuickStartViewProps,
 ): DashboardAgentQuickStartViewProps {
+	return props;
+}
+
+export function createPlatformDashboardAgentManagementViewProps(
+	props: DashboardAgentManagementViewProps,
+): DashboardAgentManagementViewProps {
 	return props;
 }
 
