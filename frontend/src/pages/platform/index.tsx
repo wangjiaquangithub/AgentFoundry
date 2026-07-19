@@ -85,7 +85,7 @@ import {
 } from './platform-workflow-template-helpers';
 import { createPlatformWorkflowRunHandlers } from './platform-workflow-run-helpers';
 import { createPlatformScenarioHandlers } from './platform-scenario-helpers';
-import { runAuditEventLoadAction } from './platform-audit-helpers';
+import { createPlatformAuditHandlers } from './platform-audit-helpers';
 import {
 	capabilityNavigationActions,
 	createPlatformNavigationRequestHandlers,
@@ -1197,23 +1197,20 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		);
 	}
 
-	async function refetchAuditEvents(overrides: Partial<typeof auditFilters> = {}) {
-		await runAuditEventLoadAction(
-			{
-				filters: auditFilters,
-				overrides,
-				loadErrorMessage: auditRequestText.loadError,
-			},
-			{
-				setLoading: setAuditLoading,
-				clearError: () => setAuditError(null),
-				loadAuditEvents: platformApi.audit,
-				setAuditEvents,
-				setAuditSummary,
-				setError: setAuditError,
-			},
-		);
-	}
+	const { refetchAuditEvents } = createPlatformAuditHandlers(
+		{
+			filters: auditFilters,
+			loadErrorMessage: auditRequestText.loadError,
+		},
+		{
+			setLoading: setAuditLoading,
+			clearError: () => setAuditError(null),
+			loadAuditEvents: platformApi.audit,
+			setAuditEvents,
+			setAuditSummary,
+			setError: setAuditError,
+		},
+	);
 
 	const { refetchPlatformAgents } = createPlatformAgentManagementHandlers(
 		{

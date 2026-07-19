@@ -13,6 +13,35 @@ export type AuditEventLoadActionHandlers = {
 	setError: (message: string) => void;
 };
 
+export type PlatformAuditHandlerValues = {
+	filters: AuditFiltersState;
+	loadErrorMessage: string;
+};
+
+export type PlatformAuditHandlerActions = AuditEventLoadActionHandlers;
+
+export function createPlatformAuditHandlers(
+	values: PlatformAuditHandlerValues,
+	actions: PlatformAuditHandlerActions,
+) {
+	async function refetchAuditEvents(
+		overrides: Partial<AuditFiltersState> = {},
+	) {
+		await runAuditEventLoadAction(
+			{
+				filters: values.filters,
+				overrides,
+				loadErrorMessage: values.loadErrorMessage,
+			},
+			actions,
+		);
+	}
+
+	return {
+		refetchAuditEvents,
+	};
+}
+
 export async function runAuditEventLoadAction(
 	values: {
 		filters: AuditFiltersState;
