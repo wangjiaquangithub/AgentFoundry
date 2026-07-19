@@ -68,8 +68,8 @@ import {
 	runApprovalIdFromInput,
 	runQuestionFromInput,
 	scenarioWorkflowRunTarget,
-	selectedToolInputs,
 	selectedRunAgentIdForAvailableAgents,
+	toolRunTargetForRequest,
 	workflowInputsForSelectedOption,
 	workflowSelectionForAvailableTemplates,
 	workflowInputsWithValue,
@@ -2531,16 +2531,16 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		agentId?: string;
 		approvalId?: string;
 	}) {
-		const toolName = options?.toolName ?? selectedToolName;
-		const inputs =
-			options?.inputs ??
-			selectedToolInputs({
-				inputKey: selectedToolInputKey,
-				inputValue: selectedToolInputValue,
+		const { toolName, inputs, userId, agentId, approvalId } =
+			toolRunTargetForRequest({
+				options,
+				selectedToolName,
+				selectedToolInputKey,
+				selectedToolInputValue,
+				selectedIdentityUserId,
+				selectedRunAgentId,
+				toolApprovalId,
 			});
-		const userId = options?.userId ?? selectedIdentityUserId;
-		const agentId = options?.agentId ?? selectedRunAgentId;
-		const approvalId = runApprovalIdFromInput(options?.approvalId, toolApprovalId);
 
 		if (!inputs) {
 			return;

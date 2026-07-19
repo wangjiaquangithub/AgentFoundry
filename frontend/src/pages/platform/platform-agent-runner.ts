@@ -212,6 +212,44 @@ export function selectedToolInputs(values: {
 	return values.inputKey ? { [values.inputKey]: values.inputValue } : null;
 }
 
+export function toolRunTargetForRequest(values: {
+	options?: {
+		toolName?: string;
+		inputs?: Record<string, unknown>;
+		userId?: string;
+		agentId?: string;
+		approvalId?: string;
+	};
+	selectedToolName: string;
+	selectedToolInputKey: string;
+	selectedToolInputValue: string;
+	selectedIdentityUserId: string;
+	selectedRunAgentId: string;
+	toolApprovalId: string;
+}): {
+	toolName: string;
+	inputs: Record<string, unknown> | null;
+	userId: string;
+	agentId: string;
+	approvalId: string;
+} {
+	return {
+		toolName: values.options?.toolName ?? values.selectedToolName,
+		inputs:
+			values.options?.inputs ??
+			selectedToolInputs({
+				inputKey: values.selectedToolInputKey,
+				inputValue: values.selectedToolInputValue,
+			}),
+		userId: values.options?.userId ?? values.selectedIdentityUserId,
+		agentId: values.options?.agentId ?? values.selectedRunAgentId,
+		approvalId: runApprovalIdFromInput(
+			values.options?.approvalId,
+			values.toolApprovalId,
+		),
+	};
+}
+
 export function enterpriseToolRunPayload(values: {
 	toolName: string;
 	inputs: Record<string, unknown>;
