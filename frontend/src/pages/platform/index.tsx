@@ -69,7 +69,7 @@ import {
 	createPlatformToolPolicyHandlers,
 	toolPolicyDraftFromDecisions,
 } from './platform-tool-policy-helpers';
-import { runToolCatalogLoadAction } from './platform-tool-catalog-helpers';
+import { createPlatformToolCatalogHandlers } from './platform-tool-catalog-helpers';
 import {
 	createPlatformMemberHandlers,
 } from './platform-member-helpers';
@@ -1102,24 +1102,22 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	);
 
-	async function refetchToolCatalog() {
-		await runToolCatalogLoadAction(
-			{
-				loadErrorMessage: toolCatalogRequestText.loadError,
-				params: {
-					agentId: selectedRunAgentId,
-					userId: selectedIdentityUserId,
-				},
+	const { refetchToolCatalog } = createPlatformToolCatalogHandlers(
+		{
+			loadErrorMessage: toolCatalogRequestText.loadError,
+			params: {
+				agentId: selectedRunAgentId,
+				userId: selectedIdentityUserId,
 			},
-			{
-				setLoading: setToolCatalogLoading,
-				clearError: () => setToolCatalogError(null),
-				loadToolCatalog: platformApi.tools,
-				setToolCatalog,
-				setError: setToolCatalogError,
-			},
-		);
-	}
+		},
+		{
+			setLoading: setToolCatalogLoading,
+			clearError: () => setToolCatalogError(null),
+			loadToolCatalog: platformApi.tools,
+			setToolCatalog,
+			setError: setToolCatalogError,
+		},
+	);
 
 	async function refetchAgentManagementDependencies() {
 		await refetchPlatformAgents();

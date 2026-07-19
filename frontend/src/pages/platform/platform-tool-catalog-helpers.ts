@@ -39,3 +39,44 @@ export async function runToolCatalogLoadAction(
 		handlers.setLoading(false);
 	}
 }
+
+export type PlatformToolCatalogHandlerValues = {
+	loadErrorMessage: string;
+	params: ToolCatalogLoadActionParams;
+};
+
+export type PlatformToolCatalogHandlerActions = {
+	setLoading: (loading: boolean) => void;
+	clearError: () => void;
+	loadToolCatalog: (params: {
+		agent_id?: string;
+		user_id?: string;
+	}) => EnterpriseToolCatalogResponse | Promise<EnterpriseToolCatalogResponse>;
+	setToolCatalog: (catalog: EnterpriseToolCatalogResponse) => void;
+	setError: (message: string) => void;
+};
+
+export function createPlatformToolCatalogHandlers(
+	values: PlatformToolCatalogHandlerValues,
+	actions: PlatformToolCatalogHandlerActions,
+) {
+	async function refetchToolCatalog() {
+		await runToolCatalogLoadAction(
+			{
+				loadErrorMessage: values.loadErrorMessage,
+				params: values.params,
+			},
+			{
+				setLoading: actions.setLoading,
+				clearError: actions.clearError,
+				loadToolCatalog: actions.loadToolCatalog,
+				setToolCatalog: actions.setToolCatalog,
+				setError: actions.setError,
+			},
+		);
+	}
+
+	return {
+		refetchToolCatalog,
+	};
+}
