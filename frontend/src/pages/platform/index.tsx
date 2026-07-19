@@ -218,6 +218,7 @@ import {
 	agentPublishPayloadFromForm,
 	agentTemplateToolsPatch,
 	agentWorkflowEnabledPatch,
+	availableKnowledgeBaseIds,
 	buildAgentConfigurationPayloadFromForm,
 	defaultPublishFormForTemplate,
 	publishFormFromPublishedAgent,
@@ -2332,7 +2333,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleBindAvailableKnowledge(agent: EnterprisePublishedAgent) {
-		const knowledgeBaseIds = knowledgeBases.map((knowledgeBase) => knowledgeBase.id);
+		const knowledgeBaseIds = availableKnowledgeBaseIds(knowledgeBases);
 		if (knowledgeBaseIds.length === 0) {
 			navigate('/knowledge');
 			return;

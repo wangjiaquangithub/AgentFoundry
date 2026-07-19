@@ -55,6 +55,12 @@ export function createDefaultPublishForm({
 	};
 }
 
+export function availableKnowledgeBaseIds(
+	knowledgeBases: KnowledgeBaseView[],
+): string[] {
+	return knowledgeBases.map((knowledgeBase) => knowledgeBase.id);
+}
+
 export function defaultPublishFormForTemplate(values: {
 	template: EnterpriseAgentTemplate;
 	currentUserTenant?: string;
@@ -65,9 +71,7 @@ export function defaultPublishFormForTemplate(values: {
 		template: values.template,
 		tenant: values.currentUserTenant ?? '',
 		modelConfigId: values.credentials[0]?.id ?? '',
-		knowledgeBaseIds: values.knowledgeBases.map(
-			(knowledgeBase) => knowledgeBase.id,
-		),
+		knowledgeBaseIds: availableKnowledgeBaseIds(values.knowledgeBases),
 	});
 }
 
