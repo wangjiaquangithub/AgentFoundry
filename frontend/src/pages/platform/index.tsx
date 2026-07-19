@@ -206,9 +206,9 @@ import {
 import { createPlatformGovernancePageState } from './platform-governance-state';
 import { createPlatformSelectedIdentityPageState } from './platform-selected-identity-state';
 import {
-	platformAgentReleasePipelineDisplayStateForStatus,
-} from './platform-publish-display';
-import { createPlatformPublishPageState } from './platform-publish-state';
+	createPlatformAgentReleasePipelinePageState,
+	createPlatformPublishPageState,
+} from './platform-publish-state';
 import { createPlatformResourcePageState } from './platform-resource-state';
 import { createPlatformRuntimePageState } from './platform-runtime-state';
 import { createPlatformToolRunnerPageState } from './platform-tool-runner-state';
@@ -745,7 +745,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			headlineLabels: operationsHeadlineLabels(t),
 		},
 	});
-	const agentReleasePipeline = platformAgentReleasePipelineDisplayStateForStatus(
+	const agentReleasePipeline = createPlatformAgentReleasePipelinePageState(
 		{
 			selectedTemplate,
 			publishForm,
