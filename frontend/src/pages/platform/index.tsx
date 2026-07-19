@@ -56,13 +56,13 @@ import {
 	agentQuestionWithFallback,
 	agentRunResultForSelectedAgent,
 	agentRunResultAfterHistoryRefresh,
+	agentRunSelectionResult,
 	agentRunTargetForRequest,
 	clearAgentConversationTurns,
 	clearAgentRunsParams,
 	enterpriseAgentRunPayload,
 	enterpriseToolRunPayload,
 	enterpriseWorkflowRunPayload,
-	latestAgentRunResponse,
 	mergeAgentConversationTurn,
 	replaceAgentConversationTurns,
 	runApprovalIdFromInput,
@@ -1873,14 +1873,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	function handlePrimePublishedAgent(agentId: string, sample = primaryAgentSampleQuestion) {
 		setSelectedRunAgentId(agentId);
 		setAgentQuestion((current) => agentQuestionWithFallback(current, sample));
-		setAgentRunResult(latestAgentRunResponse(agentConversations, agentId));
+		setAgentRunResult(agentRunSelectionResult({ agentConversations, agentId }));
 		setAgentRunError(null);
 		window.setTimeout(scrollToAgentRunner, 0);
 	}
 
 	function handleSelectRunAgent(agentId: string) {
 		setSelectedRunAgentId(agentId);
-		setAgentRunResult(latestAgentRunResponse(agentConversations, agentId));
+		setAgentRunResult(agentRunSelectionResult({ agentConversations, agentId }));
 		setAgentRunError(null);
 	}
 
