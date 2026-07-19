@@ -53,13 +53,12 @@ import { usePlatformPageRefs } from './platform-page-refs';
 import {
 	agentRunResultForSelectedAgent,
 	agentRunResultAfterHistoryRefresh,
-	agentRunHistorySelectionTarget,
 	clearAgentConversationTarget,
 	runEnterpriseAgentRequestAction,
 	replaceAgentConversationTurns,
 	runAgentRunnerPrimeTargetAction,
 	runAgentRunHistoryDetailAction,
-	runAgentRunHistorySelectionAction,
+	runAgentRunHistorySelectionRequestAction,
 	runClearAgentConversationSuccessAction,
 	runEnterpriseToolRequestAction,
 	runEnterpriseWorkflowRequestAction,
@@ -1851,9 +1850,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleSelectAgentRun(turn: EnterpriseAgentConversationTurn) {
-		const target = agentRunHistorySelectionTarget(turn);
-
-		runAgentRunHistorySelectionAction(target, {
+		const target = runAgentRunHistorySelectionRequestAction(turn, {
 			setQuestion: setAgentQuestion,
 			clearRunError: () => setAgentRunError(null),
 			clearRunsError: () => setAgentRunsError(null),

@@ -347,6 +347,15 @@ export function runAgentRunHistorySelectionAction(
 	handlers.setRunsLoading(true);
 }
 
+export function runAgentRunHistorySelectionRequestAction(
+	turn: EnterpriseAgentConversationTurn,
+	handlers: AgentRunHistorySelectionActionHandlers,
+): AgentRunHistorySelectionTarget {
+	const target = agentRunHistorySelectionTarget(turn);
+	runAgentRunHistorySelectionAction(target, handlers);
+	return target;
+}
+
 export function agentRunResultForSelectedAgent(values: {
 	current: EnterpriseAgentRunResponse | null;
 	agentConversations: AgentConversationMap;
