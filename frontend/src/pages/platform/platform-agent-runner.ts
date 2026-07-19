@@ -214,6 +214,16 @@ export function runIdentityAgentRunnerTargetAction(
 	handlers.scrollToAgentRunner();
 }
 
+export function runUseIdentityAgentRunnerAction(
+	identity: EnterpriseIdentity,
+	fallbackQuestion: string,
+	handlers: IdentityAgentRunnerTargetActionHandlers,
+) {
+	const target = identityAgentRunnerTarget(identity, fallbackQuestion);
+
+	runIdentityAgentRunnerTargetAction(target, handlers);
+}
+
 export function tenantAgentRunnerTarget(values: {
 	enterpriseIdentities: EnterpriseIdentity[];
 	tenant: string;

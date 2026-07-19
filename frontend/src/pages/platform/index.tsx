@@ -56,7 +56,6 @@ import {
 	agentRunRequestTarget,
 	agentRunHistorySelectionTarget,
 	clearAgentConversationTarget,
-	identityAgentRunnerTarget,
 	memoryOperationAgentRunTarget,
 	runEnterpriseAgentAction,
 	replaceAgentConversationTurns,
@@ -66,13 +65,13 @@ import {
 	runClearAgentConversationSuccessAction,
 	runEnterpriseToolAction,
 	runEnterpriseWorkflowAction,
-	runIdentityAgentRunnerTargetAction,
 	runMemoryOperationAgentRunTargetAction,
 	runPrimeAgentWorkflowAction,
 	runPrimePublishedAgentAction,
 	runScenarioWorkflowAction,
 	runSelectAgentForRunAction,
 	runTenantAgentRunnerTargetAction,
+	runUseIdentityAgentRunnerAction,
 	scenarioWorkflowRunTarget,
 	selectedRunAgentIdForAvailableAgents,
 	tenantAgentRunnerTarget,
@@ -1926,14 +1925,16 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleUseIdentity(identity: EnterpriseIdentity) {
-		const target = identityAgentRunnerTarget(identity, primaryAgentSampleQuestion);
-
-		runIdentityAgentRunnerTargetAction(target, {
-			selectIdentityUser: setSelectedIdentityUserId,
-			setQuestion: setAgentQuestion,
-			clearError: () => setAgentRunError(null),
-			scrollToAgentRunner: () => window.setTimeout(scrollToAgentRunner, 0),
-		});
+		runUseIdentityAgentRunnerAction(
+			identity,
+			primaryAgentSampleQuestion,
+			{
+				selectIdentityUser: setSelectedIdentityUserId,
+				setQuestion: setAgentQuestion,
+				clearError: () => setAgentRunError(null),
+				scrollToAgentRunner: () => window.setTimeout(scrollToAgentRunner, 0),
+			},
+		);
 	}
 
 	function handleInspectIdentityAudit(identity: EnterpriseIdentity) {
