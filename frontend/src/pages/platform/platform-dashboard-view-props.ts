@@ -322,6 +322,15 @@ type DashboardRuntimeStatusViewProps = Pick<
 	| 'runtimeItems'
 >;
 
+type DashboardGovernanceHealthViewProps = Pick<
+	DashboardViewPageProps,
+	| 'governanceError'
+	| 'governanceHealthItems'
+	| 'governanceLoading'
+	| 'refetchGovernance'
+	| 'scrollToGovernance'
+>;
+
 type DashboardPlatformConsoleViewProps = Pick<
 	DashboardViewPageProps,
 	'platformConsoleItems'
@@ -502,6 +511,12 @@ export function createPlatformDashboardMonitoringSnapshotViewProps(
 export function createPlatformDashboardRuntimeStatusViewProps(
 	props: DashboardRuntimeStatusViewProps,
 ): DashboardRuntimeStatusViewProps {
+	return props;
+}
+
+export function createPlatformDashboardGovernanceHealthViewProps(
+	props: DashboardGovernanceHealthViewProps,
+): DashboardGovernanceHealthViewProps {
 	return props;
 }
 
