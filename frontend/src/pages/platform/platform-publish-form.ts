@@ -626,6 +626,14 @@ export async function runAgentPublishAction(
 	}
 }
 
+export async function runAgentPublishRequestAction(
+	values: Parameters<typeof agentPublishRequestTarget>[0],
+	handlers: AgentPublishActionHandlers,
+) {
+	const target = agentPublishRequestTarget(values);
+	await runAgentPublishAction(target, handlers);
+}
+
 export async function runQuickPublishAction(
 	target: QuickPublishTarget,
 	handlers: QuickPublishActionHandlers,

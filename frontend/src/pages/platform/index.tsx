@@ -239,14 +239,13 @@ import {
 import {
 	agentArchiveTarget,
 	agentEditDraft,
-	agentPublishRequestTarget,
 	defaultPublishFormForTemplate,
 	publishFormWithPatch,
 	quickPublishTarget,
 	runAgentArchiveAction,
 	runAgentEditCancelAction,
 	runAgentEditDraftAction,
-	runAgentPublishAction,
+	runAgentPublishRequestAction,
 	runPrepareTenantAgentAction,
 	runPublishListToggleAction,
 	runPublishTenantChangeAction,
@@ -2111,12 +2110,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handlePublishAgent() {
-		const target = agentPublishRequestTarget({
+		await runAgentPublishRequestAction({
 			selectedTemplateId,
 			editingAgentId,
 			form: publishForm,
-		});
-		await runAgentPublishAction(target, {
+		}, {
 			setPublishingTemplate: setPublishingTemplateId,
 			clearError: () => setPlatformAgentsError(null),
 			publishAgent: platformApi.publishAgent,
