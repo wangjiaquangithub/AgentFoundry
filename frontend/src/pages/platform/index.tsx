@@ -85,7 +85,10 @@ import {
 	createPlatformMemberHandlers,
 	runMemberLoadAction,
 } from './platform-member-helpers';
-import { runGovernanceLoadAction } from './platform-governance-helpers';
+import {
+	createPlatformGovernanceInspectionHandlers,
+	runGovernanceLoadAction,
+} from './platform-governance-helpers';
 import {
 	createPlatformOpsTaskHandlers,
 	runOpsTaskLoadAction,
@@ -96,15 +99,6 @@ import {
 } from './platform-workflow-template-helpers';
 import { runWorkflowRunLoadAction } from './platform-workflow-run-helpers';
 import { runScenarioLoadAction } from './platform-scenario-helpers';
-import {
-	runInspectAgentRunEvidenceAuditAction,
-	runInspectIdentityApprovalsAction,
-	runInspectIdentityAuditAction,
-	runInspectIdentityFailuresAction,
-	runInspectMemoryOperationAuditAction,
-	runInspectTenantApprovalsAction,
-	runInspectTenantAuditAction,
-} from './platform-filter-builders';
 import { runAuditEventLoadAction } from './platform-audit-helpers';
 import {
 	capabilityNavigationActions,
@@ -1508,30 +1502,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		);
 	}
 
-	function handleInspectIdentityAudit(identity: EnterpriseIdentity) {
-		runInspectIdentityAuditAction(identity, {
-			patchAuditFilters: setAuditFilters,
-			refetchAuditEvents,
-			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
-		});
-	}
-
-	function handleInspectIdentityApprovals(identity: EnterpriseIdentity) {
-		runInspectIdentityApprovalsAction(identity, {
-			patchApprovalFilters: setApprovalFilters,
-			refetchApprovals,
-			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
-		});
-	}
-
-	function handleInspectIdentityFailures(identity: EnterpriseIdentity) {
-		runInspectIdentityFailuresAction(identity, {
-			patchAuditFilters: setAuditFilters,
-			refetchAuditEvents,
-			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
-		});
-	}
-
 	function handleUseTenant(tenant: string) {
 		runPlatformUseTenantAgentRunnerAction(
 			{
@@ -1547,14 +1517,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				scrollToAgentRunner,
 			},
 		);
-	}
-
-	function handleInspectTenantAudit(tenant: string) {
-		runInspectTenantAuditAction(tenant, {
-			patchAuditFilters: setAuditFilters,
-			refetchAuditEvents,
-			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
-		});
 	}
 
 	function handleOpenMemoryOperation(item: MemoryOperationsItem) {
@@ -1575,22 +1537,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		);
 	}
 
-	function handleInspectMemoryOperationAudit(item: MemoryOperationsItem) {
-		runInspectMemoryOperationAuditAction(item, {
-			patchAuditFilters: setAuditFilters,
-			refetchAuditEvents,
-			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
-		});
-	}
-
-	function handleInspectTenantApprovals(tenant: string) {
-		runInspectTenantApprovalsAction(tenant, {
-			patchApprovalFilters: setApprovalFilters,
-			refetchApprovals,
-			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
-		});
-	}
-
 	function handlePrepareTenantAgent(tenant: string) {
 		runPrepareTenantAgentAction(
 			{
@@ -1609,13 +1555,26 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		);
 	}
 
-	function handleInspectAgentRunAudit() {
-		runInspectAgentRunEvidenceAuditAction(agentRunEvidence, {
+	const {
+		handleInspectIdentityAudit,
+		handleInspectIdentityApprovals,
+		handleInspectIdentityFailures,
+		handleInspectTenantAudit,
+		handleInspectMemoryOperationAudit,
+		handleInspectTenantApprovals,
+		handleInspectAgentRunAudit,
+	} = createPlatformGovernanceInspectionHandlers(
+		{
+			agentRunEvidence,
+		},
+		{
 			patchAuditFilters: setAuditFilters,
 			refetchAuditEvents,
-			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
-		});
-	}
+			patchApprovalFilters: setApprovalFilters,
+			refetchApprovals,
+			scrollToGovernance,
+		},
+	);
 
 	function handleNextAgentSetupStep() {
 		runPlatformAgentSetupStepRequestAction({
