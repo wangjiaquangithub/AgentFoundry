@@ -232,7 +232,6 @@ import {
 	agentArchiveSyncTarget,
 	agentArchiveTarget,
 	agentDefaultModelBindTarget,
-	agentDefaultModelPatch,
 	agentEditCancelTarget,
 	agentEditDraft,
 	agentKnowledgeBasesBindTarget,
@@ -2387,6 +2386,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	async function handleBindDefaultModel(agent: EnterprisePublishedAgent) {
 		const target = agentDefaultModelBindTarget({
+			agent,
 			modelConfigId: credentials[0]?.id,
 		});
 		if (target.type === 'navigate') {
@@ -2397,9 +2397,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setBindingAgentModelId(agent.id);
 		setPlatformAgentsError(null);
 		try {
-			const patch = agentDefaultModelPatch(target.modelConfigId);
-			const response = await platformApi.updateAgent(agent.id, patch);
-			syncAgentQuickConfiguration(agent.id, response.agent.id, patch);
+			const response = await platformApi.updateAgent(target.agentId, target.patch);
+			syncAgentQuickConfiguration(agent.id, response.agent.id, target.patch);
 			await refetchPlatformAgents();
 			await refetchPlatform();
 			await refetchToolCatalog();
