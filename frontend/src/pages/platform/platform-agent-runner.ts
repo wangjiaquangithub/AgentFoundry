@@ -225,6 +225,80 @@ export function agentRunTargetForRequest(values: {
 	};
 }
 
+export type AgentRunRequestTarget =
+	| {
+			type: 'empty';
+	  }
+	| {
+			type: 'access-denied';
+	  }
+	| {
+			type: 'run';
+			agentId: string;
+			question: string;
+			userId: string;
+			payload: EnterpriseAgentRunRequest;
+	  };
+
+export function agentRunRequestTarget(values: {
+	options?: {
+		agentId?: string;
+		question?: string;
+		userId?: string;
+		approvalId?: string;
+	};
+	selectedRunAgentId: string;
+	agentQuestion: string;
+	selectedIdentityUserId: string;
+	agentApprovalId: string;
+	activeAgents: EnterprisePublishedAgent[];
+	selectedRunAgent: EnterprisePublishedAgent | null;
+	enterpriseIdentities: EnterpriseIdentity[];
+	selectedIdentity: EnterpriseIdentity | null;
+}): AgentRunRequestTarget {
+	const agentId = values.options?.agentId ?? values.selectedRunAgentId;
+	const question = runQuestionFromInput(
+		values.options?.question,
+		values.agentQuestion,
+	);
+	const userId = values.options?.userId ?? values.selectedIdentityUserId;
+	const approvalId = runApprovalIdFromInput(
+		values.options?.approvalId,
+		values.agentApprovalId,
+	);
+
+	if (!question || !agentId) {
+		return { type: 'empty' };
+	}
+
+	const { accessAllowed } = agentRunTargetForRequest({
+		agentId,
+		selectedRunAgentId: values.selectedRunAgentId,
+		activeAgents: values.activeAgents,
+		selectedRunAgent: values.selectedRunAgent,
+		userId,
+		enterpriseIdentities: values.enterpriseIdentities,
+		selectedIdentity: values.selectedIdentity,
+	});
+
+	if (!accessAllowed) {
+		return { type: 'access-denied' };
+	}
+
+	return {
+		type: 'run',
+		agentId,
+		question,
+		userId,
+		payload: enterpriseAgentRunPayload({
+			agentId,
+			question,
+			userId,
+			approvalId,
+		}),
+	};
+}
+
 export function clearAgentRunsParams(values: {
 	agentId: string;
 	userId: string;

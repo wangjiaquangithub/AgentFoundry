@@ -56,18 +56,15 @@ import {
 	agentQuestionWithFallback,
 	agentRunResultForSelectedAgent,
 	agentRunResultAfterHistoryRefresh,
+	agentRunRequestTarget,
 	agentRunSelectionResult,
-	agentRunTargetForRequest,
 	clearAgentConversationTurns,
 	clearAgentRunsParams,
-	enterpriseAgentRunPayload,
 	enterpriseToolRunPayload,
 	enterpriseWorkflowRunPayload,
 	memoryOperationAgentRunTarget,
 	mergeAgentConversationTurn,
 	replaceAgentConversationTurns,
-	runApprovalIdFromInput,
-	runQuestionFromInput,
 	scenarioWorkflowRunTarget,
 	selectedRunAgentIdForAvailableAgents,
 	toolRunTargetForRequest,
@@ -2502,26 +2499,21 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		userId?: string;
 		approvalId?: string;
 	}) {
-		const agentId = options?.agentId ?? selectedRunAgentId;
-		const question = runQuestionFromInput(options?.question, agentQuestion);
-		const userId = options?.userId ?? selectedIdentityUserId;
-		const explicitApprovalId = runApprovalIdFromInput(
-			options?.approvalId,
-			agentApprovalId,
-		);
-		if (!question || !agentId) {
-			return;
-		}
-		const { accessAllowed } = agentRunTargetForRequest({
-			agentId,
+		const target = agentRunRequestTarget({
+			options,
 			selectedRunAgentId,
+			agentQuestion,
+			selectedIdentityUserId,
+			agentApprovalId,
 			activeAgents: activePlatformAgents,
 			selectedRunAgent,
-			userId,
 			enterpriseIdentities,
 			selectedIdentity,
 		});
-		if (!accessAllowed) {
+		if (target.type === 'empty') {
+			return;
+		}
+		if (target.type === 'access-denied') {
 			setAgentRunError(agentRunnerRequestText.accessDenied);
 			return;
 		}
@@ -2529,18 +2521,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setRunningAgent(true);
 		setAgentRunError(null);
 		try {
-			const response = await platformApi.runAgent(enterpriseAgentRunPayload({
-				agentId,
-				question,
-				userId,
-				approvalId: explicitApprovalId,
-			}));
+			const response = await platformApi.runAgent(target.payload);
 			const turn = agentConversationTurnFromRunResponse({
 				response,
-				agentId,
-				question,
+				agentId: target.agentId,
+				question: target.question,
 				createdAt: new Date().toISOString(),
-				fallbackId: `${agentId}-${Date.now()}`,
+				fallbackId: `${target.agentId}-${Date.now()}`,
 			});
 			setAgentRunResult(response);
 			setAgentConversations((current) => mergeAgentConversationTurn(current, turn, 20));
@@ -2551,7 +2538,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				setAgentRunError(agentRunnerRequestText.approvalRequiredCreated);
 				await refetchApprovals();
 			}
-			await refetchAgentRuns(agentId, userId || username);
+			await refetchAgentRuns(target.agentId, target.userId || username);
 			await refetchPlatform();
 			await refetchToolCatalog();
 			await refetchAuditEvents();
