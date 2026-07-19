@@ -126,12 +126,12 @@ import {
 	auditFiltersForIdentity,
 	auditFiltersForMemoryOperation,
 	auditFiltersForTenant,
-	auditQueryFromFilters,
 	failedAuditFiltersForIdentity,
 	runApprovalFilterTargetAction,
 	runAuditFilterTargetAction,
 	runInspectAgentRunEvidenceAuditAction,
 } from './platform-filter-builders';
+import { runAuditEventLoadAction } from './platform-audit-helpers';
 import {
 	capabilityNavigationActions,
 	firstAgentGuideNavigationActions,
@@ -1345,18 +1345,21 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function refetchAuditEvents(overrides: Partial<typeof auditFilters> = {}) {
-		setAuditLoading(true);
-		setAuditError(null);
-		try {
-			const filters = { ...auditFilters, ...overrides };
-			const response = await platformApi.audit(auditQueryFromFilters(filters));
-			setAuditEvents(response.events);
-			setAuditSummary(response.summary);
-		} catch (error) {
-			setAuditError(error instanceof Error ? error.message : auditRequestText.loadError);
-		} finally {
-			setAuditLoading(false);
-		}
+		await runAuditEventLoadAction(
+			{
+				filters: auditFilters,
+				overrides,
+				loadErrorMessage: auditRequestText.loadError,
+			},
+			{
+				setLoading: setAuditLoading,
+				clearError: () => setAuditError(null),
+				loadAuditEvents: platformApi.audit,
+				setAuditEvents,
+				setAuditSummary,
+				setError: setAuditError,
+			},
+		);
 	}
 
 	async function refetchPlatformAgents() {
