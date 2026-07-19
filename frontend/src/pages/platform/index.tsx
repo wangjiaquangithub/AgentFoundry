@@ -65,6 +65,7 @@ import {
 	replaceAgentConversationTurns,
 	scenarioWorkflowRunTarget,
 	selectedToolInputs,
+	selectedRunAgentIdForAvailableAgents,
 	workflowInputsWithValue,
 	type AgentConversationMap,
 } from './platform-agent-runner';
@@ -997,18 +998,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}, [connectors]);
 
 	useEffect(() => {
-		if (activePlatformAgents.length === 0) {
-			if (selectedRunAgentId) {
-				setSelectedRunAgentId('');
-			}
-			return;
-		}
+		const nextAgentId = selectedRunAgentIdForAvailableAgents({
+			currentAgentId: selectedRunAgentId,
+			activeAgents: activePlatformAgents,
+			readyAgents: readyPlatformAgents,
+		});
 
-		if (
-			!selectedRunAgentId ||
-			!activePlatformAgents.some((agent) => agent.id === selectedRunAgentId)
-		) {
-			setSelectedRunAgentId((readyPlatformAgents[0] ?? activePlatformAgents[0]).id);
+		if (nextAgentId !== selectedRunAgentId) {
+			setSelectedRunAgentId(nextAgentId);
 		}
 	}, [activePlatformAgents, readyPlatformAgents, selectedRunAgentId]);
 

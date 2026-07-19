@@ -1,6 +1,7 @@
 import type {
 	EnterpriseAgentRunRequest,
 	EnterpriseAgentRunResponse,
+	EnterprisePublishedAgent,
 	EnterprisePlatformScenario,
 	EnterpriseToolRunRequest,
 	EnterpriseWorkflowRunRequest,
@@ -53,6 +54,25 @@ export function agentRunResultForSelectedAgent(values: {
 	}
 
 	return latestAgentRunResponse(values.agentConversations, values.agentId);
+}
+
+export function selectedRunAgentIdForAvailableAgents(values: {
+	currentAgentId: string;
+	activeAgents: EnterprisePublishedAgent[];
+	readyAgents: EnterprisePublishedAgent[];
+}): string {
+	if (values.activeAgents.length === 0) {
+		return '';
+	}
+
+	if (
+		values.currentAgentId &&
+		values.activeAgents.some((agent) => agent.id === values.currentAgentId)
+	) {
+		return values.currentAgentId;
+	}
+
+	return (values.readyAgents[0] ?? values.activeAgents[0]).id;
 }
 
 export function replaceAgentConversationTurns(values: {
