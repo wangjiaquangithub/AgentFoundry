@@ -868,3 +868,27 @@ export function runApprovalUsageTargetAction(
 		handlers.scrollToWorkflowRunner();
 	}
 }
+
+export type PlatformApprovalUsageActionValues = {
+	approval: EnterpriseApprovalRequestItem;
+	toolInputConfig: Record<string, ApprovalToolInputConfig>;
+};
+
+export function runPlatformApprovalUsageTargetAction(
+	values: PlatformApprovalUsageActionValues,
+	handlers: ApprovalUsageTargetActionHandlers,
+) {
+	runApprovalUsageTargetAction(
+		values.approval,
+		values.approval.tool_name
+			? values.toolInputConfig[values.approval.tool_name]
+			: undefined,
+		{
+			...handlers,
+			scrollToAgentRunner: () => window.setTimeout(handlers.scrollToAgentRunner, 0),
+			scrollToToolRunner: () => window.setTimeout(handlers.scrollToToolRunner, 0),
+			scrollToWorkflowRunner: () =>
+				window.setTimeout(handlers.scrollToWorkflowRunner, 0),
+		},
+	);
+}

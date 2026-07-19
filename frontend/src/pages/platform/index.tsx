@@ -77,7 +77,7 @@ import {
 	runApprovalDecisionAction,
 	runApprovalLoadAction,
 	runApprovalRunCreateAction,
-	runApprovalUsageTargetAction,
+	runPlatformApprovalUsageTargetAction,
 	runPrimeToolApprovalAction,
 	type PlatformApprovalRunType,
 } from './platform-approval-helpers';
@@ -1739,26 +1739,28 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleUseApproval(approval: EnterpriseApprovalRequestItem) {
-		runApprovalUsageTargetAction(
-			approval,
-			approval.tool_name ? enterpriseToolInputConfig[approval.tool_name] : undefined,
+		runPlatformApprovalUsageTargetAction(
+			{
+				approval,
+				toolInputConfig: enterpriseToolInputConfig,
+			},
 			{
 				selectIdentityUser: setSelectedIdentityUserId,
 				selectRunAgent: setSelectedRunAgentId,
 				setAgentApprovalId,
 				setAgentQuestion,
 				clearAgentRunError: () => setAgentRunError(null),
-				scrollToAgentRunner: () => window.setTimeout(scrollToAgentRunner, 0),
+				scrollToAgentRunner,
 				selectToolName: setSelectedToolName,
 				patchToolInputs: setToolInputs,
 				setToolApprovalId,
 				clearToolRunError: () => setToolRunError(null),
-				scrollToToolRunner: () => window.setTimeout(scrollToToolRunner, 0),
+				scrollToToolRunner,
 				selectWorkflowType: setSelectedWorkflowType,
 				setWorkflowInputs,
 				setWorkflowApprovalId,
 				clearWorkflowRunError: () => setWorkflowRunError(null),
-				scrollToWorkflowRunner: () => window.setTimeout(scrollToWorkflowRunner, 0),
+				scrollToWorkflowRunner,
 			},
 		);
 	}
