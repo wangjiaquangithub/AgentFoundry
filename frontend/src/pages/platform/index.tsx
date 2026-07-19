@@ -16,7 +16,6 @@ import {
 	type EnterprisePlatformConfigExportResponse,
 	type EnterprisePlatformConnectorsResponse,
 	type EnterprisePlatformGovernanceResponse,
-	type EnterprisePlatformMember,
 	type EnterprisePlatformMembersResponse,
 	type EnterprisePlatformOpsTask,
 	type EnterprisePlatformOpsTasksResponse,
@@ -87,10 +86,8 @@ import {
 } from './platform-tool-policy-helpers';
 import { runToolCatalogLoadAction } from './platform-tool-catalog-helpers';
 import {
-	runMemberEditAction,
+	createPlatformMemberHandlers,
 	runMemberLoadAction,
-	runMemberSaveAction,
-	runMemberStatusToggleRequestAction,
 } from './platform-member-helpers';
 import { runGovernanceLoadAction } from './platform-governance-helpers';
 import {
@@ -1080,45 +1077,34 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		]);
 	}
 
-	async function handleSaveMember() {
-		await runMemberSaveAction(memberForm, {
+	const {
+		handleSaveMember,
+		handleEditMember,
+		handleToggleMemberStatus,
+	} = createPlatformMemberHandlers(
+		{
+			memberForm,
+			text: memberRequestText,
+		},
+		{
+			setMemberForm,
 			setSavingMember,
 			clearError: () => setPlatformMembersError(null),
-			handleValidationError: () =>
-				setPlatformMembersError(memberRequestText.userRequired),
+			setError: setPlatformMembersError,
 			createMember: async (payload) => {
 				await platformApi.createMember(payload);
 			},
 			resetForm: () => setMemberForm(defaultMemberForm),
 			refreshDependentViews: refreshMemberDependentViews,
-			handleError: (error) =>
-				setPlatformMembersError(
-					error instanceof Error ? error.message : memberRequestText.saveError,
-				),
-		});
-	}
-
-	function handleEditMember(member: EnterprisePlatformMember) {
-		runMemberEditAction(member, { setMemberForm });
-	}
-
-	async function handleToggleMemberStatus(member: EnterprisePlatformMember) {
-		await runMemberStatusToggleRequestAction(member, {
 			setUpdatingMember: setUpdatingMemberId,
-			clearError: () => setPlatformMembersError(null),
 			activateMember: async (userId, patch) => {
 				await platformApi.updateMember(userId, patch);
 			},
 			deactivateMember: async (userId) => {
 				await platformApi.deactivateMember(userId);
 			},
-			refreshDependentViews: refreshMemberDependentViews,
-			handleError: (error) =>
-				setPlatformMembersError(
-					error instanceof Error ? error.message : memberRequestText.saveError,
-				),
-		});
-	}
+		},
+	);
 
 	function loadSavedConnectorConfig(config: EnterpriseConnectorSavedConfig) {
 		runConnectorSavedConfigLoadAction(config, {

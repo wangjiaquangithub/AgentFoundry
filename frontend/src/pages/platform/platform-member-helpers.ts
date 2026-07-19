@@ -54,6 +54,32 @@ export type MemberStatusToggleActionHandlers = {
 	handleError: (error: unknown) => void;
 };
 
+export type PlatformMemberHandlerValues = {
+	memberForm: MemberFormState;
+	text: {
+		userRequired: string;
+		saveError: string;
+	};
+};
+
+export type PlatformMemberHandlerActions = {
+	setMemberForm: (form: MemberFormState) => void;
+	setSavingMember: (saving: boolean) => void;
+	clearError: () => void;
+	setError: (message: string) => void;
+	createMember: (
+		payload: EnterprisePlatformMemberUpsertRequest,
+	) => void | Promise<void>;
+	resetForm: () => void;
+	refreshDependentViews: () => void | Promise<void>;
+	setUpdatingMember: (userId: string | null) => void;
+	activateMember: (
+		userId: string,
+		patch: Pick<EnterprisePlatformMemberUpsertRequest, 'status'>,
+	) => void | Promise<void>;
+	deactivateMember: (userId: string) => void | Promise<void>;
+};
+
 export function memberUserIdFromForm(form: MemberFormState): string {
 	return form.user_id.trim();
 }
@@ -173,4 +199,50 @@ export async function runMemberStatusToggleRequestAction(
 	handlers: MemberStatusToggleActionHandlers,
 ) {
 	await runMemberStatusToggleAction(memberStatusToggleAction(member), handlers);
+}
+
+export function createPlatformMemberHandlers(
+	values: PlatformMemberHandlerValues,
+	actions: PlatformMemberHandlerActions,
+) {
+	async function handleSaveMember() {
+		await runMemberSaveAction(values.memberForm, {
+			setSavingMember: actions.setSavingMember,
+			clearError: actions.clearError,
+			handleValidationError: () => actions.setError(values.text.userRequired),
+			createMember: actions.createMember,
+			resetForm: actions.resetForm,
+			refreshDependentViews: actions.refreshDependentViews,
+			handleError: (error) =>
+				actions.setError(
+					error instanceof Error ? error.message : values.text.saveError,
+				),
+		});
+	}
+
+	function handleEditMember(member: EnterprisePlatformMember) {
+		runMemberEditAction(member, {
+			setMemberForm: actions.setMemberForm,
+		});
+	}
+
+	async function handleToggleMemberStatus(member: EnterprisePlatformMember) {
+		await runMemberStatusToggleRequestAction(member, {
+			setUpdatingMember: actions.setUpdatingMember,
+			clearError: actions.clearError,
+			activateMember: actions.activateMember,
+			deactivateMember: actions.deactivateMember,
+			refreshDependentViews: actions.refreshDependentViews,
+			handleError: (error) =>
+				actions.setError(
+					error instanceof Error ? error.message : values.text.saveError,
+				),
+		});
+	}
+
+	return {
+		handleSaveMember,
+		handleEditMember,
+		handleToggleMemberStatus,
+	};
 }
