@@ -220,7 +220,7 @@ import {
 import { createPlatformResourcePageState } from './platform-resource-state';
 import { createPlatformRuntimePageState } from './platform-runtime-state';
 import { platformToolRunnerDisplayStateForStatus } from './platform-tool-runner-display';
-import { platformOverviewDisplayStateForStatus } from './platform-overview-display';
+import { createPlatformOverviewPageState } from './platform-overview-state';
 import type { PlatformView } from './platform-view';
 
 export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
@@ -575,7 +575,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		...selectedIdentityLabels(t),
 	});
 
-	const overviewDisplay = platformOverviewDisplayStateForStatus({
+	const { stats, runtimeItems } = createPlatformOverviewPageState({
 		stats: {
 			platformAgentCount: platformAgents?.agents.length,
 			agentCount: agents.length,
@@ -605,8 +605,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			},
 		},
 	});
-	const stats = overviewDisplay.stats;
-	const runtimeItems = overviewDisplay.runtimeItems;
 
 	const toolRunnerDisplay = platformToolRunnerDisplayStateForStatus({
 		catalog: {
