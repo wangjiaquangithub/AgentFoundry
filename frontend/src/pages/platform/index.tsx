@@ -1306,6 +1306,12 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		await refetchOpsTasks();
 	}
 
+	async function refetchWorkflowTemplateDependencies() {
+		await refetchPlatform();
+		await refetchScenarios();
+		await refetchOpsTasks();
+	}
+
 	async function handleSaveToolPolicy() {
 		await runToolPolicySaveAction(
 			{ identity: selectedIdentity, draft: toolPolicyDraft },
@@ -1618,11 +1624,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				updateWorkflow: (workflowType, values) =>
 					platformApi.updateWorkflow(workflowType, values),
 				setWorkflowTemplates,
-				refreshDependentViews: async () => {
-					await refetchPlatform();
-					await refetchScenarios();
-					await refetchOpsTasks();
-				},
+				refreshDependentViews: refetchWorkflowTemplateDependencies,
 				handleError: (error) =>
 					setWorkflowTemplatesError(
 						error instanceof Error
