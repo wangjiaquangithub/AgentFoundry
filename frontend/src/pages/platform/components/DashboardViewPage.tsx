@@ -31,6 +31,7 @@ import { ConfigManagementPanel } from './ConfigManagementPanel';
 import { DashboardAgentRunNowSection } from './DashboardAgentRunNowSection';
 import { DashboardApplicationSection } from './DashboardApplicationSection';
 import { DashboardLaunchOrchestrationSection } from './DashboardLaunchOrchestrationSection';
+import { DashboardMembersSection } from './DashboardMembersSection';
 import { DashboardOperationalHealthSection } from './DashboardOperationalHealthSection';
 import { DashboardOperationsConsoleSection } from './DashboardOperationsConsoleSection';
 import { DashboardOperationsSnapshotSection } from './DashboardOperationsSnapshotSection';
@@ -38,7 +39,6 @@ import { DashboardTenantAccessSection } from './DashboardTenantAccessSection';
 import { DashboardTenantGovernancePanelSection } from './DashboardTenantGovernancePanelSection';
 import { DashboardWorkflowAutomationSection } from './DashboardWorkflowAutomationSection';
 import { DashboardWorkbenchSection } from './DashboardWorkbenchSection';
-import { MembersPanel } from './MembersPanel';
 import { PlatformDashboardOverview } from './PlatformDashboardOverview';
 import { PolicySubagentsPanel } from './PolicySubagentsPanel';
 import { RuntimeStatusPanel } from './RuntimeStatusPanel';
@@ -1646,24 +1646,24 @@ export function DashboardViewPage({
 					)}
 				</section>
 
-				<MembersPanel
-					membersRef={membersRef}
-					platformMembers={platformMembers}
-					platformMembersLoading={platformMembersLoading}
-					platformMembersError={platformMembersError}
-					platformMemberTenantSummaries={platformMemberTenantSummaries}
-					activeMemberCount={activeMemberCount}
-					activePlatformAgentCount={activePlatformAgents.length}
-					pendingApprovalCount={pendingApprovals.length}
-					memberForm={memberForm}
-					setMemberForm={setMemberForm}
-					savingMember={savingMember}
-					updatingMemberId={updatingMemberId}
-					onRefreshMembers={() => void refetchMembers()}
-					onSaveMember={() => void handleSaveMember()}
-					onEditMember={handleEditMember}
-					onToggleMemberStatus={(member) => void handleToggleMemberStatus(member)}
+				<DashboardMembersSection
 					t={t}
+					activeMemberCount={activeMemberCount}
+					activePlatformAgents={activePlatformAgents}
+					handleEditMember={handleEditMember}
+					handleSaveMember={handleSaveMember}
+					handleToggleMemberStatus={handleToggleMemberStatus}
+					memberForm={memberForm}
+					membersRef={membersRef}
+					pendingApprovals={pendingApprovals}
+					platformMemberTenantSummaries={platformMemberTenantSummaries}
+					platformMembers={platformMembers}
+					platformMembersError={platformMembersError}
+					platformMembersLoading={platformMembersLoading}
+					refetchMembers={refetchMembers}
+					savingMember={savingMember}
+					setMemberForm={setMemberForm}
+					updatingMemberId={updatingMemberId}
 				/>
 				<AgentManagementPanel
 					agentManagementRef={agentManagementRef}
