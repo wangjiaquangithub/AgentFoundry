@@ -281,7 +281,6 @@ import {
 	auditStatsForSummary,
 	capabilityItemsForStatus,
 	mapAgentRunToConversationTurn,
-	memoryOperationsStateForConversations,
 	nextAgentSetupStepForSteps,
 	platformOverviewStatsForSummary,
 	platformConsoleItemsForDisplay,
@@ -289,7 +288,6 @@ import {
 	selectedIdentityStateForStatus,
 	selectedToolRunnerStateForStatus,
 	summarizeAuditObject,
-	tenantWorkspaceOperationsStateForStatus,
 	toolCatalogStateForStatus,
 	workflowSelectionStateForTemplates,
 	type AgentWizardStep,
@@ -739,6 +737,19 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		operations: {
 			availableToolItems,
 		},
+		tenantWorkspace: {
+			connectors,
+			enterpriseIdentities,
+			activePlatformAgents,
+			auditEvents,
+			workflowRuns,
+			members: platformMembers?.members ?? [],
+		},
+		tenantWorkspaceLabels: tenantWorkspaceOperationsLabels(t),
+		memoryOperations: {
+			activePlatformAgents,
+			agentConversations,
+		},
 		todo: {
 			credentialCount: credentials.length,
 			activeAgentCount: activePlatformAgents.length,
@@ -758,26 +769,12 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		recentAuditEvents,
 		auditEventCount,
 	} = dashboardDisplay.fallbackState;
-	const tenantWorkspaceOperationsState = tenantWorkspaceOperationsStateForStatus(
-		{
-			connectors,
-			enterpriseIdentities,
-			activePlatformAgents,
-			pendingApprovals,
-			auditEvents,
-			workflowRuns,
-			members: platformMembers?.members ?? [],
-		},
-		tenantWorkspaceOperationsLabels(t),
-	);
+	const tenantWorkspaceOperationsState = dashboardDisplay.tenantWorkspaceState;
 	const tenantWorkspaces = tenantWorkspaceOperationsState.tenantWorkspaces;
 	const tenantOverviewItems = tenantWorkspaceOperationsState.tenantOverviewItems;
 	const platformMemberTenantSummaries =
 		tenantWorkspaceOperationsState.platformMemberTenantSummaries;
-	const memoryOperationsState = memoryOperationsStateForConversations({
-		activePlatformAgents,
-		agentConversations,
-	});
+	const memoryOperationsState = dashboardDisplay.memoryOperationsState;
 	const memoryOperationsItems = memoryOperationsState.items;
 	const memoryOperationsRunCount = memoryOperationsState.runCount;
 	const memoryOperationsHitCount = memoryOperationsState.hitCount;
