@@ -1,9 +1,16 @@
 import {
+	platformAgentRoutingDisplayStateForResult,
 	platformAgentRunnerDisplayStateForStatus,
 	platformAgentSetupStepsDisplayStateForStatus,
 	platformNextAgentSetupStepDisplayStateForSteps,
 } from './platform-agent-runner-display';
 
+type PlatformAgentRoutingResult = Parameters<
+	typeof platformAgentRoutingDisplayStateForResult
+>[0];
+type PlatformAgentRoutingLabels = Parameters<
+	typeof platformAgentRoutingDisplayStateForResult
+>[1];
 type PlatformAgentSetupValues = Parameters<
 	typeof platformAgentSetupStepsDisplayStateForStatus
 >[0];
@@ -42,4 +49,14 @@ export function createPlatformAgentRunnerPageState(values: {
 		primaryAgentSampleQuestion,
 		...runnerState,
 	};
+}
+
+export function createPlatformAgentRoutingPageState(values: {
+	agentRunResult: PlatformAgentRoutingResult;
+	labels: PlatformAgentRoutingLabels;
+}) {
+	return platformAgentRoutingDisplayStateForResult(
+		values.agentRunResult,
+		values.labels,
+	);
 }

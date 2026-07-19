@@ -193,9 +193,9 @@ import {
 } from './platform-defaults';
 import { createPlatformAgentInventoryPageState } from './platform-agent-inventory-state';
 import {
-	platformAgentRoutingDisplayStateForResult,
-} from './platform-agent-runner-display';
-import { createPlatformAgentRunnerPageState } from './platform-agent-runner-state';
+	createPlatformAgentRoutingPageState,
+	createPlatformAgentRunnerPageState,
+} from './platform-agent-runner-state';
 import { createPlatformAppCenterPageState } from './platform-app-center-state';
 import { createPlatformConnectorPageState } from './platform-connector-state';
 import { createPlatformConnectionPageState } from './platform-connection-state';
@@ -618,10 +618,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			labels: selectedToolRunnerLabels(t),
 		},
 	});
-	const { agentRoutingLabel, agentRoutingText } = platformAgentRoutingDisplayStateForResult(
+	const { agentRoutingLabel, agentRoutingText } = createPlatformAgentRoutingPageState({
 		agentRunResult,
-		agentRoutingLabels(t),
-	);
+		labels: agentRoutingLabels(t),
+	});
 	const {
 		connectorState,
 		savedConnectorConfigs,
