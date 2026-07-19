@@ -269,6 +269,7 @@ import { platformConnectorDisplayStateForStatus } from './platform-connector-dis
 import { platformConnectionDisplayStateForStatus } from './platform-connection-display';
 import { platformGovernanceDisplayStateForStatus } from './platform-governance-display';
 import { platformResourceDisplayStateForStatus } from './platform-resource-display';
+import { platformRuntimeDisplayStateForStatus } from './platform-runtime-display';
 import {
 	agentAccessAllowed,
 	agentRoutingDisplayStateForResult,
@@ -291,7 +292,6 @@ import {
 	platformOverviewStatsForSummary,
 	platformAgentInventoryStateForStatus,
 	platformConsoleItemsForDisplay,
-	platformRuntimeConfigStateForStatus,
 	runtimeStatusItemsForStatus,
 	selectedIdentityStateForStatus,
 	selectedToolRunnerStateForStatus,
@@ -592,12 +592,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 		agentRunnerLabels(t),
 	);
-	const platformRuntimeConfigState = platformRuntimeConfigStateForStatus({
+	const platformRuntimeDisplay = platformRuntimeDisplayStateForStatus({
 		platformStatus,
 		governance,
 		connectors,
 		labels: platformRuntimeConfigLabels(t),
 	});
+	const platformRuntimeConfigState = platformRuntimeDisplay.configState;
 	const enterpriseIdentities = platformRuntimeConfigState.enterpriseIdentities;
 	const {
 		publishTenant,
