@@ -3,7 +3,6 @@
 import {
 	AlertTriangle,
 	BotMessageSquare,
-	Building2,
 	CheckCircle2,
 	Database,
 	KeyRound,
@@ -33,7 +32,6 @@ import { AuditEventsPanel } from './AuditEventsPanel';
 import { CapabilitiesPanel } from './CapabilitiesPanel';
 import { ConfigManagementPanel } from './ConfigManagementPanel';
 import { DashboardOpsPanel } from './DashboardOpsPanel';
-import { FirstAgentGuide } from './FirstAgentGuide';
 import { GovernanceHealthPanel } from './GovernanceHealthPanel';
 import { LaunchpadPanel } from './LaunchpadPanel';
 import { MembersPanel } from './MembersPanel';
@@ -44,8 +42,8 @@ import { OpsTasksPanel } from './OpsTasksPanel';
 import { OrchestrationWorkbenchPanel } from './OrchestrationWorkbenchPanel';
 import { PlatformConsolePanel } from './PlatformConsolePanel';
 import { PlatformDashboardOverview } from './PlatformDashboardOverview';
+import { DashboardWorkbenchSection } from './DashboardWorkbenchSection';
 import { PolicySubagentsPanel } from './PolicySubagentsPanel';
-import { RolloutPath } from './RolloutPath';
 import { RuntimeStatusPanel } from './RuntimeStatusPanel';
 import { ScenariosPanel } from './ScenariosPanel';
 import { TenantGovernancePanel } from './TenantGovernancePanel';
@@ -53,8 +51,6 @@ import { TenantWorkspacePanel } from './TenantWorkspacePanel';
 import { ToolCatalogPanel } from './ToolCatalogPanel';
 import { ToolRunnerPanel } from './ToolRunnerPanel';
 import { TriggerOpsPanel } from './TriggerOpsPanel';
-import { WorkbenchReadinessPanel } from './WorkbenchReadinessPanel';
-import { WorkbenchStatusPanel } from './WorkbenchStatusPanel';
 import { WorkflowOpsPanel } from './WorkflowOpsPanel';
 import { WorkflowRunnerPanel } from './WorkflowRunnerPanel';
 import { PlatformNotice, StateBadge } from './common';
@@ -515,132 +511,26 @@ export function DashboardViewPage({
 					onPrimaryAction={handleNextStepPrimaryAction}
 				/>
 
-				<section className="grid gap-4 rounded-lg border bg-background p-4">
-					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-						<div className="min-w-0">
-							<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-								<Building2 className="size-4" />
-								<span>{t('platform.workbench.eyebrow')}</span>
-							</div>
-							<h2 className="text-base font-semibold">
-								{t('platform.workbench.title')}
-							</h2>
-							<p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-								{t('platform.workbench.description')}
-							</p>
-						</div>
-						<div className="flex flex-wrap gap-2 lg:justify-end">
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={handleNextStepPrimaryAction}
-								disabled={nextStepPrimaryDisabled}
-							>
-								<NextStepIcon className="size-4" />
-								{t(`platform.nextStep.${nextStepMode}.action`)}
-							</Button>
-							<Button
-								type="button"
-								size="sm"
-								onClick={selectedRunAgent ? scrollToAgentRunner : handleStartPublishing}
-							>
-								{selectedRunAgent ? (
-									<Play className="size-4" />
-								) : (
-									<BotMessageSquare className="size-4" />
-								)}
-								{selectedRunAgent
-									? t('platform.workbench.runPrimary')
-									: t('platform.workbench.publishPrimary')}
-							</Button>
-						</div>
-					</div>
-
-					<FirstAgentGuide
-						steps={firstAgentGuideSteps}
-						primaryStep={firstAgentGuidePrimaryStep}
-						publishingTemplateId={publishingTemplateId}
-						labels={{
-							title: t('platform.workbench.firstAgentGuide.title'),
-							description: t('platform.workbench.firstAgentGuide.description'),
-							publishing: t('platform.agentManagement.publishing'),
-							states: {
-								ready: t('platform.launchpad.ready'),
-								partial: t('platform.launchpad.partial'),
-								todo: t('platform.launchpad.todo'),
-								blocked: t('platform.launchpad.blocked'),
-							},
-						}}
-					/>
-
-					<RolloutPath
-						steps={rolloutPathSteps}
-						labels={{
-							title: t('platform.workbench.rolloutPath.title'),
-							description: t('platform.workbench.rolloutPath.description'),
-							progress: t('platform.launchpad.progress', {
-								ready: rolloutPathSteps.filter((step) => step.state === 'ready')
-									.length,
-								total: rolloutPathSteps.length,
-							}),
-							states: {
-								ready: t('platform.launchpad.ready'),
-								partial: t('platform.launchpad.partial'),
-								todo: t('platform.launchpad.todo'),
-								blocked: t('platform.launchpad.blocked'),
-							},
-						}}
-					/>
-
-					<WorkbenchReadinessPanel
-						readinessItems={workbenchReadinessItems}
-						quickActions={workbenchQuickActions}
-						riskItems={workbenchRiskItems}
-						labels={{
-							readinessTitle: t('platform.workbench.readinessTitle'),
-							readinessDescription: t('platform.workbench.readinessDescription'),
-							readinessProgress: t('platform.launchpad.progress', {
-								ready: workbenchReadinessItems.filter(
-									(item) => item.state === 'ready',
-								).length,
-								total: workbenchReadinessItems.length,
-							}),
-							quickActionsTitle: t('platform.workbench.quickActionsTitle'),
-							riskTitle: t('platform.workbench.riskTitle'),
-							riskEmpty: t('platform.workbench.riskEmpty'),
-							states: {
-								ready: t('platform.launchpad.ready'),
-								partial: t('platform.launchpad.partial'),
-								todo: t('platform.launchpad.todo'),
-								blocked: t('platform.launchpad.blocked'),
-							},
-						}}
-					/>
-
-					<WorkbenchStatusPanel
-						indicators={workbenchIndicators}
-						actions={workbenchActions}
-						labels={{
-							statusTitle: t('platform.workbench.statusTitle'),
-							statusDescription:
-								dashboardTodoItems.length > 0
-									? dashboardTodoItems.join(' · ')
-									: t('platform.dashboard.todoReady'),
-							statusState: dashboardTodoItems.length > 0 ? 'partial' : 'ready',
-							statusStateLabel:
-								dashboardTodoItems.length > 0
-									? t('platform.workbench.needsAction')
-									: t('platform.workbench.ready'),
-							states: {
-								ready: t('platform.launchpad.ready'),
-								partial: t('platform.launchpad.partial'),
-								todo: t('platform.launchpad.todo'),
-								blocked: t('platform.launchpad.blocked'),
-							},
-						}}
-					/>
-				</section>
+				<DashboardWorkbenchSection
+					t={t}
+					NextStepIcon={NextStepIcon}
+					dashboardTodoItems={dashboardTodoItems}
+					firstAgentGuidePrimaryStep={firstAgentGuidePrimaryStep}
+					firstAgentGuideSteps={firstAgentGuideSteps}
+					handleNextStepPrimaryAction={handleNextStepPrimaryAction}
+					handleStartPublishing={handleStartPublishing}
+					nextStepMode={nextStepMode}
+					nextStepPrimaryDisabled={nextStepPrimaryDisabled}
+					publishingTemplateId={publishingTemplateId}
+					rolloutPathSteps={rolloutPathSteps}
+					scrollToAgentRunner={scrollToAgentRunner}
+					selectedRunAgent={selectedRunAgent}
+					workbenchActions={workbenchActions}
+					workbenchIndicators={workbenchIndicators}
+					workbenchQuickActions={workbenchQuickActions}
+					workbenchReadinessItems={workbenchReadinessItems}
+					workbenchRiskItems={workbenchRiskItems}
+				/>
 
 				<LaunchpadPanel
 					steps={launchpadSteps}
