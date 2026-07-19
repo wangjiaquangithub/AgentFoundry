@@ -165,6 +165,7 @@ import { createPlatformWorkbenchPageState } from './platform-workbench-state';
 import { createPlatformWorkflowPageState } from './platform-workflow-state';
 import { createPlatformApprovalsViewProps } from './platform-approvals-view-props';
 import { createPlatformRunsViewProps } from './platform-runs-view-props';
+import { createPlatformWorkflowsViewProps } from './platform-workflows-view-props';
 import {
 	createPlatformAgentQuickConfigurationHandlers,
 	createPlatformAgentQuickConfigurationSyncHandler,
@@ -1859,48 +1860,48 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	if (view === 'workflows') {
 		return (
 			<WorkflowsViewPage
-				serverUrl={serverUrl}
-				username={username}
-				hasErrors={hasErrors}
-				workflowRunnerRef={workflowRunnerRef}
-				selectedWorkflowType={selectedWorkflowType}
-				workflowOptions={workflowOptions}
-				selectedWorkflowTemplate={selectedWorkflowTemplate}
-				workflowInputs={workflowInputs}
-				workflowApprovalId={workflowApprovalId}
-				workflowRunError={workflowRunError}
-				workflowRunResult={workflowRunResult}
-				runningWorkflow={runningWorkflow}
-				workflowTemplatesLoading={workflowTemplatesLoading}
-				workflowTemplatesError={workflowTemplatesError}
-				workflowTemplates={workflowTemplates}
-				selectedWorkflowDisabled={selectedWorkflowDisabled}
-				savingWorkflowType={savingWorkflowType}
-				creatingRunApproval={creatingRunApproval}
-				platformError={platformError ? String(platformError) : null}
-				workflowRunsLoading={workflowRunsLoading}
-				workflowRunsError={workflowRunsError}
-				workflowRuns={workflowRuns}
-				onWorkflowTypeChange={(value) => {
-					setSelectedWorkflowType(value);
-					setWorkflowRunError(null);
-					setWorkflowInputs(
-						workflowInputsForSelectedOption(workflowOptions, value),
-					);
-				}}
-				onWorkflowInputChange={(key, value) =>
-					setWorkflowInputs((current) =>
-						workflowInputsWithValue(current, key, value),
-					)
-				}
-				onWorkflowApprovalIdChange={setWorkflowApprovalId}
-				onRequestApproval={() => void handleCreateRunApproval('workflow_run')}
-				onRunWorkflow={() => void handleRunEnterpriseWorkflow()}
-				onToggleWorkflowTemplate={(template, checked) =>
-					void handleToggleWorkflowTemplate(template, checked)
-				}
-				summarizeAuditObject={platformSummarizeAuditObject}
-				t={t}
+				{...createPlatformWorkflowsViewProps({
+					serverUrl,
+					username,
+					hasErrors,
+					workflowRunnerRef,
+					selectedWorkflowType,
+					workflowOptions,
+					selectedWorkflowTemplate,
+					workflowInputs,
+					workflowApprovalId,
+					workflowRunError,
+					workflowRunResult,
+					runningWorkflow,
+					workflowTemplatesLoading,
+					workflowTemplatesError,
+					workflowTemplates,
+					selectedWorkflowDisabled,
+					savingWorkflowType,
+					creatingRunApproval,
+					platformError: platformError ? String(platformError) : null,
+					workflowRunsLoading,
+					workflowRunsError,
+					workflowRuns,
+					onWorkflowTypeChange: (value) => {
+						setSelectedWorkflowType(value);
+						setWorkflowRunError(null);
+						setWorkflowInputs(
+							workflowInputsForSelectedOption(workflowOptions, value),
+						);
+					},
+					onWorkflowInputChange: (key, value) =>
+						setWorkflowInputs((current) =>
+							workflowInputsWithValue(current, key, value),
+						),
+					onWorkflowApprovalIdChange: setWorkflowApprovalId,
+					onRequestApproval: () => void handleCreateRunApproval('workflow_run'),
+					onRunWorkflow: () => void handleRunEnterpriseWorkflow(),
+					onToggleWorkflowTemplate: (template, checked) =>
+						void handleToggleWorkflowTemplate(template, checked),
+					summarizeAuditObject: platformSummarizeAuditObject,
+					t,
+				})}
 			/>
 		);
 	}
