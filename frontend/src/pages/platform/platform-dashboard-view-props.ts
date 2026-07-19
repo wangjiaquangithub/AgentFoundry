@@ -256,6 +256,22 @@ type DashboardCapabilitiesViewProps = Pick<
 	'capabilities'
 >;
 
+type DashboardConfigManagementViewProps = Pick<
+	DashboardViewPageProps,
+	| 'handleCopyPlatformConfig'
+	| 'handleImportPlatformConfig'
+	| 'importingPlatformConfig'
+	| 'platformConfigError'
+	| 'platformConfigExport'
+	| 'platformConfigImportMode'
+	| 'platformConfigImportResult'
+	| 'platformConfigImportText'
+	| 'platformConfigLoading'
+	| 'refetchPlatformConfigExport'
+	| 'setPlatformConfigImportMode'
+	| 'setPlatformConfigImportText'
+>;
+
 type DashboardLaunchpadViewProps = Pick<
 	DashboardViewPageProps,
 	| 'launchpadPrimaryStep'
@@ -394,6 +410,12 @@ export function createPlatformDashboardRolloutPathViewProps(
 export function createPlatformDashboardCapabilitiesViewProps(
 	props: DashboardCapabilitiesViewProps,
 ): DashboardCapabilitiesViewProps {
+	return props;
+}
+
+export function createPlatformDashboardConfigManagementViewProps(
+	props: DashboardConfigManagementViewProps,
+): DashboardConfigManagementViewProps {
 	return props;
 }
 
