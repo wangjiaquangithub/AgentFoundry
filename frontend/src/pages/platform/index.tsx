@@ -126,7 +126,6 @@ import {
 } from './platform-filter-builders';
 import {
 	agentSetupStepAction,
-	appCenterDetailPrimaryAction,
 	appCenterDetailSecondaryAction,
 	capabilityNavigationActions,
 	firstAgentGuideNavigationActions,
@@ -135,7 +134,7 @@ import {
 	platformConsoleNavigationActions,
 	rolloutPathNavigationActions,
 	runAgentSetupStepAction,
-	runAppCenterDetailPrimaryAction,
+	runAppCenterDetailPrimaryRequestAction,
 	runAppCenterDetailSecondaryAction,
 	runAppCenterPrimaryRequestAction,
 	runNextStepPrimaryRequestAction,
@@ -2178,14 +2177,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleAppCenterDetailPrimaryAction() {
-		const action = appCenterDetailPrimaryAction({
+		runAppCenterDetailPrimaryRequestAction({
 			agentId: inspectedAppCenterAgent?.id,
 			agentIsReady: Boolean(
 				inspectedAppCenterAgent && agentIsReady(inspectedAppCenterAgent),
 			),
 			hasTemplate: Boolean(inspectedAppCenterTemplate),
-		});
-		runAppCenterDetailPrimaryAction(action, {
+		}, {
 			selectAndPrimeAgent: (agentId) => {
 				setSelectedRunAgentId(agentId);
 				handlePrimeAgentRunner();

@@ -265,6 +265,13 @@ export function runAppCenterDetailPrimaryAction(
 	}
 }
 
+export function runAppCenterDetailPrimaryRequestAction(
+	values: Parameters<typeof appCenterDetailPrimaryAction>[0],
+	handlers: AppCenterDetailPrimaryActionHandlers,
+) {
+	runAppCenterDetailPrimaryAction(appCenterDetailPrimaryAction(values), handlers);
+}
+
 export type AppCenterDetailSecondaryActionHandlers = {
 	editAgent: NavigationHandler;
 	scrollToAgentManagement: NavigationHandler;
