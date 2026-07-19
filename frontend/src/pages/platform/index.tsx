@@ -110,9 +110,9 @@ import {
 	connectorFormWithoutToken,
 	connectorFormWithPlatformDefaults,
 	connectorSavePayloadFromForm,
-	connectorTestPayloadFromForm,
 	connectorsWithSavedConfigs,
 	runConnectorSavedConfigLoadAction,
+	runConnectorTestAction,
 } from './platform-connector-helpers';
 import {
 	formatPlatformConfigExport,
@@ -1294,33 +1294,26 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleTestConnector() {
-		const baseUrl = connectorBaseUrlFromForm(connectorTestForm);
-		const validationError = connectorDraftValidationError({
-			baseUrl,
-			draftIssues: connectorDraftIssues,
-			baseUrlRequiredMessage: connectorRequestText.testBaseUrlRequired,
-		});
-		if (validationError) {
-			setConnectorTestError(validationError);
-			return null;
-		}
-
-		setTestingConnector(true);
-		setConnectorTestError(null);
-		try {
-			const response = await platformApi.testConnector(
-				connectorTestPayloadFromForm(connectorTestForm, baseUrl),
-			);
-			setConnectorTestResult(response);
-			return response;
-		} catch (error) {
-			setConnectorTestError(
-				error instanceof Error ? error.message : connectorRequestText.testError,
-			);
-			return null;
-		} finally {
-			setTestingConnector(false);
-		}
+		return runConnectorTestAction(
+			{
+				form: connectorTestForm,
+				draftIssues: connectorDraftIssues,
+				baseUrlRequiredMessage: connectorRequestText.testBaseUrlRequired,
+			},
+			{
+				setTestingConnector,
+				clearError: () => setConnectorTestError(null),
+				handleValidationError: setConnectorTestError,
+				testConnector: async (payload) => platformApi.testConnector(payload),
+				setConnectorTestResult,
+				handleError: (error) =>
+					setConnectorTestError(
+						error instanceof Error
+							? error.message
+							: connectorRequestText.testError,
+					),
+			},
+		);
 	}
 
 	async function handleTestAndSaveConnectorConfig() {

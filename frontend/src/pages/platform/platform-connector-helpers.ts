@@ -22,6 +22,17 @@ export type ConnectorSavedConfigLoadActionHandlers = {
 	setConnectorSaveSuccess: (message: string | null) => void;
 };
 
+export type ConnectorTestActionHandlers = {
+	setTestingConnector: (testing: boolean) => void;
+	clearError: () => void;
+	handleValidationError: (error: string) => void;
+	testConnector: (
+		payload: EnterpriseConnectorTestRequest,
+	) => EnterpriseConnectorTestResponse | Promise<EnterpriseConnectorTestResponse>;
+	setConnectorTestResult: (result: EnterpriseConnectorTestResponse) => void;
+	handleError: (error: unknown) => void;
+};
+
 function connectorTimeoutFromForm(form: ConnectorTestFormState) {
 	const timeout = Number.parseFloat(form.timeout_seconds);
 
@@ -170,4 +181,39 @@ export function connectorTestPayloadFromForm(
 		metrics_path: form.metrics_path.trim() || defaultConnectorMetricsPath,
 		timeout_seconds: connectorTimeoutFromForm(form),
 	};
+}
+
+export async function runConnectorTestAction(
+	values: {
+		form: ConnectorTestFormState;
+		draftIssues: string[];
+		baseUrlRequiredMessage: string;
+	},
+	handlers: ConnectorTestActionHandlers,
+): Promise<EnterpriseConnectorTestResponse | null> {
+	const baseUrl = connectorBaseUrlFromForm(values.form);
+	const validationError = connectorDraftValidationError({
+		baseUrl,
+		draftIssues: values.draftIssues,
+		baseUrlRequiredMessage: values.baseUrlRequiredMessage,
+	});
+	if (validationError) {
+		handlers.handleValidationError(validationError);
+		return null;
+	}
+
+	handlers.setTestingConnector(true);
+	handlers.clearError();
+	try {
+		const response = await handlers.testConnector(
+			connectorTestPayloadFromForm(values.form, baseUrl),
+		);
+		handlers.setConnectorTestResult(response);
+		return response;
+	} catch (error) {
+		handlers.handleError(error);
+		return null;
+	} finally {
+		handlers.setTestingConnector(false);
+	}
 }
