@@ -762,6 +762,15 @@ export function runToolApprovalPrimeTargetAction(
 	handlers.scrollToGovernance();
 }
 
+export function runPrimeToolApprovalAction(
+	values: Parameters<typeof toolApprovalPrimeTarget>[0],
+	handlers: ToolApprovalPrimeTargetActionHandlers,
+) {
+	const target = toolApprovalPrimeTarget(values);
+
+	runToolApprovalPrimeTargetAction(target, handlers);
+}
+
 export type ApprovalUsageTargetActionHandlers = {
 	selectIdentityUser: (userId: string) => void;
 	selectRunAgent: (agentId: string) => void;

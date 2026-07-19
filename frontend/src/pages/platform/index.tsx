@@ -93,8 +93,7 @@ import {
 	runApprovalDecisionAction,
 	runApprovalRunCreateAction,
 	runApprovalUsageTargetAction,
-	runToolApprovalPrimeTargetAction,
-	toolApprovalPrimeTarget,
+	runPrimeToolApprovalAction,
 	type PlatformApprovalRunType,
 } from './platform-approval-helpers';
 import {
@@ -1778,7 +1777,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handlePrimeToolApproval(agent: EnterprisePublishedAgent, toolName: string) {
-		const target = toolApprovalPrimeTarget({
+		runPrimeToolApprovalAction({
 			agent,
 			inputConfig: enterpriseToolInputConfig[toolName],
 			catalogItems: availableToolItems,
@@ -1790,9 +1789,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			defaultInputValue: defaultApprovalForm.input_value,
 			selectedIdentityUserId,
 			username,
-		});
-
-		runToolApprovalPrimeTargetAction(target, {
+		}, {
 			selectIdentityUser: setSelectedIdentityUserId,
 			patchApprovalForm: setApprovalForm,
 			clearApprovalError: () => setApprovalError(null),
