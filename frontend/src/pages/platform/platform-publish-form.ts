@@ -30,6 +30,9 @@ export type AgentQuickConfigurationPatch = PublishFormPatch & EnterpriseAgentUpd
 export type AgentDefaultModelBindTarget =
 	| { type: 'navigate'; path: '/credential' }
 	| { type: 'bind'; modelConfigId: string };
+export type AgentKnowledgeBasesBindTarget =
+	| { type: 'navigate'; path: '/knowledge' }
+	| { type: 'bind'; knowledgeBaseIds: string[] };
 
 export type DefaultPublishFormOptions = {
 	template: EnterpriseAgentTemplate;
@@ -243,6 +246,16 @@ export function agentKnowledgeBasesPatch(
 	return {
 		knowledge_base_ids: knowledgeBaseIds,
 	};
+}
+
+export function agentKnowledgeBasesBindTarget(values: {
+	knowledgeBases: KnowledgeBaseView[];
+}): AgentKnowledgeBasesBindTarget {
+	const knowledgeBaseIds = availableKnowledgeBaseIds(values.knowledgeBases);
+
+	return knowledgeBaseIds.length > 0
+		? { type: 'bind', knowledgeBaseIds }
+		: { type: 'navigate', path: '/knowledge' };
 }
 
 export function agentTemplateToolsPatch(tools: string[]): AgentQuickConfigurationPatch {

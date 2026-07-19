@@ -232,6 +232,7 @@ import { runPlatformOperationAction } from './platform-operation-actions';
 import {
 	agentDefaultModelBindTarget,
 	agentDefaultModelPatch,
+	agentKnowledgeBasesBindTarget,
 	agentKnowledgeBasesPatch,
 	agentMemoryEnabledPatch,
 	agentPublishPayloadFromForm,
@@ -239,7 +240,6 @@ import {
 	agentTemplateToolsForPublishedAgent,
 	agentTemplateToolsPatch,
 	agentWorkflowEnabledPatch,
-	availableKnowledgeBaseIds,
 	buildAgentConfigurationPayloadFromForm,
 	defaultPublishFormForTemplate,
 	nextPublishedAgentIdAfterArchive,
@@ -2388,16 +2388,16 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleBindAvailableKnowledge(agent: EnterprisePublishedAgent) {
-		const knowledgeBaseIds = availableKnowledgeBaseIds(knowledgeBases);
-		if (knowledgeBaseIds.length === 0) {
-			navigate('/knowledge');
+		const target = agentKnowledgeBasesBindTarget({ knowledgeBases });
+		if (target.type === 'navigate') {
+			navigate(target.path);
 			return;
 		}
 
 		setBindingAgentKnowledgeId(agent.id);
 		setPlatformAgentsError(null);
 		try {
-			const patch = agentKnowledgeBasesPatch(knowledgeBaseIds);
+			const patch = agentKnowledgeBasesPatch(target.knowledgeBaseIds);
 			const response = await platformApi.updateAgent(agent.id, patch);
 			syncAgentQuickConfiguration(agent.id, response.agent.id, patch);
 			await refetchPlatformAgents();
