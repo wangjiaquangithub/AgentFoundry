@@ -369,6 +369,36 @@ type DashboardTenantWorkspaceViewProps = Pick<
 	| 'tenantOverviewItems'
 >;
 
+type DashboardTenantGovernanceViewProps = Pick<
+	DashboardViewPageProps,
+	| 'availableToolItems'
+	| 'connectors'
+	| 'connectorsLoading'
+	| 'currentIdentityLabel'
+	| 'enterpriseIdentities'
+	| 'handleInspectIdentityAudit'
+	| 'handleSaveToolPolicy'
+	| 'handleUseIdentity'
+	| 'savingToolPolicy'
+	| 'scrollToAgentRunner'
+	| 'selectedIdentity'
+	| 'selectedIdentityAllowedTools'
+	| 'selectedIdentityDeniedTools'
+	| 'selectedIdentityPendingToolNames'
+	| 'selectedIdentityWorkspace'
+	| 'setAgentQuestion'
+	| 'setSelectedIdentityUserId'
+	| 'setToolPolicyDraft'
+	| 'setToolPolicySaveError'
+	| 'setToolPolicySaveSuccess'
+	| 't'
+	| 'toolPolicyDraft'
+	| 'toolPolicyMode'
+	| 'toolPolicySaveError'
+	| 'toolPolicySaveSuccess'
+	| 'toolPolicySummary'
+>;
+
 type DashboardPlatformConsoleViewProps = Pick<
 	DashboardViewPageProps,
 	'platformConsoleItems'
@@ -611,6 +641,12 @@ export function createPlatformDashboardGovernanceHealthViewProps(
 export function createPlatformDashboardTenantWorkspaceViewProps(
 	props: DashboardTenantWorkspaceViewProps,
 ): DashboardTenantWorkspaceViewProps {
+	return props;
+}
+
+export function createPlatformDashboardTenantGovernanceViewProps(
+	props: DashboardTenantGovernanceViewProps,
+): DashboardTenantGovernanceViewProps {
 	return props;
 }
 
