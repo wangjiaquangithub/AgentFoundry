@@ -103,6 +103,7 @@ import {
 } from './platform-tool-policy-helpers';
 import {
 	runMemberEditAction,
+	runMemberLoadAction,
 	runMemberSaveAction,
 	runMemberStatusToggleRequestAction,
 } from './platform-member-helpers';
@@ -1107,18 +1108,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function refetchMembers() {
-		setPlatformMembersLoading(true);
-		setPlatformMembersError(null);
-		try {
-			const response = await platformApi.members();
-			setPlatformMembers(response);
-		} catch (error) {
-			setPlatformMembersError(
-				error instanceof Error ? error.message : memberRequestText.loadError,
-			);
-		} finally {
-			setPlatformMembersLoading(false);
-		}
+		await runMemberLoadAction(memberRequestText.loadError, {
+			setLoading: setPlatformMembersLoading,
+			clearError: () => setPlatformMembersError(null),
+			loadMembers: platformApi.members,
+			setMembers: setPlatformMembers,
+			setError: setPlatformMembersError,
+		});
 	}
 
 	async function refreshMemberDependentViews() {

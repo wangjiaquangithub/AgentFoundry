@@ -1,5 +1,6 @@
 import type {
 	EnterprisePlatformMember,
+	EnterprisePlatformMembersResponse,
 	EnterprisePlatformMemberUpsertRequest,
 } from '@/api';
 import type { MemberFormState } from './platform-defaults';
@@ -17,6 +18,16 @@ export type MemberStatusToggleAction =
 
 export type MemberEditActionHandlers = {
 	setMemberForm: (form: MemberFormState) => void;
+};
+
+export type MemberLoadActionHandlers = {
+	setLoading: (loading: boolean) => void;
+	clearError: () => void;
+	loadMembers: () =>
+		| EnterprisePlatformMembersResponse
+		| Promise<EnterprisePlatformMembersResponse>;
+	setMembers: (members: EnterprisePlatformMembersResponse) => void;
+	setError: (message: string) => void;
 };
 
 export type MemberSaveActionHandlers = {
@@ -77,6 +88,24 @@ export function runMemberEditAction(
 	handlers: MemberEditActionHandlers,
 ) {
 	handlers.setMemberForm(memberFormFromMember(member));
+}
+
+export async function runMemberLoadAction(
+	loadErrorMessage: string,
+	handlers: MemberLoadActionHandlers,
+) {
+	handlers.setLoading(true);
+	handlers.clearError();
+	try {
+		const response = await handlers.loadMembers();
+		handlers.setMembers(response);
+	} catch (error) {
+		handlers.setError(
+			error instanceof Error ? error.message : loadErrorMessage,
+		);
+	} finally {
+		handlers.setLoading(false);
+	}
 }
 
 export async function runMemberSaveAction(
