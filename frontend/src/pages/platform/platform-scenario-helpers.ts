@@ -30,3 +30,28 @@ export async function runScenarioLoadAction(
 		handlers.setLoading(false);
 	}
 }
+
+export type PlatformScenarioHandlerValues = {
+	loadErrorMessage: string;
+};
+
+export type PlatformScenarioHandlerActions = ScenarioLoadActionHandlers;
+
+export function createPlatformScenarioHandlers(
+	values: PlatformScenarioHandlerValues,
+	actions: PlatformScenarioHandlerActions,
+) {
+	async function refetchScenarios() {
+		await runScenarioLoadAction(values.loadErrorMessage, {
+			setLoading: actions.setLoading,
+			clearError: actions.clearError,
+			loadScenarios: actions.loadScenarios,
+			setScenarios: actions.setScenarios,
+			setError: actions.setError,
+		});
+	}
+
+	return {
+		refetchScenarios,
+	};
+}

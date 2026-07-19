@@ -85,7 +85,7 @@ import {
 	createPlatformWorkflowTemplateHandlers,
 } from './platform-workflow-template-helpers';
 import { createPlatformWorkflowRunHandlers } from './platform-workflow-run-helpers';
-import { runScenarioLoadAction } from './platform-scenario-helpers';
+import { createPlatformScenarioHandlers } from './platform-scenario-helpers';
 import { runAuditEventLoadAction } from './platform-audit-helpers';
 import {
 	capabilityNavigationActions,
@@ -1243,18 +1243,18 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	);
 
-	async function refetchScenarios() {
-		await runScenarioLoadAction(
-			scenarioRequestText.loadError,
-			{
-				setLoading: setScenariosLoading,
-				clearError: () => setScenariosError(null),
-				loadScenarios: platformApi.scenarios,
-				setScenarios,
-				setError: setScenariosError,
-			},
-		);
-	}
+	const { refetchScenarios } = createPlatformScenarioHandlers(
+		{
+			loadErrorMessage: scenarioRequestText.loadError,
+		},
+		{
+			setLoading: setScenariosLoading,
+			clearError: () => setScenariosError(null),
+			loadScenarios: platformApi.scenarios,
+			setScenarios,
+			setError: setScenariosError,
+		},
+	);
 
 	async function refetchOpsTasks() {
 		await runOpsTaskLoadAction(
