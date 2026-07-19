@@ -4,6 +4,12 @@ import { DashboardViewPage } from './components/DashboardViewPage';
 
 type DashboardViewPageProps = ComponentProps<typeof DashboardViewPage>;
 
+type DashboardSharedViewProps = Pick<
+	DashboardViewPageProps,
+	| 't'
+	| 'username'
+>;
+
 type DashboardTenantAccessViewProps = Pick<
 	DashboardViewPageProps,
 	| 'accessControlStats'
@@ -655,6 +661,12 @@ type DashboardScenariosViewProps = Pick<
 export function createPlatformDashboardViewProps(
 	props: DashboardViewPageProps,
 ): DashboardViewPageProps {
+	return props;
+}
+
+export function createPlatformDashboardSharedViewProps(
+	props: DashboardSharedViewProps,
+): DashboardSharedViewProps {
 	return props;
 }
 

@@ -186,6 +186,7 @@ import {
 	createPlatformDashboardRolloutPathViewProps,
 	createPlatformDashboardRuntimeStatusViewProps,
 	createPlatformDashboardScenariosViewProps,
+	createPlatformDashboardSharedViewProps,
 	createPlatformDashboardTenantAccessViewProps,
 	createPlatformDashboardTenantGovernanceViewProps,
 	createPlatformDashboardTenantWorkspaceViewProps,
@@ -2601,8 +2602,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					t,
 					username,
 				}),
-				t: t,
-				username: username,
+				...createPlatformDashboardSharedViewProps({
+					t,
+					username,
+				}),
 			})}
 		/>
 	);
