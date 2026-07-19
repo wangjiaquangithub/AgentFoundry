@@ -69,6 +69,7 @@ import {
 	runAgentRunHistorySelectionAction,
 	runAgentWorkflowPrimeTargetAction,
 	runClearAgentConversationSuccessAction,
+	runEnterpriseToolAction,
 	runIdentityAgentRunnerTargetAction,
 	runMemoryOperationAgentRunTargetAction,
 	runPublishedAgentRunnerTargetAction,
@@ -2557,35 +2558,23 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			selectedRunAgentId,
 			toolApprovalId,
 		});
-		if (target.type === 'empty') {
-			return;
-		}
 
-		setRunningTool(true);
-		setToolRunError(null);
-		try {
-			const response = await platformApi.runTool(target.payload);
-			setToolRunResult(response);
-			await refetchPlatform();
-			await refetchToolCatalog();
-			await refetchAuditEvents();
-			await refetchOpsTasks();
-		} catch (error) {
-			const approvalRequired = approvalRequiredDetail(error, 'tool_run');
-			if (approvalRequired) {
-				const created = await handleCreateRunApproval(
-					'tool_run',
-					approvalRequired.message,
-				);
-				if (created) {
-					setToolRunError(toolRunnerRequestText.approvalRequiredCreated);
-				}
-				return;
-			}
-			setToolRunError(error instanceof Error ? error.message : String(error));
-		} finally {
-			setRunningTool(false);
-		}
+		await runEnterpriseToolAction(target, {
+			setRunning: setRunningTool,
+			clearError: () => setToolRunError(null),
+			runTool: platformApi.runTool,
+			setResult: setToolRunResult,
+			refreshDependentViews: async () => {
+				await refetchPlatform();
+				await refetchToolCatalog();
+				await refetchAuditEvents();
+				await refetchOpsTasks();
+			},
+			createApproval: (message) => handleCreateRunApproval('tool_run', message),
+			setApprovalRequiredError: () =>
+				setToolRunError(toolRunnerRequestText.approvalRequiredCreated),
+			setError: setToolRunError,
+		});
 	}
 
 	async function handleRunEnterpriseTool() {

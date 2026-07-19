@@ -5,12 +5,14 @@ import type {
 	EnterprisePublishedAgent,
 	EnterprisePlatformScenario,
 	EnterpriseToolRunRequest,
+	EnterpriseToolRunResponse,
 	EnterpriseWorkflowRunRequest,
 	EnterpriseWorkflowTemplate,
 } from '@/api';
 import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
 import {
 	agentAccessAllowed,
+	approvalRequiredDetail,
 	identityForTenant,
 	identityForMemoryOperation,
 	normalizeWorkflowInputs,
@@ -692,6 +694,48 @@ export function toolRunRequestTarget(values: {
 			approvalId: target.approvalId,
 		}),
 	};
+}
+
+export type EnterpriseToolRunActionHandlers = {
+	setRunning: (running: boolean) => void;
+	clearError: () => void;
+	runTool: (
+		payload: EnterpriseToolRunRequest,
+	) => EnterpriseToolRunResponse | Promise<EnterpriseToolRunResponse>;
+	setResult: (response: EnterpriseToolRunResponse) => void;
+	refreshDependentViews: () => void | Promise<void>;
+	createApproval: (message: string) => boolean | Promise<boolean>;
+	setApprovalRequiredError: () => void;
+	setError: (message: string) => void;
+};
+
+export async function runEnterpriseToolAction(
+	target: ToolRunRequestTarget,
+	handlers: EnterpriseToolRunActionHandlers,
+) {
+	if (target.type === 'empty') {
+		return;
+	}
+
+	handlers.setRunning(true);
+	handlers.clearError();
+	try {
+		const response = await handlers.runTool(target.payload);
+		handlers.setResult(response);
+		await handlers.refreshDependentViews();
+	} catch (error) {
+		const approvalRequired = approvalRequiredDetail(error, 'tool_run');
+		if (approvalRequired) {
+			const created = await handlers.createApproval(approvalRequired.message);
+			if (created) {
+				handlers.setApprovalRequiredError();
+			}
+			return;
+		}
+		handlers.setError(error instanceof Error ? error.message : String(error));
+	} finally {
+		handlers.setRunning(false);
+	}
 }
 
 export function enterpriseWorkflowRunPayload(values: {
