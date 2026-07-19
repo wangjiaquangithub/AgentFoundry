@@ -928,6 +928,29 @@ export function scenarioWorkflowRunTarget(values: {
 	};
 }
 
+export type ScenarioWorkflowRunActionHandlers = {
+	setWorkflowType: (workflowType: string) => void;
+	setWorkflowInputs: (inputs: Record<string, string>) => void;
+	scheduleWorkflowRunnerFocus: () => void;
+	runWorkflow: (target: {
+		workflowType: string;
+		inputs: Record<string, string>;
+	}) => void | Promise<void>;
+};
+
+export async function runScenarioWorkflowAction(
+	target: ReturnType<typeof scenarioWorkflowRunTarget>,
+	handlers: ScenarioWorkflowRunActionHandlers,
+) {
+	handlers.setWorkflowType(target.workflowType);
+	handlers.setWorkflowInputs(target.inputs);
+	handlers.scheduleWorkflowRunnerFocus();
+	await handlers.runWorkflow({
+		workflowType: target.workflowType,
+		inputs: target.inputs,
+	});
+}
+
 export function agentWorkflowPrimeInputs(values: {
 	selectedWorkflowTemplate: EnterpriseWorkflowTemplate | null;
 	workflowOptions: Array<{

@@ -72,6 +72,7 @@ import {
 	runIdentityAgentRunnerTargetAction,
 	runMemoryOperationAgentRunTargetAction,
 	runPublishedAgentRunnerTargetAction,
+	runScenarioWorkflowAction,
 	runSelectedRunAgentTargetAction,
 	runTenantAgentRunnerTargetAction,
 	scenarioWorkflowRunTarget,
@@ -2613,12 +2614,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			workflowTemplates,
 			currentInputs: workflowInputs,
 		});
-		setSelectedWorkflowType(target.workflowType);
-		setWorkflowInputs(target.inputs);
-		window.setTimeout(scrollToWorkflowRunner, 0);
-		await runEnterpriseWorkflow({
-			workflowType: target.workflowType,
-			inputs: target.inputs,
+		await runScenarioWorkflowAction(target, {
+			setWorkflowType: setSelectedWorkflowType,
+			setWorkflowInputs,
+			scheduleWorkflowRunnerFocus: () => window.setTimeout(scrollToWorkflowRunner, 0),
+			runWorkflow: runEnterpriseWorkflow,
 		});
 	}
 
