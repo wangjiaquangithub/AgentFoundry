@@ -268,6 +268,7 @@ import { platformAppCenterDisplayStateForStatus } from './platform-app-center-di
 import { platformConnectorDisplayStateForStatus } from './platform-connector-display';
 import { platformConnectionDisplayStateForStatus } from './platform-connection-display';
 import { platformGovernanceDisplayStateForStatus } from './platform-governance-display';
+import { platformResourceDisplayStateForStatus } from './platform-resource-display';
 import {
 	agentAccessAllowed,
 	agentRoutingDisplayStateForResult,
@@ -290,7 +291,6 @@ import {
 	platformOverviewStatsForSummary,
 	platformAgentInventoryStateForStatus,
 	platformConsoleItemsForDisplay,
-	platformResourceLookupStateForStatus,
 	platformRuntimeConfigStateForStatus,
 	runtimeStatusItemsForStatus,
 	selectedIdentityStateForStatus,
@@ -533,10 +533,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const selectedAgentConversation = agentConversations[selectedRunAgentId] ?? [];
 	const selectedTemplate = platformAgentInventoryState.selectedTemplate;
 	const defaultAgentTemplate = platformAgentInventoryState.defaultAgentTemplate;
-	const platformResourceLookupState = platformResourceLookupStateForStatus({
+	const platformResourceDisplay = platformResourceDisplayStateForStatus({
 		credentials,
 		knowledgeBases,
 	});
+	const platformResourceLookupState = platformResourceDisplay.lookupState;
 	const credentialById = platformResourceLookupState.credentialById;
 	const knowledgeBaseById = platformResourceLookupState.knowledgeBaseById;
 	const agentSetupSteps: AgentWizardStep[] = agentSetupStepsForStatus(
