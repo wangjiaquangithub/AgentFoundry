@@ -212,6 +212,7 @@ import {
 	workflowSelectionLabels,
 } from './platform-labels';
 import { platformLaunchpadDisplayStateForStatus } from './platform-launchpad-display';
+import { platformWorkbenchDisplayStateForStatus } from './platform-workbench-display';
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
 	agentQuickConfigurationSyncResult,
@@ -307,11 +308,6 @@ import {
 	tenantWorkspaceOperationsStateForStatus,
 	toolCatalogStateForStatus,
 	triggerOperationsStateForStatus,
-	workbenchActionsForStatus,
-	workbenchIndicatorsForStatus,
-	workbenchQuickActionsForStatus,
-	workbenchReadinessItemsForStatus,
-	workbenchRiskItemsForStatus,
 	workflowSelectionStateForTemplates,
 	workflowOperationsStateForStatus,
 	type AgentWizardStep,
@@ -2603,7 +2599,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		actions: platformConsoleNavigationActions(platformNavigationHandlers),
 		labels: platformConsoleItemLabels(t),
 	});
-	const workbenchIndicators = workbenchIndicatorsForStatus(
+	const workbenchDisplay = platformWorkbenchDisplayStateForStatus(
 		{
 			activeAgentCount: activePlatformAgents.length,
 			readyAgentCount: readyPlatformAgents.length,
@@ -2613,65 +2609,54 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			memoryOperationsSavedCount,
 			memoryOperationsHitCount,
 			memoryOperationsItemCount: memoryOperationsItems.length,
-		},
-		{
-			icons: workbenchIndicatorIcons,
-			actions: workbenchIndicatorNavigationActions(platformNavigationHandlers),
-			labels: workbenchIndicatorLabels(t, {
-				memoryOperationsSavedCount,
-				memoryOperationsHitCount,
-			}),
-		},
-	);
-	const workbenchActions = workbenchActionsForStatus(
-		{
+			memoryOperationsRunCount,
 			selectedRunAgentName: selectedRunAgent?.name,
 			workflowTemplateCount: workflowTemplates.length,
-			pendingApprovalCount: pendingApprovals.length,
-			memoryOperationsRunCount,
-		},
-		{
-			icons: workbenchPrimaryActionIcons,
-			actions: workbenchPrimaryNavigationActions(platformNavigationHandlers),
-			labels: workbenchPrimaryActionLabels(t),
-		},
-	);
-	const workbenchReadinessItems = workbenchReadinessItemsForStatus(
-		{
 			credentialCount: credentials.length,
 			knowledgeBaseCount: knowledgeBases.length,
 			savedConnectorConfigCount: savedConnectorConfigs.length,
 			connectorDraftIssueCount: connectorDraftIssues.length,
 			savedConnectorConfigEnabled: Boolean(connectors?.runtime.saved_config_enabled),
 			activeMemberCount,
-			readyAgentCount: readyPlatformAgents.length,
-			activeAgentCount: activePlatformAgents.length,
-			workflowTemplateCount: workflowTemplates.length,
-		},
-		{
-			icons: workbenchReadinessIcons,
-			actions: workbenchReadinessNavigationActions(platformNavigationHandlers),
-			labels: workbenchReadinessLabels(t),
-		},
-	);
-	const workbenchRiskItems = workbenchRiskItemsForStatus(
-		{
 			hasErrors,
-			connectorDraftIssueCount: connectorDraftIssues.length,
-			pendingApprovalCount: pendingApprovals.length,
-			failedWorkflowRunCount,
-			readyAgentCount: readyPlatformAgents.length,
 		},
 		{
-			actions: workbenchRiskNavigationActions(platformNavigationHandlers),
-			labels: workbenchRiskLabels(t),
+			indicator: {
+				icons: workbenchIndicatorIcons,
+				actions: workbenchIndicatorNavigationActions(platformNavigationHandlers),
+				labels: workbenchIndicatorLabels(t, {
+					memoryOperationsSavedCount,
+					memoryOperationsHitCount,
+				}),
+			},
+			primaryAction: {
+				icons: workbenchPrimaryActionIcons,
+				actions: workbenchPrimaryNavigationActions(platformNavigationHandlers),
+				labels: workbenchPrimaryActionLabels(t),
+			},
+			readiness: {
+				icons: workbenchReadinessIcons,
+				actions: workbenchReadinessNavigationActions(platformNavigationHandlers),
+				labels: workbenchReadinessLabels(t),
+			},
+			risk: {
+				actions: workbenchRiskNavigationActions(platformNavigationHandlers),
+				labels: workbenchRiskLabels(t),
+			},
+			quickAction: {
+				icons: workbenchQuickActionIcons,
+				actions: workbenchQuickNavigationActions(platformNavigationHandlers),
+				labels: workbenchQuickActionLabels(t),
+			},
 		},
 	);
-	const workbenchQuickActions = workbenchQuickActionsForStatus({
-		icons: workbenchQuickActionIcons,
-		actions: workbenchQuickNavigationActions(platformNavigationHandlers),
-		labels: workbenchQuickActionLabels(t),
-	});
+	const {
+		actions: workbenchActions,
+		indicators: workbenchIndicators,
+		quickActions: workbenchQuickActions,
+		readinessItems: workbenchReadinessItems,
+		riskItems: workbenchRiskItems,
+	} = workbenchDisplay;
 	const rolloutPathSteps = rolloutPathStepsForStatus(
 		{
 			credentialCount: credentials.length,
