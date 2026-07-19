@@ -118,6 +118,7 @@ import {
 	runWorkflowTemplateToggleAction,
 } from './platform-workflow-template-helpers';
 import { runWorkflowRunLoadAction } from './platform-workflow-run-helpers';
+import { runScenarioLoadAction } from './platform-scenario-helpers';
 import {
 	approvalFiltersForIdentity,
 	approvalFiltersForTenant,
@@ -1402,18 +1403,16 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function refetchScenarios() {
-		setScenariosLoading(true);
-		setScenariosError(null);
-		try {
-			const response = await platformApi.scenarios();
-			setScenarios(response.scenarios);
-		} catch (error) {
-			setScenariosError(
-				error instanceof Error ? error.message : scenarioRequestText.loadError,
-			);
-		} finally {
-			setScenariosLoading(false);
-		}
+		await runScenarioLoadAction(
+			scenarioRequestText.loadError,
+			{
+				setLoading: setScenariosLoading,
+				clearError: () => setScenariosError(null),
+				loadScenarios: platformApi.scenarios,
+				setScenarios,
+				setError: setScenariosError,
+			},
+		);
 	}
 
 	async function refetchOpsTasks() {
