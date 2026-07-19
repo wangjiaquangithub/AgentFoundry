@@ -15,6 +15,20 @@ type DashboardTenantAccessViewProps = Pick<
 	| 'tenantWorkspaces'
 >;
 
+type DashboardOverviewViewProps = Pick<
+	DashboardViewPageProps,
+	| 'handleNextStepPrimaryAction'
+	| 'handleStartPublishing'
+	| 'hasErrors'
+	| 'nextStepMode'
+	| 'nextStepPrimaryDisabled'
+	| 'publishingTemplateId'
+	| 'serverUrl'
+	| 'stats'
+	| 't'
+	| 'username'
+>;
+
 type DashboardAgentRunnerViewProps = Pick<
 	DashboardViewPageProps,
 	| 'agentAccessAllowed'
@@ -630,6 +644,12 @@ type DashboardScenariosViewProps = Pick<
 export function createPlatformDashboardViewProps(
 	props: DashboardViewPageProps,
 ): DashboardViewPageProps {
+	return props;
+}
+
+export function createPlatformDashboardOverviewViewProps(
+	props: DashboardOverviewViewProps,
+): DashboardOverviewViewProps {
 	return props;
 }
 
