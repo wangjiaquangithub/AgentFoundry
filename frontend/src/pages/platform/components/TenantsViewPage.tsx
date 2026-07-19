@@ -19,7 +19,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 import type { PlatformMemberTenantSummary } from './MembersPanel';
-import { PlatformNotice } from './common';
+import {
+	PlatformNotice,
+	PlatformPageHeader,
+	PlatformPageShell,
+	StatCard,
+} from './common';
 import { countArrayField } from '../platform-utils';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -63,22 +68,14 @@ export function TenantsViewPage({
 	t,
 }: TenantsViewPageProps) {
 	return (
-		<main className="h-full overflow-y-auto bg-background">
-			<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 lg:px-8">
-				<section className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
-					<div className="min-w-0">
-						<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-							<Building2 className="size-4" />
-							<span>{t('platform.members.organizationOverview')}</span>
-						</div>
-						<h1 className="text-2xl font-semibold tracking-normal">
-							成员与租户治理
-						</h1>
-						<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-							按租户查看成员、角色、已绑定 Agent、审批和连接器工作区，先把多租户隔离关系管清楚。
-						</p>
-					</div>
-					<div className="flex flex-wrap gap-2 lg:justify-end">
+		<PlatformPageShell>
+			<PlatformPageHeader
+				icon={Building2}
+				eyebrow={t('platform.members.organizationOverview')}
+				title="成员与租户治理"
+				description="按租户查看成员、角色、已绑定 Agent、审批和连接器工作区，先把多租户隔离关系管清楚。"
+				actions={
+					<>
 						<Button
 							type="button"
 							size="sm"
@@ -99,8 +96,9 @@ export function TenantsViewPage({
 							<Network className={cn(connectorsLoading && 'animate-pulse')} />
 							{t('platform.connectors.title')}
 						</Button>
-					</div>
-				</section>
+					</>
+				}
+			/>
 
 				{platformMembersError ? <PlatformNotice>{platformMembersError}</PlatformNotice> : null}
 				{connectorsError ? <PlatformNotice>{connectorsError}</PlatformNotice> : null}
@@ -135,19 +133,13 @@ export function TenantsViewPage({
 					].map((item) => {
 						const Icon = item.icon;
 						return (
-							<Card key={item.label} size="sm" className="rounded-lg shadow-none">
-								<CardHeader className="grid-cols-[1fr_auto] items-start gap-3">
-									<CardTitle className="text-sm text-muted-foreground">
-										{item.label}
-									</CardTitle>
-									<Icon className="size-4 text-muted-foreground" />
-								</CardHeader>
-								<CardContent>
-									<div className="text-2xl font-semibold tabular-nums">
-										{item.value}
-									</div>
-								</CardContent>
-							</Card>
+							<StatCard
+								key={item.label}
+								label={item.label}
+								value={item.value}
+								icon={Icon}
+								loading={platformMembersLoading || connectorsLoading}
+							/>
 						);
 					})}
 				</section>
@@ -314,7 +306,6 @@ export function TenantsViewPage({
 						</CardContent>
 					</Card>
 				</section>
-			</div>
-		</main>
+		</PlatformPageShell>
 	);
 }

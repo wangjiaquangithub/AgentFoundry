@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { formatTimestamp } from '../platform-utils';
 import type { MemoryOperationsItem } from './MemoryOperationsPanel';
+import { PlatformPageHeader, PlatformPageShell, StatCard } from './common';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -27,22 +28,14 @@ export function MemoryViewPage({
 	t,
 }: MemoryViewPageProps) {
 	return (
-		<main className="h-full overflow-y-auto bg-background">
-			<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 lg:px-8">
-				<section className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
-					<div className="min-w-0">
-						<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-							<Brain className="size-4" />
-							<span>{t('platform.memoryOps.eyebrow')}</span>
-						</div>
-						<h1 className="text-2xl font-semibold tracking-normal">
-							{t('platform.memoryOps.title')}
-						</h1>
-						<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-							{t('platform.memoryOps.description')}
-						</p>
-					</div>
-					<div className="flex flex-wrap gap-2 lg:justify-end">
+		<PlatformPageShell>
+			<PlatformPageHeader
+				icon={Brain}
+				eyebrow={t('platform.memoryOps.eyebrow')}
+				title={t('platform.memoryOps.title')}
+				description={t('platform.memoryOps.description')}
+				actions={
+					<>
 						<Button
 							type="button"
 							size="sm"
@@ -61,8 +54,9 @@ export function MemoryViewPage({
 							<FileClock className="size-4" />
 							{t('platform.nav.runs')}
 						</Button>
-					</div>
-				</section>
+					</>
+				}
+			/>
 
 				<section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 					{[
@@ -89,19 +83,7 @@ export function MemoryViewPage({
 					].map((item) => {
 						const Icon = item.icon;
 						return (
-							<Card key={item.label} size="sm" className="rounded-lg shadow-none">
-								<CardHeader className="grid-cols-[1fr_auto] items-start gap-3">
-									<CardTitle className="text-sm text-muted-foreground">
-										{item.label}
-									</CardTitle>
-									<Icon className="size-4 text-muted-foreground" />
-								</CardHeader>
-								<CardContent>
-									<div className="text-2xl font-semibold tabular-nums">
-										{item.value}
-									</div>
-								</CardContent>
-							</Card>
+							<StatCard key={item.label} label={item.label} value={item.value} icon={Icon} />
 						);
 					})}
 				</section>
@@ -193,7 +175,6 @@ export function MemoryViewPage({
 						</div>
 					)}
 				</section>
-			</div>
-		</main>
+		</PlatformPageShell>
 	);
 }

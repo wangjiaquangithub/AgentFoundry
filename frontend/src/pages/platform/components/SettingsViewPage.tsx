@@ -8,7 +8,12 @@ import { cn } from '@/lib/utils';
 
 import { ConfigManagementPanel } from './ConfigManagementPanel';
 import type { RuntimeStatusItem } from './RuntimeStatusPanel';
-import { PlatformNotice, StateBadge } from './common';
+import {
+	PlatformConnectionCard,
+	PlatformNotice,
+	PlatformPageHeader,
+	PlatformPageShell,
+} from './common';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -58,20 +63,14 @@ export function SettingsViewPage({
 	t,
 }: SettingsViewPageProps) {
 	return (
-		<main className="h-full overflow-y-auto bg-background">
-			<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 lg:px-8">
-				<section className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
-					<div className="min-w-0">
-						<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-							<Server className="size-4" />
-							<span>{t('platform.configManagement.title')}</span>
-						</div>
-						<h1 className="text-2xl font-semibold tracking-normal">平台设置</h1>
-						<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-							查看运行时连接状态，导出或导入平台配置，后续模型、租户策略和运行参数都收敛到这里。
-						</p>
-					</div>
-					<div className="flex flex-wrap gap-2 lg:justify-end">
+		<PlatformPageShell>
+			<PlatformPageHeader
+				icon={Server}
+				eyebrow={t('platform.configManagement.title')}
+				title="平台设置"
+				description="查看运行时连接状态，导出或导入平台配置，后续模型、租户策略和运行参数都收敛到这里。"
+				actions={
+					<>
 						<Button
 							size="sm"
 							variant="outline"
@@ -90,8 +89,9 @@ export function SettingsViewPage({
 							<RefreshCcw className={cn(platformConfigLoading && 'animate-spin')} />
 							{t('platform.configManagement.refresh')}
 						</Button>
-					</div>
-				</section>
+					</>
+				}
+			/>
 
 				{platformError ? (
 					<PlatformNotice>{t('platform.runtime.error')}</PlatformNotice>
@@ -105,37 +105,18 @@ export function SettingsViewPage({
 							</CardTitle>
 						</CardHeader>
 						<CardContent className="grid gap-3">
-							<div className="grid gap-2 rounded-lg border bg-muted/10 p-3 text-xs">
-								<div className="flex items-center justify-between gap-3">
-									<span className="text-muted-foreground">
-										{t('platform.connection.server')}
-									</span>
-									<span className="truncate font-mono" title={serverUrl}>
-										{serverUrl}
-									</span>
-								</div>
-								<div className="flex items-center justify-between gap-3">
-									<span className="text-muted-foreground">
-										{t('platform.connection.user')}
-									</span>
-									<span className="truncate font-mono" title={username}>
-										{username}
-									</span>
-								</div>
-								<div className="flex items-center justify-between gap-3">
-									<span className="text-muted-foreground">
-										{t('platform.connection.health')}
-									</span>
-									<StateBadge
-										state={hasErrors ? 'partial' : 'ready'}
-										label={
-											hasErrors
-												? t('platform.status.toConfigure')
-												: t('platform.status.ready')
-										}
-									/>
-								</div>
-							</div>
+							<PlatformConnectionCard
+								serverUrl={serverUrl}
+								username={username}
+								hasErrors={hasErrors}
+								labels={{
+									server: t('platform.connection.server'),
+									user: t('platform.connection.user'),
+									health: t('platform.connection.health'),
+									partial: t('platform.status.toConfigure'),
+									connected: t('platform.status.ready'),
+								}}
+							/>
 							<div className="grid gap-2">
 								{runtimeItems.map((item) => {
 									const Icon = item.icon;
@@ -175,7 +156,6 @@ export function SettingsViewPage({
 						t={t}
 					/>
 				</section>
-			</div>
-		</main>
+		</PlatformPageShell>
 	);
 }

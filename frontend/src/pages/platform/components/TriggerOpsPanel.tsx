@@ -71,7 +71,7 @@ export function TriggerOpsPanel({
 	labels,
 }: TriggerOpsPanelProps) {
 	return (
-		<section className="grid gap-4 rounded-lg border bg-muted/10 p-4">
+		<section className="grid min-w-0 gap-4 rounded-lg border bg-muted/10 p-4">
 			<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 				<div className="min-w-0">
 					<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
@@ -83,29 +83,39 @@ export function TriggerOpsPanel({
 						{labels.description}
 					</p>
 				</div>
-				<div className="flex flex-wrap gap-2 lg:justify-end">
-					<Button type="button" size="sm" variant="outline" onClick={onOpenSchedules}>
+				<div className="grid w-full min-w-0 gap-2 sm:grid-cols-3 lg:w-auto lg:min-w-[28rem]">
+					<Button
+						type="button"
+						size="sm"
+						variant="outline"
+						className="min-w-0 justify-center"
+						onClick={onOpenSchedules}
+					>
 						<CalendarClock className="size-4" />
-						{labels.createSchedule}
+						<span className="min-w-0 truncate">{labels.createSchedule}</span>
 					</Button>
 					<Button
 						type="button"
 						size="sm"
 						variant="outline"
+						className="min-w-0 justify-center"
 						onClick={() => onCreateRunApproval('workflow_run')}
 						disabled={creatingRunApproval === 'workflow_run'}
 					>
 						<ShieldCheck className="size-4" />
-						{labels.requestApproval}
+						<span className="min-w-0 truncate">{labels.requestApproval}</span>
 					</Button>
 					<Button
 						type="button"
 						size="sm"
+						className="min-w-0 justify-center"
 						onClick={onRunWorkflow}
 						disabled={runningWorkflow || selectedWorkflowDisabled}
 					>
 						<Play className="size-4" />
-						{runningWorkflow ? labels.running : labels.runWorkflow}
+						<span className="min-w-0 truncate">
+							{runningWorkflow ? labels.running : labels.runWorkflow}
+						</span>
 					</Button>
 				</div>
 			</div>
@@ -121,37 +131,41 @@ export function TriggerOpsPanel({
 
 			<div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.85fr)]">
 				<div className="grid content-start gap-3 rounded-lg border bg-background p-3">
-					<div className="flex items-start justify-between gap-3">
+					<div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
 						<div className="min-w-0">
 							<h3 className="text-sm font-medium">{labels.triggerPlan}</h3>
 							<p className="mt-1 text-xs leading-5 text-muted-foreground">
 								{triggerOpsSummary}
 							</p>
 						</div>
-						<Badge variant="secondary">{selectedWorkflowName}</Badge>
+						<Badge variant="secondary" className="max-w-full self-start">
+							<span className="min-w-0 truncate">{selectedWorkflowName}</span>
+						</Badge>
 					</div>
 					<div className="grid gap-2">
-						<div className="flex items-center justify-between gap-3 rounded-md bg-muted/30 px-2 py-1.5 text-xs">
+						<div className="grid min-w-0 gap-2 rounded-md bg-muted/30 px-2 py-1.5 text-xs sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
 							<span className="min-w-0 truncate">{labels.manualTrigger}</span>
 							<Button
 								type="button"
 								size="sm"
 								variant="ghost"
+								className="min-w-0 justify-start sm:justify-center"
 								onClick={onScrollToWorkflowRunner}
 							>
-								{labels.configureWorkflow}
+								<span className="min-w-0 truncate">{labels.configureWorkflow}</span>
 								<ArrowRight className="size-4" />
 							</Button>
 						</div>
-						<div className="flex items-center justify-between gap-3 rounded-md bg-muted/30 px-2 py-1.5 text-xs">
+						<div className="grid min-w-0 gap-2 rounded-md bg-muted/30 px-2 py-1.5 text-xs sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
 							<span className="min-w-0 truncate">{labels.approvalGate}</span>
 							<Button
 								type="button"
 								size="sm"
 								variant="ghost"
+								className="min-w-0 justify-start sm:justify-center"
 								onClick={onScrollToGovernance}
 							>
-								{labels.viewGovernance}
+								<span className="min-w-0 truncate">{labels.viewGovernance}</span>
 								<ArrowRight className="size-4" />
 							</Button>
 						</div>
@@ -159,10 +173,16 @@ export function TriggerOpsPanel({
 				</div>
 
 				<div className="grid content-start gap-3 rounded-lg border bg-background p-3">
-					<div className="flex items-center justify-between gap-3">
+					<div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
 						<h3 className="text-sm font-medium">{labels.recentSchedules}</h3>
-						<Button type="button" size="sm" variant="ghost" onClick={onOpenSchedules}>
-							{labels.openSchedules}
+						<Button
+							type="button"
+							size="sm"
+							variant="ghost"
+							className="min-w-0 justify-start sm:justify-center"
+							onClick={onOpenSchedules}
+						>
+							<span className="min-w-0 truncate">{labels.openSchedules}</span>
 							<ArrowRight className="size-4" />
 						</Button>
 					</div>

@@ -29,7 +29,12 @@ import {
 	type AgentRunnerConversationTurn,
 } from './AgentRunnerConversation';
 import { AgentRunnerResult } from './AgentRunnerResult';
-import { PlatformNotice, type HealthState } from './common';
+import {
+	PlatformNotice,
+	PlatformPageHeader,
+	PlatformPageShell,
+	type HealthState,
+} from './common';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -165,22 +170,14 @@ export function AgentsViewPage({
 	handleInspectAgentRunAudit,
 }: AgentsViewPageProps) {
 	return (
-		<main className="h-full overflow-y-auto bg-background">
-			<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 lg:px-8">
-				<section className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
-					<div className="min-w-0">
-						<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-							<BotMessageSquare className="size-4" />
-							<span>{t('platform.agentManagement.title')}</span>
-						</div>
-						<h1 className="text-2xl font-semibold tracking-normal">
-							{t('platform.agentManagement.title')}
-						</h1>
-						<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-							{t('platform.agentManagement.description')}
-						</p>
-					</div>
-					<div className="flex flex-wrap gap-2 lg:justify-end">
+		<PlatformPageShell>
+			<PlatformPageHeader
+				icon={BotMessageSquare}
+				eyebrow={t('platform.agentManagement.title')}
+				title={t('platform.agentManagement.title')}
+				description={t('platform.agentManagement.description')}
+				actions={
+					<>
 						<Button
 							size="sm"
 							variant="outline"
@@ -198,8 +195,9 @@ export function AgentsViewPage({
 							<Play />
 							{t('platform.agentManagement.runAgent')}
 						</Button>
-					</div>
-				</section>
+					</>
+				}
+			/>
 
 				{platformAgentsError ? (
 					<PlatformNotice>{t('platform.agentManagement.loadError')}</PlatformNotice>
@@ -446,7 +444,6 @@ export function AgentsViewPage({
 						t={t}
 					/>
 				</section>
-			</div>
-		</main>
+		</PlatformPageShell>
 	);
 }

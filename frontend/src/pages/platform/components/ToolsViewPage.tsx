@@ -9,7 +9,11 @@ import type {
 } from '@/api';
 import { ToolCatalogPanel } from './ToolCatalogPanel';
 import { ToolRunnerPanel } from './ToolRunnerPanel';
-import { StateBadge } from './common';
+import {
+	PlatformConnectionCard,
+	PlatformPageHeader,
+	PlatformPageShell,
+} from './common';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -87,53 +91,27 @@ export function ToolsViewPage({
 	t,
 }: ToolsViewPageProps) {
 	return (
-		<main className="h-full overflow-y-auto bg-background">
-			<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 lg:px-8">
-				<section className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
-					<div className="min-w-0">
-						<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-							<Boxes className="size-4" />
-							<span>{t('platform.toolCatalog.title')}</span>
-						</div>
-						<h1 className="text-2xl font-semibold tracking-normal">
-							{t('platform.toolCatalog.title')}
-						</h1>
-						<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-							{t('platform.toolCatalog.description')}
-						</p>
-					</div>
-					<div className="grid min-w-0 gap-2 rounded-lg border bg-muted/20 p-3 text-xs sm:min-w-80">
-						<div className="flex items-center justify-between gap-3">
-							<span className="text-muted-foreground">
-								{t('platform.connection.server')}
-							</span>
-							<span className="truncate font-mono" title={serverUrl}>
-								{serverUrl}
-							</span>
-						</div>
-						<div className="flex items-center justify-between gap-3">
-							<span className="text-muted-foreground">
-								{t('platform.connection.user')}
-							</span>
-							<span className="truncate font-mono" title={username}>
-								{username}
-							</span>
-						</div>
-						<div className="flex items-center justify-between gap-3">
-							<span className="text-muted-foreground">
-								{t('platform.connection.health')}
-							</span>
-							<StateBadge
-								state={hasErrors ? 'partial' : 'ready'}
-								label={
-									hasErrors
-										? t('platform.connection.partial')
-										: t('platform.connection.connected')
-								}
-							/>
-						</div>
-					</div>
-				</section>
+		<PlatformPageShell>
+			<PlatformPageHeader
+				icon={Boxes}
+				eyebrow={t('platform.toolCatalog.title')}
+				title={t('platform.toolCatalog.title')}
+				description={t('platform.toolCatalog.description')}
+				aside={
+					<PlatformConnectionCard
+						serverUrl={serverUrl}
+						username={username}
+						hasErrors={hasErrors}
+						labels={{
+							server: t('platform.connection.server'),
+							user: t('platform.connection.user'),
+							health: t('platform.connection.health'),
+							partial: t('platform.connection.partial'),
+							connected: t('platform.connection.connected'),
+						}}
+					/>
+				}
+			/>
 
 				<ToolCatalogPanel
 					sectionRef={configManagementRef}
@@ -171,7 +149,6 @@ export function ToolsViewPage({
 					onRunEnterpriseTool={onRunEnterpriseTool}
 					t={t}
 				/>
-			</div>
-		</main>
+		</PlatformPageShell>
 	);
 }

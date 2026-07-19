@@ -26,7 +26,13 @@ import type {
 	MonitoringStat,
 } from './MonitoringSnapshotPanel';
 import { AuditEventsPanel } from './AuditEventsPanel';
-import { StateBadge, type HealthState } from './common';
+import {
+	PlatformPageHeader,
+	PlatformPageShell,
+	StatCard,
+	StateBadge,
+	type HealthState,
+} from './common';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -100,22 +106,14 @@ export function RunsViewPage({
 	t,
 }: RunsViewPageProps) {
 	return (
-		<main className="h-full overflow-y-auto bg-background">
-			<div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 lg:px-8">
-				<section className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
-					<div className="min-w-0">
-						<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-							<Activity className="size-4" />
-							<span>{t('platform.monitoring.eyebrow')}</span>
-						</div>
-						<h1 className="text-2xl font-semibold tracking-normal">
-							{t('platform.monitoring.title')}
-						</h1>
-						<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-							{t('platform.monitoring.description')}
-						</p>
-					</div>
-					<div className="flex flex-wrap gap-2 lg:justify-end">
+		<PlatformPageShell>
+			<PlatformPageHeader
+				icon={Activity}
+				eyebrow={t('platform.monitoring.eyebrow')}
+				title={t('platform.monitoring.title')}
+				description={t('platform.monitoring.description')}
+				actions={
+					<>
 						<StateBadge
 							state={monitoringHealthState}
 							label={t(
@@ -151,23 +149,22 @@ export function RunsViewPage({
 							<ShieldCheck className="size-4" />
 							{t('platform.monitoring.openGovernance')}
 						</Button>
-					</div>
-				</section>
+					</>
+				}
+			/>
 
 				<section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
 					{monitoringStats.map((stat) => {
 						const StatIcon = stat.icon;
 						return (
-							<div key={stat.label} className="grid gap-3 rounded-lg border bg-muted/10 p-3">
-								<div className="flex items-center justify-between gap-3">
-									<div className="text-sm font-medium">{stat.label}</div>
-									<div className="grid size-8 place-items-center rounded-md border bg-background">
-										<StatIcon className="size-4 text-muted-foreground" />
-									</div>
-								</div>
-								<div className="text-2xl font-semibold tracking-normal">{stat.value}</div>
-								<p className="text-xs leading-5 text-muted-foreground">{stat.helper}</p>
-							</div>
+							<StatCard
+								key={stat.label}
+								label={stat.label}
+								value={stat.value}
+								helper={stat.helper}
+								icon={StatIcon}
+								loading={monitoringLoading}
+							/>
 						);
 					})}
 				</section>
@@ -318,7 +315,6 @@ export function RunsViewPage({
 					summarizeAuditObject={summarizeAuditObject}
 					t={t}
 				/>
-			</div>
-		</main>
+		</PlatformPageShell>
 	);
 }
