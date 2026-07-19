@@ -142,6 +142,7 @@ import {
 } from './platform-filter-builders';
 import {
 	agentSetupStepAction,
+	appCenterPrimaryAction,
 	capabilityNavigationActions,
 	firstAgentGuideNavigationActions,
 	launchpadNavigationActions,
@@ -2226,19 +2227,24 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleAppCenterPrimaryAction() {
-		if (credentials.length === 0) {
-			navigate('/credential');
+		const action = appCenterPrimaryAction({
+			credentialCount: credentials.length,
+			readyAgentId: readyPlatformAgents[0]?.id,
+			activeAgentCount: activePlatformAgents.length,
+		});
+
+		if (action.type === 'navigate') {
+			navigate(action.path);
 			return;
 		}
 
-		const readyAgent = readyPlatformAgents[0];
-		if (readyAgent) {
-			setSelectedRunAgentId(readyAgent.id);
+		if (action.type === 'select-ready-agent') {
+			setSelectedRunAgentId(action.agentId);
 			handlePrimeAgentRunner();
 			return;
 		}
 
-		if (activePlatformAgents.length === 0) {
+		if (action.type === 'quick-publish') {
 			void handleQuickPublishAgent();
 			return;
 		}

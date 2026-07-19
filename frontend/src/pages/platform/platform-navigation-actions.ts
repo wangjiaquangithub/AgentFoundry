@@ -9,6 +9,12 @@ export type AgentSetupStepAction =
 	| { type: 'navigate'; path: '/credential' | '/knowledge' }
 	| { type: 'scroll-step' };
 
+export type AppCenterPrimaryAction =
+	| { type: 'navigate'; path: '/credential' }
+	| { type: 'select-ready-agent'; agentId: string }
+	| { type: 'quick-publish' }
+	| { type: 'scroll-management' };
+
 export function agentSetupStepAction(values: {
 	nextStep: AgentWizardStep | null;
 	hasSelectedTemplate: boolean;
@@ -39,6 +45,26 @@ export function agentSetupStepAction(values: {
 	}
 
 	return { type: 'scroll-step' };
+}
+
+export function appCenterPrimaryAction(values: {
+	credentialCount: number;
+	readyAgentId?: string;
+	activeAgentCount: number;
+}): AppCenterPrimaryAction {
+	if (values.credentialCount === 0) {
+		return { type: 'navigate', path: '/credential' };
+	}
+
+	if (values.readyAgentId) {
+		return { type: 'select-ready-agent', agentId: values.readyAgentId };
+	}
+
+	if (values.activeAgentCount === 0) {
+		return { type: 'quick-publish' };
+	}
+
+	return { type: 'scroll-management' };
 }
 
 export type PlatformNavigationActionHandlers = {
