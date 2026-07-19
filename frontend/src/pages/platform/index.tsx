@@ -166,6 +166,7 @@ import { createPlatformWorkflowPageState } from './platform-workflow-state';
 import { createPlatformAgentsViewProps } from './platform-agents-view-props';
 import { createPlatformApprovalsViewProps } from './platform-approvals-view-props';
 import { createPlatformRunsViewProps } from './platform-runs-view-props';
+import { createPlatformTenantsViewProps } from './platform-tenants-view-props';
 import { createPlatformWorkflowsViewProps } from './platform-workflows-view-props';
 import {
 	createPlatformAgentQuickConfigurationHandlers,
@@ -1679,22 +1680,24 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	if (view === 'tenants') {
 		return (
 			<TenantsViewPage
-				platformMemberTenantSummaries={platformMemberTenantSummaries}
-				platformMembersLoading={platformMembersLoading}
-				platformMembersLoaded={Boolean(platformMembers)}
-				platformMembersError={platformMembersError}
-				connectorsLoading={connectorsLoading}
-				connectorsError={connectorsError}
-				tenantWorkspaces={tenantWorkspaces}
-				enterpriseIdentities={enterpriseIdentities}
-				activeMemberCount={activeMemberCount}
-				roleCount={platformMembers?.roles.length ?? 0}
-				activePlatformAgentCount={activePlatformAgents.length}
-				pendingApprovalCount={pendingApprovals.length}
-				onRefreshMembers={() => void refetchMembers()}
-				onRefreshConnectors={() => void refetchConnectors()}
-				onNavigate={navigate}
-				t={t}
+				{...createPlatformTenantsViewProps({
+					platformMemberTenantSummaries,
+					platformMembersLoading,
+					platformMembersLoaded: Boolean(platformMembers),
+					platformMembersError,
+					connectorsLoading,
+					connectorsError,
+					tenantWorkspaces,
+					enterpriseIdentities,
+					activeMemberCount,
+					roleCount: platformMembers?.roles.length ?? 0,
+					activePlatformAgentCount: activePlatformAgents.length,
+					pendingApprovalCount: pendingApprovals.length,
+					onRefreshMembers: () => void refetchMembers(),
+					onRefreshConnectors: () => void refetchConnectors(),
+					onNavigate: navigate,
+					t,
+				})}
 			/>
 		);
 	}
