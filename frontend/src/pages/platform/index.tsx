@@ -243,6 +243,7 @@ import {
 	agentKnowledgeBasesBindTarget,
 	agentQuickConfigurationSyncResult,
 	agentTemplateToolsBindTarget,
+	runAgentDefaultModelBindAction,
 	type AgentQuickConfigurationPatch,
 } from './platform-agent-quick-config';
 import {
@@ -2353,27 +2354,26 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			agent,
 			modelConfigId: credentials[0]?.id,
 		});
-		if (target.type === 'navigate') {
-			navigate(target.path);
-			return;
-		}
 
-		setBindingAgentModelId(agent.id);
-		setPlatformAgentsError(null);
-		try {
-			const response = await platformApi.updateAgent(target.agentId, target.patch);
-			syncAgentQuickConfiguration(agent.id, response.agent.id, target.patch);
-			await refetchPlatformAgents();
-			await refetchPlatform();
-			await refetchToolCatalog();
-			await refetchOpsTasks();
-		} catch (error) {
-			setPlatformAgentsError(
-				error instanceof Error ? error.message : agentManagementRequestText.bindModelError,
-			);
-		} finally {
-			setBindingAgentModelId(null);
-		}
+		await runAgentDefaultModelBindAction(target, {
+			navigateToPath: navigate,
+			setBindingAgent: setBindingAgentModelId,
+			clearError: () => setPlatformAgentsError(null),
+			updateAgent: platformApi.updateAgent,
+			syncQuickConfiguration: syncAgentQuickConfiguration,
+			refreshDependentViews: async () => {
+				await refetchPlatformAgents();
+				await refetchPlatform();
+				await refetchToolCatalog();
+				await refetchOpsTasks();
+			},
+			handleError: (error) =>
+				setPlatformAgentsError(
+					error instanceof Error
+						? error.message
+						: agentManagementRequestText.bindModelError,
+				),
+		});
 	}
 
 	async function handleBindAvailableKnowledge(agent: EnterprisePublishedAgent) {
