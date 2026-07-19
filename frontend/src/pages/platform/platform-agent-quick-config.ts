@@ -54,6 +54,22 @@ export type AgentDefaultModelBindActionHandlers = {
 	refreshDependentViews: () => void | Promise<void>;
 	handleError: (error: unknown) => void;
 };
+export type AgentKnowledgeBasesBindActionHandlers = {
+	navigateToPath: (path: '/knowledge') => void;
+	setBindingAgent: (agentId: string | null) => void;
+	clearError: () => void;
+	updateAgent: (
+		agentId: string,
+		patch: AgentQuickConfigurationPatch,
+	) => EnterpriseAgentUpdateResponse | Promise<EnterpriseAgentUpdateResponse>;
+	syncQuickConfiguration: (
+		agentId: string,
+		updatedAgentId: string,
+		patch: AgentQuickConfigurationPatch,
+	) => void;
+	refreshDependentViews: () => void | Promise<void>;
+	handleError: (error: unknown) => void;
+};
 
 export function agentQuickConfigurationSyncResult(values: {
 	agentId: string;
@@ -143,6 +159,32 @@ export function agentKnowledgeBasesBindTarget(values: {
 				patch: agentKnowledgeBasesPatch(knowledgeBaseIds),
 			}
 		: { type: 'navigate', path: '/knowledge' };
+}
+
+export async function runAgentKnowledgeBasesBindAction(
+	target: AgentKnowledgeBasesBindTarget,
+	handlers: AgentKnowledgeBasesBindActionHandlers,
+) {
+	if (target.type === 'navigate') {
+		handlers.navigateToPath(target.path);
+		return;
+	}
+
+	handlers.setBindingAgent(target.agentId);
+	handlers.clearError();
+	try {
+		const response = await handlers.updateAgent(target.agentId, target.patch);
+		handlers.syncQuickConfiguration(
+			target.agentId,
+			response.agent.id,
+			target.patch,
+		);
+		await handlers.refreshDependentViews();
+	} catch (error) {
+		handlers.handleError(error);
+	} finally {
+		handlers.setBindingAgent(null);
+	}
 }
 
 export function agentTemplateToolsPatch(tools: string[]): AgentQuickConfigurationPatch {
