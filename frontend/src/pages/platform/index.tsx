@@ -96,6 +96,7 @@ import {
 	workbenchReadinessNavigationActions,
 	workbenchRiskNavigationActions,
 } from './platform-navigation-actions';
+import { createPlatformNavigationHandlers } from './platform-navigation-handlers';
 import {
 	agentReleasePipelineIcons,
 	capabilityIcons,
@@ -1491,7 +1492,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	);
 
-	const platformNavigationHandlers = {
+	const platformNavigationHandlers = createPlatformNavigationHandlers({
 		navigate,
 		handleStartPublishing,
 		handleQuickPublishAgent,
@@ -1503,7 +1504,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		scrollToMembers,
 		scrollToToolRunner,
 		scrollToWorkflowRunner,
-	};
+	});
 	const capabilities = platformCapabilityItemsDisplayStateForStatus({
 		t,
 		counts: {
