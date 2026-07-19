@@ -390,6 +390,23 @@ type DashboardOpsPanelViewProps = Pick<
 	| 'workflowTemplates'
 >;
 
+type DashboardAuditEventsViewProps = Pick<
+	DashboardViewPageProps,
+	| 'activePlatformAgents'
+	| 'auditError'
+	| 'auditEvents'
+	| 'auditFilters'
+	| 'auditLoading'
+	| 'auditStats'
+	| 'availableToolItems'
+	| 'platformStatus'
+	| 'refetchAuditEvents'
+	| 'setAuditFilters'
+	| 'summarizeAuditObject'
+	| 't'
+	| 'username'
+>;
+
 type DashboardWorkbenchReadinessViewProps = Pick<
 	DashboardViewPageProps,
 	| 'workbenchQuickActions'
@@ -586,6 +603,12 @@ export function createPlatformDashboardTriggerOpsViewProps(
 export function createPlatformDashboardOpsPanelViewProps(
 	props: DashboardOpsPanelViewProps,
 ): DashboardOpsPanelViewProps {
+	return props;
+}
+
+export function createPlatformDashboardAuditEventsViewProps(
+	props: DashboardAuditEventsViewProps,
+): DashboardAuditEventsViewProps {
 	return props;
 }
 
