@@ -186,6 +186,25 @@ export function approvalWorkflowContinuationTarget(approval: EnterpriseApprovalR
 	};
 }
 
+export function approvalToolContinuationTarget(
+	approval: EnterpriseApprovalRequestItem,
+	inputConfig?: ApprovalToolInputConfig,
+) {
+	const { inputValue } = approvalInputForTool(
+		approval.inputs,
+		inputConfig?.inputKey,
+	);
+
+	return {
+		toolName: approval.tool_name ?? '',
+		inputs: approval.inputs,
+		inputValue,
+		userId: approval.user_id,
+		agentId: approval.agent_id,
+		approvalId: approval.approval_id,
+	};
+}
+
 export function approvalToolInputsPatch(
 	current: Record<string, string>,
 	toolName: string,

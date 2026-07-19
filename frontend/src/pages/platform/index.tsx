@@ -72,6 +72,7 @@ import {
 	approvalInputForTool,
 	approvalQueryFromFilters,
 	approvalToolFormPatch,
+	approvalToolContinuationTarget,
 	approvalToolInputsPatch,
 	approvalWorkflowContinuationTarget,
 	prependApprovalRequest,
@@ -1662,27 +1663,20 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			}
 
 			if (canContinueToolRun && approval.tool_name) {
-				const toolConfig = enterpriseToolInputConfig[approval.tool_name];
-				const { inputValue } = approvalInputForTool(
-					approval.inputs,
-					toolConfig?.inputKey,
+				const target = approvalToolContinuationTarget(
+					approval,
+					enterpriseToolInputConfig[approval.tool_name],
 				);
 
-				setSelectedIdentityUserId(approval.user_id);
-				setSelectedRunAgentId(approval.agent_id);
-				setSelectedToolName(approval.tool_name);
+				setSelectedIdentityUserId(target.userId);
+				setSelectedRunAgentId(target.agentId);
+				setSelectedToolName(target.toolName);
 				setToolInputs((current) =>
-					approvalToolInputsPatch(current, approval.tool_name!, inputValue),
+					approvalToolInputsPatch(current, target.toolName, target.inputValue),
 				);
-				setToolApprovalId(approval.approval_id);
+				setToolApprovalId(target.approvalId);
 				window.setTimeout(scrollToToolRunner, 0);
-				await runEnterpriseTool({
-					toolName: approval.tool_name,
-					inputs: approval.inputs,
-					userId: approval.user_id,
-					agentId: approval.agent_id,
-					approvalId: approval.approval_id,
-				});
+				await runEnterpriseTool(target);
 				return;
 			}
 
