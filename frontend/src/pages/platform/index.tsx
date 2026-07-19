@@ -211,6 +211,7 @@ import {
 	workflowRunnerRequestLabels,
 	workflowSelectionLabels,
 } from './platform-labels';
+import { platformDashboardDisplayStateForStatus } from './platform-dashboard-display';
 import { platformLaunchpadDisplayStateForStatus } from './platform-launchpad-display';
 import { platformMonitoringDisplayStateForStatus } from './platform-monitoring-display';
 import { platformOnboardingDisplayStateForStatus } from './platform-onboarding-display';
@@ -277,9 +278,6 @@ import {
 	auditStatsForSummary,
 	capabilityItemsForStatus,
 	connectorOperationsStateForStatus,
-	dashboardFallbackStateForStatus,
-	dashboardOperationsStateForStatus,
-	dashboardTodoItemsForStatus,
 	governanceOperationsStateForStatus,
 	mapAgentRunToConversationTurn,
 	memoryOperationsStateForConversations,
@@ -287,7 +285,6 @@ import {
 	operationsHeadlineText,
 	publishAccessStateForStatus,
 	publishDraftStateForStatus,
-	platformDashboardSourceStateForStatus,
 	platformOverviewStatsForSummary,
 	platformAgentInventoryStateForStatus,
 	platformConnectionStateForStatus,
@@ -733,10 +730,27 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const selectedWorkflowTemplate = workflowSelectionState.selectedWorkflowTemplate;
 	const workflowOptions = workflowSelectionState.workflowOptions;
 	const selectedWorkflowDisabled = workflowSelectionState.selectedWorkflowDisabled;
-	const dashboardSourceState = platformDashboardSourceStateForStatus({ platformStatus });
-	const dashboard = dashboardSourceState.dashboard;
+	const dashboardDisplay = platformDashboardDisplayStateForStatus({
+		source: { platformStatus },
+		fallback: {
+			governance,
+			approvalRequests,
+			workflowRuns,
+			auditEvents,
+		},
+		operations: {
+			availableToolItems,
+		},
+		todo: {
+			credentialCount: credentials.length,
+			activeAgentCount: activePlatformAgents.length,
+			readyAgentCount: readyPlatformAgents.length,
+			hasErrors,
+		},
+		todoLabels: dashboardTodoLabels(t),
+	});
+	const dashboardSourceState = dashboardDisplay.sourceState;
 	const dashboardOperations = dashboardSourceState.dashboardOperations;
-	const dashboardRiskTools = dashboardSourceState.dashboardRiskTools;
 	const {
 		pendingApprovals,
 		approvedApprovalCount,
@@ -745,13 +759,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		workflowRunCount,
 		recentAuditEvents,
 		auditEventCount,
-	} = dashboardFallbackStateForStatus({
-		dashboard,
-		governance,
-		approvalRequests,
-		workflowRuns,
-		auditEvents,
-	});
+	} = dashboardDisplay.fallbackState;
 	const tenantWorkspaceOperationsState = tenantWorkspaceOperationsStateForStatus(
 		{
 			connectors,
@@ -776,27 +784,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const memoryOperationsRunCount = memoryOperationsState.runCount;
 	const memoryOperationsHitCount = memoryOperationsState.hitCount;
 	const memoryOperationsSavedCount = memoryOperationsState.savedCount;
-	const dashboardOperationsState = dashboardOperationsStateForStatus({
-		dashboardOperations,
-		dashboardRiskTools,
-		availableToolItems,
-	});
+	const dashboardOperationsState = dashboardDisplay.operationsState;
 	const riskToolItems = dashboardOperationsState.riskToolItems;
 	const completedWorkflowRunCount = dashboardOperationsState.completedWorkflowRunCount;
 	const partialWorkflowRunCount = dashboardOperationsState.partialWorkflowRunCount;
 	const failedWorkflowRunCount = dashboardOperationsState.failedWorkflowRunCount;
 	const governedWorkflowItems = dashboardOperationsState.governedWorkflowItems;
 	const recommendedOperationActions = dashboardOperationsState.recommendedOperationActions;
-	const dashboardTodoItems = dashboardTodoItemsForStatus(
-		{
-			credentialCount: credentials.length,
-			activeAgentCount: activePlatformAgents.length,
-			readyAgentCount: readyPlatformAgents.length,
-			pendingApprovalCount: pendingApprovals.length,
-			hasErrors,
-		},
-		dashboardTodoLabels(t),
-	);
+	const dashboardTodoItems = dashboardDisplay.todoItems;
 	const appCenterDisplay = platformAppCenterDisplayStateForStatus({
 		operations: {
 			selectedItem: selectedAppCenterItem,
