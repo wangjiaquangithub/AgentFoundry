@@ -131,6 +131,7 @@ import {
 import {
 	runOpsTaskResolveAction,
 } from './platform-ops-task-helpers';
+import { runWorkflowTemplateToggleAction } from './platform-workflow-template-helpers';
 import {
 	agentRunEvidenceAuditTarget,
 	approvalFiltersForIdentity,
@@ -1710,23 +1711,27 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		template: EnterpriseWorkflowTemplate,
 		enabled: boolean,
 	) {
-		setSavingWorkflowType(template.workflow_type);
-		setWorkflowTemplatesError(null);
-		try {
-			const response = await platformApi.updateWorkflow(template.workflow_type, {
-				enabled,
-			});
-			setWorkflowTemplates(response.workflows);
-			await refetchPlatform();
-			await refetchScenarios();
-			await refetchOpsTasks();
-		} catch (error) {
-			setWorkflowTemplatesError(
-				error instanceof Error ? error.message : workflowRunnerRequestText.templatesLoadError,
-			);
-		} finally {
-			setSavingWorkflowType(null);
-		}
+		await runWorkflowTemplateToggleAction(
+			{ template, enabled },
+			{
+				setSavingWorkflowType,
+				clearError: () => setWorkflowTemplatesError(null),
+				updateWorkflow: (workflowType, values) =>
+					platformApi.updateWorkflow(workflowType, values),
+				setWorkflowTemplates,
+				refreshDependentViews: async () => {
+					await refetchPlatform();
+					await refetchScenarios();
+					await refetchOpsTasks();
+				},
+				handleError: (error) =>
+					setWorkflowTemplatesError(
+						error instanceof Error
+							? error.message
+							: workflowRunnerRequestText.templatesLoadError,
+					),
+			},
+		);
 	}
 
 	function buildDefaultPublishForm(template: EnterpriseAgentTemplate): PublishFormState {
