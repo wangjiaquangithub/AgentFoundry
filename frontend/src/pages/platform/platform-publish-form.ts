@@ -717,6 +717,15 @@ export async function runAgentArchiveAction(
 	}
 }
 
+export async function runAgentArchiveRequestAction(
+	agent: EnterprisePublishedAgent,
+	values: Parameters<typeof runAgentArchiveAction>[1],
+	handlers: AgentArchiveActionHandlers,
+) {
+	const target = agentArchiveTarget(agent);
+	await runAgentArchiveAction(target, values, handlers);
+}
+
 export function publishFormWithPatch(
 	current: PublishFormState,
 	patch: PublishFormPatch,

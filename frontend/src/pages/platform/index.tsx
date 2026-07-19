@@ -237,11 +237,10 @@ import {
 	type AgentQuickConfigurationPatch,
 } from './platform-agent-quick-config';
 import {
-	agentArchiveTarget,
 	agentEditDraft,
 	defaultPublishFormForTemplate,
 	publishFormWithPatch,
-	runAgentArchiveAction,
+	runAgentArchiveRequestAction,
 	runAgentEditCancelAction,
 	runAgentEditDraftAction,
 	runAgentPublishRequestAction,
@@ -2246,9 +2245,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleArchiveAgent(agent: EnterprisePublishedAgent) {
-		const target = agentArchiveTarget(agent);
-		await runAgentArchiveAction(
-			target,
+		await runAgentArchiveRequestAction(
+			agent,
 			{
 				selectedRunAgentId,
 				editingAgentId,
