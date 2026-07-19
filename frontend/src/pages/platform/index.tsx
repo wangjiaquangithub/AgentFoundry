@@ -264,6 +264,7 @@ import {
 	type PublishFormState,
 } from './platform-defaults';
 import { platformAppCenterDisplayStateForStatus } from './platform-app-center-display';
+import { platformGovernanceDisplayStateForStatus } from './platform-governance-display';
 import {
 	agentAccessAllowed,
 	agentRoutingDisplayStateForResult,
@@ -278,7 +279,6 @@ import {
 	auditStatsForSummary,
 	capabilityItemsForStatus,
 	connectorOperationsStateForStatus,
-	governanceOperationsStateForStatus,
 	mapAgentRunToConversationTurn,
 	memoryOperationsStateForConversations,
 	nextAgentSetupStepForSteps,
@@ -292,7 +292,6 @@ import {
 	platformResourceLookupStateForStatus,
 	platformRuntimeConfigStateForStatus,
 	runtimeStatusItemsForStatus,
-	selectedIdentityGovernanceDisplayStateForStatus,
 	selectedIdentityStateForStatus,
 	selectedToolRunnerStateForStatus,
 	summarizeAuditObject,
@@ -877,28 +876,30 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		state: HealthState;
 		icon: ComponentType<{ className?: string }>;
 	}>;
-	const selectedIdentityGovernanceDisplayState =
-		selectedIdentityGovernanceDisplayStateForStatus({
+	const governanceDisplay = platformGovernanceDisplayStateForStatus({
+		selectedIdentity: {
 			selectedIdentity,
 			pendingApprovals,
 			auditEvents,
 			availableToolItems,
 			toolPolicyDraft,
-		});
+		},
+		operations: {
+			enterpriseIdentities,
+			pendingApprovals,
+			governance,
+			auditEventCount,
+			accessLabels: governanceAccessLabels(t),
+			healthLabels: governanceHealthLabels(t),
+			icons: governanceHealthIcons,
+		},
+	});
+	const selectedIdentityGovernanceDisplayState = governanceDisplay.selectedIdentityState;
 	const selectedIdentityPendingApprovals =
 		selectedIdentityGovernanceDisplayState.selectedIdentityPendingApprovals;
 	const selectedIdentityPendingToolNames =
 		selectedIdentityGovernanceDisplayState.selectedIdentityPendingToolNames;
-	const governanceOperationsState = governanceOperationsStateForStatus({
-		enterpriseIdentities,
-		pendingApprovals,
-		governance,
-		auditEventCount,
-		selectedIdentityPendingApprovalCount: selectedIdentityPendingApprovals.length,
-		accessLabels: governanceAccessLabels(t),
-		healthLabels: governanceHealthLabels(t),
-		icons: governanceHealthIcons,
-	});
+	const governanceOperationsState = governanceDisplay.operationsState;
 	const identityAccessRows = governanceOperationsState.identityAccessRows;
 	const accessTenantSummaries = governanceOperationsState.accessTenantSummaries;
 	const accessControlStats = governanceOperationsState.accessControlStats;
