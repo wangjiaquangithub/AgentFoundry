@@ -194,10 +194,8 @@ import {
 import { createPlatformAgentInventoryPageState } from './platform-agent-inventory-state';
 import {
 	platformAgentRoutingDisplayStateForResult,
-	platformAgentRunnerDisplayStateForStatus,
-	platformAgentSetupStepsDisplayStateForStatus,
-	platformNextAgentSetupStepDisplayStateForSteps,
 } from './platform-agent-runner-display';
+import { createPlatformAgentRunnerPageState } from './platform-agent-runner-state';
 import { createPlatformAppCenterPageState } from './platform-app-center-state';
 import { createPlatformConnectorPageState } from './platform-connector-state';
 import { createPlatformConnectionPageState } from './platform-connection-state';
@@ -456,8 +454,26 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		credentials,
 		knowledgeBases,
 	});
-	const agentSetupSteps = platformAgentSetupStepsDisplayStateForStatus(
-		{
+	const {
+		agentSetupSteps,
+		nextAgentSetupStep,
+		primaryAgentSampleQuestion,
+		selectedRunAgentModelLabel,
+		selectedRunAgentKnowledgeLabels,
+		selectedRunAgentToolCount,
+		selectedRunAgentKnowledgeCount,
+		selectedRunAgentReadinessState,
+		selectedRunAgentReadinessLabel,
+		nextStepMode,
+		nextStepPrimaryDisabled,
+		agentRunModelLabel,
+		agentRunKnowledgeLabels,
+		agentRunConnectorSourceText,
+		agentToolCalls,
+		agentToolCallBadgeText,
+		agentRunEvidence,
+	} = createPlatformAgentRunnerPageState({
+		setup: {
 			selectedTemplateName: selectedTemplate?.name,
 			modelConfigId: publishForm.model_config_id,
 			credentialById,
@@ -475,27 +491,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				runtime: agentRuntimeStepRef,
 			},
 		},
-		agentSetupStepLabels(t),
-	);
-	const nextAgentSetupStep = platformNextAgentSetupStepDisplayStateForSteps(agentSetupSteps);
-	const primaryAgentSampleQuestion = agentSampleQuestions[0];
-	const {
-		selectedRunAgentModelLabel,
-		selectedRunAgentKnowledgeLabels,
-		selectedRunAgentToolCount,
-		selectedRunAgentKnowledgeCount,
-		selectedRunAgentReadinessState,
-		selectedRunAgentReadinessLabel,
-		nextStepMode,
-		nextStepPrimaryDisabled,
-		agentRunModelLabel,
-		agentRunKnowledgeLabels,
-		agentRunConnectorSourceText,
-		agentToolCalls,
-		agentToolCallBadgeText,
-		agentRunEvidence,
-	} = platformAgentRunnerDisplayStateForStatus(
-		{
+		setupLabels: agentSetupStepLabels(t),
+		runner: {
 			selectedRunAgent,
 			agentRunResult,
 			credentialById,
@@ -506,8 +503,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			hasDefaultAgentTemplate: Boolean(defaultAgentTemplate),
 			publishingTemplate: Boolean(publishingTemplateId),
 		},
-		agentRunnerLabels(t),
-	).runnerState;
+		runnerLabels: agentRunnerLabels(t),
+		sampleQuestions: agentSampleQuestions,
+	});
 	const {
 		enterpriseIdentities,
 		subagentTemplates,
