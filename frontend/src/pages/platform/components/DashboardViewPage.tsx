@@ -29,10 +29,10 @@ import { DashboardRuntimeStatusSection } from './DashboardRuntimeStatusSection';
 import { DashboardTenantAccessSection } from './DashboardTenantAccessSection';
 import { DashboardTenantGovernancePanelSection } from './DashboardTenantGovernancePanelSection';
 import { DashboardWorkbenchSection } from './DashboardWorkbenchSection';
+import { DashboardToolCatalogSection } from './DashboardToolCatalogSection';
 import { DashboardWorkflowAutomationSection } from './DashboardWorkflowAutomationSection';
 import { DashboardWorkflowRunnerSection } from './DashboardWorkflowRunnerSection';
 import { PlatformDashboardOverview } from './PlatformDashboardOverview';
-import { ToolCatalogPanel } from './ToolCatalogPanel';
 import { ToolRunnerPanel } from './ToolRunnerPanel';
 import { cn } from '@/lib/utils';
 
@@ -993,14 +993,14 @@ export function DashboardViewPage({
 					summarizeAuditObject={summarizeAuditObject}
 				/>
 
-				<ToolCatalogPanel
-					sectionRef={configManagementRef}
+				<DashboardToolCatalogSection
+					t={t}
+					configManagementRef={configManagementRef}
 					availableToolItems={availableToolItems}
 					publishedPlatformAgents={publishedPlatformAgents}
 					toolCatalogLoading={toolCatalogLoading}
 					toolCatalogError={toolCatalogError}
-					onRefetchToolCatalog={refetchToolCatalog}
-					t={t}
+					refetchToolCatalog={refetchToolCatalog}
 				/>
 
 				<ToolRunnerPanel
