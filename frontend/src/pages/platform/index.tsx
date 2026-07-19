@@ -142,6 +142,7 @@ import {
 } from './platform-filter-builders';
 import {
 	agentSetupStepAction,
+	appCenterDetailPrimaryAction,
 	appCenterPrimaryAction,
 	capabilityNavigationActions,
 	firstAgentGuideNavigationActions,
@@ -2253,19 +2254,27 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleAppCenterDetailPrimaryAction() {
-		if (inspectedAppCenterAgent) {
-			if (agentIsReady(inspectedAppCenterAgent)) {
-				setSelectedRunAgentId(inspectedAppCenterAgent.id);
-				handlePrimeAgentRunner();
-				return;
-			}
+		const action = appCenterDetailPrimaryAction({
+			agentId: inspectedAppCenterAgent?.id,
+			agentIsReady: Boolean(
+				inspectedAppCenterAgent && agentIsReady(inspectedAppCenterAgent),
+			),
+			hasTemplate: Boolean(inspectedAppCenterTemplate),
+		});
 
+		if (action.type === 'select-agent') {
+			setSelectedRunAgentId(action.agentId);
+			handlePrimeAgentRunner();
+			return;
+		}
+
+		if (action.type === 'edit-agent' && inspectedAppCenterAgent) {
 			handleEditAgent(inspectedAppCenterAgent);
 			window.setTimeout(scrollToAgentManagement, 0);
 			return;
 		}
 
-		if (inspectedAppCenterTemplate) {
+		if (action.type === 'configure-template' && inspectedAppCenterTemplate) {
 			handleConfigureTemplate(inspectedAppCenterTemplate);
 			window.setTimeout(scrollToAgentManagement, 0);
 		}

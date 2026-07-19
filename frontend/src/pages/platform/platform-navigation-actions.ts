@@ -15,6 +15,12 @@ export type AppCenterPrimaryAction =
 	| { type: 'quick-publish' }
 	| { type: 'scroll-management' };
 
+export type AppCenterDetailPrimaryAction =
+	| { type: 'none' }
+	| { type: 'select-agent'; agentId: string }
+	| { type: 'edit-agent' }
+	| { type: 'configure-template' };
+
 export function agentSetupStepAction(values: {
 	nextStep: AgentWizardStep | null;
 	hasSelectedTemplate: boolean;
@@ -65,6 +71,24 @@ export function appCenterPrimaryAction(values: {
 	}
 
 	return { type: 'scroll-management' };
+}
+
+export function appCenterDetailPrimaryAction(values: {
+	agentId?: string;
+	agentIsReady: boolean;
+	hasTemplate: boolean;
+}): AppCenterDetailPrimaryAction {
+	if (values.agentId) {
+		return values.agentIsReady
+			? { type: 'select-agent', agentId: values.agentId }
+			: { type: 'edit-agent' };
+	}
+
+	if (values.hasTemplate) {
+		return { type: 'configure-template' };
+	}
+
+	return { type: 'none' };
 }
 
 export type PlatformNavigationActionHandlers = {
