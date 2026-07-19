@@ -1068,6 +1068,19 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		});
 	}
 
+	async function refetchPlatformConfigImportDependencies() {
+		await Promise.all([
+			refetchPlatform(),
+			refetchMembers(),
+			refetchConnectors(),
+			refetchGovernance(),
+			refetchPlatformAgents(),
+			refetchToolCatalog(),
+			refetchWorkflowTemplates(),
+			refetchPlatformConfigExport(),
+		]);
+	}
+
 	async function handleImportPlatformConfig() {
 		await runPlatformConfigImportAction(
 			{
@@ -1081,18 +1094,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				clearResult: () => setPlatformConfigImportResult(null),
 				importConfig: platformApi.importConfig,
 				setResult: setPlatformConfigImportResult,
-				refreshDependentViews: async () => {
-					await Promise.all([
-						refetchPlatform(),
-						refetchMembers(),
-						refetchConnectors(),
-						refetchGovernance(),
-						refetchPlatformAgents(),
-						refetchToolCatalog(),
-						refetchWorkflowTemplates(),
-						refetchPlatformConfigExport(),
-					]);
-				},
+				refreshDependentViews: refetchPlatformConfigImportDependencies,
 				handleError: (error) =>
 					setPlatformConfigError(
 						platformConfigImportErrorMessage(
