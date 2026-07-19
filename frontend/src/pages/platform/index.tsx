@@ -62,7 +62,7 @@ import {
 	runAgentRunHistorySelectionAction,
 	runClearAgentConversationSuccessAction,
 	runEnterpriseToolRequestAction,
-	runEnterpriseWorkflowAction,
+	runEnterpriseWorkflowRequestAction,
 	runOpenMemoryOperationAgentAction,
 	runPrimeAgentWorkflowAction,
 	runPrimePublishedAgentAction,
@@ -75,7 +75,6 @@ import {
 	workflowInputsForSelectedOption,
 	workflowSelectionForAvailableTemplates,
 	workflowInputsWithValue,
-	workflowRunRequestTarget,
 	type AgentConversationMap,
 } from './platform-agent-runner';
 import {
@@ -2518,33 +2517,35 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		agentId?: string;
 		approvalId?: string;
 	}) {
-		const payload = workflowRunRequestTarget({
-			options,
-			selectedWorkflowType,
-			workflowInputs,
-			selectedIdentityUserId,
-			selectedRunAgentId,
-			workflowApprovalId,
-		});
-
-		await runEnterpriseWorkflowAction(payload, {
-			setRunning: setRunningWorkflow,
-			clearError: () => setWorkflowRunError(null),
-			runWorkflow: platformApi.runWorkflow,
-			setResult: setWorkflowRunResult,
-			refreshDependentViews: async () => {
-				await refetchPlatform();
-				await refetchToolCatalog();
-				await refetchAuditEvents();
-				await refetchWorkflowRuns();
-				await refetchScenarios();
-				await refetchOpsTasks();
+		await runEnterpriseWorkflowRequestAction(
+			{
+				options,
+				selectedWorkflowType,
+				workflowInputs,
+				selectedIdentityUserId,
+				selectedRunAgentId,
+				workflowApprovalId,
 			},
-			createApproval: (message) => handleCreateRunApproval('workflow_run', message),
-			setApprovalRequiredError: () =>
-				setWorkflowRunError(workflowRunnerRequestText.approvalRequiredCreated),
-			setError: setWorkflowRunError,
-		});
+			{
+				setRunning: setRunningWorkflow,
+				clearError: () => setWorkflowRunError(null),
+				runWorkflow: platformApi.runWorkflow,
+				setResult: setWorkflowRunResult,
+				refreshDependentViews: async () => {
+					await refetchPlatform();
+					await refetchToolCatalog();
+					await refetchAuditEvents();
+					await refetchWorkflowRuns();
+					await refetchScenarios();
+					await refetchOpsTasks();
+				},
+				createApproval: (message) =>
+					handleCreateRunApproval('workflow_run', message),
+				setApprovalRequiredError: () =>
+					setWorkflowRunError(workflowRunnerRequestText.approvalRequiredCreated),
+				setError: setWorkflowRunError,
+			},
+		);
 	}
 
 	async function handleRunEnterpriseWorkflow() {

@@ -972,6 +972,14 @@ export async function runEnterpriseWorkflowAction(
 	}
 }
 
+export async function runEnterpriseWorkflowRequestAction(
+	values: Parameters<typeof workflowRunRequestTarget>[0],
+	handlers: EnterpriseWorkflowRunActionHandlers,
+) {
+	const payload = workflowRunRequestTarget(values);
+	await runEnterpriseWorkflowAction(payload, handlers);
+}
+
 export function scenarioWorkflowRunTarget(values: {
 	scenario: EnterprisePlatformScenario;
 	workflowTemplates: EnterpriseWorkflowTemplate[];
