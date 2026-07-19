@@ -264,6 +264,7 @@ import {
 	type MemberFormState,
 	type PublishFormState,
 } from './platform-defaults';
+import { platformAgentInventoryDisplayStateForStatus } from './platform-agent-inventory-display';
 import { platformAppCenterDisplayStateForStatus } from './platform-app-center-display';
 import { platformConnectorDisplayStateForStatus } from './platform-connector-display';
 import { platformConnectionDisplayStateForStatus } from './platform-connection-display';
@@ -290,7 +291,6 @@ import {
 	publishAccessStateForStatus,
 	publishDraftStateForStatus,
 	platformOverviewStatsForSummary,
-	platformAgentInventoryStateForStatus,
 	platformConsoleItemsForDisplay,
 	runtimeStatusItemsForStatus,
 	selectedIdentityStateForStatus,
@@ -516,7 +516,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	const agentTemplates = platformAgents?.templates ?? [];
 	const publishedPlatformAgents = platformAgents?.agents ?? [];
-	const platformAgentInventoryState = platformAgentInventoryStateForStatus({
+	const platformAgentInventoryDisplay = platformAgentInventoryDisplayStateForStatus({
 		agents,
 		agentTemplates,
 		publishedPlatformAgents,
@@ -524,6 +524,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		lastPublishedAgentId,
 		selectedTemplateId,
 	});
+	const platformAgentInventoryState = platformAgentInventoryDisplay.inventoryState;
 	const featuredAgents = platformAgentInventoryState.featuredAgents;
 	const activePlatformAgents = platformAgentInventoryState.activePlatformAgents;
 	const archivedPlatformAgents = platformAgentInventoryState.archivedPlatformAgents;
