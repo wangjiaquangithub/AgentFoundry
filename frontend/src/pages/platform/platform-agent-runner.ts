@@ -717,6 +717,39 @@ export function runClearAgentConversationSuccessAction(
 	handlers.clearRunError();
 }
 
+export type ClearAgentConversationRequestActionHandlers =
+	ClearAgentConversationSuccessActionHandlers & {
+		setRunsLoading: (loading: boolean) => void;
+		clearRunsError: NavigationHandler;
+		clearRuns: (params: ClearAgentRunsParams) => unknown | Promise<unknown>;
+		setRunsError: (message: string) => void;
+		historyClearErrorMessage: string;
+	};
+
+export async function runClearAgentConversationRequestAction(
+	values: Parameters<typeof clearAgentConversationTarget>[0],
+	handlers: ClearAgentConversationRequestActionHandlers,
+) {
+	const target = clearAgentConversationTarget(values);
+
+	if (target.type === 'skip') {
+		return;
+	}
+
+	handlers.setRunsLoading(true);
+	handlers.clearRunsError();
+	try {
+		await handlers.clearRuns(target.params);
+		runClearAgentConversationSuccessAction(target, handlers);
+	} catch (error) {
+		handlers.setRunsError(
+			error instanceof Error ? error.message : handlers.historyClearErrorMessage,
+		);
+	} finally {
+		handlers.setRunsLoading(false);
+	}
+}
+
 export function selectedToolInputs(values: {
 	inputKey: string;
 	inputValue: string;

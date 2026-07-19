@@ -53,13 +53,12 @@ import { usePlatformPageRefs } from './platform-page-refs';
 import {
 	agentRunResultForSelectedAgent,
 	agentRunResultAfterHistoryRefresh,
-	clearAgentConversationTarget,
 	runEnterpriseAgentRequestAction,
 	replaceAgentConversationTurns,
 	runAgentRunnerPrimeTargetAction,
 	runAgentRunHistoryDetailAction,
 	runAgentRunHistorySelectionRequestAction,
-	runClearAgentConversationSuccessAction,
+	runClearAgentConversationRequestAction,
 	runEnterpriseToolRequestAction,
 	runEnterpriseWorkflowRequestAction,
 	runOpenMemoryOperationAgentAction,
@@ -1876,32 +1875,23 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleClearAgentConversation() {
-		const target = clearAgentConversationTarget({
-			selectedRunAgentId,
-			selectedIdentityUserId,
-			username,
-		});
-
-		if (target.type === 'skip') {
-			return;
-		}
-
-		setAgentRunsLoading(true);
-		setAgentRunsError(null);
-		try {
-			await platformApi.clearAgentRuns(target.params);
-			runClearAgentConversationSuccessAction(target, {
+		await runClearAgentConversationRequestAction(
+			{
+				selectedRunAgentId,
+				selectedIdentityUserId,
+				username,
+			},
+			{
+				setRunsLoading: setAgentRunsLoading,
+				clearRunsError: () => setAgentRunsError(null),
+				clearRuns: platformApi.clearAgentRuns,
 				setAgentConversations,
 				clearRunResult: () => setAgentRunResult(null),
 				clearRunError: () => setAgentRunError(null),
-			});
-		} catch (error) {
-			setAgentRunsError(
-				error instanceof Error ? error.message : agentRunnerRequestText.historyClearError,
-			);
-		} finally {
-			setAgentRunsLoading(false);
-		}
+				setRunsError: setAgentRunsError,
+				historyClearErrorMessage: agentRunnerRequestText.historyClearError,
+			},
+		);
 	}
 
 	function handleUseIdentity(identity: EnterpriseIdentity) {
