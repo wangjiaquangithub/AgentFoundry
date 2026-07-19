@@ -225,9 +225,8 @@ import {
 } from './platform-labels';
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
-	agentCapabilityEnableTarget,
 	agentQuickConfigurationSyncResult,
-	runAgentCapabilityEnableAction,
+	runAgentCapabilityEnableRequestAction,
 	runAgentDefaultModelBindRequestAction,
 	runAgentKnowledgeBasesBindRequestAction,
 	runAgentTemplateToolsBindRequestAction,
@@ -2373,55 +2372,57 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleEnableAgentMemory(agent: EnterprisePublishedAgent) {
-		const target = agentCapabilityEnableTarget({
-			agent,
-			capability: 'memory',
-		});
-
-		await runAgentCapabilityEnableAction(target, {
-			setEnablingAgent: setEnablingAgentMemoryId,
-			clearError: () => setPlatformAgentsError(null),
-			updateAgent: platformApi.updateAgent,
-			syncQuickConfiguration: syncAgentQuickConfiguration,
-			refreshDependentViews: async () => {
-				await refetchPlatformAgents();
-				await refetchPlatform();
-				await refetchToolCatalog();
-				await refetchOpsTasks();
+		await runAgentCapabilityEnableRequestAction(
+			{
+				agent,
+				capability: 'memory',
 			},
-			handleError: (error) =>
-				setPlatformAgentsError(
-					error instanceof Error
-						? error.message
-						: agentManagementRequestText.enableMemoryError,
-				),
-		});
+			{
+				setEnablingAgent: setEnablingAgentMemoryId,
+				clearError: () => setPlatformAgentsError(null),
+				updateAgent: platformApi.updateAgent,
+				syncQuickConfiguration: syncAgentQuickConfiguration,
+				refreshDependentViews: async () => {
+					await refetchPlatformAgents();
+					await refetchPlatform();
+					await refetchToolCatalog();
+					await refetchOpsTasks();
+				},
+				handleError: (error) =>
+					setPlatformAgentsError(
+						error instanceof Error
+							? error.message
+							: agentManagementRequestText.enableMemoryError,
+					),
+			},
+		);
 	}
 
 	async function handleEnableAgentWorkflow(agent: EnterprisePublishedAgent) {
-		const target = agentCapabilityEnableTarget({
-			agent,
-			capability: 'workflow',
-		});
-
-		await runAgentCapabilityEnableAction(target, {
-			setEnablingAgent: setEnablingAgentWorkflowId,
-			clearError: () => setPlatformAgentsError(null),
-			updateAgent: platformApi.updateAgent,
-			syncQuickConfiguration: syncAgentQuickConfiguration,
-			refreshDependentViews: async () => {
-				await refetchPlatformAgents();
-				await refetchPlatform();
-				await refetchToolCatalog();
-				await refetchOpsTasks();
+		await runAgentCapabilityEnableRequestAction(
+			{
+				agent,
+				capability: 'workflow',
 			},
-			handleError: (error) =>
-				setPlatformAgentsError(
-					error instanceof Error
-						? error.message
-						: agentManagementRequestText.enableWorkflowError,
-				),
-		});
+			{
+				setEnablingAgent: setEnablingAgentWorkflowId,
+				clearError: () => setPlatformAgentsError(null),
+				updateAgent: platformApi.updateAgent,
+				syncQuickConfiguration: syncAgentQuickConfiguration,
+				refreshDependentViews: async () => {
+					await refetchPlatformAgents();
+					await refetchPlatform();
+					await refetchToolCatalog();
+					await refetchOpsTasks();
+				},
+				handleError: (error) =>
+					setPlatformAgentsError(
+						error instanceof Error
+							? error.message
+							: agentManagementRequestText.enableWorkflowError,
+					),
+			},
+		);
 	}
 
 	async function runEnterpriseAgent(options?: {

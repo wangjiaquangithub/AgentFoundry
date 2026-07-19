@@ -339,3 +339,11 @@ export async function runAgentCapabilityEnableAction(
 		handlers.setEnablingAgent(null);
 	}
 }
+
+export async function runAgentCapabilityEnableRequestAction(
+	values: Parameters<typeof agentCapabilityEnableTarget>[0],
+	handlers: AgentCapabilityEnableActionHandlers,
+) {
+	const target = agentCapabilityEnableTarget(values);
+	await runAgentCapabilityEnableAction(target, handlers);
+}
