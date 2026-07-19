@@ -107,6 +107,21 @@ export function runPublishedAgentRunnerTargetAction(
 	handlers.scrollToAgentRunner();
 }
 
+export type AgentRunnerPrimeTargetActionHandlers = {
+	setQuestion: (question: string) => void;
+	clearError: NavigationHandler;
+	scrollToAgentRunner: NavigationHandler;
+};
+
+export function runAgentRunnerPrimeTargetAction(
+	sampleQuestion: string,
+	handlers: AgentRunnerPrimeTargetActionHandlers,
+) {
+	handlers.setQuestion(sampleQuestion);
+	handlers.clearError();
+	handlers.scrollToAgentRunner();
+}
+
 export function selectedRunAgentTarget(values: {
 	agentConversations: AgentConversationMap;
 	agentId: string;

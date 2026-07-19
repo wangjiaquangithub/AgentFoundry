@@ -64,6 +64,7 @@ import {
 	mergeAgentConversationTurn,
 	publishedAgentRunnerTarget,
 	replaceAgentConversationTurns,
+	runAgentRunnerPrimeTargetAction,
 	runAgentWorkflowPrimeTargetAction,
 	runIdentityAgentRunnerTargetAction,
 	runMemoryOperationAgentRunTargetAction,
@@ -1870,9 +1871,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handlePrimeAgentRunner(sample = primaryAgentSampleQuestion) {
-		setAgentQuestion(sample);
-		setAgentRunError(null);
-		window.setTimeout(scrollToAgentRunner, 0);
+		runAgentRunnerPrimeTargetAction(sample, {
+			setQuestion: setAgentQuestion,
+			clearError: () => setAgentRunError(null),
+			scrollToAgentRunner: () => window.setTimeout(scrollToAgentRunner, 0),
+		});
 	}
 
 	function handlePrimePublishedAgent(agentId: string, sample = primaryAgentSampleQuestion) {
