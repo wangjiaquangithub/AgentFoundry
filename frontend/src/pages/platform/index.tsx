@@ -209,9 +209,9 @@ import { createPlatformConnectorPageState } from './platform-connector-state';
 import { createPlatformConnectionPageState } from './platform-connection-state';
 import {
 	platformAuditStatsDisplayStateForSummary,
-	platformGovernanceDisplayStateForStatus,
 	platformSummarizeAuditObject,
 } from './platform-governance-display';
+import { createPlatformGovernancePageState } from './platform-governance-state';
 import { createPlatformSelectedIdentityPageState } from './platform-selected-identity-state';
 import {
 	platformAgentReleasePipelineDisplayStateForStatus,
@@ -770,7 +770,17 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		agentReleasePipelineLabels(t),
 		agentReleasePipelineIcons,
 	);
-	const governanceDisplay = platformGovernanceDisplayStateForStatus({
+	const {
+		selectedIdentityPendingApprovals,
+		selectedIdentityPendingToolNames,
+		identityAccessRows,
+		accessTenantSummaries,
+		accessControlStats,
+		governanceHealthItems,
+		toolPolicySummary,
+		selectedIdentityFailedAuditEvents,
+		selectedIdentityRecentAuditEvents,
+	} = createPlatformGovernancePageState({
 		selectedIdentity: {
 			selectedIdentity,
 			pendingApprovals,
@@ -788,22 +798,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			icons: governanceHealthIcons,
 		},
 	});
-	const selectedIdentityGovernanceDisplayState = governanceDisplay.selectedIdentityState;
-	const selectedIdentityPendingApprovals =
-		selectedIdentityGovernanceDisplayState.selectedIdentityPendingApprovals;
-	const selectedIdentityPendingToolNames =
-		selectedIdentityGovernanceDisplayState.selectedIdentityPendingToolNames;
-	const governanceOperationsState = governanceDisplay.operationsState;
-	const identityAccessRows = governanceOperationsState.identityAccessRows;
-	const accessTenantSummaries = governanceOperationsState.accessTenantSummaries;
-	const accessControlStats = governanceOperationsState.accessControlStats;
-	const governanceHealthItems = governanceOperationsState.governanceHealthItems;
-	const toolPolicySummary =
-		selectedIdentityGovernanceDisplayState.toolPolicySummary;
-	const selectedIdentityFailedAuditEvents =
-		selectedIdentityGovernanceDisplayState.selectedIdentityFailedAuditEvents;
-	const selectedIdentityRecentAuditEvents =
-		selectedIdentityGovernanceDisplayState.selectedIdentityRecentAuditEvents;
 	const workflowDisplay = platformWorkflowDisplayStateForStatus({
 		selection: {
 			values: { workflowTemplates, selectedWorkflowType },
