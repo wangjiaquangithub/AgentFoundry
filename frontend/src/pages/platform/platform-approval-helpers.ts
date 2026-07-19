@@ -290,6 +290,36 @@ export function approvalToolContinuationTarget(
 	};
 }
 
+export function approvalUsageTarget(
+	approval: EnterpriseApprovalRequestItem,
+	inputConfig?: ApprovalToolInputConfig,
+) {
+	const usageKind = approvalUsageKind(approval);
+
+	if (usageKind === 'agent_run') {
+		return {
+			kind: usageKind,
+			target: approvalAgentUsageTarget(approval),
+		};
+	}
+
+	if (usageKind === 'tool_run') {
+		return {
+			kind: usageKind,
+			target: approvalToolContinuationTarget(approval, inputConfig),
+		};
+	}
+
+	if (usageKind === 'workflow_run') {
+		return {
+			kind: usageKind,
+			target: approvalWorkflowContinuationTarget(approval),
+		};
+	}
+
+	return null;
+}
+
 export function approvalToolInputsPatch(
 	current: Record<string, string>,
 	toolName: string,

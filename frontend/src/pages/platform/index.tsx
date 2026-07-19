@@ -81,14 +81,13 @@ import {
 	approvalCreatePayloadFromRun,
 	approvalDecisionPayloadFromRequestText,
 	approvalAgentContinuationTarget,
-	approvalAgentUsageTarget,
 	approvalFormWithReasonReset,
 	approvalQueryFromFilters,
 	approvalRunInputsFromSelection,
 	approvalToolContinuationTarget,
 	approvalToolInputsPatch,
 	toolApprovalPrimeTarget,
-	approvalUsageKind,
+	approvalUsageTarget,
 	approvalWorkflowContinuationTarget,
 	primedToolApprovalFormPatch,
 	prependApprovalRequest,
@@ -1831,12 +1830,15 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleUseApproval(approval: EnterpriseApprovalRequestItem) {
-		const usageKind = approvalUsageKind(approval);
+		const usageTarget = approvalUsageTarget(
+			approval,
+			approval.tool_name ? enterpriseToolInputConfig[approval.tool_name] : undefined,
+		);
 
 		setSelectedIdentityUserId(approval.user_id);
 
-		if (usageKind === 'agent_run') {
-			const target = approvalAgentUsageTarget(approval);
+		if (usageTarget?.kind === 'agent_run') {
+			const { target } = usageTarget;
 
 			setSelectedRunAgentId(target.agentId);
 			setAgentApprovalId(target.approvalId);
@@ -1846,11 +1848,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			return;
 		}
 
-		if (usageKind === 'tool_run' && approval.tool_name) {
-			const target = approvalToolContinuationTarget(
-				approval,
-				enterpriseToolInputConfig[approval.tool_name],
-			);
+		if (usageTarget?.kind === 'tool_run') {
+			const { target } = usageTarget;
 
 			setSelectedToolName(target.toolName);
 			setToolInputs((current) =>
@@ -1862,8 +1861,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			return;
 		}
 
-		if (usageKind === 'workflow_run') {
-			const target = approvalWorkflowContinuationTarget(approval);
+		if (usageTarget?.kind === 'workflow_run') {
+			const { target } = usageTarget;
 
 			setSelectedWorkflowType(target.workflowType);
 			setWorkflowInputs(target.inputs);
