@@ -139,3 +139,20 @@ export function scenarioWorkflowRunTarget(values: {
 		inputs: normalizeWorkflowInputs(template?.default_inputs ?? values.currentInputs),
 	};
 }
+
+export function agentWorkflowPrimeInputs(values: {
+	selectedWorkflowTemplate: EnterpriseWorkflowTemplate | null;
+	workflowOptions: Array<{
+		value: string;
+		defaultInputs?: Record<string, unknown>;
+	}>;
+	selectedWorkflowType: string;
+}): Record<string, string> {
+	const selectedDefaultInputs =
+		values.selectedWorkflowTemplate?.default_inputs ??
+		values.workflowOptions.find(
+			(workflow) => workflow.value === values.selectedWorkflowType,
+		)?.defaultInputs;
+
+	return normalizeWorkflowInputs(selectedDefaultInputs);
+}

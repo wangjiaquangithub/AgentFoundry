@@ -51,6 +51,7 @@ import type { HealthState } from './components/common';
 import { DashboardViewPage } from './components/DashboardViewPage';
 import { usePlatformPageRefs } from './platform-page-refs';
 import {
+	agentWorkflowPrimeInputs,
 	agentConversationTurnFromRunResponse,
 	clearAgentRunsParams,
 	enterpriseAgentRunPayload,
@@ -1824,14 +1825,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handlePrimeAgentWorkflow(agent: EnterprisePublishedAgent) {
-		const selectedDefaultInputs =
-			selectedWorkflowTemplate?.default_inputs ??
-			workflowOptions.find((workflow) => workflow.value === selectedWorkflowType)
-				?.defaultInputs;
-
 		setSelectedRunAgentId(agent.id);
 		setSelectedIdentityUserId(selectedIdentityUserId || username);
-		setWorkflowInputs(normalizeWorkflowInputs(selectedDefaultInputs));
+		setWorkflowInputs(agentWorkflowPrimeInputs({
+			selectedWorkflowTemplate,
+			workflowOptions,
+			selectedWorkflowType,
+		}));
 		setWorkflowApprovalId('');
 		setWorkflowRunError(null);
 		window.setTimeout(scrollToWorkflowRunner, 0);
