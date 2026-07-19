@@ -41,6 +41,29 @@ export type PlatformConfigImportActionHandlers = {
 	handleError: (error: unknown) => void;
 };
 
+export type PlatformConfigManagementHandlerValues = {
+	platformConfigExport: EnterprisePlatformConfigExportResponse | null;
+	platformConfigImportText: string;
+	platformConfigImportMode: EnterprisePlatformConfigImportRequest['mode'];
+	text: PlatformConfigManagementRequestText;
+};
+
+export type PlatformConfigManagementHandlerActions = {
+	setImportText: (text: string) => void;
+	copyText: (text: string) => void | Promise<void>;
+	setImporting: (importing: boolean) => void;
+	clearError: () => void;
+	clearResult: () => void;
+	importConfig: (
+		request: EnterprisePlatformConfigImportRequest,
+	) =>
+		| EnterprisePlatformConfigImportResponse
+		| Promise<EnterprisePlatformConfigImportResponse>;
+	setResult: (message: string) => void;
+	refreshDependentViews: () => void | Promise<void>;
+	setError: (message: string) => void;
+};
+
 export function formatPlatformConfigExport(
 	config: EnterprisePlatformConfigExportResponse,
 ): string {
@@ -151,4 +174,41 @@ export async function runPlatformConfigImportAction(
 	} finally {
 		handlers.setImporting(false);
 	}
+}
+
+export function createPlatformConfigManagementHandlers(
+	values: PlatformConfigManagementHandlerValues,
+	actions: PlatformConfigManagementHandlerActions,
+) {
+	async function handleCopyPlatformConfig() {
+		await runPlatformConfigCopyAction(values.platformConfigExport, {
+			setImportText: actions.setImportText,
+			copyText: actions.copyText,
+		});
+	}
+
+	async function handleImportPlatformConfig() {
+		await runPlatformConfigImportAction(
+			{
+				importText: values.platformConfigImportText,
+				importMode: values.platformConfigImportMode,
+				text: values.text,
+			},
+			{
+				setImporting: actions.setImporting,
+				clearError: actions.clearError,
+				clearResult: actions.clearResult,
+				importConfig: actions.importConfig,
+				setResult: actions.setResult,
+				refreshDependentViews: actions.refreshDependentViews,
+				handleError: (error) =>
+					actions.setError(platformConfigImportErrorMessage(error, values.text)),
+			},
+		);
+	}
+
+	return {
+		handleCopyPlatformConfig,
+		handleImportPlatformConfig,
+	};
 }

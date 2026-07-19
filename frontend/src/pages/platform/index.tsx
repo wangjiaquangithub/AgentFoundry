@@ -78,9 +78,7 @@ import {
 	runConnectorTestAction,
 } from './platform-connector-helpers';
 import {
-	platformConfigImportErrorMessage,
-	runPlatformConfigCopyAction,
-	runPlatformConfigImportAction,
+	createPlatformConfigManagementHandlers,
 	runPlatformConfigLoadAction,
 } from './platform-config-management';
 import {
@@ -1025,17 +1023,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		});
 	}
 
-	async function handleCopyPlatformConfig() {
-		await runPlatformConfigCopyAction(platformConfigExport, {
-			setImportText: setPlatformConfigImportText,
-			copyText: async (text) => {
-				if (navigator.clipboard) {
-					await navigator.clipboard.writeText(text);
-				}
-			},
-		});
-	}
-
 	async function refetchPlatformConfigImportDependencies() {
 		await Promise.all([
 			refetchPlatform(),
@@ -1049,30 +1036,30 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		]);
 	}
 
-	async function handleImportPlatformConfig() {
-		await runPlatformConfigImportAction(
+	const { handleCopyPlatformConfig, handleImportPlatformConfig } =
+		createPlatformConfigManagementHandlers(
 			{
-				importText: platformConfigImportText,
-				importMode: platformConfigImportMode,
+				platformConfigExport,
+				platformConfigImportText,
+				platformConfigImportMode,
 				text: configManagementRequestText,
 			},
 			{
+				setImportText: setPlatformConfigImportText,
+				copyText: async (text) => {
+					if (navigator.clipboard) {
+						await navigator.clipboard.writeText(text);
+					}
+				},
 				setImporting: setImportingPlatformConfig,
 				clearError: () => setPlatformConfigError(null),
 				clearResult: () => setPlatformConfigImportResult(null),
 				importConfig: platformApi.importConfig,
 				setResult: setPlatformConfigImportResult,
 				refreshDependentViews: refetchPlatformConfigImportDependencies,
-				handleError: (error) =>
-					setPlatformConfigError(
-						platformConfigImportErrorMessage(
-							error,
-							configManagementRequestText,
-						),
-					),
+				setError: setPlatformConfigError,
 			},
 		);
-	}
 
 	async function refetchMembers() {
 		await runMemberLoadAction(memberRequestText.loadError, {
