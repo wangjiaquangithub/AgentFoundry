@@ -78,6 +78,7 @@ import {
 import {
 	createPlatformOpsTaskHandlers,
 } from './platform-ops-task-helpers';
+import { usePlatformDataLoadEffects } from './platform-data-load-effects';
 import { createPlatformRefreshDependencyHandlers } from './platform-refresh-dependencies';
 import {
 	createPlatformWorkflowTemplateHandlers,
@@ -865,23 +866,26 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 		auditStatsLabels(t),
 	);
-	useEffect(() => {
-		void refetchConnectors();
-		void refetchGovernance();
-		void refetchMembers();
-		void refetchPlatformAgents();
-		void refetchAuditEvents();
-		void refetchWorkflowTemplates();
-		void refetchWorkflowRuns();
-		void refetchScenarios();
-		void refetchOpsTasks();
-		void refetchApprovals();
-		void refetchPlatformConfigExport();
-	}, []);
-
-	useEffect(() => {
-		void refetchToolCatalog();
-	}, [selectedRunAgentId, selectedIdentityUserId]);
+	usePlatformDataLoadEffects(
+		{
+			selectedIdentityUserId,
+			selectedRunAgentId,
+		},
+		{
+			refetchApprovals: () => refetchApprovals(),
+			refetchAuditEvents: () => refetchAuditEvents(),
+			refetchConnectors: () => refetchConnectors(),
+			refetchGovernance: () => refetchGovernance(),
+			refetchMembers: () => refetchMembers(),
+			refetchOpsTasks: () => refetchOpsTasks(),
+			refetchPlatformAgents: () => refetchPlatformAgents(),
+			refetchPlatformConfigExport: () => refetchPlatformConfigExport(),
+			refetchScenarios: () => refetchScenarios(),
+			refetchToolCatalog: () => refetchToolCatalog(),
+			refetchWorkflowRuns: () => refetchWorkflowRuns(),
+			refetchWorkflowTemplates: () => refetchWorkflowTemplates(),
+		},
+	);
 
 	useEffect(() => {
 		setToolPolicyDraft(
