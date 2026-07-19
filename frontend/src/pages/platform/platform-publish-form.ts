@@ -37,6 +37,10 @@ export type AgentTemplateToolsBindTarget =
 	| { type: 'error' }
 	| { type: 'bind'; tools: string[] };
 export type AgentCapabilityKey = 'memory' | 'workflow';
+export type QuickPublishTarget =
+	| { type: 'navigate'; path: '/credential' }
+	| { type: 'start-publishing' }
+	| { type: 'publish'; template: EnterpriseAgentTemplate };
 
 export type DefaultPublishFormOptions = {
 	template: EnterpriseAgentTemplate;
@@ -116,6 +120,20 @@ export function publishedAgentPrimeTarget(
 	agent: EnterprisePublishedAgent,
 ): string | null {
 	return agent.status === 'published' ? agent.id : null;
+}
+
+export function quickPublishTarget(values: {
+	credentialCount: number;
+	selectedTemplate?: EnterpriseAgentTemplate | null;
+	defaultTemplate?: EnterpriseAgentTemplate | null;
+}): QuickPublishTarget {
+	if (values.credentialCount === 0) {
+		return { type: 'navigate', path: '/credential' };
+	}
+
+	const template = values.selectedTemplate ?? values.defaultTemplate;
+
+	return template ? { type: 'publish', template } : { type: 'start-publishing' };
 }
 
 export function nextPublishedAgentIdAfterArchive(values: {

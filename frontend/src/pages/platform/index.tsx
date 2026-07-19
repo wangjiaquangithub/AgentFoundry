@@ -248,6 +248,7 @@ import {
 	publishFormForTenantChange,
 	publishFormWithPatch,
 	publishedAgentPrimeTarget,
+	quickPublishTarget,
 	type AgentQuickConfigurationPatch,
 	type PublishListFormKey,
 } from './platform-publish-form';
@@ -2163,17 +2164,22 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleQuickPublishAgent() {
-		if (credentials.length === 0) {
-			navigate('/credential');
+		const target = quickPublishTarget({
+			credentialCount: credentials.length,
+			selectedTemplate,
+			defaultTemplate: defaultAgentTemplate,
+		});
+		if (target.type === 'navigate') {
+			navigate(target.path);
 			return;
 		}
 
-		const template = selectedTemplate ?? defaultAgentTemplate;
-		if (!template) {
+		if (target.type === 'start-publishing') {
 			handleStartPublishing();
 			return;
 		}
 
+		const { template } = target;
 		const defaultForm = buildDefaultPublishForm(template);
 		setEditingAgentId(null);
 		setSelectedTemplateId(template.id);
