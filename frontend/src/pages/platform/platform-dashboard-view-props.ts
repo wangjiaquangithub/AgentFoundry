@@ -363,6 +363,33 @@ type DashboardTriggerOpsViewProps = Pick<
 	| 'triggerOpsSummary'
 >;
 
+type DashboardOpsPanelViewProps = Pick<
+	DashboardViewPageProps,
+	| 'approvedApprovalCount'
+	| 'auditEventCount'
+	| 'completedWorkflowRunCount'
+	| 'dashboardOperations'
+	| 'dashboardTodoItems'
+	| 'failedWorkflowRunCount'
+	| 'governedWorkflowItems'
+	| 'handleNextStepPrimaryAction'
+	| 'handleOperationAction'
+	| 'nextStepMode'
+	| 'nextStepPrimaryDisabled'
+	| 'partialWorkflowRunCount'
+	| 'pendingApprovals'
+	| 'recentAuditEvents'
+	| 'recentWorkflowRuns'
+	| 'recommendedOperationActions'
+	| 'riskToolItems'
+	| 'scrollToAgentRunner'
+	| 'scrollToGovernance'
+	| 'scrollToToolRunner'
+	| 'scrollToWorkflowRunner'
+	| 'workflowRunCount'
+	| 'workflowTemplates'
+>;
+
 type DashboardWorkbenchReadinessViewProps = Pick<
 	DashboardViewPageProps,
 	| 'workbenchQuickActions'
@@ -553,6 +580,12 @@ export function createPlatformDashboardPlatformConsoleViewProps(
 export function createPlatformDashboardTriggerOpsViewProps(
 	props: DashboardTriggerOpsViewProps,
 ): DashboardTriggerOpsViewProps {
+	return props;
+}
+
+export function createPlatformDashboardOpsPanelViewProps(
+	props: DashboardOpsPanelViewProps,
+): DashboardOpsPanelViewProps {
 	return props;
 }
 
