@@ -3,6 +3,7 @@ import type {
 	EnterpriseApprovalDecisionRequest,
 	EnterpriseApprovalRequestItem,
 	EnterpriseApprovalRequestType,
+	EnterpriseApprovalsResponse,
 	EnterprisePublishedAgent,
 } from '@/api';
 import type { ApprovalFiltersState, ApprovalFormState } from './platform-defaults';
@@ -18,6 +19,24 @@ export interface ApprovalCreateDefaults {
 	selectedRunAgentId: string;
 	username: string;
 }
+
+export type ApprovalCreateActionHandlers = {
+	setCreatingApproval: (creating: boolean) => void;
+	clearApprovalError: () => void;
+	createApproval: (
+		payload: EnterpriseApprovalCreateRequest,
+	) => EnterpriseApprovalsResponse | Promise<EnterpriseApprovalsResponse>;
+	setApprovalRequests: (
+		update: (
+			current: EnterpriseApprovalRequestItem[],
+		) => EnterpriseApprovalRequestItem[],
+	) => void;
+	refreshDependentViews: () => void | Promise<void>;
+	resetApprovalReason: (
+		update: (current: ApprovalFormState) => ApprovalFormState,
+	) => void;
+	handleError: (error: unknown) => void;
+};
 
 export interface ApprovalDecisionLabels {
 	approved: string;
@@ -141,6 +160,34 @@ export function approvalFormWithReasonReset(
 		...current,
 		reason: defaultReason,
 	};
+}
+
+export async function runApprovalCreateAction(
+	values: {
+		form: ApprovalFormState;
+		defaults: ApprovalCreateDefaults;
+		defaultReason: string;
+	},
+	handlers: ApprovalCreateActionHandlers,
+) {
+	handlers.setCreatingApproval(true);
+	handlers.clearApprovalError();
+	try {
+		const response = await handlers.createApproval(
+			approvalCreatePayloadFromForm(values.form, values.defaults),
+		);
+		handlers.setApprovalRequests((current) =>
+			prependApprovalRequest(current, response.approval),
+		);
+		await handlers.refreshDependentViews();
+		handlers.resetApprovalReason((current) =>
+			approvalFormWithReasonReset(current, values.defaultReason),
+		);
+	} catch (error) {
+		handlers.handleError(error);
+	} finally {
+		handlers.setCreatingApproval(false);
+	}
 }
 
 export function approvalDecisionPayload(

@@ -87,15 +87,14 @@ import {
 } from './platform-agent-runner';
 import {
 	approvalContinuationState,
-	approvalCreatePayloadFromForm,
 	approvalCreatePayloadFromRun,
 	approvalDecisionPayloadFromRequestText,
 	approvalAgentContinuationTarget,
-	approvalFormWithReasonReset,
 	approvalQueryFromFilters,
 	approvalRunInputsFromSelection,
 	approvalToolContinuationTarget,
 	approvalToolInputsPatch,
+	runApprovalCreateAction,
 	runApprovalUsageTargetAction,
 	runToolApprovalPrimeTargetAction,
 	toolApprovalPrimeTarget,
@@ -1524,31 +1523,34 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleCreateApproval() {
-		setCreatingApproval(true);
-		setApprovalError(null);
-		try {
-			const response = await platformApi.createApproval(
-				approvalCreatePayloadFromForm(approvalForm, {
+		await runApprovalCreateAction(
+			{
+				form: approvalForm,
+				defaults: {
 					selectedIdentityUserId,
 					selectedRunAgentId,
 					username,
-				}),
-			);
-			setApprovalRequests((current) =>
-				prependApprovalRequest(current, response.approval),
-			);
-			await refetchGovernance();
-			await refetchOpsTasks();
-			setApprovalForm((current) =>
-				approvalFormWithReasonReset(current, defaultApprovalForm.reason),
-			);
-		} catch (error) {
-			setApprovalError(
-				error instanceof Error ? error.message : approvalRequestText.createError,
-			);
-		} finally {
-			setCreatingApproval(false);
-		}
+				},
+				defaultReason: defaultApprovalForm.reason,
+			},
+			{
+				setCreatingApproval,
+				clearApprovalError: () => setApprovalError(null),
+				createApproval: platformApi.createApproval,
+				setApprovalRequests,
+				refreshDependentViews: async () => {
+					await refetchGovernance();
+					await refetchOpsTasks();
+				},
+				resetApprovalReason: setApprovalForm,
+				handleError: (error) =>
+					setApprovalError(
+						error instanceof Error
+							? error.message
+							: approvalRequestText.createError,
+					),
+			},
+		);
 	}
 
 	async function handleCreateRunApproval(
