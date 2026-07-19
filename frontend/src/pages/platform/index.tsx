@@ -2287,6 +2287,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					platformConsoleItems,
 				}),
 				...createPlatformDashboardTriggerOpsViewProps({
+					agents,
 					recentSchedules,
 					schedulesError,
 					schedulesLoading,
@@ -2592,7 +2593,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					t,
 					username,
 				}),
-				agents: agents,
 				readyPlatformAgents: readyPlatformAgents,
 				scrollToAgentManagement: scrollToAgentManagement,
 				selectedIdentityUserId: selectedIdentityUserId,

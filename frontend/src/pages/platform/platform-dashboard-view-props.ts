@@ -501,6 +501,7 @@ type DashboardPlatformConsoleViewProps = Pick<
 
 type DashboardTriggerOpsViewProps = Pick<
 	DashboardViewPageProps,
+	| 'agents'
 	| 'recentSchedules'
 	| 'schedulesError'
 	| 'schedulesLoading'
