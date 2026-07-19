@@ -36,7 +36,11 @@ export type AgentDefaultModelBindTarget =
 	  };
 export type AgentKnowledgeBasesBindTarget =
 	| { type: 'navigate'; path: '/knowledge' }
-	| { type: 'bind'; knowledgeBaseIds: string[] };
+	| {
+			type: 'bind';
+			agentId: string;
+			patch: AgentQuickConfigurationPatch;
+	  };
 export type AgentTemplateToolsBindTarget =
 	| { type: 'error' }
 	| { type: 'bind'; tools: string[] };
@@ -455,12 +459,17 @@ export function agentKnowledgeBasesPatch(
 }
 
 export function agentKnowledgeBasesBindTarget(values: {
+	agent: EnterprisePublishedAgent;
 	knowledgeBases: KnowledgeBaseView[];
 }): AgentKnowledgeBasesBindTarget {
 	const knowledgeBaseIds = availableKnowledgeBaseIds(values.knowledgeBases);
 
 	return knowledgeBaseIds.length > 0
-		? { type: 'bind', knowledgeBaseIds }
+		? {
+				type: 'bind',
+				agentId: values.agent.id,
+				patch: agentKnowledgeBasesPatch(knowledgeBaseIds),
+			}
 		: { type: 'navigate', path: '/knowledge' };
 }
 

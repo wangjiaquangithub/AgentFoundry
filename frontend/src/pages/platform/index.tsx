@@ -235,7 +235,6 @@ import {
 	agentEditCancelTarget,
 	agentEditDraft,
 	agentKnowledgeBasesBindTarget,
-	agentKnowledgeBasesPatch,
 	agentPublishRequestTarget,
 	agentQuickConfigurationSyncResult,
 	agentTemplateToolsBindTarget,
@@ -2413,7 +2412,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleBindAvailableKnowledge(agent: EnterprisePublishedAgent) {
-		const target = agentKnowledgeBasesBindTarget({ knowledgeBases });
+		const target = agentKnowledgeBasesBindTarget({ agent, knowledgeBases });
 		if (target.type === 'navigate') {
 			navigate(target.path);
 			return;
@@ -2422,9 +2421,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setBindingAgentKnowledgeId(agent.id);
 		setPlatformAgentsError(null);
 		try {
-			const patch = agentKnowledgeBasesPatch(target.knowledgeBaseIds);
-			const response = await platformApi.updateAgent(agent.id, patch);
-			syncAgentQuickConfiguration(agent.id, response.agent.id, patch);
+			const response = await platformApi.updateAgent(target.agentId, target.patch);
+			syncAgentQuickConfiguration(agent.id, response.agent.id, target.patch);
 			await refetchPlatformAgents();
 			await refetchPlatform();
 			await refetchToolCatalog();
