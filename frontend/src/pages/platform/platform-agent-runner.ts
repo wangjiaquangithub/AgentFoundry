@@ -255,6 +255,15 @@ export function runTenantAgentRunnerTargetAction(
 	handlers.scrollToAgentRunner();
 }
 
+export function runUseTenantAgentRunnerAction(
+	values: Parameters<typeof tenantAgentRunnerTarget>[0],
+	handlers: TenantAgentRunnerTargetActionHandlers,
+) {
+	const target = tenantAgentRunnerTarget(values);
+
+	runTenantAgentRunnerTargetAction(target, handlers);
+}
+
 export function memoryOperationAgentRunTarget(values: {
 	enterpriseIdentities: EnterpriseIdentity[];
 	item: MemoryOperationsItem;

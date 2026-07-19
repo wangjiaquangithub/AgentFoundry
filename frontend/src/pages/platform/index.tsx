@@ -70,11 +70,10 @@ import {
 	runPrimePublishedAgentAction,
 	runScenarioWorkflowAction,
 	runSelectAgentForRunAction,
-	runTenantAgentRunnerTargetAction,
 	runUseIdentityAgentRunnerAction,
+	runUseTenantAgentRunnerAction,
 	scenarioWorkflowRunTarget,
 	selectedRunAgentIdForAvailableAgents,
-	tenantAgentRunnerTarget,
 	toolRunRequestTarget,
 	workflowInputsForSelectedOption,
 	workflowSelectionForAvailableTemplates,
@@ -1965,17 +1964,18 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleUseTenant(tenant: string) {
-		const target = tenantAgentRunnerTarget({
-			enterpriseIdentities,
-			tenant,
-			fallbackIdentity: selectedIdentity,
-		});
-
-		runTenantAgentRunnerTargetAction(target, {
-			useIdentity: handleUseIdentity,
-			clearError: () => setAgentRunError(null),
-			scrollToAgentRunner: () => window.setTimeout(scrollToAgentRunner, 0),
-		});
+		runUseTenantAgentRunnerAction(
+			{
+				enterpriseIdentities,
+				tenant,
+				fallbackIdentity: selectedIdentity,
+			},
+			{
+				useIdentity: handleUseIdentity,
+				clearError: () => setAgentRunError(null),
+				scrollToAgentRunner: () => window.setTimeout(scrollToAgentRunner, 0),
+			},
+		);
 	}
 
 	function handleInspectTenantAudit(tenant: string) {
