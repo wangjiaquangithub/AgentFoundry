@@ -84,7 +84,7 @@ import {
 import {
 	createPlatformWorkflowTemplateHandlers,
 } from './platform-workflow-template-helpers';
-import { runWorkflowRunLoadAction } from './platform-workflow-run-helpers';
+import { createPlatformWorkflowRunHandlers } from './platform-workflow-run-helpers';
 import { runScenarioLoadAction } from './platform-scenario-helpers';
 import { runAuditEventLoadAction } from './platform-audit-helpers';
 import {
@@ -1229,21 +1229,19 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	);
 
-	async function refetchWorkflowRuns() {
-		await runWorkflowRunLoadAction(
-			{
-				limit: 10,
-				loadErrorMessage: workflowRunnerRequestText.historyLoadError,
-			},
-			{
-				setLoading: setWorkflowRunsLoading,
-				clearError: () => setWorkflowRunsError(null),
-				loadWorkflowRuns: platformApi.workflowRuns,
-				setWorkflowRuns,
-				setError: setWorkflowRunsError,
-			},
-		);
-	}
+	const { refetchWorkflowRuns } = createPlatformWorkflowRunHandlers(
+		{
+			limit: 10,
+			loadErrorMessage: workflowRunnerRequestText.historyLoadError,
+		},
+		{
+			setLoading: setWorkflowRunsLoading,
+			clearError: () => setWorkflowRunsError(null),
+			loadWorkflowRuns: platformApi.workflowRuns,
+			setWorkflowRuns,
+			setError: setWorkflowRunsError,
+		},
+	);
 
 	async function refetchScenarios() {
 		await runScenarioLoadAction(

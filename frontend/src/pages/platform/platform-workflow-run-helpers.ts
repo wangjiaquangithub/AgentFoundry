@@ -33,3 +33,35 @@ export async function runWorkflowRunLoadAction(
 		handlers.setLoading(false);
 	}
 }
+
+export type PlatformWorkflowRunHandlerValues = {
+	limit: number;
+	loadErrorMessage: string;
+};
+
+export type PlatformWorkflowRunHandlerActions = WorkflowRunLoadActionHandlers;
+
+export function createPlatformWorkflowRunHandlers(
+	values: PlatformWorkflowRunHandlerValues,
+	actions: PlatformWorkflowRunHandlerActions,
+) {
+	async function refetchWorkflowRuns() {
+		await runWorkflowRunLoadAction(
+			{
+				limit: values.limit,
+				loadErrorMessage: values.loadErrorMessage,
+			},
+			{
+				setLoading: actions.setLoading,
+				clearError: actions.clearError,
+				loadWorkflowRuns: actions.loadWorkflowRuns,
+				setWorkflowRuns: actions.setWorkflowRuns,
+				setError: actions.setError,
+			},
+		);
+	}
+
+	return {
+		refetchWorkflowRuns,
+	};
+}
