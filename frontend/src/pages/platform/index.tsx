@@ -205,7 +205,7 @@ import {
 	platformNextAgentSetupStepDisplayStateForSteps,
 } from './platform-agent-runner-display';
 import { platformAppCenterDisplayStateForStatus } from './platform-app-center-display';
-import { platformConnectorDisplayStateForStatus } from './platform-connector-display';
+import { createPlatformConnectorPageState } from './platform-connector-state';
 import { platformConnectionDisplayStateForStatus } from './platform-connection-display';
 import {
 	platformAuditStatsDisplayStateForSummary,
@@ -633,22 +633,22 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		agentRunResult,
 		agentRoutingLabels(t),
 	);
-	const connectorDisplay = platformConnectorDisplayStateForStatus({
+	const {
+		connectorState,
+		savedConnectorConfigs,
+		activeConnectorTenant,
+		activeSavedConnectorConfig,
+		connectorDraftIssues,
+		connectorDraftState,
+		connectorTestPassed,
+		connectorRuntimeState,
+		connectorRuntimeSourceText,
+	} = createPlatformConnectorPageState({
 		connectors,
 		form: connectorTestForm,
 		testResult: connectorTestResult,
 		labels: connectorOperationsLabels(t),
 	});
-	const connectorOperationsState = connectorDisplay.operationsState;
-	const connectorState = connectorOperationsState.connectorState;
-	const savedConnectorConfigs = connectorOperationsState.savedConnectorConfigs;
-	const activeConnectorTenant = connectorOperationsState.activeConnectorTenant;
-	const activeSavedConnectorConfig = connectorOperationsState.activeSavedConnectorConfig;
-	const connectorDraftIssues = connectorOperationsState.connectorDraftIssues;
-	const connectorDraftState = connectorOperationsState.connectorDraftState;
-	const connectorTestPassed = connectorOperationsState.connectorTestPassed;
-	const connectorRuntimeState = connectorOperationsState.connectorRuntimeState;
-	const connectorRuntimeSourceText = connectorOperationsState.connectorRuntimeSourceText;
 	const dashboardDisplay = platformDashboardDisplayStateForStatus({
 		source: { platformStatus },
 		fallback: {
