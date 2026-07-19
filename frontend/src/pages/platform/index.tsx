@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 
 import {
 	platformApi,
-	type EnterpriseIdentity,
 	type EnterpriseAgentRunResponse,
 	type EnterpriseApprovalRequestItem,
 	type EnterpriseApprovalRequestType,
@@ -34,7 +33,6 @@ import { useTranslation } from '@/i18n/useI18n';
 import { AgentsViewPage } from './components/AgentsViewPage';
 import { ApprovalsViewPage } from './components/ApprovalsViewPage';
 import type { AppCenterSelection } from './components/AppCenterPanel';
-import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
 import { MemoryViewPage } from './components/MemoryViewPage';
 import { RunsViewPage } from './components/RunsViewPage';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
@@ -46,11 +44,9 @@ import { DashboardViewPage } from './components/DashboardViewPage';
 import { usePlatformPageRefs } from './platform-page-refs';
 import {
 	agentRunResultForSelectedAgent,
+	createPlatformAgentRunnerEntryHandlers,
 	runAgentRunHistoryLoadAction,
 	runPrimeAgentWorkflowAction,
-	runPlatformOpenMemoryOperationAgentAction,
-	runPlatformUseIdentityAgentRunnerAction,
-	runPlatformUseTenantAgentRunnerAction,
 	createPlatformRunnerHandlers,
 	platformAgentAccessAllowedForDisplay,
 	selectedRunAgentIdForAvailableAgents,
@@ -1489,53 +1485,25 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		});
 	}
 
-	function handleUseIdentity(identity: EnterpriseIdentity) {
-		runPlatformUseIdentityAgentRunnerAction(
-			identity,
+	const {
+		handleUseIdentity,
+		handleUseTenant,
+		handleOpenMemoryOperation,
+	} = createPlatformAgentRunnerEntryHandlers(
+		{
+			enterpriseIdentities,
+			selectedIdentity,
 			primaryAgentSampleQuestion,
-			{
-				selectIdentityUser: setSelectedIdentityUserId,
-				setQuestion: setAgentQuestion,
-				clearError: () => setAgentRunError(null),
-				scrollToAgentRunner,
-			},
-		);
-	}
-
-	function handleUseTenant(tenant: string) {
-		runPlatformUseTenantAgentRunnerAction(
-			{
-				enterpriseIdentities,
-				tenant,
-				fallbackIdentity: selectedIdentity,
-				fallbackQuestion: primaryAgentSampleQuestion,
-			},
-			{
-				selectIdentityUser: setSelectedIdentityUserId,
-				setQuestion: setAgentQuestion,
-				clearError: () => setAgentRunError(null),
-				scrollToAgentRunner,
-			},
-		);
-	}
-
-	function handleOpenMemoryOperation(item: MemoryOperationsItem) {
-		runPlatformOpenMemoryOperationAgentAction(
-			{
-				enterpriseIdentities,
-				item,
-				fallbackQuestion: primaryAgentSampleQuestion,
-			},
-			{
-				selectIdentityUser: setSelectedIdentityUserId,
-				selectRunAgent: setSelectedRunAgentId,
-				setResult: setAgentRunResult,
-				setQuestion: setAgentQuestion,
-				clearError: () => setAgentRunError(null),
-				scrollToAgentRunner,
-			},
-		);
-	}
+		},
+		{
+			selectIdentityUser: setSelectedIdentityUserId,
+			selectRunAgent: setSelectedRunAgentId,
+			setResult: setAgentRunResult,
+			setQuestion: setAgentQuestion,
+			clearError: () => setAgentRunError(null),
+			scrollToAgentRunner,
+		},
+	);
 
 	function handlePrepareTenantAgent(tenant: string) {
 		runPrepareTenantAgentAction(

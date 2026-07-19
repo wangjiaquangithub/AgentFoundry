@@ -417,6 +417,80 @@ export function runPlatformOpenMemoryOperationAgentAction(
 	});
 }
 
+export type PlatformAgentRunnerEntryHandlerValues = {
+	enterpriseIdentities: EnterpriseIdentity[];
+	selectedIdentity: EnterpriseIdentity | null;
+	primaryAgentSampleQuestion: string;
+};
+
+export type PlatformAgentRunnerEntryHandlerActions = {
+	selectIdentityUser: (userId: string) => void;
+	selectRunAgent: (agentId: string) => void;
+	setResult: (result: EnterpriseAgentRunResponse) => void;
+	setQuestion: (question: string) => void;
+	clearError: NavigationHandler;
+	scrollToAgentRunner: NavigationHandler;
+};
+
+export function createPlatformAgentRunnerEntryHandlers(
+	values: PlatformAgentRunnerEntryHandlerValues,
+	actions: PlatformAgentRunnerEntryHandlerActions,
+) {
+	function handleUseIdentity(identity: EnterpriseIdentity) {
+		runPlatformUseIdentityAgentRunnerAction(
+			identity,
+			values.primaryAgentSampleQuestion,
+			{
+				selectIdentityUser: actions.selectIdentityUser,
+				setQuestion: actions.setQuestion,
+				clearError: actions.clearError,
+				scrollToAgentRunner: actions.scrollToAgentRunner,
+			},
+		);
+	}
+
+	function handleUseTenant(tenant: string) {
+		runPlatformUseTenantAgentRunnerAction(
+			{
+				enterpriseIdentities: values.enterpriseIdentities,
+				tenant,
+				fallbackIdentity: values.selectedIdentity,
+				fallbackQuestion: values.primaryAgentSampleQuestion,
+			},
+			{
+				selectIdentityUser: actions.selectIdentityUser,
+				setQuestion: actions.setQuestion,
+				clearError: actions.clearError,
+				scrollToAgentRunner: actions.scrollToAgentRunner,
+			},
+		);
+	}
+
+	function handleOpenMemoryOperation(item: MemoryOperationsItem) {
+		runPlatformOpenMemoryOperationAgentAction(
+			{
+				enterpriseIdentities: values.enterpriseIdentities,
+				item,
+				fallbackQuestion: values.primaryAgentSampleQuestion,
+			},
+			{
+				selectIdentityUser: actions.selectIdentityUser,
+				selectRunAgent: actions.selectRunAgent,
+				setResult: actions.setResult,
+				setQuestion: actions.setQuestion,
+				clearError: actions.clearError,
+				scrollToAgentRunner: actions.scrollToAgentRunner,
+			},
+		);
+	}
+
+	return {
+		handleUseIdentity,
+		handleUseTenant,
+		handleOpenMemoryOperation,
+	};
+}
+
 export function agentRunHistorySelectionTarget(
 	turn: EnterpriseAgentConversationTurn,
 ): AgentRunHistorySelectionTarget {
