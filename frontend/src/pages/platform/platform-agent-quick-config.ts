@@ -86,6 +86,21 @@ export type AgentTemplateToolsBindActionHandlers = {
 	handleEmptyTemplateTools: () => void;
 	handleError: (error: unknown) => void;
 };
+export type AgentCapabilityEnableActionHandlers = {
+	setEnablingAgent: (agentId: string | null) => void;
+	clearError: () => void;
+	updateAgent: (
+		agentId: string,
+		patch: AgentQuickConfigurationPatch,
+	) => EnterpriseAgentUpdateResponse | Promise<EnterpriseAgentUpdateResponse>;
+	syncQuickConfiguration: (
+		agentId: string,
+		updatedAgentId: string,
+		patch: AgentQuickConfigurationPatch,
+	) => void;
+	refreshDependentViews: () => void | Promise<void>;
+	handleError: (error: unknown) => void;
+};
 
 export function agentQuickConfigurationSyncResult(values: {
 	agentId: string;
@@ -278,4 +293,25 @@ export function agentCapabilityEnableTarget(values: {
 		agentId: values.agent.id,
 		patch: agentCapabilityEnabledPatch(values.capability),
 	};
+}
+
+export async function runAgentCapabilityEnableAction(
+	target: AgentCapabilityEnableTarget,
+	handlers: AgentCapabilityEnableActionHandlers,
+) {
+	handlers.setEnablingAgent(target.agentId);
+	handlers.clearError();
+	try {
+		const response = await handlers.updateAgent(target.agentId, target.patch);
+		handlers.syncQuickConfiguration(
+			target.agentId,
+			response.agent.id,
+			target.patch,
+		);
+		await handlers.refreshDependentViews();
+	} catch (error) {
+		handlers.handleError(error);
+	} finally {
+		handlers.setEnablingAgent(null);
+	}
 }

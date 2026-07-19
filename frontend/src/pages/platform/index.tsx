@@ -243,6 +243,7 @@ import {
 	agentKnowledgeBasesBindTarget,
 	agentQuickConfigurationSyncResult,
 	agentTemplateToolsBindTarget,
+	runAgentCapabilityEnableAction,
 	runAgentDefaultModelBindAction,
 	runAgentKnowledgeBasesBindAction,
 	runAgentTemplateToolsBindAction,
@@ -2436,24 +2437,24 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			capability: 'memory',
 		});
 
-		setEnablingAgentMemoryId(agent.id);
-		setPlatformAgentsError(null);
-		try {
-			const response = await platformApi.updateAgent(target.agentId, target.patch);
-			syncAgentQuickConfiguration(agent.id, response.agent.id, target.patch);
-			await refetchPlatformAgents();
-			await refetchPlatform();
-			await refetchToolCatalog();
-			await refetchOpsTasks();
-		} catch (error) {
-			setPlatformAgentsError(
-				error instanceof Error
-					? error.message
-					: agentManagementRequestText.enableMemoryError,
-			);
-		} finally {
-			setEnablingAgentMemoryId(null);
-		}
+		await runAgentCapabilityEnableAction(target, {
+			setEnablingAgent: setEnablingAgentMemoryId,
+			clearError: () => setPlatformAgentsError(null),
+			updateAgent: platformApi.updateAgent,
+			syncQuickConfiguration: syncAgentQuickConfiguration,
+			refreshDependentViews: async () => {
+				await refetchPlatformAgents();
+				await refetchPlatform();
+				await refetchToolCatalog();
+				await refetchOpsTasks();
+			},
+			handleError: (error) =>
+				setPlatformAgentsError(
+					error instanceof Error
+						? error.message
+						: agentManagementRequestText.enableMemoryError,
+				),
+		});
 	}
 
 	async function handleEnableAgentWorkflow(agent: EnterprisePublishedAgent) {
