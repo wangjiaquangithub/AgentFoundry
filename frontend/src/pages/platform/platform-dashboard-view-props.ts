@@ -216,6 +216,14 @@ type DashboardOpsTasksViewProps = Pick<
 	| 'summarizeAuditObject'
 >;
 
+type DashboardOperationsViewProps = Pick<
+	DashboardViewPageProps,
+	| 'blockedOrPartialPlatformAgents'
+	| 'operationsAgentIssueText'
+	| 'operationsHeadline'
+	| 'topOperationsAgents'
+>;
+
 type DashboardScenariosViewProps = Pick<
 	DashboardViewPageProps,
 	| 'handleRunScenario'
@@ -276,6 +284,12 @@ export function createPlatformDashboardMemoryOperationsViewProps(
 export function createPlatformDashboardOpsTasksViewProps(
 	props: DashboardOpsTasksViewProps,
 ): DashboardOpsTasksViewProps {
+	return props;
+}
+
+export function createPlatformDashboardOperationsViewProps(
+	props: DashboardOperationsViewProps,
+): DashboardOperationsViewProps {
 	return props;
 }
 
