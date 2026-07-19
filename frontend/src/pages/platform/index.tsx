@@ -197,7 +197,7 @@ import {
 	type MemberFormState,
 	type PublishFormState,
 } from './platform-defaults';
-import { platformAgentInventoryDisplayStateForStatus } from './platform-agent-inventory-display';
+import { createPlatformAgentInventoryPageState } from './platform-agent-inventory-state';
 import {
 	platformAgentRoutingDisplayStateForResult,
 	platformAgentRunnerDisplayStateForStatus,
@@ -435,26 +435,26 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		agentRunsError,
 	});
 
-	const agentTemplates = platformAgents?.templates ?? [];
-	const publishedPlatformAgents = platformAgents?.agents ?? [];
-	const platformAgentInventoryDisplay = platformAgentInventoryDisplayStateForStatus({
-		agents,
+	const {
 		agentTemplates,
 		publishedPlatformAgents,
+		featuredAgents,
+		activePlatformAgents,
+		archivedPlatformAgents,
+		readyPlatformAgents,
+		selectedRunAgent,
+		lastPublishedAgent,
+		selectedAgentConversation,
+		selectedTemplate,
+		defaultAgentTemplate,
+	} = createPlatformAgentInventoryPageState({
+		agents,
+		platformAgents,
 		selectedRunAgentId,
 		lastPublishedAgentId,
 		selectedTemplateId,
+		agentConversations,
 	});
-	const platformAgentInventoryState = platformAgentInventoryDisplay.inventoryState;
-	const featuredAgents = platformAgentInventoryState.featuredAgents;
-	const activePlatformAgents = platformAgentInventoryState.activePlatformAgents;
-	const archivedPlatformAgents = platformAgentInventoryState.archivedPlatformAgents;
-	const readyPlatformAgents = platformAgentInventoryState.readyPlatformAgents;
-	const selectedRunAgent = platformAgentInventoryState.selectedRunAgent;
-	const lastPublishedAgent = platformAgentInventoryState.lastPublishedAgent;
-	const selectedAgentConversation = agentConversations[selectedRunAgentId] ?? [];
-	const selectedTemplate = platformAgentInventoryState.selectedTemplate;
-	const defaultAgentTemplate = platformAgentInventoryState.defaultAgentTemplate;
 	const platformResourceDisplay = platformResourceDisplayStateForStatus({
 		credentials,
 		knowledgeBases,
