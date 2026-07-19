@@ -282,6 +282,8 @@ import {
 	firstAgentGuidePrimaryStepForSteps,
 	firstAgentGuideStepsForStatus,
 	governanceOperationsStateForStatus,
+	identityForMemoryOperation,
+	identityForTenant,
 	launchpadPrimaryStepForSteps,
 	launchpadStateForCounts,
 	launchpadStepsForStatus,
@@ -1956,8 +1958,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleUseTenant(tenant: string) {
-		const identity =
-			enterpriseIdentities.find((item) => item.tenant === tenant) ?? selectedIdentity;
+		const identity = identityForTenant({
+			enterpriseIdentities,
+			tenant,
+			fallbackIdentity: selectedIdentity,
+		});
 
 		if (identity) {
 			handleUseIdentity(identity);
@@ -1976,10 +1981,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleOpenMemoryOperation(item: MemoryOperationsItem) {
-		const identity = enterpriseIdentities.find(
-			(candidate) =>
-				candidate.tenant === item.tenant && candidate.user_id === item.userId,
-		);
+		const identity = identityForMemoryOperation({
+			enterpriseIdentities,
+			item,
+		});
 
 		if (identity) {
 			setSelectedIdentityUserId(identity.user_id);

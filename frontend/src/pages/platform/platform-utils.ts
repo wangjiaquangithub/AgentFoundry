@@ -4011,6 +4011,33 @@ export function selectedIdentityStateForStatus(values: {
 	};
 }
 
+export function identityForTenant(values: {
+	enterpriseIdentities: EnterpriseIdentity[];
+	tenant: string;
+	fallbackIdentity?: EnterpriseIdentity | null;
+}): EnterpriseIdentity | null {
+	return (
+		values.enterpriseIdentities.find(
+			(identity) => identity.tenant === values.tenant,
+		) ??
+		values.fallbackIdentity ??
+		null
+	);
+}
+
+export function identityForMemoryOperation(values: {
+	enterpriseIdentities: EnterpriseIdentity[];
+	item: Pick<MemoryOperationsItem, 'tenant' | 'userId'>;
+}): EnterpriseIdentity | null {
+	return (
+		values.enterpriseIdentities.find(
+			(identity) =>
+				identity.tenant === values.item.tenant &&
+				identity.user_id === values.item.userId,
+		) ?? null
+	);
+}
+
 export function agentReadinessState(
 	agent?: Pick<EnterprisePublishedAgent, 'readiness'> | null,
 ): HealthState {
