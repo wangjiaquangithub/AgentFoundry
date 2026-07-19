@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import {
 	platformApi,
 	type EnterpriseIdentity,
-	type EnterpriseAgentTemplate,
 	type EnterpriseAgentRunResponse,
 	type EnterpriseApprovalRequestItem,
 	type EnterpriseApprovalRequestType,
@@ -140,7 +139,6 @@ import {
 	runPlatformAppCenterDetailPrimaryRequestAction,
 	runPlatformAppCenterDetailSecondaryRequestAction,
 	runPlatformAppCenterPrimaryRequestAction,
-	runPlatformStartPublishingRequestAction,
 	workbenchIndicatorNavigationActions,
 	workbenchPrimaryNavigationActions,
 	workbenchQuickNavigationActions,
@@ -237,18 +235,8 @@ import {
 	type AgentQuickConfigurationPatch,
 } from './platform-agent-quick-config';
 import {
-	agentEditDraft,
-	defaultPublishFormForTemplate,
-	runAgentArchiveRequestAction,
-	runAgentEditCancelAction,
-	runAgentEditDraftAction,
-	runAgentPublishRequestAction,
+	createPlatformAgentPublishingHandlers,
 	runPrepareTenantAgentAction,
-	runPublishListToggleAction,
-	runPublishTenantChangeAction,
-	runQuickPublishRequestAction,
-	runTemplateConfigureAction,
-	type PublishListFormKey,
 } from './platform-publish-form';
 import {
 	agentSampleQuestions,
@@ -1628,39 +1616,50 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		);
 	}
 
-	function buildDefaultPublishForm(template: EnterpriseAgentTemplate): PublishFormState {
-		return defaultPublishFormForTemplate({
-			template,
-			currentUserTenant: platformStatus?.current_user.tenant,
-			credentials,
-			knowledgeBases,
-		});
-	}
-
-	function handleConfigureTemplate(template: EnterpriseAgentTemplate) {
-		runTemplateConfigureAction(
-			{
-				template,
-				form: buildDefaultPublishForm(template),
-			},
-			{
-				clearEditingAgent: () => setEditingAgentId(null),
-				selectTemplate: setSelectedTemplateId,
-				setPublishForm,
-			},
-		);
-	}
-
-	function handlePublishTenantChange(value: string) {
-		runPublishTenantChangeAction(
-			{
-				tenant: value,
-				currentUserTenant: platformStatus?.current_user.tenant,
-				members: platformMembers?.members ?? [],
-			},
-			{ setPublishForm },
-		);
-	}
+	const {
+		handleArchiveAgent,
+		handleCancelEdit,
+		handleConfigureTemplate,
+		handleEditAgent,
+		handlePublishAgent,
+		handlePublishTenantChange,
+		handleQuickPublishAgent,
+		handleStartPublishing,
+		handleTogglePublishList,
+	} = createPlatformAgentPublishingHandlers({
+		credentials,
+		knowledgeBases,
+		templates: agentTemplates,
+		selectedTemplateId,
+		selectedTemplate,
+		defaultTemplate: defaultAgentTemplate,
+		currentUserTenant: platformStatus?.current_user.tenant,
+		members: platformMembers?.members ?? [],
+		selectedRunAgentId,
+		editingAgentId,
+		form: publishForm,
+		requestText: agentManagementRequestText,
+		navigateToPath: navigate,
+		selectTemplate: setSelectedTemplateId,
+		setEditingAgent: setEditingAgentId,
+		setPublishForm,
+		setPublishingTemplate: setPublishingTemplateId,
+		setArchivingAgent: setArchivingAgentId,
+		setPlatformAgentsError,
+		publishAgent: platformApi.publishAgent,
+		updateAgent: platformApi.updateAgent,
+		archiveAgent: platformApi.archiveAgent,
+		setLastPublishedAgent: setLastPublishedAgentId,
+		primePublishedAgent: handlePrimePublishedAgent,
+		setSelectedRunAgent: setSelectedRunAgentId,
+		clearRunResult: () => {
+			setAgentRunResult(null);
+			setAgentRunError(null);
+		},
+		refreshDependentViews: refetchAgentManagementDependencies,
+		scrollToAgentManagement,
+		focusAgentManagement: () => window.setTimeout(scrollToAgentManagement, 0),
+	});
 
 	function handleOperationAction(target?: string) {
 		runPlatformOperationAction(target, {
@@ -1951,16 +1950,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		});
 	}
 
-	function handleStartPublishing() {
-		runPlatformStartPublishingRequestAction({
-			selectedTemplateId,
-			templates: agentTemplates,
-		}, {
-			configureTemplate: handleConfigureTemplate,
-			scrollToAgentManagement,
-		});
-	}
-
 	function handleNextAgentSetupStep() {
 		runPlatformAgentSetupStepRequestAction({
 			nextStep: nextAgentSetupStep,
@@ -1972,94 +1961,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			configureTemplate: handleConfigureTemplate,
 			navigate,
 			scrollToAgentManagement,
-		});
-	}
-
-	function handleEditAgent(agent: EnterprisePublishedAgent) {
-		const draft = agentEditDraft(agent);
-		runAgentEditDraftAction(draft, {
-			selectTemplate: setSelectedTemplateId,
-			setEditingAgent: setEditingAgentId,
-			setPublishForm,
-		});
-	}
-
-	function handleCancelEdit() {
-		runAgentEditCancelAction(selectedTemplate, {
-			clearEditingAgent: () => setEditingAgentId(null),
-			configureTemplate: handleConfigureTemplate,
-		});
-	}
-
-	function handleTogglePublishList(
-		key: PublishListFormKey,
-		value: string,
-		checked: boolean,
-	) {
-		runPublishListToggleAction(
-			{
-				key,
-				value,
-				checked,
-			},
-			{ setPublishForm },
-		);
-	}
-
-	async function handlePublishAgent() {
-		await runAgentPublishRequestAction({
-			selectedTemplateId,
-			editingAgentId,
-			form: publishForm,
-		}, {
-			setPublishingTemplate: setPublishingTemplateId,
-			clearError: () => setPlatformAgentsError(null),
-			publishAgent: platformApi.publishAgent,
-			updateAgent: platformApi.updateAgent,
-			setLastPublishedAgent: setLastPublishedAgentId,
-			primePublishedAgent: handlePrimePublishedAgent,
-			clearEditingAgent: () => setEditingAgentId(null),
-			refreshDependentViews: refetchAgentManagementDependencies,
-			handleError: (error, publishTarget) => {
-				setPlatformAgentsError(
-					error instanceof Error
-						? error.message
-						: publishTarget.type === 'update'
-							? agentManagementRequestText.updateError
-							: agentManagementRequestText.publishError,
-				);
-			},
-		});
-	}
-
-	async function handleQuickPublishAgent() {
-		await runQuickPublishRequestAction({
-			credentialCount: credentials.length,
-			selectedTemplate,
-			defaultTemplate: defaultAgentTemplate,
-			currentUserTenant: platformStatus?.current_user.tenant,
-			credentials,
-			knowledgeBases,
-		}, {
-			navigateToPath: navigate,
-			startPublishing: handleStartPublishing,
-			clearEditingAgent: () => setEditingAgentId(null),
-			selectTemplate: setSelectedTemplateId,
-			setPublishForm,
-			setPublishingTemplate: setPublishingTemplateId,
-			clearError: () => setPlatformAgentsError(null),
-			publishAgent: platformApi.publishAgent,
-			setLastPublishedAgent: setLastPublishedAgentId,
-			primePublishedAgent: handlePrimePublishedAgent,
-			refreshDependentViews: refetchAgentManagementDependencies,
-			handleError: (error) => {
-				setPlatformAgentsError(
-					error instanceof Error
-						? error.message
-						: agentManagementRequestText.publishError,
-				);
-			},
-			focusAgentManagement: () => window.setTimeout(scrollToAgentManagement, 0),
 		});
 	}
 
@@ -2108,35 +2009,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			scrollToAgentManagement,
 			scrollToGovernance,
 		});
-	}
-
-	async function handleArchiveAgent(agent: EnterprisePublishedAgent) {
-		await runAgentArchiveRequestAction(
-			agent,
-			{
-				selectedRunAgentId,
-				editingAgentId,
-			},
-			{
-				setArchivingAgent: setArchivingAgentId,
-				clearError: () => setPlatformAgentsError(null),
-				archiveAgent: platformApi.archiveAgent,
-				setSelectedRunAgent: setSelectedRunAgentId,
-				clearRunResult: () => {
-					setAgentRunResult(null);
-					setAgentRunError(null);
-				},
-				clearEditingAgent: () => setEditingAgentId(null),
-				refreshDependentViews: refetchAgentManagementDependencies,
-				handleError: (error) => {
-					setPlatformAgentsError(
-						error instanceof Error
-							? error.message
-							: agentManagementRequestText.archiveError,
-					);
-				},
-			},
-		);
 	}
 
 	const syncAgentQuickConfiguration = (

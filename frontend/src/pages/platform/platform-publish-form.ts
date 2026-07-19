@@ -77,6 +77,9 @@ export type AgentArchiveSyncTarget = {
 	shouldClearEditingAgent: boolean;
 };
 type NavigationHandler = () => void;
+type PublishFormSetter = (
+	value: PublishFormState | ((current: PublishFormState) => PublishFormState),
+) => void;
 
 export type TemplateConfigureActionHandlers = {
 	clearEditingAgent: NavigationHandler;
@@ -525,6 +528,26 @@ export type AgentArchiveActionHandlers = {
 	refreshDependentViews: () => void | Promise<void>;
 	handleError: (error: unknown) => void;
 };
+export type PlatformAgentPublishingRequestText = {
+	publishError: string;
+	updateError: string;
+	archiveError: string;
+};
+export type PlatformAgentPublishingHandlers = {
+	handleConfigureTemplate: (template: EnterpriseAgentTemplate) => void;
+	handlePublishTenantChange: (value: string) => void;
+	handleStartPublishing: () => void;
+	handleEditAgent: (agent: EnterprisePublishedAgent) => void;
+	handleCancelEdit: () => void;
+	handleTogglePublishList: (
+		key: PublishListFormKey,
+		value: string,
+		checked: boolean,
+	) => void;
+	handlePublishAgent: () => Promise<void>;
+	handleQuickPublishAgent: () => Promise<void>;
+	handleArchiveAgent: (agent: EnterprisePublishedAgent) => Promise<void>;
+};
 
 export function runAgentEditCancelTargetAction(
 	target: AgentEditCancelTarget,
@@ -733,5 +756,204 @@ export function publishFormWithPatch(
 	return {
 		...current,
 		...patch,
+	};
+}
+
+export function createPlatformAgentPublishingHandlers(values: {
+	credentials: CredentialView[];
+	knowledgeBases: KnowledgeBaseView[];
+	templates: EnterpriseAgentTemplate[];
+	selectedTemplateId: string | null;
+	selectedTemplate?: EnterpriseAgentTemplate | null;
+	defaultTemplate?: EnterpriseAgentTemplate | null;
+	currentUserTenant?: string;
+	members: EnterprisePlatformMember[];
+	selectedRunAgentId: string;
+	editingAgentId: string | null;
+	form: PublishFormState;
+	requestText: PlatformAgentPublishingRequestText;
+	navigateToPath: (path: '/credential') => void;
+	selectTemplate: (templateId: string) => void;
+	setEditingAgent: (agentId: string | null) => void;
+	setPublishForm: PublishFormSetter;
+	setPublishingTemplate: (templateId: string | null) => void;
+	setArchivingAgent: (agentId: string | null) => void;
+	setPlatformAgentsError: (message: string | null) => void;
+	publishAgent: (
+		payload: EnterpriseAgentPublishRequest,
+	) => EnterpriseAgentPublishResponse | Promise<EnterpriseAgentPublishResponse>;
+	updateAgent: (
+		agentId: string,
+		payload: EnterpriseAgentUpdateRequest,
+	) => EnterpriseAgentUpdateResponse | Promise<EnterpriseAgentUpdateResponse>;
+	archiveAgent: (
+		agentId: string,
+	) => EnterpriseAgentUpdateResponse | Promise<EnterpriseAgentUpdateResponse>;
+	setLastPublishedAgent: (agentId: string) => void;
+	primePublishedAgent: (agentId: string) => void;
+	setSelectedRunAgent: (agentId: string) => void;
+	clearRunResult: () => void;
+	refreshDependentViews: () => void | Promise<void>;
+	scrollToAgentManagement: () => void;
+	focusAgentManagement: () => void;
+}): PlatformAgentPublishingHandlers {
+	const buildDefaultPublishForm = (template: EnterpriseAgentTemplate) =>
+		defaultPublishFormForTemplate({
+			template,
+			currentUserTenant: values.currentUserTenant,
+			credentials: values.credentials,
+			knowledgeBases: values.knowledgeBases,
+		});
+
+	const handleConfigureTemplate = (template: EnterpriseAgentTemplate) => {
+		runTemplateConfigureAction(
+			{
+				template,
+				form: buildDefaultPublishForm(template),
+			},
+			{
+				clearEditingAgent: () => values.setEditingAgent(null),
+				selectTemplate: values.selectTemplate,
+				setPublishForm: values.setPublishForm,
+			},
+		);
+	};
+
+	const handleStartPublishing = () => {
+		runStartPublishingAction(
+			{
+				selectedTemplateId: values.selectedTemplateId,
+				templates: values.templates,
+			},
+			{
+				configureTemplate: handleConfigureTemplate,
+				scrollToAgentManagement: values.scrollToAgentManagement,
+			},
+		);
+	};
+
+	return {
+		handleConfigureTemplate,
+		handlePublishTenantChange: (tenant) => {
+			runPublishTenantChangeAction(
+				{
+					tenant,
+					currentUserTenant: values.currentUserTenant,
+					members: values.members,
+				},
+				{ setPublishForm: values.setPublishForm },
+			);
+		},
+		handleStartPublishing,
+		handleEditAgent: (agent) => {
+			const draft = agentEditDraft(agent);
+			runAgentEditDraftAction(draft, {
+				selectTemplate: values.selectTemplate,
+				setEditingAgent: values.setEditingAgent,
+				setPublishForm: values.setPublishForm,
+			});
+		},
+		handleCancelEdit: () => {
+			runAgentEditCancelAction(values.selectedTemplate, {
+				clearEditingAgent: () => values.setEditingAgent(null),
+				configureTemplate: handleConfigureTemplate,
+			});
+		},
+		handleTogglePublishList: (key, value, checked) => {
+			runPublishListToggleAction(
+				{
+					key,
+					value,
+					checked,
+				},
+				{ setPublishForm: values.setPublishForm },
+			);
+		},
+		handlePublishAgent: async () => {
+			await runAgentPublishRequestAction(
+				{
+					selectedTemplateId: values.selectedTemplateId,
+					editingAgentId: values.editingAgentId,
+					form: values.form,
+				},
+				{
+					setPublishingTemplate: values.setPublishingTemplate,
+					clearError: () => values.setPlatformAgentsError(null),
+					publishAgent: values.publishAgent,
+					updateAgent: values.updateAgent,
+					setLastPublishedAgent: values.setLastPublishedAgent,
+					primePublishedAgent: values.primePublishedAgent,
+					clearEditingAgent: () => values.setEditingAgent(null),
+					refreshDependentViews: values.refreshDependentViews,
+					handleError: (error, publishTarget) => {
+						values.setPlatformAgentsError(
+							error instanceof Error
+								? error.message
+								: publishTarget.type === 'update'
+									? values.requestText.updateError
+									: values.requestText.publishError,
+						);
+					},
+				},
+			);
+		},
+		handleQuickPublishAgent: async () => {
+			await runQuickPublishRequestAction(
+				{
+					credentialCount: values.credentials.length,
+					selectedTemplate: values.selectedTemplate,
+					defaultTemplate: values.defaultTemplate,
+					currentUserTenant: values.currentUserTenant,
+					credentials: values.credentials,
+					knowledgeBases: values.knowledgeBases,
+				},
+				{
+					navigateToPath: values.navigateToPath,
+					startPublishing: handleStartPublishing,
+					clearEditingAgent: () => values.setEditingAgent(null),
+					selectTemplate: values.selectTemplate,
+					setPublishForm: values.setPublishForm,
+					setPublishingTemplate: values.setPublishingTemplate,
+					clearError: () => values.setPlatformAgentsError(null),
+					publishAgent: values.publishAgent,
+					setLastPublishedAgent: values.setLastPublishedAgent,
+					primePublishedAgent: values.primePublishedAgent,
+					refreshDependentViews: values.refreshDependentViews,
+					handleError: (error) => {
+						values.setPlatformAgentsError(
+							error instanceof Error
+								? error.message
+								: values.requestText.publishError,
+						);
+					},
+					focusAgentManagement: values.focusAgentManagement,
+				},
+			);
+		},
+		handleArchiveAgent: async (agent) => {
+			await runAgentArchiveRequestAction(
+				agent,
+				{
+					selectedRunAgentId: values.selectedRunAgentId,
+					editingAgentId: values.editingAgentId,
+				},
+				{
+					setArchivingAgent: values.setArchivingAgent,
+					clearError: () => values.setPlatformAgentsError(null),
+					archiveAgent: values.archiveAgent,
+					setSelectedRunAgent: values.setSelectedRunAgent,
+					clearRunResult: values.clearRunResult,
+					clearEditingAgent: () => values.setEditingAgent(null),
+					refreshDependentViews: values.refreshDependentViews,
+					handleError: (error) => {
+						values.setPlatformAgentsError(
+							error instanceof Error
+								? error.message
+								: values.requestText.archiveError,
+						);
+					},
+				},
+			);
+		},
 	};
 }
