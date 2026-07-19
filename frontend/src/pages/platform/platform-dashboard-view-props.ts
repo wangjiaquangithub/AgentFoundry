@@ -140,6 +140,43 @@ type DashboardToolsViewProps = Pick<
 	| 'toolRunnerRef'
 >;
 
+type DashboardWorkflowsViewProps = Pick<
+	DashboardViewPageProps,
+	| 'completedWorkflowRunCount'
+	| 'failedWorkflowRunCount'
+	| 'governedWorkflowItems'
+	| 'handleRunEnterpriseWorkflow'
+	| 'handleToggleWorkflowTemplate'
+	| 'partialWorkflowRunCount'
+	| 'recentWorkflowRuns'
+	| 'refetchWorkflowRuns'
+	| 'runningWorkflow'
+	| 'savingWorkflowType'
+	| 'scrollToWorkflowRunner'
+	| 'selectedWorkflowDisabled'
+	| 'selectedWorkflowLastRun'
+	| 'selectedWorkflowName'
+	| 'selectedWorkflowSteps'
+	| 'selectedWorkflowTemplate'
+	| 'selectedWorkflowType'
+	| 'setSelectedWorkflowType'
+	| 'setWorkflowInputs'
+	| 'setWorkflowRunError'
+	| 'workflowInputs'
+	| 'workflowOpsStats'
+	| 'workflowOptions'
+	| 'workflowRunCount'
+	| 'workflowRunError'
+	| 'workflowRunResult'
+	| 'workflowRunnerRef'
+	| 'workflowRuns'
+	| 'workflowRunsError'
+	| 'workflowRunsLoading'
+	| 'workflowTemplates'
+	| 'workflowTemplatesError'
+	| 'workflowTemplatesLoading'
+>;
+
 export function createPlatformDashboardViewProps(
 	props: DashboardViewPageProps,
 ): DashboardViewPageProps {
@@ -167,6 +204,12 @@ export function createPlatformDashboardConnectorsViewProps(
 export function createPlatformDashboardToolsViewProps(
 	props: DashboardToolsViewProps,
 ): DashboardToolsViewProps {
+	return props;
+}
+
+export function createPlatformDashboardWorkflowsViewProps(
+	props: DashboardWorkflowsViewProps,
+): DashboardWorkflowsViewProps {
 	return props;
 }
 
