@@ -231,6 +231,8 @@ import {
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
 	agentCapabilityEnabledPatch,
+	agentArchiveSyncTarget,
+	agentArchiveTarget,
 	agentDefaultModelBindTarget,
 	agentDefaultModelPatch,
 	agentEditCancelTarget,
@@ -243,7 +245,6 @@ import {
 	agentTemplateToolsBindTarget,
 	agentTemplateToolsPatch,
 	defaultPublishFormForTemplate,
-	nextPublishedAgentIdAfterArchive,
 	publishFormForListToggle,
 	publishFormForPreparedTenant,
 	publishFormForTenantChange,
@@ -2307,25 +2308,29 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleArchiveAgent(agent: EnterprisePublishedAgent) {
-		if (agent.status !== 'published') {
+		const target = agentArchiveTarget(agent);
+		if (target.type === 'skip') {
 			return;
 		}
 
-		setArchivingAgentId(agent.id);
+		setArchivingAgentId(target.agentId);
 		setPlatformAgentsError(null);
 		try {
-			const response = await platformApi.archiveAgent(agent.id);
-			if (selectedRunAgentId === agent.id) {
-				setSelectedRunAgentId(
-					nextPublishedAgentIdAfterArchive({
-						agents: response.agents,
-						archivedAgentId: agent.id,
-					}),
-				);
+			const response = await platformApi.archiveAgent(target.agentId);
+			const syncTarget = agentArchiveSyncTarget({
+				agents: response.agents,
+				archivedAgentId: target.agentId,
+				selectedRunAgentId,
+				editingAgentId,
+			});
+			if (syncTarget.selectedRunAgentId !== null) {
+				setSelectedRunAgentId(syncTarget.selectedRunAgentId);
+			}
+			if (syncTarget.shouldClearRunResult) {
 				setAgentRunResult(null);
 				setAgentRunError(null);
 			}
-			if (editingAgentId === agent.id) {
+			if (syncTarget.shouldClearEditingAgent) {
 				setEditingAgentId(null);
 			}
 			await refetchPlatformAgents();

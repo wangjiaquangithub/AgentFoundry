@@ -62,6 +62,14 @@ export type AgentPublishRequestTarget =
 			publishingTemplateId: string;
 			payload: EnterpriseAgentPublishRequest;
 	  };
+export type AgentArchiveTarget =
+	| { type: 'skip' }
+	| { type: 'archive'; agentId: string };
+export type AgentArchiveSyncTarget = {
+	selectedRunAgentId: string | null;
+	shouldClearRunResult: boolean;
+	shouldClearEditingAgent: boolean;
+};
 
 export type DefaultPublishFormOptions = {
 	template: EnterpriseAgentTemplate;
@@ -195,6 +203,34 @@ export function nextPublishedAgentIdAfterArchive(values: {
 				agent.status === 'published' && agent.id !== values.archivedAgentId,
 		)?.id ?? ''
 	);
+}
+
+export function agentArchiveTarget(
+	agent: EnterprisePublishedAgent,
+): AgentArchiveTarget {
+	return agent.status === 'published'
+		? { type: 'archive', agentId: agent.id }
+		: { type: 'skip' };
+}
+
+export function agentArchiveSyncTarget(values: {
+	agents: EnterprisePublishedAgent[];
+	archivedAgentId: string;
+	selectedRunAgentId: string;
+	editingAgentId: string | null;
+}): AgentArchiveSyncTarget {
+	const shouldClearRunResult = values.selectedRunAgentId === values.archivedAgentId;
+
+	return {
+		selectedRunAgentId: shouldClearRunResult
+			? nextPublishedAgentIdAfterArchive({
+					agents: values.agents,
+					archivedAgentId: values.archivedAgentId,
+				})
+			: null,
+		shouldClearRunResult,
+		shouldClearEditingAgent: values.editingAgentId === values.archivedAgentId,
+	};
 }
 
 export function publishFormForTenantChange(values: {
