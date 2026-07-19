@@ -120,7 +120,7 @@ import {
 } from './platform-config-management';
 import {
 	toolPolicyDraftFromDecisions,
-	toolPolicyPayloadFromDraft,
+	runToolPolicySaveAction,
 } from './platform-tool-policy-helpers';
 import {
 	runMemberEditAction,
@@ -1343,34 +1343,39 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleSaveToolPolicy() {
-		if (!selectedIdentity) {
-			setToolPolicySaveError(tenantGovernanceRequestText.noIdentity);
-			setToolPolicySaveSuccess(null);
-			return;
-		}
-
-		setSavingToolPolicy(true);
-		setToolPolicySaveError(null);
-		setToolPolicySaveSuccess(null);
-		try {
-			await platformApi.updateToolPolicy(toolPolicyPayloadFromDraft({
-				tenant: selectedIdentity.tenant,
-				userId: selectedIdentity.user_id,
-				draft: toolPolicyDraft,
-			}));
-
-			setToolPolicySaveSuccess(tenantGovernanceRequestText.policySaved);
-			await Promise.all([refetchPlatform(), refetchGovernance(), refetchToolCatalog()]);
-			await refetchOpsTasks();
-		} catch (error) {
-			setToolPolicySaveError(
-				error instanceof Error
-					? error.message
-					: tenantGovernanceRequestText.policySaveError,
-			);
-		} finally {
-			setSavingToolPolicy(false);
-		}
+		await runToolPolicySaveAction(
+			{ identity: selectedIdentity, draft: toolPolicyDraft },
+			{
+				setSavingToolPolicy,
+				clearMessages: () => {
+					setToolPolicySaveError(null);
+					setToolPolicySaveSuccess(null);
+				},
+				handleValidationError: () => {
+					setToolPolicySaveError(tenantGovernanceRequestText.noIdentity);
+					setToolPolicySaveSuccess(null);
+				},
+				updateToolPolicy: async (payload) => {
+					await platformApi.updateToolPolicy(payload);
+				},
+				setToolPolicySaveSuccess: () =>
+					setToolPolicySaveSuccess(tenantGovernanceRequestText.policySaved),
+				refreshDependentViews: async () => {
+					await Promise.all([
+						refetchPlatform(),
+						refetchGovernance(),
+						refetchToolCatalog(),
+					]);
+					await refetchOpsTasks();
+				},
+				handleError: (error) =>
+					setToolPolicySaveError(
+						error instanceof Error
+							? error.message
+							: tenantGovernanceRequestText.policySaveError,
+					),
+			},
+		);
 	}
 
 	async function refetchAgentRuns(

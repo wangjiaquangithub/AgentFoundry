@@ -1,9 +1,22 @@
 import type {
+	EnterpriseIdentity,
 	EnterpriseToolCatalogItem,
 	EnterpriseToolDecision,
 	EnterpriseToolPolicyUpdateRequest,
 } from '@/api';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
+
+export type ToolPolicySaveActionHandlers = {
+	setSavingToolPolicy: (saving: boolean) => void;
+	clearMessages: () => void;
+	handleValidationError: () => void;
+	updateToolPolicy: (
+		payload: EnterpriseToolPolicyUpdateRequest,
+	) => void | Promise<void>;
+	setToolPolicySaveSuccess: () => void;
+	refreshDependentViews: () => void | Promise<void>;
+	handleError: (error: unknown) => void;
+};
 
 export function toolPolicyPayloadFromDraft(values: {
 	tenant: string;
@@ -42,4 +55,35 @@ export function toolPolicyDraftFromDecisions(values: {
 	});
 
 	return draft;
+}
+
+export async function runToolPolicySaveAction(
+	values: {
+		identity: EnterpriseIdentity | null;
+		draft: Record<string, ToolPolicyDraftValue>;
+	},
+	handlers: ToolPolicySaveActionHandlers,
+) {
+	if (!values.identity) {
+		handlers.handleValidationError();
+		return;
+	}
+
+	handlers.setSavingToolPolicy(true);
+	handlers.clearMessages();
+	try {
+		await handlers.updateToolPolicy(
+			toolPolicyPayloadFromDraft({
+				tenant: values.identity.tenant,
+				userId: values.identity.user_id,
+				draft: values.draft,
+			}),
+		);
+		handlers.setToolPolicySaveSuccess();
+		await handlers.refreshDependentViews();
+	} catch (error) {
+		handlers.handleError(error);
+	} finally {
+		handlers.setSavingToolPolicy(false);
+	}
 }
