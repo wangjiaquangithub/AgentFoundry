@@ -60,14 +60,13 @@ import {
 	agentRunSelectionResult,
 	clearAgentConversationTurns,
 	clearAgentRunsParams,
-	enterpriseToolRunPayload,
 	enterpriseWorkflowRunPayload,
 	memoryOperationAgentRunTarget,
 	mergeAgentConversationTurn,
 	replaceAgentConversationTurns,
 	scenarioWorkflowRunTarget,
 	selectedRunAgentIdForAvailableAgents,
-	toolRunTargetForRequest,
+	toolRunRequestTarget,
 	workflowInputsForSelectedOption,
 	workflowSelectionForAvailableTemplates,
 	workflowInputsWithValue,
@@ -2561,31 +2560,23 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		agentId?: string;
 		approvalId?: string;
 	}) {
-		const { toolName, inputs, userId, agentId, approvalId } =
-			toolRunTargetForRequest({
-				options,
-				selectedToolName,
-				selectedToolInputKey,
-				selectedToolInputValue,
-				selectedIdentityUserId,
-				selectedRunAgentId,
-				toolApprovalId,
-			});
-
-		if (!inputs) {
+		const target = toolRunRequestTarget({
+			options,
+			selectedToolName,
+			selectedToolInputKey,
+			selectedToolInputValue,
+			selectedIdentityUserId,
+			selectedRunAgentId,
+			toolApprovalId,
+		});
+		if (target.type === 'empty') {
 			return;
 		}
 
 		setRunningTool(true);
 		setToolRunError(null);
 		try {
-			const response = await platformApi.runTool(enterpriseToolRunPayload({
-				toolName,
-				inputs,
-				userId,
-				agentId,
-				approvalId,
-			}));
+			const response = await platformApi.runTool(target.payload);
 			setToolRunResult(response);
 			await refetchPlatform();
 			await refetchToolCatalog();

@@ -370,6 +370,48 @@ export function enterpriseToolRunPayload(values: {
 	};
 }
 
+export type ToolRunRequestTarget =
+	| {
+			type: 'empty';
+	  }
+	| {
+			type: 'run';
+			payload: EnterpriseToolRunRequest;
+	  };
+
+export function toolRunRequestTarget(values: {
+	options?: {
+		toolName?: string;
+		inputs?: Record<string, unknown>;
+		userId?: string;
+		agentId?: string;
+		approvalId?: string;
+	};
+	selectedToolName: string;
+	selectedToolInputKey: string;
+	selectedToolInputValue: string;
+	selectedIdentityUserId: string;
+	selectedRunAgentId: string;
+	toolApprovalId: string;
+}): ToolRunRequestTarget {
+	const target = toolRunTargetForRequest(values);
+
+	if (!target.inputs) {
+		return { type: 'empty' };
+	}
+
+	return {
+		type: 'run',
+		payload: enterpriseToolRunPayload({
+			toolName: target.toolName,
+			inputs: target.inputs,
+			userId: target.userId,
+			agentId: target.agentId,
+			approvalId: target.approvalId,
+		}),
+	};
+}
+
 export function enterpriseWorkflowRunPayload(values: {
 	workflowType: string;
 	inputs: Record<string, unknown>;
