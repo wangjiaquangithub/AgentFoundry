@@ -211,6 +211,7 @@ import {
 	workflowRunnerRequestLabels,
 	workflowSelectionLabels,
 } from './platform-labels';
+import { platformLaunchpadDisplayStateForStatus } from './platform-launchpad-display';
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
 	agentQuickConfigurationSyncResult,
@@ -263,7 +264,6 @@ import {
 	agentRunnerStateForStatus,
 	appCenterDetailHealthState,
 	appCenterAgentDisplayStateForStatus,
-	activePlatformMemberCountForMembers,
 	agentIsReady,
 	agentReadinessIssues,
 	agentReadinessState,
@@ -280,10 +280,6 @@ import {
 	firstAgentGuidePrimaryStepForSteps,
 	firstAgentGuideStepsForStatus,
 	governanceOperationsStateForStatus,
-	launchpadPrimaryStepForSteps,
-	launchpadStateForCounts,
-	launchpadStepsForStatus,
-	launchpadTargetActionsForNavigation,
 	mapAgentRunToConversationTurn,
 	memoryOperationsStateForConversations,
 	nextAgentSetupStepForSteps,
@@ -301,7 +297,6 @@ import {
 	platformConsoleItemsForDisplay,
 	platformResourceLookupStateForStatus,
 	platformRuntimeConfigStateForStatus,
-	readyLaunchpadStepCountForSteps,
 	readyOrchestrationWorkbenchStepCountForSteps,
 	rolloutPathStepsForStatus,
 	runtimeStatusItemsForStatus,
@@ -2575,14 +2570,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		actions: capabilityNavigationActions(platformNavigationHandlers),
 	});
 
-	const launchpadTargetActions = launchpadTargetActionsForNavigation(
-		launchpadNavigationActions(platformNavigationHandlers),
-	);
-	const activeMemberCount =
-		activePlatformMemberCountForMembers(platformMembers?.members ?? []);
-	const launchpadSteps = launchpadStepsForStatus(
+	const launchpadDisplay = platformLaunchpadDisplayStateForStatus(
 		{
-			activeMemberCount,
+			members: platformMembers?.members ?? [],
 			credentialCount: credentials.length,
 			knowledgeBaseCount: knowledgeBases.length,
 			activeAgentCount: activePlatformAgents.length,
@@ -2594,18 +2584,19 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 		{
 			icons: launchpadStepIcons,
-			actions: launchpadTargetActions,
+			navigationActions: launchpadNavigationActions(platformNavigationHandlers),
 			fallbackAction: scrollToGovernance,
 			labels: launchpadStepLabels(t),
 		},
 	);
-	const launchpadReadyCount = readyLaunchpadStepCountForSteps(launchpadSteps);
-	const launchpadTotalCount = launchpadSteps.length;
-	const launchpadState = launchpadStateForCounts({
+	const {
+		activeMemberCount,
+		primaryStep: launchpadPrimaryStep,
 		readyCount: launchpadReadyCount,
+		state: launchpadState,
+		steps: launchpadSteps,
 		totalCount: launchpadTotalCount,
-	});
-	const launchpadPrimaryStep = launchpadPrimaryStepForSteps(launchpadSteps);
+	} = launchpadDisplay;
 
 	const platformConsoleItems = platformConsoleItemsForDisplay({
 		icons: platformConsoleIcons,
