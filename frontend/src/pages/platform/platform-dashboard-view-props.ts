@@ -306,9 +306,11 @@ type DashboardConnectorsViewProps = Pick<
 type DashboardToolsViewProps = Pick<
 	DashboardViewPageProps,
 	| 'availableToolItems'
+	| 'configManagementRef'
 	| 'enterpriseToolInputConfig'
 	| 'handleRunEnterpriseTool'
 	| 'handleSaveToolPolicy'
+	| 'refetchToolCatalog'
 	| 'riskToolItems'
 	| 'runningTool'
 	| 'scrollToToolRunner'
