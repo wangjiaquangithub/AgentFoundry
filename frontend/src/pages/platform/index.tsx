@@ -169,6 +169,7 @@ import { createPlatformMemoryViewProps } from './platform-memory-view-props';
 import { createPlatformRunsViewProps } from './platform-runs-view-props';
 import { createPlatformSettingsViewProps } from './platform-settings-view-props';
 import { createPlatformTenantsViewProps } from './platform-tenants-view-props';
+import { createPlatformToolsViewProps } from './platform-tools-view-props';
 import { createPlatformWorkflowsViewProps } from './platform-workflows-view-props';
 import {
 	createPlatformAgentQuickConfigurationHandlers,
@@ -1750,37 +1751,39 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	if (view === 'tools') {
 		return (
 			<ToolsViewPage
-				serverUrl={serverUrl}
-				username={username}
-				hasErrors={hasErrors}
-				configManagementRef={configManagementRef}
-				toolRunnerRef={toolRunnerRef}
-				availableToolItems={availableToolItems}
-				publishedPlatformAgents={publishedPlatformAgents}
-				toolCatalogLoading={toolCatalogLoading}
-				toolCatalogError={toolCatalogError}
-				selectedToolName={selectedToolName}
-				selectedToolConfig={selectedToolConfig}
-				selectedToolCatalogItem={selectedToolCatalogItem}
-				selectedToolInputValue={selectedToolInputValue}
-				selectedToolInputKey={selectedToolInputKey}
-				toolApprovalId={toolApprovalId}
-				selectedToolDecision={selectedToolDecision}
-				selectedToolAllowed={selectedToolAllowed}
-				selectedToolReason={selectedToolReason}
-				creatingRunApproval={creatingRunApproval}
-				platformError={platformError}
-				runningTool={runningTool}
-				toolRunError={toolRunError}
-				toolRunResult={toolRunResult}
-				onRefetchToolCatalog={refetchToolCatalog}
-				onSelectedToolNameChange={setSelectedToolName}
-				onToolRunErrorChange={setToolRunError}
-				onToolInputsChange={setToolInputs}
-				onToolApprovalIdChange={setToolApprovalId}
-				onCreateRunApproval={handleCreateRunApproval}
-				onRunEnterpriseTool={handleRunEnterpriseTool}
-				t={t}
+				{...createPlatformToolsViewProps({
+					serverUrl,
+					username,
+					hasErrors,
+					configManagementRef,
+					toolRunnerRef,
+					availableToolItems,
+					publishedPlatformAgents,
+					toolCatalogLoading,
+					toolCatalogError,
+					selectedToolName,
+					selectedToolConfig,
+					selectedToolCatalogItem,
+					selectedToolInputValue,
+					selectedToolInputKey,
+					toolApprovalId,
+					selectedToolDecision,
+					selectedToolAllowed,
+					selectedToolReason,
+					creatingRunApproval,
+					platformError,
+					runningTool,
+					toolRunError,
+					toolRunResult,
+					onRefetchToolCatalog: refetchToolCatalog,
+					onSelectedToolNameChange: setSelectedToolName,
+					onToolRunErrorChange: setToolRunError,
+					onToolInputsChange: setToolInputs,
+					onToolApprovalIdChange: setToolApprovalId,
+					onCreateRunApproval: handleCreateRunApproval,
+					onRunEnterpriseTool: handleRunEnterpriseTool,
+					t,
+				})}
 			/>
 		);
 	}
