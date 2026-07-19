@@ -1268,6 +1268,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		);
 	}
 
+	async function refetchAgentManagementDependencies() {
+		await refetchPlatformAgents();
+		await refetchPlatform();
+		await refetchToolCatalog();
+		await refetchOpsTasks();
+	}
+
 	async function handleSaveToolPolicy() {
 		await runToolPolicySaveAction(
 			{ identity: selectedIdentity, draft: toolPolicyDraft },
@@ -2015,12 +2022,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			setLastPublishedAgent: setLastPublishedAgentId,
 			primePublishedAgent: handlePrimePublishedAgent,
 			clearEditingAgent: () => setEditingAgentId(null),
-			refreshDependentViews: async () => {
-				await refetchPlatformAgents();
-				await refetchPlatform();
-				await refetchToolCatalog();
-				await refetchOpsTasks();
-			},
+			refreshDependentViews: refetchAgentManagementDependencies,
 			handleError: (error, publishTarget) => {
 				setPlatformAgentsError(
 					error instanceof Error
@@ -2052,12 +2054,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			publishAgent: platformApi.publishAgent,
 			setLastPublishedAgent: setLastPublishedAgentId,
 			primePublishedAgent: handlePrimePublishedAgent,
-			refreshDependentViews: async () => {
-				await refetchPlatformAgents();
-				await refetchPlatform();
-				await refetchToolCatalog();
-				await refetchOpsTasks();
-			},
+			refreshDependentViews: refetchAgentManagementDependencies,
 			handleError: (error) => {
 				setPlatformAgentsError(
 					error instanceof Error
@@ -2153,12 +2150,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					setAgentRunError(null);
 				},
 				clearEditingAgent: () => setEditingAgentId(null),
-				refreshDependentViews: async () => {
-					await refetchPlatformAgents();
-					await refetchPlatform();
-					await refetchToolCatalog();
-					await refetchOpsTasks();
-				},
+				refreshDependentViews: refetchAgentManagementDependencies,
 				handleError: (error) => {
 					setPlatformAgentsError(
 						error instanceof Error
@@ -2201,12 +2193,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			clearError: () => setPlatformAgentsError(null),
 			updateAgent: platformApi.updateAgent,
 			syncQuickConfiguration: syncAgentQuickConfiguration,
-			refreshDependentViews: async () => {
-				await refetchPlatformAgents();
-				await refetchPlatform();
-				await refetchToolCatalog();
-				await refetchOpsTasks();
-			},
+			refreshDependentViews: refetchAgentManagementDependencies,
 			handleError: (error) =>
 				setPlatformAgentsError(
 					error instanceof Error
@@ -2223,12 +2210,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			clearError: () => setPlatformAgentsError(null),
 			updateAgent: platformApi.updateAgent,
 			syncQuickConfiguration: syncAgentQuickConfiguration,
-			refreshDependentViews: async () => {
-				await refetchPlatformAgents();
-				await refetchPlatform();
-				await refetchToolCatalog();
-				await refetchOpsTasks();
-			},
+			refreshDependentViews: refetchAgentManagementDependencies,
 			handleError: (error) =>
 				setPlatformAgentsError(
 					error instanceof Error
@@ -2249,12 +2231,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				clearError: () => setPlatformAgentsError(null),
 				updateAgent: platformApi.updateAgent,
 				syncQuickConfiguration: syncAgentQuickConfiguration,
-				refreshDependentViews: async () => {
-					await refetchPlatformAgents();
-					await refetchPlatform();
-					await refetchToolCatalog();
-					await refetchOpsTasks();
-				},
+				refreshDependentViews: refetchAgentManagementDependencies,
 				handleEmptyTemplateTools: () =>
 					setPlatformAgentsError(agentManagementRequestText.bindToolsError),
 				handleError: (error) =>
@@ -2278,12 +2255,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				clearError: () => setPlatformAgentsError(null),
 				updateAgent: platformApi.updateAgent,
 				syncQuickConfiguration: syncAgentQuickConfiguration,
-				refreshDependentViews: async () => {
-					await refetchPlatformAgents();
-					await refetchPlatform();
-					await refetchToolCatalog();
-					await refetchOpsTasks();
-				},
+				refreshDependentViews: refetchAgentManagementDependencies,
 				handleError: (error) =>
 					setPlatformAgentsError(
 						error instanceof Error
@@ -2305,12 +2277,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				clearError: () => setPlatformAgentsError(null),
 				updateAgent: platformApi.updateAgent,
 				syncQuickConfiguration: syncAgentQuickConfiguration,
-				refreshDependentViews: async () => {
-					await refetchPlatformAgents();
-					await refetchPlatform();
-					await refetchToolCatalog();
-					await refetchOpsTasks();
-				},
+				refreshDependentViews: refetchAgentManagementDependencies,
 				handleError: (error) =>
 					setPlatformAgentsError(
 						error instanceof Error
