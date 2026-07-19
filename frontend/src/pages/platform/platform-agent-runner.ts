@@ -647,6 +647,14 @@ export async function runEnterpriseAgentAction(
 	}
 }
 
+export async function runEnterpriseAgentRequestAction(
+	values: Parameters<typeof agentRunRequestTarget>[0],
+	handlers: EnterpriseAgentRunActionHandlers,
+) {
+	const target = agentRunRequestTarget(values);
+	await runEnterpriseAgentAction(target, handlers);
+}
+
 export function clearAgentRunsParams(values: {
 	agentId: string;
 	userId: string;
