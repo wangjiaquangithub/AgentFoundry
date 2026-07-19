@@ -230,6 +230,13 @@ export function runAppCenterPrimaryAction(
 	handlers.scrollToAgentManagement();
 }
 
+export function runAppCenterPrimaryRequestAction(
+	values: Parameters<typeof appCenterPrimaryAction>[0],
+	handlers: AppCenterPrimaryActionHandlers,
+) {
+	runAppCenterPrimaryAction(appCenterPrimaryAction(values), handlers);
+}
+
 export type AppCenterDetailPrimaryActionHandlers = {
 	selectAndPrimeAgent: (agentId: string) => void;
 	editAgent: NavigationHandler;

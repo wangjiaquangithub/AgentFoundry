@@ -128,7 +128,6 @@ import {
 	agentSetupStepAction,
 	appCenterDetailPrimaryAction,
 	appCenterDetailSecondaryAction,
-	appCenterPrimaryAction,
 	capabilityNavigationActions,
 	firstAgentGuideNavigationActions,
 	launchpadNavigationActions,
@@ -138,7 +137,7 @@ import {
 	runAgentSetupStepAction,
 	runAppCenterDetailPrimaryAction,
 	runAppCenterDetailSecondaryAction,
-	runAppCenterPrimaryAction,
+	runAppCenterPrimaryRequestAction,
 	runNextStepPrimaryRequestAction,
 	workbenchIndicatorNavigationActions,
 	workbenchPrimaryNavigationActions,
@@ -2163,12 +2162,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleAppCenterPrimaryAction() {
-		const action = appCenterPrimaryAction({
+		runAppCenterPrimaryRequestAction({
 			credentialCount: credentials.length,
 			readyAgentId: readyPlatformAgents[0]?.id,
 			activeAgentCount: activePlatformAgents.length,
-		});
-		runAppCenterPrimaryAction(action, {
+		}, {
 			navigate,
 			selectAndPrimeAgent: (agentId) => {
 				setSelectedRunAgentId(agentId);
