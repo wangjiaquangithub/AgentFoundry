@@ -119,15 +119,13 @@ import {
 import { runWorkflowRunLoadAction } from './platform-workflow-run-helpers';
 import { runScenarioLoadAction } from './platform-scenario-helpers';
 import {
-	approvalFiltersForIdentity,
-	approvalFiltersForTenant,
-	auditFiltersForIdentity,
-	auditFiltersForMemoryOperation,
-	auditFiltersForTenant,
-	failedAuditFiltersForIdentity,
-	runApprovalFilterTargetAction,
-	runAuditFilterTargetAction,
 	runInspectAgentRunEvidenceAuditAction,
+	runInspectIdentityApprovalsAction,
+	runInspectIdentityAuditAction,
+	runInspectIdentityFailuresAction,
+	runInspectMemoryOperationAuditAction,
+	runInspectTenantApprovalsAction,
+	runInspectTenantAuditAction,
 } from './platform-filter-builders';
 import { runAuditEventLoadAction } from './platform-audit-helpers';
 import {
@@ -1848,8 +1846,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleInspectIdentityAudit(identity: EnterpriseIdentity) {
-		const filters = auditFiltersForIdentity(identity);
-		runAuditFilterTargetAction(filters, {
+		runInspectIdentityAuditAction(identity, {
 			patchAuditFilters: setAuditFilters,
 			refetchAuditEvents,
 			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
@@ -1857,8 +1854,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleInspectIdentityApprovals(identity: EnterpriseIdentity) {
-		const filters = approvalFiltersForIdentity(identity);
-		runApprovalFilterTargetAction(filters, {
+		runInspectIdentityApprovalsAction(identity, {
 			patchApprovalFilters: setApprovalFilters,
 			refetchApprovals,
 			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
@@ -1866,8 +1862,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleInspectIdentityFailures(identity: EnterpriseIdentity) {
-		const filters = failedAuditFiltersForIdentity(identity);
-		runAuditFilterTargetAction(filters, {
+		runInspectIdentityFailuresAction(identity, {
 			patchAuditFilters: setAuditFilters,
 			refetchAuditEvents,
 			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
@@ -1890,8 +1885,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleInspectTenantAudit(tenant: string) {
-		const filters = auditFiltersForTenant(tenant);
-		runAuditFilterTargetAction(filters, {
+		runInspectTenantAuditAction(tenant, {
 			patchAuditFilters: setAuditFilters,
 			refetchAuditEvents,
 			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
@@ -1917,8 +1911,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleInspectMemoryOperationAudit(item: MemoryOperationsItem) {
-		const filters = auditFiltersForMemoryOperation(item);
-		runAuditFilterTargetAction(filters, {
+		runInspectMemoryOperationAuditAction(item, {
 			patchAuditFilters: setAuditFilters,
 			refetchAuditEvents,
 			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
@@ -1926,8 +1919,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleInspectTenantApprovals(tenant: string) {
-		const filters = approvalFiltersForTenant(tenant);
-		runApprovalFilterTargetAction(filters, {
+		runInspectTenantApprovalsAction(tenant, {
 			patchApprovalFilters: setApprovalFilters,
 			refetchApprovals,
 			scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),

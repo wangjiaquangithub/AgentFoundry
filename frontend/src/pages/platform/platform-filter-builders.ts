@@ -150,6 +150,34 @@ export function runInspectAgentRunEvidenceAuditAction(
 	runAgentRunEvidenceAuditTargetAction(target, handlers);
 }
 
+export function runInspectIdentityAuditAction(
+	identity: EnterpriseIdentity,
+	handlers: AuditFilterTargetActionHandlers,
+) {
+	runAuditFilterTargetAction(auditFiltersForIdentity(identity), handlers);
+}
+
+export function runInspectIdentityFailuresAction(
+	identity: EnterpriseIdentity,
+	handlers: AuditFilterTargetActionHandlers,
+) {
+	runAuditFilterTargetAction(failedAuditFiltersForIdentity(identity), handlers);
+}
+
+export function runInspectTenantAuditAction(
+	tenant: string,
+	handlers: AuditFilterTargetActionHandlers,
+) {
+	runAuditFilterTargetAction(auditFiltersForTenant(tenant), handlers);
+}
+
+export function runInspectMemoryOperationAuditAction(
+	item: MemoryOperationsItem,
+	handlers: AuditFilterTargetActionHandlers,
+) {
+	runAuditFilterTargetAction(auditFiltersForMemoryOperation(item), handlers);
+}
+
 export type ApprovalFilterTargetActionHandlers = {
 	patchApprovalFilters: (
 		updater: (current: ApprovalFiltersState) => ApprovalFiltersState,
@@ -169,4 +197,18 @@ export function runApprovalFilterTargetAction(
 	);
 	void handlers.refetchApprovals(filters);
 	handlers.scrollToGovernance();
+}
+
+export function runInspectIdentityApprovalsAction(
+	identity: EnterpriseIdentity,
+	handlers: ApprovalFilterTargetActionHandlers,
+) {
+	runApprovalFilterTargetAction(approvalFiltersForIdentity(identity), handlers);
+}
+
+export function runInspectTenantApprovalsAction(
+	tenant: string,
+	handlers: ApprovalFilterTargetActionHandlers,
+) {
+	runApprovalFilterTargetAction(approvalFiltersForTenant(tenant), handlers);
 }
