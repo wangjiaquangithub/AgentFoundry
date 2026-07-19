@@ -165,6 +165,7 @@ import { createPlatformWorkbenchPageState } from './platform-workbench-state';
 import { createPlatformWorkflowPageState } from './platform-workflow-state';
 import { createPlatformAgentsViewProps } from './platform-agents-view-props';
 import { createPlatformApprovalsViewProps } from './platform-approvals-view-props';
+import { createPlatformMemoryViewProps } from './platform-memory-view-props';
 import { createPlatformRunsViewProps } from './platform-runs-view-props';
 import { createPlatformTenantsViewProps } from './platform-tenants-view-props';
 import { createPlatformWorkflowsViewProps } from './platform-workflows-view-props';
@@ -1704,12 +1705,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	if (view === 'memory') {
 		return (
 			<MemoryViewPage
-				memoryOperationsItems={memoryOperationsItems}
-				memoryOperationsRunCount={memoryOperationsRunCount}
-				memoryOperationsHitCount={memoryOperationsHitCount}
-				memoryOperationsSavedCount={memoryOperationsSavedCount}
-				onNavigate={navigate}
-				t={t}
+				{...createPlatformMemoryViewProps({
+					memoryOperationsItems,
+					memoryOperationsRunCount,
+					memoryOperationsHitCount,
+					memoryOperationsSavedCount,
+					onNavigate: navigate,
+					t,
+				})}
 			/>
 		);
 	}
