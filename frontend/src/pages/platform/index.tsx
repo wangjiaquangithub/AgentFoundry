@@ -260,6 +260,7 @@ import {
 	publishFormWithPatch,
 	publishedAgentPrimeTarget,
 	quickPublishTarget,
+	runAgentEditDraftAction,
 	runAgentEditCancelTargetAction,
 	runPreparedTenantAgentTargetAction,
 	runStartPublishingTargetAction,
@@ -2121,9 +2122,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	function handleEditAgent(agent: EnterprisePublishedAgent) {
 		const draft = agentEditDraft(agent);
-		setSelectedTemplateId(draft.templateId);
-		setEditingAgentId(draft.editingAgentId);
-		setPublishForm(draft.form);
+		runAgentEditDraftAction(draft, {
+			selectTemplate: setSelectedTemplateId,
+			setEditingAgent: setEditingAgentId,
+			setPublishForm,
+		});
 	}
 
 	function handleCancelEdit() {

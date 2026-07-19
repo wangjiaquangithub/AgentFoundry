@@ -399,6 +399,21 @@ export function agentEditDraft(agent: EnterprisePublishedAgent): AgentEditDraft 
 	};
 }
 
+export type AgentEditDraftActionHandlers = {
+	selectTemplate: (templateId: string) => void;
+	setEditingAgent: (agentId: string) => void;
+	setPublishForm: (form: PublishFormState) => void;
+};
+
+export function runAgentEditDraftAction(
+	draft: AgentEditDraft,
+	handlers: AgentEditDraftActionHandlers,
+) {
+	handlers.selectTemplate(draft.templateId);
+	handlers.setEditingAgent(draft.editingAgentId);
+	handlers.setPublishForm(draft.form);
+}
+
 export function agentEditCancelTarget(
 	selectedTemplate?: EnterpriseAgentTemplate | null,
 ): AgentEditCancelTarget {
