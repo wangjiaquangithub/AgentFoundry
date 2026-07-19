@@ -99,6 +99,23 @@ export function approvalCreatePayloadFromRun(
 	};
 }
 
+export function approvalRunInputsFromSelection(
+	requestType: PlatformApprovalRunType,
+	options: {
+		selectedToolInputKey: string;
+		selectedToolInputValue: string;
+		workflowInputs: Record<string, string>;
+	},
+): Record<string, unknown> | null {
+	if (requestType === 'tool_run') {
+		return options.selectedToolInputKey
+			? { [options.selectedToolInputKey]: options.selectedToolInputValue }
+			: null;
+	}
+
+	return options.workflowInputs;
+}
+
 export function prependApprovalRequest(
 	current: EnterpriseApprovalRequestItem[],
 	approval?: EnterpriseApprovalRequestItem,

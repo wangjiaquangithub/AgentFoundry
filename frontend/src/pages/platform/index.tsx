@@ -85,6 +85,7 @@ import {
 	approvalAgentUsageTarget,
 	approvalFormWithReasonReset,
 	approvalQueryFromFilters,
+	approvalRunInputsFromSelection,
 	approvalToolContinuationTarget,
 	approvalToolInputsPatch,
 	approvalWorkflowContinuationTarget,
@@ -1537,14 +1538,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		requestType: PlatformApprovalRunType,
 		reason?: string,
 	): Promise<boolean> {
-		if (requestType === 'tool_run' && !selectedToolInputKey) {
+		const inputs = approvalRunInputsFromSelection(requestType, {
+			selectedToolInputKey,
+			selectedToolInputValue,
+			workflowInputs,
+		});
+		if (!inputs) {
 			return false;
 		}
-
-		const inputs =
-			requestType === 'tool_run'
-				? { [selectedToolInputKey!]: selectedToolInputValue }
-				: workflowInputs;
 
 		setCreatingRunApproval(requestType);
 		setApprovalError(null);
