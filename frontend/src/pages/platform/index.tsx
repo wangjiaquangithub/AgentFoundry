@@ -252,9 +252,8 @@ import {
 	runPublishListToggleAction,
 	runPublishTenantChangeAction,
 	runQuickPublishAction,
-	runStartPublishingTargetAction,
+	runStartPublishingAction,
 	runTemplateConfigureAction,
-	startPublishingTarget,
 	type PublishListFormKey,
 } from './platform-publish-form';
 import {
@@ -2047,11 +2046,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleStartPublishing() {
-		const target = startPublishingTarget({
+		runStartPublishingAction({
 			selectedTemplateId,
 			templates: agentTemplates,
-		});
-		runStartPublishingTargetAction(target, {
+		}, {
 			configureTemplate: handleConfigureTemplate,
 			scrollToAgentManagement: () => window.setTimeout(scrollToAgentManagement, 0),
 		});

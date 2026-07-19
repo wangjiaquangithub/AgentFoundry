@@ -192,6 +192,14 @@ export function runStartPublishingTargetAction(
 	handlers.scrollToAgentManagement();
 }
 
+export function runStartPublishingAction(
+	values: Parameters<typeof startPublishingTarget>[0],
+	handlers: StartPublishingTargetActionHandlers,
+) {
+	const target = startPublishingTarget(values);
+	runStartPublishingTargetAction(target, handlers);
+}
+
 export function buildAgentConfigurationPayloadFromForm(
 	form: PublishFormState,
 ): Omit<EnterpriseAgentPublishRequest, 'template_id'> {
