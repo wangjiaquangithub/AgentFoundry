@@ -198,6 +198,26 @@ export function publishFormWithPatch(
 	};
 }
 
+export function agentQuickConfigurationSyncResult(values: {
+	agentId: string;
+	editingAgentId: string | null;
+	patch: AgentQuickConfigurationPatch;
+	selectedRunAgentId: string;
+	updatedAgentId: string;
+}): {
+	publishFormPatch: AgentQuickConfigurationPatch | null;
+	selectedRunAgentId: string | null;
+} {
+	return {
+		selectedRunAgentId:
+			values.selectedRunAgentId === values.agentId || !values.selectedRunAgentId
+				? values.updatedAgentId
+				: null,
+		publishFormPatch:
+			values.editingAgentId === values.agentId ? values.patch : null,
+	};
+}
+
 export function agentDefaultModelPatch(
 	modelConfigId: string,
 ): AgentQuickConfigurationPatch {
