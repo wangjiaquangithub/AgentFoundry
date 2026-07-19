@@ -2,6 +2,7 @@ import type {
 	EnterpriseAgentRunRequest,
 	EnterpriseAgentRunResponse,
 	EnterpriseAgentRunHistoryItem,
+	EnterpriseAgentRunsResponse,
 	EnterpriseIdentity,
 	EnterprisePublishedAgent,
 	EnterprisePlatformScenario,
@@ -448,6 +449,73 @@ export function agentRunResultAfterHistoryRefresh(values: {
 	}
 
 	return values.turns[0]?.response ?? null;
+}
+
+export type AgentRunHistoryLoadActionHandlers = {
+	setRunsLoading: (loading: boolean) => void;
+	clearRunsError: () => void;
+	clearRunResult: () => void;
+	loadAgentRuns: (params: {
+		agent_id: string;
+		user_id?: string;
+		limit: number;
+	}) => EnterpriseAgentRunsResponse | Promise<EnterpriseAgentRunsResponse>;
+	setAgentConversations: (
+		update: (current: AgentConversationMap) => AgentConversationMap,
+	) => void;
+	setRunResult: (
+		update: (
+			current: EnterpriseAgentRunResponse | null,
+		) => EnterpriseAgentRunResponse | null,
+	) => void;
+	setRunsError: (message: string) => void;
+};
+
+export async function runAgentRunHistoryLoadAction(
+	values: {
+		agentId: string;
+		userId: string;
+		limit: number;
+		loadErrorMessage: string;
+	},
+	handlers: AgentRunHistoryLoadActionHandlers,
+) {
+	if (!values.agentId) {
+		handlers.clearRunsError();
+		handlers.clearRunResult();
+		return;
+	}
+
+	handlers.setRunsLoading(true);
+	handlers.clearRunsError();
+	try {
+		const response = await handlers.loadAgentRuns({
+			agent_id: values.agentId,
+			user_id: values.userId || undefined,
+			limit: values.limit,
+		});
+		const turns = response.runs.map(agentConversationTurnFromRunHistoryItem);
+		handlers.setAgentConversations((current) =>
+			replaceAgentConversationTurns({
+				agentConversations: current,
+				agentId: values.agentId,
+				turns,
+			}),
+		);
+		handlers.setRunResult((current) =>
+			agentRunResultAfterHistoryRefresh({
+				current,
+				agentId: values.agentId,
+				turns,
+			}),
+		);
+	} catch (error) {
+		handlers.setRunsError(
+			error instanceof Error ? error.message : values.loadErrorMessage,
+		);
+	} finally {
+		handlers.setRunsLoading(false);
+	}
 }
 
 export function mergeAgentConversationTurn(

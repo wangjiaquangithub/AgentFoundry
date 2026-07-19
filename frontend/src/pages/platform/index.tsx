@@ -49,12 +49,11 @@ import { DashboardViewPage } from './components/DashboardViewPage';
 import { usePlatformPageRefs } from './platform-page-refs';
 import {
 	agentRunResultForSelectedAgent,
-	agentRunResultAfterHistoryRefresh,
 	agentConversationTurnFromRunHistoryItem,
 	runEnterpriseAgentRequestAction,
-	replaceAgentConversationTurns,
 	runAgentRunnerPrimeTargetAction,
 	runAgentRunHistoryDetailAction,
+	runAgentRunHistoryLoadAction,
 	runAgentRunHistorySelectionRequestAction,
 	runClearAgentConversationRequestAction,
 	runEnterpriseToolRequestAction,
@@ -1311,38 +1310,23 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		agentId = selectedRunAgentId,
 		userId = selectedIdentityUserId || username,
 	) {
-		if (!agentId) {
-			setAgentRunsError(null);
-			setAgentRunResult(null);
-			return;
-		}
-
-		setAgentRunsLoading(true);
-		setAgentRunsError(null);
-		try {
-			const response = await platformApi.agentRuns({
-				agent_id: agentId,
-				user_id: userId || undefined,
+		await runAgentRunHistoryLoadAction(
+			{
+				agentId,
+				userId,
 				limit: 20,
-			});
-			const turns = response.runs.map(agentConversationTurnFromRunHistoryItem);
-			setAgentConversations((current) =>
-				replaceAgentConversationTurns({
-					agentConversations: current,
-					agentId,
-					turns,
-				}),
-			);
-			setAgentRunResult((current) =>
-				agentRunResultAfterHistoryRefresh({ current, agentId, turns }),
-			);
-		} catch (error) {
-			setAgentRunsError(
-				error instanceof Error ? error.message : agentRunnerRequestText.historyLoadError,
-			);
-		} finally {
-			setAgentRunsLoading(false);
-		}
+				loadErrorMessage: agentRunnerRequestText.historyLoadError,
+			},
+			{
+				setRunsLoading: setAgentRunsLoading,
+				clearRunsError: () => setAgentRunsError(null),
+				clearRunResult: () => setAgentRunResult(null),
+				loadAgentRuns: platformApi.agentRuns,
+				setAgentConversations,
+				setRunResult: setAgentRunResult,
+				setRunsError: setAgentRunsError,
+			},
+		);
 	}
 
 	async function refetchAuditEvents(overrides: Partial<typeof auditFilters> = {}) {
