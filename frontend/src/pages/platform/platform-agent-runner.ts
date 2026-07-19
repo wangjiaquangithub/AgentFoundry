@@ -541,6 +541,66 @@ export function agentRunRequestTarget(values: {
 	};
 }
 
+export type EnterpriseAgentRunActionHandlers = {
+	setRunning: (running: boolean) => void;
+	clearError: () => void;
+	setAccessDeniedError: () => void;
+	runAgent: (
+		payload: EnterpriseAgentRunRequest,
+	) => EnterpriseAgentRunResponse | Promise<EnterpriseAgentRunResponse>;
+	setResult: (response: EnterpriseAgentRunResponse) => void;
+	setAgentConversations: (
+		updater: (current: AgentConversationMap) => AgentConversationMap,
+	) => void;
+	setApprovalRequiredError: () => void;
+	refreshApprovals: () => void | Promise<void>;
+	refreshAgentRuns: (agentId: string, userId: string) => void | Promise<void>;
+	refreshDependentViews: () => void | Promise<void>;
+	setError: (message: string) => void;
+	now: () => string;
+	fallbackId: (agentId: string) => string;
+};
+
+export async function runEnterpriseAgentAction(
+	target: AgentRunRequestTarget,
+	handlers: EnterpriseAgentRunActionHandlers,
+) {
+	if (target.type === 'empty') {
+		return;
+	}
+	if (target.type === 'access-denied') {
+		handlers.setAccessDeniedError();
+		return;
+	}
+
+	handlers.setRunning(true);
+	handlers.clearError();
+	try {
+		const response = await handlers.runAgent(target.payload);
+		const turn = agentConversationTurnFromRunResponse({
+			response,
+			agentId: target.agentId,
+			question: target.question,
+			createdAt: handlers.now(),
+			fallbackId: handlers.fallbackId(target.agentId),
+		});
+		handlers.setResult(response);
+		handlers.setAgentConversations((current) =>
+			mergeAgentConversationTurn(current, turn, 20),
+		);
+		if (agentRunResponseRequiresApproval(response)) {
+			handlers.setApprovalRequiredError();
+			await handlers.refreshApprovals();
+		}
+		await handlers.refreshAgentRuns(target.agentId, target.userId);
+		await handlers.refreshDependentViews();
+	} catch (error) {
+		handlers.setError(error instanceof Error ? error.message : String(error));
+	} finally {
+		handlers.setRunning(false);
+	}
+}
+
 export function clearAgentRunsParams(values: {
 	agentId: string;
 	userId: string;

@@ -52,17 +52,15 @@ import { DashboardViewPage } from './components/DashboardViewPage';
 import { usePlatformPageRefs } from './platform-page-refs';
 import {
 	agentWorkflowPrimeTarget,
-	agentConversationTurnFromRunResponse,
 	agentRunResultForSelectedAgent,
 	agentRunResultAfterHistoryRefresh,
 	agentRunRequestTarget,
-	agentRunResponseRequiresApproval,
 	agentRunHistorySelectionTarget,
 	clearAgentConversationTarget,
 	identityAgentRunnerTarget,
 	memoryOperationAgentRunTarget,
-	mergeAgentConversationTurn,
 	publishedAgentRunnerTarget,
+	runEnterpriseAgentAction,
 	replaceAgentConversationTurns,
 	runAgentRunnerPrimeTargetAction,
 	runAgentRunHistoryDetailAction,
@@ -2501,41 +2499,29 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			enterpriseIdentities,
 			selectedIdentity,
 		});
-		if (target.type === 'empty') {
-			return;
-		}
-		if (target.type === 'access-denied') {
-			setAgentRunError(agentRunnerRequestText.accessDenied);
-			return;
-		}
 
-		setRunningAgent(true);
-		setAgentRunError(null);
-		try {
-			const response = await platformApi.runAgent(target.payload);
-			const turn = agentConversationTurnFromRunResponse({
-				response,
-				agentId: target.agentId,
-				question: target.question,
-				createdAt: new Date().toISOString(),
-				fallbackId: `${target.agentId}-${Date.now()}`,
-			});
-			setAgentRunResult(response);
-			setAgentConversations((current) => mergeAgentConversationTurn(current, turn, 20));
-			if (agentRunResponseRequiresApproval(response)) {
-				setAgentRunError(agentRunnerRequestText.approvalRequiredCreated);
-				await refetchApprovals();
-			}
-			await refetchAgentRuns(target.agentId, target.userId || username);
-			await refetchPlatform();
-			await refetchToolCatalog();
-			await refetchAuditEvents();
-			await refetchOpsTasks();
-		} catch (error) {
-			setAgentRunError(error instanceof Error ? error.message : String(error));
-		} finally {
-			setRunningAgent(false);
-		}
+		await runEnterpriseAgentAction(target, {
+			setRunning: setRunningAgent,
+			clearError: () => setAgentRunError(null),
+			setAccessDeniedError: () => setAgentRunError(agentRunnerRequestText.accessDenied),
+			runAgent: platformApi.runAgent,
+			setResult: setAgentRunResult,
+			setAgentConversations,
+			setApprovalRequiredError: () =>
+				setAgentRunError(agentRunnerRequestText.approvalRequiredCreated),
+			refreshApprovals: refetchApprovals,
+			refreshAgentRuns: (agentId, userId) =>
+				refetchAgentRuns(agentId, userId || username),
+			refreshDependentViews: async () => {
+				await refetchPlatform();
+				await refetchToolCatalog();
+				await refetchAuditEvents();
+				await refetchOpsTasks();
+			},
+			setError: setAgentRunError,
+			now: () => new Date().toISOString(),
+			fallbackId: (agentId) => `${agentId}-${Date.now()}`,
+		});
 	}
 
 	async function handleRunEnterpriseAgent() {
