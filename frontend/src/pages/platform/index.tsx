@@ -1175,6 +1175,12 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		});
 	}
 
+	async function refetchConnectorConfigDependencies() {
+		await refetchConnectors();
+		await refetchGovernance();
+		await refetchOpsTasks();
+	}
+
 	async function handleSaveConnectorConfig() {
 		await runConnectorSaveAction(
 			{
@@ -1198,11 +1204,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				setConnectorTestForm,
 				setConnectorSaveSuccess,
 				saveSuccessMessage: connectorRequestText.saveSuccessWithTenant,
-				refreshDependentViews: async () => {
-					await refetchConnectors();
-					await refetchGovernance();
-					await refetchOpsTasks();
-				},
+				refreshDependentViews: refetchConnectorConfigDependencies,
 				handleError: (error) =>
 					setConnectorSaveError(
 						error instanceof Error
