@@ -7,8 +7,10 @@ import type {
 } from '@/api';
 import {
 	availableKnowledgeBaseIds,
+	publishFormWithPatch,
 	type PublishFormPatch,
 } from './platform-publish-form';
+import type { PublishFormState } from './platform-defaults';
 
 export type AgentQuickConfigurationPatch = PublishFormPatch &
 	EnterpriseAgentUpdateRequest;
@@ -101,6 +103,12 @@ export type AgentCapabilityEnableActionHandlers = {
 	refreshDependentViews: () => void | Promise<void>;
 	handleError: (error: unknown) => void;
 };
+export type AgentQuickConfigurationSyncHandlers = {
+	setSelectedRunAgent: (agentId: string) => void;
+	setPublishForm: (
+		updater: (current: PublishFormState) => PublishFormState,
+	) => void;
+};
 
 export function agentQuickConfigurationSyncResult(values: {
 	agentId: string;
@@ -120,6 +128,28 @@ export function agentQuickConfigurationSyncResult(values: {
 		publishFormPatch:
 			values.editingAgentId === values.agentId ? values.patch : null,
 	};
+}
+
+export function runAgentQuickConfigurationSyncAction(
+	values: {
+		agentId: string;
+		editingAgentId: string | null;
+		patch: AgentQuickConfigurationPatch;
+		selectedRunAgentId: string;
+		updatedAgentId: string;
+	},
+	handlers: AgentQuickConfigurationSyncHandlers,
+) {
+	const syncResult = agentQuickConfigurationSyncResult(values);
+	if (syncResult.selectedRunAgentId) {
+		handlers.setSelectedRunAgent(syncResult.selectedRunAgentId);
+	}
+	const publishFormPatch = syncResult.publishFormPatch;
+	if (publishFormPatch) {
+		handlers.setPublishForm((current) =>
+			publishFormWithPatch(current, publishFormPatch),
+		);
+	}
 }
 
 export function agentDefaultModelPatch(

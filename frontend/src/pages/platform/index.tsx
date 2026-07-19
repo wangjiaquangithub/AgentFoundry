@@ -231,17 +231,16 @@ import {
 import { platformWorkflowDisplayStateForStatus } from './platform-workflow-display';
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
-	agentQuickConfigurationSyncResult,
 	runAgentCapabilityEnableRequestAction,
 	runAgentDefaultModelBindRequestAction,
 	runAgentKnowledgeBasesBindRequestAction,
+	runAgentQuickConfigurationSyncAction,
 	runAgentTemplateToolsBindRequestAction,
 	type AgentQuickConfigurationPatch,
 } from './platform-agent-quick-config';
 import {
 	agentEditDraft,
 	defaultPublishFormForTemplate,
-	publishFormWithPatch,
 	runAgentArchiveRequestAction,
 	runAgentEditCancelAction,
 	runAgentEditDraftAction,
@@ -2170,26 +2169,24 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		);
 	}
 
-	function syncAgentQuickConfiguration(
+	const syncAgentQuickConfiguration = (
 		agentId: string,
 		updatedAgentId: string,
 		patch: AgentQuickConfigurationPatch,
-	) {
-		const syncResult = agentQuickConfigurationSyncResult({
-			agentId,
-			editingAgentId,
-			patch,
-			selectedRunAgentId,
-			updatedAgentId,
-		});
-		if (syncResult.selectedRunAgentId) {
-			setSelectedRunAgentId(syncResult.selectedRunAgentId);
-		}
-		const publishFormPatch = syncResult.publishFormPatch;
-		if (publishFormPatch) {
-			setPublishForm((current) => publishFormWithPatch(current, publishFormPatch));
-		}
-	}
+	) =>
+		runAgentQuickConfigurationSyncAction(
+			{
+				agentId,
+				editingAgentId,
+				patch,
+				selectedRunAgentId,
+				updatedAgentId,
+			},
+			{
+				setSelectedRunAgent: setSelectedRunAgentId,
+				setPublishForm,
+			},
+		);
 
 	async function handleBindDefaultModel(agent: EnterprisePublishedAgent) {
 		await runAgentDefaultModelBindRequestAction({
