@@ -670,6 +670,14 @@ export async function runQuickPublishAction(
 	}
 }
 
+export async function runQuickPublishRequestAction(
+	values: Parameters<typeof quickPublishTarget>[0],
+	handlers: QuickPublishActionHandlers,
+) {
+	const target = quickPublishTarget(values);
+	await runQuickPublishAction(target, handlers);
+}
+
 export async function runAgentArchiveAction(
 	target: AgentArchiveTarget,
 	values: {

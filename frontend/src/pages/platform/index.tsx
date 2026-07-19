@@ -241,7 +241,6 @@ import {
 	agentEditDraft,
 	defaultPublishFormForTemplate,
 	publishFormWithPatch,
-	quickPublishTarget,
 	runAgentArchiveAction,
 	runAgentEditCancelAction,
 	runAgentEditDraftAction,
@@ -249,7 +248,7 @@ import {
 	runPrepareTenantAgentAction,
 	runPublishListToggleAction,
 	runPublishTenantChangeAction,
-	runQuickPublishAction,
+	runQuickPublishRequestAction,
 	runStartPublishingAction,
 	runTemplateConfigureAction,
 	type PublishListFormKey,
@@ -2141,15 +2140,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleQuickPublishAgent() {
-		const target = quickPublishTarget({
+		await runQuickPublishRequestAction({
 			credentialCount: credentials.length,
 			selectedTemplate,
 			defaultTemplate: defaultAgentTemplate,
 			currentUserTenant: platformStatus?.current_user.tenant,
 			credentials,
 			knowledgeBases,
-		});
-		await runQuickPublishAction(target, {
+		}, {
 			navigateToPath: navigate,
 			startPublishing: handleStartPublishing,
 			clearEditingAgent: () => setEditingAgentId(null),
