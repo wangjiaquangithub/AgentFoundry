@@ -98,16 +98,12 @@ import { runScenarioLoadAction } from './platform-scenario-helpers';
 import { runAuditEventLoadAction } from './platform-audit-helpers';
 import {
 	capabilityNavigationActions,
+	createPlatformNavigationRequestHandlers,
 	firstAgentGuideNavigationActions,
 	launchpadNavigationActions,
 	orchestrationWorkbenchNavigationActions,
 	platformConsoleNavigationActions,
 	rolloutPathNavigationActions,
-	runNextStepPrimaryRequestAction,
-	runPlatformAgentSetupStepRequestAction,
-	runPlatformAppCenterDetailPrimaryRequestAction,
-	runPlatformAppCenterDetailSecondaryRequestAction,
-	runPlatformAppCenterPrimaryRequestAction,
 	workbenchIndicatorNavigationActions,
 	workbenchPrimaryNavigationActions,
 	workbenchQuickNavigationActions,
@@ -1544,67 +1540,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 	);
 
-	function handleNextAgentSetupStep() {
-		runPlatformAgentSetupStepRequestAction({
-			nextStep: nextAgentSetupStep,
-			selectedTemplate,
-			defaultTemplate: defaultAgentTemplate,
-			credentialCount: credentials.length,
-			knowledgeBaseCount: knowledgeBases.length,
-		}, {
-			configureTemplate: handleConfigureTemplate,
-			navigate,
-			scrollToAgentManagement,
-		});
-	}
-
-	function handleNextStepPrimaryAction() {
-		runNextStepPrimaryRequestAction(nextStepMode, {
-			navigate,
-			handleQuickPublishAgent,
-			scrollToAgentManagement,
-			scrollToGovernance,
-			handlePrimeAgentRunner,
-		});
-	}
-
-	function handleAppCenterPrimaryAction() {
-		runPlatformAppCenterPrimaryRequestAction({
-			credentialCount: credentials.length,
-			readyPlatformAgents,
-			activePlatformAgents,
-		}, {
-			navigate,
-			setSelectedRunAgentId,
-			handlePrimeAgentRunner,
-			handleQuickPublishAgent,
-			scrollToAgentManagement,
-		});
-	}
-
-	function handleAppCenterDetailPrimaryAction() {
-		runPlatformAppCenterDetailPrimaryRequestAction({
-			inspectedAgent: inspectedAppCenterAgent,
-			inspectedTemplate: inspectedAppCenterTemplate,
-		}, {
-			setSelectedRunAgentId,
-			handlePrimeAgentRunner,
-			handleEditAgent,
-			handleConfigureTemplate,
-			scrollToAgentManagement,
-		});
-	}
-
-	function handleAppCenterDetailSecondaryAction() {
-		runPlatformAppCenterDetailSecondaryRequestAction({
-			inspectedAgent: inspectedAppCenterAgent,
-		}, {
-			handleEditAgent,
-			scrollToAgentManagement,
-			scrollToGovernance,
-		});
-	}
-
 	const syncAgentQuickConfiguration = (
 		agentId: string,
 		updatedAgentId: string,
@@ -1814,6 +1749,37 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		scrollToAgentManagement,
 		focusAgentManagement: () => window.setTimeout(scrollToAgentManagement, 0),
 	});
+
+	const {
+		handleNextAgentSetupStep,
+		handleNextStepPrimaryAction,
+		handleAppCenterPrimaryAction,
+		handleAppCenterDetailPrimaryAction,
+		handleAppCenterDetailSecondaryAction,
+	} = createPlatformNavigationRequestHandlers(
+		{
+			nextAgentSetupStep,
+			selectedTemplate,
+			defaultTemplate: defaultAgentTemplate,
+			credentialCount: credentials.length,
+			knowledgeBaseCount: knowledgeBases.length,
+			nextStepMode,
+			readyPlatformAgents,
+			activePlatformAgents,
+			inspectedAppCenterAgent,
+			inspectedAppCenterTemplate,
+		},
+		{
+			configureTemplate: handleConfigureTemplate,
+			navigate,
+			scrollToAgentManagement,
+			scrollToGovernance,
+			setSelectedRunAgentId,
+			handlePrimeAgentRunner,
+			handleQuickPublishAgent,
+			handleEditAgent,
+		},
+	);
 
 	const platformNavigationHandlers = {
 		navigate,

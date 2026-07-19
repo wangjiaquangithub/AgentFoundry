@@ -495,6 +495,116 @@ export function runPlatformAppCenterDetailSecondaryRequestAction(
 	);
 }
 
+export type PlatformNavigationRequestHandlerValues = {
+	nextAgentSetupStep: AgentWizardStep | null;
+	selectedTemplate?: EnterpriseAgentTemplate | null;
+	defaultTemplate?: EnterpriseAgentTemplate | null;
+	credentialCount: number;
+	knowledgeBaseCount: number;
+	nextStepMode: AgentRunnerNextStepMode;
+	readyPlatformAgents: Pick<EnterprisePublishedAgent, 'id'>[];
+	activePlatformAgents: EnterprisePublishedAgent[];
+	inspectedAppCenterAgent?: EnterprisePublishedAgent | null;
+	inspectedAppCenterTemplate?: EnterpriseAgentTemplate | null;
+};
+
+export type PlatformNavigationRequestHandlerActions = {
+	configureTemplate: (template: EnterpriseAgentTemplate) => void;
+	navigate: NavigateHandler;
+	scrollToAgentManagement: NavigationHandler;
+	scrollToGovernance: NavigationHandler;
+	setSelectedRunAgentId: (agentId: string) => void;
+	handlePrimeAgentRunner: NavigationHandler;
+	handleQuickPublishAgent: () => void | Promise<void>;
+	handleEditAgent: (agent: EnterprisePublishedAgent) => void;
+};
+
+export function createPlatformNavigationRequestHandlers(
+	values: PlatformNavigationRequestHandlerValues,
+	actions: PlatformNavigationRequestHandlerActions,
+) {
+	function handleNextAgentSetupStep() {
+		runPlatformAgentSetupStepRequestAction(
+			{
+				nextStep: values.nextAgentSetupStep,
+				selectedTemplate: values.selectedTemplate,
+				defaultTemplate: values.defaultTemplate,
+				credentialCount: values.credentialCount,
+				knowledgeBaseCount: values.knowledgeBaseCount,
+			},
+			{
+				configureTemplate: actions.configureTemplate,
+				navigate: actions.navigate,
+				scrollToAgentManagement: actions.scrollToAgentManagement,
+			},
+		);
+	}
+
+	function handleNextStepPrimaryAction() {
+		runNextStepPrimaryRequestAction(values.nextStepMode, {
+			navigate: actions.navigate,
+			handleQuickPublishAgent: actions.handleQuickPublishAgent,
+			scrollToAgentManagement: actions.scrollToAgentManagement,
+			scrollToGovernance: actions.scrollToGovernance,
+			handlePrimeAgentRunner: actions.handlePrimeAgentRunner,
+		});
+	}
+
+	function handleAppCenterPrimaryAction() {
+		runPlatformAppCenterPrimaryRequestAction(
+			{
+				credentialCount: values.credentialCount,
+				readyPlatformAgents: values.readyPlatformAgents,
+				activePlatformAgents: values.activePlatformAgents,
+			},
+			{
+				navigate: actions.navigate,
+				setSelectedRunAgentId: actions.setSelectedRunAgentId,
+				handlePrimeAgentRunner: actions.handlePrimeAgentRunner,
+				handleQuickPublishAgent: actions.handleQuickPublishAgent,
+				scrollToAgentManagement: actions.scrollToAgentManagement,
+			},
+		);
+	}
+
+	function handleAppCenterDetailPrimaryAction() {
+		runPlatformAppCenterDetailPrimaryRequestAction(
+			{
+				inspectedAgent: values.inspectedAppCenterAgent,
+				inspectedTemplate: values.inspectedAppCenterTemplate,
+			},
+			{
+				setSelectedRunAgentId: actions.setSelectedRunAgentId,
+				handlePrimeAgentRunner: actions.handlePrimeAgentRunner,
+				handleEditAgent: actions.handleEditAgent,
+				handleConfigureTemplate: actions.configureTemplate,
+				scrollToAgentManagement: actions.scrollToAgentManagement,
+			},
+		);
+	}
+
+	function handleAppCenterDetailSecondaryAction() {
+		runPlatformAppCenterDetailSecondaryRequestAction(
+			{
+				inspectedAgent: values.inspectedAppCenterAgent,
+			},
+			{
+				handleEditAgent: actions.handleEditAgent,
+				scrollToAgentManagement: actions.scrollToAgentManagement,
+				scrollToGovernance: actions.scrollToGovernance,
+			},
+		);
+	}
+
+	return {
+		handleNextAgentSetupStep,
+		handleNextStepPrimaryAction,
+		handleAppCenterPrimaryAction,
+		handleAppCenterDetailPrimaryAction,
+		handleAppCenterDetailSecondaryAction,
+	};
+}
+
 export type PlatformNavigationActionHandlers = {
 	navigate: NavigateHandler;
 	handleStartPublishing: NavigationHandler;
