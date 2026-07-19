@@ -204,7 +204,7 @@ import {
 	platformAgentSetupStepsDisplayStateForStatus,
 	platformNextAgentSetupStepDisplayStateForSteps,
 } from './platform-agent-runner-display';
-import { platformAppCenterDisplayStateForStatus } from './platform-app-center-display';
+import { createPlatformAppCenterPageState } from './platform-app-center-state';
 import { createPlatformConnectorPageState } from './platform-connector-state';
 import { createPlatformConnectionPageState } from './platform-connection-state';
 import {
@@ -704,7 +704,21 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 		todoLabels: dashboardTodoLabels(t),
 	});
-	const appCenterDisplay = platformAppCenterDisplayStateForStatus({
+	const {
+		blockedOrPartialPlatformAgents,
+		appCenterAgents,
+		inspectedAppCenterAgent,
+		inspectedAppCenterTemplate,
+		appCenterPrimaryDisabled,
+		agentOpsSummary,
+		topOperationsAgents,
+		operationsAgentIssueText,
+		agentResourceText,
+		appCenterDetailResources,
+		appCenterDetailIssues,
+		appCenterDetailStatus,
+		operationsHeadline,
+	} = createPlatformAppCenterPageState({
 		operations: {
 			selectedItem: selectedAppCenterItem,
 			activeAgents: activePlatformAgents,
@@ -742,21 +756,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			headlineLabels: operationsHeadlineLabels(t),
 		},
 	});
-	const appCenterOperationsState = appCenterDisplay.operationsState;
-	const blockedOrPartialPlatformAgents = appCenterOperationsState.blockedOrPartialAgents;
-	const appCenterAgents = appCenterOperationsState.appCenterAgents;
-	const inspectedAppCenterAgent = appCenterOperationsState.inspectedAgent;
-	const inspectedAppCenterTemplate = appCenterOperationsState.inspectedTemplate;
-	const appCenterPrimaryDisabled = appCenterOperationsState.primaryDisabled;
-	const agentOpsSummary = appCenterOperationsState.agentOpsSummary;
-	const topOperationsAgents = appCenterOperationsState.topOperationsAgents;
-	const { operationsAgentIssueText, agentResourceText } =
-		appCenterDisplay.agentDisplayState;
-	const appCenterDetailState = appCenterDisplay.detailState;
-	const appCenterDetailResources = appCenterDetailState.detailResources;
-	const appCenterDetailIssues = appCenterDetailState.detailIssues;
-	const appCenterDetailStatus = appCenterDetailState.detailStatus;
-	const operationsHeadline = appCenterDetailState.operationsHeadline;
 	const agentReleasePipeline = platformAgentReleasePipelineDisplayStateForStatus(
 		{
 			selectedTemplate,
