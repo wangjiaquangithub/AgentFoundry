@@ -53,6 +53,7 @@ import { usePlatformPageRefs } from './platform-page-refs';
 import {
 	agentWorkflowPrimeInputs,
 	agentConversationTurnFromRunResponse,
+	agentQuestionWithFallback,
 	agentRunResultForSelectedAgent,
 	agentRunResultAfterHistoryRefresh,
 	clearAgentConversationTurns,
@@ -1869,7 +1870,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	function handlePrimePublishedAgent(agentId: string, sample = primaryAgentSampleQuestion) {
 		setSelectedRunAgentId(agentId);
-		setAgentQuestion((current) => current.trim() || sample);
+		setAgentQuestion((current) => agentQuestionWithFallback(current, sample));
 		setAgentRunResult(latestAgentRunResponse(agentConversations, agentId));
 		setAgentRunError(null);
 		window.setTimeout(scrollToAgentRunner, 0);

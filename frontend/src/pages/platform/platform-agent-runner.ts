@@ -75,6 +75,13 @@ export function selectedRunAgentIdForAvailableAgents(values: {
 	return (values.readyAgents[0] ?? values.activeAgents[0]).id;
 }
 
+export function agentQuestionWithFallback(
+	currentQuestion: string,
+	fallbackQuestion: string,
+): string {
+	return currentQuestion.trim() || fallbackQuestion;
+}
+
 export function replaceAgentConversationTurns(values: {
 	agentConversations: AgentConversationMap;
 	agentId: string;
