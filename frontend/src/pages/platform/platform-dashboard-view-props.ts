@@ -48,6 +48,26 @@ type DashboardAgentQuickStartViewProps = Pick<
 	| 'featuredAgents'
 >;
 
+type DashboardAgentRunNowViewProps = Pick<
+	DashboardViewPageProps,
+	| 'currentIdentityLabel'
+	| 'defaultAgentTemplate'
+	| 'handlePrimeAgentRunner'
+	| 'handleQuickPublishAgent'
+	| 'handleStartPublishing'
+	| 'platformAgents'
+	| 'platformAgentsLoading'
+	| 'platformStatus'
+	| 'primaryAgentSampleQuestion'
+	| 'publishingTemplateId'
+	| 'scrollToAgentRunner'
+	| 'selectedRunAgent'
+	| 'selectedRunAgentKnowledgeCount'
+	| 'selectedRunAgentModelLabel'
+	| 'selectedRunAgentToolCount'
+	| 't'
+>;
+
 type DashboardAgentManagementViewProps = Pick<
 	DashboardViewPageProps,
 	| 'activePlatformAgents'
@@ -513,6 +533,12 @@ export function createPlatformDashboardAgentRunnerViewProps(
 export function createPlatformDashboardAgentQuickStartViewProps(
 	props: DashboardAgentQuickStartViewProps,
 ): DashboardAgentQuickStartViewProps {
+	return props;
+}
+
+export function createPlatformDashboardAgentRunNowViewProps(
+	props: DashboardAgentRunNowViewProps,
+): DashboardAgentRunNowViewProps {
 	return props;
 }
 
