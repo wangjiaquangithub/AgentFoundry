@@ -71,11 +71,10 @@ import {
 	runPrimeAgentWorkflowAction,
 	runPrimePublishedAgentAction,
 	runScenarioWorkflowAction,
-	runSelectedRunAgentTargetAction,
+	runSelectAgentForRunAction,
 	runTenantAgentRunnerTargetAction,
 	scenarioWorkflowRunTarget,
 	selectedRunAgentIdForAvailableAgents,
-	selectedRunAgentTarget,
 	tenantAgentRunnerTarget,
 	toolRunRequestTarget,
 	workflowInputsForSelectedOption,
@@ -1862,9 +1861,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleSelectRunAgent(agentId: string) {
-		const target = selectedRunAgentTarget({ agentConversations, agentId });
-
-		runSelectedRunAgentTargetAction(target, {
+		runSelectAgentForRunAction({ agentConversations, agentId }, {
 			selectRunAgent: setSelectedRunAgentId,
 			setResult: setAgentRunResult,
 			clearError: () => setAgentRunError(null),

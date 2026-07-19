@@ -175,6 +175,15 @@ export function runSelectedRunAgentTargetAction(
 	handlers.clearError();
 }
 
+export function runSelectAgentForRunAction(
+	values: Parameters<typeof selectedRunAgentTarget>[0],
+	handlers: SelectedRunAgentTargetActionHandlers,
+) {
+	const target = selectedRunAgentTarget(values);
+
+	runSelectedRunAgentTargetAction(target, handlers);
+}
+
 export function identityAgentRunnerTarget(
 	identity: EnterpriseIdentity,
 	fallbackQuestion: string,
