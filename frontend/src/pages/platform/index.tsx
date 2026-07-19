@@ -245,6 +245,7 @@ import {
 	agentTemplateToolsBindTarget,
 	runAgentDefaultModelBindAction,
 	runAgentKnowledgeBasesBindAction,
+	runAgentTemplateToolsBindAction,
 	type AgentQuickConfigurationPatch,
 } from './platform-agent-quick-config';
 import {
@@ -2406,27 +2407,27 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			agent,
 			templates: agentTemplates,
 		});
-		if (target.type === 'error') {
-			setPlatformAgentsError(agentManagementRequestText.bindToolsError);
-			return;
-		}
 
-		setBindingAgentToolsId(agent.id);
-		setPlatformAgentsError(null);
-		try {
-			const response = await platformApi.updateAgent(target.agentId, target.patch);
-			syncAgentQuickConfiguration(agent.id, response.agent.id, target.patch);
-			await refetchPlatformAgents();
-			await refetchPlatform();
-			await refetchToolCatalog();
-			await refetchOpsTasks();
-		} catch (error) {
-			setPlatformAgentsError(
-				error instanceof Error ? error.message : agentManagementRequestText.bindToolsError,
-			);
-		} finally {
-			setBindingAgentToolsId(null);
-		}
+		await runAgentTemplateToolsBindAction(target, {
+			setBindingAgent: setBindingAgentToolsId,
+			clearError: () => setPlatformAgentsError(null),
+			updateAgent: platformApi.updateAgent,
+			syncQuickConfiguration: syncAgentQuickConfiguration,
+			refreshDependentViews: async () => {
+				await refetchPlatformAgents();
+				await refetchPlatform();
+				await refetchToolCatalog();
+				await refetchOpsTasks();
+			},
+			handleEmptyTemplateTools: () =>
+				setPlatformAgentsError(agentManagementRequestText.bindToolsError),
+			handleError: (error) =>
+				setPlatformAgentsError(
+					error instanceof Error
+						? error.message
+						: agentManagementRequestText.bindToolsError,
+				),
+		});
 	}
 
 	async function handleEnableAgentMemory(agent: EnterprisePublishedAgent) {

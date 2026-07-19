@@ -70,6 +70,22 @@ export type AgentKnowledgeBasesBindActionHandlers = {
 	refreshDependentViews: () => void | Promise<void>;
 	handleError: (error: unknown) => void;
 };
+export type AgentTemplateToolsBindActionHandlers = {
+	setBindingAgent: (agentId: string | null) => void;
+	clearError: () => void;
+	updateAgent: (
+		agentId: string,
+		patch: AgentQuickConfigurationPatch,
+	) => EnterpriseAgentUpdateResponse | Promise<EnterpriseAgentUpdateResponse>;
+	syncQuickConfiguration: (
+		agentId: string,
+		updatedAgentId: string,
+		patch: AgentQuickConfigurationPatch,
+	) => void;
+	refreshDependentViews: () => void | Promise<void>;
+	handleEmptyTemplateTools: () => void;
+	handleError: (error: unknown) => void;
+};
 
 export function agentQuickConfigurationSyncResult(values: {
 	agentId: string;
@@ -218,6 +234,32 @@ export function agentTemplateToolsBindTarget(values: {
 				patch: agentTemplateToolsPatch(tools),
 			}
 		: { type: 'error' };
+}
+
+export async function runAgentTemplateToolsBindAction(
+	target: AgentTemplateToolsBindTarget,
+	handlers: AgentTemplateToolsBindActionHandlers,
+) {
+	if (target.type === 'error') {
+		handlers.handleEmptyTemplateTools();
+		return;
+	}
+
+	handlers.setBindingAgent(target.agentId);
+	handlers.clearError();
+	try {
+		const response = await handlers.updateAgent(target.agentId, target.patch);
+		handlers.syncQuickConfiguration(
+			target.agentId,
+			response.agent.id,
+			target.patch,
+		);
+		await handlers.refreshDependentViews();
+	} catch (error) {
+		handlers.handleError(error);
+	} finally {
+		handlers.setBindingAgent(null);
+	}
 }
 
 export function agentCapabilityEnabledPatch(
