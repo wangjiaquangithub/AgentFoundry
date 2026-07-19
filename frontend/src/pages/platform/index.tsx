@@ -163,6 +163,7 @@ import { createPlatformOnboardingPageState } from './platform-onboarding-state';
 import { createPlatformOrchestrationPageState } from './platform-orchestration-state';
 import { createPlatformWorkbenchPageState } from './platform-workbench-state';
 import { createPlatformWorkflowPageState } from './platform-workflow-state';
+import { createPlatformAgentsViewProps } from './platform-agents-view-props';
 import { createPlatformApprovalsViewProps } from './platform-approvals-view-props';
 import { createPlatformRunsViewProps } from './platform-runs-view-props';
 import { createPlatformWorkflowsViewProps } from './platform-workflows-view-props';
@@ -1909,62 +1910,64 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	if (view === 'agents') {
 		return (
 			<AgentsViewPage
-				t={t}
-				platformAgentsError={platformAgentsError}
-				platformAgentsLoading={platformAgentsLoading}
-				platformAgents={platformAgents}
-				agentManagementRef={agentManagementRef}
-				agentTemplateStepRef={agentTemplateStepRef}
-				agentRunnerRef={agentRunnerRef}
-				agentOpsSummary={agentOpsSummary}
-				agentReleasePipeline={agentReleasePipeline}
-				nextAgentSetupStep={nextAgentSetupStep}
-				selectedRunAgent={selectedRunAgent}
-				selectedRunAgentReadinessState={selectedRunAgentReadinessState}
-				selectedRunAgentReadinessLabel={selectedRunAgentReadinessLabel}
-				selectedRunAgentModelLabel={selectedRunAgentModelLabel}
-				selectedRunAgentKnowledgeCount={selectedRunAgentKnowledgeCount}
-				selectedRunAgentKnowledgeLabels={selectedRunAgentKnowledgeLabels}
-				selectedRunAgentToolCount={selectedRunAgentToolCount}
-				selectedRunAgentAccessAllowed={selectedRunAgentAccessAllowed}
-				selectedRunAgentAccessLabel={selectedRunAgentAccessLabel}
-				agentTemplates={agentTemplates}
-				selectedTemplateId={selectedTemplateId}
-				publishingTemplateId={publishingTemplateId}
-				activePlatformAgents={activePlatformAgents}
-				selectedRunAgentId={selectedRunAgentId}
-				agentQuestion={agentQuestion}
-				agentApprovalId={agentApprovalId}
-				agentSampleQuestions={agentSampleQuestions}
-				selectedAgentConversation={selectedAgentConversation}
-				agentRunResult={agentRunResult}
-				agentRunsLoading={agentRunsLoading}
-				agentRunsError={agentRunsError}
-				runningAgent={runningAgent}
-				agentRunError={agentRunError}
-				agentToolCalls={agentToolCalls}
-				agentToolCallBadgeText={agentToolCallBadgeText}
-				agentRoutingLabel={agentRoutingLabel}
-				agentRoutingText={agentRoutingText}
-				agentRunConnectorSourceText={agentRunConnectorSourceText}
-				agentRunModelLabel={agentRunModelLabel}
-				agentRunKnowledgeLabels={agentRunKnowledgeLabels}
-				knowledgeBaseById={knowledgeBaseById}
-				refetchPlatformAgents={refetchPlatformAgents}
-				scrollToAgentRunner={scrollToAgentRunner}
-				handleNextAgentSetupStep={handleNextAgentSetupStep}
-				handlePrimeAgentWorkflow={handlePrimeAgentWorkflow}
-				handleEditAgent={handleEditAgent}
-				scrollToGovernance={scrollToGovernance}
-				handleConfigureTemplate={handleConfigureTemplate}
-				handleSelectRunAgent={handleSelectRunAgent}
-				setAgentQuestion={setAgentQuestion}
-				setAgentRunError={setAgentRunError}
-				setAgentApprovalId={setAgentApprovalId}
-				handleClearAgentConversation={handleClearAgentConversation}
-				handleSelectAgentRun={handleSelectAgentRun}
-				handleRunEnterpriseAgent={handleRunEnterpriseAgent}
-				handleInspectAgentRunAudit={handleInspectAgentRunAudit}
+				{...createPlatformAgentsViewProps({
+					t,
+					platformAgentsError,
+					platformAgentsLoading,
+					platformAgents,
+					agentManagementRef,
+					agentTemplateStepRef,
+					agentRunnerRef,
+					agentOpsSummary,
+					agentReleasePipeline,
+					nextAgentSetupStep,
+					selectedRunAgent,
+					selectedRunAgentReadinessState,
+					selectedRunAgentReadinessLabel,
+					selectedRunAgentModelLabel,
+					selectedRunAgentKnowledgeCount,
+					selectedRunAgentKnowledgeLabels,
+					selectedRunAgentToolCount,
+					selectedRunAgentAccessAllowed,
+					selectedRunAgentAccessLabel,
+					agentTemplates,
+					selectedTemplateId,
+					publishingTemplateId,
+					activePlatformAgents,
+					selectedRunAgentId,
+					agentQuestion,
+					agentApprovalId,
+					agentSampleQuestions,
+					selectedAgentConversation,
+					agentRunResult,
+					agentRunsLoading,
+					agentRunsError,
+					runningAgent,
+					agentRunError,
+					agentToolCalls,
+					agentToolCallBadgeText,
+					agentRoutingLabel,
+					agentRoutingText,
+					agentRunConnectorSourceText,
+					agentRunModelLabel,
+					agentRunKnowledgeLabels,
+					knowledgeBaseById,
+					refetchPlatformAgents,
+					scrollToAgentRunner,
+					handleNextAgentSetupStep,
+					handlePrimeAgentWorkflow,
+					handleEditAgent,
+					scrollToGovernance,
+					handleConfigureTemplate,
+					handleSelectRunAgent,
+					setAgentQuestion,
+					setAgentRunError,
+					setAgentApprovalId,
+					handleClearAgentConversation,
+					handleSelectAgentRun,
+					handleRunEnterpriseAgent,
+					handleInspectAgentRunAudit,
+				})}
 			/>
 		);
 	}
