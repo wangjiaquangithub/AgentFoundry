@@ -27,6 +27,9 @@ export type PublishFormPatch = Partial<
 	>
 >;
 export type AgentQuickConfigurationPatch = PublishFormPatch & EnterpriseAgentUpdateRequest;
+export type AgentDefaultModelBindTarget =
+	| { type: 'navigate'; path: '/credential' }
+	| { type: 'bind'; modelConfigId: string };
 
 export type DefaultPublishFormOptions = {
 	template: EnterpriseAgentTemplate;
@@ -224,6 +227,14 @@ export function agentDefaultModelPatch(
 	return {
 		model_config_id: modelConfigId,
 	};
+}
+
+export function agentDefaultModelBindTarget(values: {
+	modelConfigId?: string;
+}): AgentDefaultModelBindTarget {
+	return values.modelConfigId
+		? { type: 'bind', modelConfigId: values.modelConfigId }
+		: { type: 'navigate', path: '/credential' };
 }
 
 export function agentKnowledgeBasesPatch(

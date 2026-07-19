@@ -230,6 +230,7 @@ import {
 } from './platform-labels';
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
+	agentDefaultModelBindTarget,
 	agentDefaultModelPatch,
 	agentKnowledgeBasesPatch,
 	agentMemoryEnabledPatch,
@@ -2359,16 +2360,18 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleBindDefaultModel(agent: EnterprisePublishedAgent) {
-		const modelConfigId = credentials[0]?.id;
-		if (!modelConfigId) {
-			navigate('/credential');
+		const target = agentDefaultModelBindTarget({
+			modelConfigId: credentials[0]?.id,
+		});
+		if (target.type === 'navigate') {
+			navigate(target.path);
 			return;
 		}
 
 		setBindingAgentModelId(agent.id);
 		setPlatformAgentsError(null);
 		try {
-			const patch = agentDefaultModelPatch(modelConfigId);
+			const patch = agentDefaultModelPatch(target.modelConfigId);
 			const response = await platformApi.updateAgent(agent.id, patch);
 			syncAgentQuickConfiguration(agent.id, response.agent.id, patch);
 			await refetchPlatformAgents();
