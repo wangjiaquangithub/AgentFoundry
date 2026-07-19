@@ -291,6 +291,16 @@ export function runAppCenterDetailSecondaryAction(
 	handlers.scrollToGovernance();
 }
 
+export function runAppCenterDetailSecondaryRequestAction(
+	values: Parameters<typeof appCenterDetailSecondaryAction>[0],
+	handlers: AppCenterDetailSecondaryActionHandlers,
+) {
+	runAppCenterDetailSecondaryAction(
+		appCenterDetailSecondaryAction(values),
+		handlers,
+	);
+}
+
 export type PlatformNavigationActionHandlers = {
 	navigate: NavigateHandler;
 	handleStartPublishing: NavigationHandler;

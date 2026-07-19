@@ -126,7 +126,6 @@ import {
 } from './platform-filter-builders';
 import {
 	agentSetupStepAction,
-	appCenterDetailSecondaryAction,
 	capabilityNavigationActions,
 	firstAgentGuideNavigationActions,
 	launchpadNavigationActions,
@@ -135,7 +134,7 @@ import {
 	rolloutPathNavigationActions,
 	runAgentSetupStepAction,
 	runAppCenterDetailPrimaryRequestAction,
-	runAppCenterDetailSecondaryAction,
+	runAppCenterDetailSecondaryRequestAction,
 	runAppCenterPrimaryRequestAction,
 	runNextStepPrimaryRequestAction,
 	workbenchIndicatorNavigationActions,
@@ -2203,10 +2202,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleAppCenterDetailSecondaryAction() {
-		const action = appCenterDetailSecondaryAction({
+		runAppCenterDetailSecondaryRequestAction({
 			hasAgent: Boolean(inspectedAppCenterAgent),
-		});
-		runAppCenterDetailSecondaryAction(action, {
+		}, {
 			editAgent: () => {
 				if (inspectedAppCenterAgent) {
 					handleEditAgent(inspectedAppCenterAgent);
