@@ -102,6 +102,7 @@ import {
 	toolPolicyDraftFromDecisions,
 	runToolPolicySaveAction,
 } from './platform-tool-policy-helpers';
+import { runToolCatalogLoadAction } from './platform-tool-catalog-helpers';
 import {
 	runMemberEditAction,
 	runMemberLoadAction,
@@ -1245,21 +1246,22 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function refetchToolCatalog() {
-		setToolCatalogLoading(true);
-		setToolCatalogError(null);
-		try {
-			const response = await platformApi.tools({
-				agent_id: selectedRunAgentId || undefined,
-				user_id: selectedIdentityUserId || undefined,
-			});
-			setToolCatalog(response);
-		} catch (error) {
-			setToolCatalogError(
-				error instanceof Error ? error.message : toolCatalogRequestText.loadError,
-			);
-		} finally {
-			setToolCatalogLoading(false);
-		}
+		await runToolCatalogLoadAction(
+			{
+				loadErrorMessage: toolCatalogRequestText.loadError,
+				params: {
+					agentId: selectedRunAgentId,
+					userId: selectedIdentityUserId,
+				},
+			},
+			{
+				setLoading: setToolCatalogLoading,
+				clearError: () => setToolCatalogError(null),
+				loadToolCatalog: platformApi.tools,
+				setToolCatalog,
+				setError: setToolCatalogError,
+			},
+		);
 	}
 
 	async function handleSaveToolPolicy() {
