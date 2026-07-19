@@ -57,8 +57,7 @@ import {
 	agentRunResultAfterHistoryRefresh,
 	agentRunRequestTarget,
 	agentRunResponseRequiresApproval,
-	clearAgentConversationTurns,
-	clearAgentRunsParams,
+	clearAgentConversationTarget,
 	identityAgentRunnerTarget,
 	memoryOperationAgentRunTarget,
 	mergeAgentConversationTurn,
@@ -66,6 +65,7 @@ import {
 	replaceAgentConversationTurns,
 	runAgentRunnerPrimeTargetAction,
 	runAgentWorkflowPrimeTargetAction,
+	runClearAgentConversationSuccessAction,
 	runIdentityAgentRunnerTargetAction,
 	runMemoryOperationAgentRunTargetAction,
 	runPublishedAgentRunnerTargetAction,
@@ -1940,22 +1940,25 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleClearAgentConversation() {
-		if (!selectedRunAgentId) {
+		const target = clearAgentConversationTarget({
+			selectedRunAgentId,
+			selectedIdentityUserId,
+			username,
+		});
+
+		if (target.type === 'skip') {
 			return;
 		}
-
-		const agentId = selectedRunAgentId;
-		const userId = selectedIdentityUserId || username;
 
 		setAgentRunsLoading(true);
 		setAgentRunsError(null);
 		try {
-			await platformApi.clearAgentRuns(clearAgentRunsParams({ agentId, userId }));
-			setAgentConversations((current) =>
-				clearAgentConversationTurns(current, agentId),
-			);
-			setAgentRunResult(null);
-			setAgentRunError(null);
+			await platformApi.clearAgentRuns(target.params);
+			runClearAgentConversationSuccessAction(target, {
+				setAgentConversations,
+				clearRunResult: () => setAgentRunResult(null),
+				clearRunError: () => setAgentRunError(null),
+			});
 		} catch (error) {
 			setAgentRunsError(
 				error instanceof Error ? error.message : agentRunnerRequestText.historyClearError,

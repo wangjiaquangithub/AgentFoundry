@@ -24,6 +24,14 @@ export type ClearAgentRunsParams = {
 	user_id?: string;
 	session_id?: string;
 };
+export type ClearAgentConversationTarget =
+	| { type: 'skip' }
+	| {
+			type: 'clear';
+			agentId: string;
+			userId: string;
+			params: ClearAgentRunsParams;
+	  };
 type NavigationHandler = () => void;
 
 export function agentConversationTurnFromRunResponse(values: {
@@ -487,6 +495,49 @@ export function clearAgentRunsParams(values: {
 		agent_id: values.agentId,
 		user_id: values.userId || undefined,
 	};
+}
+
+export function clearAgentConversationTarget(values: {
+	selectedRunAgentId: string;
+	selectedIdentityUserId: string;
+	username: string;
+}): ClearAgentConversationTarget {
+	if (!values.selectedRunAgentId) {
+		return { type: 'skip' };
+	}
+
+	const agentId = values.selectedRunAgentId;
+	const userId = values.selectedIdentityUserId || values.username;
+
+	return {
+		type: 'clear',
+		agentId,
+		userId,
+		params: clearAgentRunsParams({ agentId, userId }),
+	};
+}
+
+export type ClearAgentConversationSuccessActionHandlers = {
+	setAgentConversations: (
+		updater: (current: AgentConversationMap) => AgentConversationMap,
+	) => void;
+	clearRunResult: NavigationHandler;
+	clearRunError: NavigationHandler;
+};
+
+export function runClearAgentConversationSuccessAction(
+	target: ClearAgentConversationTarget,
+	handlers: ClearAgentConversationSuccessActionHandlers,
+) {
+	if (target.type === 'skip') {
+		return;
+	}
+
+	handlers.setAgentConversations((current) =>
+		clearAgentConversationTurns(current, target.agentId),
+	);
+	handlers.clearRunResult();
+	handlers.clearRunError();
 }
 
 export function selectedToolInputs(values: {
