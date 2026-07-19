@@ -15,9 +15,42 @@ type DashboardTenantAccessViewProps = Pick<
 	| 'tenantWorkspaces'
 >;
 
+type DashboardAgentRunnerViewProps = Pick<
+	DashboardViewPageProps,
+	| 'agentAccessAllowed'
+	| 'agentApprovalId'
+	| 'agentQuestion'
+	| 'agentRunConnectorSourceText'
+	| 'agentRunError'
+	| 'agentRunKnowledgeLabels'
+	| 'agentRunModelLabel'
+	| 'agentRunResult'
+	| 'agentRunnerRef'
+	| 'agentToolCallBadgeText'
+	| 'agentToolCalls'
+	| 'handleApproveAndRun'
+	| 'handleClearAgentConversation'
+	| 'handleInspectAgentRunAudit'
+	| 'handleRunEnterpriseAgent'
+	| 'handleSelectAgentRun'
+	| 'refetchAgentRuns'
+	| 'runningAgent'
+	| 'selectedAgentConversation'
+	| 'setAgentApprovalId'
+	| 'setAgentQuestion'
+	| 'setAgentRunError'
+	| 'setAgentRunResult'
+>;
+
 export function createPlatformDashboardViewProps(
 	props: DashboardViewPageProps,
 ): DashboardViewPageProps {
+	return props;
+}
+
+export function createPlatformDashboardAgentRunnerViewProps(
+	props: DashboardAgentRunnerViewProps,
+): DashboardAgentRunnerViewProps {
 	return props;
 }
 
