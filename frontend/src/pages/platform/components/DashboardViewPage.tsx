@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-import { ApprovalsPanel } from './ApprovalsPanel';
 import { AuditEventsPanel } from './AuditEventsPanel';
 import { CapabilitiesPanel } from './CapabilitiesPanel';
 import { ConfigManagementPanel } from './ConfigManagementPanel';
@@ -18,6 +17,7 @@ import { DashboardAgentQuickStartSection } from './DashboardAgentQuickStartSecti
 import { DashboardAgentRunnerSection } from './DashboardAgentRunnerSection';
 import { DashboardAgentRunNowSection } from './DashboardAgentRunNowSection';
 import { DashboardApplicationSection } from './DashboardApplicationSection';
+import { DashboardApprovalsSection } from './DashboardApprovalsSection';
 import { DashboardConnectorsSection } from './DashboardConnectorsSection';
 import { DashboardLaunchOrchestrationSection } from './DashboardLaunchOrchestrationSection';
 import { DashboardMembersSection } from './DashboardMembersSection';
@@ -964,11 +964,12 @@ export function DashboardViewPage({
 					workflowTemplatesLoading={workflowTemplatesLoading}
 				/>
 
-				<ApprovalsPanel
+				<DashboardApprovalsSection
+					t={t}
 					approvalForm={approvalForm}
-					onApprovalFormChange={setApprovalForm}
+					setApprovalForm={setApprovalForm}
 					approvalFilters={approvalFilters}
-					onApprovalFiltersChange={setApprovalFilters}
+					setApprovalFilters={setApprovalFilters}
 					approvalSummary={approvalSummary}
 					approvalRequests={approvalRequests}
 					approvalLoading={approvalLoading}
@@ -982,16 +983,14 @@ export function DashboardViewPage({
 					selectedRunAgentId={selectedRunAgentId}
 					selectedIdentityUserId={selectedIdentityUserId}
 					username={username}
-					currentTenant={platformStatus?.current_user.tenant}
-					currentUserId={platformStatus?.current_user.user_id}
-					toolInputConfig={enterpriseToolInputConfig}
-					onCreateApproval={handleCreateApproval}
-					onRefetchApprovals={refetchApprovals}
-					onApproveAndRun={handleApproveAndRun}
-					onDecideApproval={handleDecideApproval}
-					onUseApproval={handleUseApproval}
+					platformStatus={platformStatus}
+					enterpriseToolInputConfig={enterpriseToolInputConfig}
+					handleCreateApproval={handleCreateApproval}
+					refetchApprovals={refetchApprovals}
+					handleApproveAndRun={handleApproveAndRun}
+					handleDecideApproval={handleDecideApproval}
+					handleUseApproval={handleUseApproval}
 					summarizeAuditObject={summarizeAuditObject}
-					t={t}
 				/>
 
 				<ToolCatalogPanel
