@@ -3,6 +3,7 @@ import type { HealthState } from './components/common';
 import type { LaunchpadStep } from './components/LaunchpadPanel';
 import {
 	activePlatformMemberCountForMembers,
+	capabilityItemsForStatus,
 	launchpadPrimaryStepForSteps,
 	launchpadStateForCounts,
 	launchpadStepsForStatus,
@@ -11,6 +12,12 @@ import {
 } from './platform-utils';
 
 type LaunchpadStepOptions = Parameters<typeof launchpadStepsForStatus>[1];
+
+export function platformCapabilityItemsDisplayStateForStatus(
+	options: Parameters<typeof capabilityItemsForStatus>[0],
+) {
+	return capabilityItemsForStatus(options);
+}
 
 export interface PlatformLaunchpadDisplayState {
 	activeMemberCount: number;

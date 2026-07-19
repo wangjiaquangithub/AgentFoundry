@@ -211,7 +211,10 @@ import {
 	workflowSelectionLabels,
 } from './platform-labels';
 import { platformDashboardDisplayStateForStatus } from './platform-dashboard-display';
-import { platformLaunchpadDisplayStateForStatus } from './platform-launchpad-display';
+import {
+	platformCapabilityItemsDisplayStateForStatus,
+	platformLaunchpadDisplayStateForStatus,
+} from './platform-launchpad-display';
 import { platformMonitoringDisplayStateForStatus } from './platform-monitoring-display';
 import { platformOnboardingDisplayStateForStatus } from './platform-onboarding-display';
 import { platformOrchestrationDisplayStateForStatus } from './platform-orchestration-display';
@@ -284,7 +287,6 @@ import {
 	agentIsReady,
 	agentReleasePipelineForStatus,
 	agentSetupStepsForStatus,
-	capabilityItemsForStatus,
 	mapAgentRunToConversationTurn,
 	nextAgentSetupStepForSteps,
 	platformConsoleItemsForDisplay,
@@ -2531,7 +2533,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		scrollToToolRunner,
 		scrollToWorkflowRunner,
 	};
-	const capabilities = capabilityItemsForStatus({
+	const capabilities = platformCapabilityItemsDisplayStateForStatus({
 		t,
 		counts: {
 			credentials: credentials.length,
