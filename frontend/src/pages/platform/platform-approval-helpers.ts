@@ -38,6 +38,26 @@ export type ApprovalCreateActionHandlers = {
 	handleError: (error: unknown) => void;
 };
 
+export type ApprovalRunCreateActionHandlers = {
+	setCreatingRunApproval: (requestType: PlatformApprovalRunType | null) => void;
+	clearApprovalError: () => void;
+	createApproval: (
+		payload: EnterpriseApprovalCreateRequest,
+	) => EnterpriseApprovalsResponse | Promise<EnterpriseApprovalsResponse>;
+	setApprovalRequests: (
+		update: (
+			current: EnterpriseApprovalRequestItem[],
+		) => EnterpriseApprovalRequestItem[],
+	) => void;
+	clearRunError: (requestType: PlatformApprovalRunType) => void;
+	refreshDependentViews: () => void | Promise<void>;
+	scrollToGovernance: () => void;
+	handleError: (
+		requestType: PlatformApprovalRunType,
+		error: unknown,
+	) => void;
+};
+
 export interface ApprovalDecisionLabels {
 	approved: string;
 	rejected: string;
@@ -187,6 +207,60 @@ export async function runApprovalCreateAction(
 		handlers.handleError(error);
 	} finally {
 		handlers.setCreatingApproval(false);
+	}
+}
+
+export async function runApprovalRunCreateAction(
+	values: {
+		requestType: PlatformApprovalRunType;
+		reason?: string;
+		runApprovalReason: string;
+		selectedToolInputKey: string;
+		selectedToolInputValue: string;
+		workflowInputs: Record<string, string>;
+		selectedIdentityUserId: string;
+		selectedRunAgentId: string;
+		selectedToolName: string;
+		selectedWorkflowType: string;
+		username: string;
+	},
+	handlers: ApprovalRunCreateActionHandlers,
+): Promise<boolean> {
+	const inputs = approvalRunInputsFromSelection(values.requestType, {
+		selectedToolInputKey: values.selectedToolInputKey,
+		selectedToolInputValue: values.selectedToolInputValue,
+		workflowInputs: values.workflowInputs,
+	});
+	if (!inputs) {
+		return false;
+	}
+
+	handlers.setCreatingRunApproval(values.requestType);
+	handlers.clearApprovalError();
+	try {
+		const response = await handlers.createApproval(
+			approvalCreatePayloadFromRun(values.requestType, {
+				inputs,
+				reason: values.reason || values.runApprovalReason,
+				selectedIdentityUserId: values.selectedIdentityUserId,
+				selectedRunAgentId: values.selectedRunAgentId,
+				selectedToolName: values.selectedToolName,
+				selectedWorkflowType: values.selectedWorkflowType,
+				username: values.username,
+			}),
+		);
+		handlers.setApprovalRequests((current) =>
+			prependApprovalRequest(current, response.approval),
+		);
+		handlers.clearRunError(values.requestType);
+		await handlers.refreshDependentViews();
+		handlers.scrollToGovernance();
+		return true;
+	} catch (error) {
+		handlers.handleError(values.requestType, error);
+		return false;
+	} finally {
+		handlers.setCreatingRunApproval(null);
 	}
 }
 

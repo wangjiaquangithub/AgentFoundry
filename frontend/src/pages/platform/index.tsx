@@ -87,19 +87,17 @@ import {
 } from './platform-agent-runner';
 import {
 	approvalContinuationState,
-	approvalCreatePayloadFromRun,
 	approvalDecisionPayloadFromRequestText,
 	approvalAgentContinuationTarget,
 	approvalQueryFromFilters,
-	approvalRunInputsFromSelection,
 	approvalToolContinuationTarget,
 	approvalToolInputsPatch,
 	runApprovalCreateAction,
+	runApprovalRunCreateAction,
 	runApprovalUsageTargetAction,
 	runToolApprovalPrimeTargetAction,
 	toolApprovalPrimeTarget,
 	approvalWorkflowContinuationTarget,
-	prependApprovalRequest,
 	replaceApprovalRequest,
 	type PlatformApprovalRunType,
 } from './platform-approval-helpers';
@@ -1557,53 +1555,50 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		requestType: PlatformApprovalRunType,
 		reason?: string,
 	): Promise<boolean> {
-		const inputs = approvalRunInputsFromSelection(requestType, {
-			selectedToolInputKey,
-			selectedToolInputValue,
-			workflowInputs,
-		});
-		if (!inputs) {
-			return false;
-		}
-
-		setCreatingRunApproval(requestType);
-		setApprovalError(null);
-		try {
-			const response = await platformApi.createApproval(
-				approvalCreatePayloadFromRun(requestType, {
-					inputs,
-					reason: reason || approvalRequestText.runApprovalReason,
-					selectedIdentityUserId,
-					selectedRunAgentId,
-					selectedToolName,
-					selectedWorkflowType,
-					username,
-				}),
-			);
-			setApprovalRequests((current) =>
-				prependApprovalRequest(current, response.approval),
-			);
-			if (requestType === 'tool_run') {
-				setToolRunError(null);
-			} else {
-				setWorkflowRunError(null);
-			}
-			await refetchGovernance();
-			await refetchOpsTasks();
-			window.setTimeout(scrollToGovernance, 0);
-			return true;
-		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : approvalRequestText.createError;
-			if (requestType === 'tool_run') {
-				setToolRunError(message);
-			} else {
-				setWorkflowRunError(message);
-			}
-			return false;
-		} finally {
-			setCreatingRunApproval(null);
-		}
+		return runApprovalRunCreateAction(
+			{
+				requestType,
+				reason,
+				runApprovalReason: approvalRequestText.runApprovalReason,
+				selectedToolInputKey,
+				selectedToolInputValue,
+				workflowInputs,
+				selectedIdentityUserId,
+				selectedRunAgentId,
+				selectedToolName,
+				selectedWorkflowType,
+				username,
+			},
+			{
+				setCreatingRunApproval,
+				clearApprovalError: () => setApprovalError(null),
+				createApproval: platformApi.createApproval,
+				setApprovalRequests,
+				clearRunError: (type) => {
+					if (type === 'tool_run') {
+						setToolRunError(null);
+					} else {
+						setWorkflowRunError(null);
+					}
+				},
+				refreshDependentViews: async () => {
+					await refetchGovernance();
+					await refetchOpsTasks();
+				},
+				scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
+				handleError: (type, error) => {
+					const message =
+						error instanceof Error
+							? error.message
+							: approvalRequestText.createError;
+					if (type === 'tool_run') {
+						setToolRunError(message);
+					} else {
+						setWorkflowRunError(message);
+					}
+				},
+			},
+		);
 	}
 
 	async function handleDecideApproval(
