@@ -163,6 +163,7 @@ import { createPlatformOnboardingPageState } from './platform-onboarding-state';
 import { createPlatformOrchestrationPageState } from './platform-orchestration-state';
 import { createPlatformWorkbenchPageState } from './platform-workbench-state';
 import { createPlatformWorkflowPageState } from './platform-workflow-state';
+import { createPlatformApprovalsViewProps } from './platform-approvals-view-props';
 import { createPlatformRunsViewProps } from './platform-runs-view-props';
 import {
 	createPlatformAgentQuickConfigurationHandlers,
@@ -1775,35 +1776,37 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	if (view === 'approvals') {
 		return (
 			<ApprovalsViewPage
-				serverUrl={serverUrl}
-				username={username}
-				hasErrors={hasErrors}
-				approvalForm={approvalForm}
-				onApprovalFormChange={setApprovalForm}
-				approvalFilters={approvalFilters}
-				onApprovalFiltersChange={setApprovalFilters}
-				approvalSummary={approvalSummary}
-				approvalRequests={approvalRequests}
-				approvalLoading={approvalLoading}
-				approvalError={approvalError}
-				creatingApproval={creatingApproval}
-				decidingApprovalId={decidingApprovalId}
-				continuingApprovalId={continuingApprovalId}
-				workflowOptions={workflowOptions}
-				availableToolItems={availableToolItems}
-				activePlatformAgents={activePlatformAgents}
-				selectedRunAgentId={selectedRunAgentId}
-				selectedIdentityUserId={selectedIdentityUserId}
-				currentTenant={platformStatus?.current_user.tenant}
-				currentUserId={platformStatus?.current_user.user_id}
-				toolInputConfig={enterpriseToolInputConfig}
-				onCreateApproval={handleCreateApproval}
-				onRefetchApprovals={refetchApprovals}
-				onApproveAndRun={handleApproveAndRun}
-				onDecideApproval={handleDecideApproval}
-				onUseApproval={handleUseApproval}
-				summarizeAuditObject={platformSummarizeAuditObject}
-				t={t}
+				{...createPlatformApprovalsViewProps({
+					serverUrl,
+					username,
+					hasErrors,
+					approvalForm,
+					onApprovalFormChange: setApprovalForm,
+					approvalFilters,
+					onApprovalFiltersChange: setApprovalFilters,
+					approvalSummary,
+					approvalRequests,
+					approvalLoading,
+					approvalError,
+					creatingApproval,
+					decidingApprovalId,
+					continuingApprovalId,
+					workflowOptions,
+					availableToolItems,
+					activePlatformAgents,
+					selectedRunAgentId,
+					selectedIdentityUserId,
+					currentTenant: platformStatus?.current_user.tenant,
+					currentUserId: platformStatus?.current_user.user_id,
+					toolInputConfig: enterpriseToolInputConfig,
+					onCreateApproval: handleCreateApproval,
+					onRefetchApprovals: refetchApprovals,
+					onApproveAndRun: handleApproveAndRun,
+					onDecideApproval: handleDecideApproval,
+					onUseApproval: handleUseApproval,
+					summarizeAuditObject: platformSummarizeAuditObject,
+					t,
+				})}
 			/>
 		);
 	}
