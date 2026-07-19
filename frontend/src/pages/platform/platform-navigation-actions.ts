@@ -1,4 +1,9 @@
-import type { AgentRunnerNextStepMode, AgentWizardStep } from './platform-utils';
+import type { EnterpriseAgentTemplate, EnterprisePublishedAgent } from '@/api';
+import {
+	agentIsReady,
+	type AgentRunnerNextStepMode,
+	type AgentWizardStep,
+} from './platform-utils';
 
 type NavigationHandler = () => void;
 type NavigateHandler = (path: string) => void;
@@ -244,6 +249,42 @@ export function runAppCenterPrimaryRequestAction(
 	runAppCenterPrimaryAction(appCenterPrimaryAction(values), handlers);
 }
 
+export type PlatformAppCenterPrimaryActionValues = {
+	credentialCount: number;
+	readyPlatformAgents: Pick<EnterprisePublishedAgent, 'id'>[];
+	activePlatformAgents: EnterprisePublishedAgent[];
+};
+
+export type PlatformAppCenterPrimaryActionHandlers = {
+	navigate: NavigateHandler;
+	setSelectedRunAgentId: (agentId: string) => void;
+	handlePrimeAgentRunner: NavigationHandler;
+	handleQuickPublishAgent: () => void | Promise<void>;
+	scrollToAgentManagement: NavigationHandler;
+};
+
+export function runPlatformAppCenterPrimaryRequestAction(
+	values: PlatformAppCenterPrimaryActionValues,
+	handlers: PlatformAppCenterPrimaryActionHandlers,
+) {
+	runAppCenterPrimaryRequestAction(
+		{
+			credentialCount: values.credentialCount,
+			readyAgentId: values.readyPlatformAgents[0]?.id,
+			activeAgentCount: values.activePlatformAgents.length,
+		},
+		{
+			navigate: handlers.navigate,
+			selectAndPrimeAgent: (agentId) => {
+				handlers.setSelectedRunAgentId(agentId);
+				handlers.handlePrimeAgentRunner();
+			},
+			handleQuickPublishAgent: handlers.handleQuickPublishAgent,
+			scrollToAgentManagement: handlers.scrollToAgentManagement,
+		},
+	);
+}
+
 export type AppCenterDetailPrimaryActionHandlers = {
 	selectAndPrimeAgent: (agentId: string) => void;
 	editAgent: NavigationHandler;
@@ -279,6 +320,52 @@ export function runAppCenterDetailPrimaryRequestAction(
 	runAppCenterDetailPrimaryAction(appCenterDetailPrimaryAction(values), handlers);
 }
 
+export type PlatformAppCenterDetailPrimaryActionValues = {
+	inspectedAgent?: EnterprisePublishedAgent | null;
+	inspectedTemplate?: EnterpriseAgentTemplate | null;
+};
+
+export type PlatformAppCenterDetailPrimaryActionHandlers = {
+	setSelectedRunAgentId: (agentId: string) => void;
+	handlePrimeAgentRunner: NavigationHandler;
+	handleEditAgent: (agent: EnterprisePublishedAgent) => void;
+	handleConfigureTemplate: (template: EnterpriseAgentTemplate) => void;
+	scrollToAgentManagement: NavigationHandler;
+};
+
+export function runPlatformAppCenterDetailPrimaryRequestAction(
+	values: PlatformAppCenterDetailPrimaryActionValues,
+	handlers: PlatformAppCenterDetailPrimaryActionHandlers,
+) {
+	const { inspectedAgent, inspectedTemplate } = values;
+
+	runAppCenterDetailPrimaryRequestAction(
+		{
+			agentId: inspectedAgent?.id,
+			agentIsReady: agentIsReady(inspectedAgent),
+			hasTemplate: Boolean(inspectedTemplate),
+		},
+		{
+			selectAndPrimeAgent: (agentId) => {
+				handlers.setSelectedRunAgentId(agentId);
+				handlers.handlePrimeAgentRunner();
+			},
+			editAgent: () => {
+				if (inspectedAgent) {
+					handlers.handleEditAgent(inspectedAgent);
+				}
+			},
+			configureTemplate: () => {
+				if (inspectedTemplate) {
+					handlers.handleConfigureTemplate(inspectedTemplate);
+				}
+			},
+			scrollToAgentManagement: () =>
+				window.setTimeout(handlers.scrollToAgentManagement, 0),
+		},
+	);
+}
+
 export type AppCenterDetailSecondaryActionHandlers = {
 	editAgent: NavigationHandler;
 	scrollToAgentManagement: NavigationHandler;
@@ -305,6 +392,39 @@ export function runAppCenterDetailSecondaryRequestAction(
 	runAppCenterDetailSecondaryAction(
 		appCenterDetailSecondaryAction(values),
 		handlers,
+	);
+}
+
+export type PlatformAppCenterDetailSecondaryActionValues = {
+	inspectedAgent?: EnterprisePublishedAgent | null;
+};
+
+export type PlatformAppCenterDetailSecondaryActionHandlers = {
+	handleEditAgent: (agent: EnterprisePublishedAgent) => void;
+	scrollToAgentManagement: NavigationHandler;
+	scrollToGovernance: NavigationHandler;
+};
+
+export function runPlatformAppCenterDetailSecondaryRequestAction(
+	values: PlatformAppCenterDetailSecondaryActionValues,
+	handlers: PlatformAppCenterDetailSecondaryActionHandlers,
+) {
+	const { inspectedAgent } = values;
+
+	runAppCenterDetailSecondaryRequestAction(
+		{
+			hasAgent: Boolean(inspectedAgent),
+		},
+		{
+			editAgent: () => {
+				if (inspectedAgent) {
+					handlers.handleEditAgent(inspectedAgent);
+				}
+			},
+			scrollToAgentManagement: () =>
+				window.setTimeout(handlers.scrollToAgentManagement, 0),
+			scrollToGovernance: handlers.scrollToGovernance,
+		},
 	);
 }
 

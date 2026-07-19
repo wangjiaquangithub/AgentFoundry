@@ -136,10 +136,10 @@ import {
 	platformConsoleNavigationActions,
 	rolloutPathNavigationActions,
 	runAgentSetupStepRequestAction,
-	runAppCenterDetailPrimaryRequestAction,
-	runAppCenterDetailSecondaryRequestAction,
-	runAppCenterPrimaryRequestAction,
 	runNextStepPrimaryRequestAction,
+	runPlatformAppCenterDetailPrimaryRequestAction,
+	runPlatformAppCenterDetailSecondaryRequestAction,
+	runPlatformAppCenterPrimaryRequestAction,
 	workbenchIndicatorNavigationActions,
 	workbenchPrimaryNavigationActions,
 	workbenchQuickNavigationActions,
@@ -291,7 +291,6 @@ import {
 	platformSummarizeAuditObject,
 } from './platform-governance-display';
 import {
-	platformAgentIsReadyForDisplay,
 	platformAgentReleasePipelineDisplayStateForStatus,
 	platformPublishDisplayStateForStatus,
 } from './platform-publish-display';
@@ -2084,58 +2083,38 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleAppCenterPrimaryAction() {
-		runAppCenterPrimaryRequestAction({
+		runPlatformAppCenterPrimaryRequestAction({
 			credentialCount: credentials.length,
-			readyAgentId: readyPlatformAgents[0]?.id,
-			activeAgentCount: activePlatformAgents.length,
+			readyPlatformAgents,
+			activePlatformAgents,
 		}, {
 			navigate,
-			selectAndPrimeAgent: (agentId) => {
-				setSelectedRunAgentId(agentId);
-				handlePrimeAgentRunner();
-			},
+			setSelectedRunAgentId,
+			handlePrimeAgentRunner,
 			handleQuickPublishAgent,
 			scrollToAgentManagement,
 		});
 	}
 
 	function handleAppCenterDetailPrimaryAction() {
-		runAppCenterDetailPrimaryRequestAction({
-			agentId: inspectedAppCenterAgent?.id,
-			agentIsReady: Boolean(
-				inspectedAppCenterAgent &&
-					platformAgentIsReadyForDisplay(inspectedAppCenterAgent),
-			),
-			hasTemplate: Boolean(inspectedAppCenterTemplate),
+		runPlatformAppCenterDetailPrimaryRequestAction({
+			inspectedAgent: inspectedAppCenterAgent,
+			inspectedTemplate: inspectedAppCenterTemplate,
 		}, {
-			selectAndPrimeAgent: (agentId) => {
-				setSelectedRunAgentId(agentId);
-				handlePrimeAgentRunner();
-			},
-			editAgent: () => {
-				if (inspectedAppCenterAgent) {
-					handleEditAgent(inspectedAppCenterAgent);
-				}
-			},
-			configureTemplate: () => {
-				if (inspectedAppCenterTemplate) {
-					handleConfigureTemplate(inspectedAppCenterTemplate);
-				}
-			},
-			scrollToAgentManagement: () => window.setTimeout(scrollToAgentManagement, 0),
+			setSelectedRunAgentId,
+			handlePrimeAgentRunner,
+			handleEditAgent,
+			handleConfigureTemplate,
+			scrollToAgentManagement,
 		});
 	}
 
 	function handleAppCenterDetailSecondaryAction() {
-		runAppCenterDetailSecondaryRequestAction({
-			hasAgent: Boolean(inspectedAppCenterAgent),
+		runPlatformAppCenterDetailSecondaryRequestAction({
+			inspectedAgent: inspectedAppCenterAgent,
 		}, {
-			editAgent: () => {
-				if (inspectedAppCenterAgent) {
-					handleEditAgent(inspectedAppCenterAgent);
-				}
-			},
-			scrollToAgentManagement: () => window.setTimeout(scrollToAgentManagement, 0),
+			handleEditAgent,
+			scrollToAgentManagement,
 			scrollToGovernance,
 		});
 	}
