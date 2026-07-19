@@ -49,10 +49,15 @@ export type PlatformConfigManagementHandlerValues = {
 };
 
 export type PlatformConfigManagementHandlerActions = {
-	setImportText: (text: string) => void;
+	setLoading: (loading: boolean) => void;
+	clearError: () => void;
+	exportConfig: () =>
+		| EnterprisePlatformConfigExportResponse
+		| Promise<EnterprisePlatformConfigExportResponse>;
+	setExport: (response: EnterprisePlatformConfigExportResponse) => void;
+	setImportText: (value: string | ((current: string) => string)) => void;
 	copyText: (text: string) => void | Promise<void>;
 	setImporting: (importing: boolean) => void;
-	clearError: () => void;
 	clearResult: () => void;
 	importConfig: (
 		request: EnterprisePlatformConfigImportRequest,
@@ -180,6 +185,17 @@ export function createPlatformConfigManagementHandlers(
 	values: PlatformConfigManagementHandlerValues,
 	actions: PlatformConfigManagementHandlerActions,
 ) {
+	async function refetchPlatformConfigExport() {
+		await runPlatformConfigLoadAction(values.text, {
+			setLoading: actions.setLoading,
+			clearError: actions.clearError,
+			exportConfig: actions.exportConfig,
+			setExport: actions.setExport,
+			setImportText: actions.setImportText,
+			setError: actions.setError,
+		});
+	}
+
 	async function handleCopyPlatformConfig() {
 		await runPlatformConfigCopyAction(values.platformConfigExport, {
 			setImportText: actions.setImportText,
@@ -208,6 +224,7 @@ export function createPlatformConfigManagementHandlers(
 	}
 
 	return {
+		refetchPlatformConfigExport,
 		handleCopyPlatformConfig,
 		handleImportPlatformConfig,
 	};

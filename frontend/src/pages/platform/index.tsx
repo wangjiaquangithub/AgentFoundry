@@ -65,7 +65,6 @@ import {
 } from './platform-connector-helpers';
 import {
 	createPlatformConfigManagementHandlers,
-	runPlatformConfigLoadAction,
 } from './platform-config-management';
 import {
 	createPlatformToolPolicyHandlers,
@@ -985,17 +984,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		});
 	}
 
-	async function refetchPlatformConfigExport() {
-		await runPlatformConfigLoadAction(configManagementRequestText, {
-			setLoading: setPlatformConfigLoading,
-			clearError: () => setPlatformConfigError(null),
-			exportConfig: platformApi.exportConfig,
-			setExport: setPlatformConfigExport,
-			setImportText: setPlatformConfigImportText,
-			setError: setPlatformConfigError,
-		});
-	}
-
 	async function refetchPlatformConfigImportDependencies() {
 		await Promise.all([
 			refetchPlatform(),
@@ -1009,7 +997,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		]);
 	}
 
-	const { handleCopyPlatformConfig, handleImportPlatformConfig } =
+	const {
+		refetchPlatformConfigExport,
+		handleCopyPlatformConfig,
+		handleImportPlatformConfig,
+	} =
 		createPlatformConfigManagementHandlers(
 			{
 				platformConfigExport,
@@ -1019,13 +1011,16 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			},
 			{
 				setImportText: setPlatformConfigImportText,
+				setLoading: setPlatformConfigLoading,
+				clearError: () => setPlatformConfigError(null),
+				exportConfig: platformApi.exportConfig,
+				setExport: setPlatformConfigExport,
 				copyText: async (text) => {
 					if (navigator.clipboard) {
 						await navigator.clipboard.writeText(text);
 					}
 				},
 				setImporting: setImportingPlatformConfig,
-				clearError: () => setPlatformConfigError(null),
 				clearResult: () => setPlatformConfigImportResult(null),
 				importConfig: platformApi.importConfig,
 				setResult: setPlatformConfigImportResult,
