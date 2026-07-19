@@ -1021,6 +1021,14 @@ export async function runScenarioWorkflowAction(
 	});
 }
 
+export async function runScenarioWorkflowRequestAction(
+	values: Parameters<typeof scenarioWorkflowRunTarget>[0],
+	handlers: ScenarioWorkflowRunActionHandlers,
+) {
+	const target = scenarioWorkflowRunTarget(values);
+	await runScenarioWorkflowAction(target, handlers);
+}
+
 export function agentWorkflowPrimeInputs(values: {
 	selectedWorkflowTemplate: EnterpriseWorkflowTemplate | null;
 	workflowOptions: Array<{

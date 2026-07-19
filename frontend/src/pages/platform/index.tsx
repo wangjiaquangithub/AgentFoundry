@@ -66,11 +66,10 @@ import {
 	runOpenMemoryOperationAgentAction,
 	runPrimeAgentWorkflowAction,
 	runPrimePublishedAgentAction,
-	runScenarioWorkflowAction,
+	runScenarioWorkflowRequestAction,
 	runSelectAgentForRunAction,
 	runUseIdentityAgentRunnerAction,
 	runUseTenantAgentRunnerAction,
-	scenarioWorkflowRunTarget,
 	selectedRunAgentIdForAvailableAgents,
 	workflowInputsForSelectedOption,
 	workflowSelectionForAvailableTemplates,
@@ -2553,17 +2552,20 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleRunScenario(scenario: EnterprisePlatformScenario) {
-		const target = scenarioWorkflowRunTarget({
-			scenario,
-			workflowTemplates,
-			currentInputs: workflowInputs,
-		});
-		await runScenarioWorkflowAction(target, {
-			setWorkflowType: setSelectedWorkflowType,
-			setWorkflowInputs,
-			scheduleWorkflowRunnerFocus: () => window.setTimeout(scrollToWorkflowRunner, 0),
-			runWorkflow: runEnterpriseWorkflow,
-		});
+		await runScenarioWorkflowRequestAction(
+			{
+				scenario,
+				workflowTemplates,
+				currentInputs: workflowInputs,
+			},
+			{
+				setWorkflowType: setSelectedWorkflowType,
+				setWorkflowInputs,
+				scheduleWorkflowRunnerFocus: () =>
+					window.setTimeout(scrollToWorkflowRunner, 0),
+				runWorkflow: runEnterpriseWorkflow,
+			},
+		);
 	}
 
 	const platformNavigationHandlers = {
