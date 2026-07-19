@@ -217,6 +217,7 @@ import {
 	publishFormForPreparedTenant,
 	publishFormForTenantChange,
 	publishFormWithPatch,
+	publishedAgentPrimeTarget,
 	type PublishListFormKey,
 } from './platform-publish-form';
 import {
@@ -2126,9 +2127,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 							form: publishForm,
 						}),
 					);
-			if (response.agent.status === 'published') {
-				setLastPublishedAgentId(response.agent.id);
-				handlePrimePublishedAgent(response.agent.id);
+			const publishedAgentId = publishedAgentPrimeTarget(response.agent);
+			if (publishedAgentId) {
+				setLastPublishedAgentId(publishedAgentId);
+				handlePrimePublishedAgent(publishedAgentId);
 			}
 			setEditingAgentId(null);
 			await refetchPlatformAgents();
@@ -2174,9 +2176,10 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					form: defaultForm,
 				}),
 			);
-			if (response.agent.status === 'published') {
-				setLastPublishedAgentId(response.agent.id);
-				handlePrimePublishedAgent(response.agent.id);
+			const publishedAgentId = publishedAgentPrimeTarget(response.agent);
+			if (publishedAgentId) {
+				setLastPublishedAgentId(publishedAgentId);
+				handlePrimePublishedAgent(publishedAgentId);
 			}
 			await refetchPlatformAgents();
 			await refetchPlatform();

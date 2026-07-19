@@ -98,6 +98,12 @@ export function agentPublishPayloadFromForm(values: {
 	};
 }
 
+export function publishedAgentPrimeTarget(
+	agent: EnterprisePublishedAgent,
+): string | null {
+	return agent.status === 'published' ? agent.id : null;
+}
+
 export function publishFormForTenantChange(values: {
 	current: PublishFormState;
 	tenant: string;
