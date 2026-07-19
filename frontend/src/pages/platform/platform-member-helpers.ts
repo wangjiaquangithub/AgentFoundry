@@ -19,6 +19,18 @@ export type MemberEditActionHandlers = {
 	setMemberForm: (form: MemberFormState) => void;
 };
 
+export type MemberSaveActionHandlers = {
+	setSavingMember: (saving: boolean) => void;
+	clearError: () => void;
+	handleValidationError: () => void;
+	createMember: (
+		payload: EnterprisePlatformMemberUpsertRequest,
+	) => void | Promise<void>;
+	resetForm: () => void;
+	refreshDependentViews: () => void | Promise<void>;
+	handleError: (error: unknown) => void;
+};
+
 export type MemberStatusToggleActionHandlers = {
 	setUpdatingMember: (userId: string | null) => void;
 	clearError: () => void;
@@ -65,6 +77,29 @@ export function runMemberEditAction(
 	handlers: MemberEditActionHandlers,
 ) {
 	handlers.setMemberForm(memberFormFromMember(member));
+}
+
+export async function runMemberSaveAction(
+	form: MemberFormState,
+	handlers: MemberSaveActionHandlers,
+) {
+	const userId = memberUserIdFromForm(form);
+	if (!userId) {
+		handlers.handleValidationError();
+		return;
+	}
+
+	handlers.setSavingMember(true);
+	handlers.clearError();
+	try {
+		await handlers.createMember(memberCreatePayloadFromForm(form, userId));
+		handlers.resetForm();
+		await handlers.refreshDependentViews();
+	} catch (error) {
+		handlers.handleError(error);
+	} finally {
+		handlers.setSavingMember(false);
+	}
 }
 
 export function memberStatusToggleAction(

@@ -127,10 +127,9 @@ import {
 	toolPolicyPayloadFromDraft,
 } from './platform-tool-policy-helpers';
 import {
-	memberCreatePayloadFromForm,
 	runMemberEditAction,
+	runMemberSaveAction,
 	memberStatusToggleAction,
-	memberUserIdFromForm,
 	runMemberStatusToggleAction,
 } from './platform-member-helpers';
 import {
@@ -1205,25 +1204,21 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleSaveMember() {
-		const userId = memberUserIdFromForm(memberForm);
-		if (!userId) {
-			setPlatformMembersError(memberRequestText.userRequired);
-			return;
-		}
-
-		setSavingMember(true);
-		setPlatformMembersError(null);
-		try {
-			await platformApi.createMember(memberCreatePayloadFromForm(memberForm, userId));
-			setMemberForm(defaultMemberForm);
-			await refreshMemberDependentViews();
-		} catch (error) {
-			setPlatformMembersError(
-				error instanceof Error ? error.message : memberRequestText.saveError,
-			);
-		} finally {
-			setSavingMember(false);
-		}
+		await runMemberSaveAction(memberForm, {
+			setSavingMember,
+			clearError: () => setPlatformMembersError(null),
+			handleValidationError: () =>
+				setPlatformMembersError(memberRequestText.userRequired),
+			createMember: async (payload) => {
+				await platformApi.createMember(payload);
+			},
+			resetForm: () => setMemberForm(defaultMemberForm),
+			refreshDependentViews: refreshMemberDependentViews,
+			handleError: (error) =>
+				setPlatformMembersError(
+					error instanceof Error ? error.message : memberRequestText.saveError,
+				),
+		});
 	}
 
 	function handleEditMember(member: EnterprisePlatformMember) {
