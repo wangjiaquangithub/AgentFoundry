@@ -262,19 +262,18 @@ import {
 	type MemberFormState,
 	type PublishFormState,
 } from './platform-defaults';
+import { platformAppCenterDisplayStateForStatus } from './platform-app-center-display';
 import {
 	agentAccessAllowed,
 	agentRoutingDisplayStateForResult,
 	agentRunnerStateForStatus,
 	appCenterDetailHealthState,
-	appCenterAgentDisplayStateForStatus,
 	agentIsReady,
 	agentReadinessIssues,
 	agentReadinessState,
 	agentReleasePipelineForStatus,
 	agentSetupStepsForStatus,
 	appCenterDetailResourceValuesForSelection,
-	appCenterOperationsStateForStatus,
 	auditStatsForSummary,
 	capabilityItemsForStatus,
 	connectorOperationsStateForStatus,
@@ -798,18 +797,25 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 		dashboardTodoLabels(t),
 	);
-	const appCenterOperationsState = appCenterOperationsStateForStatus({
-		selectedItem: selectedAppCenterItem,
-		activeAgents: activePlatformAgents,
-		readyAgents: readyPlatformAgents,
-		publishedAgents: publishedPlatformAgents,
-		archivedAgents: archivedPlatformAgents,
-		templates: agentTemplates,
-		defaultTemplate: defaultAgentTemplate,
-		hasCredentials: credentials.length > 0,
-		publishingTemplateId,
-		labels: appCenterOperationsLabels(t),
+	const appCenterDisplay = platformAppCenterDisplayStateForStatus({
+		operations: {
+			selectedItem: selectedAppCenterItem,
+			activeAgents: activePlatformAgents,
+			readyAgents: readyPlatformAgents,
+			publishedAgents: publishedPlatformAgents,
+			archivedAgents: archivedPlatformAgents,
+			templates: agentTemplates,
+			defaultTemplate: defaultAgentTemplate,
+			hasCredentials: credentials.length > 0,
+			publishingTemplateId,
+			labels: appCenterOperationsLabels(t),
+		},
+		agentDisplay: {
+			credentialById,
+			labels: appCenterAgentDisplayLabels(t),
+		},
 	});
+	const appCenterOperationsState = appCenterDisplay.operationsState;
 	const blockedOrPartialPlatformAgents = appCenterOperationsState.blockedOrPartialAgents;
 	const appCenterAgents = appCenterOperationsState.appCenterAgents;
 	const inspectedAppCenterAgent = appCenterOperationsState.inspectedAgent;
@@ -817,10 +823,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const appCenterPrimaryDisabled = appCenterOperationsState.primaryDisabled;
 	const agentOpsSummary = appCenterOperationsState.agentOpsSummary;
 	const topOperationsAgents = appCenterOperationsState.topOperationsAgents;
-	const { operationsAgentIssueText, agentResourceText } = appCenterAgentDisplayStateForStatus({
-		credentialById,
-		labels: appCenterAgentDisplayLabels(t),
-	});
+	const { operationsAgentIssueText, agentResourceText } =
+		appCenterDisplay.agentDisplayState;
 	const inspectedAppCenterAgentReadiness = agentReadinessState(inspectedAppCenterAgent);
 	const inspectedAppCenterAgentIssues = agentReadinessIssues(inspectedAppCenterAgent);
 	const inspectedAppCenterResourceValues = appCenterDetailResourceValuesForSelection({
