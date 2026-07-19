@@ -58,7 +58,6 @@ import {
 	clearAgentConversationTarget,
 	identityAgentRunnerTarget,
 	memoryOperationAgentRunTarget,
-	publishedAgentRunnerTarget,
 	runEnterpriseAgentAction,
 	replaceAgentConversationTurns,
 	runAgentRunnerPrimeTargetAction,
@@ -69,8 +68,8 @@ import {
 	runEnterpriseWorkflowAction,
 	runIdentityAgentRunnerTargetAction,
 	runMemoryOperationAgentRunTargetAction,
-	runPublishedAgentRunnerTargetAction,
 	runPrimeAgentWorkflowAction,
+	runPrimePublishedAgentAction,
 	runScenarioWorkflowAction,
 	runSelectedRunAgentTargetAction,
 	runTenantAgentRunnerTargetAction,
@@ -1848,14 +1847,12 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handlePrimePublishedAgent(agentId: string, sample = primaryAgentSampleQuestion) {
-		const target = publishedAgentRunnerTarget({
+		runPrimePublishedAgentAction({
 			agentConversations,
 			agentId,
 			currentQuestion: agentQuestion,
 			sampleQuestion: sample,
-		});
-
-		runPublishedAgentRunnerTargetAction(target, {
+		}, {
 			selectRunAgent: setSelectedRunAgentId,
 			setQuestion: setAgentQuestion,
 			setResult: setAgentRunResult,

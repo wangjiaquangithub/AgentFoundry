@@ -123,6 +123,15 @@ export function runPublishedAgentRunnerTargetAction(
 	handlers.scrollToAgentRunner();
 }
 
+export function runPrimePublishedAgentAction(
+	values: Parameters<typeof publishedAgentRunnerTarget>[0],
+	handlers: PublishedAgentRunnerTargetActionHandlers,
+) {
+	const target = publishedAgentRunnerTarget(values);
+
+	runPublishedAgentRunnerTargetAction(target, handlers);
+}
+
 export type AgentRunnerPrimeTargetActionHandlers = {
 	setQuestion: (question: string) => void;
 	clearError: NavigationHandler;
