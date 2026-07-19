@@ -2463,24 +2463,24 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			capability: 'workflow',
 		});
 
-		setEnablingAgentWorkflowId(agent.id);
-		setPlatformAgentsError(null);
-		try {
-			const response = await platformApi.updateAgent(target.agentId, target.patch);
-			syncAgentQuickConfiguration(agent.id, response.agent.id, target.patch);
-			await refetchPlatformAgents();
-			await refetchPlatform();
-			await refetchToolCatalog();
-			await refetchOpsTasks();
-		} catch (error) {
-			setPlatformAgentsError(
-				error instanceof Error
-					? error.message
-					: agentManagementRequestText.enableWorkflowError,
-			);
-		} finally {
-			setEnablingAgentWorkflowId(null);
-		}
+		await runAgentCapabilityEnableAction(target, {
+			setEnablingAgent: setEnablingAgentWorkflowId,
+			clearError: () => setPlatformAgentsError(null),
+			updateAgent: platformApi.updateAgent,
+			syncQuickConfiguration: syncAgentQuickConfiguration,
+			refreshDependentViews: async () => {
+				await refetchPlatformAgents();
+				await refetchPlatform();
+				await refetchToolCatalog();
+				await refetchOpsTasks();
+			},
+			handleError: (error) =>
+				setPlatformAgentsError(
+					error instanceof Error
+						? error.message
+						: agentManagementRequestText.enableWorkflowError,
+				),
+		});
 	}
 
 	async function runEnterpriseAgent(options?: {
