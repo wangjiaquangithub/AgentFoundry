@@ -237,7 +237,7 @@ import {
 	agentMemoryEnabledPatch,
 	agentPublishPayloadFromForm,
 	agentQuickConfigurationSyncResult,
-	agentTemplateToolsForPublishedAgent,
+	agentTemplateToolsBindTarget,
 	agentTemplateToolsPatch,
 	agentWorkflowEnabledPatch,
 	buildAgentConfigurationPayloadFromForm,
@@ -2416,11 +2416,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleBindTemplateTools(agent: EnterprisePublishedAgent) {
-		const templateTools = agentTemplateToolsForPublishedAgent({
+		const target = agentTemplateToolsBindTarget({
 			agent,
 			templates: agentTemplates,
 		});
-		if (!templateTools) {
+		if (target.type === 'error') {
 			setPlatformAgentsError(agentManagementRequestText.bindToolsError);
 			return;
 		}
@@ -2428,7 +2428,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		setBindingAgentToolsId(agent.id);
 		setPlatformAgentsError(null);
 		try {
-			const patch = agentTemplateToolsPatch(templateTools);
+			const patch = agentTemplateToolsPatch(target.tools);
 			const response = await platformApi.updateAgent(agent.id, patch);
 			syncAgentQuickConfiguration(agent.id, response.agent.id, patch);
 			await refetchPlatformAgents();

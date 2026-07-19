@@ -33,6 +33,9 @@ export type AgentDefaultModelBindTarget =
 export type AgentKnowledgeBasesBindTarget =
 	| { type: 'navigate'; path: '/knowledge' }
 	| { type: 'bind'; knowledgeBaseIds: string[] };
+export type AgentTemplateToolsBindTarget =
+	| { type: 'error' }
+	| { type: 'bind'; tools: string[] };
 
 export type DefaultPublishFormOptions = {
 	template: EnterpriseAgentTemplate;
@@ -274,6 +277,15 @@ export function agentTemplateToolsForPublishedAgent(values: {
 	const tools = template?.tools ?? [];
 
 	return tools.length > 0 ? tools : null;
+}
+
+export function agentTemplateToolsBindTarget(values: {
+	agent: EnterprisePublishedAgent;
+	templates: EnterpriseAgentTemplate[];
+}): AgentTemplateToolsBindTarget {
+	const tools = agentTemplateToolsForPublishedAgent(values);
+
+	return tools ? { type: 'bind', tools } : { type: 'error' };
 }
 
 export function agentMemoryEnabledPatch(): AgentQuickConfigurationPatch {
