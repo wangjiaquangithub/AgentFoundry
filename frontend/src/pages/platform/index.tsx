@@ -264,6 +264,7 @@ import {
 	runAgentEditCancelTargetAction,
 	runPreparedTenantAgentTargetAction,
 	runStartPublishingTargetAction,
+	runTemplateConfigureAction,
 	startPublishingTarget,
 	type PublishListFormKey,
 } from './platform-publish-form';
@@ -1747,9 +1748,17 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleConfigureTemplate(template: EnterpriseAgentTemplate) {
-		setEditingAgentId(null);
-		setSelectedTemplateId(template.id);
-		setPublishForm(buildDefaultPublishForm(template));
+		runTemplateConfigureAction(
+			{
+				template,
+				form: buildDefaultPublishForm(template),
+			},
+			{
+				clearEditingAgent: () => setEditingAgentId(null),
+				selectTemplate: setSelectedTemplateId,
+				setPublishForm,
+			},
+		);
 	}
 
 	function handlePublishTenantChange(value: string) {

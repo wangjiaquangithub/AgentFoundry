@@ -76,6 +76,12 @@ export type AgentArchiveSyncTarget = {
 };
 type NavigationHandler = () => void;
 
+export type TemplateConfigureActionHandlers = {
+	clearEditingAgent: NavigationHandler;
+	selectTemplate: (templateId: string) => void;
+	setPublishForm: (form: PublishFormState) => void;
+};
+
 export type DefaultPublishFormOptions = {
 	template: EnterpriseAgentTemplate;
 	tenant: string;
@@ -121,6 +127,18 @@ export function defaultPublishFormForTemplate(values: {
 		modelConfigId: values.credentials[0]?.id ?? '',
 		knowledgeBaseIds: availableKnowledgeBaseIds(values.knowledgeBases),
 	});
+}
+
+export function runTemplateConfigureAction(
+	values: {
+		template: EnterpriseAgentTemplate;
+		form: PublishFormState;
+	},
+	handlers: TemplateConfigureActionHandlers,
+) {
+	handlers.clearEditingAgent();
+	handlers.selectTemplate(values.template.id);
+	handlers.setPublishForm(values.form);
 }
 
 export function preparedTenantAgentTarget(values: {
