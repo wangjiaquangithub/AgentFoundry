@@ -19,6 +19,18 @@ export type MemberEditActionHandlers = {
 	setMemberForm: (form: MemberFormState) => void;
 };
 
+export type MemberStatusToggleActionHandlers = {
+	setUpdatingMember: (userId: string | null) => void;
+	clearError: () => void;
+	activateMember: (
+		userId: string,
+		patch: Pick<EnterprisePlatformMemberUpsertRequest, 'status'>,
+	) => void | Promise<void>;
+	deactivateMember: (userId: string) => void | Promise<void>;
+	refreshDependentViews: () => void | Promise<void>;
+	handleError: (error: unknown) => void;
+};
+
 export function memberUserIdFromForm(form: MemberFormState): string {
 	return form.user_id.trim();
 }
@@ -70,4 +82,24 @@ export function memberStatusToggleAction(
 		kind: 'deactivate',
 		userId: member.user_id,
 	};
+}
+
+export async function runMemberStatusToggleAction(
+	action: MemberStatusToggleAction,
+	handlers: MemberStatusToggleActionHandlers,
+) {
+	handlers.setUpdatingMember(action.userId);
+	handlers.clearError();
+	try {
+		if (action.kind === 'activate') {
+			await handlers.activateMember(action.userId, action.patch);
+		} else {
+			await handlers.deactivateMember(action.userId);
+		}
+		await handlers.refreshDependentViews();
+	} catch (error) {
+		handlers.handleError(error);
+	} finally {
+		handlers.setUpdatingMember(null);
+	}
 }

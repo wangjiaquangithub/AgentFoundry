@@ -131,6 +131,7 @@ import {
 	runMemberEditAction,
 	memberStatusToggleAction,
 	memberUserIdFromForm,
+	runMemberStatusToggleAction,
 } from './platform-member-helpers';
 import {
 	opsTaskActionTarget,
@@ -1231,22 +1232,21 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	async function handleToggleMemberStatus(member: EnterprisePlatformMember) {
 		const toggleAction = memberStatusToggleAction(member);
-		setUpdatingMemberId(toggleAction.userId);
-		setPlatformMembersError(null);
-		try {
-			if (toggleAction.kind === 'activate') {
-				await platformApi.updateMember(toggleAction.userId, toggleAction.patch);
-			} else {
-				await platformApi.deactivateMember(toggleAction.userId);
-			}
-			await refreshMemberDependentViews();
-		} catch (error) {
-			setPlatformMembersError(
-				error instanceof Error ? error.message : memberRequestText.saveError,
-			);
-		} finally {
-			setUpdatingMemberId(null);
-		}
+		await runMemberStatusToggleAction(toggleAction, {
+			setUpdatingMember: setUpdatingMemberId,
+			clearError: () => setPlatformMembersError(null),
+			activateMember: async (userId, patch) => {
+				await platformApi.updateMember(userId, patch);
+			},
+			deactivateMember: async (userId) => {
+				await platformApi.deactivateMember(userId);
+			},
+			refreshDependentViews: refreshMemberDependentViews,
+			handleError: (error) =>
+				setPlatformMembersError(
+					error instanceof Error ? error.message : memberRequestText.saveError,
+				),
+		});
 	}
 
 	function loadSavedConnectorConfig(config: EnterpriseConnectorSavedConfig) {
