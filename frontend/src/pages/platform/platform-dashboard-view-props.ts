@@ -105,6 +105,41 @@ type DashboardConnectorsViewProps = Pick<
 	| 'testingConnector'
 >;
 
+type DashboardToolsViewProps = Pick<
+	DashboardViewPageProps,
+	| 'availableToolItems'
+	| 'enterpriseToolInputConfig'
+	| 'handleRunEnterpriseTool'
+	| 'handleSaveToolPolicy'
+	| 'riskToolItems'
+	| 'runningTool'
+	| 'scrollToToolRunner'
+	| 'selectedToolAllowed'
+	| 'selectedToolCatalogItem'
+	| 'selectedToolConfig'
+	| 'selectedToolDecision'
+	| 'selectedToolInputKey'
+	| 'selectedToolInputValue'
+	| 'selectedToolName'
+	| 'selectedToolReason'
+	| 'setSelectedToolName'
+	| 'setToolInputs'
+	| 'setToolPolicyDraft'
+	| 'setToolPolicySaveError'
+	| 'setToolPolicySaveSuccess'
+	| 'setToolRunError'
+	| 'toolCatalogError'
+	| 'toolCatalogLoading'
+	| 'toolPolicyDraft'
+	| 'toolPolicyMode'
+	| 'toolPolicySaveError'
+	| 'toolPolicySaveSuccess'
+	| 'toolPolicySummary'
+	| 'toolRunError'
+	| 'toolRunResult'
+	| 'toolRunnerRef'
+>;
+
 export function createPlatformDashboardViewProps(
 	props: DashboardViewPageProps,
 ): DashboardViewPageProps {
@@ -126,6 +161,12 @@ export function createPlatformDashboardApprovalsViewProps(
 export function createPlatformDashboardConnectorsViewProps(
 	props: DashboardConnectorsViewProps,
 ): DashboardConnectorsViewProps {
+	return props;
+}
+
+export function createPlatformDashboardToolsViewProps(
+	props: DashboardToolsViewProps,
+): DashboardToolsViewProps {
 	return props;
 }
 
