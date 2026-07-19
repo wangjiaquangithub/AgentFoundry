@@ -25,6 +25,23 @@ export type WorkflowTemplateLoadActionHandlers = {
 	setError: (message: string) => void;
 };
 
+export type PlatformWorkflowTemplateHandlerValues = {
+	text: {
+		templatesLoadError: string;
+	};
+};
+
+export type PlatformWorkflowTemplateHandlerActions = {
+	setSavingWorkflowType: (workflowType: string | null) => void;
+	setWorkflowTemplatesError: (message: string | null) => void;
+	updateWorkflow: (
+		workflowType: string,
+		values: { enabled: boolean },
+	) => EnterpriseWorkflowTemplatesResponse | Promise<EnterpriseWorkflowTemplatesResponse>;
+	setWorkflowTemplates: (workflows: EnterpriseWorkflowTemplate[]) => void;
+	refreshDependentViews: () => void | Promise<void>;
+};
+
 export async function runWorkflowTemplateLoadAction(
 	loadErrorMessage: string,
 	handlers: WorkflowTemplateLoadActionHandlers,
@@ -41,6 +58,37 @@ export async function runWorkflowTemplateLoadAction(
 	} finally {
 		handlers.setLoading(false);
 	}
+}
+
+export function createPlatformWorkflowTemplateHandlers(
+	values: PlatformWorkflowTemplateHandlerValues,
+	actions: PlatformWorkflowTemplateHandlerActions,
+) {
+	async function handleToggleWorkflowTemplate(
+		template: EnterpriseWorkflowTemplate,
+		enabled: boolean,
+	) {
+		await runWorkflowTemplateToggleAction(
+			{ template, enabled },
+			{
+				setSavingWorkflowType: actions.setSavingWorkflowType,
+				clearError: () => actions.setWorkflowTemplatesError(null),
+				updateWorkflow: actions.updateWorkflow,
+				setWorkflowTemplates: actions.setWorkflowTemplates,
+				refreshDependentViews: actions.refreshDependentViews,
+				handleError: (error) =>
+					actions.setWorkflowTemplatesError(
+						error instanceof Error
+							? error.message
+							: values.text.templatesLoadError,
+					),
+			},
+		);
+	}
+
+	return {
+		handleToggleWorkflowTemplate,
+	};
 }
 
 export async function runWorkflowTemplateToggleAction(

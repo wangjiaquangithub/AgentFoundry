@@ -100,8 +100,8 @@ import {
 	runOpsTaskResolveAction,
 } from './platform-ops-task-helpers';
 import {
+	createPlatformWorkflowTemplateHandlers,
 	runWorkflowTemplateLoadAction,
-	runWorkflowTemplateToggleAction,
 } from './platform-workflow-template-helpers';
 import { runWorkflowRunLoadAction } from './platform-workflow-run-helpers';
 import { runScenarioLoadAction } from './platform-scenario-helpers';
@@ -1572,29 +1572,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		);
 	}
 
-	async function handleToggleWorkflowTemplate(
-		template: EnterpriseWorkflowTemplate,
-		enabled: boolean,
-	) {
-		await runWorkflowTemplateToggleAction(
-			{ template, enabled },
-			{
-				setSavingWorkflowType,
-				clearError: () => setWorkflowTemplatesError(null),
-				updateWorkflow: (workflowType, values) =>
-					platformApi.updateWorkflow(workflowType, values),
-				setWorkflowTemplates,
-				refreshDependentViews: refetchWorkflowTemplateDependencies,
-				handleError: (error) =>
-					setWorkflowTemplatesError(
-						error instanceof Error
-							? error.message
-							: workflowRunnerRequestText.templatesLoadError,
-					),
-			},
-		);
-	}
-
 	function handleOperationAction(target?: string) {
 		runPlatformOperationAction(target, {
 			scrollToAgentManagement,
@@ -1953,6 +1930,22 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			fallbackId: (agentId) => `${agentId}-${Date.now()}`,
 		},
 	);
+
+	const { handleToggleWorkflowTemplate } =
+		createPlatformWorkflowTemplateHandlers(
+			{
+				text: {
+					templatesLoadError: workflowRunnerRequestText.templatesLoadError,
+				},
+			},
+			{
+				setSavingWorkflowType,
+				setWorkflowTemplatesError,
+				updateWorkflow: platformApi.updateWorkflow,
+				setWorkflowTemplates,
+				refreshDependentViews: refetchWorkflowTemplateDependencies,
+			},
+		);
 
 	const {
 		handleArchiveAgent,
