@@ -218,7 +218,7 @@ import {
 	platformPublishDisplayStateForStatus,
 } from './platform-publish-display';
 import { createPlatformResourcePageState } from './platform-resource-state';
-import { platformRuntimeDisplayStateForStatus } from './platform-runtime-display';
+import { createPlatformRuntimePageState } from './platform-runtime-state';
 import { platformToolRunnerDisplayStateForStatus } from './platform-tool-runner-display';
 import { platformOverviewDisplayStateForStatus } from './platform-overview-display';
 import type { PlatformView } from './platform-view';
@@ -514,14 +514,16 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		},
 		agentRunnerLabels(t),
 	).runnerState;
-	const platformRuntimeDisplay = platformRuntimeDisplayStateForStatus({
+	const {
+		enterpriseIdentities,
+		subagentTemplates,
+		toolPolicyMode,
+	} = createPlatformRuntimePageState({
 		platformStatus,
 		governance,
 		connectors,
 		labels: platformRuntimeConfigLabels(t),
 	});
-	const platformRuntimeConfigState = platformRuntimeDisplay.configState;
-	const enterpriseIdentities = platformRuntimeConfigState.enterpriseIdentities;
 	const publishDisplay = platformPublishDisplayStateForStatus({
 		access: {
 			tenant: publishForm.tenant,
@@ -605,8 +607,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const stats = overviewDisplay.stats;
 	const runtimeItems = overviewDisplay.runtimeItems;
 
-	const subagentTemplates = platformRuntimeConfigState.subagentTemplates;
-	const toolPolicyMode = platformRuntimeConfigState.toolPolicyMode;
 	const toolRunnerDisplay = platformToolRunnerDisplayStateForStatus({
 		catalog: {
 			platformStatus,
