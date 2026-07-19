@@ -53,6 +53,36 @@ export type OpsTaskResolveActionHandlers = {
 	handleError: (error: unknown) => void;
 };
 
+export type OpsTaskLoadActionHandlers = {
+	setLoading: (loading: boolean) => void;
+	clearError: () => void;
+	loadOpsTasks: () =>
+		| EnterprisePlatformOpsTasksResponse
+		| Promise<EnterprisePlatformOpsTasksResponse>;
+	setOpsTasks: (tasks: EnterprisePlatformOpsTask[]) => void;
+	setOpsTasksSummary: (summary: EnterprisePlatformOpsTasksResponse['summary']) => void;
+	setError: (message: string) => void;
+};
+
+export async function runOpsTaskLoadAction(
+	loadErrorMessage: string,
+	handlers: OpsTaskLoadActionHandlers,
+) {
+	handlers.setLoading(true);
+	handlers.clearError();
+	try {
+		const response = await handlers.loadOpsTasks();
+		handlers.setOpsTasks(response.tasks);
+		handlers.setOpsTasksSummary(response.summary);
+	} catch (error) {
+		handlers.setError(
+			error instanceof Error ? error.message : loadErrorMessage,
+		);
+	} finally {
+		handlers.setLoading(false);
+	}
+}
+
 export async function runOpsTaskResolveAction(
 	task: EnterprisePlatformOpsTask,
 	handlers: OpsTaskResolveActionHandlers,

@@ -111,6 +111,7 @@ import {
 } from './platform-member-helpers';
 import { runGovernanceLoadAction } from './platform-governance-helpers';
 import {
+	runOpsTaskLoadAction,
 	runOpsTaskResolveAction,
 } from './platform-ops-task-helpers';
 import {
@@ -1416,19 +1417,17 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function refetchOpsTasks() {
-		setOpsTasksLoading(true);
-		setOpsTasksError(null);
-		try {
-			const response = await platformApi.opsTasks();
-			setOpsTasks(response.tasks);
-			setOpsTasksSummary(response.summary);
-		} catch (error) {
-			setOpsTasksError(
-				error instanceof Error ? error.message : opsTasksRequestText.loadError,
-			);
-		} finally {
-			setOpsTasksLoading(false);
-		}
+		await runOpsTaskLoadAction(
+			opsTasksRequestText.loadError,
+			{
+				setLoading: setOpsTasksLoading,
+				clearError: () => setOpsTasksError(null),
+				loadOpsTasks: platformApi.opsTasks,
+				setOpsTasks,
+				setOpsTasksSummary,
+				setError: setOpsTasksError,
+			},
+		);
 	}
 
 	async function refetchApprovals(overrides: Partial<typeof approvalFilters> = {}) {
