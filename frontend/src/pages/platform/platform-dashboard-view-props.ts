@@ -467,6 +467,17 @@ type DashboardTenantGovernanceViewProps = Pick<
 	| 'toolPolicySummary'
 >;
 
+type DashboardPolicySubagentsViewProps = Pick<
+	DashboardViewPageProps,
+	| 'platformError'
+	| 'platformLoading'
+	| 'platformStatus'
+	| 'policyDecisions'
+	| 'subagentTemplates'
+	| 't'
+	| 'toolPolicyMode'
+>;
+
 type DashboardPlatformConsoleViewProps = Pick<
 	DashboardViewPageProps,
 	'platformConsoleItems'
@@ -727,6 +738,12 @@ export function createPlatformDashboardTenantWorkspaceViewProps(
 export function createPlatformDashboardTenantGovernanceViewProps(
 	props: DashboardTenantGovernanceViewProps,
 ): DashboardTenantGovernanceViewProps {
+	return props;
+}
+
+export function createPlatformDashboardPolicySubagentsViewProps(
+	props: DashboardPolicySubagentsViewProps,
+): DashboardPolicySubagentsViewProps {
 	return props;
 }
 
