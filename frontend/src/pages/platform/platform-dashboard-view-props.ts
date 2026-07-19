@@ -251,6 +251,11 @@ type DashboardRolloutPathViewProps = Pick<
 	'rolloutPathSteps'
 >;
 
+type DashboardCapabilitiesViewProps = Pick<
+	DashboardViewPageProps,
+	'capabilities'
+>;
+
 type DashboardLaunchpadViewProps = Pick<
 	DashboardViewPageProps,
 	| 'launchpadPrimaryStep'
@@ -383,6 +388,12 @@ export function createPlatformDashboardFirstAgentGuideViewProps(
 export function createPlatformDashboardRolloutPathViewProps(
 	props: DashboardRolloutPathViewProps,
 ): DashboardRolloutPathViewProps {
+	return props;
+}
+
+export function createPlatformDashboardCapabilitiesViewProps(
+	props: DashboardCapabilitiesViewProps,
+): DashboardCapabilitiesViewProps {
 	return props;
 }
 
