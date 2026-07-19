@@ -494,6 +494,19 @@ export type QuickPublishActionHandlers = {
 	focusAgentManagement: () => void;
 };
 
+export type AgentArchiveActionHandlers = {
+	setArchivingAgent: (agentId: string | null) => void;
+	clearError: () => void;
+	archiveAgent: (
+		agentId: string,
+	) => EnterpriseAgentUpdateResponse | Promise<EnterpriseAgentUpdateResponse>;
+	setSelectedRunAgent: (agentId: string) => void;
+	clearRunResult: () => void;
+	clearEditingAgent: () => void;
+	refreshDependentViews: () => void | Promise<void>;
+	handleError: (error: unknown) => void;
+};
+
 export function runAgentEditCancelTargetAction(
 	target: AgentEditCancelTarget,
 	handlers: AgentEditCancelTargetActionHandlers,
@@ -619,6 +632,45 @@ export async function runQuickPublishAction(
 		handlers.focusAgentManagement();
 	} finally {
 		handlers.setPublishingTemplate(null);
+	}
+}
+
+export async function runAgentArchiveAction(
+	target: AgentArchiveTarget,
+	values: {
+		selectedRunAgentId: string;
+		editingAgentId: string | null;
+	},
+	handlers: AgentArchiveActionHandlers,
+) {
+	if (target.type === 'skip') {
+		return;
+	}
+
+	handlers.setArchivingAgent(target.agentId);
+	handlers.clearError();
+	try {
+		const response = await handlers.archiveAgent(target.agentId);
+		const syncTarget = agentArchiveSyncTarget({
+			agents: response.agents,
+			archivedAgentId: target.agentId,
+			selectedRunAgentId: values.selectedRunAgentId,
+			editingAgentId: values.editingAgentId,
+		});
+		if (syncTarget.selectedRunAgentId !== null) {
+			handlers.setSelectedRunAgent(syncTarget.selectedRunAgentId);
+		}
+		if (syncTarget.shouldClearRunResult) {
+			handlers.clearRunResult();
+		}
+		if (syncTarget.shouldClearEditingAgent) {
+			handlers.clearEditingAgent();
+		}
+		await handlers.refreshDependentViews();
+	} catch (error) {
+		handlers.handleError(error);
+	} finally {
+		handlers.setArchivingAgent(null);
 	}
 }
 

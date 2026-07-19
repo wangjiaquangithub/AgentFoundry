@@ -246,7 +246,6 @@ import {
 	type AgentQuickConfigurationPatch,
 } from './platform-agent-quick-config';
 import {
-	agentArchiveSyncTarget,
 	agentArchiveTarget,
 	agentEditCancelTarget,
 	agentEditDraft,
@@ -255,6 +254,7 @@ import {
 	preparedTenantAgentTarget,
 	publishFormWithPatch,
 	quickPublishTarget,
+	runAgentArchiveAction,
 	runAgentEditDraftAction,
 	runAgentEditCancelTargetAction,
 	runAgentPublishAction,
@@ -2294,41 +2294,37 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	async function handleArchiveAgent(agent: EnterprisePublishedAgent) {
 		const target = agentArchiveTarget(agent);
-		if (target.type === 'skip') {
-			return;
-		}
-
-		setArchivingAgentId(target.agentId);
-		setPlatformAgentsError(null);
-		try {
-			const response = await platformApi.archiveAgent(target.agentId);
-			const syncTarget = agentArchiveSyncTarget({
-				agents: response.agents,
-				archivedAgentId: target.agentId,
+		await runAgentArchiveAction(
+			target,
+			{
 				selectedRunAgentId,
 				editingAgentId,
-			});
-			if (syncTarget.selectedRunAgentId !== null) {
-				setSelectedRunAgentId(syncTarget.selectedRunAgentId);
-			}
-			if (syncTarget.shouldClearRunResult) {
-				setAgentRunResult(null);
-				setAgentRunError(null);
-			}
-			if (syncTarget.shouldClearEditingAgent) {
-				setEditingAgentId(null);
-			}
-			await refetchPlatformAgents();
-			await refetchPlatform();
-			await refetchToolCatalog();
-			await refetchOpsTasks();
-		} catch (error) {
-			setPlatformAgentsError(
-				error instanceof Error ? error.message : agentManagementRequestText.archiveError,
-			);
-		} finally {
-			setArchivingAgentId(null);
-		}
+			},
+			{
+				setArchivingAgent: setArchivingAgentId,
+				clearError: () => setPlatformAgentsError(null),
+				archiveAgent: platformApi.archiveAgent,
+				setSelectedRunAgent: setSelectedRunAgentId,
+				clearRunResult: () => {
+					setAgentRunResult(null);
+					setAgentRunError(null);
+				},
+				clearEditingAgent: () => setEditingAgentId(null),
+				refreshDependentViews: async () => {
+					await refetchPlatformAgents();
+					await refetchPlatform();
+					await refetchToolCatalog();
+					await refetchOpsTasks();
+				},
+				handleError: (error) => {
+					setPlatformAgentsError(
+						error instanceof Error
+							? error.message
+							: agentManagementRequestText.archiveError,
+					);
+				},
+			},
+		);
 	}
 
 	function syncAgentQuickConfiguration(
