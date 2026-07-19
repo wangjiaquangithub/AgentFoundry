@@ -9,13 +9,13 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-import { AgentRunnerPanel } from './AgentRunnerPanel';
 import { ApprovalsPanel } from './ApprovalsPanel';
 import { AuditEventsPanel } from './AuditEventsPanel';
 import { CapabilitiesPanel } from './CapabilitiesPanel';
 import { ConfigManagementPanel } from './ConfigManagementPanel';
 import { DashboardAgentManagementSection } from './DashboardAgentManagementSection';
 import { DashboardAgentQuickStartSection } from './DashboardAgentQuickStartSection';
+import { DashboardAgentRunnerSection } from './DashboardAgentRunnerSection';
 import { DashboardAgentRunNowSection } from './DashboardAgentRunNowSection';
 import { DashboardApplicationSection } from './DashboardApplicationSection';
 import { DashboardConnectorsSection } from './DashboardConnectorsSection';
@@ -893,51 +893,44 @@ export function DashboardViewPage({
 					subagentTemplates={subagentTemplates}
 				/>
 
-				<AgentRunnerPanel
-					sectionRef={agentRunnerRef}
-					agents={activePlatformAgents}
-					selectedAgent={selectedRunAgent}
-					selectedAgentId={selectedRunAgentId}
-					selectedAgentModelLabel={selectedRunAgentModelLabel}
-					selectedAgentKnowledgeLabels={selectedRunAgentKnowledgeLabels}
-					selectedAgentToolCount={selectedRunAgentToolCount}
-					selectedAgentAccessAllowed={selectedRunAgentAccessAllowed}
-					selectedAgentAccessLabel={selectedRunAgentAccessLabel}
-					lastPublishedAgent={lastPublishedAgent}
-					question={agentQuestion}
-					approvalId={agentApprovalId}
-					sampleQuestions={agentSampleQuestions}
-					conversation={selectedAgentConversation}
-					activeResult={agentRunResult}
-					conversationLoading={agentRunsLoading}
-					conversationError={agentRunsError}
-					running={runningAgent}
-					runError={agentRunError}
-					resultToolCalls={agentToolCalls}
-					resultToolCallBadgeText={agentToolCallBadgeText}
-					resultRoutingLabel={agentRoutingLabel}
-					resultRoutingText={agentRoutingText}
-					resultConnectorSourceText={agentRunConnectorSourceText}
-					resultModelLabel={agentRunModelLabel}
-					resultKnowledgeLabels={agentRunKnowledgeLabels}
-					knowledgeBaseById={knowledgeBaseById}
-					onSelectAgent={handleSelectRunAgent}
-					onQuestionChange={(value) => {
-						setAgentQuestion(value);
-						setAgentRunError(null);
-					}}
-					onApprovalIdChange={(value) => {
-						setAgentApprovalId(value);
-						setAgentRunError(null);
-					}}
-					onRun={handleRunEnterpriseAgent}
-					onClearConversation={handleClearAgentConversation}
-					onSelectConversationTurn={(turn) => {
-						void handleSelectAgentRun(turn as never);
-					}}
-					onInspectAudit={handleInspectAgentRunAudit}
-					onOpenGovernance={scrollToGovernance}
+				<DashboardAgentRunnerSection
 					t={t}
+					agentRunnerRef={agentRunnerRef}
+					activePlatformAgents={activePlatformAgents}
+					selectedRunAgent={selectedRunAgent}
+					selectedRunAgentId={selectedRunAgentId}
+					selectedRunAgentModelLabel={selectedRunAgentModelLabel}
+					selectedRunAgentKnowledgeLabels={selectedRunAgentKnowledgeLabels}
+					selectedRunAgentToolCount={selectedRunAgentToolCount}
+					selectedRunAgentAccessAllowed={selectedRunAgentAccessAllowed}
+					selectedRunAgentAccessLabel={selectedRunAgentAccessLabel}
+					lastPublishedAgent={lastPublishedAgent}
+					agentQuestion={agentQuestion}
+					agentApprovalId={agentApprovalId}
+					agentSampleQuestions={agentSampleQuestions}
+					selectedAgentConversation={selectedAgentConversation}
+					agentRunResult={agentRunResult}
+					agentRunsLoading={agentRunsLoading}
+					agentRunsError={agentRunsError}
+					runningAgent={runningAgent}
+					agentRunError={agentRunError}
+					agentToolCalls={agentToolCalls}
+					agentToolCallBadgeText={agentToolCallBadgeText}
+					agentRoutingLabel={agentRoutingLabel}
+					agentRoutingText={agentRoutingText}
+					agentRunConnectorSourceText={agentRunConnectorSourceText}
+					agentRunModelLabel={agentRunModelLabel}
+					agentRunKnowledgeLabels={agentRunKnowledgeLabels}
+					knowledgeBaseById={knowledgeBaseById}
+					handleSelectRunAgent={handleSelectRunAgent}
+					setAgentQuestion={setAgentQuestion}
+					setAgentRunError={setAgentRunError}
+					setAgentApprovalId={setAgentApprovalId}
+					handleRunEnterpriseAgent={handleRunEnterpriseAgent}
+					handleClearAgentConversation={handleClearAgentConversation}
+					handleSelectAgentRun={handleSelectAgentRun}
+					handleInspectAgentRunAudit={handleInspectAgentRunAudit}
+					scrollToGovernance={scrollToGovernance}
 				/>
 
 				<DashboardWorkflowRunnerSection
