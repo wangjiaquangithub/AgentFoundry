@@ -63,6 +63,7 @@ import {
 	enterpriseAgentRunPayload,
 	enterpriseToolRunPayload,
 	enterpriseWorkflowRunPayload,
+	memoryOperationAgentRunTarget,
 	mergeAgentConversationTurn,
 	replaceAgentConversationTurns,
 	runApprovalIdFromInput,
@@ -290,7 +291,6 @@ import {
 	firstAgentGuidePrimaryStepForSteps,
 	firstAgentGuideStepsForStatus,
 	governanceOperationsStateForStatus,
-	identityForMemoryOperation,
 	identityForTenant,
 	launchpadPrimaryStepForSteps,
 	launchpadStateForCounts,
@@ -1986,18 +1986,19 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleOpenMemoryOperation(item: MemoryOperationsItem) {
-		const identity = identityForMemoryOperation({
+		const target = memoryOperationAgentRunTarget({
 			enterpriseIdentities,
 			item,
+			fallbackQuestion: primaryAgentSampleQuestion,
 		});
 
-		if (identity) {
-			setSelectedIdentityUserId(identity.user_id);
+		if (target.identity) {
+			setSelectedIdentityUserId(target.identity.user_id);
 		}
 
-		setSelectedRunAgentId(item.agentId);
-		setAgentRunResult(item.latestResponse);
-		setAgentQuestion(item.latestQuestion || primaryAgentSampleQuestion);
+		setSelectedRunAgentId(target.agentId);
+		setAgentRunResult(target.result);
+		setAgentQuestion(target.question);
 		setAgentRunError(null);
 		window.setTimeout(scrollToAgentRunner, 0);
 	}

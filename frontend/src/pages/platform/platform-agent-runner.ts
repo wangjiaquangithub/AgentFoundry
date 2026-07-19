@@ -8,8 +8,10 @@ import type {
 	EnterpriseWorkflowRunRequest,
 	EnterpriseWorkflowTemplate,
 } from '@/api';
+import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
 import {
 	agentAccessAllowed,
+	identityForMemoryOperation,
 	normalizeWorkflowInputs,
 	type EnterpriseAgentConversationTurn,
 } from './platform-utils';
@@ -51,6 +53,27 @@ export function agentRunSelectionResult(values: {
 	agentId: string;
 }): EnterpriseAgentRunResponse | null {
 	return latestAgentRunResponse(values.agentConversations, values.agentId);
+}
+
+export function memoryOperationAgentRunTarget(values: {
+	enterpriseIdentities: EnterpriseIdentity[];
+	item: MemoryOperationsItem;
+	fallbackQuestion: string;
+}): {
+	identity: EnterpriseIdentity | null;
+	agentId: string;
+	result: EnterpriseAgentRunResponse;
+	question: string;
+} {
+	return {
+		identity: identityForMemoryOperation({
+			enterpriseIdentities: values.enterpriseIdentities,
+			item: values.item,
+		}),
+		agentId: values.item.agentId,
+		result: values.item.latestResponse,
+		question: values.item.latestQuestion || values.fallbackQuestion,
+	};
 }
 
 export function agentRunResultForSelectedAgent(values: {
