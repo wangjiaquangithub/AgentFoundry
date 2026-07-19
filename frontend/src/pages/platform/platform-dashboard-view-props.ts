@@ -200,6 +200,15 @@ type DashboardOpsTasksViewProps = Pick<
 	| 'summarizeAuditObject'
 >;
 
+type DashboardScenariosViewProps = Pick<
+	DashboardViewPageProps,
+	| 'handleRunScenario'
+	| 'refetchScenarios'
+	| 'scenarios'
+	| 'scenariosError'
+	| 'scenariosLoading'
+>;
+
 export function createPlatformDashboardViewProps(
 	props: DashboardViewPageProps,
 ): DashboardViewPageProps {
@@ -245,6 +254,12 @@ export function createPlatformDashboardMemoryOperationsViewProps(
 export function createPlatformDashboardOpsTasksViewProps(
 	props: DashboardOpsTasksViewProps,
 ): DashboardOpsTasksViewProps {
+	return props;
+}
+
+export function createPlatformDashboardScenariosViewProps(
+	props: DashboardScenariosViewProps,
+): DashboardScenariosViewProps {
 	return props;
 }
 
