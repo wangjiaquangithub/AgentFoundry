@@ -148,6 +148,7 @@ import {
 	capabilityNavigationActions,
 	firstAgentGuideNavigationActions,
 	launchpadNavigationActions,
+	nextStepPrimaryAction,
 	orchestrationWorkbenchNavigationActions,
 	platformConsoleNavigationActions,
 	rolloutPathNavigationActions,
@@ -2209,22 +2210,28 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleNextStepPrimaryAction() {
-		if (nextStepMode === 'model') {
-			navigate('/credential');
+		const action = nextStepPrimaryAction(nextStepMode);
+
+		if (action.type === 'navigate') {
+			navigate(action.path);
 			return;
 		}
-		if (nextStepMode === 'publish') {
+
+		if (action.type === 'quick-publish') {
 			void handleQuickPublishAgent();
 			return;
 		}
-		if (nextStepMode === 'configure') {
+
+		if (action.type === 'scroll-management') {
 			scrollToAgentManagement();
 			return;
 		}
-		if (nextStepMode === 'governance') {
+
+		if (action.type === 'scroll-governance') {
 			scrollToGovernance();
 			return;
 		}
+
 		handlePrimeAgentRunner();
 	}
 

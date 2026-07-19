@@ -1,4 +1,4 @@
-import type { AgentWizardStep } from './platform-utils';
+import type { AgentRunnerNextStepMode, AgentWizardStep } from './platform-utils';
 
 type NavigationHandler = () => void;
 type NavigateHandler = (path: string) => void;
@@ -24,6 +24,13 @@ export type AppCenterDetailPrimaryAction =
 export type AppCenterDetailSecondaryAction =
 	| { type: 'edit-agent' }
 	| { type: 'scroll-governance' };
+
+export type NextStepPrimaryAction =
+	| { type: 'navigate'; path: '/credential' }
+	| { type: 'quick-publish' }
+	| { type: 'scroll-management' }
+	| { type: 'scroll-governance' }
+	| { type: 'prime-runner' };
 
 export function agentSetupStepAction(values: {
 	nextStep: AgentWizardStep | null;
@@ -99,6 +106,28 @@ export function appCenterDetailSecondaryAction(values: {
 	hasAgent: boolean;
 }): AppCenterDetailSecondaryAction {
 	return values.hasAgent ? { type: 'edit-agent' } : { type: 'scroll-governance' };
+}
+
+export function nextStepPrimaryAction(
+	nextStepMode: AgentRunnerNextStepMode,
+): NextStepPrimaryAction {
+	if (nextStepMode === 'model') {
+		return { type: 'navigate', path: '/credential' };
+	}
+
+	if (nextStepMode === 'publish') {
+		return { type: 'quick-publish' };
+	}
+
+	if (nextStepMode === 'configure') {
+		return { type: 'scroll-management' };
+	}
+
+	if (nextStepMode === 'governance') {
+		return { type: 'scroll-governance' };
+	}
+
+	return { type: 'prime-runner' };
 }
 
 export type PlatformNavigationActionHandlers = {
