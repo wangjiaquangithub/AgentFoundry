@@ -24,6 +24,7 @@ import { DashboardMembersSection } from './DashboardMembersSection';
 import { DashboardOperationalHealthSection } from './DashboardOperationalHealthSection';
 import { DashboardOperationsConsoleSection } from './DashboardOperationsConsoleSection';
 import { DashboardOperationsSnapshotSection } from './DashboardOperationsSnapshotSection';
+import { DashboardRuntimeStatusSection } from './DashboardRuntimeStatusSection';
 import { DashboardTenantAccessSection } from './DashboardTenantAccessSection';
 import { DashboardTenantGovernancePanelSection } from './DashboardTenantGovernancePanelSection';
 import { DashboardWorkbenchSection } from './DashboardWorkbenchSection';
@@ -31,7 +32,6 @@ import { DashboardWorkflowAutomationSection } from './DashboardWorkflowAutomatio
 import { DashboardWorkflowRunnerSection } from './DashboardWorkflowRunnerSection';
 import { PlatformDashboardOverview } from './PlatformDashboardOverview';
 import { PolicySubagentsPanel } from './PolicySubagentsPanel';
-import { RuntimeStatusPanel } from './RuntimeStatusPanel';
 import { ToolCatalogPanel } from './ToolCatalogPanel';
 import { ToolRunnerPanel } from './ToolRunnerPanel';
 import { cn } from '@/lib/utils';
@@ -866,19 +866,14 @@ export function DashboardViewPage({
 					cn={cn}
 				/>
 
-				<RuntimeStatusPanel
+				<DashboardRuntimeStatusSection
+					t={t}
 					governanceRef={governanceRef}
 					platformLoading={platformLoading}
-					hasPlatformStatus={Boolean(platformStatus)}
+					platformStatus={platformStatus}
 					platformError={platformError}
 					runtimeItems={runtimeItems}
-					onRefreshPlatform={refetchPlatform}
-					labels={{
-						title: t('platform.runtime.title'),
-						description: t('platform.runtime.description'),
-						refreshStatus: t('platform.actions.refreshStatus'),
-						error: t('platform.runtime.error'),
-					}}
+					refetchPlatform={refetchPlatform}
 				/>
 
 				<AgentQuickStartPanel
