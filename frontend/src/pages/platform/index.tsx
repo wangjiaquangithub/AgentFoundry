@@ -35,7 +35,6 @@ import { useKnowledgeBases } from '@/hooks/useKnowledgeBases';
 import { usePlatformStatus } from '@/hooks/usePlatformStatus';
 import { useSchedules } from '@/hooks/useSchedules';
 import { useTranslation } from '@/i18n/useI18n';
-import { appCenterDetailResourcesForSelection } from './app-center-detail-resources';
 import { AgentsViewPage } from './components/AgentsViewPage';
 import { ApprovalsViewPage } from './components/ApprovalsViewPage';
 import type { AppCenterSelection } from './components/AppCenterPanel';
@@ -276,19 +275,14 @@ import { platformRuntimeDisplayStateForStatus } from './platform-runtime-display
 import {
 	agentAccessAllowed,
 	agentRoutingDisplayStateForResult,
-	appCenterDetailHealthState,
 	agentIsReady,
-	agentReadinessIssues,
-	agentReadinessState,
 	agentReleasePipelineForStatus,
 	agentSetupStepsForStatus,
-	appCenterDetailResourceValuesForSelection,
 	auditStatsForSummary,
 	capabilityItemsForStatus,
 	mapAgentRunToConversationTurn,
 	memoryOperationsStateForConversations,
 	nextAgentSetupStepForSteps,
-	operationsHeadlineText,
 	platformOverviewStatsForSummary,
 	platformConsoleItemsForDisplay,
 	runtimeStatusItemsForStatus,
@@ -813,6 +807,26 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			credentialById,
 			labels: appCenterAgentDisplayLabels(t),
 		},
+		detail: {
+			selection: {
+				credentialById,
+				knowledgeBaseById,
+				modelCount: credentials.length,
+				knowledgeBaseCount: knowledgeBases.length,
+				labels: appCenterDetailResourceValueLabels(t),
+			},
+			resourceLabels: appCenterDetailResourcesLabels(t),
+			health: {
+				hasCredentials: credentials.length > 0,
+				hasKnowledgeBases: knowledgeBases.length > 0,
+				labels: appCenterDetailHealthLabels(t),
+			},
+			headline: {
+				activeAgentCount: activePlatformAgents.length,
+				pendingApprovalCount: pendingApprovals.length,
+			},
+			headlineLabels: operationsHeadlineLabels(t),
+		},
 	});
 	const appCenterOperationsState = appCenterDisplay.operationsState;
 	const blockedOrPartialPlatformAgents = appCenterOperationsState.blockedOrPartialAgents;
@@ -824,43 +838,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const topOperationsAgents = appCenterOperationsState.topOperationsAgents;
 	const { operationsAgentIssueText, agentResourceText } =
 		appCenterDisplay.agentDisplayState;
-	const inspectedAppCenterAgentReadiness = agentReadinessState(inspectedAppCenterAgent);
-	const inspectedAppCenterAgentIssues = agentReadinessIssues(inspectedAppCenterAgent);
-	const inspectedAppCenterResourceValues = appCenterDetailResourceValuesForSelection({
-		agent: inspectedAppCenterAgent,
-		template: inspectedAppCenterTemplate,
-		credentialById,
-		knowledgeBaseById,
-		modelCount: credentials.length,
-		knowledgeBaseCount: knowledgeBases.length,
-		labels: appCenterDetailResourceValueLabels(t),
-	});
-	const appCenterDetailResources = appCenterDetailResourcesForSelection(
-		{
-			agent: inspectedAppCenterResourceValues.agent,
-			template: inspectedAppCenterResourceValues.template,
-		},
-		appCenterDetailResourcesLabels(t),
-	);
-	const appCenterDetailHealth = appCenterDetailHealthState({
-		hasAgent: Boolean(inspectedAppCenterAgent),
-		agentReadiness: inspectedAppCenterAgentReadiness,
-		agentIssues: inspectedAppCenterAgentIssues,
-		hasTemplate: Boolean(inspectedAppCenterTemplate),
-		hasCredentials: credentials.length > 0,
-		hasKnowledgeBases: knowledgeBases.length > 0,
-		labels: appCenterDetailHealthLabels(t),
-	});
-	const appCenterDetailIssues = appCenterDetailHealth.issues;
-	const appCenterDetailStatus = appCenterDetailHealth.status;
-	const operationsHeadline = operationsHeadlineText(
-		{
-			activeAgentCount: activePlatformAgents.length,
-			blockedOrPartialAgentCount: blockedOrPartialPlatformAgents.length,
-			pendingApprovalCount: pendingApprovals.length,
-		},
-		operationsHeadlineLabels(t),
-	);
+	const appCenterDetailState = appCenterDisplay.detailState;
+	const appCenterDetailResources = appCenterDetailState.detailResources;
+	const appCenterDetailIssues = appCenterDetailState.detailIssues;
+	const appCenterDetailStatus = appCenterDetailState.detailStatus;
+	const operationsHeadline = appCenterDetailState.operationsHeadline;
 	const agentReleasePipeline = agentReleasePipelineForStatus(
 		{
 			selectedTemplate,
