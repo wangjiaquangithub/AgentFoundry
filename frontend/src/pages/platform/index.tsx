@@ -97,6 +97,7 @@ import {
 } from './platform-approval-helpers';
 import {
 	connectorBaseUrlFromForm,
+	connectorDraftValidationError,
 	connectorFormPatchFromSavedConfig,
 	connectorFormWithoutToken,
 	connectorFormWithPlatformDefaults,
@@ -1234,13 +1235,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	async function handleSaveConnectorConfig() {
 		const baseUrl = connectorBaseUrlFromForm(connectorTestForm);
-		if (!baseUrl) {
-			setConnectorSaveError(connectorRequestText.saveBaseUrlRequired);
-			setConnectorSaveSuccess(null);
-			return;
-		}
-		if (connectorDraftIssues.length > 0) {
-			setConnectorSaveError(connectorDraftIssues[0]);
+		const validationError = connectorDraftValidationError({
+			baseUrl,
+			draftIssues: connectorDraftIssues,
+			baseUrlRequiredMessage: connectorRequestText.saveBaseUrlRequired,
+		});
+		if (validationError) {
+			setConnectorSaveError(validationError);
 			setConnectorSaveSuccess(null);
 			return;
 		}
@@ -1273,12 +1274,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 
 	async function handleTestConnector() {
 		const baseUrl = connectorBaseUrlFromForm(connectorTestForm);
-		if (!baseUrl) {
-			setConnectorTestError(connectorRequestText.testBaseUrlRequired);
-			return null;
-		}
-		if (connectorDraftIssues.length > 0) {
-			setConnectorTestError(connectorDraftIssues[0]);
+		const validationError = connectorDraftValidationError({
+			baseUrl,
+			draftIssues: connectorDraftIssues,
+			baseUrlRequiredMessage: connectorRequestText.testBaseUrlRequired,
+		});
+		if (validationError) {
+			setConnectorTestError(validationError);
 			return null;
 		}
 

@@ -23,6 +23,18 @@ export function connectorBaseUrlFromForm(
 	return form.base_url.trim();
 }
 
+export function connectorDraftValidationError(values: {
+	baseUrl: string;
+	draftIssues: string[];
+	baseUrlRequiredMessage: string;
+}): string | null {
+	if (!values.baseUrl) {
+		return values.baseUrlRequiredMessage;
+	}
+
+	return values.draftIssues[0] || null;
+}
+
 export function connectorFormPatchFromSavedConfig(
 	current: ConnectorTestFormState,
 	config: EnterpriseConnectorSavedConfig,
