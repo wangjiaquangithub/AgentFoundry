@@ -57,6 +57,7 @@ import {
 	agentRunResultAfterHistoryRefresh,
 	agentRunRequestTarget,
 	agentRunResponseRequiresApproval,
+	agentRunHistorySelectionTarget,
 	clearAgentConversationTarget,
 	identityAgentRunnerTarget,
 	memoryOperationAgentRunTarget,
@@ -64,6 +65,8 @@ import {
 	publishedAgentRunnerTarget,
 	replaceAgentConversationTurns,
 	runAgentRunnerPrimeTargetAction,
+	runAgentRunHistoryDetailAction,
+	runAgentRunHistorySelectionAction,
 	runAgentWorkflowPrimeTargetAction,
 	runClearAgentConversationSuccessAction,
 	runIdentityAgentRunnerTargetAction,
@@ -1916,19 +1919,23 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleSelectAgentRun(turn: EnterpriseAgentConversationTurn) {
-		setAgentQuestion(turn.question);
-		setAgentRunError(null);
-		setAgentRunsError(null);
-		setAgentRunResult(turn.response);
-		setAgentRunsLoading(true);
+		const target = agentRunHistorySelectionTarget(turn);
+
+		runAgentRunHistorySelectionAction(target, {
+			setQuestion: setAgentQuestion,
+			clearRunError: () => setAgentRunError(null),
+			clearRunsError: () => setAgentRunsError(null),
+			setResult: setAgentRunResult,
+			setRunsLoading: setAgentRunsLoading,
+		});
 
 		try {
-			const run = await platformApi.agentRun(turn.id);
+			const run = await platformApi.agentRun(target.runId);
 			const detailedTurn = mapAgentRunToConversationTurn(run);
-			setAgentConversations((current) =>
-				mergeAgentConversationTurn(current, detailedTurn),
-			);
-			setAgentRunResult(run.response);
+			runAgentRunHistoryDetailAction(detailedTurn, {
+				setAgentConversations,
+				setResult: setAgentRunResult,
+			});
 		} catch (error) {
 			setAgentRunsError(
 				error instanceof Error ? error.message : agentRunnerRequestText.historyLoadError,

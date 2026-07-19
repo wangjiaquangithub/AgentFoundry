@@ -32,6 +32,11 @@ export type ClearAgentConversationTarget =
 			userId: string;
 			params: ClearAgentRunsParams;
 	  };
+export type AgentRunHistorySelectionTarget = {
+	runId: string;
+	question: string;
+	result: EnterpriseAgentRunResponse;
+};
 type NavigationHandler = () => void;
 
 export function agentConversationTurnFromRunResponse(values: {
@@ -264,6 +269,35 @@ export function runMemoryOperationAgentRunTargetAction(
 	handlers.scrollToAgentRunner();
 }
 
+export function agentRunHistorySelectionTarget(
+	turn: EnterpriseAgentConversationTurn,
+): AgentRunHistorySelectionTarget {
+	return {
+		runId: turn.id,
+		question: turn.question,
+		result: turn.response,
+	};
+}
+
+export type AgentRunHistorySelectionActionHandlers = {
+	setQuestion: (question: string) => void;
+	clearRunError: NavigationHandler;
+	clearRunsError: NavigationHandler;
+	setResult: (result: EnterpriseAgentRunResponse) => void;
+	setRunsLoading: (loading: boolean) => void;
+};
+
+export function runAgentRunHistorySelectionAction(
+	target: AgentRunHistorySelectionTarget,
+	handlers: AgentRunHistorySelectionActionHandlers,
+) {
+	handlers.setQuestion(target.question);
+	handlers.clearRunError();
+	handlers.clearRunsError();
+	handlers.setResult(target.result);
+	handlers.setRunsLoading(true);
+}
+
 export function agentRunResultForSelectedAgent(values: {
 	current: EnterpriseAgentRunResponse | null;
 	agentConversations: AgentConversationMap;
@@ -355,6 +389,23 @@ export function mergeAgentConversationTurn(
 		...agentConversations,
 		[turn.agentId]: typeof limit === 'number' ? nextTurns.slice(0, limit) : nextTurns,
 	};
+}
+
+export type AgentRunHistoryDetailActionHandlers = {
+	setAgentConversations: (
+		updater: (current: AgentConversationMap) => AgentConversationMap,
+	) => void;
+	setResult: (result: EnterpriseAgentRunResponse) => void;
+};
+
+export function runAgentRunHistoryDetailAction(
+	turn: EnterpriseAgentConversationTurn,
+	handlers: AgentRunHistoryDetailActionHandlers,
+) {
+	handlers.setAgentConversations((current) =>
+		mergeAgentConversationTurn(current, turn),
+	);
+	handlers.setResult(turn.response);
 }
 
 export function enterpriseAgentRunPayload(values: {
