@@ -213,6 +213,7 @@ import {
 } from './platform-labels';
 import { platformLaunchpadDisplayStateForStatus } from './platform-launchpad-display';
 import { platformOnboardingDisplayStateForStatus } from './platform-onboarding-display';
+import { platformOrchestrationDisplayStateForStatus } from './platform-orchestration-display';
 import { platformWorkbenchDisplayStateForStatus } from './platform-workbench-display';
 import { runPlatformOperationAction } from './platform-operation-actions';
 import {
@@ -286,8 +287,6 @@ import {
 	monitoringActivitySummaryForStatus,
 	monitoringStatsForSummary,
 	operationsHeadlineText,
-	orchestrationPrimaryStepForSteps,
-	orchestrationWorkbenchStepsForStatus,
 	publishAccessStateForStatus,
 	publishDraftStateForStatus,
 	platformDashboardSourceStateForStatus,
@@ -297,7 +296,6 @@ import {
 	platformConsoleItemsForDisplay,
 	platformResourceLookupStateForStatus,
 	platformRuntimeConfigStateForStatus,
-	readyOrchestrationWorkbenchStepCountForSteps,
 	runtimeStatusItemsForStatus,
 	selectedIdentityGovernanceDisplayStateForStatus,
 	selectedIdentityStateForStatus,
@@ -2685,7 +2683,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		firstAgentGuideSteps,
 		rolloutPathSteps,
 	} = onboardingDisplay;
-	const orchestrationWorkbenchSteps = orchestrationWorkbenchStepsForStatus(
+	const orchestrationDisplay = platformOrchestrationDisplayStateForStatus(
 		{
 			selectedTemplateName: selectedTemplate?.name,
 			credentialCount: credentials.length,
@@ -2718,11 +2716,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			labels: orchestrationWorkbenchStepLabels(t),
 		},
 	);
-	const orchestrationReadyCount = readyOrchestrationWorkbenchStepCountForSteps(
-		orchestrationWorkbenchSteps,
-	);
-	const orchestrationPrimaryStep =
-		orchestrationPrimaryStepForSteps(orchestrationWorkbenchSteps);
+	const {
+		primaryStep: orchestrationPrimaryStep,
+		readyCount: orchestrationReadyCount,
+		steps: orchestrationWorkbenchSteps,
+	} = orchestrationDisplay;
 	const monitoringActivitySummary = monitoringActivitySummaryForStatus({
 		agentConversations,
 		auditSummary,
