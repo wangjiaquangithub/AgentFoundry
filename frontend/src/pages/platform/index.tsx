@@ -120,7 +120,7 @@ import {
 import {
 	memberCreatePayloadFromForm,
 	memberFormFromMember,
-	memberShouldActivate,
+	memberStatusToggleAction,
 	memberUserIdFromForm,
 } from './platform-member-helpers';
 import {
@@ -1205,13 +1205,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	async function handleToggleMemberStatus(member: EnterprisePlatformMember) {
-		setUpdatingMemberId(member.user_id);
+		const toggleAction = memberStatusToggleAction(member);
+		setUpdatingMemberId(toggleAction.userId);
 		setPlatformMembersError(null);
 		try {
-			if (memberShouldActivate(member)) {
-				await platformApi.updateMember(member.user_id, { status: 'active' });
+			if (toggleAction.kind === 'activate') {
+				await platformApi.updateMember(toggleAction.userId, toggleAction.patch);
 			} else {
-				await platformApi.deactivateMember(member.user_id);
+				await platformApi.deactivateMember(toggleAction.userId);
 			}
 			await refreshMemberDependentViews();
 		} catch (error) {

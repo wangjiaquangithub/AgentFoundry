@@ -4,6 +4,17 @@ import type {
 } from '@/api';
 import type { MemberFormState } from './platform-defaults';
 
+export type MemberStatusToggleAction =
+	| {
+			kind: 'activate';
+			userId: string;
+			patch: Pick<EnterprisePlatformMemberUpsertRequest, 'status'>;
+	  }
+	| {
+			kind: 'deactivate';
+			userId: string;
+	  };
+
 export function memberUserIdFromForm(form: MemberFormState): string {
 	return form.user_id.trim();
 }
@@ -33,6 +44,19 @@ export function memberFormFromMember(
 	};
 }
 
-export function memberShouldActivate(member: EnterprisePlatformMember) {
-	return member.status === 'inactive';
+export function memberStatusToggleAction(
+	member: EnterprisePlatformMember,
+): MemberStatusToggleAction {
+	if (member.status === 'inactive') {
+		return {
+			kind: 'activate',
+			userId: member.user_id,
+			patch: { status: 'active' },
+		};
+	}
+
+	return {
+		kind: 'deactivate',
+		userId: member.user_id,
+	};
 }
