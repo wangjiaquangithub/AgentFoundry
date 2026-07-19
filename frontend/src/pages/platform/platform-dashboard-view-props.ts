@@ -233,6 +233,13 @@ type DashboardWorkbenchReadinessViewProps = Pick<
 	| 'workbenchRiskItems'
 >;
 
+type DashboardWorkbenchStatusViewProps = Pick<
+	DashboardViewPageProps,
+	| 'dashboardTodoItems'
+	| 'workbenchActions'
+	| 'workbenchIndicators'
+>;
+
 type DashboardOpsTasksViewProps = Pick<
 	DashboardViewPageProps,
 	| 'handleResolveOpsTask'
@@ -331,6 +338,12 @@ export function createPlatformDashboardTriggerOpsViewProps(
 export function createPlatformDashboardWorkbenchReadinessViewProps(
 	props: DashboardWorkbenchReadinessViewProps,
 ): DashboardWorkbenchReadinessViewProps {
+	return props;
+}
+
+export function createPlatformDashboardWorkbenchStatusViewProps(
+	props: DashboardWorkbenchStatusViewProps,
+): DashboardWorkbenchStatusViewProps {
 	return props;
 }
 
