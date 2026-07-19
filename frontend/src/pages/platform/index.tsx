@@ -265,6 +265,7 @@ import {
 	type PublishFormState,
 } from './platform-defaults';
 import { platformAgentInventoryDisplayStateForStatus } from './platform-agent-inventory-display';
+import { platformAgentRunnerDisplayStateForStatus } from './platform-agent-runner-display';
 import { platformAppCenterDisplayStateForStatus } from './platform-app-center-display';
 import { platformConnectorDisplayStateForStatus } from './platform-connector-display';
 import { platformConnectionDisplayStateForStatus } from './platform-connection-display';
@@ -274,7 +275,6 @@ import { platformRuntimeDisplayStateForStatus } from './platform-runtime-display
 import {
 	agentAccessAllowed,
 	agentRoutingDisplayStateForResult,
-	agentRunnerStateForStatus,
 	appCenterDetailHealthState,
 	agentIsReady,
 	agentReadinessIssues,
@@ -579,7 +579,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		agentToolCalls,
 		agentToolCallBadgeText,
 		agentRunEvidence,
-	} = agentRunnerStateForStatus(
+	} = platformAgentRunnerDisplayStateForStatus(
 		{
 			selectedRunAgent,
 			agentRunResult,
@@ -592,7 +592,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			publishingTemplate: Boolean(publishingTemplateId),
 		},
 		agentRunnerLabels(t),
-	);
+	).runnerState;
 	const platformRuntimeDisplay = platformRuntimeDisplayStateForStatus({
 		platformStatus,
 		governance,
