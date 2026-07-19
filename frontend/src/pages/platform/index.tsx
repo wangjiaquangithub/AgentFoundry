@@ -273,6 +273,7 @@ import { platformPublishDisplayStateForStatus } from './platform-publish-display
 import { platformResourceDisplayStateForStatus } from './platform-resource-display';
 import { platformRuntimeDisplayStateForStatus } from './platform-runtime-display';
 import { platformToolRunnerDisplayStateForStatus } from './platform-tool-runner-display';
+import { platformOverviewDisplayStateForStatus } from './platform-overview-display';
 import {
 	agentAccessAllowed,
 	agentRoutingDisplayStateForResult,
@@ -283,9 +284,7 @@ import {
 	capabilityItemsForStatus,
 	mapAgentRunToConversationTurn,
 	nextAgentSetupStepForSteps,
-	platformOverviewStatsForSummary,
 	platformConsoleItemsForDisplay,
-	runtimeStatusItemsForStatus,
 	selectedIdentityStateForStatus,
 	summarizeAuditObject,
 	workflowSelectionStateForTemplates,
@@ -641,8 +640,8 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const selectedIdentityWorkspace = selectedIdentityState.selectedIdentityWorkspace;
 	const currentIdentityLabel = selectedIdentityState.currentIdentityLabel;
 
-	const stats = platformOverviewStatsForSummary(
-		{
+	const overviewDisplay = platformOverviewDisplayStateForStatus({
+		stats: {
 			platformAgentCount: platformAgents?.agents.length,
 			agentCount: agents.length,
 			credentialCount: credentials.length,
@@ -656,22 +655,23 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				workflows: workflowTemplatesLoading || schedulesLoading,
 			},
 		},
-		{
-			icons: platformOverviewStatIcons,
-			labels: platformOverviewStatLabels(t),
-		},
-	);
-
-	const runtimeItems = runtimeStatusItemsForStatus(
-		{
+		runtime: {
 			platformStatus,
 			currentIdentityLabel,
 		},
-		{
-			icons: runtimeStatusIcons,
-			labels: runtimeStatusLabels(t),
+		options: {
+			stats: {
+				icons: platformOverviewStatIcons,
+				labels: platformOverviewStatLabels(t),
+			},
+			runtime: {
+				icons: runtimeStatusIcons,
+				labels: runtimeStatusLabels(t),
+			},
 		},
-	);
+	});
+	const stats = overviewDisplay.stats;
+	const runtimeItems = overviewDisplay.runtimeItems;
 
 	const subagentTemplates = platformRuntimeConfigState.subagentTemplates;
 	const toolPolicyMode = platformRuntimeConfigState.toolPolicyMode;
