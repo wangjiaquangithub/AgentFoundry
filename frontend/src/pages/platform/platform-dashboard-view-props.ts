@@ -204,6 +204,14 @@ type DashboardMemoryOperationsViewProps = Pick<
 	| 'memoryOperationsSavedCount'
 >;
 
+type DashboardMonitoringSnapshotViewProps = Pick<
+	DashboardViewPageProps,
+	| 'monitoringHealthState'
+	| 'monitoringLoading'
+	| 'monitoringStats'
+	| 'recentAgentTurns'
+>;
+
 type DashboardOpsTasksViewProps = Pick<
 	DashboardViewPageProps,
 	| 'handleResolveOpsTask'
@@ -278,6 +286,12 @@ export function createPlatformDashboardWorkflowsViewProps(
 export function createPlatformDashboardMemoryOperationsViewProps(
 	props: DashboardMemoryOperationsViewProps,
 ): DashboardMemoryOperationsViewProps {
+	return props;
+}
+
+export function createPlatformDashboardMonitoringSnapshotViewProps(
+	props: DashboardMonitoringSnapshotViewProps,
+): DashboardMonitoringSnapshotViewProps {
 	return props;
 }
 
