@@ -63,6 +63,42 @@ export function agentRunSelectionResult(values: {
 	return latestAgentRunResponse(values.agentConversations, values.agentId);
 }
 
+export function publishedAgentRunnerTarget(values: {
+	agentConversations: AgentConversationMap;
+	agentId: string;
+	currentQuestion: string;
+	sampleQuestion: string;
+}): {
+	agentId: string;
+	question: string;
+	result: EnterpriseAgentRunResponse | null;
+} {
+	return {
+		agentId: values.agentId,
+		question: agentQuestionWithFallback(
+			values.currentQuestion,
+			values.sampleQuestion,
+		),
+		result: agentRunSelectionResult({
+			agentConversations: values.agentConversations,
+			agentId: values.agentId,
+		}),
+	};
+}
+
+export function selectedRunAgentTarget(values: {
+	agentConversations: AgentConversationMap;
+	agentId: string;
+}): {
+	agentId: string;
+	result: EnterpriseAgentRunResponse | null;
+} {
+	return {
+		agentId: values.agentId,
+		result: agentRunSelectionResult(values),
+	};
+}
+
 export function memoryOperationAgentRunTarget(values: {
 	enterpriseIdentities: EnterpriseIdentity[];
 	item: MemoryOperationsItem;

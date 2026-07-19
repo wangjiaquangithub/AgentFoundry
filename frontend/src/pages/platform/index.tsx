@@ -53,19 +53,19 @@ import { usePlatformPageRefs } from './platform-page-refs';
 import {
 	agentWorkflowPrimeInputs,
 	agentConversationTurnFromRunResponse,
-	agentQuestionWithFallback,
 	agentRunResultForSelectedAgent,
 	agentRunResultAfterHistoryRefresh,
 	agentRunRequestTarget,
 	agentRunResponseRequiresApproval,
-	agentRunSelectionResult,
 	clearAgentConversationTurns,
 	clearAgentRunsParams,
 	memoryOperationAgentRunTarget,
 	mergeAgentConversationTurn,
+	publishedAgentRunnerTarget,
 	replaceAgentConversationTurns,
 	scenarioWorkflowRunTarget,
 	selectedRunAgentIdForAvailableAgents,
+	selectedRunAgentTarget,
 	toolRunRequestTarget,
 	workflowInputsForSelectedOption,
 	workflowSelectionForAvailableTemplates,
@@ -1875,16 +1875,25 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handlePrimePublishedAgent(agentId: string, sample = primaryAgentSampleQuestion) {
-		setSelectedRunAgentId(agentId);
-		setAgentQuestion((current) => agentQuestionWithFallback(current, sample));
-		setAgentRunResult(agentRunSelectionResult({ agentConversations, agentId }));
+		const target = publishedAgentRunnerTarget({
+			agentConversations,
+			agentId,
+			currentQuestion: agentQuestion,
+			sampleQuestion: sample,
+		});
+
+		setSelectedRunAgentId(target.agentId);
+		setAgentQuestion(target.question);
+		setAgentRunResult(target.result);
 		setAgentRunError(null);
 		window.setTimeout(scrollToAgentRunner, 0);
 	}
 
 	function handleSelectRunAgent(agentId: string) {
-		setSelectedRunAgentId(agentId);
-		setAgentRunResult(agentRunSelectionResult({ agentConversations, agentId }));
+		const target = selectedRunAgentTarget({ agentConversations, agentId });
+
+		setSelectedRunAgentId(target.agentId);
+		setAgentRunResult(target.result);
 		setAgentRunError(null);
 	}
 
