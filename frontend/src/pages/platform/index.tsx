@@ -269,6 +269,7 @@ import { platformAppCenterDisplayStateForStatus } from './platform-app-center-di
 import { platformConnectorDisplayStateForStatus } from './platform-connector-display';
 import { platformConnectionDisplayStateForStatus } from './platform-connection-display';
 import {
+	platformAuditStatsDisplayStateForSummary,
 	platformGovernanceDisplayStateForStatus,
 	platformSelectedIdentityDisplayStateForStatus,
 } from './platform-governance-display';
@@ -283,7 +284,6 @@ import {
 	agentIsReady,
 	agentReleasePipelineForStatus,
 	agentSetupStepsForStatus,
-	auditStatsForSummary,
 	capabilityItemsForStatus,
 	mapAgentRunToConversationTurn,
 	nextAgentSetupStepForSteps,
@@ -922,7 +922,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	const recentSchedules = triggerOperationsState.recentSchedules;
 	const triggerOpsStats = triggerOperationsState.triggerOpsStats;
 	const triggerOpsSummary = triggerOperationsState.triggerOpsSummary;
-	const auditStats = auditStatsForSummary(
+	const auditStats = platformAuditStatsDisplayStateForSummary(
 		{
 			auditSummary,
 			auditEvents,

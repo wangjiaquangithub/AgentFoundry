@@ -1,4 +1,5 @@
 import {
+	auditStatsForSummary,
 	governanceOperationsStateForStatus,
 	selectedIdentityGovernanceDisplayStateForStatus,
 	selectedIdentityStateForStatus,
@@ -13,6 +14,13 @@ export function platformSelectedIdentityDisplayStateForStatus(
 	values: Parameters<typeof selectedIdentityStateForStatus>[0],
 ) {
 	return selectedIdentityStateForStatus(values);
+}
+
+export function platformAuditStatsDisplayStateForSummary(
+	values: Parameters<typeof auditStatsForSummary>[0],
+	labels: Parameters<typeof auditStatsForSummary>[1],
+) {
+	return auditStatsForSummary(values, labels);
 }
 
 export function platformGovernanceDisplayStateForStatus(values: {
