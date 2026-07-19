@@ -166,6 +166,7 @@ import {
 	createPlatformDashboardMonitoringSnapshotViewProps,
 	createPlatformDashboardOpsTasksViewProps,
 	createPlatformDashboardOperationsViewProps,
+	createPlatformDashboardPlatformConsoleViewProps,
 	createPlatformDashboardScenariosViewProps,
 	createPlatformDashboardTenantAccessViewProps,
 	createPlatformDashboardToolsViewProps,
@@ -2193,6 +2194,9 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					operationsHeadline,
 					topOperationsAgents,
 				}),
+				...createPlatformDashboardPlatformConsoleViewProps({
+					platformConsoleItems,
+				}),
 				...createPlatformDashboardScenariosViewProps({
 					handleRunScenario,
 					refetchScenarios,
@@ -2322,7 +2326,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				platformConfigImportResult: platformConfigImportResult,
 				platformConfigImportText: platformConfigImportText,
 				platformConfigLoading: platformConfigLoading,
-				platformConsoleItems: platformConsoleItems,
 				platformError: platformError,
 				platformLoading: platformLoading,
 				platformMembers: platformMembers,

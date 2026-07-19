@@ -212,6 +212,11 @@ type DashboardMonitoringSnapshotViewProps = Pick<
 	| 'recentAgentTurns'
 >;
 
+type DashboardPlatformConsoleViewProps = Pick<
+	DashboardViewPageProps,
+	'platformConsoleItems'
+>;
+
 type DashboardOpsTasksViewProps = Pick<
 	DashboardViewPageProps,
 	| 'handleResolveOpsTask'
@@ -292,6 +297,12 @@ export function createPlatformDashboardMemoryOperationsViewProps(
 export function createPlatformDashboardMonitoringSnapshotViewProps(
 	props: DashboardMonitoringSnapshotViewProps,
 ): DashboardMonitoringSnapshotViewProps {
+	return props;
+}
+
+export function createPlatformDashboardPlatformConsoleViewProps(
+	props: DashboardPlatformConsoleViewProps,
+): DashboardPlatformConsoleViewProps {
 	return props;
 }
 
