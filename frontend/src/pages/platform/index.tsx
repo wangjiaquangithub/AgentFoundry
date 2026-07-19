@@ -1288,6 +1288,11 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 		await refetchScenarios();
 	}
 
+	async function refetchApprovalDependencies() {
+		await refetchGovernance();
+		await refetchOpsTasks();
+	}
+
 	async function handleSaveToolPolicy() {
 		await runToolPolicySaveAction(
 			{ identity: selectedIdentity, draft: toolPolicyDraft },
@@ -1464,10 +1469,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				clearApprovalError: () => setApprovalError(null),
 				createApproval: platformApi.createApproval,
 				setApprovalRequests,
-				refreshDependentViews: async () => {
-					await refetchGovernance();
-					await refetchOpsTasks();
-				},
+				refreshDependentViews: refetchApprovalDependencies,
 				resetApprovalReason: setApprovalForm,
 				handleError: (error) =>
 					setApprovalError(
@@ -1509,10 +1511,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 						setWorkflowRunError(null);
 					}
 				},
-				refreshDependentViews: async () => {
-					await refetchGovernance();
-					await refetchOpsTasks();
-				},
+				refreshDependentViews: refetchApprovalDependencies,
 				scrollToGovernance: () => window.setTimeout(scrollToGovernance, 0),
 				handleError: (type, error) => {
 					const message =
@@ -1546,10 +1545,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				approveApproval: platformApi.approveApproval,
 				rejectApproval: platformApi.rejectApproval,
 				setApprovalRequests,
-				refreshDependentViews: async () => {
-					await refetchGovernance();
-					await refetchOpsTasks();
-				},
+				refreshDependentViews: refetchApprovalDependencies,
 				handleError: (error) =>
 					setApprovalError(
 						error instanceof Error
@@ -1576,10 +1572,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				clearApprovalError: () => setApprovalError(null),
 				approveApproval: platformApi.approveApproval,
 				setApprovalRequests,
-				refreshDependentViews: async () => {
-					await refetchGovernance();
-					await refetchOpsTasks();
-				},
+				refreshDependentViews: refetchApprovalDependencies,
 				selectIdentityUser: setSelectedIdentityUserId,
 				selectRunAgent: setSelectedRunAgentId,
 				setAgentApprovalId,
