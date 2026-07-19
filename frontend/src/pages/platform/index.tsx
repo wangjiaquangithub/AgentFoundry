@@ -250,6 +250,7 @@ import {
 	publishFormWithPatch,
 	publishedAgentPrimeTarget,
 	quickPublishTarget,
+	startPublishingTarget,
 	type AgentQuickConfigurationPatch,
 	type PublishListFormKey,
 } from './platform-publish-form';
@@ -2073,8 +2074,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handleStartPublishing() {
-		if (!selectedTemplateId && agentTemplates.length > 0) {
-			handleConfigureTemplate(agentTemplates[0]);
+		const target = startPublishingTarget({
+			selectedTemplateId,
+			templates: agentTemplates,
+		});
+
+		if (target.type === 'configure-template') {
+			handleConfigureTemplate(target.template);
 		}
 		window.setTimeout(scrollToAgentManagement, 0);
 	}

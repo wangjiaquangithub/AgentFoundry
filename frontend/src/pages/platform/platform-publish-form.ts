@@ -56,6 +56,9 @@ export type PreparedTenantAgentTarget =
 			templateId: string;
 			templateForm: PublishFormState;
 	  };
+export type StartPublishingTarget =
+	| { type: 'scroll' }
+	| { type: 'configure-template'; template: EnterpriseAgentTemplate };
 export type AgentPublishRequestTarget =
 	| { type: 'skip' }
 	| {
@@ -145,6 +148,17 @@ export function preparedTenantAgentTarget(values: {
 			knowledgeBases: values.knowledgeBases,
 		}),
 	};
+}
+
+export function startPublishingTarget(values: {
+	selectedTemplateId: string | null;
+	templates: EnterpriseAgentTemplate[];
+}): StartPublishingTarget {
+	if (!values.selectedTemplateId && values.templates.length > 0) {
+		return { type: 'configure-template', template: values.templates[0] };
+	}
+
+	return { type: 'scroll' };
 }
 
 export function buildAgentConfigurationPayloadFromForm(
