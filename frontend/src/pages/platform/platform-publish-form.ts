@@ -49,6 +49,13 @@ export type QuickPublishTarget =
 	| { type: 'navigate'; path: '/credential' }
 	| { type: 'start-publishing' }
 	| { type: 'publish'; template: EnterpriseAgentTemplate };
+export type PreparedTenantAgentTarget =
+	| { type: 'current' }
+	| {
+			type: 'template';
+			templateId: string;
+			templateForm: PublishFormState;
+	  };
 export type AgentPublishRequestTarget =
 	| { type: 'skip' }
 	| {
@@ -116,6 +123,28 @@ export function defaultPublishFormForTemplate(values: {
 		modelConfigId: values.credentials[0]?.id ?? '',
 		knowledgeBaseIds: availableKnowledgeBaseIds(values.knowledgeBases),
 	});
+}
+
+export function preparedTenantAgentTarget(values: {
+	defaultTemplate?: EnterpriseAgentTemplate | null;
+	currentUserTenant?: string;
+	credentials: CredentialView[];
+	knowledgeBases: KnowledgeBaseView[];
+}): PreparedTenantAgentTarget {
+	if (!values.defaultTemplate) {
+		return { type: 'current' };
+	}
+
+	return {
+		type: 'template',
+		templateId: values.defaultTemplate.id,
+		templateForm: defaultPublishFormForTemplate({
+			template: values.defaultTemplate,
+			currentUserTenant: values.currentUserTenant,
+			credentials: values.credentials,
+			knowledgeBases: values.knowledgeBases,
+		}),
+	};
 }
 
 export function buildAgentConfigurationPayloadFromForm(

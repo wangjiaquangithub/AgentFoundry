@@ -243,6 +243,7 @@ import {
 	agentTemplateToolsBindTarget,
 	agentTemplateToolsPatch,
 	defaultPublishFormForTemplate,
+	preparedTenantAgentTarget,
 	publishFormForListToggle,
 	publishFormForPreparedTenant,
 	publishFormForTenantChange,
@@ -2037,18 +2038,23 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function handlePrepareTenantAgent(tenant: string) {
-		if (defaultAgentTemplate) {
+		const target = preparedTenantAgentTarget({
+			defaultTemplate: defaultAgentTemplate,
+			currentUserTenant: platformStatus?.current_user.tenant,
+			credentials,
+			knowledgeBases,
+		});
+
+		if (target.type === 'template') {
 			setEditingAgentId(null);
-			setSelectedTemplateId(defaultAgentTemplate.id);
+			setSelectedTemplateId(target.templateId);
 		}
 
 		setPublishForm((current) =>
 			publishFormForPreparedTenant({
 				current,
 				tenant,
-				templateForm: defaultAgentTemplate
-					? buildDefaultPublishForm(defaultAgentTemplate)
-					: null,
+				templateForm: target.type === 'template' ? target.templateForm : null,
 			}),
 		);
 
