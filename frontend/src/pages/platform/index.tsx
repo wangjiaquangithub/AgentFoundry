@@ -270,6 +270,7 @@ import { platformAppCenterDisplayStateForStatus } from './platform-app-center-di
 import { platformConnectorDisplayStateForStatus } from './platform-connector-display';
 import { platformConnectionDisplayStateForStatus } from './platform-connection-display';
 import { platformGovernanceDisplayStateForStatus } from './platform-governance-display';
+import { platformPublishDisplayStateForStatus } from './platform-publish-display';
 import { platformResourceDisplayStateForStatus } from './platform-resource-display';
 import { platformRuntimeDisplayStateForStatus } from './platform-runtime-display';
 import {
@@ -288,8 +289,6 @@ import {
 	memoryOperationsStateForConversations,
 	nextAgentSetupStepForSteps,
 	operationsHeadlineText,
-	publishAccessStateForStatus,
-	publishDraftStateForStatus,
 	platformOverviewStatsForSummary,
 	platformConsoleItemsForDisplay,
 	runtimeStatusItemsForStatus,
@@ -601,26 +600,16 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	});
 	const platformRuntimeConfigState = platformRuntimeDisplay.configState;
 	const enterpriseIdentities = platformRuntimeConfigState.enterpriseIdentities;
-	const {
-		publishTenant,
-		publishAccessMembers,
-		publishRoleOptions,
-	} = publishAccessStateForStatus({
-		tenant: publishForm.tenant,
-		currentUserTenant: platformStatus?.current_user.tenant,
-		members: platformMembers?.members ?? [],
-		configuredRoles: platformMembers?.roles ?? [],
-		allowedUserIds: publishForm.allowed_user_ids,
-		allowedRoles: publishForm.allowed_roles,
-	});
-	const {
-		publishSelectedModelLabel,
-		publishAccessScopeSummary,
-		publishRuntimeSummary,
-		publishReleaseIssues,
-		publishBlocked,
-	} = publishDraftStateForStatus(
-		{
+	const publishDisplay = platformPublishDisplayStateForStatus({
+		access: {
+			tenant: publishForm.tenant,
+			currentUserTenant: platformStatus?.current_user.tenant,
+			members: platformMembers?.members ?? [],
+			configuredRoles: platformMembers?.roles ?? [],
+			allowedUserIds: publishForm.allowed_user_ids,
+			allowedRoles: publishForm.allowed_roles,
+		},
+		draft: {
 			modelConfigId: publishForm.model_config_id,
 			knowledgeBaseCount: publishForm.knowledge_base_ids.length,
 			allowedUserCount: publishForm.allowed_user_ids.length,
@@ -630,8 +619,20 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			hasSelectedTemplate: Boolean(selectedTemplate),
 			credentialById,
 		},
-		publishDraftLabels(t),
-	);
+		draftLabels: publishDraftLabels(t),
+	});
+	const {
+		publishTenant,
+		publishAccessMembers,
+		publishRoleOptions,
+	} = publishDisplay.accessState;
+	const {
+		publishSelectedModelLabel,
+		publishAccessScopeSummary,
+		publishRuntimeSummary,
+		publishReleaseIssues,
+		publishBlocked,
+	} = publishDisplay.draftState;
 	const selectedIdentityState = selectedIdentityStateForStatus({
 		enterpriseIdentities,
 		selectedIdentityUserId,
