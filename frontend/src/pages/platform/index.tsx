@@ -159,7 +159,7 @@ import {
 import { createPlatformDashboardPageState } from './platform-dashboard-state';
 import { createPlatformLaunchpadPageState } from './platform-launchpad-state';
 import { platformMonitoringDisplayStateForStatus } from './platform-monitoring-display';
-import { platformOnboardingDisplayStateForStatus } from './platform-onboarding-display';
+import { createPlatformOnboardingPageState } from './platform-onboarding-state';
 import { platformOrchestrationDisplayStateForStatus } from './platform-orchestration-display';
 import { createPlatformWorkbenchPageState } from './platform-workbench-state';
 import { createPlatformWorkflowPageState } from './platform-workflow-state';
@@ -1581,8 +1581,12 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			},
 		},
 	});
-	const onboardingDisplay = platformOnboardingDisplayStateForStatus(
-		{
+	const {
+		firstAgentGuidePrimaryStep,
+		firstAgentGuideSteps,
+		rolloutPathSteps,
+	} = createPlatformOnboardingPageState({
+		onboarding: {
 			credentialCount: credentials.length,
 			knowledgeBaseCount: knowledgeBases.length,
 			readyAgentCount: readyPlatformAgents.length,
@@ -1593,7 +1597,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			pendingApprovalCount: pendingApprovals.length,
 			hasPlatformConfigExport: Boolean(platformConfigExport),
 		},
-		{
+		onboardingOptions: {
 			rolloutPath: {
 				icons: rolloutPathIcons,
 				actions: rolloutPathNavigationActions(platformNavigationHandlers),
@@ -1605,12 +1609,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				labels: firstAgentGuideStepLabels(t),
 			},
 		},
-	);
-	const {
-		firstAgentGuidePrimaryStep,
-		firstAgentGuideSteps,
-		rolloutPathSteps,
-	} = onboardingDisplay;
+	});
 	const orchestrationDisplay = platformOrchestrationDisplayStateForStatus(
 		{
 			selectedTemplateName: selectedTemplate?.name,
