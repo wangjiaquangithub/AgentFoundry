@@ -64,6 +64,7 @@ import {
 	mergeAgentConversationTurn,
 	publishedAgentRunnerTarget,
 	replaceAgentConversationTurns,
+	runAgentWorkflowPrimeTargetAction,
 	runIdentityAgentRunnerTargetAction,
 	runMemoryOperationAgentRunTargetAction,
 	runPublishedAgentRunnerTargetAction,
@@ -1833,12 +1834,14 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 			selectedWorkflowType,
 		});
 
-		setSelectedRunAgentId(target.agentId);
-		setSelectedIdentityUserId(target.userId);
-		setWorkflowInputs(target.inputs);
-		setWorkflowApprovalId('');
-		setWorkflowRunError(null);
-		window.setTimeout(scrollToWorkflowRunner, 0);
+		runAgentWorkflowPrimeTargetAction(target, {
+			selectRunAgent: setSelectedRunAgentId,
+			selectIdentityUser: setSelectedIdentityUserId,
+			setWorkflowInputs,
+			setWorkflowApprovalId,
+			clearWorkflowRunError: () => setWorkflowRunError(null),
+			scrollToWorkflowRunner: () => window.setTimeout(scrollToWorkflowRunner, 0),
+		});
 	}
 
 	function handleUseApproval(approval: EnterpriseApprovalRequestItem) {

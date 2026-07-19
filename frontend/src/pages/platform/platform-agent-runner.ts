@@ -711,6 +711,27 @@ export function agentWorkflowPrimeTarget(values: {
 	};
 }
 
+export type AgentWorkflowPrimeTargetActionHandlers = {
+	selectRunAgent: (agentId: string) => void;
+	selectIdentityUser: (userId: string) => void;
+	setWorkflowInputs: (inputs: Record<string, string>) => void;
+	setWorkflowApprovalId: (approvalId: string) => void;
+	clearWorkflowRunError: NavigationHandler;
+	scrollToWorkflowRunner: NavigationHandler;
+};
+
+export function runAgentWorkflowPrimeTargetAction(
+	target: ReturnType<typeof agentWorkflowPrimeTarget>,
+	handlers: AgentWorkflowPrimeTargetActionHandlers,
+) {
+	handlers.selectRunAgent(target.agentId);
+	handlers.selectIdentityUser(target.userId);
+	handlers.setWorkflowInputs(target.inputs);
+	handlers.setWorkflowApprovalId('');
+	handlers.clearWorkflowRunError();
+	handlers.scrollToWorkflowRunner();
+}
+
 export function workflowInputsForSelectedOption(
 	workflowOptions: Array<{
 		value: string;
