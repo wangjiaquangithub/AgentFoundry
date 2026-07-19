@@ -104,12 +104,12 @@ import {
 import {
 	connectorBaseUrlFromForm,
 	connectorDraftValidationError,
-	connectorFormPatchFromSavedConfig,
 	connectorFormWithoutToken,
 	connectorFormWithPlatformDefaults,
 	connectorSavePayloadFromForm,
 	connectorTestPayloadFromForm,
 	connectorsWithSavedConfigs,
+	runConnectorSavedConfigLoadAction,
 } from './platform-connector-helpers';
 import {
 	formatPlatformConfigExport,
@@ -1245,13 +1245,13 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 	}
 
 	function loadSavedConnectorConfig(config: EnterpriseConnectorSavedConfig) {
-		setConnectorTestForm((previous) =>
-			connectorFormPatchFromSavedConfig(previous, config),
-		);
-		setConnectorTestResult(null);
-		setConnectorTestError(null);
-		setConnectorSaveError(null);
-		setConnectorSaveSuccess(null);
+		runConnectorSavedConfigLoadAction(config, {
+			setConnectorTestForm,
+			setConnectorTestResult,
+			setConnectorTestError,
+			setConnectorSaveError,
+			setConnectorSaveSuccess,
+		});
 	}
 
 	async function handleSaveConnectorConfig() {

@@ -2,6 +2,7 @@ import type {
 	EnterpriseConnectorConfigSaveRequest,
 	EnterpriseConnectorSavedConfig,
 	EnterpriseConnectorTestRequest,
+	EnterpriseConnectorTestResponse,
 	EnterprisePlatformConnectorsResponse,
 } from '@/api';
 import type { ConnectorTestFormState } from './platform-defaults';
@@ -10,6 +11,16 @@ const defaultConnectorPolicyPath = '/tenants/{tenant}/policies/search';
 const defaultConnectorTicketPath = '/tenants/{tenant}/tickets/{ticket_id}';
 const defaultConnectorMetricsPath =
 	'/tenants/{tenant}/departments/{department}/metrics';
+
+export type ConnectorSavedConfigLoadActionHandlers = {
+	setConnectorTestForm: (
+		update: (previous: ConnectorTestFormState) => ConnectorTestFormState,
+	) => void;
+	setConnectorTestResult: (result: EnterpriseConnectorTestResponse | null) => void;
+	setConnectorTestError: (error: string | null) => void;
+	setConnectorSaveError: (error: string | null) => void;
+	setConnectorSaveSuccess: (message: string | null) => void;
+};
 
 function connectorTimeoutFromForm(form: ConnectorTestFormState) {
 	const timeout = Number.parseFloat(form.timeout_seconds);
@@ -112,6 +123,19 @@ export function connectorFormWithoutToken(
 		...form,
 		token: '',
 	};
+}
+
+export function runConnectorSavedConfigLoadAction(
+	config: EnterpriseConnectorSavedConfig,
+	handlers: ConnectorSavedConfigLoadActionHandlers,
+) {
+	handlers.setConnectorTestForm((previous) =>
+		connectorFormPatchFromSavedConfig(previous, config),
+	);
+	handlers.setConnectorTestResult(null);
+	handlers.setConnectorTestError(null);
+	handlers.setConnectorSaveError(null);
+	handlers.setConnectorSaveSuccess(null);
 }
 
 export function connectorSavePayloadFromForm(
