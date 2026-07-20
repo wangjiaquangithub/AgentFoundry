@@ -1014,33 +1014,13 @@ async def _route_enterprise_agent_question_with_model(
         config["provider"],
     )
 
-    if config["provider"] == "anthropic":
-        headers = {
-            "content-type": "application/json",
-            "x-api-key": config["api_key"],
-            "anthropic-version": "2023-06-01",
-        }
-        payload = {
-            "model": config["model"],
-            "max_tokens": 500,
-            "temperature": 0,
-            "system": system_prompt,
-            "messages": [{"role": "user", "content": user_prompt}],
-        }
-    else:
-        headers = {
-            "authorization": f"Bearer {config['api_key']}",
-            "content-type": "application/json",
-        }
-        payload = {
-            "model": config["model"],
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            "temperature": 0,
-            "max_tokens": 500,
-        }
+    headers, payload = enterprise_router_service.build_model_request(
+        provider=config["provider"],
+        api_key=config["api_key"],
+        model=config["model"],
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+    )
 
     try:
         async with httpx.AsyncClient(

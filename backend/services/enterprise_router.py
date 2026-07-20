@@ -71,6 +71,47 @@ class PlatformEnterpriseRouterService:
             return f"{normalized}/chat/completions"
         return f"{normalized}/v1/chat/completions"
 
+    def build_model_request(
+        self,
+        *,
+        provider: str,
+        api_key: str,
+        model: str,
+        system_prompt: str,
+        user_prompt: str,
+    ) -> tuple[dict[str, str], dict[str, Any]]:
+        if provider == "anthropic":
+            return (
+                {
+                    "content-type": "application/json",
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                },
+                {
+                    "model": model,
+                    "max_tokens": 500,
+                    "temperature": 0,
+                    "system": system_prompt,
+                    "messages": [{"role": "user", "content": user_prompt}],
+                },
+            )
+
+        return (
+            {
+                "authorization": f"Bearer {api_key}",
+                "content-type": "application/json",
+            },
+            {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                "temperature": 0,
+                "max_tokens": 500,
+            },
+        )
+
     def parse_model_route_content(self, content: str) -> dict[str, Any]:
         return self.normalize_model_route(self.parse_router_json(content))
 
