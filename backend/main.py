@@ -1001,14 +1001,10 @@ async def _route_enterprise_agent_question_with_model(
     except json.JSONDecodeError as exc:
         raise EnterpriseRouterError("Router HTTP response is not JSON.") from exc
 
-    content = enterprise_router_service.extract_model_response_content(
+    return enterprise_router_service.parse_model_response_payload(
         provider=config["provider"],
         response_payload=response_payload,
     )
-    if not content:
-        raise EnterpriseRouterError("Router response content is empty.")
-
-    return enterprise_router_service.parse_model_route_content(content)
 
 
 def _route_enterprise_agent_question_with_rules(

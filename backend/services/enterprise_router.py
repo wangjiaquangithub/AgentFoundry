@@ -186,6 +186,21 @@ class PlatformEnterpriseRouterService:
     def parse_model_route_content(self, content: str) -> dict[str, Any]:
         return self.normalize_model_route(self.parse_router_json(content))
 
+    def parse_model_response_payload(
+        self,
+        *,
+        provider: str,
+        response_payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        content = self.extract_model_response_content(
+            provider=provider,
+            response_payload=response_payload,
+        )
+        if not content:
+            raise EnterpriseRouterError("Router response content is empty.")
+
+        return self.parse_model_route_content(content)
+
     def extract_model_response_content(
         self,
         *,
