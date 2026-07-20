@@ -694,13 +694,6 @@ def _raise_platform_member_service_error(exc: PlatformMemberServiceError) -> NoR
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
-def _load_platform_members_config() -> dict[str, Any]:
-    try:
-        return _platform_member_service().load_config()
-    except PlatformMemberServiceError as exc:
-        _raise_platform_member_service_error(exc)
-
-
 def _save_platform_members_config(config: dict[str, Any]) -> None:
     _platform_member_service().save_config(config)
 
