@@ -1227,6 +1227,17 @@ class PlatformAgentRunService:
             },
         }
 
+    def build_created_pending_approval_response_context(
+        self,
+        *,
+        detail: dict[str, Any],
+        approval: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self.build_pending_approval_response_context(
+            detail=detail,
+            approval_id=self.resolve_approval_id(approval),
+        )
+
     def pending_approval_decision_payload(
         self,
         context: dict[str, Any],
