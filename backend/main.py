@@ -2421,7 +2421,10 @@ async def run_enterprise_workflow(
     except PlatformWorkflowTemplateServiceError as exc:
         _raise_platform_workflow_template_service_error(exc)
 
-    runtime = _enterprise_runtime_context(user_id)
+    try:
+        runtime = _platform_connector_config_service().enterprise_runtime_context(user_id)
+    except PlatformConnectorConfigServiceError as exc:
+        _raise_platform_connector_config_service_error(exc)
     tenant = str(runtime["tenant"])
     connector_label = str(runtime["connector_label"])
     connector_source = str(runtime["connector_source"])
