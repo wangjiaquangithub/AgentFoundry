@@ -264,6 +264,14 @@ class PlatformToolPolicyService:
     ) -> str:
         return query_user_id or header_user_id or "acme:alice"
 
+    @staticmethod
+    def run_request_user_id(
+        *,
+        payload_user_id: str | None = None,
+        header_user_id: str | None = None,
+    ) -> str:
+        return payload_user_id or header_user_id or "acme:alice"
+
     def update_user_policy(
         self,
         *,

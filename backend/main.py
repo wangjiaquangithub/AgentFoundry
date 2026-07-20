@@ -1522,12 +1522,15 @@ async def run_enterprise_tool(
     request: Request,
 ) -> dict[str, Any]:
     """Run one tenant-aware enterprise tool from the platform console."""
-    user_id = payload.user_id or request.headers.get("X-User-ID") or "acme:alice"
+    tool_policy_service = _platform_tool_policy_service()
+    user_id = tool_policy_service.run_request_user_id(
+        payload_user_id=payload.user_id,
+        header_user_id=request.headers.get("X-User-ID"),
+    )
     try:
         runtime = _platform_connector_config_service().enterprise_runtime_context(user_id)
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
-    tool_policy_service = _platform_tool_policy_service()
     runtime_selection = tool_policy_service.runtime_selection(runtime)
     tenant = runtime_selection["tenant"]
     runner_agent_id = "platform-console"
