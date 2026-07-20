@@ -5,6 +5,7 @@ from typing import Any, Callable
 from uuid import uuid4
 
 from repositories.agent_runs import AgentRunRepository
+from services.approvals import PlatformApprovalServiceError
 
 
 class PlatformAgentRunServiceError(ValueError):
@@ -1557,6 +1558,37 @@ class PlatformAgentRunService:
             inputs=inputs,
             headers=headers,
         )
+
+    def create_pending_tool_approval_request_or_raise_from_context(
+        self,
+        *,
+        platform_approval_service: Callable[[], Any],
+        raise_platform_approval_service_error: Callable[
+            [PlatformApprovalServiceError],
+            Any,
+        ],
+        detail: dict[str, Any],
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        tool_name: str,
+        inputs: dict[str, Any],
+        headers: Any,
+    ) -> dict[str, Any]:
+        try:
+            return self.create_pending_tool_approval_request_from_context(
+                platform_approval_service=platform_approval_service,
+                detail=detail,
+                tenant=tenant,
+                user_id=user_id,
+                agent_id=agent_id,
+                tool_name=tool_name,
+                inputs=inputs,
+                headers=headers,
+            )
+        except PlatformApprovalServiceError as exc:
+            raise_platform_approval_service_error(exc)
+            raise
 
     def resolve_approval_id(self, approval: dict[str, Any]) -> str:
         return str(approval["approval_id"])
