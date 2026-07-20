@@ -40,6 +40,25 @@ class PlatformApprovalService:
         agent_id: str | None = None,
         limit: int = 20,
     ) -> dict[str, Any]:
+        return {
+            "approvals": self.list_records(
+                status=status,
+                tenant=tenant,
+                user_id=user_id,
+                agent_id=agent_id,
+                limit=limit,
+            ),
+        }
+
+    def list_records(
+        self,
+        *,
+        status: str | None = None,
+        tenant: str | None = None,
+        user_id: str | None = None,
+        agent_id: str | None = None,
+        limit: int = 20,
+    ) -> list[dict[str, Any]]:
         normalized_status = _optional_filter(status)
         if normalized_status and normalized_status not in self._VALID_STATUSES:
             raise PlatformApprovalServiceError(
@@ -47,15 +66,13 @@ class PlatformApprovalService:
                 f"Unknown approval status: {normalized_status}",
             )
 
-        return {
-            "approvals": self._repository.list(
-                limit=limit,
-                status=normalized_status,
-                tenant=_optional_filter(tenant),
-                user_id=_optional_filter(user_id),
-                agent_id=_optional_filter(agent_id),
-            ),
-        }
+        return self._repository.list(
+            limit=limit,
+            status=normalized_status,
+            tenant=_optional_filter(tenant),
+            user_id=_optional_filter(user_id),
+            agent_id=_optional_filter(agent_id),
+        )
 
     def create_request(
         self,

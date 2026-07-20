@@ -4398,13 +4398,16 @@ def _load_platform_approval_requests(
     user_id: str | None = None,
     agent_id: str | None = None,
 ) -> list[dict[str, Any]]:
-    return approval_request_repository.list(
-        limit=limit,
-        status=status,
-        tenant=tenant,
-        user_id=user_id,
-        agent_id=agent_id,
-    )
+    try:
+        return _platform_approval_service().list_records(
+            limit=limit,
+            status=status,
+            tenant=tenant,
+            user_id=user_id,
+            agent_id=agent_id,
+        )
+    except PlatformApprovalServiceError as exc:
+        _raise_platform_approval_service_error(exc)
 
 
 def _require_platform_approval(
