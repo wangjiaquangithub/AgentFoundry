@@ -3917,7 +3917,11 @@ async def run_enterprise_workflow(
     )
 
     approval_id = None
-    if workflow_type in APPROVAL_REQUIRED_WORKFLOWS or approval_required_tools:
+    if workflow_run_service.requires_approval(
+        workflow_type,
+        approval_required_tools,
+        APPROVAL_REQUIRED_WORKFLOWS,
+    ):
         approval_id = _require_platform_approval(
             approval_id=payload.approval_id,
             request_type="workflow_run",

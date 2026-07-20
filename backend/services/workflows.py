@@ -362,6 +362,16 @@ class PlatformWorkflowRunService:
             },
         )
 
+    def requires_approval(
+        self,
+        workflow_type: str,
+        approval_required_tools: list[str],
+        approval_required_workflows: set[str],
+    ) -> bool:
+        return workflow_type in approval_required_workflows or bool(
+            approval_required_tools,
+        )
+
     def status_counts(self, steps: list[dict[str, Any]]) -> dict[str, int]:
         counts = {"success": 0, "denied": 0, "failed": 0}
         for step in steps:
