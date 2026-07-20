@@ -67,7 +67,7 @@ from repositories.workflows import (
     WorkflowRunRepository,
     WorkflowTemplateRepository,
 )
-from runtime import get_runtime_adapter
+from runtime import describe_runtime_adapter
 from services.approvals import (
     PlatformApprovalService,
     PlatformApprovalServiceError,
@@ -1552,7 +1552,7 @@ async def run_enterprise_agent(
 
     agent_metadata = _platform_agent_service().run_metadata(agent)
     runtime_adapter_payload = agent_run_service.runtime_adapter_payload_from_metadata(
-        get_runtime_adapter=get_runtime_adapter,
+        describe_runtime_adapter=describe_runtime_adapter,
         agent_metadata=agent_metadata,
     )
     execution_context = agent_run_service.build_execution_context(

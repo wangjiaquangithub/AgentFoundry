@@ -226,3 +226,11 @@ def build_runtime_context(
 def get_runtime_adapter(_agent_metadata: dict[str, Any] | None = None) -> RuntimeAdapter:
     """Return the runtime adapter for platform agent runs."""
     return AGENTSCOPE_PLATFORM_ADAPTER
+
+
+def describe_runtime_adapter(
+    agent_metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Return provider metadata for the selected runtime adapter."""
+    runtime_adapter = get_runtime_adapter(agent_metadata)
+    return runtime_adapter.describe(agent_metadata)
