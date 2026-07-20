@@ -1753,17 +1753,14 @@ async def run_enterprise_agent(
 
                 try:
                     approval = _platform_approval_service().create_request(
-                        **agent_run_service.build_approval_request_payload(
+                        **agent_run_service.build_pending_approval_request_payload(
                             detail=detail,
                             tenant=tenant,
                             user_id=user_id,
                             agent_id=runner_agent_id,
                             tool_name=tool_name,
                             inputs=route_inputs,
-                            requested_by=agent_run_service.resolve_requested_by(
-                                headers=request.headers,
-                                user_id=user_id,
-                            ),
+                            headers=request.headers,
                         ),
                     )
                 except PlatformApprovalServiceError as service_exc:
