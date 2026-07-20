@@ -55,6 +55,16 @@ class PlatformEnterpriseRouterService:
         user_prompt = f"Business question:\n{question}\n\nReturn JSON only."
         return system_prompt, user_prompt
 
+    def model_router_env_present(self, env: dict[str, str]) -> bool:
+        return any(
+            env.get(name, "").strip()
+            for name in (
+                "ENTERPRISE_AGENT_ROUTER_BASE_URL",
+                "ENTERPRISE_AGENT_ROUTER_API_KEY",
+                "ENTERPRISE_AGENT_ROUTER_MODEL",
+            )
+        )
+
     def build_model_endpoint(self, base_url: str, provider: str) -> str:
         normalized = base_url.rstrip("/")
         if provider == "anthropic":

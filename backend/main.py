@@ -1065,13 +1065,8 @@ async def _select_enterprise_agent_routes(
     question: str,
 ) -> tuple[list[dict[str, Any]], str | None]:
     rule_routes = _route_enterprise_agent_question_with_rules(question)
-    router_env_present = any(
-        os.getenv(name, "").strip()
-        for name in (
-            "ENTERPRISE_AGENT_ROUTER_BASE_URL",
-            "ENTERPRISE_AGENT_ROUTER_API_KEY",
-            "ENTERPRISE_AGENT_ROUTER_MODEL",
-        )
+    router_env_present = enterprise_router_service.model_router_env_present(
+        os.environ,
     )
     if router_env_present:
         try:
