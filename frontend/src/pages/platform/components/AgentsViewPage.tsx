@@ -1,5 +1,5 @@
 import { BotMessageSquare, CheckCircle2, Database, Play, RefreshCcw, Wrench } from 'lucide-react';
-import type { ComponentType, RefObject } from 'react';
+import { useState, type ComponentType, type RefObject } from 'react';
 
 import {
 	AgentManagementOverview,
@@ -33,10 +33,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
+type AgentWorkspaceTab = 'manage' | 'run';
 
 interface AgentOpsSummaryItem {
 	label: string;
@@ -181,6 +183,12 @@ export function AgentsViewPage({
 	const runnerStateLabel = selectedRunAgent
 		? selectedRunAgentReadinessLabel
 		: t('platform.agentRunner.noInstances');
+	const [agentWorkspaceTab, setAgentWorkspaceTab] =
+		useState<AgentWorkspaceTab>('manage');
+	const handleOpenAgentRunner = () => {
+		setAgentWorkspaceTab('run');
+		window.setTimeout(scrollToAgentRunner, 0);
+	};
 
 	return (
 		<PlatformPageShell>
@@ -202,7 +210,7 @@ export function AgentsViewPage({
 						</Button>
 						<Button
 							size="sm"
-							onClick={scrollToAgentRunner}
+							onClick={handleOpenAgentRunner}
 							disabled={!selectedRunAgent}
 						>
 							<Play />
@@ -216,134 +224,158 @@ export function AgentsViewPage({
 				<PlatformNotice>{t('platform.agentManagement.loadError')}</PlatformNotice>
 			) : null}
 
-			<section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(25rem,0.78fr)]">
-				<div className="grid min-w-0 gap-4">
-					<section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-						<div className="rounded-lg border bg-background p-4 shadow-sm">
-							<div className="flex items-center justify-between gap-3">
-								<span className="text-sm font-medium text-muted-foreground">
-									{t('platform.agentManagement.templates')}
-								</span>
-								<BotMessageSquare className="size-4 text-muted-foreground" />
-							</div>
-							<div className="mt-3 text-2xl font-semibold tabular-nums">
-								{agentTemplates.length}
-							</div>
-							<p className="mt-1 truncate text-xs text-muted-foreground">
-								{t('platform.agentManagement.configureTemplate')}
-							</p>
-						</div>
-						<div className="rounded-lg border bg-background p-4 shadow-sm">
-							<div className="flex items-center justify-between gap-3">
-								<span className="text-sm font-medium text-muted-foreground">
-									{t('platform.agentRunner.instance')}
-								</span>
-								<CheckCircle2 className="size-4 text-muted-foreground" />
-							</div>
-							<div className="mt-3 text-2xl font-semibold tabular-nums">
-								{activeAgentCount}
-							</div>
-							<p className="mt-1 truncate text-xs text-muted-foreground">
-								{runnerStateLabel}
-							</p>
-						</div>
-						<div className="rounded-lg border bg-background p-4 shadow-sm">
-							<div className="flex items-center justify-between gap-3">
-								<span className="text-sm font-medium text-muted-foreground">
-									{t('platform.agentManagement.knowledgeBases')}
-								</span>
-								<Database className="size-4 text-muted-foreground" />
-							</div>
-							<div className="mt-3 text-2xl font-semibold tabular-nums">
-								{totalKnowledgeBindings}
-							</div>
-							<p className="mt-1 truncate text-xs text-muted-foreground">
-								{t('platform.agentRunner.knowledgeCount', {
-									count: selectedRunAgentKnowledgeCount,
-								})}
-							</p>
-						</div>
-						<div className="rounded-lg border bg-background p-4 shadow-sm">
-							<div className="flex items-center justify-between gap-3">
-								<span className="text-sm font-medium text-muted-foreground">
-									{t('platform.agentManagement.tools')}
-								</span>
-								<Wrench className="size-4 text-muted-foreground" />
-							</div>
-							<div className="mt-3 text-2xl font-semibold tabular-nums">
-								{totalToolBindings}
-							</div>
-							<p className="mt-1 truncate text-xs text-muted-foreground">
-								{t('platform.agentRunner.toolsCount', {
-									count: selectedRunAgentToolCount,
-								})}
-							</p>
-						</div>
-					</section>
-
-					<section ref={agentManagementRef} className="grid gap-4">
-						<AgentManagementOverview
-							agentOpsSummary={agentOpsSummary}
-							agentReleasePipeline={agentReleasePipeline}
-							nextAgentSetupStep={nextAgentSetupStep}
-							selectedRunAgent={selectedRunAgent}
-							selectedRunAgentReadinessState={selectedRunAgentReadinessState}
-							selectedRunAgentReadinessLabel={selectedRunAgentReadinessLabel}
-							selectedRunAgentModelLabel={selectedRunAgentModelLabel}
-							selectedRunAgentKnowledgeCount={selectedRunAgentKnowledgeCount}
-							selectedRunAgentToolCount={selectedRunAgentToolCount}
-							labels={{
-								pipelineTitle: t('platform.agentManagement.pipeline.title'),
-								pipelineDescription: t('platform.agentManagement.pipeline.description'),
-								nextAction: t('platform.agentManagement.wizard.nextAction'),
-								readyAction: t('platform.agentManagement.wizard.readyAction'),
-								noRuntimeAgent: t('platform.agentManagement.ops.noRuntimeAgent'),
-								noRuntimeAgentHint: t('platform.agentManagement.ops.noRuntimeAgentHint'),
-								modelCredential: t('platform.agentManagement.modelCredential'),
-								knowledgeBases: t('platform.agentManagement.knowledgeBases'),
-								tools: t('platform.agentManagement.tools'),
-								memory: t('platform.agentManagement.memory'),
-								workflow: t('platform.agentManagement.workflow'),
-								enabled: t('platform.agentManagement.enabled'),
-								disabled: t('platform.agentManagement.disabled'),
-								runAgent: t('platform.agentManagement.runAgent'),
-								runWorkflow: t('platform.agentManagement.runWorkflow'),
-								edit: t('platform.agentManagement.edit'),
-								openGovernance: t('platform.agentManagement.ops.openGovernance'),
-								states: {
-									ready: t('platform.agentManagement.wizard.states.ready'),
-									partial: t('platform.agentManagement.wizard.states.partial'),
-									todo: t('platform.agentManagement.wizard.states.todo'),
-									blocked: t('platform.agentManagement.wizard.states.blocked'),
-								},
-							}}
-							onNextAgentSetupStep={handleNextAgentSetupStep}
-							onRunAgent={scrollToAgentRunner}
-							onRunWorkflow={handlePrimeAgentWorkflow}
-							onEditAgent={handleEditAgent}
-							onOpenGovernance={scrollToGovernance}
-						/>
-					</section>
-
-					<section ref={agentTemplateStepRef} className="grid gap-3">
-						<AgentTemplateList
-							templates={agentTemplates}
-							selectedTemplateId={selectedTemplateId}
-							loading={platformAgentsLoading}
-							hasLoaded={Boolean(platformAgents)}
-							publishingTemplateId={publishingTemplateId}
-							labels={{
-								title: t('platform.agentManagement.templates'),
-								empty: t('platform.agentManagement.emptyTemplates'),
-								configure: t('platform.agentManagement.configureTemplate'),
-							}}
-							onConfigureTemplate={handleConfigureTemplate}
-						/>
-					</section>
+			<section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+				<div className="rounded-lg border bg-background p-4 shadow-sm">
+					<div className="flex items-center justify-between gap-3">
+						<span className="text-sm font-medium text-muted-foreground">
+							{t('platform.agentManagement.templates')}
+						</span>
+						<BotMessageSquare className="size-4 text-muted-foreground" />
+					</div>
+					<div className="mt-3 text-2xl font-semibold tabular-nums">
+						{agentTemplates.length}
+					</div>
+					<p className="mt-1 truncate text-xs text-muted-foreground">
+						{t('platform.agentManagement.configure')}
+					</p>
 				</div>
+				<div className="rounded-lg border bg-background p-4 shadow-sm">
+					<div className="flex items-center justify-between gap-3">
+						<span className="text-sm font-medium text-muted-foreground">
+							{t('platform.agentRunner.instance')}
+						</span>
+						<CheckCircle2 className="size-4 text-muted-foreground" />
+					</div>
+					<div className="mt-3 text-2xl font-semibold tabular-nums">
+						{activeAgentCount}
+					</div>
+					<p className="mt-1 truncate text-xs text-muted-foreground">
+						{runnerStateLabel}
+					</p>
+				</div>
+				<div className="rounded-lg border bg-background p-4 shadow-sm">
+					<div className="flex items-center justify-between gap-3">
+						<span className="text-sm font-medium text-muted-foreground">
+							{t('platform.agentManagement.knowledgeBases')}
+						</span>
+						<Database className="size-4 text-muted-foreground" />
+					</div>
+					<div className="mt-3 text-2xl font-semibold tabular-nums">
+						{totalKnowledgeBindings}
+					</div>
+					<p className="mt-1 truncate text-xs text-muted-foreground">
+						{t('platform.agentRunner.knowledgeCount', {
+							count: selectedRunAgentKnowledgeCount,
+						})}
+					</p>
+				</div>
+				<div className="rounded-lg border bg-background p-4 shadow-sm">
+					<div className="flex items-center justify-between gap-3">
+						<span className="text-sm font-medium text-muted-foreground">
+							{t('platform.agentManagement.tools')}
+						</span>
+						<Wrench className="size-4 text-muted-foreground" />
+					</div>
+					<div className="mt-3 text-2xl font-semibold tabular-nums">
+						{totalToolBindings}
+					</div>
+					<p className="mt-1 truncate text-xs text-muted-foreground">
+						{t('platform.agentRunner.toolsCount', {
+							count: selectedRunAgentToolCount,
+						})}
+					</p>
+				</div>
+			</section>
 
-				<div className="grid min-w-0 gap-4 xl:sticky xl:top-20">
-					<section ref={agentRunnerRef} className="grid gap-4 rounded-lg border bg-muted/10 p-4 shadow-sm">
+			<Tabs
+				value={agentWorkspaceTab}
+				onValueChange={(value) => setAgentWorkspaceTab(value as AgentWorkspaceTab)}
+				className="grid gap-4"
+			>
+				<section className="flex flex-col gap-3 rounded-lg border bg-background p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+					<div>
+						<h2 className="text-base font-semibold">Agent 工作区</h2>
+						<p className="mt-1 text-sm leading-6 text-muted-foreground">
+							编排配置和运行调试分区处理，避免模板、发布状态、对话测试和结果审计挤在同一个长页面里。
+						</p>
+					</div>
+					<TabsList className="w-full sm:w-auto">
+						<TabsTrigger value="manage" className="flex-1 sm:flex-none">
+							编排管理
+						</TabsTrigger>
+						<TabsTrigger value="run" className="flex-1 sm:flex-none">
+							运行调试
+						</TabsTrigger>
+					</TabsList>
+				</section>
+
+				<TabsContent value="manage" className="mt-0">
+					<div className="grid min-w-0 gap-4">
+						<section ref={agentManagementRef} className="grid gap-4">
+							<AgentManagementOverview
+								agentOpsSummary={agentOpsSummary}
+								agentReleasePipeline={agentReleasePipeline}
+								nextAgentSetupStep={nextAgentSetupStep}
+								selectedRunAgent={selectedRunAgent}
+								selectedRunAgentReadinessState={selectedRunAgentReadinessState}
+								selectedRunAgentReadinessLabel={selectedRunAgentReadinessLabel}
+								selectedRunAgentModelLabel={selectedRunAgentModelLabel}
+								selectedRunAgentKnowledgeCount={selectedRunAgentKnowledgeCount}
+								selectedRunAgentToolCount={selectedRunAgentToolCount}
+								labels={{
+									pipelineTitle: t('platform.agentManagement.pipeline.title'),
+									pipelineDescription: t('platform.agentManagement.pipeline.description'),
+									nextAction: t('platform.agentManagement.wizard.nextAction'),
+									readyAction: t('platform.agentManagement.wizard.readyAction'),
+									noRuntimeAgent: t('platform.agentManagement.ops.noRuntimeAgent'),
+									noRuntimeAgentHint: t('platform.agentManagement.ops.noRuntimeAgentHint'),
+									modelCredential: t('platform.agentManagement.modelCredential'),
+									knowledgeBases: t('platform.agentManagement.knowledgeBases'),
+									tools: t('platform.agentManagement.tools'),
+									memory: t('platform.agentManagement.memory'),
+									workflow: t('platform.agentManagement.workflow'),
+									enabled: t('platform.agentManagement.enabled'),
+									disabled: t('platform.agentManagement.disabled'),
+									runAgent: t('platform.agentManagement.runAgent'),
+									runWorkflow: t('platform.agentManagement.runWorkflow'),
+									edit: t('platform.agentManagement.edit'),
+									openGovernance: t('platform.agentManagement.ops.openGovernance'),
+									states: {
+										ready: t('platform.agentManagement.wizard.states.ready'),
+										partial: t('platform.agentManagement.wizard.states.partial'),
+										todo: t('platform.agentManagement.wizard.states.todo'),
+										blocked: t('platform.agentManagement.wizard.states.blocked'),
+									},
+								}}
+								onNextAgentSetupStep={handleNextAgentSetupStep}
+								onRunAgent={handleOpenAgentRunner}
+								onRunWorkflow={handlePrimeAgentWorkflow}
+								onEditAgent={handleEditAgent}
+								onOpenGovernance={scrollToGovernance}
+							/>
+						</section>
+
+						<section ref={agentTemplateStepRef} className="grid gap-3">
+							<AgentTemplateList
+								templates={agentTemplates}
+								selectedTemplateId={selectedTemplateId}
+								loading={platformAgentsLoading}
+								hasLoaded={Boolean(platformAgents)}
+								publishingTemplateId={publishingTemplateId}
+								labels={{
+									title: t('platform.agentManagement.templates'),
+									empty: t('platform.agentManagement.emptyTemplates'),
+									configure: t('platform.agentManagement.configure'),
+								}}
+								onConfigureTemplate={handleConfigureTemplate}
+							/>
+						</section>
+					</div>
+				</TabsContent>
+
+				<TabsContent value="run" className="mt-0">
+					<div className="grid items-start gap-4 xl:grid-cols-[minmax(0,0.92fr)_minmax(24rem,0.72fr)]">
+						<section ref={agentRunnerRef} className="grid gap-4 rounded-lg border bg-muted/10 p-4 shadow-sm">
 						<div className="flex items-start gap-2">
 							<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background">
 								<BotMessageSquare className="size-4 text-muted-foreground" />
@@ -505,25 +537,26 @@ export function AgentsViewPage({
 								{t('platform.agentRunner.error')} {agentRunError}
 							</div>
 						) : null}
-					</section>
+						</section>
 
-					<section className="grid gap-3 rounded-lg border bg-background p-4 shadow-sm">
-						<AgentRunnerResult
-							result={agentRunResult}
-							toolCalls={agentToolCalls}
-							toolCallBadgeText={agentToolCallBadgeText}
-							routingLabel={agentRoutingLabel}
-							routingText={agentRoutingText}
-							connectorSourceText={agentRunConnectorSourceText}
-							modelLabel={agentRunModelLabel}
-							knowledgeLabels={agentRunKnowledgeLabels}
-							knowledgeBaseById={knowledgeBaseById}
-							onInspectAudit={handleInspectAgentRunAudit}
-							t={t}
-						/>
-					</section>
-				</div>
-			</section>
+						<section className="grid gap-3 rounded-lg border bg-background p-4 shadow-sm">
+							<AgentRunnerResult
+								result={agentRunResult}
+								toolCalls={agentToolCalls}
+								toolCallBadgeText={agentToolCallBadgeText}
+								routingLabel={agentRoutingLabel}
+								routingText={agentRoutingText}
+								connectorSourceText={agentRunConnectorSourceText}
+								modelLabel={agentRunModelLabel}
+								knowledgeLabels={agentRunKnowledgeLabels}
+								knowledgeBaseById={knowledgeBaseById}
+								onInspectAudit={handleInspectAgentRunAudit}
+								t={t}
+							/>
+						</section>
+					</div>
+				</TabsContent>
+			</Tabs>
 		</PlatformPageShell>
 	);
 }
