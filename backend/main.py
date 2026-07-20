@@ -1988,15 +1988,12 @@ async def enterprise_platform_members(request: Request) -> dict[str, Any]:
     runtime = _enterprise_runtime_context(user_id)
     identities = _platform_identity_metadata(user_id, str(runtime["tenant"]))
     try:
-        members = _platform_member_service().list_members(include_inactive=True)
+        return _platform_member_service().registry_payload(
+            identities=identities,
+            registry_path=PLATFORM_MEMBERS_PATH,
+        )
     except PlatformMemberServiceError as exc:
         _raise_platform_member_service_error(exc)
-    return {
-        "members": members,
-        "identities": identities,
-        "roles": _platform_member_service().roles(identities),
-        "path": str(PLATFORM_MEMBERS_PATH),
-    }
 
 
 @app.post("/enterprise/platform/members")

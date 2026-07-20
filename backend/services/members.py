@@ -99,6 +99,19 @@ class PlatformMemberService:
             },
         )
 
+    def registry_payload(
+        self,
+        *,
+        identities: list[dict[str, Any]],
+        registry_path: Any,
+    ) -> dict[str, Any]:
+        return {
+            "members": self.list_members(include_inactive=True),
+            "identities": identities,
+            "roles": self.roles(identities),
+            "path": str(registry_path),
+        }
+
     def upsert_member(
         self,
         payload: dict[str, Any],
