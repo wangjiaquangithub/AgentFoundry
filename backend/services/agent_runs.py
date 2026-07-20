@@ -219,8 +219,9 @@ class PlatformAgentRunService:
         user_id: str,
         question: str,
         runtime_adapter: dict[str, Any],
+        runtime_invocation_id: str | None = None,
     ) -> dict[str, Any]:
-        return {
+        context = {
             "session_id": runtime_context["session_id"],
             "agent_id": runtime_context["agent_id"],
             "agent_name": runtime_context.get("agent_name"),
@@ -229,6 +230,9 @@ class PlatformAgentRunService:
             "question": question,
             "runtime_adapter": runtime_adapter,
         }
+        if runtime_invocation_id is not None:
+            context["runtime_invocation_id"] = runtime_invocation_id
+        return context
 
     def build_execution_context(
         self,
@@ -245,6 +249,7 @@ class PlatformAgentRunService:
         runtime_identity = self.build_runtime_identity(runtime)
         tenant = runtime_identity["tenant"]
         question = run_request["question"]
+        runtime_invocation_id = uuid4().hex
         runner_context = self.resolve_runner_context(
             agent_metadata=agent_metadata,
             agent=agent,
@@ -264,7 +269,10 @@ class PlatformAgentRunService:
             tools=sorted(runner_context["configured_tools"]),
             knowledge_base_ids=knowledge_base_ids,
             memory_enabled=bool(agent_metadata.get("memory_enabled", False)),
-            metadata={"source": "enterprise_agent_run"},
+            metadata={
+                "source": "enterprise_agent_run",
+                "runtime_invocation_id": runtime_invocation_id,
+            },
         )
         response_record_context = self.build_response_record_context(
             runtime_context=runtime_invocation_request["context"],
@@ -275,6 +283,7 @@ class PlatformAgentRunService:
             user_id=run_request["user_id"],
             question=question,
             runtime_adapter=runtime_adapter,
+            runtime_invocation_id=runtime_invocation_id,
         )
         return {
             "runtime_identity": runtime_identity,
@@ -285,6 +294,7 @@ class PlatformAgentRunService:
             "configured_tools": runner_context["configured_tools"],
             "runner_agent_id": runner_context["runner_agent_id"],
             "runner_session_id": runner_context["runner_session_id"],
+            "runtime_invocation_id": runtime_invocation_id,
             "runtime_invocation_request": runtime_invocation_request,
             "response_record_context": response_record_context,
             "knowledge_base_ids": knowledge_base_ids,
@@ -1769,6 +1779,7 @@ class PlatformAgentRunService:
         runtime_adapter: dict[str, Any],
         evidence: dict[str, Any],
         response: dict[str, Any],
+        runtime_invocation_id: str | None = None,
         runtime_invocation_result: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         record = {
@@ -1785,6 +1796,8 @@ class PlatformAgentRunService:
             "evidence": evidence,
             "response": response,
         }
+        if runtime_invocation_id is not None:
+            record["runtime_invocation_id"] = runtime_invocation_id
         if runtime_invocation_result is not None:
             record["runtime_invocation_result"] = runtime_invocation_result
         return record
@@ -1804,6 +1817,7 @@ class PlatformAgentRunService:
         runtime_adapter: dict[str, Any],
         evidence: dict[str, Any],
         response: dict[str, Any],
+        runtime_invocation_id: str | None = None,
         runtime_invocation_result: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         record = self.build_run_record(
@@ -1819,6 +1833,7 @@ class PlatformAgentRunService:
             runtime_adapter=runtime_adapter,
             evidence=evidence,
             response=response,
+            runtime_invocation_id=runtime_invocation_id,
             runtime_invocation_result=runtime_invocation_result,
         )
         return self.append_run(record)
@@ -1836,6 +1851,7 @@ class PlatformAgentRunService:
         answer: str,
         runtime_adapter: dict[str, Any],
         response: dict[str, Any],
+        runtime_invocation_id: str | None = None,
         runtime_invocation_result: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         return self.append_response_record(
@@ -1851,6 +1867,7 @@ class PlatformAgentRunService:
             runtime_adapter=runtime_adapter,
             evidence=dict(response_trace["evidence"]),
             response=response,
+            runtime_invocation_id=runtime_invocation_id,
             runtime_invocation_result=runtime_invocation_result,
         )
 
@@ -1874,6 +1891,7 @@ class PlatformAgentRunService:
             answer=answer,
             runtime_adapter=dict(context["runtime_adapter"]),
             response=response,
+            runtime_invocation_id=context.get("runtime_invocation_id"),
             runtime_invocation_result=runtime_invocation_result,
         )
 
