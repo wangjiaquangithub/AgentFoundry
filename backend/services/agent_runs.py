@@ -45,6 +45,10 @@ class PlatformAgentRunService:
             raise PlatformAgentRunServiceError(404, "Agent run not found.")
         return run
 
+    def append_run(self, record: dict[str, Any]) -> dict[str, Any]:
+        self._repository.append(record)
+        return record
+
     def clear_runs(
         self,
         *,

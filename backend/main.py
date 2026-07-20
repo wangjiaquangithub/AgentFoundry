@@ -3763,7 +3763,7 @@ async def run_enterprise_agent(
             "tool_calls": [],
             "evidence": evidence,
         }
-        agent_run_repository.append(
+        _platform_agent_run_service().append_run(
             {
                 "turn_id": turn_id,
                 "session_id": runner_session_id,
@@ -4002,7 +4002,7 @@ async def run_enterprise_agent(
         "memory_saved": memory_saved,
         "evidence": evidence,
     }
-    agent_run_repository.append(
+    _platform_agent_run_service().append_run(
         {
             "turn_id": turn_id,
             "session_id": runner_session_id,
