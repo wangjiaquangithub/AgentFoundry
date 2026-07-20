@@ -45,6 +45,10 @@ class PlatformAgentService:
     def save_agents(self, agents: list[dict[str, Any]]) -> None:
         self._repository.save_all(agents)
 
+    @staticmethod
+    def resolve_request_user_id(user_id: str | None) -> str:
+        return user_id or "acme:alice"
+
     def import_agents_payload(self, value: Any, *, mode: str) -> None:
         imported_agents = self.normalize_import_agents(value)
         agents = (

@@ -1311,18 +1311,19 @@ async def publish_enterprise_platform_agent(
     request: Request,
 ) -> dict[str, Any]:
     """Publish one business template as a tenant-scoped platform agent."""
-    user_id = request.headers.get("X-User-ID") or "acme:alice"
-    resource_inputs = _platform_agent_service().resource_validation_inputs(payload)
+    agent_service = _platform_agent_service()
+    user_id = agent_service.resolve_request_user_id(request.headers.get("X-User-ID"))
+    resource_inputs = agent_service.resource_validation_inputs(payload)
     await _validate_platform_agent_resources(
         request,
         user_id,
         **resource_inputs,
     )
     try:
-        agent, agents = _platform_agent_service().create_agent(payload, user_id)
+        agent, agents = agent_service.create_agent(payload, user_id)
     except PlatformAgentServiceError as exc:
         _raise_platform_agent_service_error(exc)
-    return _platform_agent_service().mutation_response(agent, agents)
+    return agent_service.mutation_response(agent, agents)
 
 
 @app.patch("/enterprise/platform/agents/{agent_id}")
@@ -1332,12 +1333,13 @@ async def update_enterprise_platform_agent(
     request: Request,
 ) -> dict[str, Any]:
     """Update a tenant-scoped platform agent instance."""
-    user_id = request.headers.get("X-User-ID") or "acme:alice"
+    agent_service = _platform_agent_service()
+    user_id = agent_service.resolve_request_user_id(request.headers.get("X-User-ID"))
     try:
-        existing_agent = _platform_agent_service().get_agent(agent_id)
+        existing_agent = agent_service.get_agent(agent_id)
     except PlatformAgentServiceError as exc:
         _raise_platform_agent_service_error(exc)
-    resource_inputs = _platform_agent_service().resource_validation_inputs(
+    resource_inputs = agent_service.resource_validation_inputs(
         payload,
         existing_agent=existing_agent,
     )
@@ -1347,14 +1349,14 @@ async def update_enterprise_platform_agent(
         **resource_inputs,
     )
     try:
-        agent, agents = _platform_agent_service().update_agent(
+        agent, agents = agent_service.update_agent(
             agent_id,
             payload,
             user_id,
         )
     except PlatformAgentServiceError as exc:
         _raise_platform_agent_service_error(exc)
-    return _platform_agent_service().mutation_response(agent, agents)
+    return agent_service.mutation_response(agent, agents)
 
 
 @app.delete("/enterprise/platform/agents/{agent_id}")
