@@ -86,6 +86,7 @@ from services.connectors import (
     PlatformConnectorConfigService,
     PlatformConnectorConfigServiceError,
 )
+from services.dev_knowledge import PlatformDevKnowledgeService
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
 from services.platform_status import PlatformStatusService
@@ -158,6 +159,9 @@ approval_request_repository = ApprovalRequestRepository(
 )
 member_repository = MemberRepository(PLATFORM_MEMBERS_PATH)
 dev_knowledge_repository = DevKnowledgeRepository(PLATFORM_DEV_KNOWLEDGE_PATH)
+dev_knowledge_service = PlatformDevKnowledgeService(
+    repository=dev_knowledge_repository,
+)
 platform_memory_repository = PlatformMemoryRepository(PLATFORM_MEMORY_DIR)
 platform_memory_service = PlatformMemoryService(repository=platform_memory_repository)
 
@@ -1138,7 +1142,7 @@ def _format_knowledge_answer(
 
 
 def _load_platform_dev_knowledge() -> list[dict[str, Any]]:
-    return dev_knowledge_repository.list()
+    return dev_knowledge_service.list_records()
 
 
 def _knowledge_query_terms(value: str) -> set[str]:
