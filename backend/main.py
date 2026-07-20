@@ -1647,7 +1647,7 @@ async def run_enterprise_agent(
             ),
         )
 
-        unrouted_finalize_context = agent_run_service.build_unrouted_finalize_context(
+        response = agent_run_service.finalize_unrouted_response_from_context(
             response_record_context=response_record_context,
             answer=answer,
             session_id=runner_session_id,
@@ -1667,9 +1667,6 @@ async def run_enterprise_agent(
             memory_payload=memory_payload,
             memory_saved=memory_saved,
             decision=decision,
-        )
-        response = agent_run_service.finalize_unrouted_response(
-            **unrouted_finalize_context,
         )
         return response
 
