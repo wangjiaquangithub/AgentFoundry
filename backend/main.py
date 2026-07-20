@@ -73,6 +73,10 @@ from repositories.workflows import (
     WorkflowTemplateRepository,
 )
 from runtime import get_runtime_adapter
+from services.approvals import (
+    PlatformApprovalService,
+    PlatformApprovalServiceError,
+)
 from services.agent_runs import (
     PlatformAgentRunService,
     PlatformAgentRunServiceError,
@@ -4084,8 +4088,18 @@ def _platform_workflow_run_service() -> PlatformWorkflowRunService:
     return PlatformWorkflowRunService(repository=workflow_run_repository)
 
 
+def _platform_approval_service() -> PlatformApprovalService:
+    return PlatformApprovalService(repository=approval_request_repository)
+
+
 def _raise_platform_workflow_template_service_error(
     exc: PlatformWorkflowTemplateServiceError,
+) -> NoReturn:
+    raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
+
+
+def _raise_platform_approval_service_error(
+    exc: PlatformApprovalServiceError,
 ) -> NoReturn:
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
@@ -4773,18 +4787,16 @@ async def list_enterprise_approval_requests(
     limit: int = 20,
 ) -> dict[str, Any]:
     """List recent platform governance approval requests."""
-    normalized_status = (status or "").strip() or None
-    if normalized_status and normalized_status not in {"pending", "approved", "rejected"}:
-        raise HTTPException(status_code=400, detail=f"Unknown approval status: {normalized_status}")
-    return {
-        "approvals": _load_platform_approval_requests(
+    try:
+        return _platform_approval_service().list_requests(
             limit=limit,
-            status=normalized_status,
-            tenant=(tenant or "").strip() or None,
-            user_id=(user_id or "").strip() or None,
-            agent_id=(agent_id or "").strip() or None,
-        ),
-    }
+            status=status,
+            tenant=tenant,
+            user_id=user_id,
+            agent_id=agent_id,
+        )
+    except PlatformApprovalServiceError as exc:
+        _raise_platform_approval_service_error(exc)
 
 
 @app.post("/enterprise/platform/approvals")
