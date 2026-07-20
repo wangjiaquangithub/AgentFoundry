@@ -2267,12 +2267,16 @@ async def update_enterprise_workflow(
     request: Request,
 ) -> dict[str, Any]:
     """Update mutable workflow template metadata from the platform console."""
-    normalized_type = workflow_type.strip()
+    workflow_service = _platform_workflow_template_service()
+    update_context = workflow_service.update_template_context(
+        workflow_type=workflow_type,
+        actor=request.headers.get("X-User-ID"),
+    )
     try:
-        workflow, workflows = _platform_workflow_template_service().update_template(
-            workflow_type=normalized_type,
+        workflow, workflows = workflow_service.update_template(
+            workflow_type=update_context["workflow_type"],
             payload=payload,
-            actor=request.headers.get("X-User-ID") or "platform-admin",
+            actor=update_context["actor"],
         )
     except PlatformWorkflowTemplateServiceError as exc:
         _raise_platform_workflow_template_service_error(exc)

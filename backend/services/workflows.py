@@ -196,6 +196,17 @@ class PlatformWorkflowTemplateService:
             )
         return workflow
 
+    def update_template_context(
+        self,
+        *,
+        workflow_type: str,
+        actor: str | None,
+    ) -> dict[str, str]:
+        return {
+            "workflow_type": workflow_type.strip(),
+            "actor": str(actor or "platform-admin").strip() or "platform-admin",
+        }
+
     def update_template(
         self,
         *,
