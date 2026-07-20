@@ -74,6 +74,19 @@ class PlatformApprovalService:
             agent_id=_optional_filter(agent_id),
         )
 
+    def build_create_request_context(
+        self,
+        *,
+        payload: Any,
+        actor: str | None,
+    ) -> dict[str, str]:
+        requested_by = actor
+        user_id = payload.user_id or requested_by or "acme:alice"
+        return {
+            "user_id": user_id,
+            "requested_by": requested_by or user_id,
+        }
+
     def build_create_request_payload(
         self,
         *,

@@ -2328,18 +2328,23 @@ async def create_enterprise_approval_request(
     request: Request,
 ) -> dict[str, Any]:
     """Create a pending approval request for a high-risk platform action."""
-    requested_by = request.headers.get("X-User-ID")
-    user_id = payload.user_id or requested_by or "acme:alice"
+    approval_service = _platform_approval_service()
+    create_context = approval_service.build_create_request_context(
+        payload=payload,
+        actor=request.headers.get("X-User-ID"),
+    )
     try:
-        runtime = _platform_connector_config_service().enterprise_runtime_context(user_id)
+        runtime = _platform_connector_config_service().enterprise_runtime_context(
+            create_context["user_id"],
+        )
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
     runtime_selection = _platform_status_service().runtime_selection(runtime)
-    request_payload = _platform_approval_service().build_create_request_payload(
+    request_payload = approval_service.build_create_request_payload(
         payload=payload,
         tenant=runtime_selection["tenant"],
-        user_id=user_id,
-        requested_by=requested_by or user_id,
+        user_id=create_context["user_id"],
+        requested_by=create_context["requested_by"],
     )
     tool_name = request_payload["tool_name"]
     workflow_type = request_payload["workflow_type"]
@@ -2352,7 +2357,7 @@ async def create_enterprise_approval_request(
             _raise_platform_workflow_template_service_error(exc)
 
     try:
-        record = _platform_approval_service().create_request(
+        record = approval_service.create_request(
             **request_payload,
         )
     except PlatformApprovalServiceError as exc:
