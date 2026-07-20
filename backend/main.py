@@ -2323,11 +2323,12 @@ async def create_enterprise_approval_request(
         runtime = _platform_connector_config_service().enterprise_runtime_context(user_id)
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
+    tenant = _platform_status_service().runtime_tenant(runtime)
     default_agent_id = "platform-workflow" if request_type == "workflow_run" else "platform-console"
     try:
         record = _platform_approval_service().create_request(
             request_type=request_type,
-            tenant=str(runtime["tenant"]),
+            tenant=tenant,
             user_id=user_id,
             agent_id=(payload.agent_id or "").strip() or default_agent_id,
             tool_name=tool_name,
