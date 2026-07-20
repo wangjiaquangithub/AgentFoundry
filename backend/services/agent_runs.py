@@ -723,6 +723,72 @@ class PlatformAgentRunService:
             response=response,
         )
 
+    def finalize_routed_response(
+        self,
+        *,
+        primary_call: dict[str, Any],
+        response_record_context: dict[str, Any],
+        answer: str,
+        routed: bool,
+        session_id: str,
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        connector: str,
+        connector_source: str,
+        routing_mode: str,
+        routing_source: str,
+        routing_reason: str,
+        routing_error: str | None,
+        agent_metadata: dict[str, Any],
+        runtime_adapter: dict[str, Any],
+        tool_calls: list[dict[str, Any]],
+        knowledge_hits: list[dict[str, Any]],
+        memory_hits: list[dict[str, Any]],
+        knowledge_payload: dict[str, Any],
+        memory_payload: dict[str, Any],
+        memory_saved: bool,
+    ) -> dict[str, Any]:
+        response_trace = self.build_routed_response_trace(
+            primary_call=primary_call,
+            tenant=tenant,
+            user_id=user_id,
+            agent_id=agent_id,
+            session_id=session_id,
+            tool_calls=tool_calls,
+            knowledge_hits=knowledge_hits,
+            memory_hits=memory_hits,
+            memory_saved=memory_saved,
+        )
+        response = self.build_routed_response_from_trace(
+            response_trace=response_trace,
+            answer=answer,
+            routed=routed,
+            session_id=session_id,
+            primary_call=primary_call,
+            tenant=tenant,
+            user_id=user_id,
+            connector=connector,
+            connector_source=connector_source,
+            routing_mode=routing_mode,
+            routing_source=routing_source,
+            routing_reason=routing_reason,
+            routing_error=routing_error,
+            agent_metadata=agent_metadata,
+            runtime_adapter=runtime_adapter,
+            tool_calls=tool_calls,
+            knowledge_payload=knowledge_payload,
+            memory_payload=memory_payload,
+            memory_saved=memory_saved,
+        )
+        self.append_response_record_from_context(
+            response_trace=response_trace,
+            context=response_record_context,
+            answer=answer,
+            response=response,
+        )
+        return response
+
     def clear_runs(
         self,
         *,
