@@ -204,6 +204,34 @@ class PlatformToolPolicyService:
             "stats": self.audit_stats(events),
         }
 
+    def catalog_tools_payloads(
+        self,
+        *,
+        tool_names: list[str],
+        tool_catalog: dict[str, dict[str, Any]],
+        decisions: dict[str, dict[str, Any]],
+        audit_events_for_tool: Callable[[str], list[dict[str, Any]]],
+        published_agents: list[dict[str, Any]],
+        configured_agent: dict[str, Any] | None,
+    ) -> list[dict[str, Any]]:
+        configured_agent_tools = (
+            set(configured_agent.get("tools") or []) if configured_agent else set()
+        )
+        tools = []
+        for tool_name in tool_names:
+            tools.append(
+                self.catalog_tool_payload(
+                    tool_name=tool_name,
+                    catalog=tool_catalog[tool_name],
+                    decision=decisions.get(tool_name),
+                    events=audit_events_for_tool(tool_name),
+                    published_agents=published_agents,
+                    configured_agent=configured_agent,
+                    configured_agent_tools=configured_agent_tools,
+                ),
+            )
+        return tools
+
     @staticmethod
     def catalog_decisions_by_name(
         *,

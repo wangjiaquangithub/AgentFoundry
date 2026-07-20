@@ -1377,35 +1377,24 @@ async def enterprise_platform_tools(
         except PlatformAgentServiceError as exc:
             _raise_platform_agent_service_error(exc)
 
-    configured_agent_tools = (
-        set(configured_agent.get("tools") or []) if configured_agent else set()
-    )
     decisions = tool_policy_service.catalog_decisions_by_name(
         authorization_policy=tool_authorization_policy,
         tenant=tenant,
         user_id=resolved_user_id,
         tool_names=ENTERPRISE_TOOL_NAMES,
     )
-    tools = []
-    for tool_name in ENTERPRISE_TOOL_NAMES:
-        catalog = ENTERPRISE_TOOL_CATALOG[tool_name]
-        events = tool_audit_logger.query(
+    tools = tool_policy_service.catalog_tools_payloads(
+        tool_names=ENTERPRISE_TOOL_NAMES,
+        tool_catalog=ENTERPRISE_TOOL_CATALOG,
+        decisions=decisions,
+        audit_events_for_tool=lambda tool_name: tool_audit_logger.query(
             user_id=resolved_user_id,
             tool_name=tool_name,
             limit=200,
-        )
-        decision = decisions.get(tool_name)
-        tools.append(
-            tool_policy_service.catalog_tool_payload(
-                tool_name=tool_name,
-                catalog=catalog,
-                decision=decision,
-                events=events,
-                published_agents=published_agents,
-                configured_agent=configured_agent,
-                configured_agent_tools=configured_agent_tools,
-            ),
-        )
+        ),
+        published_agents=published_agents,
+        configured_agent=configured_agent,
+    )
     return tool_policy_service.catalog_response(
         tools=tools,
         user_id=resolved_user_id,
