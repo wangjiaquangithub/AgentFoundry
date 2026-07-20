@@ -68,7 +68,6 @@ from repositories.connectors import ConnectorConfigRepository
 from repositories.dev_knowledge import DevKnowledgeRepository
 from repositories.memories import PlatformMemoryRepository
 from repositories.members import MemberRepository
-from repositories.tool_policy import ToolPolicyRepository
 from repositories.workflows import (
     WorkflowRunRepository,
     WorkflowTemplateRepository,
@@ -81,6 +80,10 @@ from services.connectors import (
 )
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.platform_status import PlatformStatusService
+from services.tools import (
+    PlatformToolPolicyService,
+    PlatformToolPolicyServiceError,
+)
 from services.workflows import (
     PlatformWorkflowTemplateService,
     PlatformWorkflowTemplateServiceError,
@@ -188,25 +191,47 @@ def _platform_tool_policy_path() -> Path:
 
 
 def _load_platform_tool_policy_config() -> dict[str, Any]:
-    return ToolPolicyRepository(
-        _platform_tool_policy_path(),
-        _default_tool_policy_copy(),
-    ).load()
+    try:
+        return _platform_tool_policy_service().load_policy()
+    except PlatformToolPolicyServiceError as exc:
+        _raise_platform_tool_policy_service_error(exc)
 
 
 def _save_platform_tool_policy_config(policy: dict[str, Any]) -> None:
-    ToolPolicyRepository(
-        _platform_tool_policy_path(),
-        _default_tool_policy_copy(),
-    ).save(policy)
+    try:
+        _platform_tool_policy_service().save_policy(policy)
+    except PlatformToolPolicyServiceError as exc:
+        _raise_platform_tool_policy_service_error(exc)
 
 
 def _build_tool_authorization_policy() -> ToolAuthorizationPolicy:
-    mode = os.getenv("ENTERPRISE_TOOL_POLICY_MODE", "permissive").strip().lower()
-    return ToolAuthorizationPolicy(
-        _load_platform_tool_policy_config(),
-        mode=mode,  # type: ignore[arg-type]
+    try:
+        return _platform_tool_policy_service().build_authorization_policy()
+    except PlatformToolPolicyServiceError as exc:
+        _raise_platform_tool_policy_service_error(exc)
+
+
+def _platform_tool_policy_service() -> PlatformToolPolicyService:
+    return PlatformToolPolicyService(
+        policy_path=_platform_tool_policy_path,
+        default_policy=_default_tool_policy_copy(),
+        policy_mode=lambda: os.getenv(
+            "ENTERPRISE_TOOL_POLICY_MODE",
+            "permissive",
+        ).strip().lower(),
+        enterprise_tool_names=ENTERPRISE_TOOL_NAMES,
+        runtime_context=lambda user_id: _enterprise_runtime_context(user_id),
+        identity_metadata=lambda user_id, tenant: _platform_identity_metadata(
+            user_id,
+            tenant,
+        ),
     )
+
+
+def _raise_platform_tool_policy_service_error(
+    exc: PlatformToolPolicyServiceError,
+) -> NoReturn:
+    raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
 tool_authorization_policy = _build_tool_authorization_policy()
@@ -1931,18 +1956,7 @@ def _deep_merge_dict(base: dict[str, Any], incoming: dict[str, Any]) -> dict[str
 
 
 def _normalize_policy_tools(value: list[str] | None) -> list[str]:
-    if not value:
-        return []
-
-    seen: set[str] = set()
-    result: list[str] = []
-    allowed_names = set(ENTERPRISE_TOOL_NAMES)
-    for item in value:
-        name = str(item or "").strip()
-        if name in allowed_names and name not in seen:
-            seen.add(name)
-            result.append(name)
-    return result
+    return _platform_tool_policy_service().normalize_policy_tools(value)
 
 
 def _platform_agent_template_metadata() -> list[dict[str, Any]]:
@@ -2030,20 +2044,14 @@ def _platform_tool_policy_payload(
     user_id: str | None = None,
     tenant: str | None = None,
 ) -> dict[str, Any]:
-    resolved_user_id = user_id or "acme:alice"
-    runtime = _enterprise_runtime_context(resolved_user_id)
-    resolved_tenant = tenant or str(runtime["tenant"])
-    identities = _platform_identity_metadata(resolved_user_id, resolved_tenant)
-    return {
-        "mode": tool_authorization_policy.mode,
-        "path": str(_platform_tool_policy_path()),
-        "policy": _load_platform_tool_policy_config(),
-        "identities": identities,
-        "selected": {
-            "tenant": resolved_tenant,
-            "user_id": resolved_user_id,
-        },
-    }
+    try:
+        return _platform_tool_policy_service().policy_payload(
+            authorization_policy=tool_authorization_policy,
+            user_id=user_id,
+            tenant=tenant,
+        )
+    except PlatformToolPolicyServiceError as exc:
+        _raise_platform_tool_policy_service_error(exc)
 
 
 def _tenant_workspace_metadata(
@@ -3177,26 +3185,20 @@ async def update_enterprise_platform_tool_policy(
     """Persist one tenant user's enterprise tool authorization policy."""
     global tool_authorization_policy
 
-    tenant = payload.tenant.strip()
-    user_id = payload.user_id.strip()
-    if not tenant or not user_id:
-        raise HTTPException(status_code=400, detail="tenant and user_id are required.")
+    try:
+        tool_authorization_policy = _platform_tool_policy_service().update_user_policy(
+            tenant=payload.tenant,
+            user_id=payload.user_id,
+            allow=payload.allow,
+            deny=payload.deny,
+        )
+    except PlatformToolPolicyServiceError as exc:
+        _raise_platform_tool_policy_service_error(exc)
 
-    allow = _normalize_policy_tools(payload.allow)
-    deny = _normalize_policy_tools(payload.deny)
-    deny_set = set(deny)
-    allow = [name for name in allow if name not in deny_set]
-
-    policy = _load_platform_tool_policy_config()
-    tenants = policy.setdefault("tenants", {})
-    tenant_policy = tenants.setdefault(tenant, {})
-    users = tenant_policy.setdefault("users", {})
-    users[user_id] = {"allow": allow, "deny": deny}
-
-    _save_platform_tool_policy_config(policy)
-    tool_authorization_policy = _build_tool_authorization_policy()
-
-    return _platform_tool_policy_payload(user_id=user_id, tenant=tenant)
+    return _platform_tool_policy_payload(
+        user_id=payload.user_id.strip(),
+        tenant=payload.tenant.strip(),
+    )
 
 
 @app.get("/enterprise/platform/connectors/configs")
