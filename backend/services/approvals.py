@@ -1,6 +1,7 @@
 """Service-layer orchestration for enterprise approval requests."""
 
 from typing import Any, Callable
+from uuid import uuid4
 
 from repositories.approvals import ApprovalRequestRepository
 
@@ -55,6 +56,59 @@ class PlatformApprovalService:
                 agent_id=_optional_filter(agent_id),
             ),
         }
+
+    def create_request(
+        self,
+        *,
+        request_type: str,
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        inputs: dict[str, Any],
+        requested_by: str,
+        tool_name: str | None = None,
+        workflow_type: str | None = None,
+        reason: str | None = None,
+    ) -> dict[str, Any]:
+        normalized_request_type = request_type.strip()
+        if normalized_request_type not in {"tool_run", "workflow_run", "agent_action"}:
+            raise PlatformApprovalServiceError(
+                400,
+                f"Unknown approval type: {normalized_request_type}",
+            )
+
+        normalized_tool_name = _optional_filter(tool_name)
+        normalized_workflow_type = _optional_filter(workflow_type)
+        if normalized_request_type == "tool_run" and not normalized_tool_name:
+            raise PlatformApprovalServiceError(
+                400,
+                "tool_name is required for tool approvals.",
+            )
+        if normalized_request_type == "workflow_run" and not normalized_workflow_type:
+            raise PlatformApprovalServiceError(
+                400,
+                "workflow_type is required for workflow approvals.",
+            )
+
+        record = {
+            "approval_id": uuid4().hex,
+            "status": "pending",
+            "tenant": tenant,
+            "user_id": user_id,
+            "agent_id": agent_id,
+            "request_type": normalized_request_type,
+            "tool_name": normalized_tool_name,
+            "workflow_type": normalized_workflow_type,
+            "inputs": dict(inputs),
+            "reason": _optional_filter(reason),
+            "requested_at": self._now(),
+            "requested_by": requested_by,
+            "decided_at": None,
+            "decided_by": None,
+            "decision_note": None,
+        }
+        self._repository.append(record)
+        return record
 
     def update_status(
         self,

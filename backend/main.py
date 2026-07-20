@@ -3835,21 +3835,24 @@ async def run_enterprise_agent(
                 if exc.status_code != 403 or not detail.get("approval_required"):
                     raise
 
-                approval = _create_platform_approval_request(
-                    request_type="tool_run",
-                    tenant=tenant,
-                    user_id=user_id,
-                    agent_id=runner_agent_id,
-                    tool_name=tool_name,
-                    inputs=route_inputs,
-                    reason=str(
-                        detail.get(
-                            "message",
-                            "该工具需要审批后才能运行。",
+                try:
+                    approval = _platform_approval_service().create_request(
+                        request_type="tool_run",
+                        tenant=tenant,
+                        user_id=user_id,
+                        agent_id=runner_agent_id,
+                        tool_name=tool_name,
+                        inputs=route_inputs,
+                        reason=str(
+                            detail.get(
+                                "message",
+                                "该工具需要审批后才能运行。",
+                            ),
                         ),
-                    ),
-                    requested_by=request.headers.get("X-User-ID") or user_id,
-                )
+                        requested_by=request.headers.get("X-User-ID") or user_id,
+                    )
+                except PlatformApprovalServiceError as service_exc:
+                    _raise_platform_approval_service_error(service_exc)
                 approval_id = str(approval["approval_id"])
                 approval_message = (
                     f"该工具需要审批，已自动创建审批请求 {approval_id}。"
@@ -4408,48 +4411,6 @@ def _load_platform_approval_requests(
     )
 
 
-def _append_platform_approval_request(record: dict[str, Any]) -> None:
-    approval_request_repository.append(record)
-
-
-def _create_platform_approval_request(
-    *,
-    request_type: str,
-    tenant: str,
-    user_id: str,
-    agent_id: str,
-    inputs: dict[str, Any],
-    requested_by: str,
-    tool_name: str | None = None,
-    workflow_type: str | None = None,
-    reason: str | None = None,
-) -> dict[str, Any]:
-    """Persist a pending approval request for a governed platform action."""
-    record = {
-        "approval_id": uuid4().hex,
-        "status": "pending",
-        "tenant": tenant,
-        "user_id": user_id,
-        "agent_id": agent_id,
-        "request_type": request_type,
-        "tool_name": tool_name,
-        "workflow_type": workflow_type,
-        "inputs": dict(inputs),
-        "reason": (reason or "").strip() or None,
-        "requested_at": _now_iso(),
-        "requested_by": requested_by,
-        "decided_at": None,
-        "decided_by": None,
-        "decision_note": None,
-    }
-    _append_platform_approval_request(record)
-    return record
-
-
-def _replace_platform_approval_requests(records: list[dict[str, Any]]) -> None:
-    approval_request_repository.replace_all(records)
-
-
 def _get_platform_approval_request(approval_id: str) -> dict[str, Any]:
     normalized_id = approval_id.strip()
     for record in _read_platform_approval_requests():
@@ -4779,18 +4740,8 @@ async def create_enterprise_approval_request(
 ) -> dict[str, Any]:
     """Create a pending approval request for a high-risk platform action."""
     request_type = payload.request_type.strip()
-    if request_type not in {"tool_run", "workflow_run", "agent_action"}:
-        raise HTTPException(status_code=400, detail=f"Unknown approval type: {request_type}")
-
     tool_name = (payload.tool_name or "").strip() or None
     workflow_type = (payload.workflow_type or "").strip() or None
-    if request_type == "tool_run" and not tool_name:
-        raise HTTPException(status_code=400, detail="tool_name is required for tool approvals.")
-    if request_type == "workflow_run" and not workflow_type:
-        raise HTTPException(
-            status_code=400,
-            detail="workflow_type is required for workflow approvals.",
-        )
     if tool_name and tool_name not in ENTERPRISE_TOOL_CATALOG:
         raise HTTPException(status_code=400, detail=f"Unknown enterprise tool: {tool_name}")
     if workflow_type:
@@ -4799,17 +4750,20 @@ async def create_enterprise_approval_request(
     user_id = payload.user_id or request.headers.get("X-User-ID") or "acme:alice"
     runtime = _enterprise_runtime_context(user_id)
     default_agent_id = "platform-workflow" if request_type == "workflow_run" else "platform-console"
-    record = _create_platform_approval_request(
-        request_type=request_type,
-        tenant=str(runtime["tenant"]),
-        user_id=user_id,
-        agent_id=(payload.agent_id or "").strip() or default_agent_id,
-        tool_name=tool_name,
-        workflow_type=workflow_type,
-        inputs=payload.inputs,
-        reason=payload.reason,
-        requested_by=request.headers.get("X-User-ID") or user_id,
-    )
+    try:
+        record = _platform_approval_service().create_request(
+            request_type=request_type,
+            tenant=str(runtime["tenant"]),
+            user_id=user_id,
+            agent_id=(payload.agent_id or "").strip() or default_agent_id,
+            tool_name=tool_name,
+            workflow_type=workflow_type,
+            inputs=payload.inputs,
+            reason=payload.reason,
+            requested_by=request.headers.get("X-User-ID") or user_id,
+        )
+    except PlatformApprovalServiceError as exc:
+        _raise_platform_approval_service_error(exc)
     return {"approval": record}
 
 
