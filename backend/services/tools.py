@@ -46,6 +46,13 @@ class PlatformToolPolicyService:
     def save_policy(self, policy: dict[str, Any]) -> None:
         self._repository().save(policy)
 
+    def merge_import_policy(
+        self,
+        current_policy: dict[str, Any],
+        imported_policy: dict[str, Any],
+    ) -> dict[str, Any]:
+        return _deep_merge_dict(current_policy, imported_policy)
+
     def build_authorization_policy(self) -> ToolAuthorizationPolicy:
         return ToolAuthorizationPolicy(
             self.load_policy(),
@@ -208,3 +215,13 @@ class PlatformToolPolicyService:
             self._policy_path(),
             json.loads(json.dumps(self._default_policy)),
         )
+
+
+def _deep_merge_dict(base: dict[str, Any], incoming: dict[str, Any]) -> dict[str, Any]:
+    merged = json.loads(json.dumps(base))
+    for key, value in incoming.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _deep_merge_dict(merged[key], value)
+        else:
+            merged[key] = value
+    return merged

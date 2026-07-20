@@ -1183,19 +1183,6 @@ def _export_platform_config() -> dict[str, Any]:
     )
 
 
-def _deep_merge_dict(base: dict[str, Any], incoming: dict[str, Any]) -> dict[str, Any]:
-    merged = json.loads(json.dumps(base))
-    for key, value in incoming.items():
-        if (
-            isinstance(value, dict)
-            and isinstance(merged.get(key), dict)
-        ):
-            merged[key] = _deep_merge_dict(merged[key], value)
-        else:
-            merged[key] = value
-    return merged
-
-
 def _platform_identity_metadata(
     current_user_id: str,
     current_tenant: str,
@@ -2175,7 +2162,10 @@ async def import_enterprise_platform_config(
                 current_policy = tool_policy_service.load_policy()
             except PlatformToolPolicyServiceError as exc:
                 _raise_platform_tool_policy_service_error(exc)
-            policy = _deep_merge_dict(current_policy, raw_policy)
+            policy = tool_policy_service.merge_import_policy(
+                current_policy,
+                raw_policy,
+            )
         try:
             tool_policy_service.save_policy(policy)
         except PlatformToolPolicyServiceError as exc:
