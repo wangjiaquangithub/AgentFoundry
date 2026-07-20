@@ -795,13 +795,6 @@ def _tenant_hint_from_user_id(user_id: str) -> str | None:
     return tenant or None
 
 
-def _enterprise_runtime_context(user_id: str) -> dict[str, Any]:
-    try:
-        return _platform_connector_config_service().enterprise_runtime_context(user_id)
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
-
-
 def _export_platform_config() -> dict[str, Any]:
     try:
         connector_config_service = _platform_connector_config_service()
