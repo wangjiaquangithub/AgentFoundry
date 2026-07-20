@@ -321,20 +321,6 @@ def _platform_status_service() -> PlatformStatusService:
     )
 
 
-def _enterprise_platform_launch_readiness(
-    *,
-    tenant: str,
-    user_id: str,
-    identities: list[dict[str, Any]],
-) -> dict[str, Any]:
-    """Build an authoritative launch checklist for the enterprise console."""
-    return _platform_status_service().launch_readiness(
-        tenant=tenant,
-        user_id=user_id,
-        identities=identities,
-    )
-
-
 def _enterprise_platform_ops_tasks(
     *,
     tenant: str,
@@ -2501,7 +2487,7 @@ async def enterprise_platform_status(request: Request) -> dict[str, Any]:
             tenant=tenant,
             user_id=user_id,
         ),
-        "launch_readiness": _enterprise_platform_launch_readiness(
+        "launch_readiness": _platform_status_service().launch_readiness(
             tenant=tenant,
             user_id=user_id,
             identities=identities,
