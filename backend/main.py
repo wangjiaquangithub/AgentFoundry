@@ -908,10 +908,6 @@ def _validate_platform_agent_access_scope(
         _raise_platform_agent_service_error(exc)
 
 
-def _platform_agent_access_summary(agent: dict[str, Any]) -> dict[str, Any]:
-    return _platform_agent_service().access_summary(agent)
-
-
 def _identity_role_for_user(user_id: str) -> str:
     tenant_hint = _tenant_hint_from_user_id(user_id)
     current_tenant = (
