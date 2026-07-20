@@ -277,26 +277,6 @@ def _tool_audit_stats(events: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _audit_query_summary(events: list[dict[str, Any]]) -> dict[str, Any]:
-    """Summarize filtered audit events for the platform audit view."""
-    stats = _tool_audit_stats(events)
-    return {
-        "total_returned": stats["calls"],
-        "successes": stats["successes"],
-        "failures": stats["failures"],
-        "avg_duration_ms": stats["avg_duration_ms"],
-        "unique_users": len(
-            {event.get("user_id") for event in events if event.get("user_id")}
-        ),
-        "unique_agents": len(
-            {event.get("agent_id") for event in events if event.get("agent_id")}
-        ),
-        "unique_tools": len(
-            {event.get("tool_name") for event in events if event.get("tool_name")}
-        ),
-    }
-
-
 def _platform_status_service() -> PlatformStatusService:
     """Build the service object that composes platform console status payloads."""
     return PlatformStatusService(
@@ -2835,9 +2815,36 @@ async def enterprise_platform_audit(
         success=success,
         limit=normalized_limit,
     )
+    stats = _tool_audit_stats(events)
     return {
         "events": events,
-        "summary": _audit_query_summary(events),
+        "summary": {
+            "total_returned": stats["calls"],
+            "successes": stats["successes"],
+            "failures": stats["failures"],
+            "avg_duration_ms": stats["avg_duration_ms"],
+            "unique_users": len(
+                {
+                    event.get("user_id")
+                    for event in events
+                    if event.get("user_id")
+                }
+            ),
+            "unique_agents": len(
+                {
+                    event.get("agent_id")
+                    for event in events
+                    if event.get("agent_id")
+                }
+            ),
+            "unique_tools": len(
+                {
+                    event.get("tool_name")
+                    for event in events
+                    if event.get("tool_name")
+                }
+            ),
+        },
         "filters": {
             "tenant": tenant,
             "user_id": user_id,
