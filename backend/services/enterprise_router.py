@@ -65,6 +65,23 @@ class PlatformEnterpriseRouterService:
             )
         )
 
+    def missing_model_router_config_names(
+        self,
+        *,
+        base_url: str,
+        api_key: str,
+        model: str,
+    ) -> list[str]:
+        return [
+            name
+            for name, value in (
+                ("ENTERPRISE_AGENT_ROUTER_BASE_URL", base_url),
+                ("ENTERPRISE_AGENT_ROUTER_API_KEY", api_key),
+                ("ENTERPRISE_AGENT_ROUTER_MODEL", model),
+            )
+            if not value
+        ]
+
     def normalize_model_provider(self, provider: str) -> str:
         return provider.strip().lower() or "openai"
 

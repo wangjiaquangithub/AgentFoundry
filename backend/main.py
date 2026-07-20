@@ -966,15 +966,11 @@ def _enterprise_router_config() -> dict[str, Any] | None:
     if not base_url and not api_key and not model:
         return None
 
-    missing = [
-        name
-        for name, value in (
-            ("ENTERPRISE_AGENT_ROUTER_BASE_URL", base_url),
-            ("ENTERPRISE_AGENT_ROUTER_API_KEY", api_key),
-            ("ENTERPRISE_AGENT_ROUTER_MODEL", model),
-        )
-        if not value
-    ]
+    missing = enterprise_router_service.missing_model_router_config_names(
+        base_url=base_url,
+        api_key=api_key,
+        model=model,
+    )
     if missing:
         raise EnterpriseRouterError(
             "Router env is incomplete: missing " + ", ".join(missing),
