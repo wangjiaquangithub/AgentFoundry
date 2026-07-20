@@ -4089,7 +4089,10 @@ def _platform_workflow_run_service() -> PlatformWorkflowRunService:
 
 
 def _platform_approval_service() -> PlatformApprovalService:
-    return PlatformApprovalService(repository=approval_request_repository)
+    return PlatformApprovalService(
+        repository=approval_request_repository,
+        now=_now_iso,
+    )
 
 
 def _raise_platform_workflow_template_service_error(
@@ -4528,36 +4531,6 @@ def _require_platform_approval(
     return normalized_approval_id
 
 
-def _update_platform_approval_request_status(
-    *,
-    approval_id: str,
-    status: str,
-    decided_by: str,
-    decision_note: str | None,
-) -> dict[str, Any]:
-    records = _read_platform_approval_requests()
-    for index, record in enumerate(records):
-        if record.get("approval_id") != approval_id:
-            continue
-        if record.get("status") != "pending":
-            raise HTTPException(
-                status_code=409,
-                detail=f"Approval request is already {record.get('status')}.",
-            )
-        updated = {
-            **record,
-            "status": status,
-            "decided_at": _now_iso(),
-            "decided_by": decided_by,
-            "decision_note": (decision_note or "").strip() or None,
-        }
-        records[index] = updated
-        _replace_platform_approval_requests(records)
-        return updated
-
-    raise HTTPException(status_code=404, detail=f"Unknown approval request: {approval_id}")
-
-
 def _workflow_error_message(exc: HTTPException) -> str:
     detail = exc.detail
     if isinstance(detail, dict):
@@ -4852,12 +4825,15 @@ async def approve_enterprise_approval_request(
         or request.headers.get("X-User-ID")
         or "platform-admin"
     )
-    approval = _update_platform_approval_request_status(
-        approval_id=approval_id,
-        status="approved",
-        decided_by=decided_by,
-        decision_note=payload.decision_note,
-    )
+    try:
+        approval = _platform_approval_service().update_status(
+            approval_id=approval_id,
+            status="approved",
+            decided_by=decided_by,
+            decision_note=payload.decision_note,
+        )
+    except PlatformApprovalServiceError as exc:
+        _raise_platform_approval_service_error(exc)
     return {"approval": approval}
 
 
@@ -4873,12 +4849,15 @@ async def reject_enterprise_approval_request(
         or request.headers.get("X-User-ID")
         or "platform-admin"
     )
-    approval = _update_platform_approval_request_status(
-        approval_id=approval_id,
-        status="rejected",
-        decided_by=decided_by,
-        decision_note=payload.decision_note,
-    )
+    try:
+        approval = _platform_approval_service().update_status(
+            approval_id=approval_id,
+            status="rejected",
+            decided_by=decided_by,
+            decision_note=payload.decision_note,
+        )
+    except PlatformApprovalServiceError as exc:
+        _raise_platform_approval_service_error(exc)
     return {"approval": approval}
 
 
