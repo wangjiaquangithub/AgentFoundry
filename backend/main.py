@@ -214,6 +214,14 @@ def _build_tool_authorization_policy() -> ToolAuthorizationPolicy:
 
 
 def _platform_tool_policy_service() -> PlatformToolPolicyService:
+    def runtime_context(user_id: str) -> dict[str, Any]:
+        try:
+            return _platform_connector_config_service().enterprise_runtime_context(
+                user_id,
+            )
+        except PlatformConnectorConfigServiceError as exc:
+            _raise_platform_connector_config_service_error(exc)
+
     return PlatformToolPolicyService(
         policy_path=_platform_tool_policy_path,
         default_policy=json.loads(json.dumps(DEFAULT_TOOL_POLICY)),
@@ -222,7 +230,7 @@ def _platform_tool_policy_service() -> PlatformToolPolicyService:
             "permissive",
         ).strip().lower(),
         enterprise_tool_names=ENTERPRISE_TOOL_NAMES,
-        runtime_context=lambda user_id: _enterprise_runtime_context(user_id),
+        runtime_context=runtime_context,
         identity_metadata=lambda user_id, tenant: _platform_identity_metadata(
             user_id,
             tenant,
