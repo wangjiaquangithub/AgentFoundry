@@ -674,16 +674,6 @@ def _get_platform_agent(agent_id: str) -> dict[str, Any]:
         _raise_platform_agent_service_error(exc)
 
 
-def _validate_platform_agent_tools(
-    template: dict[str, Any],
-    selected_tools: list[str],
-) -> None:
-    try:
-        _platform_agent_service().validate_tools(template, selected_tools)
-    except PlatformAgentServiceError as exc:
-        _raise_platform_agent_service_error(exc)
-
-
 def _normalize_platform_resource_ids(values: list[Any] | None) -> list[str]:
     return _platform_agent_service().normalize_resource_ids(values)
 
