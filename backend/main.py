@@ -2129,24 +2129,13 @@ async def import_enterprise_platform_config(
             _raise_platform_agent_service_error(exc)
 
     if "workflow_templates" in incoming:
-        workflow_template_service = _platform_workflow_template_service()
         try:
-            imported_workflows = workflow_template_service.normalize_import_templates(
+            _platform_workflow_template_service().import_templates_payload(
                 incoming.get("workflow_templates"),
+                mode=mode,
             )
         except PlatformWorkflowTemplateServiceError as exc:
             _raise_platform_workflow_template_service_error(exc)
-        workflows = imported_workflows
-        if mode != "replace":
-            try:
-                current_workflows = workflow_template_service.list_templates()
-            except PlatformWorkflowTemplateServiceError as exc:
-                _raise_platform_workflow_template_service_error(exc)
-            workflows = workflow_template_service.merge_import_templates(
-                current_workflows,
-                imported_workflows,
-            )
-        workflow_template_service.save_templates(workflows)
 
     if "tool_policy" in incoming:
         raw_policy = incoming.get("tool_policy")

@@ -156,6 +156,16 @@ class PlatformWorkflowTemplateService:
     ) -> list[dict[str, Any]]:
         return _merge_by_key(existing, imported, "workflow_type")
 
+    def import_templates_payload(self, value: Any, *, mode: str) -> None:
+        imported_workflows = self.normalize_import_templates(value)
+        workflows = imported_workflows
+        if mode != "replace":
+            workflows = self.merge_import_templates(
+                self.list_templates(),
+                imported_workflows,
+            )
+        self.save_templates(workflows)
+
     def list_templates(self) -> list[dict[str, Any]]:
         if not self._repository.exists():
             workflows = self.default_templates()
