@@ -1686,6 +1686,9 @@ async def run_enterprise_agent(
         question=question,
         runtime_adapter=runtime_adapter_payload,
     )
+    knowledge_base_ids = agent_run_service.knowledge_base_ids_from_metadata(
+        agent_metadata,
+    )
     memory_payload = platform_memory_service.build_agent_run_context(
         enabled=bool(agent_metadata.get("memory_enabled", False)),
         tenant=tenant,
@@ -1709,7 +1712,7 @@ async def run_enterprise_agent(
             dev_knowledge_provider=PLATFORM_DEV_KNOWLEDGE_PROVIDER,
             user_id=user_id,
             question=question,
-            knowledge_base_ids=list(agent_metadata.get("knowledge_base_ids") or []),
+            knowledge_base_ids=knowledge_base_ids,
         )
     )
     knowledge_payload = knowledge_response_service.build_agent_run_payload(
@@ -1744,7 +1747,7 @@ async def run_enterprise_agent(
             question=question,
             answer=answer,
             tool_calls=[],
-            knowledge_base_ids=list(agent_metadata.get("knowledge_base_ids") or []),
+            knowledge_base_ids=knowledge_base_ids,
             max_records=PLATFORM_MEMORY_MAX_RECORDS,
         )
 
@@ -1953,7 +1956,7 @@ async def run_enterprise_agent(
         question=question,
         answer=answer,
         tool_calls=tool_calls,
-        knowledge_base_ids=list(agent_metadata.get("knowledge_base_ids") or []),
+        knowledge_base_ids=knowledge_base_ids,
         max_records=PLATFORM_MEMORY_MAX_RECORDS,
     )
 

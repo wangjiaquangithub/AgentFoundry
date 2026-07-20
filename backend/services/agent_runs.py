@@ -139,6 +139,12 @@ class PlatformAgentRunService:
             "runner_session_id": runner_session_id,
         }
 
+    def knowledge_base_ids_from_metadata(
+        self,
+        agent_metadata: dict[str, Any],
+    ) -> list[Any]:
+        return list(agent_metadata.get("knowledge_base_ids") or [])
+
     def summarize_routed_tool_calls(
         self,
         tool_calls: list[dict[str, Any]],
