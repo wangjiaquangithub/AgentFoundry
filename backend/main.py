@@ -981,10 +981,6 @@ def _platform_agent_readiness(agent: dict[str, Any]) -> dict[str, Any]:
     return _platform_agent_service().readiness(agent)
 
 
-def _platform_agent_response(agent: dict[str, Any]) -> dict[str, Any]:
-    return _platform_agent_service().response(agent)
-
-
 def _resource_record_id(record: Any) -> str | None:
     if isinstance(record, dict):
         value = record.get("id")
@@ -2859,7 +2855,8 @@ async def enterprise_platform_agents() -> dict[str, Any]:
     return {
         "templates": _platform_agent_template_metadata(),
         "agents": [
-            _platform_agent_response(agent) for agent in _load_platform_agents()
+            _platform_agent_service().response(agent)
+            for agent in _load_platform_agents()
         ],
     }
 
@@ -2881,8 +2878,8 @@ async def publish_enterprise_platform_agent(
     )
     agent, agents = _create_platform_agent(payload, user_id)
     return {
-        "agent": _platform_agent_response(agent),
-        "agents": [_platform_agent_response(item) for item in agents],
+        "agent": _platform_agent_service().response(agent),
+        "agents": [_platform_agent_service().response(item) for item in agents],
     }
 
 
@@ -2918,8 +2915,8 @@ async def update_enterprise_platform_agent(
     )
     agent, agents = _update_platform_agent(agent_id, payload, user_id)
     return {
-        "agent": _platform_agent_response(agent),
-        "agents": [_platform_agent_response(item) for item in agents],
+        "agent": _platform_agent_service().response(agent),
+        "agents": [_platform_agent_service().response(item) for item in agents],
     }
 
 
@@ -2932,8 +2929,8 @@ async def archive_enterprise_platform_agent(
     user_id = request.headers.get("X-User-ID") or "acme:alice"
     agent, agents = _archive_platform_agent(agent_id, user_id)
     return {
-        "agent": _platform_agent_response(agent),
-        "agents": [_platform_agent_response(item) for item in agents],
+        "agent": _platform_agent_service().response(agent),
+        "agents": [_platform_agent_service().response(item) for item in agents],
     }
 
 
