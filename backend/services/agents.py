@@ -285,6 +285,42 @@ class PlatformAgentService:
             "allowed_roles": access["allowed_roles"],
         }
 
+    def resource_validation_inputs(
+        self,
+        payload: Any,
+        *,
+        existing_agent: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        if existing_agent is None:
+            return {
+                "model_config_id": (payload.model_config_id or "").strip() or None,
+                "knowledge_base_ids": self.normalize_resource_ids(
+                    payload.knowledge_base_ids,
+                ),
+            }
+
+        changes = payload.model_dump(exclude_unset=True)
+        if "model_config_id" in changes:
+            model_config_id = (payload.model_config_id or "").strip() or None
+        else:
+            model_config_id = (
+                str(existing_agent.get("model_config_id") or "").strip() or None
+            )
+
+        if "knowledge_base_ids" in changes:
+            knowledge_base_ids = self.normalize_resource_ids(
+                payload.knowledge_base_ids,
+            )
+        else:
+            knowledge_base_ids = self.normalize_resource_ids(
+                existing_agent.get("knowledge_base_ids"),
+            )
+
+        return {
+            "model_config_id": model_config_id,
+            "knowledge_base_ids": knowledge_base_ids,
+        }
+
     def create_agent(
         self,
         payload: Any,

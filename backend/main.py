@@ -2570,15 +2570,11 @@ async def publish_enterprise_platform_agent(
 ) -> dict[str, Any]:
     """Publish one business template as a tenant-scoped platform agent."""
     user_id = request.headers.get("X-User-ID") or "acme:alice"
-    model_config_id = (payload.model_config_id or "").strip() or None
-    knowledge_base_ids = _platform_agent_service().normalize_resource_ids(
-        payload.knowledge_base_ids,
-    )
+    resource_inputs = _platform_agent_service().resource_validation_inputs(payload)
     await _validate_platform_agent_resources(
         request,
         user_id,
-        model_config_id=model_config_id,
-        knowledge_base_ids=knowledge_base_ids,
+        **resource_inputs,
     )
     agent, agents = _create_platform_agent(payload, user_id)
     return {
@@ -2596,26 +2592,14 @@ async def update_enterprise_platform_agent(
     """Update a tenant-scoped platform agent instance."""
     user_id = request.headers.get("X-User-ID") or "acme:alice"
     existing_agent = _get_platform_agent(agent_id)
-    changes = payload.model_dump(exclude_unset=True)
-    if "model_config_id" in changes:
-        model_config_id = (payload.model_config_id or "").strip() or None
-    else:
-        model_config_id = (
-            str(existing_agent.get("model_config_id") or "").strip() or None
-        )
-    if "knowledge_base_ids" in changes:
-        knowledge_base_ids = _platform_agent_service().normalize_resource_ids(
-            payload.knowledge_base_ids,
-        )
-    else:
-        knowledge_base_ids = _platform_agent_service().normalize_resource_ids(
-            existing_agent.get("knowledge_base_ids"),
-        )
+    resource_inputs = _platform_agent_service().resource_validation_inputs(
+        payload,
+        existing_agent=existing_agent,
+    )
     await _validate_platform_agent_resources(
         request,
         user_id,
-        model_config_id=model_config_id,
-        knowledge_base_ids=knowledge_base_ids,
+        **resource_inputs,
     )
     agent, agents = _update_platform_agent(agent_id, payload, user_id)
     return {
