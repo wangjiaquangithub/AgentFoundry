@@ -2751,7 +2751,7 @@ async def import_enterprise_platform_config(
                 "workflow_type",
             )
         )
-        _save_platform_workflow_templates(workflows)
+        _platform_workflow_template_service().save_templates(workflows)
 
     if "tool_policy" in incoming:
         raw_policy = incoming.get("tool_policy")
@@ -3532,10 +3532,6 @@ def _raise_platform_approval_service_error(
     exc: PlatformApprovalServiceError,
 ) -> NoReturn:
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
-
-
-def _save_platform_workflow_templates(workflows: list[dict[str, Any]]) -> None:
-    _platform_workflow_template_service().save_templates(workflows)
 
 
 def _load_platform_workflow_templates() -> list[dict[str, Any]]:
