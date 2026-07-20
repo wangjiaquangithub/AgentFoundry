@@ -1972,12 +1972,11 @@ async def run_enterprise_agent(
             },
         )
 
-    executed_tool_calls = [call for call in tool_calls if call.get("allowed")]
-    primary_call = executed_tool_calls[0] if executed_tool_calls else tool_calls[0]
-    routing_reason = "; ".join(
-        f"{call['tool_name']}: {call.get('routing_reason', '')}"
-        for call in tool_calls
+    tool_call_summary = _platform_agent_run_service().summarize_routed_tool_calls(
+        tool_calls,
     )
+    primary_call = tool_call_summary["primary_call"]
+    routing_reason = str(tool_call_summary["routing_reason"])
     answer = _platform_agent_run_service().compose_routed_answer(
         tool_calls=tool_calls,
         knowledge_hits=knowledge_hits,
@@ -2018,7 +2017,7 @@ async def run_enterprise_agent(
     )
     response = {
         "answer": answer,
-        "routed": bool(executed_tool_calls),
+        "routed": bool(tool_call_summary["routed"]),
         "turn_id": turn_id,
         "session_id": runner_session_id,
         "tool_name": primary_call.get("tool_name"),

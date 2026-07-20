@@ -49,6 +49,23 @@ class PlatformAgentRunService:
         self._repository.append(record)
         return record
 
+    def summarize_routed_tool_calls(
+        self,
+        tool_calls: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        executed_tool_calls = [call for call in tool_calls if call.get("allowed")]
+        primary_call = executed_tool_calls[0] if executed_tool_calls else tool_calls[0]
+        routing_reason = "; ".join(
+            f"{call['tool_name']}: {call.get('routing_reason', '')}"
+            for call in tool_calls
+        )
+        return {
+            "executed_tool_calls": executed_tool_calls,
+            "primary_call": primary_call,
+            "routing_reason": routing_reason,
+            "routed": bool(executed_tool_calls),
+        }
+
     def compose_routed_answer(
         self,
         *,
