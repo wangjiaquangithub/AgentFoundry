@@ -1175,65 +1175,6 @@ def _platform_memory_path(
     )
 
 
-def _memory_text_terms(value: str) -> set[str]:
-    normalized = value.lower()
-    terms = set(re.findall(r"[a-z0-9][a-z0-9._-]{1,}", normalized))
-    for ticket_id in re.findall(r"\b[A-Z]{2,5}-\d+\b", value.upper()):
-        terms.add(ticket_id.lower())
-
-    chinese_markers = (
-        "刚才",
-        "之前",
-        "上次",
-        "关注",
-        "记住",
-        "工单",
-        "部门",
-        "指标",
-        "政策",
-        "制度",
-        "远程",
-        "报销",
-        "安全",
-        "工程",
-        "研发",
-        "客服",
-        "销售",
-        "相关",
-    )
-    for marker in chinese_markers:
-        if marker in value:
-            terms.add(marker)
-
-    return terms
-
-
-def _question_uses_memory_reference(question: str) -> bool:
-    normalized = question.lower()
-    english_markers = (
-        "remember",
-        "previous",
-        "earlier",
-        "last time",
-        "follow up",
-    )
-    chinese_markers = (
-        "刚才",
-        "之前",
-        "上次",
-        "记住",
-        "还记得",
-        "关注",
-        "相关",
-        "继续",
-        "那个",
-        "这个",
-    )
-    return any(marker in normalized for marker in english_markers) or any(
-        marker in question for marker in chinese_markers
-    )
-
-
 def _question_is_memory_lookup(question: str) -> bool:
     normalized = question.lower()
     english_markers = (
@@ -1404,28 +1345,6 @@ def _load_platform_memories(
     )
 
 
-def _format_platform_memory_hit(
-    record: dict[str, Any],
-    score: float,
-) -> dict[str, Any]:
-    facts = [
-        str(fact)
-        for fact in record.get("facts", [])
-        if str(fact).strip()
-    ]
-    snippet = "；".join(facts[:3]) or str(record.get("question", ""))
-    return {
-        "id": str(record.get("id", "")),
-        "created_at": str(record.get("created_at", "")),
-        "score": round(score, 3),
-        "source": "platform_memory",
-        "snippet": _truncate_text(snippet, 500),
-        "facts": facts,
-        "tool_names": list(record.get("tool_names") or []),
-        "knowledge_base_ids": list(record.get("knowledge_base_ids") or []),
-    }
-
-
 def _search_platform_memories(
     *,
     tenant: str,
@@ -1434,43 +1353,14 @@ def _search_platform_memories(
     question: str,
     limit: int = PLATFORM_MEMORY_SEARCH_LIMIT,
 ) -> list[dict[str, Any]]:
-    records = _load_platform_memories(
+    return platform_memory_service.search_memories(
         tenant=tenant,
         user_id=user_id,
         agent_id=agent_id,
+        question=question,
+        max_records=PLATFORM_MEMORY_MAX_RECORDS,
+        limit=limit,
     )
-    if not records:
-        return []
-
-    question_terms = _memory_text_terms(question)
-    asks_for_memory = _question_uses_memory_reference(question)
-    scored: list[tuple[float, int, dict[str, Any]]] = []
-    total = max(len(records), 1)
-    for index, record in enumerate(records):
-        memory_text = " ".join(
-            [
-                str(record.get("question", "")),
-                " ".join(str(fact) for fact in record.get("facts", [])),
-                " ".join(str(term) for term in record.get("keywords", [])),
-            ],
-        )
-        memory_terms = set(record.get("keywords") or [])
-        memory_terms.update(_memory_text_terms(memory_text))
-        overlap = question_terms & memory_terms
-        score = float(len(overlap) * 2)
-        if asks_for_memory:
-            score += 1.0
-        score += ((index + 1) / total) * 0.5
-
-        if score <= 0.5 and not asks_for_memory:
-            continue
-        scored.append((score, index, record))
-
-    scored.sort(key=lambda item: (item[0], item[1]), reverse=True)
-    return [
-        _format_platform_memory_hit(record, score)
-        for score, _index, record in scored[:limit]
-    ]
 
 
 def _format_memory_answer(memory_hits: list[dict[str, Any]]) -> str:
@@ -1538,7 +1428,7 @@ def _append_platform_memory(
         "facts": facts,
         "tool_names": tool_names,
         "knowledge_base_ids": list(knowledge_base_ids),
-        "keywords": sorted(_memory_text_terms(keyword_text))[:80],
+        "keywords": platform_memory_service.extract_keywords(keyword_text),
     }
     platform_memory_service.append_capped(
         tenant=tenant,
