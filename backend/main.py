@@ -3229,7 +3229,8 @@ def _enterprise_platform_scenarios() -> dict[str, Any]:
         workflows = _platform_workflow_template_service().list_templates()
     except PlatformWorkflowTemplateServiceError as exc:
         _raise_platform_workflow_template_service_error(exc)
-    workflow_runs = _platform_workflow_run_service().list_run_records(limit=100)
+    workflow_run_service = _platform_workflow_run_service()
+    workflow_runs = workflow_run_service.list_run_records(limit=100)
     try:
         pending_approvals = _platform_approval_service().list_records(
             limit=100,
@@ -3237,84 +3238,14 @@ def _enterprise_platform_scenarios() -> dict[str, Any]:
         )
     except PlatformApprovalServiceError as exc:
         _raise_platform_approval_service_error(exc)
-    scenarios: list[dict[str, Any]] = []
-
-    for workflow in workflows:
-        workflow_type = str(workflow.get("workflow_type", "")).strip()
-        steps = workflow.get("steps") if isinstance(workflow.get("steps"), list) else []
-        tools = [
-            str(step.get("tool_name", "")).strip()
-            for step in steps
-            if isinstance(step, dict) and str(step.get("tool_name", "")).strip()
-        ]
-        missing_tools = [tool_name for tool_name in tools if tool_name not in ENTERPRISE_TOOL_CATALOG]
-        approval_tools = [
-            tool_name for tool_name in tools if tool_name in APPROVAL_REQUIRED_TOOLS
-        ]
-        approval_required = workflow_type in APPROVAL_REQUIRED_WORKFLOWS or bool(
-            approval_tools,
-        )
-        pending_approval_count = sum(
-            1
-            for approval in pending_approvals
-            if approval.get("workflow_type") == workflow_type
-            or approval.get("tool_name") in approval_tools
-        )
-        matching_runs = [
-            run for run in workflow_runs if run.get("workflow_type") == workflow_type
-        ]
-
-        if workflow.get("enabled") is False:
-            status = "blocked"
-            next_action = {"code": "enable_workflow", "target": "workflows"}
-        elif missing_tools or approval_required:
-            status = "partial"
-            next_action = {
-                "code": "request_approval" if approval_required else "configure_tools",
-                "target": "governance" if approval_required else "tools",
-            }
-        else:
-            status = "ready"
-            next_action = {"code": "run", "target": "workflows"}
-
-        scenarios.append(
-            {
-                "scenario_id": workflow_type,
-                "name": workflow.get("name") or workflow_type,
-                "description": workflow.get("description") or "",
-                "status": status,
-                "workflow_type": workflow_type,
-                "enabled": workflow.get("enabled") is not False,
-                "tools": tools,
-                "approval_required": approval_required,
-                "approval_required_tools": approval_tools,
-                "pending_approval_count": pending_approval_count,
-                "run_count": len(matching_runs),
-                "last_run": matching_runs[0] if matching_runs else None,
-                "evidence": {
-                    "enabled": workflow.get("enabled") is not False,
-                    "tool_count": len(tools),
-                    "missing_tool_count": len(missing_tools),
-                    "has_last_run": bool(matching_runs),
-                },
-                "next_action": next_action,
-            },
-        )
-
-    status_counts = {
-        "ready": sum(1 for scenario in scenarios if scenario["status"] == "ready"),
-        "partial": sum(1 for scenario in scenarios if scenario["status"] == "partial"),
-        "blocked": sum(1 for scenario in scenarios if scenario["status"] == "blocked"),
-    }
-    return {
-        "scenarios": scenarios,
-        "summary": {
-            "total_count": len(scenarios),
-            "ready_count": status_counts["ready"],
-            "partial_count": status_counts["partial"],
-            "blocked_count": status_counts["blocked"],
-        },
-    }
+    return workflow_run_service.build_platform_scenarios(
+        workflows=workflows,
+        workflow_runs=workflow_runs,
+        pending_approvals=pending_approvals,
+        enterprise_tool_catalog=ENTERPRISE_TOOL_CATALOG,
+        approval_required_tools=APPROVAL_REQUIRED_TOOLS,
+        approval_required_workflows=APPROVAL_REQUIRED_WORKFLOWS,
+    )
 
 
 def _build_agent_run_evidence(

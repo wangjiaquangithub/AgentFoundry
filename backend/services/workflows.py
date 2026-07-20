@@ -276,6 +276,113 @@ class PlatformWorkflowRunService:
             user_id=user_id,
         )["runs"]
 
+    def build_platform_scenarios(
+        self,
+        *,
+        workflows: list[dict[str, Any]],
+        workflow_runs: list[dict[str, Any]],
+        pending_approvals: list[dict[str, Any]],
+        enterprise_tool_catalog: dict[str, dict[str, Any]],
+        approval_required_tools: set[str],
+        approval_required_workflows: set[str],
+    ) -> dict[str, Any]:
+        scenarios: list[dict[str, Any]] = []
+
+        for workflow in workflows:
+            workflow_type = str(workflow.get("workflow_type", "")).strip()
+            steps = (
+                workflow.get("steps")
+                if isinstance(workflow.get("steps"), list)
+                else []
+            )
+            tools = [
+                str(step.get("tool_name", "")).strip()
+                for step in steps
+                if isinstance(step, dict) and str(step.get("tool_name", "")).strip()
+            ]
+            missing_tools = [
+                tool_name
+                for tool_name in tools
+                if tool_name not in enterprise_tool_catalog
+            ]
+            approval_tools = [
+                tool_name for tool_name in tools if tool_name in approval_required_tools
+            ]
+            approval_required = workflow_type in approval_required_workflows or bool(
+                approval_tools,
+            )
+            pending_approval_count = sum(
+                1
+                for approval in pending_approvals
+                if approval.get("workflow_type") == workflow_type
+                or approval.get("tool_name") in approval_tools
+            )
+            matching_runs = [
+                run
+                for run in workflow_runs
+                if run.get("workflow_type") == workflow_type
+            ]
+
+            if workflow.get("enabled") is False:
+                status = "blocked"
+                next_action = {"code": "enable_workflow", "target": "workflows"}
+            elif missing_tools or approval_required:
+                status = "partial"
+                next_action = {
+                    "code": "request_approval"
+                    if approval_required
+                    else "configure_tools",
+                    "target": "governance" if approval_required else "tools",
+                }
+            else:
+                status = "ready"
+                next_action = {"code": "run", "target": "workflows"}
+
+            scenarios.append(
+                {
+                    "scenario_id": workflow_type,
+                    "name": workflow.get("name") or workflow_type,
+                    "description": workflow.get("description") or "",
+                    "status": status,
+                    "workflow_type": workflow_type,
+                    "enabled": workflow.get("enabled") is not False,
+                    "tools": tools,
+                    "approval_required": approval_required,
+                    "approval_required_tools": approval_tools,
+                    "pending_approval_count": pending_approval_count,
+                    "run_count": len(matching_runs),
+                    "last_run": matching_runs[0] if matching_runs else None,
+                    "evidence": {
+                        "enabled": workflow.get("enabled") is not False,
+                        "tool_count": len(tools),
+                        "missing_tool_count": len(missing_tools),
+                        "has_last_run": bool(matching_runs),
+                    },
+                    "next_action": next_action,
+                },
+            )
+
+        status_counts = {
+            "ready": sum(
+                1 for scenario in scenarios if scenario["status"] == "ready"
+            ),
+            "partial": sum(
+                1 for scenario in scenarios if scenario["status"] == "partial"
+            ),
+            "blocked": sum(
+                1 for scenario in scenarios if scenario["status"] == "blocked"
+            ),
+        }
+        return {
+            "scenarios": scenarios,
+            "summary": {
+                "total_count": len(scenarios),
+                "ready_count": status_counts["ready"],
+                "partial_count": status_counts["partial"],
+                "blocked_count": status_counts["blocked"],
+            },
+        }
+
     def append_run(self, record: dict[str, Any]) -> dict[str, Any]:
         self._repository.append(record)
         return record
