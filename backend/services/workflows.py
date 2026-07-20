@@ -149,6 +149,13 @@ class PlatformWorkflowTemplateService:
             if isinstance(item, dict) and item.get("workflow_type")
         ]
 
+    def merge_import_templates(
+        self,
+        existing: list[dict[str, Any]],
+        imported: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        return _merge_by_key(existing, imported, "workflow_type")
+
     def list_templates(self) -> list[dict[str, Any]]:
         if not self._repository.exists():
             workflows = self.default_templates()
@@ -651,3 +658,20 @@ def _utc_now_iso() -> str:
 def _optional_filter(value: str | None) -> str | None:
     normalized = (value or "").strip()
     return normalized or None
+
+
+def _merge_by_key(
+    existing: list[dict[str, Any]],
+    imported: list[dict[str, Any]],
+    key: str,
+) -> list[dict[str, Any]]:
+    merged: dict[str, dict[str, Any]] = {}
+    order: list[str] = []
+    for item in [*existing, *imported]:
+        item_key = str(item.get(key) or "").strip()
+        if not item_key:
+            continue
+        if item_key not in merged:
+            order.append(item_key)
+        merged[item_key] = item
+    return [merged[item_key] for item_key in order]

@@ -2173,10 +2173,9 @@ async def import_enterprise_platform_config(
                 current_workflows = workflow_template_service.list_templates()
             except PlatformWorkflowTemplateServiceError as exc:
                 _raise_platform_workflow_template_service_error(exc)
-            workflows = _merge_by_key(
+            workflows = workflow_template_service.merge_import_templates(
                 current_workflows,
                 imported_workflows,
-                "workflow_type",
             )
         workflow_template_service.save_templates(workflows)
 
