@@ -82,6 +82,27 @@ class PlatformAgentRunService:
     ) -> str:
         return payload_user_id or header_user_id or "acme:alice"
 
+    def run_request_payload(
+        self,
+        *,
+        question: str,
+        payload_user_id: str | None = None,
+        header_user_id: str | None = None,
+        agent_id: str | None = None,
+        session_id: str | None = None,
+        approval_id: str | None = None,
+    ) -> dict[str, Any]:
+        return {
+            "question": question.strip(),
+            "user_id": self.run_request_user_id(
+                payload_user_id=payload_user_id,
+                header_user_id=header_user_id,
+            ),
+            "agent_id": _optional_filter(agent_id),
+            "session_id": session_id,
+            "approval_id": approval_id,
+        }
+
     @staticmethod
     def runtime_tenant(runtime: dict[str, Any]) -> str:
         return str(runtime["tenant"])

@@ -1528,10 +1528,15 @@ async def run_enterprise_agent(
     """Route a business question through a published enterprise agent."""
 
     agent_run_service = _platform_agent_run_service()
-    user_id = agent_run_service.run_request_user_id(
+    run_request = agent_run_service.run_request_payload(
+        question=payload.question,
         payload_user_id=payload.user_id,
         header_user_id=request.headers.get("X-User-ID"),
+        agent_id=payload.agent_id,
+        session_id=payload.session_id,
+        approval_id=payload.approval_id,
     )
+    user_id = run_request["user_id"]
     try:
         runtime = _platform_connector_config_service().enterprise_runtime_context(user_id)
     except PlatformConnectorConfigServiceError as exc:
@@ -1540,11 +1545,11 @@ async def run_enterprise_agent(
     tenant = runtime_identity["tenant"]
     connector_label = runtime_identity["connector"]
     connector_source = runtime_identity["connector_source"]
-    question = payload.question.strip()
+    question = run_request["question"]
     agent = None
-    if payload.agent_id:
+    if run_request["agent_id"]:
         agent, _ = _published_platform_agent_tool_scope_for_user(
-            payload.agent_id,
+            run_request["agent_id"],
             user_id,
         )
 
@@ -1555,7 +1560,7 @@ async def run_enterprise_agent(
         agent_metadata=agent_metadata,
         agent=agent,
         user_id=user_id,
-        session_id=payload.session_id,
+        session_id=run_request["session_id"],
         default_tool_names=set(ENTERPRISE_TOOL_NAMES),
         safe_path_part=_safe_path_part,
     )
@@ -1710,7 +1715,7 @@ async def run_enterprise_agent(
         ):
             try:
                 approved_by = _require_platform_approval(
-                    approval_id=payload.approval_id,
+                    approval_id=run_request["approval_id"],
                     request_type="tool_run",
                     target_key="tool_name",
                     target_value=tool_name,
