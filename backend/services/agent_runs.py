@@ -314,6 +314,33 @@ class PlatformAgentRunService:
             "memory_hits": list(memory_state["memory_hits"]),
         }
 
+    def build_memory_append_context(
+        self,
+        *,
+        enabled: bool,
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        session_id: str,
+        question: str,
+        answer: str,
+        tool_calls: list[dict[str, Any]],
+        knowledge_base_ids: list[Any],
+        max_records: int,
+    ) -> dict[str, Any]:
+        return {
+            "enabled": enabled,
+            "tenant": tenant,
+            "user_id": user_id,
+            "agent_id": agent_id,
+            "session_id": session_id,
+            "question": question,
+            "answer": answer,
+            "tool_calls": tool_calls,
+            "knowledge_base_ids": knowledge_base_ids,
+            "max_records": max_records,
+        }
+
     def build_knowledge_context(
         self,
         *,

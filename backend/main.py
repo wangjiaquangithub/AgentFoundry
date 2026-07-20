@@ -1638,16 +1638,18 @@ async def run_enterprise_agent(
             format_memory_answer=platform_memory_service.format_answer,
         )
         memory_saved = platform_memory_service.append_agent_turn_if_enabled(
-            enabled=memory_enabled,
-            tenant=tenant,
-            user_id=user_id,
-            agent_id=runner_agent_id,
-            session_id=runner_session_id,
-            question=question,
-            answer=answer,
-            tool_calls=[],
-            knowledge_base_ids=knowledge_base_ids,
-            max_records=PLATFORM_MEMORY_MAX_RECORDS,
+            **agent_run_service.build_memory_append_context(
+                enabled=memory_enabled,
+                tenant=tenant,
+                user_id=user_id,
+                agent_id=runner_agent_id,
+                session_id=runner_session_id,
+                question=question,
+                answer=answer,
+                tool_calls=[],
+                knowledge_base_ids=knowledge_base_ids,
+                max_records=PLATFORM_MEMORY_MAX_RECORDS,
+            ),
         )
 
         unrouted_finalize_context = agent_run_service.build_unrouted_finalize_context(
@@ -1839,16 +1841,18 @@ async def run_enterprise_agent(
         format_memory_answer=platform_memory_service.format_answer,
     )
     memory_saved = platform_memory_service.append_agent_turn_if_enabled(
-        enabled=memory_enabled,
-        tenant=tenant,
-        user_id=user_id,
-        agent_id=runner_agent_id,
-        session_id=runner_session_id,
-        question=question,
-        answer=answer,
-        tool_calls=tool_calls,
-        knowledge_base_ids=knowledge_base_ids,
-        max_records=PLATFORM_MEMORY_MAX_RECORDS,
+        **agent_run_service.build_memory_append_context(
+            enabled=memory_enabled,
+            tenant=tenant,
+            user_id=user_id,
+            agent_id=runner_agent_id,
+            session_id=runner_session_id,
+            question=question,
+            answer=answer,
+            tool_calls=tool_calls,
+            knowledge_base_ids=knowledge_base_ids,
+            max_records=PLATFORM_MEMORY_MAX_RECORDS,
+        ),
     )
 
     routed_finalize_context = agent_run_service.build_routed_finalize_context(
