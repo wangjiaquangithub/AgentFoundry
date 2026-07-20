@@ -222,6 +222,25 @@ class PlatformToolPolicyService:
             "agent_id": agent_id,
         }
 
+    @staticmethod
+    def agent_tool_denial_response(
+        *,
+        tool_name: str,
+        tenant: str,
+        user_id: str,
+        runtime_selection: dict[str, Any],
+        decision: dict[str, Any],
+    ) -> dict[str, Any]:
+        return {
+            "tool_name": tool_name,
+            "allowed": False,
+            "tenant": tenant,
+            "user_id": user_id,
+            "connector": runtime_selection["connector_label"],
+            "connector_source": runtime_selection["connector_source"],
+            "decision": decision,
+        }
+
     def normalize_policy_tools(self, value: list[str] | None) -> list[str]:
         if not value:
             return []

@@ -1473,15 +1473,13 @@ async def run_enterprise_tool(
                 _raise_platform_connector_config_service_error(exc)
             runtime_selection = tool_policy_service.runtime_selection(runtime)
             decision = _platform_agent_service().tool_denial_payload(payload.tool_name)
-            return {
-                "tool_name": payload.tool_name,
-                "allowed": False,
-                "tenant": tenant,
-                "user_id": user_id,
-                "connector": runtime_selection["connector_label"],
-                "connector_source": runtime_selection["connector_source"],
-                "decision": decision,
-            }
+            return tool_policy_service.agent_tool_denial_response(
+                tool_name=payload.tool_name,
+                tenant=tenant,
+                user_id=user_id,
+                runtime_selection=runtime_selection,
+                decision=decision,
+            )
 
     approval_id = None
     if payload.tool_name in APPROVAL_REQUIRED_TOOLS:
