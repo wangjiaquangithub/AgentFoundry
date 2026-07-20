@@ -43,6 +43,37 @@ RISK_AGENT_TOOLS = [
     "enterprise_get_ticket_status",
     "enterprise_summarize_department_metrics",
 ]
+EXPECTED_RUNTIME_CAPABILITIES = {
+    "tenant_context",
+    "tool_routing",
+    "approval_gate",
+    "knowledge_retrieval",
+    "long_term_memory",
+    "run_evidence",
+}
+
+
+def _assert_runtime_adapter_metadata(record: dict[str, Any], label: str) -> None:
+    runtime_adapter = record.get("runtime_adapter")
+    if not isinstance(runtime_adapter, dict):
+        raise AssertionError(f"{label} failed: missing runtime_adapter: {record}")
+    expected_fields = {
+        "id": "agentscope-platform-adapter",
+        "provider": "agentscope",
+        "mode": "local-service",
+    }
+    for field, expected in expected_fields.items():
+        if runtime_adapter.get(field) != expected:
+            raise AssertionError(
+                f"{label} failed: runtime_adapter {field} mismatch: {record}",
+            )
+    capabilities = runtime_adapter.get("capabilities")
+    if not isinstance(capabilities, list) or not EXPECTED_RUNTIME_CAPABILITIES.issubset(
+        set(capabilities),
+    ):
+        raise AssertionError(
+            f"{label} failed: runtime_adapter capabilities mismatch: {record}",
+        )
 
 
 class _SmokeEnterpriseGateway(BaseHTTPRequestHandler):
@@ -666,6 +697,10 @@ def main() -> None:
             "get enterprise agent run detail failed: "
             f"runtime status mismatch: {agent_run_detail}",
         )
+    _assert_runtime_adapter_metadata(
+        agent_run_detail,
+        "get enterprise agent run detail",
+    )
 
     risk_agent_id = _ensure_risk_smoke_agent(client)
     role_agent_id = _ensure_role_smoke_agent(client)
@@ -1055,6 +1090,7 @@ def main() -> None:
             "list agent runs failed: "
             f"runtime provider_run_id mismatch: {listed_agent_run}",
         )
+    _assert_runtime_adapter_metadata(listed_agent_run, "list agent runs")
     _expect_ok(
         client.get("/enterprise/platform/workflows/runs", headers=HEADERS),
         "list workflow runs",
