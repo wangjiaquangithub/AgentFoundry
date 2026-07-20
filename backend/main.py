@@ -259,17 +259,18 @@ def _now_iso() -> str:
 
 def _platform_status_service() -> PlatformStatusService:
     """Build the service object that composes platform console status payloads."""
+    agent_service = _platform_agent_service()
     return PlatformStatusService(
         load_approval_requests=_load_platform_approval_requests,
         load_workflow_runs=_platform_workflow_run_service().list_run_records,
         load_workflow_templates=_load_platform_workflow_templates,
-        load_agents=_load_platform_agents,
+        load_agents=agent_service.list_agents,
         load_memories=_load_platform_memories,
         agent_run_repository=agent_run_repository,
         audit_logger=tool_audit_logger,
         tool_policy=tool_authorization_policy,
         connector_health=_enterprise_connector_health,
-        agent_readiness=_platform_agent_service().readiness,
+        agent_readiness=agent_service.readiness,
         enterprise_tool_names=ENTERPRISE_TOOL_NAMES,
         enterprise_tool_catalog=ENTERPRISE_TOOL_CATALOG,
         approval_required_tools=APPROVAL_REQUIRED_TOOLS,
@@ -597,13 +598,6 @@ def _raise_platform_agent_run_service_error(
     exc: PlatformAgentRunServiceError,
 ) -> NoReturn:
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
-
-
-def _load_platform_agents() -> list[dict[str, Any]]:
-    try:
-        return _platform_agent_service().list_agents()
-    except PlatformAgentServiceError as exc:
-        _raise_platform_agent_service_error(exc)
 
 
 def _published_platform_agent_tool_scope_for_user(
@@ -1177,11 +1171,15 @@ def _export_platform_config() -> dict[str, Any]:
         connector_configs = connector_config_service.export_configs_payload()
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
+    try:
+        agents = _platform_agent_service().list_agents()
+    except PlatformAgentServiceError as exc:
+        _raise_platform_agent_service_error(exc)
 
     config = {
         "members": _platform_member_registry(include_inactive=True),
         "connector_configs": connector_configs,
-        "agents": _load_platform_agents(),
+        "agents": agents,
         "workflow_templates": _load_platform_workflow_templates(),
         "tool_policy": _load_platform_tool_policy_config(),
     }
