@@ -1147,24 +1147,6 @@ def _load_platform_memories(
     )
 
 
-def _search_platform_memories(
-    *,
-    tenant: str,
-    user_id: str,
-    agent_id: str,
-    question: str,
-    limit: int = PLATFORM_MEMORY_SEARCH_LIMIT,
-) -> list[dict[str, Any]]:
-    return platform_memory_service.search_memories(
-        tenant=tenant,
-        user_id=user_id,
-        agent_id=agent_id,
-        question=question,
-        max_records=PLATFORM_MEMORY_MAX_RECORDS,
-        limit=limit,
-    )
-
-
 def _append_platform_memory(
     *,
     tenant: str,
@@ -2980,11 +2962,13 @@ async def run_enterprise_agent(
     )
     memory_enabled = bool(agent_metadata.get("memory_enabled", False))
     memory_hits = (
-        _search_platform_memories(
+        platform_memory_service.search_memories(
             tenant=tenant,
             user_id=user_id,
             agent_id=runner_agent_id,
             question=question,
+            max_records=PLATFORM_MEMORY_MAX_RECORDS,
+            limit=PLATFORM_MEMORY_SEARCH_LIMIT,
         )
         if memory_enabled
         else []
