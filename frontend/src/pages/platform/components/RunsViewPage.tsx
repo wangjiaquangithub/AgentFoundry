@@ -32,6 +32,7 @@ import type {
 } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -169,153 +170,180 @@ export function RunsViewPage({
 				})}
 			</section>
 
-			<section className="grid gap-4 lg:grid-cols-3">
-				<div className="grid min-h-80 content-start gap-3 rounded-lg border bg-background p-4 shadow-sm">
+			<Tabs defaultValue="overview" className="grid gap-4">
+				<section className="flex flex-col gap-3 rounded-lg border bg-background p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
 					<div>
-						<h2 className="text-sm font-medium">
-							{t('platform.monitoring.recentAgentRuns')}
-						</h2>
-						<p className="mt-1 text-xs leading-5 text-muted-foreground">
-							{t('platform.monitoring.recentAgentRunsHelper')}
+						<h2 className="text-base font-semibold">运行工作区</h2>
+						<p className="mt-1 text-sm leading-6 text-muted-foreground">
+							运行摘要和审计检索分区查看，避免监控页默认承载过长列表。
 						</p>
 					</div>
-					{recentAgentTurns.length === 0 ? (
-						<div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
-							{t('platform.monitoring.emptyAgentRuns')}
-						</div>
-					) : (
-						<div className="grid gap-2">
-							{recentAgentTurns.map((turn) => (
-								<button
-									key={turn.id}
-									type="button"
-									onClick={() => onSelectAgentTurn(turn)}
-									className="rounded-md border bg-muted/10 p-3 text-left text-xs transition-colors hover:border-primary/30 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-								>
-									<div className="flex items-center justify-between gap-2">
-										<span className="truncate font-medium">{turn.question}</span>
-										<span className="shrink-0 text-muted-foreground">
-											{formatTimestamp(turn.createdAt)}
-										</span>
-									</div>
-									<p className="mt-1 line-clamp-2 leading-5 text-muted-foreground">
-										{turn.answer}
-									</p>
-								</button>
-							))}
-						</div>
-					)}
-				</div>
+					<TabsList className="w-full sm:w-auto">
+						<TabsTrigger value="overview" className="flex-1 sm:flex-none">
+							运行概览
+						</TabsTrigger>
+						<TabsTrigger value="audit" className="flex-1 sm:flex-none">
+							审计检索
+						</TabsTrigger>
+					</TabsList>
+				</section>
 
-				<div className="grid min-h-80 content-start gap-3 rounded-lg border bg-background p-4 shadow-sm">
-					<div>
-						<h2 className="text-sm font-medium">
-							{t('platform.monitoring.recentWorkflowRuns')}
-						</h2>
-						<p className="mt-1 text-xs leading-5 text-muted-foreground">
-							{t('platform.monitoring.recentWorkflowRunsHelper')}
-						</p>
-					</div>
-					{recentWorkflowRuns.length === 0 ? (
-						<div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
-							{t('platform.monitoring.emptyWorkflowRuns')}
-						</div>
-					) : (
-						<div className="grid gap-2">
-							{recentWorkflowRuns.slice(0, 6).map((run) => (
-								<button
-									key={run.run_id}
-									type="button"
-									onClick={onRunWorkflow}
-									className="rounded-md border bg-muted/10 p-3 text-left text-xs transition-colors hover:border-primary/30 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-								>
-									<div className="flex items-center justify-between gap-2">
-										<span className="truncate font-medium">{run.workflow_name}</span>
-										<Badge
-											variant="outline"
-											className={workflowStatusClassName(run.status)}
-										>
-											{t(
-												`platform.workflowRunner.${workflowStatusLabelKey(run.status)}`,
-											)}
-										</Badge>
-									</div>
-									<p className="mt-1 line-clamp-2 leading-5 text-muted-foreground">
-										{run.summary ||
-											formatTimestamp(run.finished_at || run.started_at)}
-									</p>
-								</button>
-							))}
-						</div>
-					)}
-				</div>
-
-				<div className="grid min-h-80 content-start gap-3 rounded-lg border bg-background p-4 shadow-sm">
-					<div>
-						<h2 className="text-sm font-medium">
-							{t('platform.monitoring.recentAudit')}
-						</h2>
-						<p className="mt-1 text-xs leading-5 text-muted-foreground">
-							{t('platform.monitoring.recentAuditHelper')}
-						</p>
-					</div>
-					{recentAuditEvents.length === 0 ? (
-						<div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
-							{t('platform.monitoring.emptyAudit')}
-						</div>
-					) : (
-						<div className="grid gap-2">
-							{recentAuditEvents.slice(0, 6).map((event, index) => (
-								<div
-									key={event.event_id ?? `${event.timestamp}-${index}`}
-									className="rounded-md border bg-muted/10 p-3 text-xs"
-								>
-									<div className="flex items-center justify-between gap-2">
-										<span className="truncate font-medium">
-											{event.tool_name ||
-												event.event_type ||
-												t('platform.monitoring.auditEvent')}
-										</span>
-										<Badge
-											variant="outline"
-											className={
-												event.success === false
-													? ''
-													: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700'
-											}
-										>
-											{event.success === false
-												? t('platform.monitoring.failure')
-												: t('platform.monitoring.success')}
-										</Badge>
-									</div>
-									<p className="mt-1 truncate text-muted-foreground">
-										{event.user_id || '-'} · {event.tenant || '-'} ·{' '}
-										{formatTimestamp(event.timestamp)}
-									</p>
+				<TabsContent value="overview" className="mt-0">
+					<section className="grid gap-4 lg:grid-cols-3">
+						<div className="grid min-h-80 content-start gap-3 rounded-lg border bg-background p-4 shadow-sm">
+							<div>
+								<h2 className="text-sm font-medium">
+									{t('platform.monitoring.recentAgentRuns')}
+								</h2>
+								<p className="mt-1 text-xs leading-5 text-muted-foreground">
+									{t('platform.monitoring.recentAgentRunsHelper')}
+								</p>
+							</div>
+							{recentAgentTurns.length === 0 ? (
+								<div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
+									{t('platform.monitoring.emptyAgentRuns')}
 								</div>
-							))}
+							) : (
+								<div className="grid gap-2">
+									{recentAgentTurns.map((turn) => (
+										<button
+											key={turn.id}
+											type="button"
+											onClick={() => onSelectAgentTurn(turn)}
+											className="rounded-md border bg-muted/10 p-3 text-left text-xs transition-colors hover:border-primary/30 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+										>
+											<div className="flex items-center justify-between gap-2">
+												<span className="truncate font-medium">
+													{turn.question}
+												</span>
+												<span className="shrink-0 text-muted-foreground">
+													{formatTimestamp(turn.createdAt)}
+												</span>
+											</div>
+											<p className="mt-1 line-clamp-2 leading-5 text-muted-foreground">
+												{turn.answer}
+											</p>
+										</button>
+									))}
+								</div>
+							)}
 						</div>
-					)}
-				</div>
-			</section>
 
-			<AuditEventsPanel
-				auditFilters={auditFilters}
-				activePlatformAgents={activePlatformAgents}
-				availableToolItems={availableToolItems}
-				currentTenant={currentTenant}
-				currentUserId={currentUserId}
-				username={username}
-				auditLoading={auditLoading}
-				auditError={auditError}
-				auditEvents={auditEvents}
-				auditStats={auditStats}
-				onAuditFiltersChange={onAuditFiltersChange}
-				onRefetchAuditEvents={onRefetchAuditEvents}
-				summarizeAuditObject={summarizeAuditObject}
-				t={t}
-			/>
+						<div className="grid min-h-80 content-start gap-3 rounded-lg border bg-background p-4 shadow-sm">
+							<div>
+								<h2 className="text-sm font-medium">
+									{t('platform.monitoring.recentWorkflowRuns')}
+								</h2>
+								<p className="mt-1 text-xs leading-5 text-muted-foreground">
+									{t('platform.monitoring.recentWorkflowRunsHelper')}
+								</p>
+							</div>
+							{recentWorkflowRuns.length === 0 ? (
+								<div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
+									{t('platform.monitoring.emptyWorkflowRuns')}
+								</div>
+							) : (
+								<div className="grid gap-2">
+									{recentWorkflowRuns.slice(0, 6).map((run) => (
+										<button
+											key={run.run_id}
+											type="button"
+											onClick={onRunWorkflow}
+											className="rounded-md border bg-muted/10 p-3 text-left text-xs transition-colors hover:border-primary/30 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+										>
+											<div className="flex items-center justify-between gap-2">
+												<span className="truncate font-medium">
+													{run.workflow_name}
+												</span>
+												<Badge
+													variant="outline"
+													className={workflowStatusClassName(run.status)}
+												>
+													{t(
+														`platform.workflowRunner.${workflowStatusLabelKey(run.status)}`,
+													)}
+												</Badge>
+											</div>
+											<p className="mt-1 line-clamp-2 leading-5 text-muted-foreground">
+												{run.summary ||
+													formatTimestamp(run.finished_at || run.started_at)}
+											</p>
+										</button>
+									))}
+								</div>
+							)}
+						</div>
+
+						<div className="grid min-h-80 content-start gap-3 rounded-lg border bg-background p-4 shadow-sm">
+							<div>
+								<h2 className="text-sm font-medium">
+									{t('platform.monitoring.recentAudit')}
+								</h2>
+								<p className="mt-1 text-xs leading-5 text-muted-foreground">
+									{t('platform.monitoring.recentAuditHelper')}
+								</p>
+							</div>
+							{recentAuditEvents.length === 0 ? (
+								<div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
+									{t('platform.monitoring.emptyAudit')}
+								</div>
+							) : (
+								<div className="grid gap-2">
+									{recentAuditEvents.slice(0, 6).map((event, index) => (
+										<div
+											key={event.event_id ?? `${event.timestamp}-${index}`}
+											className="rounded-md border bg-muted/10 p-3 text-xs"
+										>
+											<div className="flex items-center justify-between gap-2">
+												<span className="truncate font-medium">
+													{event.tool_name ||
+														event.event_type ||
+														t('platform.monitoring.auditEvent')}
+												</span>
+												<Badge
+													variant="outline"
+													className={
+														event.success === false
+															? ''
+															: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700'
+													}
+												>
+													{event.success === false
+														? t('platform.monitoring.failure')
+														: t('platform.monitoring.success')}
+												</Badge>
+											</div>
+											<p className="mt-1 truncate text-muted-foreground">
+												{event.user_id || '-'} · {event.tenant || '-'} ·{' '}
+												{formatTimestamp(event.timestamp)}
+											</p>
+										</div>
+									))}
+								</div>
+							)}
+						</div>
+					</section>
+				</TabsContent>
+
+				<TabsContent value="audit" className="mt-0">
+					<AuditEventsPanel
+						auditFilters={auditFilters}
+						activePlatformAgents={activePlatformAgents}
+						availableToolItems={availableToolItems}
+						currentTenant={currentTenant}
+						currentUserId={currentUserId}
+						username={username}
+						auditLoading={auditLoading}
+						auditError={auditError}
+						auditEvents={auditEvents}
+						auditStats={auditStats}
+						onAuditFiltersChange={onAuditFiltersChange}
+						onRefetchAuditEvents={onRefetchAuditEvents}
+						summarizeAuditObject={summarizeAuditObject}
+						t={t}
+					/>
+				</TabsContent>
+			</Tabs>
 		</PlatformPageShell>
 	);
 }
