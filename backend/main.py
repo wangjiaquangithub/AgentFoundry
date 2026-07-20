@@ -958,14 +958,10 @@ def _run_authorized_enterprise_tool(
     }
 
 
-def _enterprise_router_config() -> dict[str, Any] | None:
-    return enterprise_router_service.build_model_router_config(os.environ)
-
-
 async def _route_enterprise_agent_question_with_model(
     question: str,
 ) -> dict[str, Any]:
-    config = _enterprise_router_config()
+    config = enterprise_router_service.build_model_router_config(os.environ)
     if config is None:
         raise EnterpriseRouterError("Router model is not configured.")
 
