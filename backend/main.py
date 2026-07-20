@@ -2241,7 +2241,8 @@ async def resolve_enterprise_platform_ops_task(
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
     status_service = _platform_status_service()
-    tenant = status_service.runtime_tenant(runtime)
+    runtime_selection = status_service.runtime_selection(runtime)
+    tenant = runtime_selection["tenant"]
     identities = _platform_identity_metadata(user_id, tenant)
     return status_service.resolved_disabled_workflows_payload(
         task_code=normalized_code,
