@@ -108,6 +108,19 @@ class PlatformAgentRunService:
             "部门指标。你可以试试：帮我查一下 INC-1001 的工单状态。"
         )
 
+    def normalize_route_context(
+        self,
+        route: dict[str, Any],
+        *,
+        default_source: str,
+    ) -> dict[str, Any]:
+        return {
+            "tool_name": str(route["tool_name"]),
+            "inputs": dict(route["inputs"]),
+            "reason": str(route.get("reason", "Matched enterprise tool route.")),
+            "source": str(route.get("source", default_source)),
+        }
+
     def build_denied_routed_tool_call(
         self,
         *,

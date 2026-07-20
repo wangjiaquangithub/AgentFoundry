@@ -1794,10 +1794,14 @@ async def run_enterprise_agent(
 
     tool_calls: list[dict[str, Any]] = []
     for route in routes:
-        tool_name = str(route["tool_name"])
-        route_inputs = dict(route["inputs"])
-        route_reason = str(route.get("reason", "Matched enterprise tool route."))
-        route_source = str(route.get("source", ROUTING_SOURCE_RULES))
+        route_context = _platform_agent_run_service().normalize_route_context(
+            route,
+            default_source=ROUTING_SOURCE_RULES,
+        )
+        tool_name = route_context["tool_name"]
+        route_inputs = route_context["inputs"]
+        route_reason = route_context["reason"]
+        route_source = route_context["source"]
 
         if tool_name not in configured_tools:
             denial = _platform_agent_service().tool_denial_payload(tool_name)
