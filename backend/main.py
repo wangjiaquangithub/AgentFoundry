@@ -1056,16 +1056,7 @@ def _route_enterprise_agent_question_with_rules(
     normalized = question.lower()
     routes: list[dict[str, Any]] = []
 
-    for ticket_id in re.findall(r"\b[A-Z]{2,5}-\d+\b", question.upper()):
-        routes.append(
-            {
-                "routed": True,
-                "tool_name": "enterprise_get_ticket_status",
-                "inputs": {"ticket_id": ticket_id},
-                "reason": "Detected a ticket id in the question.",
-                "source": ROUTING_SOURCE_RULES,
-            },
-        )
+    routes.extend(enterprise_router_service.ticket_routes_for_question(question))
 
     policy_keywords = {
         "remote": ("remote", "Remote-work policy request."),

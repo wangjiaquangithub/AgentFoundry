@@ -1,6 +1,7 @@
 """Service helpers for enterprise agent route normalization."""
 
 import json
+import re
 from typing import Any
 
 
@@ -245,6 +246,18 @@ class PlatformEnterpriseRouterService:
             )
 
         return deduped
+
+    def ticket_routes_for_question(self, question: str) -> list[dict[str, Any]]:
+        return [
+            {
+                "routed": True,
+                "tool_name": "enterprise_get_ticket_status",
+                "inputs": {"ticket_id": ticket_id},
+                "reason": "Detected a ticket id in the question.",
+                "source": self._default_source,
+            }
+            for ticket_id in re.findall(r"\b[A-Z]{2,5}-\d+\b", question.upper())
+        ]
 
     def fallback_route(self) -> dict[str, Any]:
         return {
