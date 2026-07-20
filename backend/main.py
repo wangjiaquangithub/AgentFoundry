@@ -1836,15 +1836,16 @@ async def run_enterprise_agent(
         format_knowledge_answer=knowledge_response_service.format_answer,
         format_memory_answer=platform_memory_service.format_answer,
     )
-    memory_saved = platform_memory_service.append_agent_turn_if_enabled(
-        **agent_run_service.build_routed_memory_append_context(
-            execution_context=execution_context,
-            memory_context=memory_context,
-            user_id=user_id,
-            answer=answer,
-            tool_calls=tool_calls,
-            max_records=PLATFORM_MEMORY_MAX_RECORDS,
+    memory_saved = agent_run_service.append_routed_memory_from_context(
+        append_agent_turn_if_enabled=(
+            platform_memory_service.append_agent_turn_if_enabled
         ),
+        execution_context=execution_context,
+        memory_context=memory_context,
+        user_id=user_id,
+        answer=answer,
+        tool_calls=tool_calls,
+        max_records=PLATFORM_MEMORY_MAX_RECORDS,
     )
 
     response = agent_run_service.finalize_routed_response_from_context(
