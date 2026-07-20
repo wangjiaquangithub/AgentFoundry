@@ -344,6 +344,16 @@ class PlatformConnectorConfigService:
     def list_configs_response(self) -> dict[str, Any]:
         return {"saved_configs": self.redacted_configs()}
 
+    @staticmethod
+    def runtime_metadata(runtime: dict[str, Any]) -> dict[str, Any]:
+        """Return connector metadata from a selected runtime context."""
+        return {
+            "tenant": str(runtime["tenant"]),
+            "connector": runtime["connector_label"],
+            "source": runtime["connector_source"],
+            "saved_config_enabled": runtime["saved_config_enabled"],
+        }
+
     def metadata_response(
         self,
         *,
@@ -362,12 +372,7 @@ class PlatformConnectorConfigService:
                 connector_mode=connector_mode,
                 env_metadata=env_metadata,
             ),
-            "runtime": {
-                "tenant": str(runtime["tenant"]),
-                "connector": runtime["connector_label"],
-                "source": runtime["connector_source"],
-                "saved_config_enabled": runtime["saved_config_enabled"],
-            },
+            "runtime": self.runtime_metadata(runtime),
             "supported": self.supported_connectors(),
             "env": env_metadata,
             "http_paths": {
