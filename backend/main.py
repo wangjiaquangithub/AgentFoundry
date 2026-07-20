@@ -1723,17 +1723,16 @@ async def run_enterprise_agent(
             approval_required_tools=APPROVAL_REQUIRED_TOOLS,
         ):
             try:
-                approved_by = _require_platform_approval(
-                    **agent_run_service.build_tool_approval_requirement_context(
-                        approval_id=agent_run_service.agent_run_approval_id(
-                            run_request,
-                        ),
-                        tool_name=tool_name,
-                        tenant=tenant,
-                        user_id=user_id,
-                        agent_id=runner_agent_id,
-                        inputs=route_inputs,
+                approved_by = agent_run_service.require_tool_approval_from_context(
+                    require_platform_approval=_require_platform_approval,
+                    approval_id=agent_run_service.agent_run_approval_id(
+                        run_request,
                     ),
+                    tool_name=tool_name,
+                    tenant=tenant,
+                    user_id=user_id,
+                    agent_id=runner_agent_id,
+                    inputs=route_inputs,
                 )
             except HTTPException as exc:
                 detail = agent_run_service.approval_exception_detail(exc)

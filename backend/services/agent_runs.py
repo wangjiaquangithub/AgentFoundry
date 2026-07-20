@@ -983,6 +983,28 @@ class PlatformAgentRunService:
             "inputs": inputs,
         }
 
+    def require_tool_approval_from_context(
+        self,
+        *,
+        require_platform_approval: Callable[..., str | None],
+        approval_id: str | None,
+        tool_name: str,
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        inputs: dict[str, Any],
+    ) -> str | None:
+        return require_platform_approval(
+            **self.build_tool_approval_requirement_context(
+                approval_id=approval_id,
+                tool_name=tool_name,
+                tenant=tenant,
+                user_id=user_id,
+                agent_id=agent_id,
+                inputs=inputs,
+            ),
+        )
+
     def build_tool_execution_request_context(
         self,
         *,
