@@ -697,11 +697,14 @@ def _platform_agent_access_scope_diagnostics(
 
 def _identity_role_for_user(user_id: str) -> str:
     tenant_hint = _tenant_hint_from_user_id(user_id)
-    current_tenant = (
-        tenant_hint
-        or _runtime_tenant_for_user(user_id)
-        or _configured_tenant_for_user(user_id)
-    )
+    current_tenant = tenant_hint or _runtime_tenant_for_user(user_id)
+    if not current_tenant:
+        try:
+            current_tenant = (
+                _platform_connector_config_service().configured_tenant_for_user(user_id)
+            )
+        except PlatformConnectorConfigServiceError as exc:
+            _raise_platform_connector_config_service_error(exc)
     for identity in _platform_identity_metadata(user_id, current_tenant):
         if identity.get("user_id") == user_id:
             return str(identity.get("role") or "").strip()
@@ -1100,13 +1103,6 @@ def _tenant_hint_from_user_id(user_id: str) -> str | None:
 def _runtime_tenant_for_user(user_id: str) -> str:
     try:
         return _platform_connector_config_service().runtime_tenant_for_user(user_id)
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
-
-
-def _configured_tenant_for_user(user_id: str) -> str:
-    try:
-        return _platform_connector_config_service().configured_tenant_for_user(user_id)
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
 
