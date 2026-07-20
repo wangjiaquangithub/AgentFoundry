@@ -2802,19 +2802,13 @@ async def save_enterprise_platform_connector_config(
 ) -> dict[str, Any]:
     """Persist a tenant-scoped connector configuration."""
     user_id = request.headers.get("X-User-ID") or "acme:alice"
-    configs = _load_platform_connector_configs()
-    tenant = payload.tenant.strip() or _configured_tenant_for_user(user_id)
-    config = _normalize_connector_config_payload(
-        payload,
-        user_id=user_id,
-        existing_config=configs.get(tenant),
-    )
-    configs[config["tenant"]] = config
-    _save_platform_connector_configs(configs)
-    return {
-        "config": _redact_connector_config(config),
-        "saved_configs": _redacted_connector_configs(),
-    }
+    try:
+        return _platform_connector_config_service().save_config_payload(
+            payload,
+            user_id=user_id,
+        )
+    except PlatformConnectorConfigServiceError as exc:
+        _raise_platform_connector_config_service_error(exc)
 
 
 @app.post("/enterprise/platform/connectors/test")

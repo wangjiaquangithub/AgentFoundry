@@ -311,6 +311,21 @@ class PlatformConnectorConfigService:
             "updated_by": user_id,
         }
 
+    def save_config_payload(self, payload: Any, *, user_id: str) -> dict[str, Any]:
+        configs = self.list_configs()
+        tenant = payload.tenant.strip() or self.configured_tenant_for_user(user_id)
+        config = self.normalize_config_payload(
+            payload,
+            user_id=user_id,
+            existing_config=configs.get(tenant),
+        )
+        configs[config["tenant"]] = config
+        self.save_configs(configs)
+        return {
+            "config": self.redact_config(config),
+            "saved_configs": self.redacted_configs(),
+        }
+
     def normalize_import_configs(
         self,
         value: Any,
