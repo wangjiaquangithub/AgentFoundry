@@ -104,6 +104,15 @@ class PlatformAgentRunService:
         }
 
     @staticmethod
+    def runtime_adapter_payload_from_metadata(
+        *,
+        get_runtime_adapter: Callable[[dict[str, Any]], Any],
+        agent_metadata: dict[str, Any],
+    ) -> dict[str, Any]:
+        runtime_adapter = get_runtime_adapter(agent_metadata)
+        return runtime_adapter.describe(agent_metadata)
+
+    @staticmethod
     def runtime_tenant(runtime: dict[str, Any]) -> str:
         return str(runtime["tenant"])
 
