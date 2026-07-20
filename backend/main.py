@@ -1082,10 +1082,11 @@ async def create_enterprise_platform_member(
         )
     except PlatformMemberServiceError as exc:
         _raise_platform_member_service_error(exc)
-    return _platform_member_service().mutation_payload(
+    return _platform_member_service().mutation_response_payload(
+        actor=actor,
         member=member,
         members=members,
-        identities=_platform_identity_metadata(actor, member["tenant"]),
+        identity_metadata=_platform_identity_metadata,
         registry_path=PLATFORM_MEMBERS_PATH,
     )
 
@@ -1108,10 +1109,11 @@ async def update_enterprise_platform_member(
         )
     except PlatformMemberServiceError as exc:
         _raise_platform_member_service_error(exc)
-    return _platform_member_service().mutation_payload(
+    return _platform_member_service().mutation_response_payload(
+        actor=actor,
         member=member,
         members=members,
-        identities=_platform_identity_metadata(actor, member["tenant"]),
+        identity_metadata=_platform_identity_metadata,
         registry_path=PLATFORM_MEMBERS_PATH,
     )
 
@@ -1132,10 +1134,11 @@ async def deactivate_enterprise_platform_member(
         )
     except PlatformMemberServiceError as exc:
         _raise_platform_member_service_error(exc)
-    return _platform_member_service().mutation_payload(
+    return _platform_member_service().mutation_response_payload(
+        actor=actor,
         member=existing,
         members=members,
-        identities=_platform_identity_metadata(actor, existing["tenant"]),
+        identity_metadata=_platform_identity_metadata,
         registry_path=PLATFORM_MEMBERS_PATH,
     )
 

@@ -246,6 +246,22 @@ class PlatformMemberService:
             "path": str(registry_path),
         }
 
+    def mutation_response_payload(
+        self,
+        *,
+        actor: str,
+        member: dict[str, Any],
+        members: list[dict[str, Any]],
+        identity_metadata: Callable[[str, str], list[dict[str, Any]]],
+        registry_path: Any,
+    ) -> dict[str, Any]:
+        return self.mutation_payload(
+            member=member,
+            members=members,
+            identities=identity_metadata(actor, member["tenant"]),
+            registry_path=registry_path,
+        )
+
     def upsert_member(
         self,
         payload: dict[str, Any],
