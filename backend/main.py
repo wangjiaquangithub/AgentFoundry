@@ -2189,9 +2189,10 @@ async def enterprise_platform_ops_tasks(request: Request) -> dict[str, Any]:
         )
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
-    tenant = str(runtime["tenant"])
+    status_service = _platform_status_service()
+    tenant = status_service.runtime_tenant(runtime)
     identities = _platform_identity_metadata(user_id, tenant)
-    return _platform_status_service().ops_tasks(
+    return status_service.ops_tasks(
         tenant=tenant,
         user_id=user_id,
         identities=identities,
@@ -2229,9 +2230,10 @@ async def resolve_enterprise_platform_ops_task(
         )
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
-    tenant = str(runtime["tenant"])
+    status_service = _platform_status_service()
+    tenant = status_service.runtime_tenant(runtime)
     identities = _platform_identity_metadata(user_id, tenant)
-    return _platform_status_service().resolved_disabled_workflows_payload(
+    return status_service.resolved_disabled_workflows_payload(
         task_code=normalized_code,
         enabled_workflows=enabled_workflows,
         workflows=workflows,
