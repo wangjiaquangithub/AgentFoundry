@@ -1008,8 +1008,7 @@ async def _route_enterprise_agent_question_with_model(
 
 
 def _route_enterprise_agent_question(question: str) -> dict[str, Any]:
-    routes = enterprise_router_service.rule_routes_for_question(question)
-    return enterprise_router_service.primary_route_or_fallback(routes)
+    return enterprise_router_service.primary_rule_route_for_question(question)
 
 
 async def _select_enterprise_agent_routes(

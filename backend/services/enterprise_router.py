@@ -521,3 +521,8 @@ class PlatformEnterpriseRouterService:
             return routes[0]
 
         return self.fallback_route()
+
+    def primary_rule_route_for_question(self, question: str) -> dict[str, Any]:
+        return self.primary_route_or_fallback(
+            self.rule_routes_for_question(question),
+        )
