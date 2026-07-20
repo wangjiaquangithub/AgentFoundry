@@ -367,9 +367,10 @@ async def build_enterprise_tools(
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
     tool_policy_service = _platform_tool_policy_service()
-    tenant = tool_policy_service.runtime_tenant(runtime)
-    runtime_connector = tool_policy_service.runtime_connector(runtime)
-    connector_label = tool_policy_service.runtime_connector_label(runtime)
+    runtime_selection = tool_policy_service.runtime_selection(runtime)
+    tenant = runtime_selection["tenant"]
+    runtime_connector = runtime_selection["connector"]
+    connector_label = runtime_selection["connector_label"]
 
     def audit_tool_call(
         tool_name: str,
