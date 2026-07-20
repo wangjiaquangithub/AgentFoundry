@@ -1829,8 +1829,6 @@ async def run_enterprise_agent(
     routed_summary_context = agent_run_service.build_routed_summary_context(
         tool_calls=tool_calls,
     )
-    primary_call = routed_summary_context["primary_call"]
-    routing_reason = routed_summary_context["routing_reason"]
     answer = agent_run_service.compose_routed_answer(
         tool_calls=tool_calls,
         knowledge_hits=knowledge_hits,
@@ -1851,11 +1849,10 @@ async def run_enterprise_agent(
         max_records=PLATFORM_MEMORY_MAX_RECORDS,
     )
 
-    response = agent_run_service.finalize_routed_response(
-        primary_call=primary_call,
+    routed_finalize_context = agent_run_service.build_routed_finalize_context(
+        routed_summary_context=routed_summary_context,
         response_record_context=response_record_context,
         answer=answer,
-        routed=routed_summary_context["routed"],
         session_id=runner_session_id,
         tenant=tenant,
         user_id=user_id,
@@ -1864,7 +1861,6 @@ async def run_enterprise_agent(
         connector_source=connector_source,
         routing_mode=routing_mode,
         routing_source=routing_source,
-        routing_reason=routing_reason,
         routing_error=routing_error,
         agent_metadata=agent_metadata,
         runtime_adapter=runtime_adapter_payload,
@@ -1874,6 +1870,9 @@ async def run_enterprise_agent(
         knowledge_payload=knowledge_payload,
         memory_payload=memory_payload,
         memory_saved=memory_saved,
+    )
+    response = agent_run_service.finalize_routed_response(
+        **routed_finalize_context,
     )
     return response
 
