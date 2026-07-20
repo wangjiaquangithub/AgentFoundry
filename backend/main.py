@@ -1769,10 +1769,8 @@ async def run_enterprise_agent(
                     )
                 )
                 decision = enterprise_router_service.decision_with_routing_context(
-                    agent_run_service.pending_approval_decision_payload(
-                        pending_approval_context,
-                    ),
-                    **agent_run_service.build_routed_decision_context(
+                    **agent_run_service.build_pending_approval_route_decision_context(
+                        pending_approval_context=pending_approval_context,
                         routing_reason=route_reason,
                         routing_source=route_source,
                         routing_mode=routing_mode,

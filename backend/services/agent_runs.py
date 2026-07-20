@@ -859,6 +859,27 @@ class PlatformAgentRunService:
     ) -> dict[str, Any]:
         return dict(context["decision_payload"])
 
+    def build_pending_approval_route_decision_context(
+        self,
+        *,
+        pending_approval_context: dict[str, Any],
+        routing_reason: str,
+        routing_source: str,
+        routing_mode: str,
+        routing_error: str | None,
+    ) -> dict[str, Any]:
+        return {
+            "decision": self.pending_approval_decision_payload(
+                pending_approval_context,
+            ),
+            **self.build_routed_decision_context(
+                routing_reason=routing_reason,
+                routing_source=routing_source,
+                routing_mode=routing_mode,
+                routing_error=routing_error,
+            ),
+        }
+
     def pending_approval_message(
         self,
         context: dict[str, Any],
