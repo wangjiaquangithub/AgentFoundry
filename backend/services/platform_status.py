@@ -55,6 +55,11 @@ class PlatformStatusService:
         """Return the connector configuration source for the runtime context."""
         return str(runtime["connector_source"])
 
+    @staticmethod
+    def runtime_saved_config_enabled(runtime: dict[str, Any]) -> bool:
+        """Return whether the runtime context came from saved connector config."""
+        return bool(runtime["saved_config_enabled"])
+
     def dashboard(self, *, tenant: str, user_id: str) -> dict[str, Any]:
         """Build a compact platform operations snapshot for the console."""
         pending_approvals = self._list_approval_records(
@@ -182,7 +187,7 @@ class PlatformStatusService:
             "connector": {
                 "name": self.runtime_connector_label(runtime),
                 "source": self.runtime_connector_source(runtime),
-                "saved_config_enabled": runtime["saved_config_enabled"],
+                "saved_config_enabled": self.runtime_saved_config_enabled(runtime),
             },
             "identities": identities,
             "tenant_workspaces": tenant_workspaces,
