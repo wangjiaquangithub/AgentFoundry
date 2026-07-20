@@ -288,6 +288,19 @@ def _platform_status_service() -> PlatformStatusService:
             limit=PLATFORM_MEMORY_MAX_RECORDS,
             **kwargs,
         ),
+        runtime_context=lambda user_id: (
+            _platform_connector_config_service().enterprise_runtime_context(user_id)
+        ),
+        identity_metadata=_platform_identity_metadata,
+        tenant_workspaces=lambda **kwargs: (
+            _platform_connector_config_service().tenant_workspaces(
+                runtime_connector_for_tenant=(
+                    _platform_connector_config_service()
+                    .runtime_enterprise_connector_for_tenant
+                ),
+                **kwargs,
+            )
+        ),
         agent_run_repository=agent_run_repository,
         audit_logger=tool_audit_logger,
         tool_policy=tool_authorization_policy,
@@ -983,23 +996,10 @@ app = create_app(
 @app.get("/enterprise/platform/status")
 async def enterprise_platform_status(request: Request) -> dict[str, Any]:
     """Return enterprise platform state for the frontend console."""
-    user_id = request.headers.get("X-User-ID") or "acme:alice"
-    try:
-        connector_config_service = _platform_connector_config_service()
-        runtime = connector_config_service.enterprise_runtime_context(user_id)
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
     status_service = _platform_status_service()
-    runtime_selection = status_service.runtime_selection(runtime)
-    tenant = runtime_selection["tenant"]
-    identities = _platform_identity_metadata(user_id, tenant)
     try:
-        tenant_workspaces = connector_config_service.tenant_workspaces(
-            identities=identities,
-            current_tenant=tenant,
-            runtime_connector_for_tenant=(
-                connector_config_service.runtime_enterprise_connector_for_tenant
-            ),
+        context = status_service.status_request_context(
+            user_id=request.headers.get("X-User-ID"),
         )
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
@@ -1007,11 +1007,11 @@ async def enterprise_platform_status(request: Request) -> dict[str, Any]:
     return status_service.platform_snapshot(
         platform_version=PLATFORM_VERSION,
         data_dir=DATA_DIR,
-        runtime=runtime,
-        tenant=tenant,
-        user_id=user_id,
-        identities=identities,
-        tenant_workspaces=tenant_workspaces,
+        runtime=context["runtime"],
+        tenant=context["tenant"],
+        user_id=context["user_id"],
+        identities=context["identities"],
+        tenant_workspaces=context["tenant_workspaces"],
         subagent_templates=ENTERPRISE_SUBAGENT_TEMPLATES,
     )
 

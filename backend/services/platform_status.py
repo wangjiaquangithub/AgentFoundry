@@ -17,6 +17,9 @@ class PlatformStatusService:
         load_workflow_templates: Callable[[], list[dict[str, Any]]],
         load_agents: Callable[[], list[dict[str, Any]]],
         load_memories: Callable[..., list[dict[str, Any]]],
+        runtime_context: Callable[[str], dict[str, Any]],
+        identity_metadata: Callable[[str, str], list[dict[str, Any]]],
+        tenant_workspaces: Callable[..., dict[str, Any]],
         agent_run_repository: Any,
         audit_logger: Any,
         tool_policy: Any,
@@ -32,6 +35,9 @@ class PlatformStatusService:
         self._load_workflow_templates = load_workflow_templates
         self._load_agents = load_agents
         self._load_memories = load_memories
+        self._runtime_context = runtime_context
+        self._identity_metadata = identity_metadata
+        self._tenant_workspaces = tenant_workspaces
         self._agent_run_repository = agent_run_repository
         self._audit_logger = audit_logger
         self._tool_policy = tool_policy
@@ -69,6 +75,31 @@ class PlatformStatusService:
             "connector_label": self.runtime_connector_label(runtime),
             "connector_source": self.runtime_connector_source(runtime),
             "saved_config_enabled": self.runtime_saved_config_enabled(runtime),
+        }
+
+    @staticmethod
+    def resolve_request_user_id(user_id: str | None) -> str:
+        """Return the user id for platform status requests."""
+        return user_id or "acme:alice"
+
+    def status_request_context(self, *, user_id: str | None) -> dict[str, Any]:
+        """Build runtime, tenant, identity, and workspace context for status."""
+        resolved_user_id = self.resolve_request_user_id(user_id)
+        runtime = self._runtime_context(resolved_user_id)
+        runtime_selection = self.runtime_selection(runtime)
+        tenant = runtime_selection["tenant"]
+        identities = self._identity_metadata(resolved_user_id, tenant)
+        tenant_workspaces = self._tenant_workspaces(
+            identities=identities,
+            current_tenant=tenant,
+        )
+        return {
+            "runtime": runtime,
+            "runtime_selection": runtime_selection,
+            "tenant": tenant,
+            "user_id": resolved_user_id,
+            "identities": identities,
+            "tenant_workspaces": tenant_workspaces,
         }
 
     def dashboard(self, *, tenant: str, user_id: str) -> dict[str, Any]:
