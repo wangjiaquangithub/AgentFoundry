@@ -1,4 +1,12 @@
-import { Boxes, CheckCircle2, ShieldAlert, Users, Wrench } from 'lucide-react';
+import {
+	Boxes,
+	CheckCircle2,
+	Code2,
+	ListChecks,
+	ShieldAlert,
+	Users,
+	Wrench,
+} from 'lucide-react';
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 
 import {
@@ -15,6 +23,7 @@ import type {
 	EnterpriseToolDecision,
 	EnterpriseToolRunResponse,
 } from '@/api';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -155,18 +164,39 @@ export function ToolsViewPage({
 				/>
 			</section>
 
-			<section className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(380px,0.9fr)] xl:items-start">
-				<ToolCatalogPanel
-					sectionRef={configManagementRef}
-					availableToolItems={availableToolItems}
-					publishedPlatformAgents={publishedPlatformAgents}
-					toolCatalogLoading={toolCatalogLoading}
-					toolCatalogError={toolCatalogError}
-					onRefetchToolCatalog={onRefetchToolCatalog}
-					t={t}
-				/>
+			<Tabs defaultValue="catalog" className="grid gap-4">
+				<section className="flex flex-col gap-3 rounded-lg border bg-background p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+					<div className="min-w-0">
+						<h2 className="text-base font-semibold">工具工作区</h2>
+						<p className="mt-1 text-sm leading-6 text-muted-foreground">
+							把工具目录、权限状态和调用调试分区处理，避免配置清单和运行结果挤在同一个长页面里。
+						</p>
+					</div>
+					<TabsList className="w-full sm:w-auto">
+						<TabsTrigger value="catalog" className="flex-1 sm:flex-none">
+							<ListChecks className="size-4" />
+							工具目录
+						</TabsTrigger>
+						<TabsTrigger value="runner" className="flex-1 sm:flex-none">
+							<Code2 className="size-4" />
+							调用调试
+						</TabsTrigger>
+					</TabsList>
+				</section>
 
-				<div className="xl:sticky xl:top-6">
+				<TabsContent value="catalog" className="mt-0">
+					<ToolCatalogPanel
+						sectionRef={configManagementRef}
+						availableToolItems={availableToolItems}
+						publishedPlatformAgents={publishedPlatformAgents}
+						toolCatalogLoading={toolCatalogLoading}
+						toolCatalogError={toolCatalogError}
+						onRefetchToolCatalog={onRefetchToolCatalog}
+						t={t}
+					/>
+				</TabsContent>
+
+				<TabsContent value="runner" className="mt-0">
 					<ToolRunnerPanel
 						sectionRef={toolRunnerRef}
 						selectedToolName={selectedToolName}
@@ -193,8 +223,8 @@ export function ToolsViewPage({
 						onRunEnterpriseTool={onRunEnterpriseTool}
 						t={t}
 					/>
-				</div>
-			</section>
+				</TabsContent>
+			</Tabs>
 		</PlatformPageShell>
 	);
 }
