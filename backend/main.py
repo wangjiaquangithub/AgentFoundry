@@ -1732,7 +1732,10 @@ async def run_enterprise_agent(
         route_reason = route_context["reason"]
         route_source = route_context["source"]
 
-        if tool_name not in configured_tools:
+        if not agent_run_service.is_configured_tool(
+            tool_name=tool_name,
+            configured_tools=configured_tools,
+        ):
             denial = _platform_agent_service().tool_denial_payload(tool_name)
             answer = agent_run_service.denied_tool_answer(denial)
             decision = enterprise_router_service.decision_with_routing_context(

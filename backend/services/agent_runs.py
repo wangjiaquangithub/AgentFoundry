@@ -273,6 +273,14 @@ class PlatformAgentRunService:
     def denied_tool_answer(self, denial: dict[str, Any]) -> str:
         return str(denial["reason"])
 
+    def is_configured_tool(
+        self,
+        *,
+        tool_name: str,
+        configured_tools: set[str],
+    ) -> bool:
+        return tool_name in configured_tools
+
     def build_denied_routed_tool_call(
         self,
         *,
