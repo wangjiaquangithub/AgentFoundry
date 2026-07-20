@@ -274,6 +274,14 @@ class PlatformStatusService:
             ],
         }
 
+    def governance_request_payload(self, *, user_id: str | None) -> dict[str, Any]:
+        """Build the governance response for one platform request user."""
+        context = self.status_request_context(user_id=user_id)
+        return self.governance_snapshot(
+            identities=context["identities"],
+            tenant_workspaces=context["tenant_workspaces"],
+        )
+
     def governance_snapshot(
         self,
         *,
