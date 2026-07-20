@@ -888,10 +888,11 @@ def _run_authorized_enterprise_tool(
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
     tool_policy_service = _platform_tool_policy_service()
-    tenant = tool_policy_service.runtime_tenant(runtime)
-    runtime_connector = tool_policy_service.runtime_connector(runtime)
-    connector_label = tool_policy_service.runtime_connector_label(runtime)
-    connector_source = tool_policy_service.runtime_connector_source(runtime)
+    runtime_selection = tool_policy_service.runtime_selection(runtime)
+    tenant = runtime_selection["tenant"]
+    runtime_connector = runtime_selection["connector"]
+    connector_label = runtime_selection["connector_label"]
+    connector_source = runtime_selection["connector_source"]
 
     if tool_name not in ENTERPRISE_TOOL_NAMES:
         raise HTTPException(

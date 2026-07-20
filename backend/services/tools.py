@@ -101,6 +101,15 @@ class PlatformToolPolicyService:
         """Return the configuration source for the selected tool connector."""
         return str(runtime["connector_source"])
 
+    def runtime_selection(self, runtime: dict[str, Any]) -> dict[str, Any]:
+        """Return runtime fields needed by enterprise tool execution."""
+        return {
+            "tenant": self.runtime_tenant(runtime),
+            "connector": self.runtime_connector(runtime),
+            "connector_label": self.runtime_connector_label(runtime),
+            "connector_source": self.runtime_connector_source(runtime),
+        }
+
     def audit_stats(self, events: list[dict[str, Any]]) -> dict[str, Any]:
         calls = len(events)
         successes = sum(1 for event in events if event.get("success") is True)
