@@ -1136,10 +1136,7 @@ def _route_enterprise_agent_question_with_rules(
 
 def _route_enterprise_agent_question(question: str) -> dict[str, Any]:
     routes = _route_enterprise_agent_question_with_rules(question)
-    if routes:
-        return routes[0]
-
-    return enterprise_router_service.fallback_route()
+    return enterprise_router_service.primary_route_or_fallback(routes)
 
 
 async def _select_enterprise_agent_routes(

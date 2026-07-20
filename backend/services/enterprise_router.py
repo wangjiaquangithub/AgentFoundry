@@ -255,3 +255,12 @@ class PlatformEnterpriseRouterService:
             ),
             "source": self._default_source,
         }
+
+    def primary_route_or_fallback(
+        self,
+        routes: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        if routes:
+            return routes[0]
+
+        return self.fallback_route()
