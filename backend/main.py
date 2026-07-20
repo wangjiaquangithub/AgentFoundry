@@ -1425,10 +1425,6 @@ def _deep_merge_dict(base: dict[str, Any], incoming: dict[str, Any]) -> dict[str
     return merged
 
 
-def _platform_agent_template_metadata() -> list[dict[str, Any]]:
-    return _platform_agent_service().template_metadata()
-
-
 def _platform_identity_metadata(
     current_user_id: str,
     current_tenant: str,
@@ -2667,7 +2663,7 @@ async def import_enterprise_platform_config(
 async def enterprise_platform_agents() -> dict[str, Any]:
     """Return platform agent templates and published tenant instances."""
     return {
-        "templates": _platform_agent_template_metadata(),
+        "templates": _platform_agent_service().template_metadata(),
         "agents": [
             _platform_agent_service().response(agent)
             for agent in _load_platform_agents()
