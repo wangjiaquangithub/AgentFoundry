@@ -606,13 +606,6 @@ def _load_platform_agents() -> list[dict[str, Any]]:
         _raise_platform_agent_service_error(exc)
 
 
-def _get_platform_agent(agent_id: str) -> dict[str, Any]:
-    try:
-        return _platform_agent_service().get_agent(agent_id)
-    except PlatformAgentServiceError as exc:
-        _raise_platform_agent_service_error(exc)
-
-
 def _published_platform_agent_tool_scope_for_user(
     agent_id: str,
     user_id: str,
@@ -2535,7 +2528,10 @@ async def update_enterprise_platform_agent(
 ) -> dict[str, Any]:
     """Update a tenant-scoped platform agent instance."""
     user_id = request.headers.get("X-User-ID") or "acme:alice"
-    existing_agent = _get_platform_agent(agent_id)
+    try:
+        existing_agent = _platform_agent_service().get_agent(agent_id)
+    except PlatformAgentServiceError as exc:
+        _raise_platform_agent_service_error(exc)
     resource_inputs = _platform_agent_service().resource_validation_inputs(
         payload,
         existing_agent=existing_agent,
