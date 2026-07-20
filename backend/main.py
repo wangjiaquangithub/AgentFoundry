@@ -1774,7 +1774,10 @@ async def run_enterprise_agent(
                 )
             except HTTPException as exc:
                 detail = exc.detail if isinstance(exc.detail, dict) else {}
-                if exc.status_code != 403 or not detail.get("approval_required"):
+                if not agent_run_service.is_approval_required_exception(
+                    status_code=exc.status_code,
+                    detail=detail,
+                ):
                     raise
 
                 try:

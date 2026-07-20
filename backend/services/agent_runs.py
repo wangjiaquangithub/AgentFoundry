@@ -354,6 +354,14 @@ class PlatformAgentRunService:
     def resolve_requested_by(self, *, headers: Any, user_id: str) -> str:
         return str(headers.get("X-User-ID") or user_id)
 
+    def is_approval_required_exception(
+        self,
+        *,
+        status_code: int,
+        detail: dict[str, Any],
+    ) -> bool:
+        return status_code == 403 and bool(detail.get("approval_required"))
+
     def resolve_approval_required_reason(self, *, detail: dict[str, Any]) -> str:
         return str(
             detail.get(
