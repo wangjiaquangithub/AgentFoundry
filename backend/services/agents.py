@@ -46,6 +46,29 @@ class PlatformAgentService:
     def save_agents(self, agents: list[dict[str, Any]]) -> None:
         self._repository.save_all(agents)
 
+    def import_agents_payload(self, value: Any, *, mode: str) -> None:
+        imported_agents = self.normalize_import_agents(value)
+        agents = (
+            imported_agents
+            if mode == "replace"
+            else _merge_by_key(self.list_agents(), imported_agents, "id")
+        )
+        self.save_agents(agents)
+
+    def normalize_import_agents(self, value: Any) -> list[dict[str, Any]]:
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            raise PlatformAgentServiceError(
+                400,
+                "agents must be a JSON array.",
+            )
+        return [
+            dict(item)
+            for item in value
+            if isinstance(item, dict) and item.get("id")
+        ]
+
     def get_agent(self, agent_id: str) -> dict[str, Any]:
         try:
             agent = self._repository.get(agent_id)
@@ -619,3 +642,20 @@ def _normalize_values(values: Iterable[Any] | None) -> list[str]:
             normalized.append(item)
             seen.add(item)
     return normalized
+
+
+def _merge_by_key(
+    existing: list[dict[str, Any]],
+    imported: list[dict[str, Any]],
+    key: str,
+) -> list[dict[str, Any]]:
+    merged: dict[str, dict[str, Any]] = {}
+    order: list[str] = []
+    for item in [*existing, *imported]:
+        item_key = str(item.get(key) or "").strip()
+        if not item_key:
+            continue
+        if item_key not in merged:
+            order.append(item_key)
+        merged[item_key] = item
+    return [merged[item_key] for item_key in order]

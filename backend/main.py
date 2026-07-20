@@ -1235,14 +1235,6 @@ def _normalize_import_members(value: Any, actor: str) -> list[dict[str, Any]]:
         _raise_platform_member_service_error(exc)
 
 
-def _normalize_import_agents(value: Any) -> list[dict[str, Any]]:
-    if value is None:
-        return []
-    if not isinstance(value, list):
-        raise HTTPException(status_code=400, detail="agents must be a JSON array.")
-    return [dict(item) for item in value if isinstance(item, dict) and item.get("id")]
-
-
 def _normalize_import_workflow_templates(value: Any) -> list[dict[str, Any]]:
     if value is None:
         return []
@@ -2444,14 +2436,11 @@ async def import_enterprise_platform_config(
             _raise_platform_connector_config_service_error(exc)
 
     if "agents" in incoming:
-        imported_agents = _normalize_import_agents(incoming.get("agents"))
-        agents = (
-            imported_agents
-            if mode == "replace"
-            else _merge_by_key(_load_platform_agents(), imported_agents, "id")
-        )
         try:
-            _platform_agent_service().save_agents(agents)
+            _platform_agent_service().import_agents_payload(
+                incoming.get("agents"),
+                mode=mode,
+            )
         except PlatformAgentServiceError as exc:
             _raise_platform_agent_service_error(exc)
 
