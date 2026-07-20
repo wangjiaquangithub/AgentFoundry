@@ -87,6 +87,7 @@ from services.connectors import (
     PlatformConnectorConfigServiceError,
 )
 from services.members import PlatformMemberService, PlatformMemberServiceError
+from services.memories import PlatformMemoryService
 from services.platform_status import PlatformStatusService
 from services.tools import (
     PlatformToolPolicyService,
@@ -158,6 +159,7 @@ approval_request_repository = ApprovalRequestRepository(
 member_repository = MemberRepository(PLATFORM_MEMBERS_PATH)
 dev_knowledge_repository = DevKnowledgeRepository(PLATFORM_DEV_KNOWLEDGE_PATH)
 platform_memory_repository = PlatformMemoryRepository(PLATFORM_MEMORY_DIR)
+platform_memory_service = PlatformMemoryService(repository=platform_memory_repository)
 
 
 def _load_local_env() -> None:
@@ -1605,7 +1607,7 @@ def _append_platform_memory(
         "knowledge_base_ids": list(knowledge_base_ids),
         "keywords": sorted(_memory_text_terms(keyword_text))[:80],
     }
-    platform_memory_repository.append_capped(
+    platform_memory_service.append_capped(
         tenant=tenant,
         user_id=user_id,
         agent_id=agent_id,
