@@ -191,6 +191,27 @@ class PlatformConnectorConfigService:
             env_metadata=env_metadata,
         )
 
+    def tenant_workspaces(
+        self,
+        *,
+        identities: list[dict[str, Any]],
+        current_tenant: str,
+        runtime_connector_for_tenant: Callable[[str], tuple[EnterpriseConnector, str]],
+    ) -> dict[str, Any]:
+        tenants = {current_tenant}
+        tenants.update(
+            str(identity.get("tenant"))
+            for identity in identities
+            if identity.get("tenant")
+        )
+        workspaces: dict[str, Any] = {}
+        for tenant in sorted(tenants):
+            connector, source = runtime_connector_for_tenant(tenant)
+            workspace = connector.describe_tenant_workspace(tenant)
+            workspace["runtime_connector_source"] = source
+            workspaces[tenant] = workspace
+        return workspaces
+
     def list_configs(self) -> dict[str, dict[str, Any]]:
         try:
             return self._repository.list_by_tenant()

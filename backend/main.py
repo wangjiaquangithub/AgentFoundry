@@ -1415,25 +1415,6 @@ def _platform_tool_policy_payload(
         _raise_platform_tool_policy_service_error(exc)
 
 
-def _tenant_workspace_metadata(
-    identities: list[dict[str, Any]],
-    current_tenant: str,
-) -> dict[str, Any]:
-    tenants = {current_tenant}
-    tenants.update(
-        str(identity.get("tenant"))
-        for identity in identities
-        if identity.get("tenant")
-    )
-    workspaces: dict[str, Any] = {}
-    for tenant in sorted(tenants):
-        connector, source = _runtime_enterprise_connector_for_tenant(tenant)
-        workspace = connector.describe_tenant_workspace(tenant)
-        workspace["runtime_connector_source"] = source
-        workspaces[tenant] = workspace
-    return workspaces
-
-
 def _enterprise_governance_snapshot(
     *,
     identities: list[dict[str, Any]],
@@ -2214,7 +2195,11 @@ async def enterprise_platform_status(request: Request) -> dict[str, Any]:
     runtime = _enterprise_runtime_context(user_id)
     tenant = str(runtime["tenant"])
     identities = _platform_identity_metadata(user_id, tenant)
-    tenant_workspaces = _tenant_workspace_metadata(identities, tenant)
+    tenant_workspaces = _platform_connector_config_service().tenant_workspaces(
+        identities=identities,
+        current_tenant=tenant,
+        runtime_connector_for_tenant=_runtime_enterprise_connector_for_tenant,
+    )
 
     return {
         "platform": {
@@ -2296,7 +2281,13 @@ async def enterprise_platform_connectors(request: Request) -> dict[str, Any]:
         _raise_platform_connector_config_service_error(exc)
 
     response["identities"] = identities
-    response["tenant_workspaces"] = _tenant_workspace_metadata(identities, tenant)
+    response["tenant_workspaces"] = (
+        _platform_connector_config_service().tenant_workspaces(
+            identities=identities,
+            current_tenant=tenant,
+            runtime_connector_for_tenant=_runtime_enterprise_connector_for_tenant,
+        )
+    )
     return response
 
 
@@ -2307,7 +2298,11 @@ async def enterprise_platform_governance(request: Request) -> dict[str, Any]:
     runtime = _enterprise_runtime_context(user_id)
     tenant = str(runtime["tenant"])
     identities = _platform_identity_metadata(user_id, tenant)
-    tenant_workspaces = _tenant_workspace_metadata(identities, tenant)
+    tenant_workspaces = _platform_connector_config_service().tenant_workspaces(
+        identities=identities,
+        current_tenant=tenant,
+        runtime_connector_for_tenant=_runtime_enterprise_connector_for_tenant,
+    )
     return _enterprise_governance_snapshot(
         identities=identities,
         tenant_workspaces=tenant_workspaces,
