@@ -746,14 +746,6 @@ def _platform_identities_for_tenant(tenant: str) -> list[dict[str, Any]]:
     ]
 
 
-def _platform_roles_for_tenant(tenant: str) -> set[str]:
-    return {
-        str(identity.get("role") or "").strip()
-        for identity in _platform_identities_for_tenant(tenant)
-        if str(identity.get("role") or "").strip()
-    }
-
-
 def _platform_agent_access_scope_diagnostics(
     tenant: str,
     access: dict[str, list[str]],
@@ -764,7 +756,11 @@ def _platform_agent_access_scope_diagnostics(
         for identity in identities
         if str(identity.get("user_id") or "").strip()
     }
-    roles = _platform_roles_for_tenant(tenant)
+    roles = {
+        str(identity.get("role") or "").strip()
+        for identity in identities
+        if str(identity.get("role") or "").strip()
+    }
     tenant_mismatched_user_ids: list[str] = []
     unknown_user_ids: list[str] = []
     inactive_user_ids: list[str] = []
