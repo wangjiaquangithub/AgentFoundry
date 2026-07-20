@@ -1693,8 +1693,8 @@ async def run_enterprise_agent(
             denial = _platform_agent_service().tool_denial_payload(tool_name)
             answer = agent_run_service.denied_tool_answer(denial)
             decision = enterprise_router_service.decision_with_routing_context(
-                denial,
-                **agent_run_service.build_routed_decision_context(
+                **agent_run_service.build_denied_route_decision_context(
+                    denial=denial,
                     routing_reason=route_reason,
                     routing_source=route_source,
                     routing_mode=routing_mode,
