@@ -633,10 +633,6 @@ def _get_platform_agent(agent_id: str) -> dict[str, Any]:
         _raise_platform_agent_service_error(exc)
 
 
-def _normalize_platform_resource_ids(values: list[Any] | None) -> list[str]:
-    return _platform_agent_service().normalize_resource_ids(values)
-
-
 def _platform_member_service() -> PlatformMemberService:
     return PlatformMemberService(
         repository=member_repository,
@@ -2630,7 +2626,9 @@ async def publish_enterprise_platform_agent(
     """Publish one business template as a tenant-scoped platform agent."""
     user_id = request.headers.get("X-User-ID") or "acme:alice"
     model_config_id = (payload.model_config_id or "").strip() or None
-    knowledge_base_ids = _normalize_platform_resource_ids(payload.knowledge_base_ids)
+    knowledge_base_ids = _platform_agent_service().normalize_resource_ids(
+        payload.knowledge_base_ids,
+    )
     await _validate_platform_agent_resources(
         request,
         user_id,
@@ -2661,11 +2659,11 @@ async def update_enterprise_platform_agent(
             str(existing_agent.get("model_config_id") or "").strip() or None
         )
     if "knowledge_base_ids" in changes:
-        knowledge_base_ids = _normalize_platform_resource_ids(
+        knowledge_base_ids = _platform_agent_service().normalize_resource_ids(
             payload.knowledge_base_ids,
         )
     else:
-        knowledge_base_ids = _normalize_platform_resource_ids(
+        knowledge_base_ids = _platform_agent_service().normalize_resource_ids(
             existing_agent.get("knowledge_base_ids"),
         )
     await _validate_platform_agent_resources(
