@@ -79,6 +79,7 @@ from repositories.workflows import (
 )
 from runtime import get_runtime_adapter
 from services.agents import PlatformAgentService, PlatformAgentServiceError
+from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.platform_status import PlatformStatusService
 from services.workflows import (
     PlatformWorkflowTemplateService,
@@ -702,12 +703,27 @@ def _platform_agent_access(agent: dict[str, Any]) -> dict[str, list[str]]:
     return _platform_agent_service().agent_access(agent)
 
 
+def _platform_member_service() -> PlatformMemberService:
+    return PlatformMemberService(
+        repository=member_repository,
+        tenant_hint_from_user_id=_tenant_hint_from_user_id,
+        now=_now_iso,
+    )
+
+
+def _raise_platform_member_service_error(exc: PlatformMemberServiceError) -> NoReturn:
+    raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
+
+
 def _load_platform_members_config() -> dict[str, Any]:
-    return member_repository.load_config()
+    try:
+        return _platform_member_service().load_config()
+    except PlatformMemberServiceError as exc:
+        _raise_platform_member_service_error(exc)
 
 
 def _save_platform_members_config(config: dict[str, Any]) -> None:
-    member_repository.save_config(config)
+    _platform_member_service().save_config(config)
 
 
 def _normalize_platform_member(
@@ -717,43 +733,27 @@ def _normalize_platform_member(
     updated_by: str | None = None,
     now: str | None = None,
 ) -> dict[str, Any]:
-    timestamp = now or _now_iso()
-    user_id = str(raw.get("user_id") or fallback_user_id or "").strip()
-    if not user_id:
-        raise HTTPException(status_code=400, detail="成员 user_id 不能为空。")
-    tenant = str(raw.get("tenant") or _tenant_hint_from_user_id(user_id) or "acme").strip()
-    role = str(raw.get("role") or "Enterprise user").strip()
-    status = str(raw.get("status") or "active").strip().lower()
-    if status not in {"active", "inactive"}:
-        raise HTTPException(status_code=400, detail="成员状态只能是 active 或 inactive。")
-
-    return {
-        "user_id": user_id,
-        "tenant": tenant,
-        "display_name": str(raw.get("display_name") or user_id).strip(),
-        "role": role,
-        "status": status,
-        "sample_questions": list(raw.get("sample_questions") or []),
-        "created_at": str(raw.get("created_at") or timestamp),
-        "updated_at": timestamp,
-        "updated_by": str(updated_by or raw.get("updated_by") or user_id),
-        "source": "member_registry",
-    }
+    try:
+        return _platform_member_service().normalize_member(
+            raw,
+            fallback_user_id=fallback_user_id,
+            updated_by=updated_by,
+            now=now,
+        )
+    except PlatformMemberServiceError as exc:
+        _raise_platform_member_service_error(exc)
 
 
 def _platform_member_registry(
     *,
     include_inactive: bool = True,
 ) -> list[dict[str, Any]]:
-    members: list[dict[str, Any]] = []
-    for raw in _load_platform_members_config().get("members", []):
-        if not isinstance(raw, dict):
-            continue
-        member = _normalize_platform_member(raw)
-        if include_inactive or member["status"] == "active":
-            members.append(member)
-    members.sort(key=lambda item: (item["tenant"], item["user_id"]))
-    return members
+    try:
+        return _platform_member_service().list_members(
+            include_inactive=include_inactive,
+        )
+    except PlatformMemberServiceError as exc:
+        _raise_platform_member_service_error(exc)
 
 
 def _platform_member_by_user(
@@ -761,21 +761,17 @@ def _platform_member_by_user(
     *,
     include_inactive: bool = True,
 ) -> dict[str, Any] | None:
-    for member in _platform_member_registry(include_inactive=include_inactive):
-        if member["user_id"] == user_id:
-            return member
-    return None
+    try:
+        return _platform_member_service().get_member_by_user(
+            user_id,
+            include_inactive=include_inactive,
+        )
+    except PlatformMemberServiceError as exc:
+        _raise_platform_member_service_error(exc)
 
 
 def _platform_member_roles(members: list[dict[str, Any]]) -> list[str]:
-    roles = sorted(
-        {
-            str(member.get("role") or "").strip()
-            for member in members
-            if str(member.get("role") or "").strip()
-        },
-    )
-    return roles
+    return _platform_member_service().roles(members)
 
 
 def _normalize_platform_agent_tenant(value: Any, user_id: str) -> str:
@@ -3145,29 +3141,16 @@ async def create_enterprise_platform_member(
 ) -> dict[str, Any]:
     """Create or replace one enterprise platform member."""
     actor = request.headers.get("X-User-ID") or "acme:alice"
-    config = _load_platform_members_config()
-    members = [
-        _normalize_platform_member(raw)
-        for raw in config.get("members", [])
-        if isinstance(raw, dict)
-    ]
-    member = _normalize_platform_member(
-        payload.model_dump(),
-        updated_by=actor,
-    )
-    replaced = False
-    for index, existing in enumerate(members):
-        if existing["user_id"] == member["user_id"]:
-            member["created_at"] = existing.get("created_at") or member["created_at"]
-            members[index] = member
-            replaced = True
-            break
-    if not replaced:
-        members.append(member)
-    _save_platform_members_config({"members": members})
+    try:
+        member, members = _platform_member_service().upsert_member(
+            payload.model_dump(),
+            actor=actor,
+        )
+    except PlatformMemberServiceError as exc:
+        _raise_platform_member_service_error(exc)
     return {
         "member": member,
-        "members": _platform_member_registry(include_inactive=True),
+        "members": members,
         "roles": _platform_member_roles(_platform_identity_metadata(actor, member["tenant"])),
         "path": str(PLATFORM_MEMBERS_PATH),
     }
@@ -3181,37 +3164,17 @@ async def update_enterprise_platform_member(
 ) -> dict[str, Any]:
     """Update one enterprise platform member."""
     actor = request.headers.get("X-User-ID") or "acme:alice"
-    config = _load_platform_members_config()
-    members = [
-        _normalize_platform_member(raw)
-        for raw in config.get("members", [])
-        if isinstance(raw, dict)
-    ]
-    for index, existing in enumerate(members):
-        if existing["user_id"] == user_id:
-            member = _normalize_platform_member(
-                {
-                    **existing,
-                    **payload.model_dump(exclude_unset=True),
-                    "user_id": user_id,
-                },
-                fallback_user_id=user_id,
-                updated_by=actor,
-            )
-            member["created_at"] = existing.get("created_at") or member["created_at"]
-            members[index] = member
-            break
-    else:
-        member = _normalize_platform_member(
-            {**payload.model_dump(exclude_unset=True), "user_id": user_id},
-            fallback_user_id=user_id,
-            updated_by=actor,
+    try:
+        member, members = _platform_member_service().patch_member(
+            user_id,
+            payload.model_dump(exclude_unset=True),
+            actor=actor,
         )
-        members.append(member)
-    _save_platform_members_config({"members": members})
+    except PlatformMemberServiceError as exc:
+        _raise_platform_member_service_error(exc)
     return {
         "member": member,
-        "members": _platform_member_registry(include_inactive=True),
+        "members": members,
         "roles": _platform_member_roles(_platform_identity_metadata(actor, member["tenant"])),
         "path": str(PLATFORM_MEMBERS_PATH),
     }
@@ -3224,31 +3187,16 @@ async def deactivate_enterprise_platform_member(
 ) -> dict[str, Any]:
     """Soft-delete one enterprise platform member by marking it inactive."""
     actor = request.headers.get("X-User-ID") or "acme:alice"
-    config = _load_platform_members_config()
-    members = [
-        _normalize_platform_member(raw)
-        for raw in config.get("members", [])
-        if isinstance(raw, dict)
-    ]
-    existing = next((member for member in members if member["user_id"] == user_id), None)
-    if existing is None:
-        existing = _normalize_platform_member(
-            {
-                "user_id": user_id,
-                "tenant": _tenant_hint_from_user_id(user_id) or "acme",
-                "display_name": user_id,
-                "role": "Enterprise user",
-            },
-            updated_by=actor,
+    try:
+        existing, members = _platform_member_service().deactivate_member(
+            user_id,
+            actor=actor,
         )
-        members.append(existing)
-    existing["status"] = "inactive"
-    existing["updated_at"] = _now_iso()
-    existing["updated_by"] = actor
-    _save_platform_members_config({"members": members})
+    except PlatformMemberServiceError as exc:
+        _raise_platform_member_service_error(exc)
     return {
         "member": existing,
-        "members": _platform_member_registry(include_inactive=True),
+        "members": members,
         "roles": _platform_member_roles(_platform_identity_metadata(actor, existing["tenant"])),
         "path": str(PLATFORM_MEMBERS_PATH),
     }
