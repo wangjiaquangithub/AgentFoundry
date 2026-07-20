@@ -281,6 +281,14 @@ class PlatformAgentRunService:
     ) -> bool:
         return tool_name in configured_tools
 
+    def requires_tool_approval(
+        self,
+        *,
+        tool_name: str,
+        approval_required_tools: set[str],
+    ) -> bool:
+        return tool_name in approval_required_tools
+
     def build_denied_routed_tool_call(
         self,
         *,

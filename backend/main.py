@@ -1763,7 +1763,10 @@ async def run_enterprise_agent(
             continue
 
         approved_by: str | None = None
-        if tool_name in APPROVAL_REQUIRED_TOOLS:
+        if agent_run_service.requires_tool_approval(
+            tool_name=tool_name,
+            approval_required_tools=APPROVAL_REQUIRED_TOOLS,
+        ):
             try:
                 approved_by = _require_platform_approval(
                     approval_id=payload.approval_id,
