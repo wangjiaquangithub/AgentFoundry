@@ -1235,6 +1235,26 @@ class PlatformAgentRunService:
             ),
         }
 
+    def decide_executed_tool_route_from_context(
+        self,
+        *,
+        decision_with_routing_context: Callable[..., dict[str, Any]],
+        tool_response: dict[str, Any],
+        routing_reason: str,
+        routing_source: str,
+        routing_mode: str,
+        routing_error: str | None,
+    ) -> dict[str, Any]:
+        return decision_with_routing_context(
+            **self.build_executed_tool_route_decision_context(
+                tool_response=tool_response,
+                routing_reason=routing_reason,
+                routing_source=routing_source,
+                routing_mode=routing_mode,
+                routing_error=routing_error,
+            ),
+        )
+
     def executed_tool_result(self, tool_response: dict[str, Any]) -> Any:
         return tool_response.get("result")
 

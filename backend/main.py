@@ -1800,14 +1800,15 @@ async def run_enterprise_agent(
                 fail_on_denied=False,
             ),
         )
-        decision = enterprise_router_service.decision_with_routing_context(
-            **agent_run_service.build_executed_tool_route_decision_context(
-                tool_response=tool_response,
-                routing_reason=route_reason,
-                routing_source=route_source,
-                routing_mode=routing_mode,
-                routing_error=routing_error,
+        decision = agent_run_service.decide_executed_tool_route_from_context(
+            decision_with_routing_context=(
+                enterprise_router_service.decision_with_routing_context
             ),
+            tool_response=tool_response,
+            routing_reason=route_reason,
+            routing_source=route_source,
+            routing_mode=routing_mode,
+            routing_error=routing_error,
         )
         call_answer = _platform_tool_policy_service().format_tool_result_answer(
             **agent_run_service.build_executed_tool_answer_context(
