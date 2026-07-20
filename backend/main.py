@@ -2221,41 +2221,41 @@ async def resolve_enterprise_platform_ops_task(
     request: Request,
 ) -> dict[str, Any]:
     """Resolve deterministic platform operations tasks from the console."""
-    normalized_code = task_code.strip()
-    if normalized_code != "disabled_workflows":
-        raise HTTPException(
-            status_code=400,
-            detail=f"Operations task cannot be auto-resolved: {normalized_code}",
+    status_service = _platform_status_service()
+    try:
+        resolve_context = status_service.resolve_ops_task_context(
+            task_code=task_code,
+            actor=request.headers.get("X-User-ID"),
+            user_id=request.headers.get("X-User-ID"),
         )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    actor = request.headers.get("X-User-ID") or "platform-admin"
     try:
         (
             enabled_workflows,
             workflows,
         ) = _platform_workflow_template_service().enable_disabled_templates(
-            actor=actor,
+            actor=resolve_context["actor"],
         )
     except PlatformWorkflowTemplateServiceError as exc:
         _raise_platform_workflow_template_service_error(exc)
 
-    user_id = request.headers.get("X-User-ID") or "acme:alice"
     try:
         runtime = _platform_connector_config_service().enterprise_runtime_context(
-            user_id,
+            resolve_context["user_id"],
         )
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
-    status_service = _platform_status_service()
     runtime_selection = status_service.runtime_selection(runtime)
     tenant = runtime_selection["tenant"]
-    identities = _platform_identity_metadata(user_id, tenant)
+    identities = _platform_identity_metadata(resolve_context["user_id"], tenant)
     return status_service.resolved_disabled_workflows_payload(
-        task_code=normalized_code,
+        task_code=resolve_context["task_code"],
         enabled_workflows=enabled_workflows,
         workflows=workflows,
         tenant=tenant,
-        user_id=user_id,
+        user_id=resolve_context["user_id"],
         identities=identities,
     )
 

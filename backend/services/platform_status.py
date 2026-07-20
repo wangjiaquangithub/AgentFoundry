@@ -7,6 +7,8 @@ from typing import Any
 class PlatformStatusService:
     """Compose platform console snapshots from repositories and runtime services."""
 
+    AUTO_RESOLVABLE_OPS_TASKS = {"disabled_workflows"}
+
     def __init__(
         self,
         *,
@@ -849,6 +851,25 @@ class PlatformStatusService:
         severity_order = {"error": 0, "warning": 1, "info": 2}
         tasks.sort(key=lambda task: (severity_order.get(task["severity"], 3), task["code"]))
         return {"tasks": tasks, "summary": summary}
+
+    def resolve_ops_task_context(
+        self,
+        *,
+        task_code: str,
+        actor: str | None,
+        user_id: str | None,
+    ) -> dict[str, str]:
+        """Normalize the request context for auto-resolving operator tasks."""
+        normalized_code = task_code.strip()
+        if normalized_code not in self.AUTO_RESOLVABLE_OPS_TASKS:
+            raise ValueError(
+                f"Operations task cannot be auto-resolved: {normalized_code}",
+            )
+        return {
+            "task_code": normalized_code,
+            "actor": str(actor or "platform-admin").strip() or "platform-admin",
+            "user_id": str(user_id or "acme:alice").strip() or "acme:alice",
+        }
 
     def resolved_disabled_workflows_payload(
         self,
