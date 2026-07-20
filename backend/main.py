@@ -1826,11 +1826,11 @@ async def run_enterprise_agent(
             ),
         )
 
-    tool_call_summary = agent_run_service.summarize_routed_tool_calls(
-        tool_calls,
+    routed_summary_context = agent_run_service.build_routed_summary_context(
+        tool_calls=tool_calls,
     )
-    primary_call = tool_call_summary["primary_call"]
-    routing_reason = str(tool_call_summary["routing_reason"])
+    primary_call = routed_summary_context["primary_call"]
+    routing_reason = routed_summary_context["routing_reason"]
     answer = agent_run_service.compose_routed_answer(
         tool_calls=tool_calls,
         knowledge_hits=knowledge_hits,
@@ -1855,7 +1855,7 @@ async def run_enterprise_agent(
         primary_call=primary_call,
         response_record_context=response_record_context,
         answer=answer,
-        routed=bool(tool_call_summary["routed"]),
+        routed=routed_summary_context["routed"],
         session_id=runner_session_id,
         tenant=tenant,
         user_id=user_id,

@@ -356,6 +356,19 @@ class PlatformAgentRunService:
             "routed": bool(executed_tool_calls),
         }
 
+    def build_routed_summary_context(
+        self,
+        *,
+        tool_calls: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        tool_call_summary = self.summarize_routed_tool_calls(tool_calls)
+        return {
+            "tool_call_summary": tool_call_summary,
+            "primary_call": tool_call_summary["primary_call"],
+            "routing_reason": str(tool_call_summary["routing_reason"]),
+            "routed": bool(tool_call_summary["routed"]),
+        }
+
     def compose_routed_answer(
         self,
         *,
