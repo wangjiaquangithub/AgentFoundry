@@ -624,18 +624,6 @@ def _permission_mode_label(template: SubAgentTemplate) -> str:
     return getattr(mode, "value", str(mode))
 
 
-def _enterprise_subagent_template_metadata() -> list[dict[str, Any]]:
-    return [
-        {
-            "type": template.type,
-            "description": template.description,
-            "permission_mode": _permission_mode_label(template),
-            "override_leader_mode": template.override_leader_mode,
-        }
-        for template in ENTERPRISE_SUBAGENT_TEMPLATES
-    ]
-
-
 def _platform_agent_service() -> PlatformAgentService:
     return PlatformAgentService(
         repository=agent_repository,
@@ -2355,7 +2343,15 @@ async def enterprise_platform_status(request: Request) -> dict[str, Any]:
                 ENTERPRISE_TOOL_NAMES,
             ),
         },
-        "subagent_templates": _enterprise_subagent_template_metadata(),
+        "subagent_templates": [
+            {
+                "type": template.type,
+                "description": template.description,
+                "permission_mode": _permission_mode_label(template),
+                "override_leader_mode": template.override_leader_mode,
+            }
+            for template in ENTERPRISE_SUBAGENT_TEMPLATES
+        ],
     }
 
 
