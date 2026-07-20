@@ -1891,22 +1891,17 @@ def _env_value(name: str, default: str) -> str:
     return os.getenv(name, default)
 
 
-def _enterprise_connector_env_metadata() -> list[dict[str, Any]]:
-    connector_mode = os.getenv("ENTERPRISE_CONNECTOR", "mock").lower().strip()
-    return _platform_connector_config_service().env_metadata(
-        connector_mode=connector_mode,
-        env_configured=_env_configured,
-    )
-
-
 def _enterprise_connector_health() -> dict[str, Any]:
     connector_name = enterprise_connector.name
     connector_mode = os.getenv("ENTERPRISE_CONNECTOR", connector_name).lower().strip()
-    return _platform_connector_config_service().health_metadata(
-        connector_name=connector_name,
-        connector_mode=connector_mode,
-        env_metadata=_enterprise_connector_env_metadata(),
-    )
+    try:
+        return _platform_connector_config_service().health_response(
+            connector_name=connector_name,
+            connector_mode=connector_mode,
+            env_configured=_env_configured,
+        )
+    except PlatformConnectorConfigServiceError as exc:
+        _raise_platform_connector_config_service_error(exc)
 
 
 def _create_platform_agent(

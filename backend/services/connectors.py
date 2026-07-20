@@ -174,6 +174,23 @@ class PlatformConnectorConfigService:
             ),
         }
 
+    def health_response(
+        self,
+        *,
+        connector_name: str,
+        connector_mode: str,
+        env_configured: Callable[[str], bool],
+    ) -> dict[str, Any]:
+        env_metadata = self.env_metadata(
+            connector_mode=connector_mode,
+            env_configured=env_configured,
+        )
+        return self.health_metadata(
+            connector_name=connector_name,
+            connector_mode=connector_mode,
+            env_metadata=env_metadata,
+        )
+
     def list_configs(self) -> dict[str, dict[str, Any]]:
         try:
             return self._repository.list_by_tenant()
