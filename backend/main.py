@@ -697,19 +697,15 @@ def _platform_member_by_user(
         _raise_platform_member_service_error(exc)
 
 
-def _platform_identities_for_tenant(tenant: str) -> list[dict[str, Any]]:
-    return [
-        identity
-        for identity in _platform_identity_metadata(f"{tenant}:system", tenant)
-        if str(identity.get("tenant") or "").strip() == tenant
-    ]
-
-
 def _platform_agent_access_scope_diagnostics(
     tenant: str,
     access: dict[str, list[str]],
 ) -> dict[str, Any]:
-    identities = _platform_identities_for_tenant(tenant)
+    identities = [
+        identity
+        for identity in _platform_identity_metadata(f"{tenant}:system", tenant)
+        if str(identity.get("tenant") or "").strip() == tenant
+    ]
     identity_by_user_id = {
         str(identity.get("user_id") or "").strip(): identity
         for identity in identities
