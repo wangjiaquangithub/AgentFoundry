@@ -92,6 +92,13 @@ class PlatformMemberService:
             if isinstance(raw, dict)
         ]
 
+    def merge_import_members(
+        self,
+        existing: list[dict[str, Any]],
+        imported: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        return _merge_by_key(existing, imported, "user_id")
+
     def list_members(self, *, include_inactive: bool = True) -> list[dict[str, Any]]:
         members = self._normalized_members()
         if not include_inactive:
@@ -238,3 +245,20 @@ class PlatformMemberService:
 
 def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _merge_by_key(
+    existing: list[dict[str, Any]],
+    imported: list[dict[str, Any]],
+    key: str,
+) -> list[dict[str, Any]]:
+    merged: dict[str, dict[str, Any]] = {}
+    order: list[str] = []
+    for item in [*existing, *imported]:
+        item_key = str(item.get(key) or "").strip()
+        if not item_key:
+            continue
+        if item_key not in merged:
+            order.append(item_key)
+        merged[item_key] = item
+    return [merged[item_key] for item_key in order]

@@ -1183,23 +1183,6 @@ def _export_platform_config() -> dict[str, Any]:
     )
 
 
-def _merge_by_key(
-    existing: list[dict[str, Any]],
-    imported: list[dict[str, Any]],
-    key: str,
-) -> list[dict[str, Any]]:
-    merged: dict[str, dict[str, Any]] = {}
-    order: list[str] = []
-    for item in [*existing, *imported]:
-        item_key = str(item.get(key) or "").strip()
-        if not item_key:
-            continue
-        if item_key not in merged:
-            order.append(item_key)
-        merged[item_key] = item
-    return [merged[item_key] for item_key in order]
-
-
 def _deep_merge_dict(base: dict[str, Any], incoming: dict[str, Any]) -> dict[str, Any]:
     merged = json.loads(json.dumps(base))
     for key, value in incoming.items():
@@ -2132,10 +2115,9 @@ async def import_enterprise_platform_config(
         members = (
             imported_members
             if mode == "replace"
-            else _merge_by_key(
+            else member_service.merge_import_members(
                 existing_members,
                 imported_members,
-                "user_id",
             )
         )
         member_service.save_config({"members": members})
