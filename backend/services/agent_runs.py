@@ -168,6 +168,39 @@ class PlatformAgentRunService:
             "answer": answer,
         }
 
+    def build_executed_routed_tool_call(
+        self,
+        *,
+        tool_name: str,
+        inputs: dict[str, Any],
+        tool_response: dict[str, Any],
+        connector: str,
+        connector_source: str,
+        routing_source: str,
+        routing_reason: str,
+        approval_id: str | None,
+        decision: dict[str, Any],
+        answer: str,
+    ) -> dict[str, Any]:
+        return {
+            "tool_name": tool_name,
+            "inputs": inputs,
+            "allowed": bool(tool_response.get("allowed")),
+            "tenant": tool_response["tenant"],
+            "user_id": tool_response["user_id"],
+            "connector": tool_response.get("connector", connector),
+            "connector_source": tool_response.get(
+                "connector_source",
+                connector_source,
+            ),
+            "routing_source": routing_source,
+            "routing_reason": routing_reason,
+            "approval_id": approval_id,
+            "decision": decision,
+            "result": tool_response.get("result"),
+            "answer": answer,
+        }
+
     def build_evidence(
         self,
         *,

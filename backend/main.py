@@ -1921,24 +1921,18 @@ async def run_enterprise_agent(
             tenant=tool_response["tenant"],
         )
         tool_calls.append(
-            {
-                "tool_name": tool_name,
-                "inputs": route_inputs,
-                "allowed": bool(tool_response.get("allowed")),
-                "tenant": tool_response["tenant"],
-                "user_id": tool_response["user_id"],
-                "connector": tool_response.get("connector", connector_label),
-                "connector_source": tool_response.get(
-                    "connector_source",
-                    connector_source,
-                ),
-                "routing_source": route_source,
-                "routing_reason": route_reason,
-                "approval_id": approved_by,
-                "decision": decision,
-                "result": tool_response.get("result"),
-                "answer": call_answer,
-            },
+            _platform_agent_run_service().build_executed_routed_tool_call(
+                tool_name=tool_name,
+                inputs=route_inputs,
+                tool_response=tool_response,
+                connector=connector_label,
+                connector_source=connector_source,
+                routing_source=route_source,
+                routing_reason=route_reason,
+                approval_id=approved_by,
+                decision=decision,
+                answer=call_answer,
+            ),
         )
 
     tool_call_summary = _platform_agent_run_service().summarize_routed_tool_calls(
