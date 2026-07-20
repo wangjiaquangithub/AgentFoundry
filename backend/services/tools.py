@@ -145,6 +145,52 @@ class PlatformToolPolicyService:
             ),
         )
 
+    def format_tool_result_answer(
+        self,
+        *,
+        tool_name: str,
+        result: dict[str, Any] | None,
+        tenant: str,
+    ) -> str:
+        if not result:
+            return "已匹配到企业工具，但当前用户没有权限调用。"
+
+        if tool_name == "enterprise_get_ticket_status":
+            ticket_id = result.get("ticket_id", "")
+            ticket = result.get("ticket")
+            if not ticket:
+                return f"在租户 {tenant} 下没有找到工单 {ticket_id}。"
+
+            return (
+                f"工单 {ticket_id} 当前状态是 {ticket.get('status', '-')}, "
+                f"负责人是 {ticket.get('owner', '-')}, "
+                f"摘要：{ticket.get('summary', '-')}。"
+            )
+
+        if tool_name == "enterprise_lookup_policy":
+            matches = result.get("matches") or {}
+            if not matches:
+                available = ", ".join(result.get("available_policy_keys", []))
+                return f"没有找到匹配的制度内容。当前可查关键词：{available}。"
+
+            snippets = [
+                f"{name}: {text}"
+                for name, text in list(matches.items())[:3]
+            ]
+            return "查到这些制度内容：" + " ".join(snippets)
+
+        metrics = result.get("metrics")
+        department = result.get("department", "")
+        if not metrics:
+            available = ", ".join(result.get("available_departments", []))
+            return f"没有找到 {department} 部门指标。当前可查部门：{available}。"
+
+        return (
+            f"{department} 部门当前有 {metrics.get('active_projects', '-')} 个活跃项目，"
+            f"{metrics.get('open_incidents', '-')} 个未关闭事件，"
+            f"SLA 为 {metrics.get('sla', '-')}。"
+        )
+
     def policy_payload(
         self,
         *,
