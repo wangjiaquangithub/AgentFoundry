@@ -1016,6 +1016,21 @@ class PlatformAgentRunService:
 
         return {"deleted_count": self._repository.delete(**filters)}
 
+    def clear_runs_request_payload(
+        self,
+        *,
+        agent_id: str | None = None,
+        tenant: str | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
+    ) -> dict[str, Any]:
+        return {
+            "agent_id": _optional_filter(agent_id),
+            "tenant": _optional_filter(tenant),
+            "user_id": _optional_filter(user_id),
+            "session_id": _optional_filter(session_id),
+        }
+
 
 def _optional_filter(value: str | None) -> str | None:
     normalized = (value or "").strip()

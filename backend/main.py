@@ -1890,13 +1890,15 @@ async def clear_enterprise_agent_runs(
     session_id: str | None = None,
 ) -> dict[str, Any]:
     """Clear matching enterprise agent question-answer turns."""
+    agent_run_service = _platform_agent_run_service()
+    clear_context = agent_run_service.clear_runs_request_payload(
+        agent_id=agent_id,
+        tenant=tenant,
+        user_id=user_id,
+        session_id=session_id,
+    )
     try:
-        return _platform_agent_run_service().clear_runs(
-            agent_id=agent_id,
-            tenant=tenant,
-            user_id=user_id,
-            session_id=session_id,
-        )
+        return agent_run_service.clear_runs(**clear_context)
     except PlatformAgentRunServiceError as exc:
         _raise_platform_agent_run_service_error(exc)
 
