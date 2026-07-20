@@ -1432,20 +1432,6 @@ def _raise_platform_connector_config_service_error(
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
-def _load_platform_connector_configs() -> dict[str, dict[str, Any]]:
-    try:
-        return _platform_connector_config_service().list_configs()
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
-
-
-def _save_platform_connector_configs(configs: dict[str, dict[str, Any]]) -> None:
-    try:
-        _platform_connector_config_service().save_configs(configs)
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
-
-
 def _redacted_connector_configs() -> list[dict[str, Any]]:
     try:
         return _platform_connector_config_service().redacted_configs()
@@ -1570,21 +1556,6 @@ def _normalize_import_members(value: Any, actor: str) -> list[dict[str, Any]]:
         for raw in raw_members
         if isinstance(raw, dict)
     ]
-
-
-def _normalize_import_connector_configs(
-    value: Any,
-    existing_configs: dict[str, dict[str, Any]],
-    actor: str,
-) -> list[dict[str, Any]]:
-    try:
-        return _platform_connector_config_service().normalize_import_configs(
-            value,
-            existing_configs=existing_configs,
-            actor=actor,
-        )
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
 
 
 def _normalize_import_agents(value: Any) -> list[dict[str, Any]]:
@@ -2842,20 +2813,14 @@ async def import_enterprise_platform_config(
         _save_platform_members_config({"members": members})
 
     if "connector_configs" in incoming:
-        existing_configs = _load_platform_connector_configs()
-        imported_configs = _normalize_import_connector_configs(
-            incoming.get("connector_configs"),
-            existing_configs,
-            actor,
-        )
-        if mode == "replace":
-            configs = {config["tenant"]: config for config in imported_configs}
-        else:
-            configs = {
-                **existing_configs,
-                **{config["tenant"]: config for config in imported_configs},
-            }
-        _save_platform_connector_configs(configs)
+        try:
+            _platform_connector_config_service().import_configs_payload(
+                incoming.get("connector_configs"),
+                actor=actor,
+                mode=mode,
+            )
+        except PlatformConnectorConfigServiceError as exc:
+            _raise_platform_connector_config_service_error(exc)
 
     if "agents" in incoming:
         imported_agents = _normalize_import_agents(incoming.get("agents"))

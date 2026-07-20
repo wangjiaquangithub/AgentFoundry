@@ -384,6 +384,22 @@ class PlatformConnectorConfigService:
             )
         return configs
 
+    def import_configs_payload(self, value: Any, *, actor: str, mode: str) -> None:
+        existing_configs = self.list_configs()
+        imported_configs = self.normalize_import_configs(
+            value,
+            existing_configs=existing_configs,
+            actor=actor,
+        )
+        if mode == "replace":
+            configs = {config["tenant"]: config for config in imported_configs}
+        else:
+            configs = {
+                **existing_configs,
+                **{config["tenant"]: config for config in imported_configs},
+            }
+        self.save_configs(configs)
+
     def test_connector(self, payload: Any) -> dict[str, Any]:
         base_url = payload.base_url.strip().rstrip("/")
         if not base_url:
