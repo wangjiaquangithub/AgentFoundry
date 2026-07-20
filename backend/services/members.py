@@ -293,6 +293,29 @@ class PlatformMemberService:
             registry_path=registry_path,
         )
 
+    def update_member_response_payload(
+        self,
+        *,
+        user_id: str,
+        payload: dict[str, Any],
+        actor: str | None,
+        identity_metadata: Callable[[str, str], list[dict[str, Any]]],
+        registry_path: Any,
+    ) -> dict[str, Any]:
+        resolved_actor = self.resolve_mutation_actor(actor)
+        member, members = self.patch_member(
+            user_id,
+            payload,
+            actor=resolved_actor,
+        )
+        return self.mutation_response_payload(
+            actor=resolved_actor,
+            member=member,
+            members=members,
+            identity_metadata=identity_metadata,
+            registry_path=registry_path,
+        )
+
     def upsert_member(
         self,
         payload: dict[str, Any],
