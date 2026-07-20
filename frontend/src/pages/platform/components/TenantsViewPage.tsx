@@ -1,12 +1,16 @@
 import {
+	ArrowRight,
 	BotMessageSquare,
 	Building2,
 	Clock3,
 	Network,
 	RefreshCcw,
+	Search,
 	ShieldCheck,
+	UserCheck,
 	UserRound,
 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 import {
 	PlatformNotice,
@@ -22,6 +26,7 @@ import type {
 } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
@@ -66,6 +71,49 @@ export function TenantsViewPage({
 	onNavigate,
 	t,
 }: TenantsViewPageProps) {
+	const [tenantQuery, setTenantQuery] = useState('');
+	const filteredTenantSummaries = useMemo(() => {
+		const normalizedQuery = tenantQuery.trim().toLowerCase();
+
+		if (!normalizedQuery) {
+			return platformMemberTenantSummaries;
+		}
+
+		return platformMemberTenantSummaries.filter((tenantSummary) => {
+			const memberMatch = tenantSummary.members.some((member) =>
+				[
+					member.user_id,
+					member.display_name,
+					member.role,
+					member.status,
+				]
+					.filter(Boolean)
+					.join(' ')
+					.toLowerCase()
+					.includes(normalizedQuery),
+			);
+
+			return (
+				tenantSummary.tenant.toLowerCase().includes(normalizedQuery) ||
+				tenantSummary.roleNames.join(' ').toLowerCase().includes(normalizedQuery) ||
+				memberMatch
+			);
+		});
+	}, [platformMemberTenantSummaries, tenantQuery]);
+	const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
+	const selectedTenantSummary =
+		filteredTenantSummaries.find((summary) => summary.tenant === selectedTenant) ??
+		filteredTenantSummaries[0] ??
+		null;
+	const selectedWorkspace = selectedTenantSummary
+		? tenantWorkspaces.find(([tenant]) => tenant === selectedTenantSummary.tenant)?.[1]
+		: null;
+	const selectedIdentityCount = selectedTenantSummary
+		? enterpriseIdentities.filter(
+				(identity) => identity.tenant === selectedTenantSummary.tenant,
+			).length
+		: 0;
+
 	return (
 		<PlatformPageShell>
 			<PlatformPageHeader
@@ -143,85 +191,195 @@ export function TenantsViewPage({
 				})}
 			</section>
 
-			<section className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.75fr)]">
-				<div className="grid content-start gap-4 rounded-lg border bg-background p-4 shadow-sm">
+			<section className="grid gap-4 xl:grid-cols-[minmax(300px,0.72fr)_minmax(0,1.28fr)]">
+				<div className="grid max-h-none content-start gap-4 rounded-lg border bg-background p-4 shadow-sm xl:max-h-[calc(100vh-15rem)]">
 					<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 						<div>
 							<h2 className="text-sm font-semibold">
 								{t('platform.members.groupedListTitle')}
 							</h2>
 							<p className="mt-1 text-xs leading-5 text-muted-foreground">
-								{t('platform.members.organizationOverview')}
+								搜索租户、成员或角色，选择后在右侧查看治理详情。
 							</p>
 						</div>
 						<Badge variant="outline">
-							{platformMemberTenantSummaries.length}{' '}
+							{filteredTenantSummaries.length}{' '}
 							{t('platform.members.tenantGroups')}
 						</Badge>
+					</div>
+					<div className="relative">
+						<Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+						<Input
+							value={tenantQuery}
+							onChange={(event) => setTenantQuery(event.target.value)}
+							placeholder="搜索租户、成员、角色"
+							className="pl-9"
+						/>
 					</div>
 					{platformMembersLoading && !platformMembersLoaded ? (
 						<div className="grid gap-3">
 							<Skeleton className="h-28 rounded-lg" />
 							<Skeleton className="h-28 rounded-lg" />
 						</div>
-					) : platformMemberTenantSummaries.length ? (
-						<div className="grid gap-3">
-							{platformMemberTenantSummaries.map((tenantSummary) => (
-								<div
+					) : filteredTenantSummaries.length ? (
+						<div className="grid gap-2 overflow-y-auto pr-1">
+							{filteredTenantSummaries.map((tenantSummary) => {
+								const isSelected =
+									selectedTenantSummary?.tenant === tenantSummary.tenant;
+
+								return (
+									<button
+										type="button"
 									key={tenantSummary.tenant}
-									className="grid gap-3 rounded-lg border bg-muted/10 p-3"
-								>
-									<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+										onClick={() => setSelectedTenant(tenantSummary.tenant)}
+										className={cn(
+											'grid w-full gap-3 rounded-lg border p-3 text-left transition-colors',
+											isSelected
+												? 'border-slate-900 bg-slate-900 text-white shadow-sm'
+												: 'bg-muted/10 hover:border-slate-300 hover:bg-muted/30',
+										)}
+									>
+										<div className="flex items-start justify-between gap-3">
 										<div className="min-w-0">
 											<div className="flex flex-wrap items-center gap-2">
 												<h3 className="text-sm font-semibold">
 													{tenantSummary.tenant}
 												</h3>
-												<Badge variant="secondary">
+													<Badge variant={isSelected ? 'outline' : 'secondary'}>
 													{tenantSummary.activeMemberCount}{' '}
 													{t('platform.members.activeMembers')}
 												</Badge>
-												{tenantSummary.inactiveMemberCount > 0 ? (
-													<Badge variant="outline">
-														{tenantSummary.inactiveMemberCount}{' '}
-														{t('platform.members.inactiveMembers')}
-													</Badge>
-												) : null}
 											</div>
-											<div className="mt-2 flex flex-wrap gap-1">
-												<Badge variant="outline">
-													{t('platform.members.roles')}:{' '}
-													{tenantSummary.roleNames.length}
-												</Badge>
-												<Badge variant="outline">
-													{t('platform.members.boundAgents')}:{' '}
-													{tenantSummary.agentCount}
-												</Badge>
-												<Badge variant="outline">
-													{t('platform.members.pendingApprovals')}:{' '}
-													{tenantSummary.pendingApprovalCount}
-												</Badge>
-												<Badge variant="outline">
-													{t('platform.members.auditEvents')}:{' '}
-													{tenantSummary.auditEventCount}
-												</Badge>
+												<div
+													className={cn(
+														'mt-2 grid grid-cols-2 gap-2 text-xs',
+														isSelected
+															? 'text-slate-200'
+															: 'text-muted-foreground',
+													)}
+												>
+													<span>
+														{t('platform.members.roles')}: {tenantSummary.roleNames.length}
+													</span>
+													<span>
+														{t('platform.members.boundAgents')}: {tenantSummary.agentCount}
+													</span>
+													<span>
+														{t('platform.members.pendingApprovals')}:{' '}
+														{tenantSummary.pendingApprovalCount}
+													</span>
+													<span>
+														{t('platform.members.auditEvents')}:{' '}
+														{tenantSummary.auditEventCount}
+													</span>
+												</div>
 											</div>
+											<ArrowRight className="mt-1 size-4 shrink-0" />
 										</div>
-										<Button
-											type="button"
-											size="sm"
-											variant="outline"
-											onClick={() => onNavigate('/platform/agents')}
-										>
-											<BotMessageSquare className="size-4" />
-											{t('platform.agentManagement.title')}
-										</Button>
+									</button>
+								);
+							})}
+						</div>
+					) : (
+						<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+							{t('platform.members.empty')}
+						</div>
+					)}
+				</div>
+
+				<div className="grid content-start gap-4">
+					{selectedTenantSummary ? (
+						<>
+							<section className="rounded-lg border bg-background p-4 shadow-sm">
+								<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+									<div className="min-w-0">
+										<div className="flex flex-wrap items-center gap-2">
+											<h2 className="truncate text-base font-semibold">
+												{selectedTenantSummary.tenant}
+											</h2>
+											<Badge variant="secondary">
+												{selectedTenantSummary.activeMemberCount}{' '}
+												{t('platform.members.activeMembers')}
+											</Badge>
+											{selectedTenantSummary.inactiveMemberCount > 0 ? (
+												<Badge variant="outline">
+													{selectedTenantSummary.inactiveMemberCount}{' '}
+													{t('platform.members.inactiveMembers')}
+												</Badge>
+											) : null}
+										</div>
+										<p className="mt-2 text-sm leading-6 text-muted-foreground">
+											该租户的成员身份、Agent 绑定、审批风险和连接器资源集中在这里核对。
+										</p>
+									</div>
+									<Button
+										type="button"
+										size="sm"
+										variant="outline"
+										onClick={() => onNavigate('/platform/agents')}
+									>
+										<BotMessageSquare className="size-4" />
+										{t('platform.agentManagement.title')}
+									</Button>
+								</div>
+
+								<div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+									{[
+										{
+											label: t('platform.members.roles'),
+											value: selectedTenantSummary.roleNames.length,
+											icon: ShieldCheck,
+										},
+										{
+											label: t('platform.members.boundAgents'),
+											value: selectedTenantSummary.agentCount,
+											icon: BotMessageSquare,
+										},
+										{
+											label: t('platform.members.pendingApprovals'),
+											value: selectedTenantSummary.pendingApprovalCount,
+											icon: Clock3,
+										},
+										{
+											label: t('platform.members.auditEvents'),
+											value: selectedTenantSummary.auditEventCount,
+											icon: UserCheck,
+										},
+									].map((item) => {
+										const Icon = item.icon;
+
+										return (
+											<div
+												key={item.label}
+												className="rounded-lg border bg-muted/10 p-3"
+											>
+												<div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+													<span className="truncate">{item.label}</span>
+													<Icon className="size-4" />
+												</div>
+												<div className="mt-2 text-2xl font-semibold tabular-nums">
+													{item.value}
+												</div>
+											</div>
+										);
+									})}
+								</div>
+							</section>
+
+							<section className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
+								<div className="rounded-lg border bg-background p-4 shadow-sm">
+									<div className="mb-3 flex items-center justify-between gap-3">
+										<h3 className="text-sm font-semibold">成员清单</h3>
+										<Badge variant="outline">
+											{selectedTenantSummary.members.length}{' '}
+											{t('platform.members.activeMembers')}
+										</Badge>
 									</div>
 									<div className="grid gap-2 md:grid-cols-2">
-										{tenantSummary.members.slice(0, 6).map((member) => (
+										{selectedTenantSummary.members.slice(0, 8).map((member) => (
 											<div
-												key={`${tenantSummary.tenant}-${member.user_id}`}
-												className="rounded-md border bg-background p-3"
+												key={`${selectedTenantSummary.tenant}-${member.user_id}`}
+												className="rounded-md border bg-muted/10 p-3"
 											>
 												<div className="truncate text-sm font-medium">
 													{member.display_name || member.user_id}
@@ -247,67 +405,54 @@ export function TenantsViewPage({
 										))}
 									</div>
 								</div>
-							))}
-						</div>
+
+								<aside className="rounded-lg border bg-background p-4 shadow-sm">
+									<div className="flex items-start justify-between gap-3">
+										<div>
+											<h3 className="text-sm font-semibold">
+												{t('platform.connectors.tenantPreview')}
+											</h3>
+											<p className="mt-1 text-xs leading-5 text-muted-foreground">
+												{selectedWorkspace?.source ?? t('platform.connectors.empty')}
+											</p>
+										</div>
+										<Badge variant="outline">
+											{selectedIdentityCount} {t('platform.connectors.identities')}
+										</Badge>
+									</div>
+									{selectedWorkspace ? (
+										<div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+											<div className="rounded-md border bg-muted/10 p-3">
+												{t('platform.connectors.policies')}:{' '}
+												{selectedWorkspace.policies.length}
+											</div>
+											<div className="rounded-md border bg-muted/10 p-3">
+												{t('platform.connectors.tickets')}:{' '}
+												{selectedWorkspace.tickets.length}
+											</div>
+											<div className="rounded-md border bg-muted/10 p-3">
+												{t('platform.connectors.departments')}:{' '}
+												{selectedWorkspace.departments.length}
+											</div>
+											<div className="rounded-md border bg-muted/10 p-3">
+												{t('platform.connectors.tools')}:{' '}
+												{countArrayField(selectedWorkspace, 'tools')}
+											</div>
+										</div>
+									) : (
+										<div className="mt-4 rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+											{t('platform.connectors.empty')}
+										</div>
+									)}
+								</aside>
+							</section>
+						</>
 					) : (
-						<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+						<div className="rounded-lg border border-dashed bg-background p-8 text-sm text-muted-foreground">
 							{t('platform.members.empty')}
 						</div>
 					)}
 				</div>
-
-				<aside className="grid content-start gap-3 rounded-lg border bg-background p-4 shadow-sm">
-					<div>
-						<h2 className="text-sm font-semibold">
-							{t('platform.connectors.tenantPreview')}
-						</h2>
-						<p className="mt-1 text-xs leading-5 text-muted-foreground">
-							{t('platform.connectors.title')}
-						</p>
-					</div>
-					{tenantWorkspaces.length ? (
-						tenantWorkspaces.map(([tenant, workspace]) => (
-							<div key={tenant} className="rounded-lg border bg-muted/10 p-3">
-								<div className="flex items-start justify-between gap-3">
-									<div className="min-w-0">
-										<div className="truncate text-sm font-semibold">{tenant}</div>
-										<div className="mt-1 truncate text-xs text-muted-foreground">
-											{workspace.source}
-										</div>
-									</div>
-									<Badge variant="outline">
-										{
-											enterpriseIdentities.filter(
-												(identity) => identity.tenant === tenant,
-											).length
-										}{' '}
-										{t('platform.connectors.identities')}
-									</Badge>
-								</div>
-								<div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-									<div className="rounded-md border bg-background p-2">
-										{t('platform.connectors.policies')}: {workspace.policies.length}
-									</div>
-									<div className="rounded-md border bg-background p-2">
-										{t('platform.connectors.tickets')}: {workspace.tickets.length}
-									</div>
-									<div className="rounded-md border bg-background p-2">
-										{t('platform.connectors.departments')}:{' '}
-										{workspace.departments.length}
-									</div>
-									<div className="rounded-md border bg-background p-2">
-										{t('platform.connectors.tools')}:{' '}
-										{countArrayField(workspace, 'tools')}
-									</div>
-								</div>
-							</div>
-						))
-					) : (
-						<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-							{t('platform.connectors.empty')}
-						</div>
-					)}
-				</aside>
 			</section>
 		</PlatformPageShell>
 	);
