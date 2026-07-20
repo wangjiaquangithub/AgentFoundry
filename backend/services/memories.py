@@ -337,6 +337,39 @@ class PlatformMemoryService:
             for score, _index, record in scored[:limit]
         ]
 
+    def build_agent_run_context(
+        self,
+        *,
+        enabled: bool,
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        question: str,
+        max_records: int,
+        limit: int,
+    ) -> dict[str, Any]:
+        memory_hits = (
+            self.search_memories(
+                tenant=tenant,
+                user_id=user_id,
+                agent_id=agent_id,
+                question=question,
+                max_records=max_records,
+                limit=limit,
+            )
+            if enabled
+            else []
+        )
+        return {
+            "memory_enabled": enabled,
+            "memory_hits": memory_hits,
+            "memory_scope": {
+                "tenant": tenant,
+                "user_id": user_id,
+                "agent_id": agent_id,
+            },
+        }
+
     def format_answer(self, memory_hits: list[dict[str, Any]]) -> str:
         snippets = _dedupe_strings(
             [
@@ -429,3 +462,33 @@ class PlatformMemoryService:
             record=record,
             max_records=max_records,
         )
+
+    def append_agent_turn_if_enabled(
+        self,
+        *,
+        enabled: bool,
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        session_id: str,
+        question: str,
+        answer: str,
+        tool_calls: list[dict[str, Any]],
+        knowledge_base_ids: list[str],
+        max_records: int,
+    ) -> bool:
+        if not enabled or self.is_agent_turn_memory_lookup(question):
+            return False
+
+        self.append_agent_turn_memory(
+            tenant=tenant,
+            user_id=user_id,
+            agent_id=agent_id,
+            session_id=session_id,
+            question=question,
+            answer=answer,
+            tool_calls=tool_calls,
+            knowledge_base_ids=knowledge_base_ids,
+            max_records=max_records,
+        )
+        return True

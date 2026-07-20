@@ -1678,28 +1678,17 @@ async def run_enterprise_agent(
     runner_session_id = (payload.session_id or "").strip() or (
         f"platform-agent:{runner_agent_id}:{_safe_path_part(user_id)}"
     )
-    memory_enabled = bool(agent_metadata.get("memory_enabled", False))
-    memory_hits = (
-        platform_memory_service.search_memories(
-            tenant=tenant,
-            user_id=user_id,
-            agent_id=runner_agent_id,
-            question=question,
-            max_records=PLATFORM_MEMORY_MAX_RECORDS,
-            limit=PLATFORM_MEMORY_SEARCH_LIMIT,
-        )
-        if memory_enabled
-        else []
+    memory_payload = platform_memory_service.build_agent_run_context(
+        enabled=bool(agent_metadata.get("memory_enabled", False)),
+        tenant=tenant,
+        user_id=user_id,
+        agent_id=runner_agent_id,
+        question=question,
+        max_records=PLATFORM_MEMORY_MAX_RECORDS,
+        limit=PLATFORM_MEMORY_SEARCH_LIMIT,
     )
-    memory_payload = {
-        "memory_enabled": memory_enabled,
-        "memory_hits": memory_hits,
-        "memory_scope": {
-            "tenant": tenant,
-            "user_id": user_id,
-            "agent_id": runner_agent_id,
-        },
-    }
+    memory_enabled = bool(memory_payload["memory_enabled"])
+    memory_hits = list(memory_payload["memory_hits"])
     knowledge_hits, knowledge_error = (
         await knowledge_response_service.search_agent_knowledge_bases(
             knowledge_base_service=getattr(
@@ -1737,24 +1726,18 @@ async def run_enterprise_agent(
             format_knowledge_answer=knowledge_response_service.format_answer,
             format_memory_answer=platform_memory_service.format_answer,
         )
-        memory_saved = False
-        if memory_enabled and not platform_memory_service.is_agent_turn_memory_lookup(
-            question,
-        ):
-            platform_memory_service.append_agent_turn_memory(
-                tenant=tenant,
-                user_id=user_id,
-                agent_id=runner_agent_id,
-                session_id=runner_session_id,
-                question=question,
-                answer=answer,
-                tool_calls=[],
-                knowledge_base_ids=list(
-                    agent_metadata.get("knowledge_base_ids") or [],
-                ),
-                max_records=PLATFORM_MEMORY_MAX_RECORDS,
-            )
-            memory_saved = True
+        memory_saved = platform_memory_service.append_agent_turn_if_enabled(
+            enabled=memory_enabled,
+            tenant=tenant,
+            user_id=user_id,
+            agent_id=runner_agent_id,
+            session_id=runner_session_id,
+            question=question,
+            answer=answer,
+            tool_calls=[],
+            knowledge_base_ids=list(agent_metadata.get("knowledge_base_ids") or []),
+            max_records=PLATFORM_MEMORY_MAX_RECORDS,
+        )
 
         turn_id = uuid4().hex
         created_at = _now_iso()
@@ -1974,22 +1957,18 @@ async def run_enterprise_agent(
         format_knowledge_answer=knowledge_response_service.format_answer,
         format_memory_answer=platform_memory_service.format_answer,
     )
-    memory_saved = False
-    if memory_enabled and not platform_memory_service.is_agent_turn_memory_lookup(
-        question,
-    ):
-        platform_memory_service.append_agent_turn_memory(
-            tenant=tenant,
-            user_id=user_id,
-            agent_id=runner_agent_id,
-            session_id=runner_session_id,
-            question=question,
-            answer=answer,
-            tool_calls=tool_calls,
-            knowledge_base_ids=list(agent_metadata.get("knowledge_base_ids") or []),
-            max_records=PLATFORM_MEMORY_MAX_RECORDS,
-        )
-        memory_saved = True
+    memory_saved = platform_memory_service.append_agent_turn_if_enabled(
+        enabled=memory_enabled,
+        tenant=tenant,
+        user_id=user_id,
+        agent_id=runner_agent_id,
+        session_id=runner_session_id,
+        question=question,
+        answer=answer,
+        tool_calls=tool_calls,
+        knowledge_base_ids=list(agent_metadata.get("knowledge_base_ids") or []),
+        max_records=PLATFORM_MEMORY_MAX_RECORDS,
+    )
 
     turn_id = uuid4().hex
     created_at = _now_iso()
