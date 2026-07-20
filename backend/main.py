@@ -1401,7 +1401,8 @@ async def enterprise_platform_tools(
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
     tool_policy_service = _platform_tool_policy_service()
-    tenant = tool_policy_service.runtime_tenant(runtime)
+    runtime_selection = tool_policy_service.runtime_selection(runtime)
+    tenant = runtime_selection["tenant"]
     try:
         published_agents = _platform_agent_service().list_published_agents()
     except PlatformAgentServiceError as exc:
@@ -1461,8 +1462,8 @@ async def enterprise_platform_tools(
         "tools": tools,
         "user_id": resolved_user_id,
         "tenant": tenant,
-        "connector": tool_policy_service.runtime_connector_label(runtime),
-        "connector_source": tool_policy_service.runtime_connector_source(runtime),
+        "connector": runtime_selection["connector_label"],
+        "connector_source": runtime_selection["connector_source"],
         "agent_id": agent_id,
     }
 
