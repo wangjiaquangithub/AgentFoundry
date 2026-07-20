@@ -44,6 +44,7 @@ const router = createBrowserRouter([
 					{ path: '/platform', element: <PlatformPage view="dashboard" /> },
 					{ path: '/platform/agents', element: <PlatformPage view="agents" /> },
 					{ path: '/platform/tools', element: <PlatformPage view="tools" /> },
+					{ path: '/platform/connectors', element: <PlatformPage view="connectors" /> },
 					{ path: '/platform/workflows', element: <PlatformPage view="workflows" /> },
 					{ path: '/platform/approvals', element: <PlatformPage view="approvals" /> },
 					{ path: '/platform/runs', element: <PlatformPage view="runs" /> },

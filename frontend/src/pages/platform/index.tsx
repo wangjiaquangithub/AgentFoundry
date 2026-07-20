@@ -32,6 +32,7 @@ import { useTranslation } from '@/i18n/useI18n';
 import { AgentsViewPage } from './components/AgentsViewPage';
 import { ApprovalsViewPage } from './components/ApprovalsViewPage';
 import type { AppCenterSelection } from './components/AppCenterPanel';
+import { DashboardConnectorsSection } from './components/DashboardConnectorsSection';
 import { MemoryViewPage } from './components/MemoryViewPage';
 import { RunsViewPage } from './components/RunsViewPage';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
@@ -1784,6 +1785,41 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					onPlatformConfigImportTextChange: setPlatformConfigImportText,
 					t,
 				})}
+			/>
+		);
+	}
+
+	if (view === 'connectors') {
+		return (
+			<DashboardConnectorsSection
+				activeConnectorTenant={activeConnectorTenant}
+				activeSavedConnectorConfig={activeSavedConnectorConfig}
+				connectorCenterRef={connectorCenterRef}
+				connectorDraftIssues={connectorDraftIssues}
+				connectorDraftState={connectorDraftState}
+				connectorRuntimeSourceText={connectorRuntimeSourceText}
+				connectorRuntimeState={connectorRuntimeState}
+				connectorSaveError={connectorSaveError}
+				connectorSaveSuccess={connectorSaveSuccess}
+				connectorState={connectorState}
+				connectorTestError={connectorTestError}
+				connectorTestForm={connectorTestForm}
+				connectorTestPassed={connectorTestPassed}
+				connectorTestResult={connectorTestResult}
+				connectors={connectors}
+				connectorsError={connectorsError}
+				connectorsLoading={connectorsLoading}
+				handleSaveConnectorConfig={handleSaveConnectorConfig}
+				handleTestAndSaveConnectorConfig={handleTestAndSaveConnectorConfig}
+				handleTestConnector={handleTestConnector}
+				loadSavedConnectorConfig={loadSavedConnectorConfig}
+				refetchConnectors={refetchConnectors}
+				savedConnectorConfigs={savedConnectorConfigs}
+				savingConnectorConfig={savingConnectorConfig}
+				setConnectorTestForm={setConnectorTestForm}
+				t={t}
+				tenantWorkspaces={tenantWorkspaces}
+				testingConnector={testingConnector}
 			/>
 		);
 	}

@@ -1,26 +1,75 @@
-// @ts-nocheck
-
 import {
 	AlertTriangle,
+	Building2,
 	CheckCircle2,
 	Database,
+	KeyRound,
+	ListChecks,
+	Network,
 	Play,
+	PlugZap,
 	RefreshCcw,
 	Save,
+	ServerCog,
 	XCircle,
 } from 'lucide-react';
+import type { Dispatch, RefObject, SetStateAction } from 'react';
 
+import type { ConnectorTestFormState } from '../platform-defaults';
 import { countArrayField, formatTimestamp } from '../platform-utils';
-import { PlatformNotice, StateBadge } from './common';
+import {
+	PlatformPageHeader,
+	PlatformPageShell,
+	PlatformNotice,
+	StatCard,
+	StateBadge,
+	type HealthState,
+} from './common';
+import type {
+	EnterpriseConnectorSavedConfig,
+	EnterpriseConnectorTestResponse,
+	EnterprisePlatformConnectorsResponse,
+	EnterpriseTenantWorkspace,
+} from '@/api/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
+type Translate = (key: string, options?: Record<string, unknown>) => string;
+
 interface DashboardConnectorsSectionProps {
-	[key: string]: any;
+	activeConnectorTenant: string;
+	activeSavedConnectorConfig: EnterpriseConnectorSavedConfig | null;
+	connectorCenterRef: RefObject<HTMLElement | null>;
+	connectorDraftIssues: string[];
+	connectorDraftState: HealthState;
+	connectorRuntimeSourceText: string;
+	connectorRuntimeState: HealthState;
+	connectorSaveError: string | null;
+	connectorSaveSuccess: string | null;
+	connectorState: HealthState;
+	connectorTestError: string | null;
+	connectorTestForm: ConnectorTestFormState;
+	connectorTestPassed: boolean;
+	connectorTestResult: EnterpriseConnectorTestResponse | null;
+	connectors: EnterprisePlatformConnectorsResponse | null;
+	connectorsError: string | null;
+	connectorsLoading: boolean;
+	handleSaveConnectorConfig: () => Promise<void>;
+	handleTestAndSaveConnectorConfig: () => Promise<void>;
+	handleTestConnector: () => Promise<EnterpriseConnectorTestResponse | null>;
+	loadSavedConnectorConfig: (config: EnterpriseConnectorSavedConfig) => void;
+	refetchConnectors: () => Promise<void>;
+	savedConnectorConfigs: EnterpriseConnectorSavedConfig[];
+	savingConnectorConfig: boolean;
+	setConnectorTestForm: Dispatch<SetStateAction<ConnectorTestFormState>>;
+	t: Translate;
+	tenantWorkspaces: Array<[string, EnterpriseTenantWorkspace]>;
+	testingConnector: boolean;
 }
 
 export function DashboardConnectorsSection({
@@ -61,21 +110,26 @@ export function DashboardConnectorsSection({
 				: activeSavedConnectorConfig
 					? t('platform.connectors.draftChanged')
 					: t('platform.connectors.draftNew');
+	const supportedConnectorCount = connectors?.supported.length ?? 0;
+	const configuredEnvCount =
+		connectors?.env.filter((envVar) => envVar.configured).length ?? 0;
+	const httpPathCount = connectors ? Object.keys(connectors.http_paths).length : 0;
 
 	return (
-				<section
-					ref={connectorCenterRef}
-					className="grid gap-4 rounded-lg border bg-muted/10 p-4"
-				>
-					<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-						<div>
-							<h2 className="text-base font-semibold">
-								{t('platform.connectors.title')}
-							</h2>
-							<p className="text-sm text-muted-foreground">
-								{t('platform.connectors.description')}
-							</p>
-						</div>
+		<PlatformPageShell>
+			<PlatformPageHeader
+				icon={PlugZap}
+				eyebrow={t('platform.connectors.title')}
+				title={t('platform.connectors.title')}
+				description={t('platform.connectors.description')}
+				actions={
+					<>
+						{connectors ? (
+							<StateBadge
+								state={connectorState}
+								label={connectors.current.status}
+							/>
+						) : null}
 						<Button
 							size="sm"
 							variant="outline"
@@ -85,7 +139,42 @@ export function DashboardConnectorsSection({
 							<RefreshCcw className={cn(connectorsLoading && 'animate-spin')} />
 							{t('platform.actions.refreshStatus')}
 						</Button>
-					</div>
+					</>
+				}
+			/>
+
+			<section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+				<StatCard
+					label={t('platform.connectors.supported')}
+					value={supportedConnectorCount}
+					helper={connectors?.current.name ?? t('platform.connectors.empty')}
+					icon={Database}
+					loading={connectorsLoading}
+				/>
+				<StatCard
+					label={t('platform.connectors.environment')}
+					value={`${configuredEnvCount}/${connectors?.env.length ?? 0}`}
+					helper={t('platform.connectors.configured')}
+					icon={KeyRound}
+					loading={connectorsLoading}
+				/>
+				<StatCard
+					label={t('platform.connectors.httpPaths')}
+					value={httpPathCount}
+					helper={t('platform.connectors.runtimeDescription')}
+					icon={Network}
+					loading={connectorsLoading}
+				/>
+				<StatCard
+					label={t('platform.connectors.savedConfigs')}
+					value={savedConnectorConfigs.length}
+					helper={t('platform.connectors.savedConfigsDescription')}
+					icon={ServerCog}
+					loading={connectorsLoading}
+				/>
+			</section>
+
+			<section ref={connectorCenterRef} className="grid gap-4">
 
 					{connectorsError ? (
 						<PlatformNotice>{t('platform.connectors.loadError')}</PlatformNotice>
@@ -97,9 +186,40 @@ export function DashboardConnectorsSection({
 							<Skeleton className="h-48 w-full" />
 						</div>
 					) : connectors ? (
-						<>
+						<Tabs defaultValue="configuration" className="grid gap-4">
+							<section className="rounded-lg border bg-background p-4 shadow-sm">
+								<div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+									<div className="min-w-0">
+										<div className="flex items-center gap-2">
+											<div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+												<PlugZap className="size-4 text-muted-foreground" />
+											</div>
+											<h2 className="text-base font-semibold">连接器工作区</h2>
+										</div>
+										<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+											把连接器状态、配置测试、资源目录和租户映射分区处理，避免调试表单和运行数据挤在同一个长面板里。
+										</p>
+									</div>
+									<TabsList className="w-full sm:w-auto">
+										<TabsTrigger value="configuration" className="flex-1 sm:flex-none">
+											<ServerCog className="size-4" />
+											配置
+										</TabsTrigger>
+										<TabsTrigger value="catalog" className="flex-1 sm:flex-none">
+											<ListChecks className="size-4" />
+											资源
+										</TabsTrigger>
+										<TabsTrigger value="tenants" className="flex-1 sm:flex-none">
+											<Building2 className="size-4" />
+											租户
+										</TabsTrigger>
+									</TabsList>
+								</div>
+							</section>
+
+							<TabsContent value="configuration" className="mt-0 grid gap-4">
 							<div className="grid gap-3 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-								<div className="grid gap-3 rounded-lg border bg-background p-3">
+								<div className="grid gap-3 rounded-lg border bg-background p-4 shadow-sm">
 									<div className="flex items-start justify-between gap-3">
 										<div className="flex items-center gap-2">
 											<div className="flex size-9 items-center justify-center rounded-lg border bg-muted/30">
@@ -188,7 +308,7 @@ export function DashboardConnectorsSection({
 									</div>
 								</div>
 
-								<div className="grid gap-3 rounded-lg border bg-background p-3">
+								<div className="grid gap-3 rounded-lg border bg-background p-4 shadow-sm">
 									<div className="flex items-center justify-between gap-3">
 										<h3 className="text-sm font-medium">
 											{t('platform.connectors.environment')}
@@ -241,7 +361,7 @@ export function DashboardConnectorsSection({
 								</div>
 							</div>
 
-							<div className="grid gap-3 rounded-lg border bg-background p-3">
+							<div className="grid gap-3 rounded-lg border bg-background p-4 shadow-sm">
 								<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 									<div>
 										<h3 className="text-sm font-medium">
@@ -709,8 +829,11 @@ export function DashboardConnectorsSection({
 								) : null}
 							</div>
 
-							<div className="grid gap-3 xl:grid-cols-2">
-								<div className="grid gap-3 rounded-lg border bg-background p-3">
+							</TabsContent>
+
+							<TabsContent value="catalog" className="mt-0">
+								<div className="grid gap-4 xl:grid-cols-2">
+								<div className="grid gap-3 rounded-lg border bg-background p-4 shadow-sm">
 									<div className="flex items-center justify-between gap-3">
 										<h3 className="text-sm font-medium">
 											{t('platform.connectors.supported')}
@@ -756,7 +879,7 @@ export function DashboardConnectorsSection({
 									</div>
 								</div>
 
-								<div className="grid gap-3 rounded-lg border bg-background p-3">
+								<div className="grid gap-3 rounded-lg border bg-background p-4 shadow-sm">
 									<div className="flex items-center justify-between gap-3">
 										<h3 className="text-sm font-medium">
 											{t('platform.connectors.httpPaths')}
@@ -782,9 +905,11 @@ export function DashboardConnectorsSection({
 									</div>
 								</div>
 							</div>
+							</TabsContent>
 
-							<div className="grid gap-3 xl:grid-cols-2">
-								<div className="grid gap-3 rounded-lg border bg-background p-3">
+							<TabsContent value="tenants" className="mt-0">
+								<div className="grid gap-4 xl:grid-cols-2">
+								<div className="grid gap-3 rounded-lg border bg-background p-4 shadow-sm">
 									<div className="flex items-center justify-between gap-3">
 										<h3 className="text-sm font-medium">
 											{t('platform.connectors.tenantPreview')}
@@ -879,7 +1004,7 @@ export function DashboardConnectorsSection({
 									</div>
 								</div>
 
-								<div className="grid gap-3 rounded-lg border bg-background p-3">
+								<div className="grid gap-3 rounded-lg border bg-background p-4 shadow-sm">
 									<div className="flex items-center justify-between gap-3">
 										<h3 className="text-sm font-medium">
 											{t('platform.connectors.identities')}
@@ -933,12 +1058,14 @@ export function DashboardConnectorsSection({
 									</div>
 								</div>
 							</div>
-						</>
+							</TabsContent>
+						</Tabs>
 					) : (
 						<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
 							{t('platform.connectors.empty')}
 						</div>
 					)}
-				</section>
+			</section>
+		</PlatformPageShell>
 	);
 }
