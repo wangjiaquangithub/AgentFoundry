@@ -889,7 +889,10 @@ def _run_authorized_enterprise_tool(
     session_id: str,
     fail_on_denied: bool = True,
 ) -> dict[str, Any]:
-    runtime = _enterprise_runtime_context(user_id)
+    try:
+        runtime = _platform_connector_config_service().enterprise_runtime_context(user_id)
+    except PlatformConnectorConfigServiceError as exc:
+        _raise_platform_connector_config_service_error(exc)
     tenant = str(runtime["tenant"])
     runtime_connector = runtime["connector"]
     connector_label = str(runtime["connector_label"])
