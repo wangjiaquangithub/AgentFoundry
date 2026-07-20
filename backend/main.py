@@ -592,7 +592,8 @@ def _platform_agent_service() -> PlatformAgentService:
         templates=ENTERPRISE_AGENT_TEMPLATES,
         approval_required_tools=APPROVAL_REQUIRED_TOOLS,
         tenant_for_user=_runtime_tenant_for_user,
-        access_scope_diagnostics=_platform_agent_access_scope_diagnostics,
+        tenant_hint_from_user_id=_tenant_hint_from_user_id,
+        identity_metadata=_platform_identity_metadata,
     )
 
 
@@ -642,69 +643,6 @@ def _platform_member_service() -> PlatformMemberService:
 
 def _raise_platform_member_service_error(exc: PlatformMemberServiceError) -> NoReturn:
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
-
-
-def _platform_agent_access_scope_diagnostics(
-    tenant: str,
-    access: dict[str, list[str]],
-) -> dict[str, Any]:
-    identities = [
-        identity
-        for identity in _platform_identity_metadata(f"{tenant}:system", tenant)
-        if str(identity.get("tenant") or "").strip() == tenant
-    ]
-    identity_by_user_id = {
-        str(identity.get("user_id") or "").strip(): identity
-        for identity in identities
-        if str(identity.get("user_id") or "").strip()
-    }
-    roles = {
-        str(identity.get("role") or "").strip()
-        for identity in identities
-        if str(identity.get("role") or "").strip()
-    }
-    tenant_mismatched_user_ids: list[str] = []
-    unknown_user_ids: list[str] = []
-    inactive_user_ids: list[str] = []
-
-    for user_id in access["allowed_user_ids"]:
-        hinted_tenant = _tenant_hint_from_user_id(user_id)
-        if hinted_tenant and hinted_tenant != tenant:
-            tenant_mismatched_user_ids.append(user_id)
-            continue
-        identity = identity_by_user_id.get(user_id)
-        if identity is None:
-            unknown_user_ids.append(user_id)
-        elif identity.get("status") != "active":
-            inactive_user_ids.append(user_id)
-
-    unknown_roles = [
-        role for role in access["allowed_roles"] if role not in roles
-    ]
-    active_member_count = 0
-    inactive_member_count = 0
-    for identity in identities:
-        user_id = str(identity.get("user_id") or "").strip()
-        role = str(identity.get("role") or "").strip()
-        if not user_id:
-            continue
-        matched = user_id in access["allowed_user_ids"] or role in access["allowed_roles"]
-        if not matched:
-            continue
-        if identity.get("status") == "active":
-            active_member_count += 1
-        else:
-            inactive_member_count += 1
-
-    return {
-        "tenant": tenant,
-        "tenant_mismatched_user_ids": tenant_mismatched_user_ids,
-        "unknown_user_ids": unknown_user_ids,
-        "inactive_user_ids": inactive_user_ids,
-        "unknown_roles": unknown_roles,
-        "active_member_count": active_member_count,
-        "inactive_member_count": inactive_member_count,
-    }
 
 
 def _identity_role_for_user(user_id: str) -> str:

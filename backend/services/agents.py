@@ -26,16 +26,15 @@ class PlatformAgentService:
         templates: list[dict[str, Any]],
         approval_required_tools: set[str],
         tenant_for_user: Callable[[str], str],
-        access_scope_diagnostics: Callable[
-            [str, dict[str, list[str]]],
-            dict[str, Any],
-        ],
+        tenant_hint_from_user_id: Callable[[str], str | None],
+        identity_metadata: Callable[[str, str], list[dict[str, Any]]],
     ) -> None:
         self._repository = repository
         self._templates = templates
         self._approval_required_tools = approval_required_tools
         self._tenant_for_user = tenant_for_user
-        self._access_scope_diagnostics = access_scope_diagnostics
+        self._tenant_hint_from_user_id = tenant_hint_from_user_id
+        self._identity_metadata = identity_metadata
 
     def list_agents(self) -> list[dict[str, Any]]:
         try:
@@ -196,7 +195,7 @@ class PlatformAgentService:
     def access_summary(self, agent: dict[str, Any]) -> dict[str, Any]:
         tenant = str(agent.get("tenant") or "").strip()
         access = self.agent_access(agent)
-        diagnostics = self._access_scope_diagnostics(tenant, access)
+        diagnostics = self.access_scope_diagnostics(tenant, access)
         return {
             **diagnostics,
             "allowed_user_count": len(access["allowed_user_ids"]),
@@ -622,7 +621,7 @@ class PlatformAgentService:
         allowed_user_ids: list[str],
         allowed_roles: list[str],
     ) -> None:
-        diagnostics = self._access_scope_diagnostics(
+        diagnostics = self.access_scope_diagnostics(
             tenant,
             {
                 "allowed_user_ids": allowed_user_ids,
@@ -643,6 +642,70 @@ class PlatformAgentService:
                     "unknown_roles": diagnostics["unknown_roles"],
                 },
             )
+
+    def access_scope_diagnostics(
+        self,
+        tenant: str,
+        access: dict[str, list[str]],
+    ) -> dict[str, Any]:
+        identities = [
+            identity
+            for identity in self._identity_metadata(f"{tenant}:system", tenant)
+            if str(identity.get("tenant") or "").strip() == tenant
+        ]
+        identity_by_user_id = {
+            str(identity.get("user_id") or "").strip(): identity
+            for identity in identities
+            if str(identity.get("user_id") or "").strip()
+        }
+        roles = {
+            str(identity.get("role") or "").strip()
+            for identity in identities
+            if str(identity.get("role") or "").strip()
+        }
+        tenant_mismatched_user_ids: list[str] = []
+        unknown_user_ids: list[str] = []
+        inactive_user_ids: list[str] = []
+
+        for user_id in access["allowed_user_ids"]:
+            hinted_tenant = self._tenant_hint_from_user_id(user_id)
+            if hinted_tenant and hinted_tenant != tenant:
+                tenant_mismatched_user_ids.append(user_id)
+                continue
+            identity = identity_by_user_id.get(user_id)
+            if identity is None:
+                unknown_user_ids.append(user_id)
+            elif identity.get("status") != "active":
+                inactive_user_ids.append(user_id)
+
+        unknown_roles = [role for role in access["allowed_roles"] if role not in roles]
+        active_member_count = 0
+        inactive_member_count = 0
+        for identity in identities:
+            user_id = str(identity.get("user_id") or "").strip()
+            role = str(identity.get("role") or "").strip()
+            if not user_id:
+                continue
+            matched = (
+                user_id in access["allowed_user_ids"]
+                or role in access["allowed_roles"]
+            )
+            if not matched:
+                continue
+            if identity.get("status") == "active":
+                active_member_count += 1
+            else:
+                inactive_member_count += 1
+
+        return {
+            "tenant": tenant,
+            "tenant_mismatched_user_ids": tenant_mismatched_user_ids,
+            "unknown_user_ids": unknown_user_ids,
+            "inactive_user_ids": inactive_user_ids,
+            "unknown_roles": unknown_roles,
+            "active_member_count": active_member_count,
+            "inactive_member_count": inactive_member_count,
+        }
 
 
 def _normalize_values(values: Iterable[Any] | None) -> list[str]:
