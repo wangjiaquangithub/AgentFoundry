@@ -1169,38 +1169,18 @@ def _export_platform_config() -> dict[str, Any]:
         "workflow_templates": workflow_templates,
         "tool_policy": tool_policy,
     }
-    counts = connector_config_service.export_config_counts(config)
-    return {
-        "schema_version": 1,
-        "platform_version": PLATFORM_VERSION,
-        "exported_at": _now_iso(),
-        "redacted": True,
-        "files": {
-            "members": {
-                "path": str(PLATFORM_MEMBERS_PATH),
-                "count": counts["members"],
-            },
-            "connector_configs": {
-                "path": str(PLATFORM_CONNECTOR_CONFIGS_PATH),
-                "count": counts["connector_configs"],
-            },
-            "agents": {
-                "path": str(PLATFORM_AGENTS_PATH),
-                "count": counts["agents"],
-            },
-            "workflow_templates": {
-                "path": str(PLATFORM_WORKFLOW_TEMPLATES_PATH),
-                "count": counts["workflow_templates"],
-            },
-            "tool_policy": {
-                "path": str(_platform_tool_policy_path()),
-                "tenant_count": counts["tool_policy_tenants"],
-                "user_policy_count": counts["tool_policy_users"],
-            },
+    return connector_config_service.export_config_response(
+        config=config,
+        platform_version=PLATFORM_VERSION,
+        exported_at=_now_iso(),
+        file_paths={
+            "members": str(PLATFORM_MEMBERS_PATH),
+            "connector_configs": str(PLATFORM_CONNECTOR_CONFIGS_PATH),
+            "agents": str(PLATFORM_AGENTS_PATH),
+            "workflow_templates": str(PLATFORM_WORKFLOW_TEMPLATES_PATH),
+            "tool_policy": str(_platform_tool_policy_path()),
         },
-        "counts": counts,
-        "config": config,
-    }
+    )
 
 
 def _normalize_import_members(value: Any, actor: str) -> list[dict[str, Any]]:

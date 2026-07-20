@@ -272,6 +272,47 @@ class PlatformConnectorConfigService:
             "tool_policy_users": user_policy_count,
         }
 
+    def export_config_response(
+        self,
+        *,
+        config: dict[str, Any],
+        platform_version: str,
+        exported_at: str,
+        file_paths: dict[str, str],
+    ) -> dict[str, Any]:
+        counts = self.export_config_counts(config)
+        return {
+            "schema_version": 1,
+            "platform_version": platform_version,
+            "exported_at": exported_at,
+            "redacted": True,
+            "files": {
+                "members": {
+                    "path": file_paths["members"],
+                    "count": counts["members"],
+                },
+                "connector_configs": {
+                    "path": file_paths["connector_configs"],
+                    "count": counts["connector_configs"],
+                },
+                "agents": {
+                    "path": file_paths["agents"],
+                    "count": counts["agents"],
+                },
+                "workflow_templates": {
+                    "path": file_paths["workflow_templates"],
+                    "count": counts["workflow_templates"],
+                },
+                "tool_policy": {
+                    "path": file_paths["tool_policy"],
+                    "tenant_count": counts["tool_policy_tenants"],
+                    "user_policy_count": counts["tool_policy_users"],
+                },
+            },
+            "counts": counts,
+            "config": config,
+        }
+
     def list_configs_response(self) -> dict[str, Any]:
         return {"saved_configs": self.redacted_configs()}
 
