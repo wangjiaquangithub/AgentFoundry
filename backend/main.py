@@ -1738,12 +1738,7 @@ async def run_enterprise_agent(
             max_records=PLATFORM_MEMORY_MAX_RECORDS,
         )
 
-        run_identity = _platform_agent_run_service().build_run_identity()
-        turn_id = run_identity["turn_id"]
-        created_at = run_identity["created_at"]
-        evidence = _platform_agent_run_service().build_evidence(
-            turn_id=turn_id,
-            created_at=created_at,
+        response_trace = _platform_agent_run_service().build_response_trace(
             tenant=tenant,
             user_id=user_id,
             agent_id=runner_agent_id,
@@ -1753,6 +1748,9 @@ async def run_enterprise_agent(
             memory_hits=memory_hits,
             memory_saved=memory_saved,
         )
+        turn_id = response_trace["turn_id"]
+        created_at = response_trace["created_at"]
+        evidence = response_trace["evidence"]
         agent_run_service = _platform_agent_run_service()
         response = agent_run_service.build_unrouted_response(
             answer=answer,
@@ -1962,12 +1960,7 @@ async def run_enterprise_agent(
         max_records=PLATFORM_MEMORY_MAX_RECORDS,
     )
 
-    run_identity = _platform_agent_run_service().build_run_identity()
-    turn_id = run_identity["turn_id"]
-    created_at = run_identity["created_at"]
-    evidence = _platform_agent_run_service().build_evidence(
-        turn_id=turn_id,
-        created_at=created_at,
+    response_trace = _platform_agent_run_service().build_response_trace(
         tenant=primary_call.get("tenant", tenant),
         user_id=primary_call.get("user_id", user_id),
         agent_id=runner_agent_id,
@@ -1977,6 +1970,9 @@ async def run_enterprise_agent(
         memory_hits=memory_hits,
         memory_saved=memory_saved,
     )
+    turn_id = response_trace["turn_id"]
+    created_at = response_trace["created_at"]
+    evidence = response_trace["evidence"]
     agent_run_service = _platform_agent_run_service()
     response = agent_run_service.build_routed_response(
         answer=answer,

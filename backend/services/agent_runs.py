@@ -57,6 +57,38 @@ class PlatformAgentRunService:
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
 
+    def build_response_trace(
+        self,
+        *,
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        session_id: str,
+        tool_calls: list[dict[str, Any]],
+        knowledge_hits: list[dict[str, Any]],
+        memory_hits: list[dict[str, Any]],
+        memory_saved: bool,
+    ) -> dict[str, Any]:
+        run_identity = self.build_run_identity()
+        turn_id = run_identity["turn_id"]
+        created_at = run_identity["created_at"]
+        return {
+            "turn_id": turn_id,
+            "created_at": created_at,
+            "evidence": self.build_evidence(
+                turn_id=turn_id,
+                created_at=created_at,
+                tenant=tenant,
+                user_id=user_id,
+                agent_id=agent_id,
+                session_id=session_id,
+                tool_calls=tool_calls,
+                knowledge_hits=knowledge_hits,
+                memory_hits=memory_hits,
+                memory_saved=memory_saved,
+            ),
+        }
+
     def resolve_runner_context(
         self,
         *,
