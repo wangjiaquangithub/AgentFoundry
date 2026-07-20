@@ -221,6 +221,52 @@ class PlatformAgentRunService:
             "runtime_adapter": runtime_adapter,
         }
 
+    def build_execution_context(
+        self,
+        *,
+        run_request: dict[str, Any],
+        agent: dict[str, Any] | None,
+        agent_metadata: dict[str, Any],
+        runtime: dict[str, Any],
+        runtime_adapter: dict[str, Any],
+        default_tool_names: set[str],
+        safe_path_part: Callable[[str], str],
+    ) -> dict[str, Any]:
+        runtime_identity = self.build_runtime_identity(runtime)
+        tenant = runtime_identity["tenant"]
+        question = run_request["question"]
+        runner_context = self.resolve_runner_context(
+            agent_metadata=agent_metadata,
+            agent=agent,
+            user_id=run_request["user_id"],
+            session_id=run_request["session_id"],
+            default_tool_names=default_tool_names,
+            safe_path_part=safe_path_part,
+        )
+        response_record_context = self.build_response_record_context(
+            session_id=runner_context["runner_session_id"],
+            agent_id=runner_context["runner_agent_id"],
+            agent_name=agent_metadata.get("agent_name"),
+            tenant=tenant,
+            user_id=run_request["user_id"],
+            question=question,
+            runtime_adapter=runtime_adapter,
+        )
+        return {
+            "runtime_identity": runtime_identity,
+            "tenant": tenant,
+            "connector_label": runtime_identity["connector"],
+            "connector_source": runtime_identity["connector_source"],
+            "question": question,
+            "configured_tools": runner_context["configured_tools"],
+            "runner_agent_id": runner_context["runner_agent_id"],
+            "runner_session_id": runner_context["runner_session_id"],
+            "response_record_context": response_record_context,
+            "knowledge_base_ids": self.knowledge_base_ids_from_metadata(
+                agent_metadata,
+            ),
+        }
+
     def resolve_runner_context(
         self,
         *,

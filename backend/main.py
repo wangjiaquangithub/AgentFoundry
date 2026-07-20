@@ -1542,11 +1542,6 @@ async def run_enterprise_agent(
         runtime = _platform_connector_config_service().enterprise_runtime_context(user_id)
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
-    runtime_identity = agent_run_service.build_runtime_identity(runtime)
-    tenant = runtime_identity["tenant"]
-    connector_label = runtime_identity["connector"]
-    connector_source = runtime_identity["connector_source"]
-    question = run_request["question"]
     agent = None
     if run_request["agent_id"]:
         agent, _ = _published_platform_agent_tool_scope_for_user(
@@ -1557,29 +1552,24 @@ async def run_enterprise_agent(
     agent_metadata = _platform_agent_service().run_metadata(agent)
     runtime_adapter = get_runtime_adapter(agent_metadata)
     runtime_adapter_payload = runtime_adapter.describe(agent_metadata)
-    runner_context = agent_run_service.resolve_runner_context(
-        agent_metadata=agent_metadata,
+    execution_context = agent_run_service.build_execution_context(
+        run_request=run_request,
         agent=agent,
-        user_id=user_id,
-        session_id=run_request["session_id"],
+        agent_metadata=agent_metadata,
+        runtime=runtime,
+        runtime_adapter=runtime_adapter_payload,
         default_tool_names=set(ENTERPRISE_TOOL_NAMES),
         safe_path_part=_safe_path_part,
     )
-    configured_tools = runner_context["configured_tools"]
-    runner_agent_id = runner_context["runner_agent_id"]
-    runner_session_id = runner_context["runner_session_id"]
-    response_record_context = agent_run_service.build_response_record_context(
-        session_id=runner_session_id,
-        agent_id=runner_agent_id,
-        agent_name=agent_metadata.get("agent_name"),
-        tenant=tenant,
-        user_id=user_id,
-        question=question,
-        runtime_adapter=runtime_adapter_payload,
-    )
-    knowledge_base_ids = agent_run_service.knowledge_base_ids_from_metadata(
-        agent_metadata,
-    )
+    tenant = execution_context["tenant"]
+    connector_label = execution_context["connector_label"]
+    connector_source = execution_context["connector_source"]
+    question = execution_context["question"]
+    configured_tools = execution_context["configured_tools"]
+    runner_agent_id = execution_context["runner_agent_id"]
+    runner_session_id = execution_context["runner_session_id"]
+    response_record_context = execution_context["response_record_context"]
+    knowledge_base_ids = execution_context["knowledge_base_ids"]
     memory_payload = platform_memory_service.build_agent_run_context(
         enabled=bool(agent_metadata.get("memory_enabled", False)),
         tenant=tenant,
