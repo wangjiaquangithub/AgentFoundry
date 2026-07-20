@@ -51,11 +51,7 @@ from agentscope.rag import QdrantStore
 from agentscope.tool import FunctionTool, ToolBase
 
 from audit import ToolAuditLogger
-from connectors import (
-    EnterpriseConnector,
-    HttpEnterpriseConnector,
-    build_enterprise_connector,
-)
+from connectors import EnterpriseConnector, build_enterprise_connector
 from permissions import (
     DEFAULT_TOOL_POLICY,
     ENTERPRISE_TOOL_NAMES,
@@ -1601,51 +1597,14 @@ def _normalize_import_connector_configs(
     existing_configs: dict[str, dict[str, Any]],
     actor: str,
 ) -> list[dict[str, Any]]:
-    if value is None:
-        return []
-    if isinstance(value, dict):
-        raw_configs = [
-            {**raw, "tenant": raw.get("tenant") or tenant}
-            for tenant, raw in value.items()
-            if isinstance(raw, dict)
-        ]
-    elif isinstance(value, list):
-        raw_configs = [raw for raw in value if isinstance(raw, dict)]
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail="connector_configs must be a JSON array or object.",
+    try:
+        return _platform_connector_config_service().normalize_import_configs(
+            value,
+            existing_configs=existing_configs,
+            actor=actor,
         )
-
-    configs: list[dict[str, Any]] = []
-    for raw in raw_configs:
-        tenant = str(raw.get("tenant") or "").strip()
-        base_url = str(raw.get("base_url") or "").strip().rstrip("/")
-        if not tenant or not base_url:
-            continue
-        existing = existing_configs.get(tenant) or {}
-        token = str(raw.get("token") or "").strip() or str(existing.get("token") or "").strip()
-        configs.append(
-            {
-                "tenant": tenant,
-                "base_url": base_url,
-                "token": token or None,
-                "policy_path": str(
-                    raw.get("policy_path") or HttpEnterpriseConnector.policy_path,
-                ).strip(),
-                "ticket_path": str(
-                    raw.get("ticket_path") or HttpEnterpriseConnector.ticket_path,
-                ).strip(),
-                "metrics_path": str(
-                    raw.get("metrics_path") or HttpEnterpriseConnector.metrics_path,
-                ).strip(),
-                "timeout_seconds": float(raw.get("timeout_seconds") or 5.0),
-                "enabled": bool(raw.get("enabled", True)),
-                "updated_at": _now_iso(),
-                "updated_by": actor,
-            },
-        )
-    return configs
+    except PlatformConnectorConfigServiceError as exc:
+        _raise_platform_connector_config_service_error(exc)
 
 
 def _normalize_import_agents(value: Any) -> list[dict[str, Any]]:

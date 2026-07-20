@@ -311,6 +311,61 @@ class PlatformConnectorConfigService:
             "updated_by": user_id,
         }
 
+    def normalize_import_configs(
+        self,
+        value: Any,
+        *,
+        existing_configs: dict[str, dict[str, Any]],
+        actor: str,
+    ) -> list[dict[str, Any]]:
+        if value is None:
+            return []
+        if isinstance(value, dict):
+            raw_configs = [
+                {**raw, "tenant": raw.get("tenant") or tenant}
+                for tenant, raw in value.items()
+                if isinstance(raw, dict)
+            ]
+        elif isinstance(value, list):
+            raw_configs = [raw for raw in value if isinstance(raw, dict)]
+        else:
+            raise PlatformConnectorConfigServiceError(
+                400,
+                "connector_configs must be a JSON array or object.",
+            )
+
+        configs: list[dict[str, Any]] = []
+        for raw in raw_configs:
+            tenant = str(raw.get("tenant") or "").strip()
+            base_url = str(raw.get("base_url") or "").strip().rstrip("/")
+            if not tenant or not base_url:
+                continue
+            existing = existing_configs.get(tenant) or {}
+            token = str(raw.get("token") or "").strip() or str(
+                existing.get("token") or "",
+            ).strip()
+            configs.append(
+                {
+                    "tenant": tenant,
+                    "base_url": base_url,
+                    "token": token or None,
+                    "policy_path": str(
+                        raw.get("policy_path") or HttpEnterpriseConnector.policy_path,
+                    ).strip(),
+                    "ticket_path": str(
+                        raw.get("ticket_path") or HttpEnterpriseConnector.ticket_path,
+                    ).strip(),
+                    "metrics_path": str(
+                        raw.get("metrics_path") or HttpEnterpriseConnector.metrics_path,
+                    ).strip(),
+                    "timeout_seconds": float(raw.get("timeout_seconds") or 5.0),
+                    "enabled": bool(raw.get("enabled", True)),
+                    "updated_at": self._now(),
+                    "updated_by": actor,
+                },
+            )
+        return configs
+
     def test_connector(self, payload: Any) -> dict[str, Any]:
         base_url = payload.base_url.strip().rstrip("/")
         if not base_url:
