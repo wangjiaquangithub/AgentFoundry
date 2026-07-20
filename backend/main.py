@@ -1887,6 +1887,10 @@ def _env_configured(name: str) -> bool:
     return bool(os.getenv(name, "").strip())
 
 
+def _env_value(name: str, default: str) -> str:
+    return os.getenv(name, default)
+
+
 def _enterprise_connector_env_metadata() -> list[dict[str, Any]]:
     connector_mode = os.getenv("ENTERPRISE_CONNECTOR", "mock").lower().strip()
     return _platform_connector_config_service().env_metadata(
@@ -2578,35 +2582,23 @@ async def enterprise_platform_connectors(request: Request) -> dict[str, Any]:
     runtime = _enterprise_runtime_context(user_id)
     tenant = str(runtime["tenant"])
     identities = _platform_identity_metadata(user_id, tenant)
+    connector_mode = os.getenv("ENTERPRISE_CONNECTOR", enterprise_connector.name)
+    connector_mode = connector_mode.lower().strip()
 
-    return {
-        "current": _enterprise_connector_health(),
-        "runtime": {
-            "tenant": tenant,
-            "connector": runtime["connector_label"],
-            "source": runtime["connector_source"],
-            "saved_config_enabled": runtime["saved_config_enabled"],
-        },
-        "supported": _enterprise_supported_connectors(),
-        "env": _enterprise_connector_env_metadata(),
-        "http_paths": {
-            "policy": os.getenv(
-                "ENTERPRISE_POLICY_PATH",
-                "/tenants/{tenant}/policies/search",
-            ),
-            "ticket": os.getenv(
-                "ENTERPRISE_TICKET_PATH",
-                "/tenants/{tenant}/tickets/{ticket_id}",
-            ),
-            "metrics": os.getenv(
-                "ENTERPRISE_METRICS_PATH",
-                "/tenants/{tenant}/departments/{department}/metrics",
-            ),
-        },
-        "identities": identities,
-        "tenant_workspaces": _tenant_workspace_metadata(identities, tenant),
-        "saved_configs": _redacted_connector_configs(),
-    }
+    try:
+        response = _platform_connector_config_service().metadata_response(
+            runtime=runtime,
+            connector_name=enterprise_connector.name,
+            connector_mode=connector_mode,
+            env_configured=_env_configured,
+            env_value=_env_value,
+        )
+    except PlatformConnectorConfigServiceError as exc:
+        _raise_platform_connector_config_service_error(exc)
+
+    response["identities"] = identities
+    response["tenant_workspaces"] = _tenant_workspace_metadata(identities, tenant)
+    return response
 
 
 @app.get("/enterprise/platform/governance")

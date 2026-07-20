@@ -212,6 +212,50 @@ class PlatformConnectorConfigService:
     def list_configs_response(self) -> dict[str, Any]:
         return {"saved_configs": self.redacted_configs()}
 
+    def metadata_response(
+        self,
+        *,
+        runtime: dict[str, Any],
+        connector_name: str,
+        connector_mode: str,
+        env_configured: Callable[[str], bool],
+        env_value: Callable[[str, str], str],
+    ) -> dict[str, Any]:
+        env_metadata = self.env_metadata(
+            connector_mode=connector_mode,
+            env_configured=env_configured,
+        )
+        return {
+            "current": self.health_metadata(
+                connector_name=connector_name,
+                connector_mode=connector_mode,
+                env_metadata=env_metadata,
+            ),
+            "runtime": {
+                "tenant": str(runtime["tenant"]),
+                "connector": runtime["connector_label"],
+                "source": runtime["connector_source"],
+                "saved_config_enabled": runtime["saved_config_enabled"],
+            },
+            "supported": self.supported_connectors(),
+            "env": env_metadata,
+            "http_paths": {
+                "policy": env_value(
+                    "ENTERPRISE_POLICY_PATH",
+                    "/tenants/{tenant}/policies/search",
+                ),
+                "ticket": env_value(
+                    "ENTERPRISE_TICKET_PATH",
+                    "/tenants/{tenant}/tickets/{ticket_id}",
+                ),
+                "metrics": env_value(
+                    "ENTERPRISE_METRICS_PATH",
+                    "/tenants/{tenant}/departments/{department}/metrics",
+                ),
+            },
+            "saved_configs": self.redacted_configs(),
+        }
+
     def runtime_tenant_for_user(self, user_id: str) -> str:
         hinted_tenant = self._tenant_hint_from_user_id(user_id)
         if hinted_tenant:
