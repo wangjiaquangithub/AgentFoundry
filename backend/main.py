@@ -1749,7 +1749,7 @@ async def run_enterprise_agent(
             connector_source=connector_source,
             routing_mode=routing_mode,
             routing_source=routing_source,
-            routing_reason=str(route["reason"]),
+            routing_reason=str(decision["routing_reason"]),
             routing_error=routing_error,
             agent_metadata=agent_metadata,
             runtime_adapter=runtime_adapter_payload,
