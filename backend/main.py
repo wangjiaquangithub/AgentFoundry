@@ -1899,10 +1899,6 @@ def _enterprise_connector_env_metadata() -> list[dict[str, Any]]:
     )
 
 
-def _enterprise_supported_connectors() -> list[dict[str, Any]]:
-    return _platform_connector_config_service().supported_connectors()
-
-
 def _enterprise_connector_health() -> dict[str, Any]:
     connector_name = enterprise_connector.name
     connector_mode = os.getenv("ENTERPRISE_CONNECTOR", connector_name).lower().strip()
