@@ -165,14 +165,15 @@ export function ToolsViewPage({
 			</section>
 
 			<Tabs defaultValue="catalog" className="grid gap-4">
-				<section className="flex flex-col gap-3 rounded-lg border bg-background p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-					<div className="min-w-0">
-						<h2 className="text-base font-semibold">工具工作区</h2>
-						<p className="mt-1 text-sm leading-6 text-muted-foreground">
-							把工具目录、权限状态和调用调试分区处理，避免配置清单和运行结果挤在同一个长页面里。
-						</p>
+				<section className="flex flex-col gap-3 rounded-lg border bg-background/80 p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+					<div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
+						<Boxes className="size-4 shrink-0" />
+						<span className="truncate">
+							{availableToolItems.length} 个工具 / {allowedToolCount} 已允许 /{' '}
+							{deniedToolCount} 已拒绝
+						</span>
 					</div>
-					<TabsList className="w-full sm:w-auto">
+					<TabsList className="grid w-full grid-cols-2 sm:w-auto">
 						<TabsTrigger value="catalog" className="flex-1 sm:flex-none">
 							<ListChecks className="size-4" />
 							工具目录
