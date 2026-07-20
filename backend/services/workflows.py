@@ -245,6 +245,37 @@ class PlatformWorkflowRunService:
         self._repository.append(record)
         return record
 
+    def status_counts(self, steps: list[dict[str, Any]]) -> dict[str, int]:
+        counts = {"success": 0, "denied": 0, "failed": 0}
+        for step in steps:
+            status = str(step.get("status") or "failed")
+            counts[status] = counts.get(status, 0) + 1
+        return counts
+
+    def run_status(self, counts: dict[str, int]) -> str:
+        if counts.get("failed", 0) == 0 and counts.get("denied", 0) == 0:
+            return "completed"
+        if counts.get("success", 0) > 0:
+            return "partial"
+        return "failed"
+
+    def summary(self, workflow_name: str, steps: list[dict[str, Any]]) -> str:
+        success_count = sum(1 for step in steps if step.get("status") == "success")
+        denied_count = sum(1 for step in steps if step.get("status") == "denied")
+        failed_count = sum(1 for step in steps if step.get("status") == "failed")
+        lines = [
+            (
+                f"{workflow_name}完成：{success_count} 步成功，"
+                f"{denied_count} 步被权限拒绝，{failed_count} 步失败。"
+            ),
+        ]
+        lines.extend(
+            f"{step.get('title', step.get('tool_name', '步骤'))}: {step.get('message', '')}"
+            for step in steps
+            if step.get("message")
+        )
+        return "\n".join(lines)
+
 
 def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()

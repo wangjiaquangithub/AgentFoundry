@@ -3429,22 +3429,6 @@ def _build_workflow_step_specs(
     return step_specs
 
 
-def _workflow_status_counts(steps: list[dict[str, Any]]) -> dict[str, int]:
-    counts = {"success": 0, "denied": 0, "failed": 0}
-    for step in steps:
-        status = str(step.get("status") or "failed")
-        counts[status] = counts.get(status, 0) + 1
-    return counts
-
-
-def _workflow_run_status(counts: dict[str, int]) -> str:
-    if counts.get("failed", 0) == 0 and counts.get("denied", 0) == 0:
-        return "completed"
-    if counts.get("success", 0) > 0:
-        return "partial"
-    return "failed"
-
-
 def _load_workflow_runs(
     *,
     limit: int = 20,
@@ -3747,24 +3731,6 @@ def _workflow_step(
         "answer": message,
     }
     return step, tool_call
-
-
-def _workflow_summary(workflow_name: str, steps: list[dict[str, Any]]) -> str:
-    success_count = sum(1 for step in steps if step.get("status") == "success")
-    denied_count = sum(1 for step in steps if step.get("status") == "denied")
-    failed_count = sum(1 for step in steps if step.get("status") == "failed")
-    lines = [
-        (
-            f"{workflow_name}完成：{success_count} 步成功，"
-            f"{denied_count} 步被权限拒绝，{failed_count} 步失败。"
-        ),
-    ]
-    lines.extend(
-        f"{step.get('title', step.get('tool_name', '步骤'))}: {step.get('message', '')}"
-        for step in steps
-        if step.get("message")
-    )
-    return "\n".join(lines)
 
 
 @app.get("/enterprise/platform/workflows")
@@ -4079,8 +4045,9 @@ async def run_enterprise_workflow(
         tool_calls.append(tool_call)
 
     finished_at = _now_iso()
-    status_counts = _workflow_status_counts(steps)
-    status = _workflow_run_status(status_counts)
+    workflow_run_service = _platform_workflow_run_service()
+    status_counts = workflow_run_service.status_counts(steps)
+    status = workflow_run_service.run_status(status_counts)
     response = {
         "run_id": run_id,
         "workflow_type": workflow_type,
@@ -4096,7 +4063,7 @@ async def run_enterprise_workflow(
         "connector_source": connector_source,
         "approval_id": approval_id,
         "inputs": normalized_inputs,
-        "summary": _workflow_summary(workflow_name, steps),
+        "summary": workflow_run_service.summary(workflow_name, steps),
         "steps": steps,
         "tool_calls": tool_calls,
         "audit_filter": {
@@ -4106,7 +4073,7 @@ async def run_enterprise_workflow(
             "session_id": session_id,
         },
     }
-    _platform_workflow_run_service().append_run(response)
+    workflow_run_service.append_run(response)
     return response
 
 
