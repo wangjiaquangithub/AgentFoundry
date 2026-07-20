@@ -876,6 +876,15 @@ class PlatformAgentRunService:
             "source": str(route.get("source", default_source)),
         }
 
+    @staticmethod
+    def route_context_view(route_context: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "tool_name": route_context["tool_name"],
+            "inputs": route_context["inputs"],
+            "reason": route_context["reason"],
+            "source": route_context["source"],
+        }
+
     def build_routed_decision_context(
         self,
         *,

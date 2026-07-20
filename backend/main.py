@@ -1687,10 +1687,11 @@ async def run_enterprise_agent(
             route,
             default_source=ROUTING_SOURCE_RULES,
         )
-        tool_name = route_context["tool_name"]
-        route_inputs = route_context["inputs"]
-        route_reason = route_context["reason"]
-        route_source = route_context["source"]
+        route_context_view = agent_run_service.route_context_view(route_context)
+        tool_name = route_context_view["tool_name"]
+        route_inputs = route_context_view["inputs"]
+        route_reason = route_context_view["reason"]
+        route_source = route_context_view["source"]
 
         if not agent_run_service.is_configured_tool(
             tool_name=tool_name,
