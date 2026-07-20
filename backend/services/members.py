@@ -231,6 +231,19 @@ class PlatformMemberService:
             "path": str(registry_path),
         }
 
+    def registry_response_payload(
+        self,
+        *,
+        user_id: str | None,
+        request_context: Callable[[str | None], dict[str, Any]],
+        registry_path: Any,
+    ) -> dict[str, Any]:
+        context = request_context(user_id)
+        return self.registry_payload(
+            identities=context["identities"],
+            registry_path=registry_path,
+        )
+
     def mutation_payload(
         self,
         *,
