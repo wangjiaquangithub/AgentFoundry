@@ -1765,12 +1765,6 @@ async def run_enterprise_agent(
                 except PlatformApprovalServiceError as service_exc:
                     _raise_platform_approval_service_error(service_exc)
                 approval_id = agent_run_service.resolve_approval_id(approval)
-                pending_approval_context = (
-                    agent_run_service.build_created_pending_approval_response_context(
-                        detail=detail,
-                        approval=approval,
-                    )
-                )
                 decision = (
                     agent_run_service.decide_created_pending_approval_route_from_context(
                         decision_with_routing_context=(
@@ -1796,8 +1790,9 @@ async def run_enterprise_agent(
                     routing_source=route_source,
                     routing_reason=route_reason,
                     decision=decision,
-                    answer=agent_run_service.pending_approval_message(
-                        pending_approval_context,
+                    answer=agent_run_service.created_pending_approval_message(
+                        detail=detail,
+                        approval=approval,
                     ),
                 )
                 continue

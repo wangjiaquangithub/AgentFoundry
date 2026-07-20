@@ -1316,6 +1316,19 @@ class PlatformAgentRunService:
     ) -> str:
         return str(context["approval_message"])
 
+    def created_pending_approval_message(
+        self,
+        *,
+        detail: dict[str, Any],
+        approval: dict[str, Any],
+    ) -> str:
+        return self.pending_approval_message(
+            self.build_created_pending_approval_response_context(
+                detail=detail,
+                approval=approval,
+            ),
+        )
+
     def resolve_requested_by(self, *, headers: Any, user_id: str) -> str:
         return str(headers.get("X-User-ID") or user_id)
 
