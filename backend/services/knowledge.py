@@ -106,6 +106,17 @@ class PlatformKnowledgeResponseService:
         hits.sort(key=lambda item: item["score"], reverse=True)
         return hits[:top_k], "; ".join(errors) if errors and not hits else None
 
+    def build_agent_run_payload(
+        self,
+        *,
+        knowledge_hits: list[dict[str, Any]],
+        knowledge_error: str | None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {"knowledge_hits": knowledge_hits}
+        if knowledge_error:
+            payload["knowledge_error"] = knowledge_error
+        return payload
+
     def format_answer(
         self,
         knowledge_hits: list[dict[str, Any]],

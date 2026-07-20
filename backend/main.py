@@ -1701,10 +1701,10 @@ async def run_enterprise_agent(
             knowledge_base_ids=list(agent_metadata.get("knowledge_base_ids") or []),
         )
     )
-    knowledge_payload = {
-        "knowledge_hits": knowledge_hits,
-        **({"knowledge_error": knowledge_error} if knowledge_error else {}),
-    }
+    knowledge_payload = knowledge_response_service.build_agent_run_payload(
+        knowledge_hits=knowledge_hits,
+        knowledge_error=knowledge_error,
+    )
     routes, routing_error = await _select_enterprise_agent_routes(question)
     routing_mode = enterprise_router_service.routing_mode_for(routes)
     routing_source = routing_mode
