@@ -278,6 +278,24 @@ def build_runtime_invocation_request_payload(
     ).to_dict()
 
 
+def build_runtime_invocation_result_payload(
+    *,
+    answer: str,
+    status: str,
+    evidence: dict[str, Any],
+    provider_run_id: str | None = None,
+    raw: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build a serialized provider-neutral runtime invocation result."""
+    return RuntimeInvocationResult(
+        answer=answer,
+        status=status,
+        evidence=evidence,
+        provider_run_id=provider_run_id,
+        raw=raw,
+    ).to_dict()
+
+
 def get_runtime_adapter(_agent_metadata: dict[str, Any] | None = None) -> RuntimeAdapter:
     """Return the runtime adapter for platform agent runs."""
     return AGENTSCOPE_PLATFORM_ADAPTER

@@ -558,6 +558,7 @@ class PlatformAgentRunService:
     def finalize_routed_response_from_context(
         self,
         *,
+        build_runtime_invocation_result_payload: Callable[..., dict[str, Any]],
         routed_summary_context: dict[str, Any],
         response_record_context: dict[str, Any],
         answer: str,
@@ -580,6 +581,9 @@ class PlatformAgentRunService:
         memory_saved: bool,
     ) -> dict[str, Any]:
         return self.finalize_routed_response(
+            build_runtime_invocation_result_payload=(
+                build_runtime_invocation_result_payload
+            ),
             **self.build_routed_finalize_context(
                 routed_summary_context=routed_summary_context,
                 response_record_context=response_record_context,
@@ -653,6 +657,7 @@ class PlatformAgentRunService:
     def finalize_unrouted_response_from_context(
         self,
         *,
+        build_runtime_invocation_result_payload: Callable[..., dict[str, Any]],
         response_record_context: dict[str, Any],
         answer: str,
         session_id: str,
@@ -674,6 +679,9 @@ class PlatformAgentRunService:
         decision: dict[str, Any],
     ) -> dict[str, Any]:
         return self.finalize_unrouted_response(
+            build_runtime_invocation_result_payload=(
+                build_runtime_invocation_result_payload
+            ),
             **self.build_unrouted_finalize_context(
                 response_record_context=response_record_context,
                 answer=answer,
@@ -1761,8 +1769,9 @@ class PlatformAgentRunService:
         runtime_adapter: dict[str, Any],
         evidence: dict[str, Any],
         response: dict[str, Any],
+        runtime_invocation_result: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        return {
+        record = {
             "turn_id": turn_id,
             "session_id": session_id,
             "agent_id": agent_id,
@@ -1776,6 +1785,9 @@ class PlatformAgentRunService:
             "evidence": evidence,
             "response": response,
         }
+        if runtime_invocation_result is not None:
+            record["runtime_invocation_result"] = runtime_invocation_result
+        return record
 
     def append_response_record(
         self,
@@ -1792,6 +1804,7 @@ class PlatformAgentRunService:
         runtime_adapter: dict[str, Any],
         evidence: dict[str, Any],
         response: dict[str, Any],
+        runtime_invocation_result: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         record = self.build_run_record(
             turn_id=turn_id,
@@ -1806,6 +1819,7 @@ class PlatformAgentRunService:
             runtime_adapter=runtime_adapter,
             evidence=evidence,
             response=response,
+            runtime_invocation_result=runtime_invocation_result,
         )
         return self.append_run(record)
 
@@ -1822,6 +1836,7 @@ class PlatformAgentRunService:
         answer: str,
         runtime_adapter: dict[str, Any],
         response: dict[str, Any],
+        runtime_invocation_result: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         return self.append_response_record(
             turn_id=str(response_trace["turn_id"]),
@@ -1836,6 +1851,7 @@ class PlatformAgentRunService:
             runtime_adapter=runtime_adapter,
             evidence=dict(response_trace["evidence"]),
             response=response,
+            runtime_invocation_result=runtime_invocation_result,
         )
 
     def append_response_record_from_context(
@@ -1845,6 +1861,7 @@ class PlatformAgentRunService:
         context: dict[str, Any],
         answer: str,
         response: dict[str, Any],
+        runtime_invocation_result: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         return self.append_response_record_from_trace(
             response_trace=response_trace,
@@ -1857,11 +1874,13 @@ class PlatformAgentRunService:
             answer=answer,
             runtime_adapter=dict(context["runtime_adapter"]),
             response=response,
+            runtime_invocation_result=runtime_invocation_result,
         )
 
     def finalize_unrouted_response(
         self,
         *,
+        build_runtime_invocation_result_payload: Callable[..., dict[str, Any]],
         response_record_context: dict[str, Any],
         answer: str,
         session_id: str,
@@ -1911,17 +1930,32 @@ class PlatformAgentRunService:
             memory_saved=memory_saved,
             decision=decision,
         )
+        runtime_invocation_result = build_runtime_invocation_result_payload(
+            answer=answer,
+            status="completed",
+            evidence=dict(response_trace["evidence"]),
+            provider_run_id=str(response_trace["turn_id"]),
+            raw={
+                "routed": False,
+                "routing_mode": routing_mode,
+                "routing_source": routing_source,
+                "routing_reason": routing_reason,
+                **({"routing_error": routing_error} if routing_error else {}),
+            },
+        )
         self.append_response_record_from_context(
             response_trace=response_trace,
             context=response_record_context,
             answer=answer,
             response=response,
+            runtime_invocation_result=runtime_invocation_result,
         )
         return response
 
     def finalize_routed_response(
         self,
         *,
+        build_runtime_invocation_result_payload: Callable[..., dict[str, Any]],
         primary_call: dict[str, Any],
         response_record_context: dict[str, Any],
         answer: str,
@@ -1977,11 +2011,26 @@ class PlatformAgentRunService:
             memory_payload=memory_payload,
             memory_saved=memory_saved,
         )
+        runtime_invocation_result = build_runtime_invocation_result_payload(
+            answer=answer,
+            status="completed",
+            evidence=dict(response_trace["evidence"]),
+            provider_run_id=str(response_trace["turn_id"]),
+            raw={
+                "routed": routed,
+                "routing_mode": routing_mode,
+                "routing_source": routing_source,
+                "routing_reason": routing_reason,
+                "tool_call_count": len(tool_calls),
+                **({"routing_error": routing_error} if routing_error else {}),
+            },
+        )
         self.append_response_record_from_context(
             response_trace=response_trace,
             context=response_record_context,
             answer=answer,
             response=response,
+            runtime_invocation_result=runtime_invocation_result,
         )
         return response
 

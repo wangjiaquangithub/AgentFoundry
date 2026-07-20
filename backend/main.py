@@ -67,7 +67,11 @@ from repositories.workflows import (
     WorkflowRunRepository,
     WorkflowTemplateRepository,
 )
-from runtime import build_runtime_invocation_request_payload, describe_runtime_adapter
+from runtime import (
+    build_runtime_invocation_request_payload,
+    build_runtime_invocation_result_payload,
+    describe_runtime_adapter,
+)
 from services.approvals import (
     PlatformApprovalService,
     PlatformApprovalServiceError,
@@ -1655,6 +1659,9 @@ async def run_enterprise_agent(
         )
 
         response = agent_run_service.finalize_unrouted_response_from_context(
+            build_runtime_invocation_result_payload=(
+                build_runtime_invocation_result_payload
+            ),
             response_record_context=response_record_context,
             answer=answer,
             session_id=runner_session_id,
@@ -1848,6 +1855,9 @@ async def run_enterprise_agent(
     )
 
     response = agent_run_service.finalize_routed_response_from_context(
+        build_runtime_invocation_result_payload=(
+            build_runtime_invocation_result_payload
+        ),
         routed_summary_context=routed_summary_context,
         response_record_context=response_record_context,
         answer=answer,
