@@ -1007,39 +1007,19 @@ async def _route_enterprise_agent_question_with_model(
     )
 
 
-def _route_enterprise_agent_question_with_rules(
-    question: str,
-) -> list[dict[str, Any]]:
-    return enterprise_router_service.rule_routes_for_question(question)
-
-
 def _route_enterprise_agent_question(question: str) -> dict[str, Any]:
-    routes = _route_enterprise_agent_question_with_rules(question)
+    routes = enterprise_router_service.rule_routes_for_question(question)
     return enterprise_router_service.primary_route_or_fallback(routes)
 
 
 async def _select_enterprise_agent_routes(
     question: str,
 ) -> tuple[list[dict[str, Any]], str | None]:
-    rule_routes = _route_enterprise_agent_question_with_rules(question)
-    router_env_present = enterprise_router_service.model_router_env_present(
-        os.environ,
+    return await enterprise_router_service.select_routes_for_question(
+        question,
+        env=os.environ,
+        model_route_loader=_route_enterprise_agent_question_with_model,
     )
-    if router_env_present:
-        try:
-            model_route = await _route_enterprise_agent_question_with_model(question)
-        except EnterpriseRouterError as exc:
-            return rule_routes, str(exc)
-
-        return (
-            enterprise_router_service.merge_model_route_with_rule_routes(
-                model_route=model_route,
-                rule_routes=rule_routes,
-            ),
-            None,
-        )
-
-    return rule_routes, None
 
 
 app = create_app(

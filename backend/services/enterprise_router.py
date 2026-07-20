@@ -2,7 +2,7 @@
 
 import json
 import re
-from collections.abc import Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from typing import Any
 
 
@@ -478,6 +478,30 @@ class PlatformEnterpriseRouterService:
     ) -> list[dict[str, Any]]:
         model_routes = [model_route] if model_route.get("routed") else []
         return self.dedupe_routes(model_routes + rule_routes)
+
+    async def select_routes_for_question(
+        self,
+        question: str,
+        *,
+        env: Mapping[str, str],
+        model_route_loader: Callable[[str], Awaitable[dict[str, Any]]],
+    ) -> tuple[list[dict[str, Any]], str | None]:
+        rule_routes = self.rule_routes_for_question(question)
+        if not self.model_router_env_present(env):
+            return rule_routes, None
+
+        try:
+            model_route = await model_route_loader(question)
+        except EnterpriseRouterError as exc:
+            return rule_routes, str(exc)
+
+        return (
+            self.merge_model_route_with_rule_routes(
+                model_route=model_route,
+                rule_routes=rule_routes,
+            ),
+            None,
+        )
 
     def fallback_route(self) -> dict[str, Any]:
         return {
