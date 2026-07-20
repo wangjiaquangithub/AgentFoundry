@@ -24,6 +24,7 @@ import { ConfigManagementPanel } from './ConfigManagementPanel';
 import type { RuntimeStatusItem } from './RuntimeStatusPanel';
 import type { EnterprisePlatformConfigExportResponse } from '@/api';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 
@@ -150,126 +151,154 @@ export function SettingsViewPage({
 				))}
 			</section>
 
-			<section className="grid gap-4 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
-				<div className="grid content-start gap-4">
-					<div className="rounded-lg border bg-background p-4 shadow-sm">
-						<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-							<div>
-								<h2 className="text-sm font-semibold">运行连接</h2>
-								<p className="mt-1 text-xs leading-5 text-muted-foreground">
-									用于确认前端连接到哪一个平台服务，以及当前账号是否已经完成基础配置。
-								</p>
-							</div>
-							<StateBadge
-								state={hasErrors ? 'partial' : 'ready'}
-								label={
-									hasErrors
-										? t('platform.connection.partial')
-										: t('platform.connection.connected')
-								}
-							/>
-						</div>
-						<div className="mt-4">
-							<PlatformConnectionCard
-								serverUrl={serverUrl}
-								username={username}
-								hasErrors={hasErrors}
-								labels={{
-									server: t('platform.connection.server'),
-									user: t('platform.connection.user'),
-									health: t('platform.connection.health'),
-									partial: t('platform.status.toConfigure'),
-									connected: t('platform.status.ready'),
-								}}
-							/>
-						</div>
+			<Tabs defaultValue="runtime" className="grid gap-4">
+				<section className="flex flex-col gap-3 rounded-lg border bg-background p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+					<div>
+						<h2 className="text-base font-semibold">设置工作区</h2>
+						<p className="mt-1 text-sm leading-6 text-muted-foreground">
+							运行连接和配置迁移分区处理，平台设置页默认只展示当前需要核对的状态。
+						</p>
 					</div>
+					<TabsList className="w-full sm:w-auto">
+						<TabsTrigger value="runtime" className="flex-1 sm:flex-none">
+							运行状态
+						</TabsTrigger>
+						<TabsTrigger value="config" className="flex-1 sm:flex-none">
+							配置迁移
+						</TabsTrigger>
+					</TabsList>
+				</section>
 
-					<div className="rounded-lg border bg-background p-4 shadow-sm">
-						<div className="mb-3 flex items-start justify-between gap-3">
-							<div>
-								<h2 className="text-sm font-semibold">配置范围</h2>
-								<p className="mt-1 text-xs leading-5 text-muted-foreground">
-									导出的配置覆盖平台治理对象，不包含明文密钥。
-								</p>
-							</div>
-							<FileJson className="size-4 text-muted-foreground" />
-						</div>
-						<div className="grid gap-2 text-sm">
-							<div className="flex items-center justify-between gap-3 rounded-md border bg-muted/10 p-3">
-								<span className="flex min-w-0 items-center gap-2 text-muted-foreground">
-									<Database className="size-4" />
-									数据对象
-								</span>
-								<span className="font-medium tabular-nums">
-									{settingsStats.reduce((sum, item) => sum + Number(item.value), 0)}
-								</span>
-							</div>
-							<div className="flex items-center justify-between gap-3 rounded-md border bg-muted/10 p-3">
-								<span className="flex min-w-0 items-center gap-2 text-muted-foreground">
-									<KeyRound className="size-4" />
-									工具策略
-								</span>
-								<span className="font-medium tabular-nums">{policyCount}</span>
-							</div>
-							<div className="flex items-center justify-between gap-3 rounded-md border bg-muted/10 p-3">
-								<span className="flex min-w-0 items-center gap-2 text-muted-foreground">
-									<Settings2 className="size-4" />
-									Schema
-								</span>
-								<span className="max-w-[12rem] truncate font-mono text-xs">
-									{platformConfigExport?.schema_version ?? '--'}
-								</span>
-							</div>
-						</div>
-					</div>
-
-					<div className="rounded-lg border bg-background p-4 shadow-sm">
-						<div className="mb-3">
-							<h2 className="text-sm font-semibold">运行时状态</h2>
-							<p className="mt-1 text-xs leading-5 text-muted-foreground">
-								快速核对模型、工具、RAG、工作流等依赖是否已经接入。
-							</p>
-						</div>
-						<div className="grid gap-2">
-						{runtimeItems.map((item) => {
-							const Icon = item.icon;
-
-							return (
-								<div
-									key={item.label}
-									className="grid grid-cols-[auto_minmax(6rem,0.35fr)_minmax(0,1fr)] items-center gap-3 rounded-lg border bg-muted/10 p-3 text-sm"
-								>
-									<Icon className="size-4 text-muted-foreground" />
-									<span className="text-xs text-muted-foreground">{item.label}</span>
-									<span className="min-w-0 truncate font-mono text-xs">
-										{item.value}
-									</span>
+				<TabsContent value="runtime" className="mt-0">
+					<section className="grid gap-4 xl:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)]">
+						<div className="grid content-start gap-4">
+							<div className="rounded-lg border bg-background p-4 shadow-sm">
+								<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+									<div>
+										<h2 className="text-sm font-semibold">运行连接</h2>
+										<p className="mt-1 text-xs leading-5 text-muted-foreground">
+											用于确认前端连接到哪一个平台服务，以及当前账号是否已经完成基础配置。
+										</p>
+									</div>
+									<StateBadge
+										state={hasErrors ? 'partial' : 'ready'}
+										label={
+											hasErrors
+												? t('platform.connection.partial')
+												: t('platform.connection.connected')
+										}
+									/>
 								</div>
-							);
-						})}
-						</div>
-					</div>
-				</div>
+								<div className="mt-4">
+									<PlatformConnectionCard
+										serverUrl={serverUrl}
+										username={username}
+										hasErrors={hasErrors}
+										labels={{
+											server: t('platform.connection.server'),
+											user: t('platform.connection.user'),
+											health: t('platform.connection.health'),
+											partial: t('platform.status.toConfigure'),
+											connected: t('platform.status.ready'),
+										}}
+									/>
+								</div>
+							</div>
 
-				<div className="[&>div]:h-full [&>div]:shadow-sm">
-					<ConfigManagementPanel
-						platformConfigExport={platformConfigExport}
-						platformConfigLoading={platformConfigLoading}
-						platformConfigError={platformConfigError}
-						platformConfigImportResult={platformConfigImportResult}
-						platformConfigImportMode={platformConfigImportMode}
-						platformConfigImportText={platformConfigImportText}
-						importingPlatformConfig={importingPlatformConfig}
-						onRefetchPlatformConfigExport={onRefetchPlatformConfigExport}
-						onCopyPlatformConfig={onCopyPlatformConfig}
-						onImportPlatformConfig={onImportPlatformConfig}
-						onPlatformConfigImportModeChange={onPlatformConfigImportModeChange}
-						onPlatformConfigImportTextChange={onPlatformConfigImportTextChange}
-						t={t}
-					/>
-				</div>
-			</section>
+							<div className="rounded-lg border bg-background p-4 shadow-sm">
+								<div className="mb-3 flex items-start justify-between gap-3">
+									<div>
+										<h2 className="text-sm font-semibold">配置范围</h2>
+										<p className="mt-1 text-xs leading-5 text-muted-foreground">
+											导出的配置覆盖平台治理对象，不包含明文密钥。
+										</p>
+									</div>
+									<FileJson className="size-4 text-muted-foreground" />
+								</div>
+								<div className="grid gap-2 text-sm">
+									<div className="flex items-center justify-between gap-3 rounded-md border bg-muted/10 p-3">
+										<span className="flex min-w-0 items-center gap-2 text-muted-foreground">
+											<Database className="size-4" />
+											数据对象
+										</span>
+										<span className="font-medium tabular-nums">
+											{settingsStats.reduce(
+												(sum, item) => sum + Number(item.value),
+												0,
+											)}
+										</span>
+									</div>
+									<div className="flex items-center justify-between gap-3 rounded-md border bg-muted/10 p-3">
+										<span className="flex min-w-0 items-center gap-2 text-muted-foreground">
+											<KeyRound className="size-4" />
+											工具策略
+										</span>
+										<span className="font-medium tabular-nums">{policyCount}</span>
+									</div>
+									<div className="flex items-center justify-between gap-3 rounded-md border bg-muted/10 p-3">
+										<span className="flex min-w-0 items-center gap-2 text-muted-foreground">
+											<Settings2 className="size-4" />
+											Schema
+										</span>
+										<span className="max-w-[12rem] truncate font-mono text-xs">
+											{platformConfigExport?.schema_version ?? '--'}
+										</span>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<div className="rounded-lg border bg-background p-4 shadow-sm">
+							<div className="mb-3">
+								<h2 className="text-sm font-semibold">运行时状态</h2>
+								<p className="mt-1 text-xs leading-5 text-muted-foreground">
+									快速核对模型、工具、RAG、工作流等依赖是否已经接入。
+								</p>
+							</div>
+							<div className="grid gap-2 sm:grid-cols-2">
+								{runtimeItems.map((item) => {
+									const Icon = item.icon;
+
+									return (
+										<div
+											key={item.label}
+											className="grid grid-cols-[auto_minmax(5rem,0.38fr)_minmax(0,1fr)] items-center gap-3 rounded-lg border bg-muted/10 p-3 text-sm"
+										>
+											<Icon className="size-4 text-muted-foreground" />
+											<span className="text-xs text-muted-foreground">
+												{item.label}
+											</span>
+											<span className="min-w-0 truncate font-mono text-xs">
+												{item.value}
+											</span>
+										</div>
+									);
+								})}
+							</div>
+						</div>
+					</section>
+				</TabsContent>
+
+				<TabsContent value="config" className="mt-0">
+					<section className="[&>div]:shadow-sm">
+						<ConfigManagementPanel
+							platformConfigExport={platformConfigExport}
+							platformConfigLoading={platformConfigLoading}
+							platformConfigError={platformConfigError}
+							platformConfigImportResult={platformConfigImportResult}
+							platformConfigImportMode={platformConfigImportMode}
+							platformConfigImportText={platformConfigImportText}
+							importingPlatformConfig={importingPlatformConfig}
+							onRefetchPlatformConfigExport={onRefetchPlatformConfigExport}
+							onCopyPlatformConfig={onCopyPlatformConfig}
+							onImportPlatformConfig={onImportPlatformConfig}
+							onPlatformConfigImportModeChange={onPlatformConfigImportModeChange}
+							onPlatformConfigImportTextChange={onPlatformConfigImportTextChange}
+							t={t}
+						/>
+					</section>
+				</TabsContent>
+			</Tabs>
 		</PlatformPageShell>
 	);
 }

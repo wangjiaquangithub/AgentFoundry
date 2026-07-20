@@ -1,13 +1,6 @@
 import { useEffect } from 'react';
 
-import type {
-	EnterpriseAgentRunResponse,
-	EnterprisePlatformConnectorsResponse,
-	EnterprisePublishedAgent,
-	EnterpriseToolCatalogItem,
-	EnterpriseToolDecision,
-	EnterpriseWorkflowTemplate,
-} from '@/api';
+import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
 import {
 	agentRunResultForSelectedAgent,
 	selectedRunAgentIdForAvailableAgents,
@@ -17,10 +10,31 @@ import {
 import { connectorFormWithPlatformDefaults } from './platform-connector-helpers';
 import type { ConnectorTestFormState } from './platform-defaults';
 import { toolPolicyDraftFromDecisions } from './platform-tool-policy-helpers';
-import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
+import type {
+	EnterpriseAgentRunResponse,
+	EnterprisePlatformConnectorsResponse,
+	EnterprisePublishedAgent,
+	EnterpriseToolCatalogItem,
+	EnterpriseToolDecision,
+	EnterpriseWorkflowTemplate,
+} from '@/api';
 
 type StateSetter<T> = (value: T | ((current: T) => T)) => void;
 type RefreshHandler = () => void | Promise<void>;
+
+function toolPolicyDraftsAreEqual(
+	current: Record<string, ToolPolicyDraftValue>,
+	next: Record<string, ToolPolicyDraftValue>,
+) {
+	const currentKeys = Object.keys(current);
+	const nextKeys = Object.keys(next);
+
+	if (currentKeys.length !== nextKeys.length) {
+		return false;
+	}
+
+	return nextKeys.every((key) => current[key] === next[key]);
+}
 
 export type PlatformSelectionSyncEffectValues = {
 	activePlatformAgents: EnterprisePublishedAgent[];
@@ -56,12 +70,14 @@ export function usePlatformSelectionSyncEffects(
 	handlers: PlatformSelectionSyncEffectHandlers,
 ) {
 	useEffect(() => {
-		handlers.setToolPolicyDraft(
-			toolPolicyDraftFromDecisions({
-				tools: values.availableToolItems,
-				allowedTools: values.selectedIdentityAllowedTools,
-				deniedTools: values.selectedIdentityDeniedTools,
-			}),
+		const nextDraft = toolPolicyDraftFromDecisions({
+			tools: values.availableToolItems,
+			allowedTools: values.selectedIdentityAllowedTools,
+			deniedTools: values.selectedIdentityDeniedTools,
+		});
+
+		handlers.setToolPolicyDraft((current) =>
+			toolPolicyDraftsAreEqual(current, nextDraft) ? current : nextDraft,
 		);
 		handlers.setToolPolicySaveError(null);
 		handlers.setToolPolicySaveSuccess(null);
@@ -81,12 +97,13 @@ export function usePlatformSelectionSyncEffects(
 
 	useEffect(() => {
 		const connectors = values.connectors;
+		const connectorDefaultsAppliedRef = values.connectorDefaultsAppliedRef;
 
-		if (!connectors || values.connectorDefaultsAppliedRef.current) {
+		if (!connectors || connectorDefaultsAppliedRef.current) {
 			return;
 		}
 
-		values.connectorDefaultsAppliedRef.current = true;
+		connectorDefaultsAppliedRef.current = true;
 		handlers.setConnectorTestForm((previous) =>
 			connectorFormWithPlatformDefaults({
 				current: previous,
