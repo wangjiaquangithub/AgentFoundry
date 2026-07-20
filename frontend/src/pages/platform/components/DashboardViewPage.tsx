@@ -7,7 +7,9 @@ import {
 	KeyRound,
 	ListChecks,
 	Play,
+	PlugZap,
 	ShieldCheck,
+	SlidersHorizontal,
 	Users,
 	Wrench,
 } from 'lucide-react';
@@ -26,6 +28,7 @@ import type {
 	EnterpriseApprovalRequestItem,
 	EnterpriseAuditEvent,
 	EnterprisePlatformOpsTask,
+	EnterprisePlatformConnectorsResponse,
 	EnterprisePublishedAgent,
 	EnterpriseWorkflowRunHistoryItem,
 } from '@/api/types';
@@ -40,6 +43,8 @@ interface DashboardViewPageProps {
 	activePlatformAgents: EnterprisePublishedAgent[];
 	approvedApprovalCount: number;
 	completedWorkflowRunCount: number;
+	connectors: EnterprisePlatformConnectorsResponse | null;
+	connectorsLoading: boolean;
 	credentials: CredentialView[];
 	failedWorkflowRunCount: number;
 	governanceError: string | null;
@@ -100,7 +105,9 @@ function DashboardModuleCard({
 					</div>
 					<CardTitle className="text-base">{title}</CardTitle>
 				</div>
-				<div className="text-right text-2xl font-semibold tabular-nums">{metric}</div>
+				<div className="text-right text-2xl font-semibold tabular-nums">
+					{metric}
+				</div>
 			</CardHeader>
 			<CardContent className="space-y-4">
 				<p className="min-h-10 text-sm leading-5 text-muted-foreground">
@@ -166,13 +173,14 @@ export function DashboardViewPage({
 	activePlatformAgents,
 	approvedApprovalCount,
 	completedWorkflowRunCount,
+	connectors,
+	connectorsLoading,
 	credentials,
 	failedWorkflowRunCount,
 	governanceError,
 	hasErrors,
 	handleNextStepPrimaryAction,
 	handleStartPublishing,
-	monitoringHealthState,
 	nextStepMode,
 	nextStepPrimaryDisabled,
 	opsTasks,
@@ -203,10 +211,19 @@ export function DashboardViewPage({
 	const workflowIssueCount = failedWorkflowRunCount + pendingApprovals.length;
 	const platformReady = !hasErrors && !governanceError;
 	const topOpsTasks = Array.isArray(opsTasks) ? opsTasks.slice(0, 4) : [];
+	const connectorConfigCount = connectors?.saved_configs.length ?? 0;
+	const connectorState = connectorsLoading
+		? 'todo'
+		: connectors?.runtime.saved_config_enabled
+			? 'ready'
+			: connectors
+				? 'partial'
+				: 'todo';
 	const moduleShortcuts: ModuleShortcut[] = [
 		{
 			title: 'Agent 管理',
-			description: '发布、配置和运行企业助手，查看模型、知识库、工具和准入状态。',
+			description:
+				'发布、配置和运行企业助手，查看模型、知识库、工具和准入状态。',
 			href: '/platform/agents',
 			icon: BotMessageSquare,
 			state: readyPlatformAgents.length > 0 ? 'ready' : 'todo',
@@ -221,6 +238,21 @@ export function DashboardViewPage({
 			state: platformReady ? 'ready' : 'partial',
 			stateLabel: platformReady ? '策略正常' : '需检查',
 			metric: pendingApprovals.length,
+		},
+		{
+			title: '连接器',
+			description: '配置企业系统连接、租户映射、运行时来源和连接测试。',
+			href: '/platform/connectors',
+			icon: PlugZap,
+			state: connectorState,
+			stateLabel: connectorsLoading
+				? '加载中'
+				: connectors?.runtime.saved_config_enabled
+					? '已启用'
+					: connectors
+						? '待配置'
+						: '未加载',
+			metric: connectorConfigCount,
 		},
 		{
 			title: '工作流编排',
@@ -258,6 +290,15 @@ export function DashboardViewPage({
 			stateLabel: credentials.length > 0 ? '可用' : '需模型',
 			metric: credentials.length,
 		},
+		{
+			title: '系统设置',
+			description: '维护模型、运行时、导入导出、环境变量和平台级配置。',
+			href: '/platform/settings',
+			icon: SlidersHorizontal,
+			state: platformReady ? 'ready' : 'partial',
+			stateLabel: platformReady ? '已连接' : '需检查',
+			metric: credentials.length,
+		},
 	];
 
 	return (
@@ -283,7 +324,9 @@ export function DashboardViewPage({
 						: t('platform.connection.connected'),
 					nextStepEyebrow: t('platform.nextStep.eyebrow'),
 					nextStepTitle: t(`platform.nextStep.${nextStepMode}.title`),
-					nextStepDescription: t(`platform.nextStep.${nextStepMode}.description`),
+					nextStepDescription: t(
+						`platform.nextStep.${nextStepMode}.description`,
+					),
 					nextStepManual: t('platform.nextStep.publish.manual'),
 					nextStepAction: t(`platform.nextStep.${nextStepMode}.action`),
 					publishing: t('platform.agentManagement.publishing'),
@@ -292,10 +335,12 @@ export function DashboardViewPage({
 				onPrimaryAction={handleNextStepPrimaryAction}
 			/>
 
-			<section className="grid gap-3 md:grid-cols-3">
+			<section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 				<Card size="sm" className="rounded-lg shadow-none">
 					<CardHeader className="grid-cols-[1fr_auto] items-center gap-3">
-						<CardTitle className="text-sm text-muted-foreground">平台状态</CardTitle>
+						<CardTitle className="text-sm text-muted-foreground">
+							平台状态
+						</CardTitle>
 						<CheckCircle2
 							className={cn(
 								'size-4',
@@ -309,12 +354,16 @@ export function DashboardViewPage({
 						</div>
 						<div className="flex flex-wrap gap-2">
 							<StateBadge
-								state={platformLoading ? 'todo' : platformReady ? 'ready' : 'partial'}
-								label={platformLoading ? '加载中' : platformReady ? '已连接' : '部分可用'}
-							/>
-							<StateBadge
-								state={monitoringHealthState === 'ready' ? 'ready' : 'partial'}
-								label={monitoringHealthState === 'ready' ? '监控正常' : '监控需检查'}
+								state={
+									platformLoading ? 'todo' : platformReady ? 'ready' : 'partial'
+								}
+								label={
+									platformLoading
+										? '加载中'
+										: platformReady
+											? '已连接'
+											: '部分可用'
+								}
 							/>
 						</div>
 					</CardContent>
@@ -322,7 +371,9 @@ export function DashboardViewPage({
 
 				<Card size="sm" className="rounded-lg shadow-none">
 					<CardHeader className="grid-cols-[1fr_auto] items-center gap-3">
-						<CardTitle className="text-sm text-muted-foreground">运行概览</CardTitle>
+						<CardTitle className="text-sm text-muted-foreground">
+							运行概览
+						</CardTitle>
 						<Clock3 className="size-4 text-muted-foreground" />
 					</CardHeader>
 					<CardContent className="grid grid-cols-3 gap-3 text-center">
@@ -349,7 +400,36 @@ export function DashboardViewPage({
 
 				<Card size="sm" className="rounded-lg shadow-none">
 					<CardHeader className="grid-cols-[1fr_auto] items-center gap-3">
-						<CardTitle className="text-sm text-muted-foreground">待办</CardTitle>
+						<CardTitle className="text-sm text-muted-foreground">
+							连接器
+						</CardTitle>
+						<PlugZap className="size-4 text-muted-foreground" />
+					</CardHeader>
+					<CardContent className="space-y-3">
+						<div className="flex items-baseline gap-2">
+							<span className="text-2xl font-semibold tabular-nums">
+								{connectorConfigCount}
+							</span>
+							<span className="text-sm text-muted-foreground">个配置</span>
+						</div>
+						<StateBadge
+							state={connectorState}
+							label={
+								connectorsLoading
+									? '加载中'
+									: connectors?.runtime.saved_config_enabled
+										? '运行时已启用'
+										: '待启用配置'
+							}
+						/>
+					</CardContent>
+				</Card>
+
+				<Card size="sm" className="rounded-lg shadow-none">
+					<CardHeader className="grid-cols-[1fr_auto] items-center gap-3">
+						<CardTitle className="text-sm text-muted-foreground">
+							待办
+						</CardTitle>
 						<ListChecks className="size-4 text-muted-foreground" />
 					</CardHeader>
 					<CardContent className="space-y-3">
@@ -435,7 +515,9 @@ export function DashboardViewPage({
 
 							<ActivityList
 								title="最近工作流"
-								items={Array.isArray(recentWorkflowRuns) ? recentWorkflowRuns : []}
+								items={
+									Array.isArray(recentWorkflowRuns) ? recentWorkflowRuns : []
+								}
 								emptyText="暂无工作流运行记录。"
 								getKey={(item, index) =>
 									(item as EnterpriseWorkflowRunHistoryItem).run_id ?? index
@@ -454,8 +536,10 @@ export function DashboardViewPage({
 									<div className="space-y-1">
 										<div className="flex items-center justify-between gap-3">
 											<div className="truncate text-sm font-medium">
-												{(item as EnterpriseWorkflowRunHistoryItem).workflow_name ??
-													(item as EnterpriseWorkflowRunHistoryItem).workflow_type ??
+												{(item as EnterpriseWorkflowRunHistoryItem)
+													.workflow_name ??
+													(item as EnterpriseWorkflowRunHistoryItem)
+														.workflow_type ??
 													'工作流运行'}
 											</div>
 											<Badge variant="outline">
@@ -473,7 +557,9 @@ export function DashboardViewPage({
 
 							<ActivityList
 								title="最近审计"
-								items={Array.isArray(recentAuditEvents) ? recentAuditEvents : []}
+								items={
+									Array.isArray(recentAuditEvents) ? recentAuditEvents : []
+								}
 								emptyText="暂无审计事件。"
 								getKey={(item, index) =>
 									(item as EnterpriseAuditEvent).event_id ?? index
@@ -493,11 +579,14 @@ export function DashboardViewPage({
 										<div className="flex items-center justify-between gap-3">
 											<div className="truncate text-sm font-medium">
 												{String(
-													(item as EnterpriseAuditEvent).event_type ?? '审计事件',
+													(item as EnterpriseAuditEvent).event_type ??
+														'审计事件',
 												)}
 											</div>
 											<Badge variant="outline">
-												{String((item as EnterpriseAuditEvent).tenant ?? 'tenant')}
+												{String(
+													(item as EnterpriseAuditEvent).tenant ?? 'tenant',
+												)}
 											</Badge>
 										</div>
 										<p className="truncate text-xs text-muted-foreground">

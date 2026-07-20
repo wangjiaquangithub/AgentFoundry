@@ -77,53 +77,55 @@ export function PlatformDashboardOverview({
 				}
 			/>
 
-			<section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-				{stats.map((stat) => (
-					<StatCard key={stat.label} {...stat} />
-				))}
-			</section>
-
-			<section className="grid gap-4 rounded-lg border bg-muted/10 p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-				<div className="min-w-0">
-					<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-						<ListChecks className="size-4" />
-						<span>{labels.nextStepEyebrow}</span>
-					</div>
-					<h2 className="text-base font-semibold">{labels.nextStepTitle}</h2>
-					<p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-						{labels.nextStepDescription}
-					</p>
+			<section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+				<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+					{stats.map((stat) => (
+						<StatCard key={stat.label} {...stat} />
+					))}
 				</div>
-				<div className="flex flex-wrap gap-2 lg:justify-end">
-					{nextStepMode === 'publish' ? (
+
+				<div className="grid gap-4 rounded-lg border bg-background p-4 shadow-sm">
+					<div className="min-w-0">
+						<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+							<ListChecks className="size-4" />
+							<span>{labels.nextStepEyebrow}</span>
+						</div>
+						<h2 className="text-base font-semibold">{labels.nextStepTitle}</h2>
+						<p className="mt-1 text-sm leading-6 text-muted-foreground">
+							{labels.nextStepDescription}
+						</p>
+					</div>
+					<div className="flex flex-wrap gap-2">
+						{nextStepMode === 'publish' ? (
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={onStartPublishing}
+							>
+								<ListChecks className="size-4" />
+								{labels.nextStepManual}
+							</Button>
+						) : null}
 						<Button
 							type="button"
 							size="sm"
-							variant="outline"
-							onClick={onStartPublishing}
+							onClick={onPrimaryAction}
+							disabled={nextStepPrimaryDisabled}
 						>
-							<ListChecks className="size-4" />
-							{labels.nextStepManual}
+							<NextStepIcon
+								className={cn(
+									'size-4',
+									nextStepMode === 'publish' &&
+										publishingTemplateId &&
+										'animate-pulse',
+								)}
+							/>
+							{nextStepMode === 'publish' && publishingTemplateId
+								? labels.publishing
+								: labels.nextStepAction}
 						</Button>
-					) : null}
-					<Button
-						type="button"
-						size="sm"
-						onClick={onPrimaryAction}
-						disabled={nextStepPrimaryDisabled}
-					>
-						<NextStepIcon
-							className={cn(
-								'size-4',
-								nextStepMode === 'publish' &&
-									publishingTemplateId &&
-									'animate-pulse',
-							)}
-						/>
-						{nextStepMode === 'publish' && publishingTemplateId
-							? labels.publishing
-							: labels.nextStepAction}
-					</Button>
+					</div>
 				</div>
 			</section>
 		</>
