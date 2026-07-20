@@ -1697,12 +1697,11 @@ async def run_enterprise_agent(
             max_records=PLATFORM_MEMORY_MAX_RECORDS,
         )
 
-        response_trace = agent_run_service.build_response_trace(
+        response_trace = agent_run_service.build_unrouted_response_trace(
             tenant=tenant,
             user_id=user_id,
             agent_id=runner_agent_id,
             session_id=runner_session_id,
-            tool_calls=[],
             knowledge_hits=knowledge_hits,
             memory_hits=memory_hits,
             memory_saved=memory_saved,

@@ -120,6 +120,28 @@ class PlatformAgentRunService:
             memory_saved=memory_saved,
         )
 
+    def build_unrouted_response_trace(
+        self,
+        *,
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        session_id: str,
+        knowledge_hits: list[dict[str, Any]],
+        memory_hits: list[dict[str, Any]],
+        memory_saved: bool,
+    ) -> dict[str, Any]:
+        return self.build_response_trace(
+            tenant=tenant,
+            user_id=user_id,
+            agent_id=agent_id,
+            session_id=session_id,
+            tool_calls=[],
+            knowledge_hits=knowledge_hits,
+            memory_hits=memory_hits,
+            memory_saved=memory_saved,
+        )
+
     def build_response_record_context(
         self,
         *,
