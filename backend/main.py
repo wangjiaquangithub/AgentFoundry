@@ -83,6 +83,7 @@ from services.connectors import (
     PlatformConnectorConfigServiceError,
 )
 from services.dev_knowledge import PlatformDevKnowledgeService
+from services.enterprise_router import PlatformEnterpriseRouterService
 from services.knowledge import PlatformKnowledgeResponseService
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
@@ -161,6 +162,11 @@ dev_knowledge_service = PlatformDevKnowledgeService(
     repository=dev_knowledge_repository,
 )
 knowledge_response_service = PlatformKnowledgeResponseService()
+enterprise_router_service = PlatformEnterpriseRouterService(
+    tool_names=ENTERPRISE_TOOL_NAMES,
+    tool_input_fields=ENTERPRISE_TOOL_INPUT_FIELDS,
+    default_source=ROUTING_SOURCE_RULES,
+)
 platform_memory_repository = PlatformMemoryRepository(PLATFORM_MEMORY_DIR)
 platform_memory_service = PlatformMemoryService(repository=platform_memory_repository)
 
@@ -1189,49 +1195,6 @@ async def _route_enterprise_agent_question_with_model(
     return _normalize_model_route(_parse_router_json(content))
 
 
-def _dedupe_enterprise_agent_routes(
-    routes: list[dict[str, Any]],
-) -> list[dict[str, Any]]:
-    deduped: list[dict[str, Any]] = []
-    seen: set[tuple[str, str]] = set()
-
-    for route in routes:
-        if not route.get("routed"):
-            continue
-
-        tool_name = str(route.get("tool_name", "")).strip()
-        if tool_name not in ENTERPRISE_TOOL_NAMES:
-            continue
-
-        raw_inputs = route.get("inputs")
-        if not isinstance(raw_inputs, dict):
-            continue
-
-        input_field = ENTERPRISE_TOOL_INPUT_FIELDS[tool_name]
-        input_value = str(raw_inputs.get(input_field, "")).strip()
-        if not input_value:
-            continue
-
-        dedupe_key = (tool_name, input_value.lower())
-        if dedupe_key in seen:
-            continue
-
-        seen.add(dedupe_key)
-        deduped.append(
-            {
-                "routed": True,
-                "tool_name": tool_name,
-                "inputs": {input_field: input_value},
-                "reason": str(
-                    route.get("reason") or "Matched enterprise tool route.",
-                ),
-                "source": str(route.get("source", ROUTING_SOURCE_RULES)),
-            },
-        )
-
-    return deduped
-
-
 def _route_enterprise_agent_question_with_rules(
     question: str,
 ) -> list[dict[str, Any]]:
@@ -1313,7 +1276,7 @@ def _route_enterprise_agent_question_with_rules(
             },
         )
 
-    return _dedupe_enterprise_agent_routes(routes)
+    return enterprise_router_service.dedupe_routes(routes)
 
 
 def _route_enterprise_agent_question(question: str) -> dict[str, Any]:
@@ -1350,7 +1313,7 @@ async def _select_enterprise_agent_routes(
             return rule_routes, str(exc)
 
         model_routes = [model_route] if model_route.get("routed") else []
-        return _dedupe_enterprise_agent_routes(model_routes + rule_routes), None
+        return enterprise_router_service.dedupe_routes(model_routes + rule_routes), None
 
     return rule_routes, None
 
