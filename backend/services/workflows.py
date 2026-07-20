@@ -285,6 +285,12 @@ class PlatformWorkflowRunService:
         normalized = str(value).strip()
         return normalized or fallback
 
+    def default_inputs(self, template: dict[str, Any]) -> dict[str, Any]:
+        default_inputs = template.get("default_inputs")
+        if isinstance(default_inputs, dict):
+            return default_inputs
+        return {}
+
     def normalize_inputs(
         self,
         inputs: dict[str, Any],

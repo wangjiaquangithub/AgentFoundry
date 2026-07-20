@@ -3894,10 +3894,8 @@ async def run_enterprise_workflow(
     session_id = f"platform-workflow:{workflow_type}:{run_id[:8]}"
     started_at = _now_iso()
     workflow_name = str(workflow_template.get("name") or workflow_type)
-    default_inputs = workflow_template.get("default_inputs")
-    if not isinstance(default_inputs, dict):
-        default_inputs = {}
     workflow_run_service = _platform_workflow_run_service()
+    default_inputs = workflow_run_service.default_inputs(workflow_template)
     normalized_inputs = workflow_run_service.normalize_inputs(
         payload.inputs,
         default_inputs,
