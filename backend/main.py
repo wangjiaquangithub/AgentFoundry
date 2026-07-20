@@ -2818,15 +2818,12 @@ async def run_enterprise_tool(
     runner_agent_id = "platform-console"
     configured_agent_id = (payload.agent_id or "").strip()
     if configured_agent_id:
-        agent = _get_platform_agent(configured_agent_id)
-        if agent.get("status") != "published":
-            raise HTTPException(
-                status_code=409,
-                detail="该 Agent 实例已停用，不能运行。",
-            )
+        agent, configured_tools = _published_platform_agent_tool_scope(
+            configured_agent_id,
+        )
         _assert_platform_agent_access(agent, user_id)
         runner_agent_id = configured_agent_id
-        if payload.tool_name not in set(agent.get("tools") or []):
+        if payload.tool_name not in configured_tools:
             runtime = _enterprise_runtime_context(user_id)
             decision = _agent_tool_denial(payload.tool_name)
             return {
