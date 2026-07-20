@@ -738,13 +738,6 @@ def _platform_member_by_user(
         _raise_platform_member_service_error(exc)
 
 
-def _normalize_platform_agent_tenant(value: Any, user_id: str) -> str:
-    try:
-        return _platform_agent_service().normalize_tenant(value, user_id)
-    except PlatformAgentServiceError as exc:
-        _raise_platform_agent_service_error(exc)
-
-
 def _platform_identities_for_tenant(tenant: str) -> list[dict[str, Any]]:
     return [
         identity
