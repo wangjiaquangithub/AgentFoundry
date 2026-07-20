@@ -408,6 +408,26 @@ class PlatformAgentRunService:
             max_records=max_records,
         )
 
+    def append_unrouted_memory_from_context(
+        self,
+        *,
+        append_agent_turn_if_enabled: Callable[..., bool],
+        execution_context: dict[str, Any],
+        memory_context: dict[str, Any],
+        user_id: str,
+        answer: str,
+        max_records: int,
+    ) -> bool:
+        return append_agent_turn_if_enabled(
+            **self.build_unrouted_memory_append_context(
+                execution_context=execution_context,
+                memory_context=memory_context,
+                user_id=user_id,
+                answer=answer,
+                max_records=max_records,
+            ),
+        )
+
     def build_knowledge_context(
         self,
         *,
