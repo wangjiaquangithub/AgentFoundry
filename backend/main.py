@@ -1599,14 +1599,9 @@ def _update_platform_agent(
 
 def _archive_platform_agent(
     agent_id: str,
-    user_id: str,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     try:
-        return _platform_agent_service().archive_agent(
-            agent_id,
-            EnterpriseAgentUpdateRequest(status="archived"),
-            user_id,
-        )
+        return _platform_agent_service().archive_agent(agent_id)
     except PlatformAgentServiceError as exc:
         _raise_platform_agent_service_error(exc)
 
@@ -2599,11 +2594,9 @@ async def update_enterprise_platform_agent(
 @app.delete("/enterprise/platform/agents/{agent_id}")
 async def archive_enterprise_platform_agent(
     agent_id: str,
-    request: Request,
 ) -> dict[str, Any]:
     """Archive a platform agent while keeping its registry record."""
-    user_id = request.headers.get("X-User-ID") or "acme:alice"
-    agent, agents = _archive_platform_agent(agent_id, user_id)
+    agent, agents = _archive_platform_agent(agent_id)
     return _platform_agent_service().mutation_response(agent, agents)
 
 

@@ -469,10 +469,35 @@ class PlatformAgentService:
     def archive_agent(
         self,
         agent_id: str,
-        payload: Any,
-        user_id: str,
     ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-        return self.update_agent(agent_id, payload, user_id)
+        agents = self.list_agents()
+        agent_index = next(
+            (
+                index
+                for index, item in enumerate(agents)
+                if str(item.get("id", "")) == agent_id
+            ),
+            None,
+        )
+        if agent_index is None:
+            raise PlatformAgentServiceError(
+                404,
+                f"Unknown platform agent: {agent_id}",
+            )
+
+        agent = dict(agents[agent_index])
+        template = self.get_template(str(agent.get("template_id", "")))
+        self.validate_access_scope(
+            tenant=str(agent.get("tenant") or "").strip(),
+            allowed_user_ids=self.normalize_access_values(agent.get("allowed_user_ids")),
+            allowed_roles=self.normalize_access_values(agent.get("allowed_roles")),
+        )
+        agent["status"] = "archived"
+        agent["capabilities"] = list(template["capabilities"])
+        agent["updated_at"] = datetime.now(timezone.utc).isoformat()
+        agents[agent_index] = agent
+        self.save_agents(agents)
+        return agent, agents
 
     def get_template(self, template_id: str) -> dict[str, Any]:
         template = next(
