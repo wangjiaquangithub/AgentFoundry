@@ -1809,8 +1809,8 @@ async def run_enterprise_agent(
             ),
         )
         decision = enterprise_router_service.decision_with_routing_context(
-            agent_run_service.executed_tool_decision_payload(tool_response),
-            **agent_run_service.build_routed_decision_context(
+            **agent_run_service.build_executed_tool_route_decision_context(
+                tool_response=tool_response,
                 routing_reason=route_reason,
                 routing_source=route_source,
                 routing_mode=routing_mode,
