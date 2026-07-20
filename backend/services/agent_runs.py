@@ -1283,6 +1283,10 @@ class PlatformAgentRunService:
     def resolve_requested_by(self, *, headers: Any, user_id: str) -> str:
         return str(headers.get("X-User-ID") or user_id)
 
+    @staticmethod
+    def approval_exception_detail(exc: Any) -> dict[str, Any]:
+        return exc.detail if isinstance(exc.detail, dict) else {}
+
     def is_approval_required_exception(
         self,
         *,
