@@ -819,13 +819,6 @@ def _agent_tool_denial(tool_name: str) -> dict[str, Any]:
     }
 
 
-def _truncate_text(value: str, limit: int = 300) -> str:
-    text = re.sub(r"\s+", " ", value).strip()
-    if len(text) <= limit:
-        return text
-    return f"{text[: limit - 3]}..."
-
-
 def _question_is_memory_lookup(question: str) -> bool:
     normalized = question.lower()
     english_markers = (
@@ -847,187 +840,6 @@ def _question_is_memory_lookup(question: str) -> bool:
     return any(marker in normalized for marker in english_markers) or any(
         marker in question for marker in chinese_markers
     )
-
-
-def _dedupe_strings(values: list[str]) -> list[str]:
-    deduped: list[str] = []
-    seen: set[str] = set()
-    for value in values:
-        normalized = value.strip()
-        if not normalized or normalized in seen:
-            continue
-        seen.add(normalized)
-        deduped.append(normalized)
-    return deduped
-
-
-def _extract_tool_memory_facts(
-    tool_calls: list[dict[str, Any]],
-) -> list[str]:
-    facts: list[str] = []
-    for call in tool_calls:
-        tool_name = str(call.get("tool_name", "")).strip()
-        result = call.get("result")
-        if not tool_name or not isinstance(result, dict):
-            continue
-
-        if tool_name == "enterprise_lookup_policy":
-            matches = result.get("matches")
-            if isinstance(matches, dict):
-                for keyword, policy_text in matches.items():
-                    facts.append(
-                        "工具结果：制度 "
-                        f"{keyword} = {_truncate_text(str(policy_text), 160)}",
-                    )
-            continue
-
-        if tool_name == "enterprise_get_ticket_status":
-            ticket_id = str(result.get("ticket_id", "")).strip()
-            ticket = result.get("ticket")
-            if isinstance(ticket, dict):
-                status = str(ticket.get("status", "")).strip()
-                owner = str(ticket.get("owner", "")).strip()
-                summary = _truncate_text(str(ticket.get("summary", "")), 120)
-                facts.append(
-                    "工具结果：工单 "
-                    f"{ticket_id} status={status} owner={owner} summary={summary}",
-                )
-            elif ticket_id:
-                facts.append(f"工具结果：工单 {ticket_id} 未找到")
-            continue
-
-        if tool_name == "enterprise_summarize_department_metrics":
-            department = str(result.get("department", "")).strip()
-            metrics = result.get("metrics")
-            if isinstance(metrics, dict):
-                active_projects = metrics.get("active_projects")
-                open_incidents = metrics.get("open_incidents")
-                sla = metrics.get("sla")
-                facts.append(
-                    "工具结果：部门指标 "
-                    f"{department} active_projects={active_projects} "
-                    f"open_incidents={open_incidents} sla={sla}",
-                )
-
-    return facts
-
-
-def _extract_platform_memory_facts(
-    *,
-    question: str,
-    tool_calls: list[dict[str, Any]],
-    knowledge_base_ids: list[str],
-) -> list[str]:
-    facts: list[str] = []
-    normalized = question.lower()
-
-    name_match = re.search(r"(?:我叫|我是)\s*([^，。,.！!\s]{1,32})", question)
-    if name_match:
-        facts.append(f"用户自称：{name_match.group(1).strip()}")
-
-    for ticket_id in re.findall(r"\b[A-Z]{2,5}-\d+\b", question.upper()):
-        facts.append(f"用户关注工单：{ticket_id}")
-
-    department_markers = {
-        "engineering": ("engineering", "engineering"),
-        "工程": ("engineering", "工程"),
-        "研发": ("engineering", "研发"),
-        "support": ("support", "support"),
-        "客服": ("support", "客服"),
-        "支持": ("support", "支持"),
-        "sales": ("sales", "sales"),
-        "销售": ("sales", "销售"),
-    }
-    for marker, (department, label) in department_markers.items():
-        if marker in normalized or marker in question:
-            facts.append(f"用户关注部门：{department} ({label})")
-
-    policy_markers = {
-        "remote": ("remote", "remote"),
-        "远程": ("remote", "远程"),
-        "expense": ("expense", "expense"),
-        "报销": ("expense", "报销"),
-        "security": ("security", "security"),
-        "安全": ("security", "安全"),
-    }
-    for marker, (policy, label) in policy_markers.items():
-        if marker in normalized or marker in question:
-            facts.append(f"用户关注制度关键词：{policy} ({label})")
-
-    if (
-        "关注" in question
-        or "记住" in question
-        or "remember" in normalized
-    ):
-        facts.append(f"用户明确要求记住：{_truncate_text(question, 160)}")
-
-    tool_names = _dedupe_strings(
-        [
-            str(call.get("tool_name", "")).strip()
-            for call in tool_calls
-            if call.get("tool_name")
-        ],
-    )
-    if tool_names:
-        facts.append(f"本轮使用工具：{', '.join(tool_names)}")
-        facts.extend(_extract_tool_memory_facts(tool_calls))
-
-    if knowledge_base_ids:
-        facts.append(f"本轮使用知识库：{', '.join(knowledge_base_ids)}")
-
-    if not facts:
-        facts.append(f"用户问过：{_truncate_text(question, 160)}")
-
-    return _dedupe_strings(facts)
-
-
-def _append_platform_memory(
-    *,
-    tenant: str,
-    user_id: str,
-    agent_id: str,
-    session_id: str,
-    question: str,
-    answer: str,
-    tool_calls: list[dict[str, Any]],
-    knowledge_base_ids: list[str],
-) -> dict[str, Any]:
-    facts = _extract_platform_memory_facts(
-        question=question,
-        tool_calls=tool_calls,
-        knowledge_base_ids=knowledge_base_ids,
-    )
-    tool_names = _dedupe_strings(
-        [
-            str(call.get("tool_name", "")).strip()
-            for call in tool_calls
-            if call.get("tool_name")
-        ],
-    )
-    keyword_text = " ".join(
-        [question, " ".join(facts), " ".join(tool_names)],
-    )
-    record = {
-        "id": str(uuid4()),
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "tenant": tenant,
-        "user_id": user_id,
-        "agent_id": agent_id,
-        "session_id": session_id,
-        "question": _truncate_text(question, 1000),
-        "facts": facts,
-        "tool_names": tool_names,
-        "knowledge_base_ids": list(knowledge_base_ids),
-        "keywords": platform_memory_service.extract_keywords(keyword_text),
-    }
-    platform_memory_service.append_capped(
-        tenant=tenant,
-        user_id=user_id,
-        agent_id=agent_id,
-        record=record,
-        max_records=PLATFORM_MEMORY_MAX_RECORDS,
-    )
-    return record
 
 
 async def _search_agent_knowledge_bases(
@@ -2503,7 +2315,7 @@ async def run_enterprise_agent(
         )
         memory_saved = False
         if memory_enabled and not _question_is_memory_lookup(question):
-            _append_platform_memory(
+            platform_memory_service.append_agent_turn_memory(
                 tenant=tenant,
                 user_id=user_id,
                 agent_id=runner_agent_id,
@@ -2514,6 +2326,7 @@ async def run_enterprise_agent(
                 knowledge_base_ids=list(
                     agent_metadata.get("knowledge_base_ids") or [],
                 ),
+                max_records=PLATFORM_MEMORY_MAX_RECORDS,
             )
             memory_saved = True
 
@@ -2746,7 +2559,7 @@ async def run_enterprise_agent(
     answer = "\n\n".join(answer_parts)
     memory_saved = False
     if memory_enabled and not _question_is_memory_lookup(question):
-        _append_platform_memory(
+        platform_memory_service.append_agent_turn_memory(
             tenant=tenant,
             user_id=user_id,
             agent_id=runner_agent_id,
@@ -2755,6 +2568,7 @@ async def run_enterprise_agent(
             answer=answer,
             tool_calls=tool_calls,
             knowledge_base_ids=list(agent_metadata.get("knowledge_base_ids") or []),
+            max_records=PLATFORM_MEMORY_MAX_RECORDS,
         )
         memory_saved = True
 
