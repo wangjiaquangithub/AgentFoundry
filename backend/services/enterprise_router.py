@@ -368,6 +368,24 @@ class PlatformEnterpriseRouterService:
 
         return payload
 
+    def unrouted_decision_for_question(
+        self,
+        question: str,
+        *,
+        routing_source: str,
+        routing_mode: str,
+        routing_error: str | None = None,
+    ) -> dict[str, Any]:
+        route = self.primary_rule_route_for_question(question)
+        reason = str(route["reason"])
+        return self.decision_with_routing_context(
+            {"reason": reason},
+            routing_reason=reason,
+            routing_source=routing_source,
+            routing_mode=routing_mode,
+            routing_error=routing_error,
+        )
+
     def ticket_routes_for_question(self, question: str) -> list[dict[str, Any]]:
         return [
             {
