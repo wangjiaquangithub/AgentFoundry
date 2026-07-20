@@ -1456,10 +1456,6 @@ def _deep_merge_dict(base: dict[str, Any], incoming: dict[str, Any]) -> dict[str
     return merged
 
 
-def _normalize_policy_tools(value: list[str] | None) -> list[str]:
-    return _platform_tool_policy_service().normalize_policy_tools(value)
-
-
 def _platform_agent_template_metadata() -> list[dict[str, Any]]:
     return _platform_agent_service().template_metadata()
 
