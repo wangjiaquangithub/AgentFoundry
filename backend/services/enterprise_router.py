@@ -2,6 +2,7 @@
 
 import json
 import re
+from collections.abc import Mapping
 from typing import Any
 
 
@@ -55,7 +56,7 @@ class PlatformEnterpriseRouterService:
         user_prompt = f"Business question:\n{question}\n\nReturn JSON only."
         return system_prompt, user_prompt
 
-    def model_router_env_present(self, env: dict[str, str]) -> bool:
+    def model_router_env_present(self, env: Mapping[str, str]) -> bool:
         return any(
             env.get(name, "").strip()
             for name in (
@@ -90,6 +91,39 @@ class PlatformEnterpriseRouterService:
             return max(1.0, float(timeout_value))
         except ValueError:
             return 8.0
+
+    def build_model_router_config(
+        self,
+        env: Mapping[str, str],
+    ) -> dict[str, Any] | None:
+        base_url = env.get("ENTERPRISE_AGENT_ROUTER_BASE_URL", "").strip()
+        api_key = env.get("ENTERPRISE_AGENT_ROUTER_API_KEY", "").strip()
+        model = env.get("ENTERPRISE_AGENT_ROUTER_MODEL", "").strip()
+
+        if not base_url and not api_key and not model:
+            return None
+
+        missing = self.missing_model_router_config_names(
+            base_url=base_url,
+            api_key=api_key,
+            model=model,
+        )
+        if missing:
+            raise EnterpriseRouterError(
+                "Router env is incomplete: missing " + ", ".join(missing),
+            )
+
+        return {
+            "base_url": base_url,
+            "api_key": api_key,
+            "model": model,
+            "provider": self.normalize_model_provider(
+                env.get("ENTERPRISE_AGENT_ROUTER_PROVIDER", "openai"),
+            ),
+            "timeout_seconds": self.normalize_model_timeout_seconds(
+                env.get("ENTERPRISE_AGENT_ROUTER_TIMEOUT_SECONDS", "8"),
+            ),
+        }
 
     def build_model_endpoint(self, base_url: str, provider: str) -> str:
         normalized = base_url.rstrip("/")

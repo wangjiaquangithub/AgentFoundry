@@ -959,38 +959,7 @@ def _run_authorized_enterprise_tool(
 
 
 def _enterprise_router_config() -> dict[str, Any] | None:
-    base_url = os.getenv("ENTERPRISE_AGENT_ROUTER_BASE_URL", "").strip()
-    api_key = os.getenv("ENTERPRISE_AGENT_ROUTER_API_KEY", "").strip()
-    model = os.getenv("ENTERPRISE_AGENT_ROUTER_MODEL", "").strip()
-
-    if not base_url and not api_key and not model:
-        return None
-
-    missing = enterprise_router_service.missing_model_router_config_names(
-        base_url=base_url,
-        api_key=api_key,
-        model=model,
-    )
-    if missing:
-        raise EnterpriseRouterError(
-            "Router env is incomplete: missing " + ", ".join(missing),
-        )
-
-    provider = enterprise_router_service.normalize_model_provider(
-        os.getenv("ENTERPRISE_AGENT_ROUTER_PROVIDER", "openai"),
-    )
-    timeout_value = os.getenv("ENTERPRISE_AGENT_ROUTER_TIMEOUT_SECONDS", "8")
-    timeout_seconds = enterprise_router_service.normalize_model_timeout_seconds(
-        timeout_value,
-    )
-
-    return {
-        "base_url": base_url,
-        "api_key": api_key,
-        "model": model,
-        "provider": provider,
-        "timeout_seconds": timeout_seconds,
-    }
+    return enterprise_router_service.build_model_router_config(os.environ)
 
 
 async def _route_enterprise_agent_question_with_model(
