@@ -82,10 +82,7 @@ from services.connectors import (
     PlatformConnectorConfigServiceError,
 )
 from services.dev_knowledge import PlatformDevKnowledgeService
-from services.enterprise_router import (
-    EnterpriseRouterError,
-    PlatformEnterpriseRouterService,
-)
+from services.enterprise_router import PlatformEnterpriseRouterService
 from services.knowledge import PlatformKnowledgeResponseService
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
@@ -957,15 +954,6 @@ def _run_authorized_enterprise_tool(
     }
 
 
-async def _select_enterprise_agent_routes(
-    question: str,
-) -> tuple[list[dict[str, Any]], str | None]:
-    return await enterprise_router_service.select_routes_for_question(
-        question,
-        env=os.environ,
-    )
-
-
 app = create_app(
     storage=storage,
     message_bus=_build_message_bus(),
@@ -1643,7 +1631,10 @@ async def run_enterprise_agent(
         knowledge_hits=knowledge_hits,
         knowledge_error=knowledge_error,
     )
-    routes, routing_error = await _select_enterprise_agent_routes(question)
+    routes, routing_error = await enterprise_router_service.select_routes_for_question(
+        question,
+        env=os.environ,
+    )
     routing_state = enterprise_router_service.routing_state_for(routes)
     routing_mode = routing_state["routing_mode"]
     routing_source = routing_state["routing_source"]
