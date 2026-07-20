@@ -961,6 +961,28 @@ class PlatformAgentRunService:
     def executed_tool_tenant(self, tool_response: dict[str, Any]) -> str:
         return str(tool_response["tenant"])
 
+    def executed_tool_user_id(self, tool_response: dict[str, Any]) -> str:
+        return str(tool_response["user_id"])
+
+    def executed_tool_allowed(self, tool_response: dict[str, Any]) -> bool:
+        return bool(tool_response.get("allowed"))
+
+    def executed_tool_connector(
+        self,
+        tool_response: dict[str, Any],
+        *,
+        connector: str,
+    ) -> str:
+        return str(tool_response.get("connector", connector))
+
+    def executed_tool_connector_source(
+        self,
+        tool_response: dict[str, Any],
+        *,
+        connector_source: str,
+    ) -> str:
+        return str(tool_response.get("connector_source", connector_source))
+
     def build_executed_tool_answer_context(
         self,
         *,
@@ -990,13 +1012,22 @@ class PlatformAgentRunService:
         return {
             "tool_name": tool_name,
             "inputs": inputs,
-            "tool_response": tool_response,
-            "connector": connector,
-            "connector_source": connector_source,
+            "allowed": self.executed_tool_allowed(tool_response),
+            "tenant": self.executed_tool_tenant(tool_response),
+            "user_id": self.executed_tool_user_id(tool_response),
+            "connector": self.executed_tool_connector(
+                tool_response,
+                connector=connector,
+            ),
+            "connector_source": self.executed_tool_connector_source(
+                tool_response,
+                connector_source=connector_source,
+            ),
             "routing_source": routing_source,
             "routing_reason": routing_reason,
             "approval_id": approval_id,
             "decision": decision,
+            "result": self.executed_tool_result(tool_response),
             "answer": answer,
         }
 
@@ -1005,31 +1036,31 @@ class PlatformAgentRunService:
         *,
         tool_name: str,
         inputs: dict[str, Any],
-        tool_response: dict[str, Any],
+        allowed: bool,
+        tenant: str,
+        user_id: str,
         connector: str,
         connector_source: str,
         routing_source: str,
         routing_reason: str,
         approval_id: str | None,
         decision: dict[str, Any],
+        result: Any,
         answer: str,
     ) -> dict[str, Any]:
         return {
             "tool_name": tool_name,
             "inputs": inputs,
-            "allowed": bool(tool_response.get("allowed")),
-            "tenant": tool_response["tenant"],
-            "user_id": tool_response["user_id"],
-            "connector": tool_response.get("connector", connector),
-            "connector_source": tool_response.get(
-                "connector_source",
-                connector_source,
-            ),
+            "allowed": allowed,
+            "tenant": tenant,
+            "user_id": user_id,
+            "connector": connector,
+            "connector_source": connector_source,
             "routing_source": routing_source,
             "routing_reason": routing_reason,
             "approval_id": approval_id,
             "decision": decision,
-            "result": tool_response.get("result"),
+            "result": result,
             "answer": answer,
         }
 
