@@ -256,27 +256,6 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _tool_audit_stats(events: list[dict[str, Any]]) -> dict[str, Any]:
-    """Summarize audit events for a tool center card."""
-    calls = len(events)
-    successes = sum(1 for event in events if event.get("success") is True)
-    failures = sum(1 for event in events if event.get("success") is False)
-    durations = [
-        float(event["duration_ms"])
-        for event in events
-        if isinstance(event.get("duration_ms"), (int, float))
-    ]
-    return {
-        "calls": calls,
-        "successes": successes,
-        "failures": failures,
-        "last_called_at": events[0].get("timestamp") if events else None,
-        "avg_duration_ms": round(sum(durations) / len(durations), 2)
-        if durations
-        else None,
-    }
-
-
 def _platform_status_service() -> PlatformStatusService:
     """Build the service object that composes platform console status payloads."""
     return PlatformStatusService(
@@ -2750,7 +2729,7 @@ async def enterprise_platform_tools(
                 "configured_agent_id": (
                     str(configured_agent.get("id")) if configured_agent else None
                 ),
-                "stats": _tool_audit_stats(events),
+                "stats": _platform_tool_policy_service().audit_stats(events),
             },
         )
     return {
@@ -2782,7 +2761,7 @@ async def enterprise_platform_audit(
         success=success,
         limit=normalized_limit,
     )
-    stats = _tool_audit_stats(events)
+    stats = _platform_tool_policy_service().audit_stats(events)
     return {
         "events": events,
         "summary": {

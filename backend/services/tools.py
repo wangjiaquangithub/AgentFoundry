@@ -59,6 +59,25 @@ class PlatformToolPolicyService:
             "reason": decision.reason,
         }
 
+    def audit_stats(self, events: list[dict[str, Any]]) -> dict[str, Any]:
+        calls = len(events)
+        successes = sum(1 for event in events if event.get("success") is True)
+        failures = sum(1 for event in events if event.get("success") is False)
+        durations = [
+            float(event["duration_ms"])
+            for event in events
+            if isinstance(event.get("duration_ms"), (int, float))
+        ]
+        return {
+            "calls": calls,
+            "successes": successes,
+            "failures": failures,
+            "last_called_at": events[0].get("timestamp") if events else None,
+            "avg_duration_ms": round(sum(durations) / len(durations), 2)
+            if durations
+            else None,
+        }
+
     def normalize_policy_tools(self, value: list[str] | None) -> list[str]:
         if not value:
             return []
