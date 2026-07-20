@@ -2269,7 +2269,7 @@ async def create_enterprise_approval_request(
         )
     except PlatformApprovalServiceError as exc:
         _raise_platform_approval_service_error(exc)
-    return {"approval": record}
+    return approval_service.create_response(record)
 
 
 @app.post("/enterprise/platform/approvals/{approval_id}/approve")

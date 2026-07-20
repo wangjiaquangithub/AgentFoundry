@@ -146,6 +146,9 @@ class PlatformApprovalService:
     def decision_response(self, approval: dict[str, Any]) -> dict[str, Any]:
         return {"approval": approval}
 
+    def create_response(self, approval: dict[str, Any]) -> dict[str, Any]:
+        return {"approval": approval}
+
     def create_request(
         self,
         *,
