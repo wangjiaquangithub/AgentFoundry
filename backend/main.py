@@ -2792,7 +2792,10 @@ async def update_enterprise_platform_tool_policy(
 @app.get("/enterprise/platform/connectors/configs")
 async def enterprise_platform_connector_configs() -> dict[str, Any]:
     """Return tenant connector configurations without exposing secrets."""
-    return {"saved_configs": _redacted_connector_configs()}
+    try:
+        return _platform_connector_config_service().list_configs_response()
+    except PlatformConnectorConfigServiceError as exc:
+        _raise_platform_connector_config_service_error(exc)
 
 
 @app.post("/enterprise/platform/connectors/configs")

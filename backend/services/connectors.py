@@ -209,6 +209,9 @@ class PlatformConnectorConfigService:
             for _tenant, config in sorted(self.list_configs().items())
         ]
 
+    def list_configs_response(self) -> dict[str, Any]:
+        return {"saved_configs": self.redacted_configs()}
+
     def runtime_tenant_for_user(self, user_id: str) -> str:
         hinted_tenant = self._tenant_hint_from_user_id(user_id)
         if hinted_tenant:
