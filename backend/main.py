@@ -2062,44 +2062,25 @@ def _workflow_step(
         )
         workflow_run_service = _platform_workflow_run_service()
         allowed = workflow_run_service.tool_response_allowed(tool_response)
-        result = workflow_run_service.tool_response_result(tool_response)
         decision = workflow_run_service.tool_response_decision(tool_response)
         message = (
             _platform_tool_policy_service().format_tool_result_answer(
-                tool_name=tool_name,
-                result=result,
-                tenant=workflow_run_service.tool_response_tenant(tool_response),
+                **workflow_run_service.build_tool_result_answer_context(
+                    tool_name=tool_name,
+                    tool_response=tool_response,
+                ),
             )
             if allowed
             else str((decision or {}).get("reason") or "当前用户无权调用该工具。")
         )
-        status = "success" if allowed else "denied"
-
-        step = {
-            "id": step_id,
-            "title": title,
-            "tool_name": tool_name,
-            "inputs": inputs,
-            "status": status,
-            "result": result,
-            "decision": decision,
-            "message": message,
-        }
-        tool_call = {
-            "tool_name": tool_name,
-            "inputs": inputs,
-            "allowed": allowed,
-            "tenant": workflow_run_service.tool_response_tenant(tool_response),
-            "user_id": workflow_run_service.tool_response_user_id(tool_response),
-            "connector": workflow_run_service.tool_response_connector(tool_response),
-            "connector_source": workflow_run_service.tool_response_connector_source(
-                tool_response,
-            ),
-            "decision": decision,
-            "result": result,
-            "answer": message,
-        }
-        return step, tool_call
+        return workflow_run_service.executed_step_record(
+            step_id=step_id,
+            title=title,
+            tool_name=tool_name,
+            inputs=inputs,
+            tool_response=tool_response,
+            message=message,
+        )
     except HTTPException as exc:
         decision = None
         if isinstance(exc.detail, dict) and isinstance(exc.detail.get("decision"), dict):

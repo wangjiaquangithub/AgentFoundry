@@ -578,6 +578,59 @@ class PlatformWorkflowRunService:
         }
         return step, tool_call
 
+    def build_tool_result_answer_context(
+        self,
+        *,
+        tool_name: str,
+        tool_response: dict[str, Any],
+    ) -> dict[str, Any]:
+        return {
+            "tool_name": tool_name,
+            "result": self.tool_response_result(tool_response),
+            "tenant": self.tool_response_tenant(tool_response),
+        }
+
+    def executed_step_record(
+        self,
+        *,
+        step_id: str,
+        title: str,
+        tool_name: str,
+        inputs: dict[str, Any],
+        tool_response: dict[str, Any],
+        message: str,
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        allowed = self.tool_response_allowed(tool_response)
+        result = self.tool_response_result(tool_response)
+        decision = self.tool_response_decision(tool_response)
+        status = "success" if allowed else "denied"
+
+        step = {
+            "id": step_id,
+            "title": title,
+            "tool_name": tool_name,
+            "inputs": inputs,
+            "status": status,
+            "result": result,
+            "decision": decision,
+            "message": message,
+        }
+        tool_call = {
+            "tool_name": tool_name,
+            "inputs": inputs,
+            "allowed": allowed,
+            "tenant": self.tool_response_tenant(tool_response),
+            "user_id": self.tool_response_user_id(tool_response),
+            "connector": self.tool_response_connector(tool_response),
+            "connector_source": self.tool_response_connector_source(
+                tool_response,
+            ),
+            "decision": decision,
+            "result": result,
+            "answer": message,
+        }
+        return step, tool_call
+
     def tool_response_allowed(self, tool_response: dict[str, Any]) -> bool:
         return bool(tool_response.get("allowed"))
 
