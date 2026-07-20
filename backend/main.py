@@ -613,6 +613,15 @@ def _get_platform_agent(agent_id: str) -> dict[str, Any]:
         _raise_platform_agent_service_error(exc)
 
 
+def _published_platform_agent_tool_scope(
+    agent_id: str,
+) -> tuple[dict[str, Any], set[str]]:
+    try:
+        return _platform_agent_service().published_tool_scope(agent_id)
+    except PlatformAgentServiceError as exc:
+        _raise_platform_agent_service_error(exc)
+
+
 def _platform_member_service() -> PlatformMemberService:
     return PlatformMemberService(
         repository=member_repository,
@@ -3878,14 +3887,10 @@ async def run_enterprise_workflow(
     agent_id = requested_agent_id or "platform-workflow"
     configured_tools: set[str] | None = None
     if requested_agent_id:
-        agent = _get_platform_agent(requested_agent_id)
-        if agent.get("status") != "published":
-            raise HTTPException(
-                status_code=409,
-                detail="该 Agent 实例已停用，不能运行。",
-            )
+        agent, configured_tools = _published_platform_agent_tool_scope(
+            requested_agent_id,
+        )
         _assert_platform_agent_access(agent, user_id)
-        configured_tools = set(agent.get("tools") or [])
 
     workflow_type = payload.workflow_type.strip()
     workflow_template = _get_enabled_platform_workflow_template(workflow_type)

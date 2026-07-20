@@ -60,6 +60,15 @@ class PlatformAgentService:
             f"Unknown platform agent: {agent_id}",
         )
 
+    def published_tool_scope(self, agent_id: str) -> tuple[dict[str, Any], set[str]]:
+        agent = self.get_agent(agent_id)
+        if agent.get("status") != "published":
+            raise PlatformAgentServiceError(
+                409,
+                "该 Agent 实例已停用，不能运行。",
+            )
+        return agent, set(agent.get("tools") or [])
+
     def template_metadata(self) -> list[dict[str, Any]]:
         return [
             {
