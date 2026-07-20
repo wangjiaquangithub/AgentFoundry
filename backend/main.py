@@ -2207,21 +2207,12 @@ def _run_authorized_enterprise_tool(
             "decision": decision_payload,
         }
 
-    if tool_name == "enterprise_lookup_policy":
-        keyword = str(inputs.get("keyword", "")).strip()
-        clean_inputs = {"keyword": keyword}
-        call = lambda: runtime_connector.lookup_policy(tenant, keyword)
-    elif tool_name == "enterprise_get_ticket_status":
-        ticket_id = str(inputs.get("ticket_id", "")).strip()
-        clean_inputs = {"ticket_id": ticket_id}
-        call = lambda: runtime_connector.get_ticket_status(tenant, ticket_id)
-    else:
-        department = str(inputs.get("department", "")).strip()
-        clean_inputs = {"department": department}
-        call = lambda: runtime_connector.summarize_department_metrics(
-            tenant,
-            department,
-        )
+    clean_inputs, call = _platform_tool_policy_service().build_connector_call(
+        tenant=tenant,
+        tool_name=tool_name,
+        inputs=inputs,
+        runtime_connector=runtime_connector,
+    )
 
     result = tool_audit_logger.capture(
         user_id=user_id,

@@ -66,6 +66,37 @@ class PlatformToolPolicyService:
                 result.append(name)
         return result
 
+    def build_connector_call(
+        self,
+        *,
+        tenant: str,
+        tool_name: str,
+        inputs: dict[str, Any],
+        runtime_connector: Any,
+    ) -> tuple[dict[str, Any], Callable[[], Any]]:
+        if tool_name == "enterprise_lookup_policy":
+            keyword = str(inputs.get("keyword", "")).strip()
+            return (
+                {"keyword": keyword},
+                lambda: runtime_connector.lookup_policy(tenant, keyword),
+            )
+
+        if tool_name == "enterprise_get_ticket_status":
+            ticket_id = str(inputs.get("ticket_id", "")).strip()
+            return (
+                {"ticket_id": ticket_id},
+                lambda: runtime_connector.get_ticket_status(tenant, ticket_id),
+            )
+
+        department = str(inputs.get("department", "")).strip()
+        return (
+            {"department": department},
+            lambda: runtime_connector.summarize_department_metrics(
+                tenant,
+                department,
+            ),
+        )
+
     def policy_payload(
         self,
         *,
