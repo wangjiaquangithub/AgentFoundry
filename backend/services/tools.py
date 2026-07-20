@@ -409,6 +409,27 @@ class PlatformToolPolicyService:
     ) -> str:
         return payload_user_id or header_user_id or "acme:alice"
 
+    def run_request_payload(
+        self,
+        *,
+        tool_name: str,
+        inputs: dict[str, Any],
+        payload_user_id: str | None = None,
+        header_user_id: str | None = None,
+        agent_id: str | None = None,
+        approval_id: str | None = None,
+    ) -> dict[str, Any]:
+        return {
+            "tool_name": tool_name,
+            "inputs": inputs,
+            "user_id": self.run_request_user_id(
+                payload_user_id=payload_user_id,
+                header_user_id=header_user_id,
+            ),
+            "agent_id": _optional_filter(agent_id),
+            "approval_id": approval_id,
+        }
+
     def update_user_policy(
         self,
         *,

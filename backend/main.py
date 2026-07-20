@@ -1451,10 +1451,19 @@ async def run_enterprise_tool(
 ) -> dict[str, Any]:
     """Run one tenant-aware enterprise tool from the platform console."""
     tool_policy_service = _platform_tool_policy_service()
-    user_id = tool_policy_service.run_request_user_id(
+    run_request = tool_policy_service.run_request_payload(
+        tool_name=payload.tool_name,
+        inputs=payload.inputs,
         payload_user_id=payload.user_id,
         header_user_id=request.headers.get("X-User-ID"),
+        agent_id=payload.agent_id,
+        approval_id=payload.approval_id,
     )
+    user_id = run_request["user_id"]
+    requested_tool_name = run_request["tool_name"]
+    requested_inputs = run_request["inputs"]
+    requested_agent_id = run_request["agent_id"]
+    requested_approval_id = run_request["approval_id"]
     try:
         runtime = _platform_connector_config_service().enterprise_runtime_context(user_id)
     except PlatformConnectorConfigServiceError as exc:
@@ -1462,14 +1471,13 @@ async def run_enterprise_tool(
     runtime_selection = tool_policy_service.runtime_selection(runtime)
     tenant = runtime_selection["tenant"]
     runner_agent_id = "platform-console"
-    configured_agent_id = (payload.agent_id or "").strip()
-    if configured_agent_id:
+    if requested_agent_id:
         _, configured_tools = _published_platform_agent_tool_scope_for_user(
-            configured_agent_id,
+            requested_agent_id,
             user_id,
         )
-        runner_agent_id = configured_agent_id
-        if payload.tool_name not in configured_tools:
+        runner_agent_id = requested_agent_id
+        if requested_tool_name not in configured_tools:
             try:
                 runtime = _platform_connector_config_service().enterprise_runtime_context(
                     user_id
@@ -1477,9 +1485,9 @@ async def run_enterprise_tool(
             except PlatformConnectorConfigServiceError as exc:
                 _raise_platform_connector_config_service_error(exc)
             runtime_selection = tool_policy_service.runtime_selection(runtime)
-            decision = _platform_agent_service().tool_denial_payload(payload.tool_name)
+            decision = _platform_agent_service().tool_denial_payload(requested_tool_name)
             return tool_policy_service.agent_tool_denial_response(
-                tool_name=payload.tool_name,
+                tool_name=requested_tool_name,
                 tenant=tenant,
                 user_id=user_id,
                 runtime_selection=runtime_selection,
@@ -1487,22 +1495,22 @@ async def run_enterprise_tool(
             )
 
     approval_id = None
-    if payload.tool_name in APPROVAL_REQUIRED_TOOLS:
+    if requested_tool_name in APPROVAL_REQUIRED_TOOLS:
         approval_id = _require_platform_approval(
-            approval_id=payload.approval_id,
+            approval_id=requested_approval_id,
             request_type="tool_run",
             target_key="tool_name",
-            target_value=payload.tool_name,
+            target_value=requested_tool_name,
             tenant=tenant,
             user_id=user_id,
             agent_id=runner_agent_id,
-            inputs=payload.inputs,
+            inputs=requested_inputs,
         )
 
     response = _run_authorized_enterprise_tool(
         user_id=user_id,
-        tool_name=payload.tool_name,
-        inputs=payload.inputs,
+        tool_name=requested_tool_name,
+        inputs=requested_inputs,
         agent_id=runner_agent_id,
         session_id="platform-console",
     )
