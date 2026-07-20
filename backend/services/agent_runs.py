@@ -302,6 +302,18 @@ class PlatformAgentRunService:
     ) -> list[Any]:
         return list(agent_metadata.get("knowledge_base_ids") or [])
 
+    def build_routing_context(
+        self,
+        *,
+        routing_state: dict[str, Any],
+        routing_error: str | None,
+    ) -> dict[str, Any]:
+        return {
+            "routing_mode": str(routing_state["routing_mode"]),
+            "routing_source": str(routing_state["routing_source"]),
+            "routing_error": routing_error,
+        }
+
     def summarize_routed_tool_calls(
         self,
         tool_calls: list[dict[str, Any]],

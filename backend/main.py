@@ -1604,9 +1604,13 @@ async def run_enterprise_agent(
         question,
         env=os.environ,
     )
-    routing_state = enterprise_router_service.routing_state_for(routes)
-    routing_mode = routing_state["routing_mode"]
-    routing_source = routing_state["routing_source"]
+    routing_context = agent_run_service.build_routing_context(
+        routing_state=enterprise_router_service.routing_state_for(routes),
+        routing_error=routing_error,
+    )
+    routing_mode = routing_context["routing_mode"]
+    routing_source = routing_context["routing_source"]
+    routing_error = routing_context["routing_error"]
 
     if not routes:
         decision = enterprise_router_service.unrouted_decision_for_question(
