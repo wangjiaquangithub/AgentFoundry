@@ -496,6 +496,14 @@ class PlatformAgentRunService:
             "knowledge_payload": knowledge_payload,
         }
 
+    @staticmethod
+    def knowledge_context_view(knowledge_context: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "knowledge_hits": knowledge_context["knowledge_hits"],
+            "knowledge_error": knowledge_context["knowledge_error"],
+            "knowledge_payload": knowledge_context["knowledge_payload"],
+        }
+
     def build_routing_context(
         self,
         *,

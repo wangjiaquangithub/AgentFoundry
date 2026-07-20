@@ -1612,9 +1612,12 @@ async def run_enterprise_agent(
         knowledge_error=knowledge_error,
         knowledge_payload=knowledge_payload,
     )
-    knowledge_hits = knowledge_context["knowledge_hits"]
-    knowledge_error = knowledge_context["knowledge_error"]
-    knowledge_payload = knowledge_context["knowledge_payload"]
+    knowledge_context_view = agent_run_service.knowledge_context_view(
+        knowledge_context,
+    )
+    knowledge_hits = knowledge_context_view["knowledge_hits"]
+    knowledge_error = knowledge_context_view["knowledge_error"]
+    knowledge_payload = knowledge_context_view["knowledge_payload"]
     routes, routing_error = await enterprise_router_service.select_routes_for_question(
         question,
         env=os.environ,
