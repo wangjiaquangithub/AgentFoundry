@@ -1649,6 +1649,7 @@ async def run_enterprise_agent(
 ) -> dict[str, Any]:
     """Route a business question through a published enterprise agent."""
 
+    agent_run_service = _platform_agent_run_service()
     user_id = payload.user_id or request.headers.get("X-User-ID") or "acme:alice"
     runtime = _enterprise_runtime_context(user_id)
     tenant = str(runtime["tenant"])
@@ -1665,7 +1666,7 @@ async def run_enterprise_agent(
     agent_metadata = _platform_agent_service().run_metadata(agent)
     runtime_adapter = get_runtime_adapter(agent_metadata)
     runtime_adapter_payload = runtime_adapter.describe(agent_metadata)
-    runner_context = _platform_agent_run_service().resolve_runner_context(
+    runner_context = agent_run_service.resolve_runner_context(
         agent_metadata=agent_metadata,
         agent=agent,
         user_id=user_id,
@@ -1719,7 +1720,7 @@ async def run_enterprise_agent(
             routing_mode=routing_mode,
             routing_error=routing_error,
         )
-        answer = _platform_agent_run_service().compose_unrouted_answer(
+        answer = agent_run_service.compose_unrouted_answer(
             knowledge_hits=knowledge_hits,
             memory_hits=memory_hits,
             format_knowledge_answer=knowledge_response_service.format_answer,
@@ -1738,7 +1739,7 @@ async def run_enterprise_agent(
             max_records=PLATFORM_MEMORY_MAX_RECORDS,
         )
 
-        response_trace = _platform_agent_run_service().build_response_trace(
+        response_trace = agent_run_service.build_response_trace(
             tenant=tenant,
             user_id=user_id,
             agent_id=runner_agent_id,
@@ -1751,7 +1752,6 @@ async def run_enterprise_agent(
         turn_id = response_trace["turn_id"]
         created_at = response_trace["created_at"]
         evidence = response_trace["evidence"]
-        agent_run_service = _platform_agent_run_service()
         response = agent_run_service.build_unrouted_response(
             answer=answer,
             turn_id=turn_id,
@@ -1790,7 +1790,7 @@ async def run_enterprise_agent(
 
     tool_calls: list[dict[str, Any]] = []
     for route in routes:
-        route_context = _platform_agent_run_service().normalize_route_context(
+        route_context = agent_run_service.normalize_route_context(
             route,
             default_source=ROUTING_SOURCE_RULES,
         )
@@ -1811,7 +1811,7 @@ async def run_enterprise_agent(
             )
 
             tool_calls.append(
-                _platform_agent_run_service().build_denied_routed_tool_call(
+                agent_run_service.build_denied_routed_tool_call(
                     tool_name=tool_name,
                     inputs=route_inputs,
                     tenant=tenant,
@@ -1884,7 +1884,7 @@ async def run_enterprise_agent(
                     routing_error=routing_error,
                 )
                 tool_calls.append(
-                    _platform_agent_run_service().build_pending_approval_routed_tool_call(
+                    agent_run_service.build_pending_approval_routed_tool_call(
                         tool_name=tool_name,
                         inputs=route_inputs,
                         approval_id=approval_id,
@@ -1921,7 +1921,7 @@ async def run_enterprise_agent(
             tenant=tool_response["tenant"],
         )
         tool_calls.append(
-            _platform_agent_run_service().build_executed_routed_tool_call(
+            agent_run_service.build_executed_routed_tool_call(
                 tool_name=tool_name,
                 inputs=route_inputs,
                 tool_response=tool_response,
@@ -1935,12 +1935,12 @@ async def run_enterprise_agent(
             ),
         )
 
-    tool_call_summary = _platform_agent_run_service().summarize_routed_tool_calls(
+    tool_call_summary = agent_run_service.summarize_routed_tool_calls(
         tool_calls,
     )
     primary_call = tool_call_summary["primary_call"]
     routing_reason = str(tool_call_summary["routing_reason"])
-    answer = _platform_agent_run_service().compose_routed_answer(
+    answer = agent_run_service.compose_routed_answer(
         tool_calls=tool_calls,
         knowledge_hits=knowledge_hits,
         memory_hits=memory_hits,
@@ -1960,7 +1960,7 @@ async def run_enterprise_agent(
         max_records=PLATFORM_MEMORY_MAX_RECORDS,
     )
 
-    response_trace = _platform_agent_run_service().build_response_trace(
+    response_trace = agent_run_service.build_response_trace(
         tenant=primary_call.get("tenant", tenant),
         user_id=primary_call.get("user_id", user_id),
         agent_id=runner_agent_id,
@@ -1973,7 +1973,6 @@ async def run_enterprise_agent(
     turn_id = response_trace["turn_id"]
     created_at = response_trace["created_at"]
     evidence = response_trace["evidence"]
-    agent_run_service = _platform_agent_run_service()
     response = agent_run_service.build_routed_response(
         answer=answer,
         routed=bool(tool_call_summary["routed"]),
