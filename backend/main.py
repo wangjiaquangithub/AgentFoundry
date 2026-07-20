@@ -1984,21 +1984,13 @@ async def run_enterprise_agent(
         f"{call['tool_name']}: {call.get('routing_reason', '')}"
         for call in tool_calls
     )
-    answer_parts = [
-        f"工具 {call['tool_name']}: {call['answer']}"
-        for call in tool_calls
-        if call.get("answer")
-    ]
-    if knowledge_hits:
-        answer_parts.append(
-            f"知识库: {knowledge_response_service.format_answer(knowledge_hits)}",
-        )
-    if memory_hits:
-        answer_parts.insert(
-            0,
-            f"长期记忆: {platform_memory_service.format_answer(memory_hits)}",
-        )
-    answer = "\n\n".join(answer_parts)
+    answer = _platform_agent_run_service().compose_routed_answer(
+        tool_calls=tool_calls,
+        knowledge_hits=knowledge_hits,
+        memory_hits=memory_hits,
+        format_knowledge_answer=knowledge_response_service.format_answer,
+        format_memory_answer=platform_memory_service.format_answer,
+    )
     memory_saved = False
     if memory_enabled and not platform_memory_service.is_agent_turn_memory_lookup(
         question,

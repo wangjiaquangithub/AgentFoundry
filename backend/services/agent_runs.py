@@ -1,6 +1,6 @@
 """Service-layer orchestration for enterprise agent run history."""
 
-from typing import Any
+from typing import Any, Callable
 
 from repositories.agent_runs import AgentRunRepository
 
@@ -48,6 +48,31 @@ class PlatformAgentRunService:
     def append_run(self, record: dict[str, Any]) -> dict[str, Any]:
         self._repository.append(record)
         return record
+
+    def compose_routed_answer(
+        self,
+        *,
+        tool_calls: list[dict[str, Any]],
+        knowledge_hits: list[dict[str, Any]],
+        memory_hits: list[dict[str, Any]],
+        format_knowledge_answer: Callable[[list[dict[str, Any]]], str],
+        format_memory_answer: Callable[[list[dict[str, Any]]], str],
+    ) -> str:
+        answer_parts = [
+            f"工具 {call['tool_name']}: {call['answer']}"
+            for call in tool_calls
+            if call.get("answer")
+        ]
+        if knowledge_hits:
+            answer_parts.append(
+                f"知识库: {format_knowledge_answer(knowledge_hits)}",
+            )
+        if memory_hits:
+            answer_parts.insert(
+                0,
+                f"长期记忆: {format_memory_answer(memory_hits)}",
+            )
+        return "\n\n".join(answer_parts)
 
     def build_evidence(
         self,
