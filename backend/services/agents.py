@@ -95,6 +95,41 @@ class PlatformAgentService:
             "allowed_roles": self.normalize_access_values(agent.get("allowed_roles")),
         }
 
+    def assert_user_access(
+        self,
+        agent: dict[str, Any],
+        *,
+        user_id: str,
+        member: dict[str, Any] | None,
+        role: str,
+    ) -> None:
+        agent_tenant = str(agent.get("tenant") or "").strip()
+        runtime_tenant = self._tenant_for_user(user_id)
+        if agent_tenant and runtime_tenant != agent_tenant:
+            raise PlatformAgentServiceError(
+                403,
+                "当前身份不属于该 Agent 租户，无法运行该 Agent 实例。",
+            )
+
+        access = self.agent_access(agent)
+        allowed_user_ids = access["allowed_user_ids"]
+        allowed_roles = access["allowed_roles"]
+        if member is not None and member.get("status") != "active":
+            raise PlatformAgentServiceError(
+                403,
+                "当前身份已停用，无法运行该 Agent 实例。",
+            )
+        if not allowed_user_ids and not allowed_roles:
+            return
+        if user_id in allowed_user_ids:
+            return
+        if role and role in allowed_roles:
+            return
+        raise PlatformAgentServiceError(
+            403,
+            "当前身份无权运行该 Agent 实例。",
+        )
+
     def access_summary(self, agent: dict[str, Any]) -> dict[str, Any]:
         tenant = str(agent.get("tenant") or "").strip()
         access = self.agent_access(agent)

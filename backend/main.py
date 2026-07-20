@@ -732,17 +732,6 @@ def _identity_role_for_user(user_id: str) -> str:
 
 
 def _assert_platform_agent_access(agent: dict[str, Any], user_id: str) -> None:
-    agent_tenant = str(agent.get("tenant") or "").strip()
-    runtime_tenant = _runtime_tenant_for_user(user_id)
-    if agent_tenant and runtime_tenant != agent_tenant:
-        raise HTTPException(
-            status_code=403,
-            detail="当前身份不属于该 Agent 租户，无法运行该 Agent 实例。",
-        )
-
-    access = _platform_agent_service().agent_access(agent)
-    allowed_user_ids = access["allowed_user_ids"]
-    allowed_roles = access["allowed_roles"]
     try:
         member = _platform_member_service().get_member_by_user(
             user_id,
@@ -750,22 +739,15 @@ def _assert_platform_agent_access(agent: dict[str, Any], user_id: str) -> None:
         )
     except PlatformMemberServiceError as exc:
         _raise_platform_member_service_error(exc)
-    if member is not None and member.get("status") != "active":
-        raise HTTPException(
-            status_code=403,
-            detail="当前身份已停用，无法运行该 Agent 实例。",
+    try:
+        _platform_agent_service().assert_user_access(
+            agent,
+            user_id=user_id,
+            member=member,
+            role=_identity_role_for_user(user_id),
         )
-    if not allowed_user_ids and not allowed_roles:
-        return
-    if user_id in allowed_user_ids:
-        return
-    role = _identity_role_for_user(user_id)
-    if role and role in allowed_roles:
-        return
-    raise HTTPException(
-        status_code=403,
-        detail="当前身份无权运行该 Agent 实例。",
-    )
+    except PlatformAgentServiceError as exc:
+        _raise_platform_agent_service_error(exc)
 
 
 def _platform_agent_run_metadata(
