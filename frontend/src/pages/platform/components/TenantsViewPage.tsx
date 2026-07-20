@@ -192,10 +192,10 @@ export function TenantsViewPage({
 			</section>
 
 			<section className="grid gap-4 xl:grid-cols-[minmax(300px,0.72fr)_minmax(0,1.28fr)]">
-				<div className="grid max-h-none content-start gap-4 rounded-lg border bg-background p-4 shadow-sm xl:max-h-[calc(100vh-15rem)]">
+				<div className="grid max-h-none content-start gap-4 rounded-lg border bg-background p-4 shadow-sm xl:max-h-[calc(100vh-14rem)]">
 					<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 						<div>
-							<h2 className="text-sm font-semibold">
+							<h2 className="text-sm font-semibold text-foreground">
 								{t('platform.members.groupedListTitle')}
 							</h2>
 							<p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -230,58 +230,63 @@ export function TenantsViewPage({
 								return (
 									<button
 										type="button"
-									key={tenantSummary.tenant}
+										key={tenantSummary.tenant}
 										onClick={() => setSelectedTenant(tenantSummary.tenant)}
 										className={cn(
-											'grid w-full gap-3 rounded-lg border p-3 text-left transition-colors',
+											'grid w-full gap-3 rounded-lg border p-3 text-left transition-all',
 											isSelected
 												? 'border-slate-900 bg-slate-900 text-white shadow-sm'
-												: 'bg-muted/10 hover:border-slate-300 hover:bg-muted/30',
+												: 'bg-background hover:border-slate-300 hover:bg-muted/20',
 										)}
 									>
 										<div className="flex items-start justify-between gap-3">
-										<div className="min-w-0">
-											<div className="flex flex-wrap items-center gap-2">
-												<h3 className="text-sm font-semibold">
-													{tenantSummary.tenant}
-												</h3>
+											<div className="min-w-0">
+												<div className="flex flex-wrap items-center gap-2">
+													<h3 className="break-words text-sm font-semibold">
+														{tenantSummary.tenant}
+													</h3>
 													<Badge variant={isSelected ? 'outline' : 'secondary'}>
-													{tenantSummary.activeMemberCount}{' '}
-													{t('platform.members.activeMembers')}
-												</Badge>
-											</div>
+														{tenantSummary.activeMemberCount}{' '}
+														{t('platform.members.activeMembers')}
+													</Badge>
+												</div>
 												<div
 													className={cn(
-														'mt-2 grid grid-cols-2 gap-2 text-xs',
+														'mt-3 grid grid-cols-2 gap-2 text-xs',
 														isSelected
 															? 'text-slate-200'
 															: 'text-muted-foreground',
 													)}
 												>
-													<span>
+													<span className="rounded-md bg-background/10 px-2 py-1">
 														{t('platform.members.roles')}: {tenantSummary.roleNames.length}
 													</span>
-													<span>
+													<span className="rounded-md bg-background/10 px-2 py-1">
 														{t('platform.members.boundAgents')}: {tenantSummary.agentCount}
 													</span>
-													<span>
+													<span className="rounded-md bg-background/10 px-2 py-1">
 														{t('platform.members.pendingApprovals')}:{' '}
 														{tenantSummary.pendingApprovalCount}
 													</span>
-													<span>
+													<span className="rounded-md bg-background/10 px-2 py-1">
 														{t('platform.members.auditEvents')}:{' '}
 														{tenantSummary.auditEventCount}
 													</span>
 												</div>
 											</div>
-											<ArrowRight className="mt-1 size-4 shrink-0" />
+											<ArrowRight
+												className={cn(
+													'mt-1 size-4 shrink-0',
+													isSelected ? 'text-white' : 'text-muted-foreground',
+												)}
+											/>
 										</div>
 									</button>
 								);
 							})}
 						</div>
 					) : (
-						<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+						<div className="rounded-lg border border-dashed bg-muted/10 p-6 text-sm text-muted-foreground">
 							{t('platform.members.empty')}
 						</div>
 					)}
@@ -294,7 +299,7 @@ export function TenantsViewPage({
 								<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 									<div className="min-w-0">
 										<div className="flex flex-wrap items-center gap-2">
-											<h2 className="truncate text-base font-semibold">
+											<h2 className="break-words text-base font-semibold">
 												{selectedTenantSummary.tenant}
 											</h2>
 											<Badge variant="secondary">
@@ -317,6 +322,7 @@ export function TenantsViewPage({
 										size="sm"
 										variant="outline"
 										onClick={() => onNavigate('/platform/agents')}
+										className="w-full sm:w-auto"
 									>
 										<BotMessageSquare className="size-4" />
 										{t('platform.agentManagement.title')}
@@ -366,28 +372,35 @@ export function TenantsViewPage({
 								</div>
 							</section>
 
-							<section className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
+							<section className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(300px,0.9fr)]">
 								<div className="rounded-lg border bg-background p-4 shadow-sm">
-									<div className="mb-3 flex items-center justify-between gap-3">
-										<h3 className="text-sm font-semibold">成员清单</h3>
+									<div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+										<div>
+											<h3 className="text-sm font-semibold">成员清单</h3>
+											<p className="mt-1 text-xs leading-5 text-muted-foreground">
+												展示前 8 个成员，用于快速核对身份、角色和状态。
+											</p>
+										</div>
 										<Badge variant="outline">
 											{selectedTenantSummary.members.length}{' '}
 											{t('platform.members.activeMembers')}
 										</Badge>
 									</div>
-									<div className="grid gap-2 md:grid-cols-2">
+									<div className="grid gap-2">
 										{selectedTenantSummary.members.slice(0, 8).map((member) => (
 											<div
 												key={`${selectedTenantSummary.tenant}-${member.user_id}`}
-												className="rounded-md border bg-muted/10 p-3"
+												className="grid gap-3 rounded-md border bg-muted/10 p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
 											>
-												<div className="truncate text-sm font-medium">
-													{member.display_name || member.user_id}
+												<div className="min-w-0">
+													<div className="break-words text-sm font-medium">
+														{member.display_name || member.user_id}
+													</div>
+													<div className="mt-1 break-all font-mono text-xs text-muted-foreground">
+														{member.user_id}
+													</div>
 												</div>
-												<div className="mt-1 truncate font-mono text-xs text-muted-foreground">
-													{member.user_id}
-												</div>
-												<div className="mt-2 flex flex-wrap gap-1">
+												<div className="flex flex-wrap gap-1 sm:justify-end">
 													<Badge variant="outline">{member.role}</Badge>
 													<Badge
 														variant={
@@ -407,40 +420,52 @@ export function TenantsViewPage({
 								</div>
 
 								<aside className="rounded-lg border bg-background p-4 shadow-sm">
-									<div className="flex items-start justify-between gap-3">
-										<div>
+									<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+										<div className="min-w-0">
 											<h3 className="text-sm font-semibold">
 												{t('platform.connectors.tenantPreview')}
 											</h3>
-											<p className="mt-1 text-xs leading-5 text-muted-foreground">
+											<p className="mt-1 break-words text-xs leading-5 text-muted-foreground">
 												{selectedWorkspace?.source ?? t('platform.connectors.empty')}
 											</p>
 										</div>
-										<Badge variant="outline">
+										<Badge variant="outline" className="w-fit">
 											{selectedIdentityCount} {t('platform.connectors.identities')}
 										</Badge>
 									</div>
 									{selectedWorkspace ? (
 										<div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-											<div className="rounded-md border bg-muted/10 p-3">
-												{t('platform.connectors.policies')}:{' '}
-												{selectedWorkspace.policies.length}
-											</div>
-											<div className="rounded-md border bg-muted/10 p-3">
-												{t('platform.connectors.tickets')}:{' '}
-												{selectedWorkspace.tickets.length}
-											</div>
-											<div className="rounded-md border bg-muted/10 p-3">
-												{t('platform.connectors.departments')}:{' '}
-												{selectedWorkspace.departments.length}
-											</div>
-											<div className="rounded-md border bg-muted/10 p-3">
-												{t('platform.connectors.tools')}:{' '}
-												{countArrayField(selectedWorkspace, 'tools')}
-											</div>
+											{[
+												{
+													label: t('platform.connectors.policies'),
+													value: selectedWorkspace.policies.length,
+												},
+												{
+													label: t('platform.connectors.tickets'),
+													value: selectedWorkspace.tickets.length,
+												},
+												{
+													label: t('platform.connectors.departments'),
+													value: selectedWorkspace.departments.length,
+												},
+												{
+													label: t('platform.connectors.tools'),
+													value: countArrayField(selectedWorkspace, 'tools'),
+												},
+											].map((item) => (
+												<div
+													key={item.label}
+													className="rounded-md border bg-muted/10 p-3"
+												>
+													<div className="text-muted-foreground">{item.label}</div>
+													<div className="mt-2 text-xl font-semibold tabular-nums text-foreground">
+														{item.value}
+													</div>
+												</div>
+											))}
 										</div>
 									) : (
-										<div className="mt-4 rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+										<div className="mt-4 rounded-lg border border-dashed bg-muted/10 p-6 text-sm text-muted-foreground">
 											{t('platform.connectors.empty')}
 										</div>
 									)}
