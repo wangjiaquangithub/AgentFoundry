@@ -297,6 +297,13 @@ class PlatformToolPolicyService:
             payload["approval_id"] = approval_id
         return payload
 
+    @staticmethod
+    def tool_requires_approval(
+        tool_name: str,
+        approval_required_tools: set[str],
+    ) -> bool:
+        return tool_name in approval_required_tools
+
     def run_platform_tool_from_context(
         self,
         *,

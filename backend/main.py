@@ -1487,7 +1487,10 @@ async def run_enterprise_tool(
             )
 
     approval_id = None
-    if requested_tool_name in APPROVAL_REQUIRED_TOOLS:
+    if tool_policy_service.tool_requires_approval(
+        requested_tool_name,
+        APPROVAL_REQUIRED_TOOLS,
+    ):
         approval_id = _require_platform_approval(
             approval_id=requested_approval_id,
             request_type="tool_run",
