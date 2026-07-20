@@ -1593,7 +1593,10 @@ async def run_enterprise_agent(
     """Route a business question through a published enterprise agent."""
 
     agent_run_service = _platform_agent_run_service()
-    user_id = payload.user_id or request.headers.get("X-User-ID") or "acme:alice"
+    user_id = agent_run_service.run_request_user_id(
+        payload_user_id=payload.user_id,
+        header_user_id=request.headers.get("X-User-ID"),
+    )
     try:
         runtime = _platform_connector_config_service().enterprise_runtime_context(user_id)
     except PlatformConnectorConfigServiceError as exc:
