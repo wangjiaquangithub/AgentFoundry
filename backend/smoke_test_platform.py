@@ -647,6 +647,25 @@ def main() -> None:
             "get enterprise agent run detail failed: "
             f"evidence run_id mismatch: {agent_run_detail}",
         )
+    runtime_invocation_id = agent_run_detail.get("runtime_invocation_id")
+    if not runtime_invocation_id:
+        raise AssertionError(
+            "get enterprise agent run detail failed: "
+            f"missing runtime_invocation_id: {agent_run_detail}",
+        )
+    runtime_invocation_result = (
+        agent_run_detail.get("runtime_invocation_result") or {}
+    )
+    if runtime_invocation_result.get("provider_run_id") != agent_turn_id:
+        raise AssertionError(
+            "get enterprise agent run detail failed: "
+            f"runtime provider_run_id mismatch: {agent_run_detail}",
+        )
+    if runtime_invocation_result.get("status") != "completed":
+        raise AssertionError(
+            "get enterprise agent run detail failed: "
+            f"runtime status mismatch: {agent_run_detail}",
+        )
 
     risk_agent_id = _ensure_risk_smoke_agent(client)
     role_agent_id = _ensure_role_smoke_agent(client)
@@ -1006,10 +1025,36 @@ def main() -> None:
             f"metrics step did not complete: {governed_workflow_result}",
         )
 
-    _expect_ok(
+    agent_runs_payload = _expect_ok(
         client.get("/enterprise/platform/agent/runs", headers=HEADERS),
         "list agent runs",
     )
+    listed_agent_run = next(
+        (
+            run
+            for run in agent_runs_payload.get("runs", [])
+            if run.get("turn_id") == agent_turn_id
+        ),
+        None,
+    )
+    if not isinstance(listed_agent_run, dict):
+        raise AssertionError(
+            "list agent runs failed: "
+            f"created run not found: {agent_runs_payload}",
+        )
+    if listed_agent_run.get("runtime_invocation_id") != runtime_invocation_id:
+        raise AssertionError(
+            "list agent runs failed: "
+            f"runtime_invocation_id mismatch: {listed_agent_run}",
+        )
+    listed_runtime_result = (
+        listed_agent_run.get("runtime_invocation_result") or {}
+    )
+    if listed_runtime_result.get("provider_run_id") != agent_turn_id:
+        raise AssertionError(
+            "list agent runs failed: "
+            f"runtime provider_run_id mismatch: {listed_agent_run}",
+        )
     _expect_ok(
         client.get("/enterprise/platform/workflows/runs", headers=HEADERS),
         "list workflow runs",
