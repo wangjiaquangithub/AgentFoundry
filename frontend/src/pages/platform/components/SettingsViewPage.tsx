@@ -1,19 +1,18 @@
 import { RefreshCcw, Server } from 'lucide-react';
 import type { Dispatch, SetStateAction } from 'react';
 
-import type { EnterprisePlatformConfigExportResponse } from '@/api';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
-
-import { ConfigManagementPanel } from './ConfigManagementPanel';
-import type { RuntimeStatusItem } from './RuntimeStatusPanel';
 import {
 	PlatformConnectionCard,
 	PlatformNotice,
 	PlatformPageHeader,
 	PlatformPageShell,
 } from './common';
+import { ConfigManagementPanel } from './ConfigManagementPanel';
+import type { RuntimeStatusItem } from './RuntimeStatusPanel';
+import type { EnterprisePlatformConfigExportResponse } from '@/api';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -93,53 +92,49 @@ export function SettingsViewPage({
 				}
 			/>
 
-				{platformError ? (
-					<PlatformNotice>{t('platform.runtime.error')}</PlatformNotice>
-				) : null}
+			{platformError ? <PlatformNotice>{t('platform.runtime.error')}</PlatformNotice> : null}
 
-				<section className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-					<Card className="rounded-lg shadow-none">
-						<CardHeader>
-							<CardTitle className="text-base">
-								{t('platform.connection.title')}
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="grid gap-3">
-							<PlatformConnectionCard
-								serverUrl={serverUrl}
-								username={username}
-								hasErrors={hasErrors}
-								labels={{
-									server: t('platform.connection.server'),
-									user: t('platform.connection.user'),
-									health: t('platform.connection.health'),
-									partial: t('platform.status.toConfigure'),
-									connected: t('platform.status.ready'),
-								}}
-							/>
-							<div className="grid gap-2">
-								{runtimeItems.map((item) => {
-									const Icon = item.icon;
+			<section className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.15fr)]">
+				<div className="grid content-start gap-4 rounded-lg border bg-background p-4 shadow-sm">
+					<div className="flex flex-col gap-1">
+						<h2 className="text-sm font-semibold">{t('platform.connection.health')}</h2>
+						<p className="text-xs leading-5 text-muted-foreground">
+							{t('platform.connection.health')}
+						</p>
+					</div>
+					<PlatformConnectionCard
+						serverUrl={serverUrl}
+						username={username}
+						hasErrors={hasErrors}
+						labels={{
+							server: t('platform.connection.server'),
+							user: t('platform.connection.user'),
+							health: t('platform.connection.health'),
+							partial: t('platform.status.toConfigure'),
+							connected: t('platform.status.ready'),
+						}}
+					/>
+					<div className="grid gap-2">
+						{runtimeItems.map((item) => {
+							const Icon = item.icon;
 
-									return (
-										<div
-											key={item.label}
-											className="grid grid-cols-[auto_7rem_1fr] items-center gap-3 rounded-lg border bg-muted/10 p-3 text-sm"
-										>
-											<Icon className="size-4 text-muted-foreground" />
-											<span className="text-xs text-muted-foreground">
-												{item.label}
-											</span>
-											<span className="min-w-0 truncate font-mono text-xs">
-												{item.value}
-											</span>
-										</div>
-									);
-								})}
-							</div>
-						</CardContent>
-					</Card>
+							return (
+								<div
+									key={item.label}
+									className="grid grid-cols-[auto_minmax(6rem,0.35fr)_minmax(0,1fr)] items-center gap-3 rounded-lg border bg-muted/10 p-3 text-sm"
+								>
+									<Icon className="size-4 text-muted-foreground" />
+									<span className="text-xs text-muted-foreground">{item.label}</span>
+									<span className="min-w-0 truncate font-mono text-xs">
+										{item.value}
+									</span>
+								</div>
+							);
+						})}
+					</div>
+				</div>
 
+				<div className="[&>div]:h-full [&>div]:shadow-sm">
 					<ConfigManagementPanel
 						platformConfigExport={platformConfigExport}
 						platformConfigLoading={platformConfigLoading}
@@ -155,7 +150,8 @@ export function SettingsViewPage({
 						onPlatformConfigImportTextChange={onPlatformConfigImportTextChange}
 						t={t}
 					/>
-				</section>
+				</div>
+			</section>
 		</PlatformPageShell>
 	);
 }
