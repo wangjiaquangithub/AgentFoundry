@@ -2578,26 +2578,16 @@ async def enterprise_platform_tools(
     resolved_user_id = user_id or request.headers.get("X-User-ID") or "acme:alice"
     runtime = _enterprise_runtime_context(resolved_user_id)
     tenant = str(runtime["tenant"])
-    published_agents = [
-        agent
-        for agent in _load_platform_agents()
-        if agent.get("status") == "published"
-    ]
+    try:
+        published_agents = _platform_agent_service().list_published_agents()
+    except PlatformAgentServiceError as exc:
+        _raise_platform_agent_service_error(exc)
     configured_agent = None
     if agent_id:
-        configured_agent = next(
-            (
-                agent
-                for agent in published_agents
-                if str(agent.get("id")) == agent_id
-            ),
-            None,
-        )
-        if configured_agent is None:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Unknown published platform agent: {agent_id}",
-            )
+        try:
+            configured_agent = _platform_agent_service().get_published_agent(agent_id)
+        except PlatformAgentServiceError as exc:
+            _raise_platform_agent_service_error(exc)
 
     configured_agent_tools = (
         set(configured_agent.get("tools") or []) if configured_agent else set()

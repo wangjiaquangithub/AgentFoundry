@@ -69,6 +69,29 @@ class PlatformAgentService:
             )
         return agent, set(agent.get("tools") or [])
 
+    def list_published_agents(self) -> list[dict[str, Any]]:
+        return [
+            agent
+            for agent in self.list_agents()
+            if agent.get("status") == "published"
+        ]
+
+    def get_published_agent(self, agent_id: str) -> dict[str, Any]:
+        agent = next(
+            (
+                item
+                for item in self.list_published_agents()
+                if str(item.get("id")) == agent_id
+            ),
+            None,
+        )
+        if agent is None:
+            raise PlatformAgentServiceError(
+                404,
+                f"Unknown published platform agent: {agent_id}",
+            )
+        return agent
+
     def published_tool_scope_for_user(
         self,
         agent_id: str,
