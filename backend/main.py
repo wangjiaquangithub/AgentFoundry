@@ -11,7 +11,7 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 from time import perf_counter
-from typing import Any
+from typing import Any, NoReturn
 from uuid import uuid4
 
 import httpx
@@ -75,12 +75,15 @@ from repositories.members import MemberRepository
 from repositories.tool_policy import ToolPolicyRepository
 from repositories.workflows import (
     WorkflowRunRepository,
-    WorkflowTemplateRegistryError,
     WorkflowTemplateRepository,
 )
 from runtime import get_runtime_adapter
 from services.agents import PlatformAgentService, PlatformAgentServiceError
 from services.platform_status import PlatformStatusService
+from services.workflows import (
+    PlatformWorkflowTemplateService,
+    PlatformWorkflowTemplateServiceError,
+)
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -4236,127 +4239,39 @@ def _workflow_input(
     return normalized or default
 
 
+def _platform_workflow_template_service() -> PlatformWorkflowTemplateService:
+    return PlatformWorkflowTemplateService(
+        repository=workflow_template_repository,
+        now=_now_iso,
+    )
+
+
+def _raise_platform_workflow_template_service_error(
+    exc: PlatformWorkflowTemplateServiceError,
+) -> NoReturn:
+    raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
+
+
 def _default_workflow_templates() -> list[dict[str, Any]]:
-    now = datetime.now(timezone.utc).isoformat()
-    return [
-        {
-            "workflow_type": "daily_ops_brief",
-            "name": "每日运营简报",
-            "description": "按制度、工单和部门指标生成一份可审计的运营简报。",
-            "enabled": True,
-            "default_inputs": {
-                "policy_keyword": "remote",
-                "ticket_id": "INC-1001",
-                "department": "engineering",
-            },
-            "steps": [
-                {
-                    "id": "policy",
-                    "title": "查询制度",
-                    "tool_name": "enterprise_lookup_policy",
-                    "input_map": {"keyword": "policy_keyword"},
-                },
-                {
-                    "id": "ticket",
-                    "title": "查询工单",
-                    "tool_name": "enterprise_get_ticket_status",
-                    "input_map": {"ticket_id": "ticket_id"},
-                },
-                {
-                    "id": "metrics",
-                    "title": "汇总部门指标",
-                    "tool_name": "enterprise_summarize_department_metrics",
-                    "input_map": {"department": "department"},
-                },
-            ],
-            "updated_at": now,
-            "updated_by": "system",
-        },
-        {
-            "workflow_type": "ticket_followup",
-            "name": "工单跟进",
-            "description": "查询指定工单，并补充关联制度依据。",
-            "enabled": True,
-            "default_inputs": {
-                "policy_keyword": "remote",
-                "ticket_id": "INC-1001",
-                "department": "engineering",
-            },
-            "steps": [
-                {
-                    "id": "ticket",
-                    "title": "查询工单",
-                    "tool_name": "enterprise_get_ticket_status",
-                    "input_map": {"ticket_id": "ticket_id"},
-                },
-                {
-                    "id": "policy",
-                    "title": "补充相关制度",
-                    "tool_name": "enterprise_lookup_policy",
-                    "input_map": {"keyword": "policy_keyword"},
-                },
-            ],
-            "updated_at": now,
-            "updated_by": "system",
-        },
-        {
-            "workflow_type": "policy_review",
-            "name": "制度复核",
-            "description": "查询制度条款，并结合部门指标做复核。",
-            "enabled": True,
-            "default_inputs": {
-                "policy_keyword": "remote",
-                "ticket_id": "INC-1001",
-                "department": "engineering",
-            },
-            "steps": [
-                {
-                    "id": "policy",
-                    "title": "查询制度",
-                    "tool_name": "enterprise_lookup_policy",
-                    "input_map": {"keyword": "policy_keyword"},
-                },
-                {
-                    "id": "metrics",
-                    "title": "核对部门指标",
-                    "tool_name": "enterprise_summarize_department_metrics",
-                    "input_map": {"department": "department"},
-                },
-            ],
-            "updated_at": now,
-            "updated_by": "system",
-        },
-    ]
+    return _platform_workflow_template_service().default_templates()
 
 
 def _save_platform_workflow_templates(workflows: list[dict[str, Any]]) -> None:
-    workflow_template_repository.save_all(workflows)
+    _platform_workflow_template_service().save_templates(workflows)
 
 
 def _load_platform_workflow_templates() -> list[dict[str, Any]]:
-    if not workflow_template_repository.exists():
-        workflows = _default_workflow_templates()
-        _save_platform_workflow_templates(workflows)
-        return workflows
-
     try:
-        return workflow_template_repository.list()
-    except WorkflowTemplateRegistryError as exc:
-        raise HTTPException(
-            status_code=500,
-            detail=str(exc),
-        ) from exc
+        return _platform_workflow_template_service().list_templates()
+    except PlatformWorkflowTemplateServiceError as exc:
+        _raise_platform_workflow_template_service_error(exc)
 
 
 def _get_platform_workflow_template(workflow_type: str) -> dict[str, Any]:
-    for workflow in _load_platform_workflow_templates():
-        if str(workflow.get("workflow_type", "")).strip() == workflow_type:
-            return workflow
-
-    raise HTTPException(
-        status_code=400,
-        detail=f"Unknown enterprise workflow: {workflow_type}",
-    )
+    try:
+        return _platform_workflow_template_service().get_template(workflow_type)
+    except PlatformWorkflowTemplateServiceError as exc:
+        _raise_platform_workflow_template_service_error(exc)
 
 
 def _workflow_input_value(
@@ -4944,22 +4859,15 @@ async def resolve_enterprise_platform_ops_task(
         )
 
     actor = request.headers.get("X-User-ID") or "platform-admin"
-    workflows = _load_platform_workflow_templates()
-    enabled_workflows: list[dict[str, Any]] = []
-    changed = False
-    now = _now_iso()
-    for index, workflow in enumerate(workflows):
-        if workflow.get("enabled") is False:
-            updated_workflow = dict(workflow)
-            updated_workflow["enabled"] = True
-            updated_workflow["updated_at"] = now
-            updated_workflow["updated_by"] = actor
-            workflows[index] = updated_workflow
-            enabled_workflows.append(updated_workflow)
-            changed = True
-
-    if changed:
-        _save_platform_workflow_templates(workflows)
+    try:
+        (
+            enabled_workflows,
+            workflows,
+        ) = _platform_workflow_template_service().enable_disabled_templates(
+            actor=actor,
+        )
+    except PlatformWorkflowTemplateServiceError as exc:
+        _raise_platform_workflow_template_service_error(exc)
 
     user_id = request.headers.get("X-User-ID") or "acme:alice"
     runtime = _enterprise_runtime_context(user_id)
@@ -4989,38 +4897,14 @@ async def update_enterprise_workflow(
 ) -> dict[str, Any]:
     """Update mutable workflow template metadata from the platform console."""
     normalized_type = workflow_type.strip()
-    workflows = _load_platform_workflow_templates()
-    workflow_index = next(
-        (
-            index
-            for index, workflow in enumerate(workflows)
-            if str(workflow.get("workflow_type", "")).strip() == normalized_type
-        ),
-        None,
-    )
-    if workflow_index is None:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unknown enterprise workflow: {normalized_type}",
+    try:
+        workflow, workflows = _platform_workflow_template_service().update_template(
+            workflow_type=normalized_type,
+            payload=payload,
+            actor=request.headers.get("X-User-ID") or "platform-admin",
         )
-
-    workflow = dict(workflows[workflow_index])
-    if payload.name is not None:
-        name = payload.name.strip()
-        if not name:
-            raise HTTPException(status_code=400, detail="Workflow name cannot be empty.")
-        workflow["name"] = name
-    if payload.description is not None:
-        workflow["description"] = payload.description.strip()
-    if payload.enabled is not None:
-        workflow["enabled"] = payload.enabled
-    if payload.default_inputs is not None:
-        workflow["default_inputs"] = dict(payload.default_inputs)
-
-    workflow["updated_at"] = _now_iso()
-    workflow["updated_by"] = request.headers.get("X-User-ID") or "platform-admin"
-    workflows[workflow_index] = workflow
-    _save_platform_workflow_templates(workflows)
+    except PlatformWorkflowTemplateServiceError as exc:
+        _raise_platform_workflow_template_service_error(exc)
     return {"workflow": workflow, "workflows": workflows}
 
 
