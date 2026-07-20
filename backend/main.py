@@ -1749,11 +1749,9 @@ async def run_enterprise_agent(
             memory_hits=memory_hits,
             memory_saved=memory_saved,
         )
-        turn_id = response_trace["turn_id"]
-        evidence = response_trace["evidence"]
-        response = agent_run_service.build_unrouted_response(
+        response = agent_run_service.build_unrouted_response_from_trace(
+            response_trace=response_trace,
             answer=answer,
-            turn_id=turn_id,
             session_id=runner_session_id,
             tenant=tenant,
             user_id=user_id,
@@ -1769,7 +1767,6 @@ async def run_enterprise_agent(
             memory_payload=memory_payload,
             memory_saved=memory_saved,
             decision=decision,
-            evidence=evidence,
         )
         agent_run_service.append_response_record_from_trace(
             response_trace=response_trace,
@@ -1967,12 +1964,10 @@ async def run_enterprise_agent(
         memory_hits=memory_hits,
         memory_saved=memory_saved,
     )
-    turn_id = response_trace["turn_id"]
-    evidence = response_trace["evidence"]
-    response = agent_run_service.build_routed_response(
+    response = agent_run_service.build_routed_response_from_trace(
+        response_trace=response_trace,
         answer=answer,
         routed=bool(tool_call_summary["routed"]),
-        turn_id=turn_id,
         session_id=runner_session_id,
         primary_call=primary_call,
         tenant=tenant,
@@ -1989,7 +1984,6 @@ async def run_enterprise_agent(
         knowledge_payload=knowledge_payload,
         memory_payload=memory_payload,
         memory_saved=memory_saved,
-        evidence=evidence,
     )
     agent_run_service.append_response_record_from_trace(
         response_trace=response_trace,
