@@ -40,6 +40,21 @@ class PlatformStatusService:
         self._approval_required_tools = approval_required_tools
         self._approval_required_workflows = approval_required_workflows
 
+    @staticmethod
+    def runtime_tenant(runtime: dict[str, Any]) -> str:
+        """Return the tenant selected for the runtime context."""
+        return str(runtime["tenant"])
+
+    @staticmethod
+    def runtime_connector_label(runtime: dict[str, Any]) -> str:
+        """Return the human-readable connector label for the runtime context."""
+        return str(runtime["connector_label"])
+
+    @staticmethod
+    def runtime_connector_source(runtime: dict[str, Any]) -> str:
+        """Return the connector configuration source for the runtime context."""
+        return str(runtime["connector_source"])
+
     def dashboard(self, *, tenant: str, user_id: str) -> dict[str, Any]:
         """Build a compact platform operations snapshot for the console."""
         pending_approvals = self._list_approval_records(
@@ -165,8 +180,8 @@ class PlatformStatusService:
                 "tenant": tenant,
             },
             "connector": {
-                "name": runtime["connector_label"],
-                "source": runtime["connector_source"],
+                "name": self.runtime_connector_label(runtime),
+                "source": self.runtime_connector_source(runtime),
                 "saved_config_enabled": runtime["saved_config_enabled"],
             },
             "identities": identities,
