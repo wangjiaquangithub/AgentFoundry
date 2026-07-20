@@ -2395,14 +2395,14 @@ async def run_enterprise_workflow(
         APPROVAL_REQUIRED_WORKFLOWS,
     ):
         approval_id = _require_platform_approval(
-            approval_id=run_request["approval_id"],
-            request_type="workflow_run",
-            target_key="workflow_type",
-            target_value=workflow_type,
-            tenant=tenant,
-            user_id=user_id,
-            agent_id=agent_id,
-            inputs=normalized_inputs,
+            **workflow_run_service.build_approval_request_context(
+                approval_id=run_request["approval_id"],
+                workflow_type=workflow_type,
+                tenant=tenant,
+                user_id=user_id,
+                agent_id=agent_id,
+                inputs=normalized_inputs,
+            ),
         )
 
     steps: list[dict[str, Any]] = []

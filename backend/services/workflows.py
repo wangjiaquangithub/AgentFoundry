@@ -826,6 +826,27 @@ class PlatformWorkflowRunService:
             approval_required_tools,
         )
 
+    def build_approval_request_context(
+        self,
+        *,
+        approval_id: str | None,
+        workflow_type: str,
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        inputs: dict[str, str],
+    ) -> dict[str, Any]:
+        return {
+            "approval_id": approval_id,
+            "request_type": "workflow_run",
+            "target_key": "workflow_type",
+            "target_value": workflow_type,
+            "tenant": tenant,
+            "user_id": user_id,
+            "agent_id": agent_id,
+            "inputs": inputs,
+        }
+
     def status_counts(self, steps: list[dict[str, Any]]) -> dict[str, int]:
         counts = {"success": 0, "denied": 0, "failed": 0}
         for step in steps:
