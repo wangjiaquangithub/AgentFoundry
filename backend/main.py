@@ -2022,25 +2022,15 @@ def _workflow_step(
             fail_on_denied=False,
         )
         workflow_run_service = _platform_workflow_run_service()
-        allowed = workflow_run_service.tool_response_allowed(tool_response)
-        decision = workflow_run_service.tool_response_decision(tool_response)
-        message = (
-            _platform_tool_policy_service().format_tool_result_answer(
-                **workflow_run_service.build_tool_result_answer_context(
-                    tool_name=tool_name,
-                    tool_response=tool_response,
-                ),
-            )
-            if allowed
-            else str((decision or {}).get("reason") or "当前用户无权调用该工具。")
-        )
-        return workflow_run_service.executed_step_record(
+        return workflow_run_service.executed_step_record_from_context(
+            format_tool_result_answer=(
+                _platform_tool_policy_service().format_tool_result_answer
+            ),
             step_id=step_id,
             title=title,
             tool_name=tool_name,
             inputs=inputs,
             tool_response=tool_response,
-            message=message,
         )
     except HTTPException as exc:
         workflow_run_service = _platform_workflow_run_service()

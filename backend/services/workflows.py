@@ -675,6 +675,37 @@ class PlatformWorkflowRunService:
         }
         return step, tool_call
 
+    def executed_step_record_from_context(
+        self,
+        *,
+        format_tool_result_answer: Callable[..., str],
+        step_id: str,
+        title: str,
+        tool_name: str,
+        inputs: dict[str, Any],
+        tool_response: dict[str, Any],
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        allowed = self.tool_response_allowed(tool_response)
+        decision = self.tool_response_decision(tool_response)
+        message = (
+            format_tool_result_answer(
+                **self.build_tool_result_answer_context(
+                    tool_name=tool_name,
+                    tool_response=tool_response,
+                ),
+            )
+            if allowed
+            else str((decision or {}).get("reason") or "当前用户无权调用该工具。")
+        )
+        return self.executed_step_record(
+            step_id=step_id,
+            title=title,
+            tool_name=tool_name,
+            inputs=inputs,
+            tool_response=tool_response,
+            message=message,
+        )
+
     def error_detail_decision(self, detail: Any) -> dict[str, Any] | None:
         if isinstance(detail, dict) and isinstance(detail.get("decision"), dict):
             return detail["decision"]
