@@ -4,6 +4,7 @@ import {
 	Clock3,
 	Database,
 	FileClock,
+	ListChecks,
 	Play,
 	Search,
 	ShieldCheck,
@@ -17,6 +18,7 @@ import type { MemoryOperationsItem } from './MemoryOperationsPanel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -162,125 +164,158 @@ export function MemoryViewPage({
 				})}
 			</section>
 
-			<section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.42fr)]">
-				<div className="grid min-w-0 gap-4 rounded-lg border bg-background p-4 shadow-sm">
-					<div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-						<div>
-							<h2 className="text-sm font-semibold">记忆作用域清单</h2>
-							<p className="mt-1 text-xs leading-5 text-muted-foreground">
-								按租户、用户和 Agent 聚合长期记忆，快速定位哪些业务范围已经形成可复用上下文。
+			<Tabs defaultValue="scopes" className="grid gap-4">
+				<section className="rounded-lg border bg-background p-4 shadow-sm">
+					<div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+						<div className="min-w-0">
+							<div className="flex items-center gap-2">
+								<div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+									<Brain className="size-4 text-muted-foreground" />
+								</div>
+								<h2 className="text-base font-semibold">记忆工作区</h2>
+							</div>
+							<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+								把作用域清单、证据详情和来源覆盖分区处理，便于按租户、用户与
+								Agent 排查长期记忆的命中和写入情况。
 							</p>
 						</div>
-						<div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
-							<div className="relative min-w-0 sm:w-72">
-								<Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-								<Input
-									value={memorySearch}
-									onChange={(event) => setMemorySearch(event.target.value)}
-									placeholder="搜索 Agent、租户、用户或来源"
-									className="pl-9"
-								/>
-							</div>
-							<div className="grid grid-cols-4 gap-1 rounded-md border bg-muted/30 p-1 sm:w-[19rem]">
-								{memoryFilters.map((filter) => (
-									<Button
-										key={filter.value}
-										type="button"
-										size="sm"
-										variant={memoryFilter === filter.value ? 'secondary' : 'ghost'}
-										className="h-8 px-2 text-xs"
-										onClick={() => setMemoryFilter(filter.value)}
-									>
-										{filter.label}
-									</Button>
-								))}
-							</div>
-						</div>
+						<TabsList className="w-full sm:w-auto">
+							<TabsTrigger value="scopes" className="flex-1 sm:flex-none">
+								<ListChecks className="size-4" />
+								作用域
+							</TabsTrigger>
+							<TabsTrigger value="evidence" className="flex-1 sm:flex-none">
+								<UserRound className="size-4" />
+								证据
+							</TabsTrigger>
+							<TabsTrigger value="sources" className="flex-1 sm:flex-none">
+								<Database className="size-4" />
+								来源
+							</TabsTrigger>
+						</TabsList>
 					</div>
-					{memoryOperationsItems.length === 0 ? (
-						<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-							{t('platform.memoryOps.empty')}
-						</div>
-					) : filteredItems.length === 0 ? (
-						<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-							没有匹配当前筛选条件的记忆作用域。
-						</div>
-					) : (
-						<div className="grid gap-2">
-							{filteredItems.map((item) => {
-								const isSelected = selectedItem?.key === item.key;
+				</section>
 
-								return (
-									<button
-										key={item.key}
-										type="button"
-										onClick={() => setSelectedScopeKey(item.key)}
-										className={cn(
-											'grid gap-3 rounded-lg border bg-muted/10 p-3 text-left transition-colors hover:border-slate-300 hover:bg-muted/20',
-											isSelected && 'border-slate-900 bg-slate-50',
-										)}
-									>
-										<div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
-											<div className="min-w-0">
-												<div className="flex min-w-0 flex-wrap items-center gap-2">
-													<h3 className="min-w-0 truncate text-sm font-semibold">
-														{item.agentName}
-													</h3>
-													<Badge variant={item.memoryHitCount > 0 ? 'default' : 'outline'}>
-														{item.memoryHitCount > 0 ? '已命中' : '待命中'}
-													</Badge>
-												</div>
-												<div className="mt-2 flex flex-wrap gap-1">
-													<Badge variant="secondary">{item.tenant}</Badge>
-													<Badge variant="outline">{item.userId}</Badge>
-													<Badge variant="outline" className="max-w-full truncate">
-														{item.agentId}
-													</Badge>
-												</div>
-											</div>
-											<div className="grid grid-cols-3 gap-2 sm:min-w-64">
-												{[
-													{ label: t('platform.memoryOps.runs'), value: item.runCount },
-													{ label: t('platform.memoryOps.hits'), value: item.memoryHitCount },
-													{
-														label: t('platform.memoryOps.writes'),
-														value: item.memorySavedCount,
-													},
-												].map((metric) => (
-													<div
-														key={metric.label}
-														className="rounded-md border bg-background px-3 py-2"
-													>
-														<div className="truncate text-xs text-muted-foreground">
-															{metric.label}
-														</div>
-														<div className="mt-1 text-base font-semibold tabular-nums">
-															{metric.value}
-														</div>
+				<TabsContent value="scopes" className="mt-0">
+					<section className="grid min-w-0 gap-4 rounded-lg border bg-background p-4 shadow-sm">
+						<div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+							<div>
+								<h2 className="text-sm font-semibold">记忆作用域清单</h2>
+								<p className="mt-1 text-xs leading-5 text-muted-foreground">
+									按租户、用户和 Agent 聚合长期记忆，快速定位哪些业务范围已经形成可复用上下文。
+								</p>
+							</div>
+							<div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
+								<div className="relative min-w-0 sm:w-72">
+									<Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+									<Input
+										value={memorySearch}
+										onChange={(event) => setMemorySearch(event.target.value)}
+										placeholder="搜索 Agent、租户、用户或来源"
+										className="pl-9"
+									/>
+								</div>
+								<div className="grid grid-cols-4 gap-1 rounded-md border bg-muted/30 p-1 sm:w-[19rem]">
+									{memoryFilters.map((filter) => (
+										<Button
+											key={filter.value}
+											type="button"
+											size="sm"
+											variant={memoryFilter === filter.value ? 'secondary' : 'ghost'}
+											className="h-8 px-2 text-xs"
+											onClick={() => setMemoryFilter(filter.value)}
+										>
+											{filter.label}
+										</Button>
+									))}
+								</div>
+							</div>
+						</div>
+						{memoryOperationsItems.length === 0 ? (
+							<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+								{t('platform.memoryOps.empty')}
+							</div>
+						) : filteredItems.length === 0 ? (
+							<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+								没有匹配当前筛选条件的记忆作用域。
+							</div>
+						) : (
+							<div className="grid gap-2">
+								{filteredItems.map((item) => {
+									const isSelected = selectedItem?.key === item.key;
+
+									return (
+										<button
+											key={item.key}
+											type="button"
+											onClick={() => setSelectedScopeKey(item.key)}
+											className={cn(
+												'grid gap-3 rounded-lg border bg-muted/10 p-3 text-left transition-colors hover:border-slate-300 hover:bg-muted/20',
+												isSelected && 'border-slate-900 bg-slate-50',
+											)}
+										>
+											<div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+												<div className="min-w-0">
+													<div className="flex min-w-0 flex-wrap items-center gap-2">
+														<h3 className="min-w-0 truncate text-sm font-semibold">
+															{item.agentName}
+														</h3>
+														<Badge variant={item.memoryHitCount > 0 ? 'default' : 'outline'}>
+															{item.memoryHitCount > 0 ? '已命中' : '待命中'}
+														</Badge>
 													</div>
-												))}
+													<div className="mt-2 flex flex-wrap gap-1">
+														<Badge variant="secondary">{item.tenant}</Badge>
+														<Badge variant="outline">{item.userId}</Badge>
+														<Badge variant="outline" className="max-w-full truncate">
+															{item.agentId}
+														</Badge>
+													</div>
+												</div>
+												<div className="grid grid-cols-3 gap-2 sm:min-w-64">
+													{[
+														{ label: t('platform.memoryOps.runs'), value: item.runCount },
+														{ label: t('platform.memoryOps.hits'), value: item.memoryHitCount },
+														{
+															label: t('platform.memoryOps.writes'),
+															value: item.memorySavedCount,
+														},
+													].map((metric) => (
+														<div
+															key={metric.label}
+															className="rounded-md border bg-background px-3 py-2"
+														>
+															<div className="truncate text-xs text-muted-foreground">
+																{metric.label}
+															</div>
+															<div className="mt-1 text-base font-semibold tabular-nums">
+																{metric.value}
+															</div>
+														</div>
+													))}
+												</div>
 											</div>
-										</div>
-										<div className="grid gap-3 border-t pt-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-											<p className="line-clamp-2 min-w-0 text-sm leading-6 text-muted-foreground">
-												{item.latestQuestion || t('platform.memoryOps.noQuestion')}
-											</p>
-											<div className="flex items-center gap-2 text-xs text-muted-foreground">
-												<Clock3 className="size-4" />
-												<span className="tabular-nums">
-													{formatTimestamp(item.latestAt)}
-												</span>
+											<div className="grid gap-3 border-t pt-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+												<p className="line-clamp-2 min-w-0 text-sm leading-6 text-muted-foreground">
+													{item.latestQuestion || t('platform.memoryOps.noQuestion')}
+												</p>
+												<div className="flex items-center gap-2 text-xs text-muted-foreground">
+													<Clock3 className="size-4" />
+													<span className="tabular-nums">
+														{formatTimestamp(item.latestAt)}
+													</span>
+												</div>
 											</div>
-										</div>
-									</button>
-								);
-							})}
-						</div>
-					)}
-				</div>
+										</button>
+									);
+								})}
+							</div>
+						)}
+					</section>
+				</TabsContent>
 
-				<aside className="grid gap-4 xl:sticky xl:top-20">
-					<div className="rounded-lg border bg-background p-4 shadow-sm">
+				<TabsContent value="evidence" className="mt-0">
+					<section className="rounded-lg border bg-background p-4 shadow-sm">
 						<div className="flex items-start justify-between gap-3">
 							<div>
 								<h2 className="text-sm font-semibold">记忆证据面板</h2>
@@ -292,44 +327,61 @@ export function MemoryViewPage({
 						</div>
 
 						{selectedItem ? (
-							<div className="mt-4 grid gap-4">
-								<div className="rounded-lg border bg-muted/10 p-3">
-									<div className="flex min-w-0 items-start gap-3">
-										<div className="grid size-9 shrink-0 place-items-center rounded-lg border bg-background">
-											<UserRound className="size-4 text-muted-foreground" />
-										</div>
-										<div className="min-w-0">
-											<h3 className="truncate text-sm font-semibold">
-												{selectedItem.agentName}
-											</h3>
-											<p className="mt-1 truncate font-mono text-xs text-muted-foreground">
-												{selectedItem.key}
-											</p>
+							<div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,0.35fr)_minmax(0,0.65fr)]">
+								<div className="grid content-start gap-4">
+									<div className="rounded-lg border bg-muted/10 p-3">
+										<div className="flex min-w-0 items-start gap-3">
+											<div className="grid size-9 shrink-0 place-items-center rounded-lg border bg-background">
+												<UserRound className="size-4 text-muted-foreground" />
+											</div>
+											<div className="min-w-0">
+												<h3 className="truncate text-sm font-semibold">
+													{selectedItem.agentName}
+												</h3>
+												<p className="mt-1 truncate font-mono text-xs text-muted-foreground">
+													{selectedItem.key}
+												</p>
+											</div>
 										</div>
 									</div>
-								</div>
 
-								<div className="grid grid-cols-3 gap-2">
-									{[
-										{ label: t('platform.memoryOps.runs'), value: selectedItem.runCount },
-										{
-											label: t('platform.memoryOps.hits'),
-											value: selectedItem.memoryHitCount,
-										},
-										{
-											label: t('platform.memoryOps.writes'),
-											value: selectedItem.memorySavedCount,
-										},
-									].map((metric) => (
-										<div key={metric.label} className="rounded-md border px-3 py-2">
-											<div className="truncate text-xs text-muted-foreground">
-												{metric.label}
+									<div className="grid grid-cols-3 gap-2">
+										{[
+											{ label: t('platform.memoryOps.runs'), value: selectedItem.runCount },
+											{
+												label: t('platform.memoryOps.hits'),
+												value: selectedItem.memoryHitCount,
+											},
+											{
+												label: t('platform.memoryOps.writes'),
+												value: selectedItem.memorySavedCount,
+											},
+										].map((metric) => (
+											<div key={metric.label} className="rounded-md border px-3 py-2">
+												<div className="truncate text-xs text-muted-foreground">
+													{metric.label}
+												</div>
+												<div className="mt-1 text-lg font-semibold tabular-nums">
+													{metric.value}
+												</div>
 											</div>
-											<div className="mt-1 text-lg font-semibold tabular-nums">
-												{metric.value}
-											</div>
-										</div>
-									))}
+										))}
+									</div>
+
+									<div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+										<Button type="button" onClick={() => onNavigate('/platform/runs')}>
+											<ArrowRight className="size-4" />
+											{t('platform.memoryOps.openRun')}
+										</Button>
+										<Button
+											type="button"
+											variant="outline"
+											onClick={() => onNavigate('/platform/agents')}
+										>
+											<Play className="size-4" />
+											{t('platform.memoryOps.runAgent')}
+										</Button>
+									</div>
 								</div>
 
 								<div className="grid gap-3">
@@ -345,40 +397,24 @@ export function MemoryViewPage({
 										<div className="text-xs text-muted-foreground">
 											{t('platform.memoryOps.latestAnswer')}
 										</div>
-										<p className="mt-2 line-clamp-6 text-sm leading-6 text-muted-foreground">
+										<p className="mt-2 line-clamp-8 text-sm leading-6 text-muted-foreground">
 											{selectedItem.latestAnswer || t('platform.memoryOps.noAnswer')}
 										</p>
 									</div>
-								</div>
-
-								<div>
-									<div className="mb-2 text-xs text-muted-foreground">记忆来源</div>
-									<div className="flex flex-wrap gap-1">
-										{selectedItem.sources.length ? (
-											selectedItem.sources.map((source) => (
-												<Badge key={source} variant="outline">
-													{source}
-												</Badge>
-											))
-										) : (
-											<Badge variant="outline">{t('platform.memoryOps.noSources')}</Badge>
-										)}
+									<div>
+										<div className="mb-2 text-xs text-muted-foreground">记忆来源</div>
+										<div className="flex flex-wrap gap-1">
+											{selectedItem.sources.length ? (
+												selectedItem.sources.map((source) => (
+													<Badge key={source} variant="outline">
+														{source}
+													</Badge>
+												))
+											) : (
+												<Badge variant="outline">{t('platform.memoryOps.noSources')}</Badge>
+											)}
+										</div>
 									</div>
-								</div>
-
-								<div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
-									<Button type="button" onClick={() => onNavigate('/platform/runs')}>
-										<ArrowRight className="size-4" />
-										{t('platform.memoryOps.openRun')}
-									</Button>
-									<Button
-										type="button"
-										variant="outline"
-										onClick={() => onNavigate('/platform/agents')}
-									>
-										<Play className="size-4" />
-										{t('platform.memoryOps.runAgent')}
-									</Button>
 								</div>
 							</div>
 						) : (
@@ -386,17 +422,19 @@ export function MemoryViewPage({
 								选择一个记忆作用域查看证据。
 							</div>
 						)}
-					</div>
+					</section>
+				</TabsContent>
 
-					<div className="rounded-lg border bg-background p-4 shadow-sm">
+				<TabsContent value="sources" className="mt-0">
+					<section className="rounded-lg border bg-background p-4 shadow-sm">
 						<h2 className="text-sm font-semibold">来源覆盖</h2>
 						<p className="mt-1 text-xs leading-5 text-muted-foreground">
 							用于判断长期记忆是否集中依赖少数来源。
 						</p>
-						<div className="mt-3 flex flex-wrap gap-1">
+						<div className="mt-4 flex flex-wrap gap-2">
 							{topSources.length ? (
 								topSources.map((source) => (
-									<Badge key={source} variant="secondary">
+									<Badge key={source} variant="secondary" className="max-w-full truncate">
 										{source}
 									</Badge>
 								))
@@ -404,9 +442,9 @@ export function MemoryViewPage({
 								<Badge variant="outline">{t('platform.memoryOps.noSources')}</Badge>
 							)}
 						</div>
-					</div>
-				</aside>
-			</section>
+					</section>
+				</TabsContent>
+			</Tabs>
 		</PlatformPageShell>
 	);
 }
