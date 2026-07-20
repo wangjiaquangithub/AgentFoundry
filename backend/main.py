@@ -1585,9 +1585,10 @@ async def run_enterprise_agent(
         memory_payload=memory_payload,
         memory_state=platform_memory_service.agent_run_state(memory_payload),
     )
-    memory_payload = memory_context["memory_payload"]
-    memory_enabled = memory_context["memory_enabled"]
-    memory_hits = memory_context["memory_hits"]
+    memory_context_view = agent_run_service.memory_context_view(memory_context)
+    memory_payload = memory_context_view["memory_payload"]
+    memory_enabled = memory_context_view["memory_enabled"]
+    memory_hits = memory_context_view["memory_hits"]
     knowledge_hits, knowledge_error = (
         await knowledge_response_service.search_agent_knowledge_bases(
             knowledge_base_service=getattr(

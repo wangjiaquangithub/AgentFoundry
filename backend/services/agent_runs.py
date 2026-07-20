@@ -361,6 +361,14 @@ class PlatformAgentRunService:
             "memory_hits": list(memory_state["memory_hits"]),
         }
 
+    @staticmethod
+    def memory_context_view(memory_context: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "memory_payload": memory_context["memory_payload"],
+            "memory_enabled": memory_context["memory_enabled"],
+            "memory_hits": memory_context["memory_hits"],
+        }
+
     def build_memory_append_context(
         self,
         *,
