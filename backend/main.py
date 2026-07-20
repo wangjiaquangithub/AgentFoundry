@@ -645,24 +645,6 @@ def _raise_platform_member_service_error(exc: PlatformMemberServiceError) -> NoR
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
-def _normalize_platform_member(
-    raw: dict[str, Any],
-    *,
-    fallback_user_id: str | None = None,
-    updated_by: str | None = None,
-    now: str | None = None,
-) -> dict[str, Any]:
-    try:
-        return _platform_member_service().normalize_member(
-            raw,
-            fallback_user_id=fallback_user_id,
-            updated_by=updated_by,
-            now=now,
-        )
-    except PlatformMemberServiceError as exc:
-        _raise_platform_member_service_error(exc)
-
-
 def _platform_member_registry(
     *,
     include_inactive: bool = True,
@@ -1300,11 +1282,14 @@ def _normalize_import_members(value: Any, actor: str) -> list[dict[str, Any]]:
         return []
     if not isinstance(raw_members, list):
         raise HTTPException(status_code=400, detail="members must be a JSON array.")
-    return [
-        _normalize_platform_member(raw, updated_by=actor)
-        for raw in raw_members
-        if isinstance(raw, dict)
-    ]
+    try:
+        return [
+            _platform_member_service().normalize_member(raw, updated_by=actor)
+            for raw in raw_members
+            if isinstance(raw, dict)
+        ]
+    except PlatformMemberServiceError as exc:
+        _raise_platform_member_service_error(exc)
 
 
 def _normalize_import_agents(value: Any) -> list[dict[str, Any]]:
