@@ -1031,7 +1031,8 @@ async def enterprise_platform_connectors(request: Request) -> dict[str, Any]:
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
 
-    tenant = _platform_status_service().runtime_tenant(runtime)
+    runtime_selection = _platform_status_service().runtime_selection(runtime)
+    tenant = runtime_selection["tenant"]
     identities = _platform_identity_metadata(user_id, tenant)
     response["identities"] = identities
     try:
