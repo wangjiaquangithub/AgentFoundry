@@ -1001,24 +1001,6 @@ def _enterprise_router_config() -> dict[str, Any] | None:
     }
 
 
-def _enterprise_router_endpoint(base_url: str, provider: str) -> str:
-    normalized = base_url.rstrip("/")
-    if provider == "anthropic":
-        if normalized.endswith("/v1/messages") or normalized.endswith("/messages"):
-            return normalized
-        if normalized.endswith("/v1"):
-            return f"{normalized}/messages"
-        return f"{normalized}/v1/messages"
-
-    if normalized.endswith("/v1/chat/completions") or normalized.endswith(
-        "/chat/completions",
-    ):
-        return normalized
-    if normalized.endswith("/v1"):
-        return f"{normalized}/chat/completions"
-    return f"{normalized}/v1/chat/completions"
-
-
 async def _route_enterprise_agent_question_with_model(
     question: str,
 ) -> dict[str, Any]:
@@ -1027,7 +1009,7 @@ async def _route_enterprise_agent_question_with_model(
         raise EnterpriseRouterError("Router model is not configured.")
 
     system_prompt, user_prompt = enterprise_router_service.build_model_prompt(question)
-    endpoint = _enterprise_router_endpoint(
+    endpoint = enterprise_router_service.build_model_endpoint(
         config["base_url"],
         config["provider"],
     )

@@ -54,6 +54,23 @@ class PlatformEnterpriseRouterService:
         user_prompt = f"Business question:\n{question}\n\nReturn JSON only."
         return system_prompt, user_prompt
 
+    def build_model_endpoint(self, base_url: str, provider: str) -> str:
+        normalized = base_url.rstrip("/")
+        if provider == "anthropic":
+            if normalized.endswith("/v1/messages") or normalized.endswith("/messages"):
+                return normalized
+            if normalized.endswith("/v1"):
+                return f"{normalized}/messages"
+            return f"{normalized}/v1/messages"
+
+        if normalized.endswith("/v1/chat/completions") or normalized.endswith(
+            "/chat/completions",
+        ):
+            return normalized
+        if normalized.endswith("/v1"):
+            return f"{normalized}/chat/completions"
+        return f"{normalized}/v1/chat/completions"
+
     def parse_model_route_content(self, content: str) -> dict[str, Any]:
         return self.normalize_model_route(self.parse_router_json(content))
 
