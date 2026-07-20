@@ -73,6 +73,10 @@ from repositories.workflows import (
     WorkflowTemplateRepository,
 )
 from runtime import get_runtime_adapter
+from services.agent_runs import (
+    PlatformAgentRunService,
+    PlatformAgentRunServiceError,
+)
 from services.agents import PlatformAgentService, PlatformAgentServiceError
 from services.connectors import (
     PlatformConnectorConfigService,
@@ -682,6 +686,16 @@ def _platform_agent_service() -> PlatformAgentService:
 
 
 def _raise_platform_agent_service_error(exc: PlatformAgentServiceError) -> None:
+    raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
+
+
+def _platform_agent_run_service() -> PlatformAgentRunService:
+    return PlatformAgentRunService(repository=agent_run_repository)
+
+
+def _raise_platform_agent_run_service_error(
+    exc: PlatformAgentRunServiceError,
+) -> NoReturn:
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
@@ -4008,24 +4022,22 @@ async def list_enterprise_agent_runs(
     limit: int = 20,
 ) -> dict[str, Any]:
     """List recent enterprise agent question-answer turns."""
-    return {
-        "runs": agent_run_repository.list(
-            limit=limit,
-            agent_id=(agent_id or "").strip() or None,
-            tenant=(tenant or "").strip() or None,
-            user_id=(user_id or "").strip() or None,
-            session_id=(session_id or "").strip() or None,
-        ),
-    }
+    return _platform_agent_run_service().list_runs(
+        limit=limit,
+        agent_id=agent_id,
+        tenant=tenant,
+        user_id=user_id,
+        session_id=session_id,
+    )
 
 
 @app.get("/enterprise/platform/agent/runs/{turn_id}")
 async def get_enterprise_agent_run(turn_id: str) -> dict[str, Any]:
     """Get a single enterprise agent question-answer turn by run ID."""
-    run = agent_run_repository.get(turn_id.strip())
-    if run is None:
-        raise HTTPException(status_code=404, detail="Agent run not found.")
-    return run
+    try:
+        return _platform_agent_run_service().get_run(turn_id)
+    except PlatformAgentRunServiceError as exc:
+        _raise_platform_agent_run_service_error(exc)
 
 
 @app.delete("/enterprise/platform/agent/runs")
@@ -4036,25 +4048,15 @@ async def clear_enterprise_agent_runs(
     session_id: str | None = None,
 ) -> dict[str, Any]:
     """Clear matching enterprise agent question-answer turns."""
-    if not any(
-        [
-            (agent_id or "").strip(),
-            (tenant or "").strip(),
-            (user_id or "").strip(),
-            (session_id or "").strip(),
-        ],
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail="At least one agent run filter is required.",
+    try:
+        return _platform_agent_run_service().clear_runs(
+            agent_id=agent_id,
+            tenant=tenant,
+            user_id=user_id,
+            session_id=session_id,
         )
-    deleted_count = agent_run_repository.delete(
-        agent_id=(agent_id or "").strip() or None,
-        tenant=(tenant or "").strip() or None,
-        user_id=(user_id or "").strip() or None,
-        session_id=(session_id or "").strip() or None,
-    )
-    return {"deleted_count": deleted_count}
+    except PlatformAgentRunServiceError as exc:
+        _raise_platform_agent_run_service_error(exc)
 
 
 def _workflow_input(
