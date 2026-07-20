@@ -694,10 +694,6 @@ def _raise_platform_member_service_error(exc: PlatformMemberServiceError) -> NoR
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
-def _save_platform_members_config(config: dict[str, Any]) -> None:
-    _platform_member_service().save_config(config)
-
-
 def _normalize_platform_member(
     raw: dict[str, Any],
     *,
@@ -2682,7 +2678,7 @@ async def import_enterprise_platform_config(
                 "user_id",
             )
         )
-        _save_platform_members_config({"members": members})
+        _platform_member_service().save_config({"members": members})
 
     if "connector_configs" in incoming:
         try:
