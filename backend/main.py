@@ -3417,19 +3417,6 @@ async def clear_enterprise_agent_runs(
         _raise_platform_agent_run_service_error(exc)
 
 
-def _workflow_input(
-    inputs: dict[str, Any],
-    key: str,
-    default: str = "",
-) -> str:
-    value = inputs.get(key)
-    if value is None:
-        return default
-
-    normalized = str(value).strip()
-    return normalized or default
-
-
 def _platform_workflow_template_service() -> PlatformWorkflowTemplateService:
     return PlatformWorkflowTemplateService(
         repository=workflow_template_repository,
