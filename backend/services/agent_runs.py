@@ -336,12 +336,7 @@ class PlatformAgentRunService:
         detail: dict[str, Any],
         approval_id: str,
     ) -> dict[str, Any]:
-        reason = str(
-            detail.get(
-                "message",
-                "该工具需要审批后才能运行。",
-            ),
-        )
+        reason = self.resolve_approval_required_reason(detail=detail)
         return {
             "approval_message": (
                 f"该工具需要审批，已自动创建审批请求 {approval_id}。"
@@ -358,6 +353,14 @@ class PlatformAgentRunService:
 
     def resolve_requested_by(self, *, headers: Any, user_id: str) -> str:
         return str(headers.get("X-User-ID") or user_id)
+
+    def resolve_approval_required_reason(self, *, detail: dict[str, Any]) -> str:
+        return str(
+            detail.get(
+                "message",
+                "该工具需要审批后才能运行。",
+            ),
+        )
 
     def build_approval_request_payload(
         self,
@@ -377,12 +380,7 @@ class PlatformAgentRunService:
             "agent_id": agent_id,
             "tool_name": tool_name,
             "inputs": inputs,
-            "reason": str(
-                detail.get(
-                    "message",
-                    "该工具需要审批后才能运行。",
-                ),
-            ),
+            "reason": self.resolve_approval_required_reason(detail=detail),
             "requested_by": requested_by,
         }
 
