@@ -143,6 +143,9 @@ class PlatformApprovalService:
             "decision_note": payload.decision_note,
         }
 
+    def decision_response(self, approval: dict[str, Any]) -> dict[str, Any]:
+        return {"approval": approval}
+
     def create_request(
         self,
         *,

@@ -2279,19 +2279,20 @@ async def approve_enterprise_approval_request(
     request: Request,
 ) -> dict[str, Any]:
     """Approve a pending platform governance request."""
-    decision_payload = _platform_approval_service().build_decision_payload(
+    approval_service = _platform_approval_service()
+    decision_payload = approval_service.build_decision_payload(
         payload=payload,
         actor=request.headers.get("X-User-ID"),
     )
     try:
-        approval = _platform_approval_service().update_status(
+        approval = approval_service.update_status(
             approval_id=approval_id,
             status="approved",
             **decision_payload,
         )
     except PlatformApprovalServiceError as exc:
         _raise_platform_approval_service_error(exc)
-    return {"approval": approval}
+    return approval_service.decision_response(approval)
 
 
 @app.post("/enterprise/platform/approvals/{approval_id}/reject")
@@ -2301,19 +2302,20 @@ async def reject_enterprise_approval_request(
     request: Request,
 ) -> dict[str, Any]:
     """Reject a pending platform governance request."""
-    decision_payload = _platform_approval_service().build_decision_payload(
+    approval_service = _platform_approval_service()
+    decision_payload = approval_service.build_decision_payload(
         payload=payload,
         actor=request.headers.get("X-User-ID"),
     )
     try:
-        approval = _platform_approval_service().update_status(
+        approval = approval_service.update_status(
             approval_id=approval_id,
             status="rejected",
             **decision_payload,
         )
     except PlatformApprovalServiceError as exc:
         _raise_platform_approval_service_error(exc)
-    return {"approval": approval}
+    return approval_service.decision_response(approval)
 
 
 @app.post("/enterprise/platform/workflows/run")
