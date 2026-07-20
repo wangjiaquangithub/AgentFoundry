@@ -243,6 +243,41 @@ def build_runtime_context_payload(
     ).to_dict()
 
 
+def build_runtime_invocation_request_payload(
+    *,
+    tenant: str,
+    user_id: str,
+    session_id: str,
+    agent_id: str,
+    question: str,
+    agent_name: str | None = None,
+    instructions: str | None = None,
+    tools: list[str] | tuple[str, ...] = (),
+    knowledge_base_ids: list[str] | tuple[str, ...] = (),
+    memory_enabled: bool = False,
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build a serialized provider-neutral runtime invocation request."""
+    return RuntimeInvocationRequest(
+        context=build_runtime_context(
+            tenant=tenant,
+            user_id=user_id,
+            session_id=session_id,
+            agent_id=agent_id,
+            agent_name=agent_name,
+            metadata=metadata,
+        ),
+        question=question,
+        instructions=instructions,
+        tools=tuple(str(tool) for tool in tools),
+        knowledge_base_ids=tuple(
+            str(knowledge_base_id) for knowledge_base_id in knowledge_base_ids
+        ),
+        memory_enabled=memory_enabled,
+        metadata=metadata,
+    ).to_dict()
+
+
 def get_runtime_adapter(_agent_metadata: dict[str, Any] | None = None) -> RuntimeAdapter:
     """Return the runtime adapter for platform agent runs."""
     return AGENTSCOPE_PLATFORM_ADAPTER

@@ -211,7 +211,7 @@ class PlatformAgentRunService:
     def build_response_record_context(
         self,
         *,
-        build_runtime_context_payload: Callable[..., dict[str, Any]],
+        runtime_context: dict[str, Any],
         session_id: str,
         agent_id: str,
         agent_name: Any,
@@ -220,14 +220,6 @@ class PlatformAgentRunService:
         question: str,
         runtime_adapter: dict[str, Any],
     ) -> dict[str, Any]:
-        runtime_context = build_runtime_context_payload(
-            tenant=tenant,
-            user_id=user_id,
-            session_id=session_id,
-            agent_id=agent_id,
-            agent_name=agent_name,
-            metadata={"source": "enterprise_agent_run"},
-        )
         return {
             "session_id": runtime_context["session_id"],
             "agent_id": runtime_context["agent_id"],
@@ -246,7 +238,7 @@ class PlatformAgentRunService:
         agent_metadata: dict[str, Any],
         runtime: dict[str, Any],
         runtime_adapter: dict[str, Any],
-        build_runtime_context_payload: Callable[..., dict[str, Any]],
+        build_runtime_invocation_request_payload: Callable[..., dict[str, Any]],
         default_tool_names: set[str],
         safe_path_part: Callable[[str], str],
     ) -> dict[str, Any]:
@@ -261,8 +253,21 @@ class PlatformAgentRunService:
             default_tool_names=default_tool_names,
             safe_path_part=safe_path_part,
         )
+        knowledge_base_ids = self.knowledge_base_ids_from_metadata(agent_metadata)
+        runtime_invocation_request = build_runtime_invocation_request_payload(
+            tenant=tenant,
+            user_id=run_request["user_id"],
+            session_id=runner_context["runner_session_id"],
+            agent_id=runner_context["runner_agent_id"],
+            agent_name=agent_metadata.get("agent_name"),
+            question=question,
+            tools=sorted(runner_context["configured_tools"]),
+            knowledge_base_ids=knowledge_base_ids,
+            memory_enabled=bool(agent_metadata.get("memory_enabled", False)),
+            metadata={"source": "enterprise_agent_run"},
+        )
         response_record_context = self.build_response_record_context(
-            build_runtime_context_payload=build_runtime_context_payload,
+            runtime_context=runtime_invocation_request["context"],
             session_id=runner_context["runner_session_id"],
             agent_id=runner_context["runner_agent_id"],
             agent_name=agent_metadata.get("agent_name"),
@@ -280,10 +285,9 @@ class PlatformAgentRunService:
             "configured_tools": runner_context["configured_tools"],
             "runner_agent_id": runner_context["runner_agent_id"],
             "runner_session_id": runner_context["runner_session_id"],
+            "runtime_invocation_request": runtime_invocation_request,
             "response_record_context": response_record_context,
-            "knowledge_base_ids": self.knowledge_base_ids_from_metadata(
-                agent_metadata,
-            ),
+            "knowledge_base_ids": knowledge_base_ids,
         }
 
     def resolve_runner_context(
