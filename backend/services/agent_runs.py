@@ -359,6 +359,33 @@ class PlatformAgentRunService:
     def resolve_requested_by(self, *, headers: Any, user_id: str) -> str:
         return str(headers.get("X-User-ID") or user_id)
 
+    def build_approval_request_payload(
+        self,
+        *,
+        detail: dict[str, Any],
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        tool_name: str,
+        inputs: dict[str, Any],
+        requested_by: str,
+    ) -> dict[str, Any]:
+        return {
+            "request_type": "tool_run",
+            "tenant": tenant,
+            "user_id": user_id,
+            "agent_id": agent_id,
+            "tool_name": tool_name,
+            "inputs": inputs,
+            "reason": str(
+                detail.get(
+                    "message",
+                    "该工具需要审批后才能运行。",
+                ),
+            ),
+            "requested_by": requested_by,
+        }
+
     def build_executed_routed_tool_call(
         self,
         *,

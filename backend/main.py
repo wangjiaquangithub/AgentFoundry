@@ -1779,21 +1779,17 @@ async def run_enterprise_agent(
 
                 try:
                     approval = _platform_approval_service().create_request(
-                        request_type="tool_run",
-                        tenant=tenant,
-                        user_id=user_id,
-                        agent_id=runner_agent_id,
-                        tool_name=tool_name,
-                        inputs=route_inputs,
-                        reason=str(
-                            detail.get(
-                                "message",
-                                "该工具需要审批后才能运行。",
-                            ),
-                        ),
-                        requested_by=agent_run_service.resolve_requested_by(
-                            headers=request.headers,
+                        **agent_run_service.build_approval_request_payload(
+                            detail=detail,
+                            tenant=tenant,
                             user_id=user_id,
+                            agent_id=runner_agent_id,
+                            tool_name=tool_name,
+                            inputs=route_inputs,
+                            requested_by=agent_run_service.resolve_requested_by(
+                                headers=request.headers,
+                                user_id=user_id,
+                            ),
                         ),
                     )
                 except PlatformApprovalServiceError as service_exc:
