@@ -2180,21 +2180,17 @@ async def list_enterprise_platform_scenarios() -> dict[str, Any]:
 @app.get("/enterprise/platform/ops/tasks")
 async def enterprise_platform_ops_tasks(request: Request) -> dict[str, Any]:
     """List open operator tasks for the current enterprise platform tenant."""
-    user_id = request.headers.get("X-User-ID") or "acme:alice"
+    status_service = _platform_status_service()
     try:
-        runtime = _platform_connector_config_service().enterprise_runtime_context(
-            user_id,
+        request_context = status_service.status_request_context(
+            user_id=request.headers.get("X-User-ID"),
         )
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
-    status_service = _platform_status_service()
-    runtime_selection = status_service.runtime_selection(runtime)
-    tenant = runtime_selection["tenant"]
-    identities = _platform_identity_metadata(user_id, tenant)
     return status_service.ops_tasks(
-        tenant=tenant,
-        user_id=user_id,
-        identities=identities,
+        tenant=request_context["tenant"],
+        user_id=request_context["user_id"],
+        identities=request_context["identities"],
     )
 
 
