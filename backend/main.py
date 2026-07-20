@@ -1541,7 +1541,8 @@ async def run_enterprise_tool(
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
     tool_policy_service = _platform_tool_policy_service()
-    tenant = tool_policy_service.runtime_tenant(runtime)
+    runtime_selection = tool_policy_service.runtime_selection(runtime)
+    tenant = runtime_selection["tenant"]
     runner_agent_id = "platform-console"
     configured_agent_id = (payload.agent_id or "").strip()
     if configured_agent_id:
@@ -1557,14 +1558,15 @@ async def run_enterprise_tool(
                 )
             except PlatformConnectorConfigServiceError as exc:
                 _raise_platform_connector_config_service_error(exc)
+            runtime_selection = tool_policy_service.runtime_selection(runtime)
             decision = _platform_agent_service().tool_denial_payload(payload.tool_name)
             return {
                 "tool_name": payload.tool_name,
                 "allowed": False,
                 "tenant": tenant,
                 "user_id": user_id,
-                "connector": tool_policy_service.runtime_connector_label(runtime),
-                "connector_source": tool_policy_service.runtime_connector_source(runtime),
+                "connector": runtime_selection["connector_label"],
+                "connector_source": runtime_selection["connector_source"],
                 "decision": decision,
             }
 
