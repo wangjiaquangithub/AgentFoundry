@@ -1771,15 +1771,18 @@ async def run_enterprise_agent(
                         approval=approval,
                     )
                 )
-                decision = agent_run_service.decide_pending_approval_route_from_context(
-                    decision_with_routing_context=(
-                        enterprise_router_service.decision_with_routing_context
-                    ),
-                    pending_approval_context=pending_approval_context,
-                    routing_reason=route_reason,
-                    routing_source=route_source,
-                    routing_mode=routing_mode,
-                    routing_error=routing_error,
+                decision = (
+                    agent_run_service.decide_created_pending_approval_route_from_context(
+                        decision_with_routing_context=(
+                            enterprise_router_service.decision_with_routing_context
+                        ),
+                        detail=detail,
+                        approval=approval,
+                        routing_reason=route_reason,
+                        routing_source=route_source,
+                        routing_mode=routing_mode,
+                        routing_error=routing_error,
+                    )
                 )
                 agent_run_service.append_pending_approval_routed_tool_call(
                     tool_calls=tool_calls,
