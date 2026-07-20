@@ -260,10 +260,11 @@ def _now_iso() -> str:
 def _platform_status_service() -> PlatformStatusService:
     """Build the service object that composes platform console status payloads."""
     agent_service = _platform_agent_service()
+    workflow_template_service = _platform_workflow_template_service()
     return PlatformStatusService(
         load_approval_requests=_load_platform_approval_requests,
         load_workflow_runs=_platform_workflow_run_service().list_run_records,
-        load_workflow_templates=_load_platform_workflow_templates,
+        load_workflow_templates=workflow_template_service.list_templates,
         load_agents=agent_service.list_agents,
         load_memories=_load_platform_memories,
         agent_run_repository=agent_run_repository,
@@ -2450,15 +2451,17 @@ async def import_enterprise_platform_config(
         imported_workflows = _normalize_import_workflow_templates(
             incoming.get("workflow_templates"),
         )
-        workflows = (
-            imported_workflows
-            if mode == "replace"
-            else _merge_by_key(
-                _load_platform_workflow_templates(),
+        workflows = imported_workflows
+        if mode != "replace":
+            try:
+                current_workflows = _platform_workflow_template_service().list_templates()
+            except PlatformWorkflowTemplateServiceError as exc:
+                _raise_platform_workflow_template_service_error(exc)
+            workflows = _merge_by_key(
+                current_workflows,
                 imported_workflows,
                 "workflow_type",
             )
-        )
         _platform_workflow_template_service().save_templates(workflows)
 
     if "tool_policy" in incoming:
@@ -3232,13 +3235,6 @@ def _raise_platform_approval_service_error(
     exc: PlatformApprovalServiceError,
 ) -> NoReturn:
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
-
-
-def _load_platform_workflow_templates() -> list[dict[str, Any]]:
-    try:
-        return _platform_workflow_template_service().list_templates()
-    except PlatformWorkflowTemplateServiceError as exc:
-        _raise_platform_workflow_template_service_error(exc)
 
 
 def _get_platform_workflow_template(workflow_type: str) -> dict[str, Any]:
