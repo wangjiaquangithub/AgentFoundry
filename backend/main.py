@@ -1315,14 +1315,13 @@ async def update_enterprise_platform_agent(
         **resource_inputs,
     )
     try:
-        agent, agents = agent_service.update_agent(
+        return agent_service.update_agent_response_payload(
             agent_id,
             payload,
             user_id,
         )
     except PlatformAgentServiceError as exc:
         _raise_platform_agent_service_error(exc)
-    return agent_service.mutation_response(agent, agents)
 
 
 @app.delete("/enterprise/platform/agents/{agent_id}")

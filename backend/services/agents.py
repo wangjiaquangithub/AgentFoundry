@@ -552,6 +552,15 @@ class PlatformAgentService:
         self.save_agents(agents)
         return agent, agents
 
+    def update_agent_response_payload(
+        self,
+        agent_id: str,
+        payload: Any,
+        user_id: str,
+    ) -> dict[str, Any]:
+        agent, agents = self.update_agent(agent_id, payload, user_id)
+        return self.mutation_response(agent, agents)
+
     def archive_agent(
         self,
         agent_id: str,
