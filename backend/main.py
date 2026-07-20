@@ -321,20 +321,6 @@ def _platform_status_service() -> PlatformStatusService:
     )
 
 
-def _enterprise_platform_ops_tasks(
-    *,
-    tenant: str,
-    user_id: str,
-    identities: list[dict[str, Any]],
-) -> dict[str, Any]:
-    """Build the platform operator's action queue from live enterprise state."""
-    return _platform_status_service().ops_tasks(
-        tenant=tenant,
-        user_id=user_id,
-        identities=identities,
-    )
-
-
 class ReadOnlyEnterpriseTool(FunctionTool):
     """Read-only function tool gated by enterprise authorization policy."""
 
@@ -4006,7 +3992,7 @@ async def enterprise_platform_ops_tasks(request: Request) -> dict[str, Any]:
     runtime = _enterprise_runtime_context(user_id)
     tenant = str(runtime["tenant"])
     identities = _platform_identity_metadata(user_id, tenant)
-    return _enterprise_platform_ops_tasks(
+    return _platform_status_service().ops_tasks(
         tenant=tenant,
         user_id=user_id,
         identities=identities,
@@ -4049,7 +4035,7 @@ async def resolve_enterprise_platform_ops_task(
         else "No disabled workflows were found.",
         "enabled_workflows": enabled_workflows,
         "workflows": workflows,
-        "ops_tasks": _enterprise_platform_ops_tasks(
+        "ops_tasks": _platform_status_service().ops_tasks(
             tenant=tenant,
             user_id=user_id,
             identities=identities,
