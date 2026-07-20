@@ -142,6 +142,76 @@ class PlatformStatusService:
             },
         }
 
+    def platform_snapshot(
+        self,
+        *,
+        platform_version: str,
+        data_dir: Any,
+        runtime: dict[str, Any],
+        tenant: str,
+        user_id: str,
+        identities: list[dict[str, Any]],
+        tenant_workspaces: dict[str, Any],
+        subagent_templates: list[Any],
+    ) -> dict[str, Any]:
+        """Build the top-level enterprise platform status payload."""
+        return {
+            "platform": {
+                "name": "AgentScope Enterprise Agent Platform",
+                "version": platform_version,
+            },
+            "current_user": {
+                "user_id": user_id,
+                "tenant": tenant,
+            },
+            "connector": {
+                "name": runtime["connector_label"],
+                "source": runtime["connector_source"],
+                "saved_config_enabled": runtime["saved_config_enabled"],
+            },
+            "identities": identities,
+            "tenant_workspaces": tenant_workspaces,
+            "current_workspace": tenant_workspaces.get(tenant),
+            "storage": {
+                "data_dir": str(data_dir),
+                "audit_log_path": str(self._audit_logger.path),
+            },
+            "audit": {
+                "enabled": self._audit_logger.enabled,
+                "recent_events": self._audit_logger.recent(limit=12),
+            },
+            "dashboard": self.dashboard(
+                tenant=tenant,
+                user_id=user_id,
+            ),
+            "launch_readiness": self.launch_readiness(
+                tenant=tenant,
+                user_id=user_id,
+                identities=identities,
+            ),
+            "tool_policy": {
+                "mode": self._tool_policy.mode,
+                "decisions": self._tool_policy.describe_for_user(
+                    tenant,
+                    user_id,
+                    self._enterprise_tool_names,
+                ),
+            },
+            "subagent_templates": [
+                {
+                    "type": template.type,
+                    "description": template.description,
+                    "permission_mode": getattr(
+                        template.permission_context.mode,
+                        "value",
+                        str(template.permission_context.mode),
+                    ),
+                    "override_leader_mode": template.override_leader_mode,
+                }
+                for template in subagent_templates
+            ],
+        }
+
     def launch_readiness(
         self,
         *,

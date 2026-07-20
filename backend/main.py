@@ -2076,62 +2076,16 @@ async def enterprise_platform_status(request: Request) -> dict[str, Any]:
         runtime_connector_for_tenant=_runtime_enterprise_connector_for_tenant,
     )
 
-    return {
-        "platform": {
-            "name": "AgentScope Enterprise Agent Platform",
-            "version": PLATFORM_VERSION,
-        },
-        "current_user": {
-            "user_id": user_id,
-            "tenant": tenant,
-        },
-        "connector": {
-            "name": runtime["connector_label"],
-            "source": runtime["connector_source"],
-            "saved_config_enabled": runtime["saved_config_enabled"],
-        },
-        "identities": identities,
-        "tenant_workspaces": tenant_workspaces,
-        "current_workspace": tenant_workspaces.get(tenant),
-        "storage": {
-            "data_dir": str(DATA_DIR),
-            "audit_log_path": str(tool_audit_logger.path),
-        },
-        "audit": {
-            "enabled": tool_audit_logger.enabled,
-            "recent_events": tool_audit_logger.recent(limit=12),
-        },
-        "dashboard": _platform_status_service().dashboard(
-            tenant=tenant,
-            user_id=user_id,
-        ),
-        "launch_readiness": _platform_status_service().launch_readiness(
-            tenant=tenant,
-            user_id=user_id,
-            identities=identities,
-        ),
-        "tool_policy": {
-            "mode": tool_authorization_policy.mode,
-            "decisions": tool_authorization_policy.describe_for_user(
-                tenant,
-                user_id,
-                ENTERPRISE_TOOL_NAMES,
-            ),
-        },
-        "subagent_templates": [
-            {
-                "type": template.type,
-                "description": template.description,
-                "permission_mode": getattr(
-                    template.permission_context.mode,
-                    "value",
-                    str(template.permission_context.mode),
-                ),
-                "override_leader_mode": template.override_leader_mode,
-            }
-            for template in ENTERPRISE_SUBAGENT_TEMPLATES
-        ],
-    }
+    return _platform_status_service().platform_snapshot(
+        platform_version=PLATFORM_VERSION,
+        data_dir=DATA_DIR,
+        runtime=runtime,
+        tenant=tenant,
+        user_id=user_id,
+        identities=identities,
+        tenant_workspaces=tenant_workspaces,
+        subagent_templates=ENTERPRISE_SUBAGENT_TEMPLATES,
+    )
 
 
 @app.get("/enterprise/platform/connectors")
