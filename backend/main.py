@@ -2010,14 +2010,12 @@ async def create_enterprise_platform_member(
         )
     except PlatformMemberServiceError as exc:
         _raise_platform_member_service_error(exc)
-    return {
-        "member": member,
-        "members": members,
-        "roles": _platform_member_service().roles(
-            _platform_identity_metadata(actor, member["tenant"]),
-        ),
-        "path": str(PLATFORM_MEMBERS_PATH),
-    }
+    return _platform_member_service().mutation_payload(
+        member=member,
+        members=members,
+        identities=_platform_identity_metadata(actor, member["tenant"]),
+        registry_path=PLATFORM_MEMBERS_PATH,
+    )
 
 
 @app.patch("/enterprise/platform/members/{user_id:path}")
@@ -2036,14 +2034,12 @@ async def update_enterprise_platform_member(
         )
     except PlatformMemberServiceError as exc:
         _raise_platform_member_service_error(exc)
-    return {
-        "member": member,
-        "members": members,
-        "roles": _platform_member_service().roles(
-            _platform_identity_metadata(actor, member["tenant"]),
-        ),
-        "path": str(PLATFORM_MEMBERS_PATH),
-    }
+    return _platform_member_service().mutation_payload(
+        member=member,
+        members=members,
+        identities=_platform_identity_metadata(actor, member["tenant"]),
+        registry_path=PLATFORM_MEMBERS_PATH,
+    )
 
 
 @app.delete("/enterprise/platform/members/{user_id:path}")
@@ -2060,14 +2056,12 @@ async def deactivate_enterprise_platform_member(
         )
     except PlatformMemberServiceError as exc:
         _raise_platform_member_service_error(exc)
-    return {
-        "member": existing,
-        "members": members,
-        "roles": _platform_member_service().roles(
-            _platform_identity_metadata(actor, existing["tenant"]),
-        ),
-        "path": str(PLATFORM_MEMBERS_PATH),
-    }
+    return _platform_member_service().mutation_payload(
+        member=existing,
+        members=members,
+        identities=_platform_identity_metadata(actor, existing["tenant"]),
+        registry_path=PLATFORM_MEMBERS_PATH,
+    )
 
 
 @app.get("/enterprise/platform/policies/tools")

@@ -112,6 +112,21 @@ class PlatformMemberService:
             "path": str(registry_path),
         }
 
+    def mutation_payload(
+        self,
+        *,
+        member: dict[str, Any],
+        members: list[dict[str, Any]],
+        identities: list[dict[str, Any]],
+        registry_path: Any,
+    ) -> dict[str, Any]:
+        return {
+            "member": member,
+            "members": members,
+            "roles": self.roles(identities),
+            "path": str(registry_path),
+        }
+
     def upsert_member(
         self,
         payload: dict[str, Any],
