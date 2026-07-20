@@ -242,6 +242,20 @@ class PlatformToolPolicyService:
             },
         }
 
+    def policy_request_payload(
+        self,
+        *,
+        authorization_policy: ToolAuthorizationPolicy,
+        query_user_id: str | None = None,
+        header_user_id: str | None = None,
+        tenant: str | None = None,
+    ) -> dict[str, Any]:
+        return self.policy_payload(
+            authorization_policy=authorization_policy,
+            user_id=query_user_id or header_user_id,
+            tenant=tenant,
+        )
+
     def update_user_policy(
         self,
         *,

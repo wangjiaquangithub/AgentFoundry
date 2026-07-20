@@ -1150,11 +1150,11 @@ async def enterprise_platform_tool_policy(
     tenant: str | None = None,
 ) -> dict[str, Any]:
     """Return editable enterprise tool authorization policy state."""
-    resolved_user_id = user_id or request.headers.get("X-User-ID") or "acme:alice"
     try:
-        return _platform_tool_policy_service().policy_payload(
+        return _platform_tool_policy_service().policy_request_payload(
             authorization_policy=tool_authorization_policy,
-            user_id=resolved_user_id,
+            query_user_id=user_id,
+            header_user_id=request.headers.get("X-User-ID"),
             tenant=tenant,
         )
     except PlatformToolPolicyServiceError as exc:
