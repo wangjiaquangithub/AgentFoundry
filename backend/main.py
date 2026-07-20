@@ -192,10 +192,6 @@ tool_audit_logger = ToolAuditLogger.from_env(
 )
 
 
-def _default_tool_policy_copy() -> dict[str, Any]:
-    return json.loads(json.dumps(DEFAULT_TOOL_POLICY))
-
-
 def _platform_tool_policy_path() -> Path:
     env_policy_path = os.getenv("ENTERPRISE_TOOL_POLICY_PATH")
     if env_policy_path:
@@ -227,7 +223,7 @@ def _build_tool_authorization_policy() -> ToolAuthorizationPolicy:
 def _platform_tool_policy_service() -> PlatformToolPolicyService:
     return PlatformToolPolicyService(
         policy_path=_platform_tool_policy_path,
-        default_policy=_default_tool_policy_copy(),
+        default_policy=json.loads(json.dumps(DEFAULT_TOOL_POLICY)),
         policy_mode=lambda: os.getenv(
             "ENTERPRISE_TOOL_POLICY_MODE",
             "permissive",
