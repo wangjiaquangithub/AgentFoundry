@@ -139,6 +139,82 @@ class PlatformMemberService:
             },
         )
 
+    def identity_metadata_payload(
+        self,
+        *,
+        current_user_id: str,
+        current_tenant: str,
+        connector_identities: list[dict[str, Any]],
+        tenant_for_user: Callable[[str], str],
+        current_tenant_sample_questions: Callable[[], list[Any]],
+        authorization_policy: Any,
+        tool_names: list[str],
+    ) -> list[dict[str, Any]]:
+        normalized_by_user: dict[str, dict[str, Any]] = {}
+
+        for identity in connector_identities:
+            user_id = str(identity.get("user_id") or "").strip()
+            if not user_id:
+                continue
+            tenant = str(identity.get("tenant") or "").strip()
+            if not tenant:
+                tenant = tenant_for_user(user_id)
+
+            normalized_by_user[user_id] = {
+                "user_id": user_id,
+                "tenant": tenant,
+                "display_name": str(identity.get("display_name") or user_id),
+                "role": str(identity.get("role") or "Enterprise user"),
+                "status": "active",
+                "source": "demo_connector",
+                "sample_questions": list(identity.get("sample_questions") or []),
+            }
+
+        for member in self.list_members(include_inactive=True):
+            normalized_by_user[member["user_id"]] = {
+                **normalized_by_user.get(member["user_id"], {}),
+                **member,
+            }
+
+        if current_user_id not in normalized_by_user:
+            normalized_by_user[current_user_id] = {
+                "user_id": current_user_id,
+                "tenant": current_tenant,
+                "display_name": current_user_id,
+                "role": "Current request user",
+                "status": "active",
+                "source": "current_request",
+                "sample_questions": current_tenant_sample_questions(),
+            }
+
+        normalized: list[dict[str, Any]] = []
+        for identity in normalized_by_user.values():
+            user_id = str(identity.get("user_id") or "").strip()
+            tenant = str(identity.get("tenant") or current_tenant).strip()
+            normalized.append(
+                {
+                    **identity,
+                    "tenant": tenant,
+                    "tool_policy": {
+                        "mode": authorization_policy.mode,
+                        "decisions": authorization_policy.describe_for_user(
+                            tenant,
+                            user_id,
+                            tool_names,
+                        ),
+                    },
+                },
+            )
+
+        normalized.sort(
+            key=lambda item: (
+                0 if item.get("user_id") == current_user_id else 1,
+                str(item.get("tenant") or ""),
+                str(item.get("user_id") or ""),
+            ),
+        )
+        return normalized
+
     def registry_payload(
         self,
         *,
