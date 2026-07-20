@@ -632,18 +632,6 @@ def _raise_platform_member_service_error(exc: PlatformMemberServiceError) -> NoR
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
-def _platform_member_registry(
-    *,
-    include_inactive: bool = True,
-) -> list[dict[str, Any]]:
-    try:
-        return _platform_member_service().list_members(
-            include_inactive=include_inactive,
-        )
-    except PlatformMemberServiceError as exc:
-        _raise_platform_member_service_error(exc)
-
-
 def _platform_agent_access_scope_diagnostics(
     tenant: str,
     access: dict[str, list[str]],
@@ -1161,9 +1149,13 @@ def _export_platform_config() -> dict[str, Any]:
         tool_policy = _platform_tool_policy_service().load_policy()
     except PlatformToolPolicyServiceError as exc:
         _raise_platform_tool_policy_service_error(exc)
+    try:
+        members = _platform_member_service().list_members(include_inactive=True)
+    except PlatformMemberServiceError as exc:
+        _raise_platform_member_service_error(exc)
 
     config = {
-        "members": _platform_member_registry(include_inactive=True),
+        "members": members,
         "connector_configs": connector_configs,
         "agents": agents,
         "workflow_templates": workflow_templates,
@@ -1289,7 +1281,12 @@ def _platform_identity_metadata(
             "sample_questions": list(identity.get("sample_questions") or []),
         }
 
-    for member in _platform_member_registry(include_inactive=True):
+    try:
+        members = _platform_member_service().list_members(include_inactive=True)
+    except PlatformMemberServiceError as exc:
+        _raise_platform_member_service_error(exc)
+
+    for member in members:
         normalized_by_user[member["user_id"]] = {
             **normalized_by_user.get(member["user_id"], {}),
             **member,
@@ -2208,7 +2205,10 @@ async def enterprise_platform_members(request: Request) -> dict[str, Any]:
     user_id = request.headers.get("X-User-ID") or "acme:alice"
     runtime = _enterprise_runtime_context(user_id)
     identities = _platform_identity_metadata(user_id, str(runtime["tenant"]))
-    members = _platform_member_registry(include_inactive=True)
+    try:
+        members = _platform_member_service().list_members(include_inactive=True)
+    except PlatformMemberServiceError as exc:
+        _raise_platform_member_service_error(exc)
     return {
         "members": members,
         "identities": identities,
@@ -2397,11 +2397,17 @@ async def import_enterprise_platform_config(
 
     if "members" in incoming:
         imported_members = _normalize_import_members(incoming.get("members"), actor)
+        try:
+            existing_members = _platform_member_service().list_members(
+                include_inactive=True,
+            )
+        except PlatformMemberServiceError as exc:
+            _raise_platform_member_service_error(exc)
         members = (
             imported_members
             if mode == "replace"
             else _merge_by_key(
-                _platform_member_registry(include_inactive=True),
+                existing_members,
                 imported_members,
                 "user_id",
             )
