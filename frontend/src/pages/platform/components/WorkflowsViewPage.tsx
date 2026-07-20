@@ -1,11 +1,6 @@
-import { Workflow } from 'lucide-react';
+import { Activity, CheckCircle2, History, ListChecks, Workflow } from 'lucide-react';
 import type { RefObject } from 'react';
 
-import type {
-	EnterpriseWorkflowRunHistoryItem,
-	EnterpriseWorkflowRunResponse,
-	EnterpriseWorkflowTemplate,
-} from '@/api';
 
 import {
 	PlatformConnectionCard,
@@ -13,6 +8,11 @@ import {
 	PlatformPageShell,
 } from './common';
 import { WorkflowRunnerPanel } from './WorkflowRunnerPanel';
+import type {
+	EnterpriseWorkflowRunHistoryItem,
+	EnterpriseWorkflowRunResponse,
+	EnterpriseWorkflowTemplate,
+} from '@/api';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -91,6 +91,24 @@ export function WorkflowsViewPage({
 	summarizeAuditObject,
 	t,
 }: WorkflowsViewPageProps) {
+	const enabledWorkflowCount = workflowTemplates.filter(
+		(template) => template.enabled,
+	).length;
+	const totalWorkflowSteps = workflowTemplates.reduce(
+		(total, template) => total + template.steps.length,
+		0,
+	);
+	const latestWorkflowRun = workflowRuns[0];
+	const latestWorkflowStatusLabel = latestWorkflowRun
+		? t(
+				latestWorkflowRun.status === 'completed'
+					? 'platform.workflowRunner.statusCompleted'
+					: latestWorkflowRun.status === 'partial'
+						? 'platform.workflowRunner.statusPartial'
+						: 'platform.workflowRunner.statusWorkflowFailed',
+			)
+		: t('platform.workflowRunner.historyEmpty');
+
 	return (
 		<PlatformPageShell>
 			<PlatformPageHeader
@@ -114,7 +132,76 @@ export function WorkflowsViewPage({
 				}
 			/>
 
+				<section className="grid gap-3 md:grid-cols-4">
+					<div className="rounded-lg border bg-background p-4 shadow-sm">
+						<div className="flex items-center justify-between gap-3">
+							<span className="text-sm font-medium text-muted-foreground">
+								{t('platform.workflowRunner.templates')}
+							</span>
+							<Workflow className="size-4 text-muted-foreground" />
+						</div>
+						<div className="mt-3 text-2xl font-semibold tabular-nums">
+							{workflowTemplates.length}
+						</div>
+						<p className="mt-1 truncate text-xs text-muted-foreground">
+							{t('platform.workflowRunner.selectWorkflow')}
+						</p>
+					</div>
+					<div className="rounded-lg border bg-background p-4 shadow-sm">
+						<div className="flex items-center justify-between gap-3">
+							<span className="text-sm font-medium text-muted-foreground">
+								{t('platform.workflowRunner.enabled')}
+							</span>
+							<CheckCircle2 className="size-4 text-muted-foreground" />
+						</div>
+						<div className="mt-3 text-2xl font-semibold tabular-nums">
+							{enabledWorkflowCount}
+						</div>
+						<p className="mt-1 truncate text-xs text-muted-foreground">
+							{workflowTemplatesLoading
+								? t('common.loading')
+								: t('platform.workflowRunner.disabled')}
+						</p>
+					</div>
+					<div className="rounded-lg border bg-background p-4 shadow-sm">
+						<div className="flex items-center justify-between gap-3">
+							<span className="text-sm font-medium text-muted-foreground">
+								{t('platform.workflowRunner.steps')}
+							</span>
+							<ListChecks className="size-4 text-muted-foreground" />
+						</div>
+						<div className="mt-3 text-2xl font-semibold tabular-nums">
+							{totalWorkflowSteps}
+						</div>
+						<p className="mt-1 truncate text-xs text-muted-foreground">
+							{selectedWorkflowTemplate
+								? t('platform.workflowRunner.stepsCount', {
+										count: selectedWorkflowTemplate.steps.length,
+									})
+								: t('platform.workflowRunner.noTemplates')}
+						</p>
+					</div>
+					<div className="rounded-lg border bg-background p-4 shadow-sm">
+						<div className="flex items-center justify-between gap-3">
+							<span className="text-sm font-medium text-muted-foreground">
+								{t('platform.workflowRunner.history')}
+							</span>
+							<History className="size-4 text-muted-foreground" />
+						</div>
+						<div className="mt-3 text-2xl font-semibold tabular-nums">
+							{workflowRuns.length}
+						</div>
+						<p className="mt-1 truncate text-xs text-muted-foreground">
+							{latestWorkflowStatusLabel}
+						</p>
+					</div>
+				</section>
+
 				<section ref={workflowRunnerRef}>
+					<div className="mb-3 flex items-center gap-2 text-sm font-medium text-muted-foreground">
+						<Activity className="size-4" />
+						<span>{t('platform.workflowRunner.summary')}</span>
+					</div>
 					<WorkflowRunnerPanel
 						selectedWorkflowType={selectedWorkflowType}
 						workflowOptions={workflowOptions}

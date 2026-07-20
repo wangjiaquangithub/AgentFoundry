@@ -1,6 +1,21 @@
-import { BotMessageSquare, Play, RefreshCcw } from 'lucide-react';
+import { BotMessageSquare, CheckCircle2, Database, Play, RefreshCcw, Wrench } from 'lucide-react';
 import type { ComponentType, RefObject } from 'react';
 
+import {
+	AgentManagementOverview,
+	AgentTemplateList,
+} from './AgentManagementOverview';
+import {
+	AgentRunnerConversation,
+	type AgentRunnerConversationTurn,
+} from './AgentRunnerConversation';
+import { AgentRunnerResult } from './AgentRunnerResult';
+import {
+	PlatformNotice,
+	PlatformPageHeader,
+	PlatformPageShell,
+	type HealthState,
+} from './common';
 import type {
 	EnterpriseAgentRunResponse,
 	EnterpriseAgentTemplate,
@@ -20,21 +35,6 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import {
-	AgentManagementOverview,
-	AgentTemplateList,
-} from './AgentManagementOverview';
-import {
-	AgentRunnerConversation,
-	type AgentRunnerConversationTurn,
-} from './AgentRunnerConversation';
-import { AgentRunnerResult } from './AgentRunnerResult';
-import {
-	PlatformNotice,
-	PlatformPageHeader,
-	PlatformPageShell,
-	type HealthState,
-} from './common';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -169,6 +169,19 @@ export function AgentsViewPage({
 	handleRunEnterpriseAgent,
 	handleInspectAgentRunAudit,
 }: AgentsViewPageProps) {
+	const activeAgentCount = activePlatformAgents.length;
+	const totalToolBindings = activePlatformAgents.reduce(
+		(total, agent) => total + agent.tools.length,
+		0,
+	);
+	const totalKnowledgeBindings = activePlatformAgents.reduce(
+		(total, agent) => total + agent.knowledge_base_ids.length,
+		0,
+	);
+	const runnerStateLabel = selectedRunAgent
+		? selectedRunAgentReadinessLabel
+		: t('platform.agentRunner.noInstances');
+
 	return (
 		<PlatformPageShell>
 			<PlatformPageHeader
@@ -202,6 +215,69 @@ export function AgentsViewPage({
 				{platformAgentsError ? (
 					<PlatformNotice>{t('platform.agentManagement.loadError')}</PlatformNotice>
 				) : null}
+
+				<section className="grid gap-3 md:grid-cols-4">
+					<div className="rounded-lg border bg-background p-4 shadow-sm">
+						<div className="flex items-center justify-between gap-3">
+							<span className="text-sm font-medium text-muted-foreground">
+								{t('platform.agentManagement.templates')}
+							</span>
+							<BotMessageSquare className="size-4 text-muted-foreground" />
+						</div>
+						<div className="mt-3 text-2xl font-semibold tabular-nums">
+							{agentTemplates.length}
+						</div>
+						<p className="mt-1 truncate text-xs text-muted-foreground">
+							{t('platform.agentManagement.configureTemplate')}
+						</p>
+					</div>
+					<div className="rounded-lg border bg-background p-4 shadow-sm">
+						<div className="flex items-center justify-between gap-3">
+							<span className="text-sm font-medium text-muted-foreground">
+								{t('platform.agentRunner.instance')}
+							</span>
+							<CheckCircle2 className="size-4 text-muted-foreground" />
+						</div>
+						<div className="mt-3 text-2xl font-semibold tabular-nums">
+							{activeAgentCount}
+						</div>
+						<p className="mt-1 truncate text-xs text-muted-foreground">
+							{runnerStateLabel}
+						</p>
+					</div>
+					<div className="rounded-lg border bg-background p-4 shadow-sm">
+						<div className="flex items-center justify-between gap-3">
+							<span className="text-sm font-medium text-muted-foreground">
+								{t('platform.agentManagement.knowledgeBases')}
+							</span>
+							<Database className="size-4 text-muted-foreground" />
+						</div>
+						<div className="mt-3 text-2xl font-semibold tabular-nums">
+							{totalKnowledgeBindings}
+						</div>
+						<p className="mt-1 truncate text-xs text-muted-foreground">
+							{t('platform.agentRunner.knowledgeCount', {
+								count: selectedRunAgentKnowledgeCount,
+							})}
+						</p>
+					</div>
+					<div className="rounded-lg border bg-background p-4 shadow-sm">
+						<div className="flex items-center justify-between gap-3">
+							<span className="text-sm font-medium text-muted-foreground">
+								{t('platform.agentManagement.tools')}
+							</span>
+							<Wrench className="size-4 text-muted-foreground" />
+						</div>
+						<div className="mt-3 text-2xl font-semibold tabular-nums">
+							{totalToolBindings}
+						</div>
+						<p className="mt-1 truncate text-xs text-muted-foreground">
+							{t('platform.agentRunner.toolsCount', {
+								count: selectedRunAgentToolCount,
+							})}
+						</p>
+					</div>
+				</section>
 
 				<section ref={agentManagementRef} className="grid gap-6">
 					<AgentManagementOverview
@@ -247,7 +323,7 @@ export function AgentsViewPage({
 					/>
 				</section>
 
-				<section className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(360px,1.1fr)]">
+				<section className="grid gap-6 xl:grid-cols-[minmax(0,0.82fr)_minmax(420px,1.18fr)]">
 					<div ref={agentTemplateStepRef} className="grid gap-3">
 						<AgentTemplateList
 							templates={agentTemplates}
@@ -429,7 +505,7 @@ export function AgentsViewPage({
 					</section>
 				</section>
 
-				<section className="grid gap-3">
+				<section className="grid gap-3 rounded-lg border bg-background p-4 shadow-sm">
 					<AgentRunnerResult
 						result={agentRunResult}
 						toolCalls={agentToolCalls}
