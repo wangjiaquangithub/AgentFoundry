@@ -1677,6 +1677,15 @@ async def run_enterprise_agent(
     configured_tools = runner_context["configured_tools"]
     runner_agent_id = runner_context["runner_agent_id"]
     runner_session_id = runner_context["runner_session_id"]
+    response_record_context = agent_run_service.build_response_record_context(
+        session_id=runner_session_id,
+        agent_id=runner_agent_id,
+        agent_name=agent_metadata.get("agent_name"),
+        tenant=tenant,
+        user_id=user_id,
+        question=question,
+        runtime_adapter=runtime_adapter_payload,
+    )
     memory_payload = platform_memory_service.build_agent_run_context(
         enabled=bool(agent_metadata.get("memory_enabled", False)),
         tenant=tenant,
@@ -1768,16 +1777,10 @@ async def run_enterprise_agent(
             memory_saved=memory_saved,
             decision=decision,
         )
-        agent_run_service.append_response_record_from_trace(
+        agent_run_service.append_response_record_from_context(
             response_trace=response_trace,
-            session_id=runner_session_id,
-            agent_id=runner_agent_id,
-            agent_name=agent_metadata.get("agent_name"),
-            tenant=tenant,
-            user_id=user_id,
-            question=question,
+            context=response_record_context,
             answer=answer,
-            runtime_adapter=runtime_adapter_payload,
             response=response,
         )
         return response
@@ -1985,16 +1988,10 @@ async def run_enterprise_agent(
         memory_payload=memory_payload,
         memory_saved=memory_saved,
     )
-    agent_run_service.append_response_record_from_trace(
+    agent_run_service.append_response_record_from_context(
         response_trace=response_trace,
-        session_id=runner_session_id,
-        agent_id=runner_agent_id,
-        agent_name=agent_metadata.get("agent_name"),
-        tenant=tenant,
-        user_id=user_id,
-        question=question,
+        context=response_record_context,
         answer=answer,
-        runtime_adapter=runtime_adapter_payload,
         response=response,
     )
     return response

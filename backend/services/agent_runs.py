@@ -89,6 +89,27 @@ class PlatformAgentRunService:
             ),
         }
 
+    def build_response_record_context(
+        self,
+        *,
+        session_id: str,
+        agent_id: str,
+        agent_name: Any,
+        tenant: str,
+        user_id: str,
+        question: str,
+        runtime_adapter: dict[str, Any],
+    ) -> dict[str, Any]:
+        return {
+            "session_id": session_id,
+            "agent_id": agent_id,
+            "agent_name": agent_name,
+            "tenant": tenant,
+            "user_id": user_id,
+            "question": question,
+            "runtime_adapter": runtime_adapter,
+        }
+
     def resolve_runner_context(
         self,
         *,
@@ -619,6 +640,27 @@ class PlatformAgentRunService:
             created_at=str(response_trace["created_at"]),
             runtime_adapter=runtime_adapter,
             evidence=dict(response_trace["evidence"]),
+            response=response,
+        )
+
+    def append_response_record_from_context(
+        self,
+        *,
+        response_trace: dict[str, Any],
+        context: dict[str, Any],
+        answer: str,
+        response: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self.append_response_record_from_trace(
+            response_trace=response_trace,
+            session_id=str(context["session_id"]),
+            agent_id=str(context["agent_id"]),
+            agent_name=context.get("agent_name"),
+            tenant=str(context["tenant"]),
+            user_id=str(context["user_id"]),
+            question=str(context["question"]),
+            answer=answer,
+            runtime_adapter=dict(context["runtime_adapter"]),
             response=response,
         )
 
