@@ -156,6 +156,15 @@ class PlatformWorkflowTemplateService:
             f"Unknown enterprise workflow: {workflow_type}",
         )
 
+    def get_enabled_template(self, workflow_type: str) -> dict[str, Any]:
+        workflow = self.get_template(workflow_type)
+        if workflow.get("enabled") is False:
+            raise PlatformWorkflowTemplateServiceError(
+                400,
+                f"Workflow is disabled: {workflow_type}",
+            )
+        return workflow
+
     def update_template(
         self,
         *,

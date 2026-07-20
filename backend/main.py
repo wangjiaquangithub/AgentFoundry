@@ -3361,6 +3361,15 @@ def _get_platform_workflow_template(workflow_type: str) -> dict[str, Any]:
         _raise_platform_workflow_template_service_error(exc)
 
 
+def _get_enabled_platform_workflow_template(workflow_type: str) -> dict[str, Any]:
+    try:
+        return _platform_workflow_template_service().get_enabled_template(
+            workflow_type,
+        )
+    except PlatformWorkflowTemplateServiceError as exc:
+        _raise_platform_workflow_template_service_error(exc)
+
+
 def _enterprise_platform_scenarios() -> dict[str, Any]:
     workflows = _load_platform_workflow_templates()
     workflow_runs = _platform_workflow_run_service().list_run_records(limit=100)
@@ -3879,12 +3888,7 @@ async def run_enterprise_workflow(
         configured_tools = set(agent.get("tools") or [])
 
     workflow_type = payload.workflow_type.strip()
-    workflow_template = _get_platform_workflow_template(workflow_type)
-    if workflow_template.get("enabled") is False:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Workflow is disabled: {workflow_type}",
-        )
+    workflow_template = _get_enabled_platform_workflow_template(workflow_type)
 
     runtime = _enterprise_runtime_context(user_id)
     tenant = str(runtime["tenant"])
