@@ -1724,14 +1724,13 @@ async def run_enterprise_agent(
 
     if not routes:
         route = _route_enterprise_agent_question(question)
-        decision = {
-            "reason": route["reason"],
-            "routing_reason": route["reason"],
-            "routing_source": routing_source,
-            "routing_mode": routing_mode,
-        }
-        if routing_error:
-            decision["routing_error"] = routing_error
+        decision = enterprise_router_service.decision_with_routing_context(
+            {"reason": route["reason"]},
+            routing_reason=str(route["reason"]),
+            routing_source=routing_source,
+            routing_mode=routing_mode,
+            routing_error=routing_error,
+        )
         answer = _platform_agent_run_service().compose_unrouted_answer(
             knowledge_hits=knowledge_hits,
             memory_hits=memory_hits,
@@ -1821,14 +1820,13 @@ async def run_enterprise_agent(
         if tool_name not in configured_tools:
             denial = _platform_agent_service().tool_denial_payload(tool_name)
             reason = str(denial["reason"])
-            decision = {
-                **denial,
-                "routing_reason": route_reason,
-                "routing_source": route_source,
-                "routing_mode": routing_mode,
-            }
-            if routing_error:
-                decision["routing_error"] = routing_error
+            decision = enterprise_router_service.decision_with_routing_context(
+                denial,
+                routing_reason=route_reason,
+                routing_source=route_source,
+                routing_mode=routing_mode,
+                routing_error=routing_error,
+            )
 
             tool_calls.append(
                 {
@@ -1888,20 +1886,22 @@ async def run_enterprise_agent(
                     f"该工具需要审批，已自动创建审批请求 {approval_id}。"
                     "请到审批中心批准后再运行。"
                 )
-                decision = {
-                    "allowed": False,
-                    "reason": detail.get(
-                        "message",
-                        "该工具需要审批后才能运行。",
-                    ),
-                    "approval_required": True,
-                    "approval_id": approval_id,
-                    "approval_status": "pending",
-                    "routing_reason": route_reason,
-                    "routing_source": route_source,
-                    "routing_mode": routing_mode,
-                    **({"routing_error": routing_error} if routing_error else {}),
-                }
+                decision = enterprise_router_service.decision_with_routing_context(
+                    {
+                        "allowed": False,
+                        "reason": detail.get(
+                            "message",
+                            "该工具需要审批后才能运行。",
+                        ),
+                        "approval_required": True,
+                        "approval_id": approval_id,
+                        "approval_status": "pending",
+                    },
+                    routing_reason=route_reason,
+                    routing_source=route_source,
+                    routing_mode=routing_mode,
+                    routing_error=routing_error,
+                )
                 tool_calls.append(
                     {
                         "tool_name": tool_name,
@@ -1930,13 +1930,13 @@ async def run_enterprise_agent(
             session_id=runner_session_id,
             fail_on_denied=False,
         )
-        decision = {
-            **tool_response["decision"],
-            "routing_reason": route_reason,
-            "routing_source": route_source,
-            "routing_mode": routing_mode,
-            **({"routing_error": routing_error} if routing_error else {}),
-        }
+        decision = enterprise_router_service.decision_with_routing_context(
+            tool_response["decision"],
+            routing_reason=route_reason,
+            routing_source=route_source,
+            routing_mode=routing_mode,
+            routing_error=routing_error,
+        )
         call_answer = _platform_tool_policy_service().format_tool_result_answer(
             tool_name=tool_name,
             result=tool_response.get("result"),

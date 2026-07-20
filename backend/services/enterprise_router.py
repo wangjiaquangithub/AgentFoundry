@@ -341,6 +341,26 @@ class PlatformEnterpriseRouterService:
 
         return "+".join(sources) if sources else self._default_source
 
+    def decision_with_routing_context(
+        self,
+        decision: dict[str, Any],
+        *,
+        routing_reason: str,
+        routing_source: str,
+        routing_mode: str,
+        routing_error: str | None = None,
+    ) -> dict[str, Any]:
+        payload = {
+            **decision,
+            "routing_reason": routing_reason,
+            "routing_source": routing_source,
+            "routing_mode": routing_mode,
+        }
+        if routing_error:
+            payload["routing_error"] = routing_error
+
+        return payload
+
     def ticket_routes_for_question(self, question: str) -> list[dict[str, Any]]:
         return [
             {
