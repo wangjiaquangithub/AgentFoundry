@@ -1501,9 +1501,10 @@ async def run_enterprise_tool(
         agent_id=runner_agent_id,
         session_id="platform-console",
     )
-    if approval_id:
-        response["approval_id"] = approval_id
-    return response
+    return tool_policy_service.tool_run_response(
+        response,
+        approval_id=approval_id,
+    )
 
 
 @app.post("/enterprise/platform/agent/run")

@@ -241,6 +241,16 @@ class PlatformToolPolicyService:
             "decision": decision,
         }
 
+    @staticmethod
+    def tool_run_response(
+        response: dict[str, Any],
+        *,
+        approval_id: str | None = None,
+    ) -> dict[str, Any]:
+        if approval_id:
+            response["approval_id"] = approval_id
+        return response
+
     def normalize_policy_tools(self, value: list[str] | None) -> list[str]:
         if not value:
             return []
