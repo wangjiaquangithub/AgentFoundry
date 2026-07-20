@@ -1697,10 +1697,12 @@ async def run_enterprise_agent(
             answer = agent_run_service.denied_tool_answer(denial)
             decision = enterprise_router_service.decision_with_routing_context(
                 denial,
-                routing_reason=route_reason,
-                routing_source=route_source,
-                routing_mode=routing_mode,
-                routing_error=routing_error,
+                **agent_run_service.build_routed_decision_context(
+                    routing_reason=route_reason,
+                    routing_source=route_source,
+                    routing_mode=routing_mode,
+                    routing_error=routing_error,
+                ),
             )
 
             tool_calls.append(
@@ -1771,10 +1773,12 @@ async def run_enterprise_agent(
                     agent_run_service.pending_approval_decision_payload(
                         pending_approval_context,
                     ),
-                    routing_reason=route_reason,
-                    routing_source=route_source,
-                    routing_mode=routing_mode,
-                    routing_error=routing_error,
+                    **agent_run_service.build_routed_decision_context(
+                        routing_reason=route_reason,
+                        routing_source=route_source,
+                        routing_mode=routing_mode,
+                        routing_error=routing_error,
+                    ),
                 )
                 tool_calls.append(
                     agent_run_service.build_pending_approval_routed_tool_call(
@@ -1807,10 +1811,12 @@ async def run_enterprise_agent(
         )
         decision = enterprise_router_service.decision_with_routing_context(
             agent_run_service.executed_tool_decision_payload(tool_response),
-            routing_reason=route_reason,
-            routing_source=route_source,
-            routing_mode=routing_mode,
-            routing_error=routing_error,
+            **agent_run_service.build_routed_decision_context(
+                routing_reason=route_reason,
+                routing_source=route_source,
+                routing_mode=routing_mode,
+                routing_error=routing_error,
+            ),
         )
         call_answer = _platform_tool_policy_service().format_tool_result_answer(
             tool_name=tool_name,
