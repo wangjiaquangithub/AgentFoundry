@@ -2431,9 +2431,10 @@ async def run_enterprise_workflow(
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
     status_service = _platform_status_service()
-    tenant = status_service.runtime_tenant(runtime)
-    connector_label = status_service.runtime_connector_label(runtime)
-    connector_source = status_service.runtime_connector_source(runtime)
+    runtime_selection = status_service.runtime_selection(runtime)
+    tenant = runtime_selection["tenant"]
+    connector_label = runtime_selection["connector_label"]
+    connector_source = runtime_selection["connector_source"]
     run_id = uuid4().hex
     started_at = _now_iso()
     workflow_run_service = _platform_workflow_run_service()
