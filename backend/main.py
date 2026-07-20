@@ -1183,22 +1183,6 @@ def _export_platform_config() -> dict[str, Any]:
     )
 
 
-def _normalize_import_members(value: Any, actor: str) -> list[dict[str, Any]]:
-    raw_members = value.get("members", value) if isinstance(value, dict) else value
-    if raw_members is None:
-        return []
-    if not isinstance(raw_members, list):
-        raise HTTPException(status_code=400, detail="members must be a JSON array.")
-    try:
-        return [
-            _platform_member_service().normalize_member(raw, updated_by=actor)
-            for raw in raw_members
-            if isinstance(raw, dict)
-        ]
-    except PlatformMemberServiceError as exc:
-        _raise_platform_member_service_error(exc)
-
-
 def _merge_by_key(
     existing: list[dict[str, Any]],
     imported: list[dict[str, Any]],
@@ -2131,9 +2115,16 @@ async def import_enterprise_platform_config(
         _raise_platform_connector_config_service_error(exc)
 
     if "members" in incoming:
-        imported_members = _normalize_import_members(incoming.get("members"), actor)
+        member_service = _platform_member_service()
         try:
-            existing_members = _platform_member_service().list_members(
+            imported_members = member_service.normalize_import_members(
+                incoming.get("members"),
+                actor=actor,
+            )
+        except PlatformMemberServiceError as exc:
+            _raise_platform_member_service_error(exc)
+        try:
+            existing_members = member_service.list_members(
                 include_inactive=True,
             )
         except PlatformMemberServiceError as exc:
@@ -2147,7 +2138,7 @@ async def import_enterprise_platform_config(
                 "user_id",
             )
         )
-        _platform_member_service().save_config({"members": members})
+        member_service.save_config({"members": members})
 
     if "connector_configs" in incoming:
         try:

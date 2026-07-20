@@ -72,6 +72,26 @@ class PlatformMemberService:
             "source": "member_registry",
         }
 
+    def normalize_import_members(
+        self,
+        value: Any,
+        *,
+        actor: str,
+    ) -> list[dict[str, Any]]:
+        raw_members = value.get("members", value) if isinstance(value, dict) else value
+        if raw_members is None:
+            return []
+        if not isinstance(raw_members, list):
+            raise PlatformMemberServiceError(
+                400,
+                "members must be a JSON array.",
+            )
+        return [
+            self.normalize_member(raw, updated_by=actor)
+            for raw in raw_members
+            if isinstance(raw, dict)
+        ]
+
     def list_members(self, *, include_inactive: bool = True) -> list[dict[str, Any]]:
         members = self._normalized_members()
         if not include_inactive:
