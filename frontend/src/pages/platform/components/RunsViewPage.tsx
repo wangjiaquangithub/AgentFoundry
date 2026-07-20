@@ -1,13 +1,15 @@
 import {
 	Activity,
 	BotMessageSquare,
+	CheckCircle2,
 	ClipboardList,
+	Clock3,
 	FileSearch,
 	RefreshCcw,
 	ShieldCheck,
 	Workflow,
 } from 'lucide-react';
-import type { Dispatch, SetStateAction } from 'react';
+import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 
 import {
 	formatTimestamp,
@@ -18,7 +20,6 @@ import { AuditEventsPanel } from './AuditEventsPanel';
 import {
 	PlatformPageHeader,
 	PlatformPageShell,
-	StatCard,
 	StateBadge,
 	type HealthState,
 } from './common';
@@ -81,6 +82,10 @@ interface RunsViewPageProps {
 	t: Translate;
 }
 
+type SelectedRun =
+	| { type: 'agent'; id: string }
+	| { type: 'workflow'; id: string };
+
 export function RunsViewPage({
 	monitoringHealthState,
 	monitoringLoading,
@@ -108,6 +113,53 @@ export function RunsViewPage({
 	summarizeAuditObject,
 	t,
 }: RunsViewPageProps) {
+	const runItems = useMemo(
+		() => [
+			...recentAgentTurns.map((turn) => ({
+				type: 'agent' as const,
+				id: turn.id,
+				title: turn.question,
+				description: turn.answer,
+				timestamp: turn.createdAt,
+				statusLabel: 'Agent',
+				statusClassName: 'border-sky-500/30 bg-sky-500/10 text-sky-700',
+				agentId: turn.agentId,
+				raw: turn,
+			})),
+			...recentWorkflowRuns.slice(0, 8).map((run) => ({
+				type: 'workflow' as const,
+				id: run.run_id,
+				title: run.workflow_name,
+				description: run.summary || formatTimestamp(run.finished_at || run.started_at),
+				timestamp: run.finished_at || run.started_at,
+				statusLabel: t(
+					`platform.workflowRunner.${workflowStatusLabelKey(run.status)}`,
+				),
+				statusClassName: workflowStatusClassName(run.status),
+				agentId: run.agent_id,
+				raw: run,
+			})),
+		].sort(
+			(a, b) =>
+				new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+		),
+		[recentAgentTurns, recentWorkflowRuns, t],
+	);
+	const [selectedRun, setSelectedRun] = useState<SelectedRun | null>(null);
+	const activeRun =
+		runItems.find(
+			(item) =>
+				item.type === selectedRun?.type && item.id === selectedRun?.id,
+		) ?? runItems[0];
+	const activeAgentTurn =
+		activeRun?.type === 'agent'
+			? (activeRun.raw as MonitoringAgentTurn)
+			: undefined;
+	const activeWorkflowRun =
+		activeRun?.type === 'workflow'
+			? (activeRun.raw as EnterpriseWorkflowRunHistoryItem)
+			: undefined;
+
 	return (
 		<PlatformPageShell>
 			<PlatformPageHeader
@@ -139,18 +191,31 @@ export function RunsViewPage({
 				}
 			/>
 
-			<section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+			<section className="grid gap-2 rounded-lg border bg-background p-3 shadow-sm md:grid-cols-2 xl:grid-cols-4">
 				{monitoringStats.map((stat) => {
 					const StatIcon = stat.icon;
 					return (
-						<StatCard
+						<div
 							key={stat.label}
-							label={stat.label}
-							value={stat.value}
-							helper={stat.helper}
-							icon={StatIcon}
-							loading={monitoringLoading}
-						/>
+							className="grid min-h-20 grid-cols-[1fr_auto] gap-3 rounded-md border bg-slate-50/70 p-3"
+						>
+							<div className="min-w-0">
+								<div className="truncate text-xs font-medium text-muted-foreground">
+									{stat.label}
+								</div>
+								<div className="mt-2 text-2xl font-semibold tabular-nums">
+									{monitoringLoading ? '-' : stat.value}
+								</div>
+								{stat.helper ? (
+									<div className="mt-1 truncate text-xs text-muted-foreground">
+										{stat.helper}
+									</div>
+								) : null}
+							</div>
+							<div className="flex size-8 items-center justify-center rounded-md border bg-background">
+								<StatIcon className="size-4 text-muted-foreground" />
+							</div>
+						</div>
 					);
 				})}
 			</section>
@@ -216,153 +281,272 @@ export function RunsViewPage({
 				</section>
 
 				<TabsContent value="overview" className="mt-0">
-					<section className="grid gap-4 lg:grid-cols-3">
-						<div className="grid min-h-80 content-start gap-3 rounded-lg border bg-background p-4 shadow-sm">
-							<div className="flex items-start gap-3">
-								<div className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
-									<BotMessageSquare className="size-4 text-muted-foreground" />
-								</div>
+					<section className="grid gap-4 xl:grid-cols-[minmax(22rem,0.95fr)_minmax(0,1.35fr)]">
+						<div className="grid min-h-[30rem] content-start gap-3 rounded-lg border bg-background p-4 shadow-sm">
+							<div className="flex items-start justify-between gap-3">
 								<div className="min-w-0">
-									<h2 className="text-sm font-medium">
-										{t('platform.monitoring.recentAgentRuns')}
-									</h2>
+									<h2 className="text-sm font-semibold">运行队列</h2>
 									<p className="mt-1 text-xs leading-5 text-muted-foreground">
-										{t('platform.monitoring.recentAgentRunsHelper')}
+										Agent 对话和工作流执行按时间合并展示，点击后在右侧查看细节。
 									</p>
 								</div>
+								<Badge variant="secondary" className="shrink-0">
+									{runItems.length}
+								</Badge>
 							</div>
-							{recentAgentTurns.length === 0 ? (
-								<div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
-									{t('platform.monitoring.emptyAgentRuns')}
-								</div>
-							) : (
-								<div className="grid gap-2">
-									{recentAgentTurns.map((turn) => (
-										<button
-											key={turn.id}
-											type="button"
-											onClick={() => onSelectAgentTurn(turn)}
-											className="rounded-md border bg-muted/10 p-3 text-left text-xs transition-colors hover:border-primary/30 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-										>
-											<div className="flex items-center justify-between gap-2">
-												<span className="truncate font-medium">
-													{turn.question}
-												</span>
-												<span className="shrink-0 text-muted-foreground">
-													{formatTimestamp(turn.createdAt)}
-												</span>
-											</div>
-											<p className="mt-1 line-clamp-2 leading-5 text-muted-foreground">
-												{turn.answer}
-											</p>
-										</button>
-									))}
-								</div>
-							)}
-						</div>
 
-						<div className="grid min-h-80 content-start gap-3 rounded-lg border bg-background p-4 shadow-sm">
-							<div className="flex items-start gap-3">
-								<div className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
-									<Workflow className="size-4 text-muted-foreground" />
-								</div>
-								<div className="min-w-0">
-									<h2 className="text-sm font-medium">
-										{t('platform.monitoring.recentWorkflowRuns')}
-									</h2>
-									<p className="mt-1 text-xs leading-5 text-muted-foreground">
-										{t('platform.monitoring.recentWorkflowRunsHelper')}
-									</p>
-								</div>
-							</div>
-							{recentWorkflowRuns.length === 0 ? (
-								<div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
-									{t('platform.monitoring.emptyWorkflowRuns')}
+							{runItems.length === 0 ? (
+								<div className="grid min-h-72 place-items-center rounded-md border border-dashed bg-slate-50/70 p-6 text-center">
+									<div className="max-w-72">
+										<Clock3 className="mx-auto size-7 text-muted-foreground" />
+										<p className="mt-3 text-sm font-medium">暂无运行记录</p>
+										<p className="mt-1 text-xs leading-5 text-muted-foreground">
+											启动 Agent 或工作流后，最近执行会出现在这里。
+										</p>
+									</div>
 								</div>
 							) : (
-								<div className="grid gap-2">
-									{recentWorkflowRuns.slice(0, 6).map((run) => (
-										<button
-											key={run.run_id}
-											type="button"
-											onClick={onRunWorkflow}
-											className="rounded-md border bg-muted/10 p-3 text-left text-xs transition-colors hover:border-primary/30 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-										>
-											<div className="flex items-center justify-between gap-2">
-												<span className="truncate font-medium">
-													{run.workflow_name}
-												</span>
-												<Badge
-													variant="outline"
-													className={workflowStatusClassName(run.status)}
-												>
-													{t(
-														`platform.workflowRunner.${workflowStatusLabelKey(run.status)}`,
-													)}
-												</Badge>
-											</div>
-											<p className="mt-1 line-clamp-2 leading-5 text-muted-foreground">
-												{run.summary ||
-													formatTimestamp(run.finished_at || run.started_at)}
-											</p>
-										</button>
-									))}
-								</div>
-							)}
-						</div>
-
-						<div className="grid min-h-80 content-start gap-3 rounded-lg border bg-background p-4 shadow-sm">
-							<div className="flex items-start gap-3">
-								<div className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
-									<FileSearch className="size-4 text-muted-foreground" />
-								</div>
-								<div className="min-w-0">
-									<h2 className="text-sm font-medium">
-										{t('platform.monitoring.recentAudit')}
-									</h2>
-									<p className="mt-1 text-xs leading-5 text-muted-foreground">
-										{t('platform.monitoring.recentAuditHelper')}
-									</p>
-								</div>
-							</div>
-							{recentAuditEvents.length === 0 ? (
-								<div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
-									{t('platform.monitoring.emptyAudit')}
-								</div>
-							) : (
-								<div className="grid gap-2">
-									{recentAuditEvents.slice(0, 6).map((event, index) => (
-										<div
-											key={event.event_id ?? `${event.timestamp}-${index}`}
-											className="rounded-md border bg-muted/10 p-3 text-xs"
-										>
-											<div className="flex items-center justify-between gap-2">
-												<span className="truncate font-medium">
-													{event.tool_name ||
-														event.event_type ||
-														t('platform.monitoring.auditEvent')}
-												</span>
-												<Badge
-													variant="outline"
-													className={
-														event.success === false
-															? ''
-															: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700'
+								<div className="grid max-h-[28rem] gap-2 overflow-y-auto pr-1">
+									{runItems.map((item) => {
+										const ItemIcon =
+											item.type === 'agent' ? BotMessageSquare : Workflow;
+										const isActive =
+											activeRun?.type === item.type && activeRun.id === item.id;
+										return (
+											<button
+												key={`${item.type}-${item.id}`}
+												type="button"
+												onClick={() => {
+													setSelectedRun({ type: item.type, id: item.id });
+													if (item.type === 'agent') {
+														onSelectAgentTurn(item.raw as MonitoringAgentTurn);
 													}
+												}}
+												className={cn(
+													'grid grid-cols-[auto_1fr] gap-3 rounded-md border p-3 text-left text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+													isActive
+														? 'border-slate-900 bg-slate-900 text-white'
+														: 'bg-muted/10 hover:border-primary/30 hover:bg-muted/30',
+												)}
+											>
+												<div
+													className={cn(
+														'flex size-8 items-center justify-center rounded-md border',
+														isActive
+															? 'border-white/20 bg-white/10'
+															: 'bg-background',
+													)}
 												>
-													{event.success === false
-														? t('platform.monitoring.failure')
-														: t('platform.monitoring.success')}
-												</Badge>
-											</div>
-											<p className="mt-1 truncate text-muted-foreground">
-												{event.user_id || '-'} · {event.tenant || '-'} ·{' '}
-												{formatTimestamp(event.timestamp)}
-											</p>
-										</div>
-									))}
+													<ItemIcon
+														className={cn(
+															'size-4',
+															isActive
+																? 'text-white'
+																: 'text-muted-foreground',
+														)}
+													/>
+												</div>
+												<div className="min-w-0">
+													<div className="flex items-center justify-between gap-2">
+														<span className="truncate font-medium">
+															{item.title}
+														</span>
+														<span
+															className={cn(
+																'shrink-0 tabular-nums',
+																isActive
+																	? 'text-white/70'
+																	: 'text-muted-foreground',
+															)}
+														>
+															{formatTimestamp(item.timestamp)}
+														</span>
+													</div>
+													<p
+														className={cn(
+															'mt-1 line-clamp-2 leading-5',
+															isActive
+																? 'text-white/70'
+																: 'text-muted-foreground',
+														)}
+													>
+														{item.description}
+													</p>
+												</div>
+											</button>
+										);
+									})}
 								</div>
 							)}
+						</div>
+
+						<div className="grid gap-4">
+							<section className="grid min-h-[20rem] content-start gap-4 rounded-lg border bg-background p-4 shadow-sm">
+								<div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+									<div className="min-w-0">
+										<h2 className="text-sm font-semibold">运行详情</h2>
+										<p className="mt-1 text-xs leading-5 text-muted-foreground">
+											查看当前执行对象、状态、所属租户和后续操作。
+										</p>
+									</div>
+									{activeRun ? (
+										<Badge
+											variant="outline"
+											className={cn('shrink-0', activeRun.statusClassName)}
+										>
+											{activeRun.statusLabel}
+										</Badge>
+									) : null}
+								</div>
+
+								{activeRun ? (
+									<>
+										<div className="rounded-md border bg-slate-50/70 p-4">
+											<div className="flex items-start gap-3">
+												<div className="flex size-10 shrink-0 items-center justify-center rounded-md border bg-background">
+													{activeRun.type === 'agent' ? (
+														<BotMessageSquare className="size-5 text-muted-foreground" />
+													) : (
+														<Workflow className="size-5 text-muted-foreground" />
+													)}
+												</div>
+												<div className="min-w-0">
+													<h3 className="line-clamp-2 text-base font-semibold">
+														{activeRun.title}
+													</h3>
+													<p className="mt-2 line-clamp-4 text-sm leading-6 text-muted-foreground">
+														{activeRun.description}
+													</p>
+												</div>
+											</div>
+										</div>
+
+										<div className="grid gap-3 md:grid-cols-3">
+											<div className="rounded-md border p-3">
+												<div className="text-xs text-muted-foreground">类型</div>
+												<div className="mt-1 text-sm font-medium">
+													{activeRun.type === 'agent' ? 'Agent Run' : 'Workflow Run'}
+												</div>
+											</div>
+											<div className="rounded-md border p-3">
+												<div className="text-xs text-muted-foreground">Agent</div>
+												<div className="mt-1 truncate text-sm font-medium">
+													{activeRun.agentId || '-'}
+												</div>
+											</div>
+											<div className="rounded-md border p-3">
+												<div className="text-xs text-muted-foreground">时间</div>
+												<div className="mt-1 text-sm font-medium">
+													{formatTimestamp(activeRun.timestamp)}
+												</div>
+											</div>
+										</div>
+
+										{activeWorkflowRun ? (
+											<div className="rounded-md border p-3">
+												<div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+													<CheckCircle2 className="size-4" />
+													步骤状态
+												</div>
+												<div className="flex flex-wrap gap-2">
+													{Object.entries(activeWorkflowRun.status_counts || {}).map(
+														([status, count]) => (
+															<Badge key={status} variant="secondary">
+																{status}: {count}
+															</Badge>
+														),
+													)}
+												</div>
+											</div>
+										) : null}
+
+										<div className="flex flex-wrap gap-2">
+											{activeAgentTurn ? (
+												<Button
+													type="button"
+													size="sm"
+													onClick={() => onSelectAgentTurn(activeAgentTurn)}
+												>
+													<BotMessageSquare className="size-4" />
+													查看回复
+												</Button>
+											) : (
+												<Button type="button" size="sm" onClick={onRunWorkflow}>
+													<Workflow className="size-4" />
+													继续工作流
+												</Button>
+											)}
+											<Button
+												type="button"
+												size="sm"
+												variant="outline"
+												onClick={onOpenGovernance}
+											>
+												<ShieldCheck className="size-4" />
+												治理审计
+											</Button>
+										</div>
+									</>
+								) : (
+									<div className="grid min-h-64 place-items-center rounded-md border border-dashed bg-slate-50/70 p-6 text-center text-sm text-muted-foreground">
+										暂无可查看的运行详情。
+									</div>
+								)}
+							</section>
+
+							<section className="grid content-start gap-3 rounded-lg border bg-background p-4 shadow-sm">
+								<div className="flex items-start justify-between gap-3">
+									<div className="min-w-0">
+										<h2 className="text-sm font-semibold">
+											{t('platform.monitoring.recentAudit')}
+										</h2>
+										<p className="mt-1 text-xs leading-5 text-muted-foreground">
+											{t('platform.monitoring.recentAuditHelper')}
+										</p>
+									</div>
+									<Badge variant="secondary" className="shrink-0">
+										{recentAuditEvents.length}
+									</Badge>
+								</div>
+								{recentAuditEvents.length === 0 ? (
+									<div className="rounded-md border border-dashed bg-slate-50/70 p-3 text-xs text-muted-foreground">
+										{t('platform.monitoring.emptyAudit')}
+									</div>
+								) : (
+									<div className="grid gap-2 md:grid-cols-2">
+										{recentAuditEvents.slice(0, 4).map((event, index) => (
+											<div
+												key={event.event_id ?? `${event.timestamp}-${index}`}
+												className="rounded-md border bg-muted/10 p-3 text-xs"
+											>
+												<div className="flex items-center justify-between gap-2">
+													<span className="truncate font-medium">
+														{event.tool_name ||
+															event.event_type ||
+															t('platform.monitoring.auditEvent')}
+													</span>
+													<Badge
+														variant="outline"
+														className={
+															event.success === false
+																? ''
+																: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700'
+														}
+													>
+														{event.success === false
+															? t('platform.monitoring.failure')
+															: t('platform.monitoring.success')}
+													</Badge>
+												</div>
+												<p className="mt-1 truncate text-muted-foreground">
+													{event.user_id || '-'} · {event.tenant || '-'} ·{' '}
+													{formatTimestamp(event.timestamp)}
+												</p>
+											</div>
+										))}
+									</div>
+								)}
+							</section>
 						</div>
 					</section>
 				</TabsContent>
