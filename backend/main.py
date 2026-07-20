@@ -1847,7 +1847,7 @@ async def run_enterprise_agent(
         ),
     )
 
-    routed_finalize_context = agent_run_service.build_routed_finalize_context(
+    response = agent_run_service.finalize_routed_response_from_context(
         routed_summary_context=routed_summary_context,
         response_record_context=response_record_context,
         answer=answer,
@@ -1868,9 +1868,6 @@ async def run_enterprise_agent(
         knowledge_payload=knowledge_payload,
         memory_payload=memory_payload,
         memory_saved=memory_saved,
-    )
-    response = agent_run_service.finalize_routed_response(
-        **routed_finalize_context,
     )
     return response
 
