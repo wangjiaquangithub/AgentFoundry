@@ -289,6 +289,53 @@ class PlatformWorkflowRunService:
             "session_id": session_id,
         }
 
+    def build_run_record(
+        self,
+        *,
+        run_id: str,
+        workflow_type: str,
+        workflow_name: str,
+        started_at: str,
+        finished_at: str,
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        connector: str,
+        connector_source: str,
+        approval_id: str | None,
+        inputs: dict[str, str],
+        steps: list[dict[str, Any]],
+        tool_calls: list[dict[str, Any]],
+        session_id: str,
+    ) -> dict[str, Any]:
+        status_counts = self.status_counts(steps)
+        status = self.run_status(status_counts)
+        return {
+            "run_id": run_id,
+            "workflow_type": workflow_type,
+            "workflow_name": workflow_name,
+            "status": status,
+            "status_counts": status_counts,
+            "started_at": started_at,
+            "finished_at": finished_at,
+            "tenant": tenant,
+            "user_id": user_id,
+            "agent_id": agent_id,
+            "connector": connector,
+            "connector_source": connector_source,
+            "approval_id": approval_id,
+            "inputs": inputs,
+            "summary": self.summary(workflow_name, steps),
+            "steps": steps,
+            "tool_calls": tool_calls,
+            "audit_filter": self.audit_filter(
+                tenant=tenant,
+                user_id=user_id,
+                agent_id=agent_id,
+                session_id=session_id,
+            ),
+        }
+
     def input_value(
         self,
         inputs: dict[str, Any],

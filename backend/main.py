@@ -3971,33 +3971,23 @@ async def run_enterprise_workflow(
         tool_calls.append(tool_call)
 
     finished_at = _now_iso()
-    status_counts = workflow_run_service.status_counts(steps)
-    status = workflow_run_service.run_status(status_counts)
-    response = {
-        "run_id": run_id,
-        "workflow_type": workflow_type,
-        "workflow_name": workflow_name,
-        "status": status,
-        "status_counts": status_counts,
-        "started_at": started_at,
-        "finished_at": finished_at,
-        "tenant": tenant,
-        "user_id": user_id,
-        "agent_id": agent_id,
-        "connector": connector_label,
-        "connector_source": connector_source,
-        "approval_id": approval_id,
-        "inputs": normalized_inputs,
-        "summary": workflow_run_service.summary(workflow_name, steps),
-        "steps": steps,
-        "tool_calls": tool_calls,
-        "audit_filter": workflow_run_service.audit_filter(
-            tenant=tenant,
-            user_id=user_id,
-            agent_id=agent_id,
-            session_id=session_id,
-        ),
-    }
+    response = workflow_run_service.build_run_record(
+        run_id=run_id,
+        workflow_type=workflow_type,
+        workflow_name=workflow_name,
+        started_at=started_at,
+        finished_at=finished_at,
+        tenant=tenant,
+        user_id=user_id,
+        agent_id=agent_id,
+        connector=connector_label,
+        connector_source=connector_source,
+        approval_id=approval_id,
+        inputs=normalized_inputs,
+        steps=steps,
+        tool_calls=tool_calls,
+        session_id=session_id,
+    )
     workflow_run_service.append_run(response)
     return response
 
