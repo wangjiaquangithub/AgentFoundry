@@ -58,7 +58,7 @@ Frontend Console
 - 后续可以替换或并存多个 runtime，例如 AgentScope、LangGraph、自研 runtime 或远程 Agent 服务。
 - AgentScope 升级时，主要影响 adapter 和 runtime 层，不应该大面积影响控制台和平台数据模型。
 
-当前后端可以继续调用 AgentScope，但需要逐步把调用收口到明确的 runtime adapter，而不是让平台各处直接耦合 AgentScope 细节。
+当前后端已经开始建立 runtime adapter 边界。平台运行结果会返回 `runtime_adapter` 元数据，用于说明当前 Agent Run 由哪个 runtime 边界承载。下一步需要继续把具体调用逻辑从 `main.py` 迁移到 adapter/service 层，而不是让平台各处直接耦合 AgentScope 细节。
 
 ## 4. 信息架构状态
 
@@ -140,7 +140,23 @@ Tenant
 
 ## 6. 知识库现状和影响
 
-当前知识库可以先保持轻量，不影响继续优化平台骨架。但如果要让企业知识助手真正生产化，需要补齐知识库模型。
+当前知识库已经可以支撑企业知识助手 MVP 演示闭环，但还不是生产级 RAG。
+
+已落地的短期能力：
+
+- 已新增开发期本地知识文件 `backend/data/platform_dev_knowledge.json`。
+- 已有知识库标识 `dev-enterprise-handbook`，用于承载 AgentFoundry 平台说明、AgentScope runtime 边界、知识库边界、权限、工具审批、记忆和运行日志等内容。
+- 企业知识助手可以绑定该知识库并发起运行。
+- Agent 运行结果会展示知识命中、来源、检索提供方、长期记忆命中和运行证据。
+- 当标准知识库 RAG 暂时没有可用结果时，后端会使用开发期本地知识兜底，命中结果会标记为 `agentfoundry-dev-local` 和 `dev_fallback`。
+
+这个兜底能力的作用是让产品闭环先跑起来：
+
+```text
+模型配置 -> 开发期知识 -> Agent 绑定知识 -> 提问运行 -> 回答带来源 -> 记忆和审计可见
+```
+
+它不能替代正式知识库。生产化时仍然需要补齐 embedding provider、文档索引、向量检索和检索日志。
 
 知识库至少需要两层模型。
 
@@ -165,12 +181,13 @@ Vector Store
 
 短期策略：
 
-- 先保留当前知识库 demo 或 mock 数据。
+- 保留当前开发期本地知识兜底，不把它包装成生产级 RAG。
 - 继续优化 `/platform/memory`、知识状态、Agent 绑定入口和运行闭环。
 - 把企业知识助手作为第一个内置 Agent，而不是马上分散去做很多 Agent。
 
 中期策略：
 
+- 接入一个支持 embedding 的模型凭证，例如 OpenAI、DashScope、Gemini 或 Ollama。
 - 增加文档上传。
 - 增加切片和索引任务。
 - 增加检索 API。
@@ -276,7 +293,7 @@ Audit Layer
 
 ### Step 2: 收口 AgentScope runtime 边界
 
-新增或整理后端 runtime adapter，把平台后端和 AgentScope 之间的关系固定下来。
+新增或整理后端 runtime adapter，把平台后端和 AgentScope 之间的关系固定下来。当前已新增最小 adapter 元数据，后续继续迁移具体运行逻辑。
 
 目标是让 AgentScope 后续升级时不会牵动整个平台。
 

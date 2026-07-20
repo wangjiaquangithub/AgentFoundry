@@ -74,7 +74,7 @@ export function GovernanceHealthPanel({
 				{items.map((item) => {
 					const Icon = item.icon;
 					return (
-						<div key={item.label} className="rounded-lg border bg-muted/20 p-3">
+						<div key={item.label} className="rounded-lg border bg-background p-3">
 							<div className="flex items-start justify-between gap-3">
 								<div className="min-w-0">
 									<div className="text-xs text-muted-foreground">{item.label}</div>

@@ -19,8 +19,22 @@ import uvicorn
 from fastapi import HTTPException, Request
 from fastapi.middleware import Middleware
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-
+from api.schemas import (
+    EnterpriseAgentPublishRequest,
+    EnterpriseAgentRunRequest,
+    EnterpriseAgentUpdateRequest,
+    EnterpriseApprovalCreateRequest,
+    EnterpriseApprovalDecisionRequest,
+    EnterpriseConnectorConfigSaveRequest,
+    EnterpriseConnectorTestRequest,
+    EnterprisePlatformConfigImportRequest,
+    EnterprisePlatformMemberPatchRequest,
+    EnterprisePlatformMemberUpsertRequest,
+    EnterpriseToolPolicyUpdateRequest,
+    EnterpriseToolRunRequest,
+    EnterpriseWorkflowRunRequest,
+    EnterpriseWorkflowTemplateUpdateRequest,
+)
 from agentscope.app import SubAgentTemplate, create_app
 from agentscope.app.message_bus import InMemoryMessageBus, RedisMessageBus
 from agentscope.app.rag.blob_store import LocalBlobStore
@@ -48,6 +62,24 @@ from permissions import (
     ENTERPRISE_TOOL_NAMES,
     ToolAuthorizationPolicy,
 )
+from repositories.agents import AgentRegistryError, AgentRepository
+from repositories.agent_runs import AgentRunRepository
+from repositories.approvals import ApprovalRequestRepository
+from repositories.connectors import (
+    ConnectorConfigRegistryError,
+    ConnectorConfigRepository,
+)
+from repositories.dev_knowledge import DevKnowledgeRepository
+from repositories.memories import PlatformMemoryRepository
+from repositories.members import MemberRepository
+from repositories.tool_policy import ToolPolicyRepository
+from repositories.workflows import (
+    WorkflowRunRepository,
+    WorkflowTemplateRegistryError,
+    WorkflowTemplateRepository,
+)
+from runtime import get_runtime_adapter
+from services.platform_status import PlatformStatusService
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -60,8 +92,10 @@ PLATFORM_AGENT_RUNS_PATH = DATA_DIR / "platform_agent_runs.jsonl"
 PLATFORM_APPROVAL_REQUESTS_PATH = DATA_DIR / "platform_approval_requests.jsonl"
 PLATFORM_TOOL_POLICY_PATH = DATA_DIR / "platform_tool_policy.json"
 PLATFORM_MEMBERS_PATH = DATA_DIR / "platform_members.json"
+PLATFORM_DEV_KNOWLEDGE_PATH = DATA_DIR / "platform_dev_knowledge.json"
 PLATFORM_MEMORY_DIR = DATA_DIR / "platform_memory"
 PLATFORM_VERSION = "0.1.0"
+PLATFORM_DEV_KNOWLEDGE_PROVIDER = "agentfoundry-dev-local"
 ROUTING_SOURCE_MODEL = "model"
 ROUTING_SOURCE_RULES = "rules"
 PLATFORM_MEMORY_MAX_RECORDS = 200
@@ -90,6 +124,23 @@ ENTERPRISE_TOOL_CATALOG = {
         "default_input": "engineering",
     },
 }
+
+
+agent_repository = AgentRepository(PLATFORM_AGENTS_PATH)
+agent_run_repository = AgentRunRepository(PLATFORM_AGENT_RUNS_PATH)
+connector_config_repository = ConnectorConfigRepository(
+    PLATFORM_CONNECTOR_CONFIGS_PATH,
+)
+workflow_template_repository = WorkflowTemplateRepository(
+    PLATFORM_WORKFLOW_TEMPLATES_PATH,
+)
+workflow_run_repository = WorkflowRunRepository(PLATFORM_WORKFLOW_RUNS_PATH)
+approval_request_repository = ApprovalRequestRepository(
+    PLATFORM_APPROVAL_REQUESTS_PATH,
+)
+member_repository = MemberRepository(PLATFORM_MEMBERS_PATH)
+dev_knowledge_repository = DevKnowledgeRepository(PLATFORM_DEV_KNOWLEDGE_PATH)
+platform_memory_repository = PlatformMemoryRepository(PLATFORM_MEMORY_DIR)
 
 
 def _load_local_env() -> None:
@@ -132,24 +183,17 @@ def _platform_tool_policy_path() -> Path:
 
 
 def _load_platform_tool_policy_config() -> dict[str, Any]:
-    policy_path = _platform_tool_policy_path()
-    if policy_path.exists():
-        value = json.loads(policy_path.read_text(encoding="utf-8"))
-    else:
-        value = _default_tool_policy_copy()
-
-    if not isinstance(value, dict):
-        raise ValueError("Enterprise tool policy JSON must be an object.")
-    return value
+    return ToolPolicyRepository(
+        _platform_tool_policy_path(),
+        _default_tool_policy_copy(),
+    ).load()
 
 
 def _save_platform_tool_policy_config(policy: dict[str, Any]) -> None:
-    policy_path = _platform_tool_policy_path()
-    policy_path.parent.mkdir(parents=True, exist_ok=True)
-    policy_path.write_text(
-        json.dumps(policy, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
+    ToolPolicyRepository(
+        _platform_tool_policy_path(),
+        _default_tool_policy_copy(),
+    ).save(policy)
 
 
 def _build_tool_authorization_policy() -> ToolAuthorizationPolicy:
@@ -214,212 +258,36 @@ def _audit_query_summary(events: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _platform_status_service() -> PlatformStatusService:
+    """Build the service object that composes platform console status payloads."""
+    return PlatformStatusService(
+        load_approval_requests=_load_platform_approval_requests,
+        load_workflow_runs=_load_workflow_runs,
+        load_workflow_templates=_load_platform_workflow_templates,
+        load_agents=_load_platform_agents,
+        load_memories=_load_platform_memories,
+        agent_run_repository=agent_run_repository,
+        audit_logger=tool_audit_logger,
+        tool_policy=tool_authorization_policy,
+        connector_health=_enterprise_connector_health,
+        agent_readiness=_platform_agent_readiness,
+        enterprise_tool_names=ENTERPRISE_TOOL_NAMES,
+        enterprise_tool_catalog=ENTERPRISE_TOOL_CATALOG,
+        approval_required_tools=APPROVAL_REQUIRED_TOOLS,
+        approval_required_workflows=APPROVAL_REQUIRED_WORKFLOWS,
+    )
+
+
 def _enterprise_platform_dashboard(
     *,
     tenant: str,
     user_id: str,
 ) -> dict[str, Any]:
     """Build a compact platform operations snapshot for the console."""
-    pending_approvals = _load_platform_approval_requests(
-        limit=3,
-        status="pending",
+    return _platform_status_service().dashboard(
         tenant=tenant,
         user_id=user_id,
     )
-    approved_approvals = _load_platform_approval_requests(
-        limit=100,
-        status="approved",
-        tenant=tenant,
-        user_id=user_id,
-    )
-    recent_workflow_runs = _load_workflow_runs(
-        limit=3,
-        tenant=tenant,
-        user_id=user_id,
-    )
-    workflow_runs = _load_workflow_runs(
-        limit=100,
-        tenant=tenant,
-        user_id=user_id,
-    )
-    workflow_templates = _load_platform_workflow_templates()
-    enabled_workflows = [
-        workflow for workflow in workflow_templates if workflow.get("enabled") is not False
-    ]
-    disabled_workflows = [
-        workflow for workflow in workflow_templates if workflow.get("enabled") is False
-    ]
-    workflow_status_counts = {
-        "completed": 0,
-        "partial": 0,
-        "failed": 0,
-    }
-    for run in workflow_runs:
-        status = str(run.get("status") or "failed")
-        workflow_status_counts[status] = workflow_status_counts.get(status, 0) + 1
-    workflow_pending_approvals = [
-        approval
-        for approval in pending_approvals
-        if approval.get("request_type") == "workflow_run"
-    ]
-    tool_pending_approvals = [
-        approval
-        for approval in pending_approvals
-        if approval.get("request_type") == "tool_run"
-    ]
-    governed_workflows = []
-    for workflow in workflow_templates:
-        workflow_type = str(workflow.get("workflow_type") or "")
-        steps = workflow.get("steps")
-        approval_tools = sorted(
-            {
-                str(step.get("tool_name"))
-                for step in steps
-                if isinstance(step, dict)
-                and step.get("tool_name") in APPROVAL_REQUIRED_TOOLS
-            },
-        ) if isinstance(steps, list) else []
-        if workflow_type not in APPROVAL_REQUIRED_WORKFLOWS and not approval_tools:
-            continue
-        governed_workflows.append(
-            {
-                "workflow_type": workflow_type,
-                "name": workflow.get("name") or workflow_type,
-                "enabled": workflow.get("enabled") is not False,
-                "requires_workflow_approval": workflow_type in APPROVAL_REQUIRED_WORKFLOWS,
-                "approval_required_tools": approval_tools,
-                "pending_approval_count": sum(
-                    1
-                    for approval in workflow_pending_approvals
-                    if approval.get("workflow_type") == workflow_type
-                ),
-            },
-        )
-    recent_audit_events = tool_audit_logger.query(
-        tenant=tenant,
-        user_id=user_id,
-        limit=4,
-    )
-    audit_events = tool_audit_logger.query(
-        tenant=tenant,
-        user_id=user_id,
-        limit=100,
-    )
-    decisions = {
-        decision["name"]: decision
-        for decision in tool_authorization_policy.describe_for_user(
-            tenant,
-            user_id,
-            ENTERPRISE_TOOL_NAMES,
-        )
-    }
-    risk_tools = []
-    for tool_name in ENTERPRISE_TOOL_NAMES:
-        if (
-            tool_name != "enterprise_summarize_department_metrics"
-            and "summarize" not in tool_name
-        ):
-            continue
-        catalog = ENTERPRISE_TOOL_CATALOG[tool_name]
-        decision = decisions.get(tool_name, {})
-        risk_tools.append(
-            {
-                "name": tool_name,
-                "description": catalog["description"],
-                "allowed": bool(decision.get("allowed")),
-                "reason": decision.get("reason", ""),
-            },
-        )
-
-    todos = []
-    if pending_approvals:
-        todos.append(
-            {
-                "code": "pending_approvals",
-                "severity": "warning",
-                "count": len(pending_approvals),
-            },
-        )
-    if any(event.get("success") is False for event in recent_audit_events):
-        todos.append(
-            {
-                "code": "recent_tool_failures",
-                "severity": "error",
-                "count": sum(
-                    1 for event in recent_audit_events if event.get("success") is False
-                ),
-            },
-        )
-
-    operational_actions = []
-    if pending_approvals:
-        operational_actions.append(
-            {
-                "code": "review_pending_approvals",
-                "severity": "warning",
-                "count": len(pending_approvals),
-                "target": "approvals",
-            },
-        )
-    if workflow_status_counts.get("failed", 0):
-        operational_actions.append(
-            {
-                "code": "investigate_failed_workflows",
-                "severity": "error",
-                "count": workflow_status_counts["failed"],
-                "target": "workflows",
-            },
-        )
-    if disabled_workflows:
-        operational_actions.append(
-            {
-                "code": "enable_disabled_workflows",
-                "severity": "info",
-                "count": len(disabled_workflows),
-                "target": "workflows",
-            },
-        )
-    if not workflow_runs and enabled_workflows:
-        operational_actions.append(
-            {
-                "code": "run_first_workflow",
-                "severity": "info",
-                "count": len(enabled_workflows),
-                "target": "workflows",
-            },
-        )
-    if not operational_actions:
-        operational_actions.append(
-            {
-                "code": "operations_ready",
-                "severity": "info",
-                "target": "audit",
-            },
-        )
-
-    return {
-        "pending_approvals": {
-            "count": len(pending_approvals),
-            "items": pending_approvals,
-        },
-        "approved_approval_count": len(approved_approvals),
-        "recent_workflow_runs": recent_workflow_runs,
-        "workflow_run_count": len(workflow_runs),
-        "recent_audit_events": recent_audit_events,
-        "audit_event_count": len(audit_events),
-        "risk_tools": risk_tools,
-        "todos": todos,
-        "operations": {
-            "workflow_template_count": len(workflow_templates),
-            "enabled_workflow_count": len(enabled_workflows),
-            "disabled_workflow_count": len(disabled_workflows),
-            "workflow_status_counts": workflow_status_counts,
-            "pending_workflow_approval_count": len(workflow_pending_approvals),
-            "pending_tool_approval_count": len(tool_pending_approvals),
-            "governed_workflows": governed_workflows,
-            "recommended_actions": operational_actions,
-        },
-    }
 
 
 def _enterprise_platform_launch_readiness(
@@ -429,249 +297,11 @@ def _enterprise_platform_launch_readiness(
     identities: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """Build an authoritative launch checklist for the enterprise console."""
-    agents = _load_platform_agents()
-    active_agents = [
-        agent
-        for agent in agents
-        if agent.get("status") == "published"
-        and str(agent.get("tenant") or tenant) == tenant
-    ]
-    agent_readiness = [_platform_agent_readiness(agent) for agent in active_agents]
-    ready_agents = [
-        agent
-        for agent, readiness in zip(active_agents, agent_readiness)
-        if readiness.get("status") == "ready"
-    ]
-    runnable_agents = [
-        agent
-        for agent, readiness in zip(active_agents, agent_readiness)
-        if readiness.get("status") in {"ready", "partial"}
-    ]
-    agents_with_models = [
-        agent for agent in active_agents if agent.get("model_config_id")
-    ]
-    agents_with_knowledge = [
-        agent for agent in active_agents if agent.get("knowledge_base_ids")
-    ]
-    agents_with_tools = [agent for agent in active_agents if agent.get("tools")]
-    memory_enabled_agents = [
-        agent for agent in active_agents if agent.get("memory_enabled")
-    ]
-    memory_record_count = sum(
-        len(
-            _load_platform_memories(
-                tenant=tenant,
-                user_id=user_id,
-                agent_id=str(agent.get("id", "")),
-            ),
-        )
-        for agent in memory_enabled_agents
-        if agent.get("id")
-    )
-    memory_hit_count = sum(
-        int((run.get("evidence") or {}).get("memory_hit_count") or 0)
-        for run in _load_platform_agent_runs(
-            limit=100,
-            tenant=tenant,
-            user_id=user_id,
-        )
-        if run.get("agent_id")
-        in {agent.get("id") for agent in memory_enabled_agents}
-    )
-    workflow_templates = _load_platform_workflow_templates()
-    enabled_workflows = [
-        workflow for workflow in workflow_templates if workflow.get("enabled") is not False
-    ]
-    workflow_runs = _load_workflow_runs(
-        limit=100,
+    return _platform_status_service().launch_readiness(
         tenant=tenant,
         user_id=user_id,
+        identities=identities,
     )
-    audit_events = tool_audit_logger.query(
-        tenant=tenant,
-        user_id=user_id,
-        limit=100,
-    )
-    connector = _enterprise_connector_health()
-    decisions = tool_authorization_policy.describe_for_user(
-        tenant,
-        user_id,
-        ENTERPRISE_TOOL_NAMES,
-    )
-    tenant_identities = [
-        identity for identity in identities if identity.get("tenant") == tenant
-    ]
-
-    def item(
-        code: str,
-        status: str,
-        target: str,
-        evidence: dict[str, Any],
-    ) -> dict[str, Any]:
-        severity = {
-            "ready": "info",
-            "partial": "warning",
-            "blocked": "error",
-        }.get(status, "warning")
-        return {
-            "code": code,
-            "status": status,
-            "severity": severity,
-            "target": target,
-            "evidence": evidence,
-        }
-
-    items = [
-        item(
-            "model",
-            "ready" if agents_with_models else "blocked",
-            "credentials",
-            {
-                "configured_agent_count": len(agents_with_models),
-                "published_agent_count": len(active_agents),
-            },
-        ),
-        item(
-            "agent",
-            "ready"
-            if ready_agents
-            else "partial"
-            if runnable_agents
-            else "blocked",
-            "agents",
-            {
-                "published_agent_count": len(active_agents),
-                "ready_agent_count": len(ready_agents),
-                "runnable_agent_count": len(runnable_agents),
-            },
-        ),
-        item(
-            "knowledge",
-            "ready"
-            if agents_with_knowledge
-            else "partial"
-            if active_agents
-            else "blocked",
-            "knowledge",
-            {
-                "bound_agent_count": len(agents_with_knowledge),
-                "published_agent_count": len(active_agents),
-            },
-        ),
-        item(
-            "tools",
-            "ready"
-            if agents_with_tools
-            else "partial"
-            if ENTERPRISE_TOOL_NAMES
-            else "blocked",
-            "tools",
-            {
-                "catalog_tool_count": len(ENTERPRISE_TOOL_NAMES),
-                "agent_tool_count": sum(
-                    len(agent.get("tools") or []) for agent in active_agents
-                ),
-                "configured_agent_count": len(agents_with_tools),
-            },
-        ),
-        item(
-            "memory",
-            "ready"
-            if memory_enabled_agents and (memory_record_count or memory_hit_count)
-            else "partial"
-            if memory_enabled_agents
-            else "blocked",
-            "memory",
-            {
-                "enabled_agent_count": len(memory_enabled_agents),
-                "published_agent_count": len(active_agents),
-                "memory_record_count": memory_record_count,
-                "memory_hit_count": memory_hit_count,
-            },
-        ),
-        item(
-            "connector",
-            "ready"
-            if connector.get("status") == "ready"
-            else "blocked"
-            if connector.get("status") == "error"
-            else "partial",
-            "connectors",
-            {
-                "name": connector.get("name"),
-                "mode": connector.get("mode"),
-                "status": connector.get("status"),
-            },
-        ),
-        item(
-            "governance",
-            "ready"
-            if tenant_identities and decisions
-            else "partial"
-            if identities or decisions
-            else "blocked",
-            "governance",
-            {
-                "identity_count": len(tenant_identities),
-                "tool_policy_mode": tool_authorization_policy.mode,
-                "decision_count": len(decisions),
-            },
-        ),
-        item(
-            "workflow",
-            "ready"
-            if enabled_workflows and workflow_runs
-            else "partial"
-            if enabled_workflows
-            else "blocked",
-            "workflows",
-            {
-                "enabled_workflow_count": len(enabled_workflows),
-                "workflow_run_count": len(workflow_runs),
-            },
-        ),
-        item(
-            "audit",
-            "ready"
-            if tool_audit_logger.enabled and audit_events
-            else "partial"
-            if tool_audit_logger.enabled
-            else "blocked",
-            "audit",
-            {
-                "enabled": tool_audit_logger.enabled,
-                "event_count": len(audit_events),
-            },
-        ),
-    ]
-    blocking_count = sum(1 for readiness_item in items if readiness_item["status"] == "blocked")
-    ready_count = sum(1 for readiness_item in items if readiness_item["status"] == "ready")
-    if blocking_count:
-        status = "blocked"
-    elif ready_count == len(items):
-        status = "ready"
-    else:
-        status = "partial"
-    primary_action = next(
-        (
-            {
-                "target": readiness_item["target"],
-                "code": readiness_item["code"],
-            }
-            for readiness_item in items
-            if readiness_item["status"] != "ready"
-        ),
-        {"target": "audit", "code": "audit"},
-    )
-
-    return {
-        "status": status,
-        "ready_count": ready_count,
-        "total_count": len(items),
-        "blocking_count": blocking_count,
-        "items": items,
-        "primary_action": primary_action,
-    }
 
 
 def _enterprise_platform_ops_tasks(
@@ -681,361 +311,11 @@ def _enterprise_platform_ops_tasks(
     identities: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """Build the platform operator's action queue from live enterprise state."""
-    tasks: list[dict[str, Any]] = []
-
-    def add_task(
-        *,
-        code: str,
-        severity: str,
-        title: str,
-        description: str,
-        target: str,
-        count: int = 1,
-        evidence: dict[str, Any] | None = None,
-        action: dict[str, Any] | None = None,
-    ) -> None:
-        tasks.append(
-            {
-                "task_id": f"{tenant}:{user_id}:{code}",
-                "code": code,
-                "severity": severity,
-                "status": "open",
-                "title": title,
-                "description": description,
-                "target": target,
-                "count": count,
-                "evidence": evidence or {},
-                "action": action,
-            },
-        )
-
-    pending_approvals = _load_platform_approval_requests(
-        limit=100,
-        status="pending",
-        tenant=tenant,
-        user_id=user_id,
-    )
-    if pending_approvals:
-        add_task(
-            code="pending_approvals",
-            severity="warning",
-            title="处理待审批请求",
-            description="有工具或工作流调用正在等待租户审批，处理后才能继续执行业务流程。",
-            target="approvals",
-            count=len(pending_approvals),
-            evidence={
-                "approval_ids": [
-                    approval.get("approval_id") for approval in pending_approvals[:5]
-                ],
-                "request_types": sorted(
-                    {
-                        str(approval.get("request_type"))
-                        for approval in pending_approvals
-                        if approval.get("request_type")
-                    },
-                ),
-            },
-        )
-
-    workflow_runs = _load_workflow_runs(limit=100, tenant=tenant, user_id=user_id)
-    failed_workflow_runs = [
-        run for run in workflow_runs if str(run.get("status")) == "failed"
-    ]
-    if failed_workflow_runs:
-        add_task(
-            code="failed_workflows",
-            severity="error",
-            title="排查失败工作流",
-            description="最近有自动化流程执行失败，需要检查输入、工具权限或外部系统响应。",
-            target="workflows",
-            count=len(failed_workflow_runs),
-            evidence={
-                "run_ids": [run.get("run_id") for run in failed_workflow_runs[:5]],
-                "workflow_types": sorted(
-                    {
-                        str(run.get("workflow_type"))
-                        for run in failed_workflow_runs
-                        if run.get("workflow_type")
-                    },
-                ),
-            },
-        )
-
-    workflow_templates = _load_platform_workflow_templates()
-    disabled_workflows = [
-        workflow for workflow in workflow_templates if workflow.get("enabled") is False
-    ]
-    if disabled_workflows:
-        add_task(
-            code="disabled_workflows",
-            severity="info",
-            title="确认禁用的工作流",
-            description="有工作流模板处于禁用状态，如果它属于上线范围，需要启用后再验证。",
-            target="workflows",
-            count=len(disabled_workflows),
-            evidence={
-                "workflow_types": [
-                    workflow.get("workflow_type") for workflow in disabled_workflows
-                ],
-            },
-            action={
-                "type": "resolve",
-                "label": "启用工作流",
-                "method": "POST",
-                "endpoint": "/enterprise/platform/ops/tasks/disabled_workflows/resolve",
-            },
-        )
-
-    active_agents = [
-        agent
-        for agent in _load_platform_agents()
-        if agent.get("status") == "published"
-        and str(agent.get("tenant") or tenant) == tenant
-    ]
-    unready_agents = []
-    for agent in active_agents:
-        readiness = _platform_agent_readiness(agent)
-        if readiness.get("status") != "ready":
-            unready_agents.append(
-                {
-                    "id": agent.get("id"),
-                    "name": agent.get("name"),
-                    "status": readiness.get("status"),
-                    "issues": readiness.get("issues") or [],
-                },
-            )
-    if unready_agents:
-        blocking_count = sum(
-            1 for agent in unready_agents if agent.get("status") == "blocked"
-        )
-        add_task(
-            code="unready_agents",
-            severity="error" if blocking_count else "warning",
-            title="补齐未就绪 Agent 配置",
-            description="已发布 Agent 还有模型、工具、记忆、工作流或访问控制配置未补齐。",
-            target="agents",
-            count=len(unready_agents),
-            evidence={"agents": unready_agents[:5]},
-        )
-
-    launch_readiness = _enterprise_platform_launch_readiness(
+    return _platform_status_service().ops_tasks(
         tenant=tenant,
         user_id=user_id,
         identities=identities,
     )
-    launch_items = [
-        item for item in launch_readiness.get("items", []) if item.get("status") != "ready"
-    ]
-    if launch_items:
-        add_task(
-            code="launch_readiness",
-            severity="error"
-            if any(item.get("status") == "blocked" for item in launch_items)
-            else "warning",
-            title="完成平台上线检查",
-            description="模型、Agent、知识库、工具、连接器、权限、工作流或审计仍有未完成项。",
-            target=str((launch_readiness.get("primary_action") or {}).get("target") or "audit"),
-            count=len(launch_items),
-            evidence={
-                "status": launch_readiness.get("status"),
-                "items": launch_items,
-            },
-        )
-
-    decisions = tool_authorization_policy.describe_for_user(
-        tenant,
-        user_id,
-        ENTERPRISE_TOOL_NAMES,
-    )
-    denied_decisions = [
-        decision for decision in decisions if decision.get("allowed") is False
-    ]
-    if denied_decisions:
-        add_task(
-            code="tool_policy_denials",
-            severity="warning",
-            title="复核工具权限策略",
-            description="当前身份有工具被策略拒绝，可能影响 Agent 或工作流的完整执行。",
-            target="governance",
-            count=len(denied_decisions),
-            evidence={
-                "tools": [
-                    {
-                        "name": decision.get("name"),
-                        "reason": decision.get("reason"),
-                    }
-                    for decision in denied_decisions[:8]
-                ],
-            },
-        )
-
-    summary = {
-        "total_count": len(tasks),
-        "error_count": sum(1 for task in tasks if task["severity"] == "error"),
-        "warning_count": sum(1 for task in tasks if task["severity"] == "warning"),
-        "info_count": sum(1 for task in tasks if task["severity"] == "info"),
-        "open_count": sum(1 for task in tasks if task["status"] == "open"),
-    }
-    severity_order = {"error": 0, "warning": 1, "info": 2}
-    tasks.sort(key=lambda task: (severity_order.get(task["severity"], 3), task["code"]))
-    return {"tasks": tasks, "summary": summary}
-
-
-class EnterpriseToolRunRequest(BaseModel):
-    """Direct enterprise tool invocation payload from the platform console."""
-
-    tool_name: str = Field(min_length=1)
-    inputs: dict[str, Any] = Field(default_factory=dict)
-    user_id: str | None = None
-    agent_id: str | None = None
-    approval_id: str | None = None
-
-
-class EnterpriseToolPolicyUpdateRequest(BaseModel):
-    """Update one tenant user's enterprise tool authorization policy."""
-
-    tenant: str = Field(min_length=1)
-    user_id: str = Field(min_length=1)
-    allow: list[str] | None = None
-    deny: list[str] | None = None
-
-
-class EnterprisePlatformConfigImportRequest(BaseModel):
-    """Import portable enterprise platform configuration."""
-
-    config: dict[str, Any] = Field(default_factory=dict)
-    mode: str = "merge"
-
-
-class EnterprisePlatformMemberUpsertRequest(BaseModel):
-    """Create or update a tenant member visible to the enterprise platform."""
-
-    user_id: str = Field(min_length=1)
-    tenant: str = Field(default="acme", min_length=1)
-    display_name: str | None = None
-    role: str = Field(default="Enterprise user", min_length=1)
-    status: str = "active"
-
-
-class EnterprisePlatformMemberPatchRequest(BaseModel):
-    """Patch editable tenant member fields from the platform console."""
-
-    tenant: str | None = Field(default=None, min_length=1)
-    display_name: str | None = None
-    role: str | None = Field(default=None, min_length=1)
-    status: str | None = None
-
-
-class EnterpriseAgentRunRequest(BaseModel):
-    """Natural-language enterprise agent test run payload."""
-
-    question: str = Field(min_length=1)
-    agent_id: str | None = None
-    user_id: str | None = None
-    session_id: str | None = None
-    approval_id: str | None = None
-
-
-class EnterpriseWorkflowRunRequest(BaseModel):
-    """Run a predefined enterprise automation workflow from the platform."""
-
-    workflow_type: str = Field(min_length=1)
-    inputs: dict[str, Any] = Field(default_factory=dict)
-    agent_id: str | None = None
-    user_id: str | None = None
-    approval_id: str | None = None
-
-
-class EnterpriseApprovalCreateRequest(BaseModel):
-    """Create a governance approval request for a platform action."""
-
-    request_type: str = Field(min_length=1)
-    tool_name: str | None = None
-    workflow_type: str | None = None
-    inputs: dict[str, Any] = Field(default_factory=dict)
-    reason: str | None = None
-    agent_id: str | None = None
-    user_id: str | None = None
-
-
-class EnterpriseApprovalDecisionRequest(BaseModel):
-    """Approve or reject a pending platform governance request."""
-
-    decision_note: str | None = None
-    decided_by: str | None = None
-
-
-class EnterpriseWorkflowTemplateUpdateRequest(BaseModel):
-    """Update a tenant-visible enterprise workflow template."""
-
-    name: str | None = None
-    description: str | None = None
-    enabled: bool | None = None
-    default_inputs: dict[str, Any] | None = None
-
-
-class EnterpriseAgentPublishRequest(BaseModel):
-    """Publish a business agent template as a tenant-scoped platform agent."""
-
-    template_id: str = Field(min_length=1)
-    name: str | None = None
-    description: str | None = None
-    tenant: str | None = None
-    tools: list[str] | None = None
-    knowledge_base_ids: list[str] | None = None
-    model_config_id: str | None = None
-    memory_enabled: bool = True
-    workflow_enabled: bool = False
-    allowed_user_ids: list[str] | None = None
-    allowed_roles: list[str] | None = None
-
-
-class EnterpriseAgentUpdateRequest(BaseModel):
-    """Update a published platform agent instance."""
-
-    name: str | None = None
-    description: str | None = None
-    tenant: str | None = None
-    tools: list[str] | None = None
-    knowledge_base_ids: list[str] | None = None
-    model_config_id: str | None = None
-    memory_enabled: bool | None = None
-    workflow_enabled: bool | None = None
-    allowed_user_ids: list[str] | None = None
-    allowed_roles: list[str] | None = None
-    status: str | None = None
-
-
-class EnterpriseConnectorTestRequest(BaseModel):
-    """Ad-hoc HTTP connector validation payload from the platform console."""
-
-    base_url: str = Field(min_length=1)
-    token: str | None = None
-    tenant: str = "acme"
-    policy_keyword: str = "remote"
-    ticket_id: str = "INC-1001"
-    department: str = "engineering"
-    policy_path: str = HttpEnterpriseConnector.policy_path
-    ticket_path: str = HttpEnterpriseConnector.ticket_path
-    metrics_path: str = HttpEnterpriseConnector.metrics_path
-    timeout_seconds: float = Field(default=5.0, gt=0)
-
-
-class EnterpriseConnectorConfigSaveRequest(BaseModel):
-    """Persist a tenant-scoped enterprise HTTP connector configuration."""
-
-    base_url: str = Field(min_length=1)
-    token: str | None = None
-    tenant: str = "acme"
-    policy_path: str = HttpEnterpriseConnector.policy_path
-    ticket_path: str = HttpEnterpriseConnector.ticket_path
-    metrics_path: str = HttpEnterpriseConnector.metrics_path
-    timeout_seconds: float = Field(default=5.0, gt=0)
-    enabled: bool = True
-
-
-class EnterpriseRouterError(RuntimeError):
-    """Raised when the optional model router cannot produce a valid route."""
 
 
 def _tool_decision_payload(tool_name: str, decision: Any) -> dict[str, Any]:
@@ -1362,30 +642,26 @@ def _enterprise_subagent_template_metadata() -> list[dict[str, Any]]:
 
 
 def _load_platform_agents() -> list[dict[str, Any]]:
-    if not PLATFORM_AGENTS_PATH.exists():
-        return []
-
     try:
-        agents = json.loads(PLATFORM_AGENTS_PATH.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
+        return agent_repository.list()
+    except AgentRegistryError as exc:
         raise HTTPException(
             status_code=500,
-            detail="Platform agent registry is not valid JSON.",
+            detail=str(exc),
         ) from exc
-
-    if not isinstance(agents, list):
-        raise HTTPException(
-            status_code=500,
-            detail="Platform agent registry must be a JSON array.",
-        )
-
-    return agents
 
 
 def _get_platform_agent(agent_id: str) -> dict[str, Any]:
-    for agent in _load_platform_agents():
-        if str(agent.get("id", "")) == agent_id:
-            return agent
+    try:
+        agent = agent_repository.get(agent_id)
+    except AgentRegistryError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=str(exc),
+        ) from exc
+
+    if agent is not None:
+        return agent
 
     raise HTTPException(
         status_code=404,
@@ -1461,23 +737,11 @@ def _platform_agent_access(agent: dict[str, Any]) -> dict[str, list[str]]:
 
 
 def _load_platform_members_config() -> dict[str, Any]:
-    if not PLATFORM_MEMBERS_PATH.exists():
-        return {"members": []}
-    config = json.loads(PLATFORM_MEMBERS_PATH.read_text(encoding="utf-8"))
-    if not isinstance(config, dict):
-        raise ValueError("Enterprise platform members JSON must be an object.")
-    members = config.get("members")
-    if not isinstance(members, list):
-        config["members"] = []
-    return config
+    return member_repository.load_config()
 
 
 def _save_platform_members_config(config: dict[str, Any]) -> None:
-    PLATFORM_MEMBERS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    PLATFORM_MEMBERS_PATH.write_text(
-        json.dumps(config, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
+    member_repository.save_config(config)
 
 
 def _normalize_platform_member(
@@ -2002,6 +1266,91 @@ def _format_knowledge_answer(
     return "我在该 Agent 绑定的知识库中找到这些相关内容：\n" + "\n".join(snippets)
 
 
+def _load_platform_dev_knowledge() -> list[dict[str, Any]]:
+    return dev_knowledge_repository.list()
+
+
+def _knowledge_query_terms(value: str) -> set[str]:
+    normalized = value.lower()
+    terms = set(re.findall(r"[a-z0-9][a-z0-9._-]{1,}", normalized))
+    chinese_text = "".join(re.findall(r"[\u4e00-\u9fff]+", value))
+    for size in (2, 3, 4):
+        for index in range(0, max(len(chinese_text) - size + 1, 0)):
+            terms.add(chinese_text[index : index + size])
+    for marker in (
+        "知识库",
+        "知识助手",
+        "agentscope",
+        "agentfoundry",
+        "多租户",
+        "权限",
+        "工具",
+        "审批",
+        "记忆",
+        "rag",
+        "embedding",
+        "模型",
+        "运行",
+        "日志",
+        "来源",
+    ):
+        if marker.lower() in normalized or marker in value:
+            terms.add(marker.lower())
+    return terms
+
+
+def _search_platform_dev_knowledge(
+    question: str,
+    knowledge_base_ids: list[str],
+    *,
+    top_k: int = 3,
+) -> list[dict[str, Any]]:
+    if not knowledge_base_ids:
+        return []
+
+    allowed_knowledge_base_ids = set(knowledge_base_ids)
+    query_terms = _knowledge_query_terms(question)
+    if not query_terms:
+        return []
+
+    hits: list[dict[str, Any]] = []
+    for index, record in enumerate(_load_platform_dev_knowledge()):
+        knowledge_base_id = str(record.get("knowledge_base_id") or "").strip()
+        if knowledge_base_id not in allowed_knowledge_base_ids:
+            continue
+
+        title = str(record.get("title") or "").strip()
+        content = str(record.get("content") or "").strip()
+        tags = [str(tag) for tag in record.get("tags") or []]
+        haystack = " ".join([title, content, " ".join(tags)])
+        haystack_terms = _knowledge_query_terms(haystack)
+        overlap = query_terms & haystack_terms
+        if not overlap:
+            continue
+
+        score = min(1.0, 0.35 + (len(overlap) / max(len(query_terms), 1)))
+        hits.append(
+            {
+                "knowledge_base_id": knowledge_base_id,
+                "score": round(score, 4),
+                "document_id": str(record.get("id") or f"dev-doc-{index + 1}"),
+                "source": str(record.get("source") or title or knowledge_base_id),
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "snippet": _truncate_text(content, 500),
+                "metadata": {
+                    "provider": PLATFORM_DEV_KNOWLEDGE_PROVIDER,
+                    "dev_fallback": True,
+                    "title": title,
+                    "tags": tags,
+                },
+            },
+        )
+
+    hits.sort(key=lambda item: item["score"], reverse=True)
+    return hits[:top_k]
+
+
 def _truncate_text(value: str, limit: int = 300) -> str:
     text = re.sub(r"\s+", " ", value).strip()
     if len(text) <= limit:
@@ -2015,12 +1364,10 @@ def _platform_memory_path(
     user_id: str,
     agent_id: str,
 ) -> Path:
-    return (
-        PLATFORM_MEMORY_DIR
-        / _safe_path_part(tenant)
-        / _safe_path_part(user_id)
-        / _safe_path_part(agent_id)
-        / "memories.jsonl"
+    return platform_memory_repository.path_for(
+        tenant=tenant,
+        user_id=user_id,
+        agent_id=agent_id,
     )
 
 
@@ -2245,35 +1592,12 @@ def _load_platform_memories(
     agent_id: str,
     limit: int = PLATFORM_MEMORY_MAX_RECORDS,
 ) -> list[dict[str, Any]]:
-    path = _platform_memory_path(
+    return platform_memory_repository.list(
         tenant=tenant,
         user_id=user_id,
         agent_id=agent_id,
+        limit=limit,
     )
-    if not path.exists():
-        return []
-
-    records: list[dict[str, Any]] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        text = line.strip()
-        if not text:
-            continue
-        try:
-            record = json.loads(text)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(record, dict):
-            record = dict(record)
-            record.pop("answer", None)
-            record["facts"] = [
-                str(fact)
-                for fact in record.get("facts", [])
-                if str(fact).strip()
-                and not str(fact).startswith("上次回答摘要：")
-            ]
-            records.append(record)
-
-    return records[-limit:]
 
 
 def _format_platform_memory_hit(
@@ -2412,22 +1736,12 @@ def _append_platform_memory(
         "knowledge_base_ids": list(knowledge_base_ids),
         "keywords": sorted(_memory_text_terms(keyword_text))[:80],
     }
-    path = _platform_memory_path(
+    platform_memory_repository.append_capped(
         tenant=tenant,
         user_id=user_id,
         agent_id=agent_id,
-    )
-    previous = _load_platform_memories(
-        tenant=tenant,
-        user_id=user_id,
-        agent_id=agent_id,
-        limit=PLATFORM_MEMORY_MAX_RECORDS - 1,
-    )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    records = [*previous, record]
-    path.write_text(
-        "\n".join(json.dumps(item, ensure_ascii=False) for item in records) + "\n",
-        encoding="utf-8",
+        record=record,
+        max_records=PLATFORM_MEMORY_MAX_RECORDS,
     )
     return record
 
@@ -2441,77 +1755,71 @@ async def _search_agent_knowledge_bases(
     top_k: int = 3,
 ) -> tuple[list[dict[str, Any]], str | None]:
     service = getattr(request.app.state, "knowledge_base_service", None)
-    if service is None or not knowledge_base_ids:
+    if not knowledge_base_ids:
         return [], None
 
     hits: list[dict[str, Any]] = []
     errors: list[str] = []
-    for knowledge_base_id in knowledge_base_ids:
-        try:
-            results = await service.search(
-                user_id=user_id,
-                knowledge_base_id=knowledge_base_id,
-                query=question,
-                top_k=top_k,
-            )
-        except Exception as exc:  # Do not let RAG failures break tool answers.
-            errors.append(f"{knowledge_base_id}: {exc}")
-            continue
+    if service is not None:
+        for knowledge_base_id in knowledge_base_ids:
+            try:
+                results = await service.search(
+                    user_id=user_id,
+                    knowledge_base_id=knowledge_base_id,
+                    query=question,
+                    top_k=top_k,
+                )
+            except Exception as exc:  # Do not let RAG failures break tool answers.
+                errors.append(f"{knowledge_base_id}: {exc}")
+                continue
 
-        hits.extend(
-            _format_knowledge_hit(knowledge_base_id, hit)
-            for hit in results
-        )
+            hits.extend(
+                _format_knowledge_hit(knowledge_base_id, hit)
+                for hit in results
+            )
+
+    if len(hits) < top_k:
+        seen = {
+            (
+                str(hit.get("knowledge_base_id") or ""),
+                str(hit.get("document_id") or ""),
+            )
+            for hit in hits
+        }
+        for hit in _search_platform_dev_knowledge(
+            question,
+            knowledge_base_ids,
+            top_k=top_k,
+        ):
+            key = (
+                str(hit.get("knowledge_base_id") or ""),
+                str(hit.get("document_id") or ""),
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            hits.append(hit)
 
     hits.sort(key=lambda item: item["score"], reverse=True)
-    return hits[:top_k], "; ".join(errors) if errors else None
+    return hits[:top_k], "; ".join(errors) if errors and not hits else None
 
 
 def _save_platform_agents(agents: list[dict[str, Any]]) -> None:
-    PLATFORM_AGENTS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    PLATFORM_AGENTS_PATH.write_text(
-        json.dumps(agents, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+    agent_repository.save_all(agents)
 
 
 def _load_platform_connector_configs() -> dict[str, dict[str, Any]]:
-    if not PLATFORM_CONNECTOR_CONFIGS_PATH.exists():
-        return {}
-
     try:
-        raw_configs = json.loads(
-            PLATFORM_CONNECTOR_CONFIGS_PATH.read_text(encoding="utf-8"),
-        )
-    except json.JSONDecodeError as exc:
+        return connector_config_repository.list_by_tenant()
+    except ConnectorConfigRegistryError as exc:
         raise HTTPException(
             status_code=500,
-            detail="Platform connector registry is not valid JSON.",
+            detail=str(exc),
         ) from exc
-
-    if not isinstance(raw_configs, dict):
-        raise HTTPException(
-            status_code=500,
-            detail="Platform connector registry must be a JSON object.",
-        )
-
-    configs: dict[str, dict[str, Any]] = {}
-    for key, value in raw_configs.items():
-        if not isinstance(value, dict):
-            continue
-        tenant = str(value.get("tenant") or key).strip()
-        if tenant:
-            configs[tenant] = {**value, "tenant": tenant}
-
-    return configs
 
 
 def _save_platform_connector_configs(configs: dict[str, dict[str, Any]]) -> None:
-    PLATFORM_CONNECTOR_CONFIGS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    PLATFORM_CONNECTOR_CONFIGS_PATH.write_text(
-        json.dumps(configs, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+    connector_config_repository.save_all(configs)
 
 
 def _redact_connector_config(config: dict[str, Any]) -> dict[str, Any]:
@@ -4756,6 +4064,8 @@ async def run_enterprise_agent(
         _assert_platform_agent_access(agent, user_id)
 
     agent_metadata = _platform_agent_run_metadata(agent)
+    runtime_adapter = get_runtime_adapter(agent_metadata)
+    runtime_adapter_payload = runtime_adapter.describe(agent_metadata)
     configured_tools = (
         set(agent_metadata["configured_tools"])
         if agent is not None
@@ -4869,6 +4179,7 @@ async def run_enterprise_agent(
             "routing_reason": route["reason"],
             **({"routing_error": routing_error} if routing_error else {}),
             **agent_metadata,
+            "runtime_adapter": runtime_adapter_payload,
             **knowledge_payload,
             **memory_payload,
             "memory_saved": memory_saved,
@@ -4876,7 +4187,7 @@ async def run_enterprise_agent(
             "tool_calls": [],
             "evidence": evidence,
         }
-        _append_platform_agent_run(
+        agent_run_repository.append(
             {
                 "turn_id": turn_id,
                 "session_id": runner_session_id,
@@ -4887,6 +4198,7 @@ async def run_enterprise_agent(
                 "question": question,
                 "answer": answer,
                 "created_at": created_at,
+                "runtime_adapter": runtime_adapter_payload,
                 "evidence": evidence,
                 "response": response,
             },
@@ -5102,6 +4414,7 @@ async def run_enterprise_agent(
         "routing_reason": routing_reason,
         **({"routing_error": routing_error} if routing_error else {}),
         **agent_metadata,
+        "runtime_adapter": runtime_adapter_payload,
         "decision": primary_call.get("decision"),
         "result": primary_call.get("result"),
         "tool_calls": tool_calls,
@@ -5110,7 +4423,7 @@ async def run_enterprise_agent(
         "memory_saved": memory_saved,
         "evidence": evidence,
     }
-    _append_platform_agent_run(
+    agent_run_repository.append(
         {
             "turn_id": turn_id,
             "session_id": runner_session_id,
@@ -5121,6 +4434,7 @@ async def run_enterprise_agent(
             "question": question,
             "answer": answer,
             "created_at": created_at,
+            "runtime_adapter": runtime_adapter_payload,
             "evidence": evidence,
             "response": response,
         },
@@ -5138,7 +4452,7 @@ async def list_enterprise_agent_runs(
 ) -> dict[str, Any]:
     """List recent enterprise agent question-answer turns."""
     return {
-        "runs": _load_platform_agent_runs(
+        "runs": agent_run_repository.list(
             limit=limit,
             agent_id=(agent_id or "").strip() or None,
             tenant=(tenant or "").strip() or None,
@@ -5151,7 +4465,7 @@ async def list_enterprise_agent_runs(
 @app.get("/enterprise/platform/agent/runs/{turn_id}")
 async def get_enterprise_agent_run(turn_id: str) -> dict[str, Any]:
     """Get a single enterprise agent question-answer turn by run ID."""
-    run = _get_platform_agent_run(turn_id.strip())
+    run = agent_run_repository.get(turn_id.strip())
     if run is None:
         raise HTTPException(status_code=404, detail="Agent run not found.")
     return run
@@ -5165,7 +4479,19 @@ async def clear_enterprise_agent_runs(
     session_id: str | None = None,
 ) -> dict[str, Any]:
     """Clear matching enterprise agent question-answer turns."""
-    deleted_count = _delete_platform_agent_runs(
+    if not any(
+        [
+            (agent_id or "").strip(),
+            (tenant or "").strip(),
+            (user_id or "").strip(),
+            (session_id or "").strip(),
+        ],
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="At least one agent run filter is required.",
+        )
+    deleted_count = agent_run_repository.delete(
         agent_id=(agent_id or "").strip() or None,
         tenant=(tenant or "").strip() or None,
         user_id=(user_id or "").strip() or None,
@@ -5281,36 +4607,22 @@ def _default_workflow_templates() -> list[dict[str, Any]]:
 
 
 def _save_platform_workflow_templates(workflows: list[dict[str, Any]]) -> None:
-    PLATFORM_WORKFLOW_TEMPLATES_PATH.parent.mkdir(parents=True, exist_ok=True)
-    PLATFORM_WORKFLOW_TEMPLATES_PATH.write_text(
-        json.dumps(workflows, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+    workflow_template_repository.save_all(workflows)
 
 
 def _load_platform_workflow_templates() -> list[dict[str, Any]]:
-    if not PLATFORM_WORKFLOW_TEMPLATES_PATH.exists():
+    if not workflow_template_repository.exists():
         workflows = _default_workflow_templates()
         _save_platform_workflow_templates(workflows)
         return workflows
 
     try:
-        workflows = json.loads(
-            PLATFORM_WORKFLOW_TEMPLATES_PATH.read_text(encoding="utf-8"),
-        )
-    except json.JSONDecodeError as exc:
+        return workflow_template_repository.list()
+    except WorkflowTemplateRegistryError as exc:
         raise HTTPException(
             status_code=500,
-            detail="Platform workflow registry is not valid JSON.",
+            detail=str(exc),
         ) from exc
-
-    if not isinstance(workflows, list):
-        raise HTTPException(
-            status_code=500,
-            detail="Platform workflow registry must be a JSON array.",
-        )
-
-    return [workflow for workflow in workflows if isinstance(workflow, dict)]
 
 
 def _get_platform_workflow_template(workflow_type: str) -> dict[str, Any]:
@@ -5416,10 +4728,7 @@ def _workflow_run_status(counts: dict[str, int]) -> str:
 
 
 def _append_workflow_run(record: dict[str, Any]) -> None:
-    PLATFORM_WORKFLOW_RUNS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with PLATFORM_WORKFLOW_RUNS_PATH.open("a", encoding="utf-8") as file:
-        file.write(json.dumps(record, ensure_ascii=False, default=str))
-        file.write("\n")
+    workflow_run_repository.append(record)
 
 
 def _load_workflow_runs(
@@ -5430,33 +4739,13 @@ def _load_workflow_runs(
     tenant: str | None = None,
     user_id: str | None = None,
 ) -> list[dict[str, Any]]:
-    if not PLATFORM_WORKFLOW_RUNS_PATH.exists():
-        return []
-
-    bounded_limit = min(max(limit, 1), 100)
-    records: list[dict[str, Any]] = []
-    for line in reversed(PLATFORM_WORKFLOW_RUNS_PATH.read_text(encoding="utf-8").splitlines()):
-        if not line.strip():
-            continue
-        try:
-            record = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if not isinstance(record, dict):
-            continue
-        if workflow_type and record.get("workflow_type") != workflow_type:
-            continue
-        if agent_id and record.get("agent_id") != agent_id:
-            continue
-        if tenant and record.get("tenant") != tenant:
-            continue
-        if user_id and record.get("user_id") != user_id:
-            continue
-        records.append(record)
-        if len(records) >= bounded_limit:
-            break
-
-    return records
+    return workflow_run_repository.list(
+        limit=limit,
+        workflow_type=workflow_type,
+        agent_id=agent_id,
+        tenant=tenant,
+        user_id=user_id,
+    )
 
 
 def _enterprise_platform_scenarios() -> dict[str, Any]:
@@ -5543,65 +4832,6 @@ def _enterprise_platform_scenarios() -> dict[str, Any]:
     }
 
 
-def _read_platform_agent_runs() -> list[dict[str, Any]]:
-    if not PLATFORM_AGENT_RUNS_PATH.exists():
-        return []
-
-    records: list[dict[str, Any]] = []
-    for line in PLATFORM_AGENT_RUNS_PATH.read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        try:
-            record = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(record, dict):
-            records.append(record)
-    return records
-
-
-def _load_platform_agent_runs(
-    *,
-    limit: int = 20,
-    agent_id: str | None = None,
-    tenant: str | None = None,
-    user_id: str | None = None,
-    session_id: str | None = None,
-) -> list[dict[str, Any]]:
-    bounded_limit = min(max(limit, 1), 100)
-    records: list[dict[str, Any]] = []
-    for record in reversed(_read_platform_agent_runs()):
-        if agent_id and record.get("agent_id") != agent_id:
-            continue
-        if tenant and record.get("tenant") != tenant:
-            continue
-        if user_id and record.get("user_id") != user_id:
-            continue
-        if session_id and record.get("session_id") != session_id:
-            continue
-        records.append(record)
-        if len(records) >= bounded_limit:
-            break
-    return records
-
-
-def _get_platform_agent_run(turn_id: str) -> dict[str, Any] | None:
-    if not turn_id:
-        return None
-
-    for record in reversed(_read_platform_agent_runs()):
-        if record.get("turn_id") == turn_id:
-            return record
-    return None
-
-
-def _append_platform_agent_run(record: dict[str, Any]) -> None:
-    PLATFORM_AGENT_RUNS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with PLATFORM_AGENT_RUNS_PATH.open("a", encoding="utf-8") as file:
-        file.write(json.dumps(record, ensure_ascii=False, default=str))
-        file.write("\n")
-
-
 def _build_agent_run_evidence(
     *,
     turn_id: str,
@@ -5664,66 +4894,8 @@ def _build_agent_run_evidence(
     }
 
 
-def _replace_platform_agent_runs(records: list[dict[str, Any]]) -> None:
-    PLATFORM_AGENT_RUNS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    lines = [json.dumps(record, ensure_ascii=False, default=str) for record in records]
-    PLATFORM_AGENT_RUNS_PATH.write_text(
-        "\n".join(lines) + ("\n" if lines else ""),
-        encoding="utf-8",
-    )
-
-
-def _delete_platform_agent_runs(
-    *,
-    agent_id: str | None = None,
-    tenant: str | None = None,
-    user_id: str | None = None,
-    session_id: str | None = None,
-) -> int:
-    if not any([agent_id, tenant, user_id, session_id]):
-        raise HTTPException(
-            status_code=400,
-            detail="At least one agent run filter is required.",
-        )
-
-    kept_records: list[dict[str, Any]] = []
-    deleted_count = 0
-    for record in _read_platform_agent_runs():
-        matched = True
-        if agent_id and record.get("agent_id") != agent_id:
-            matched = False
-        if tenant and record.get("tenant") != tenant:
-            matched = False
-        if user_id and record.get("user_id") != user_id:
-            matched = False
-        if session_id and record.get("session_id") != session_id:
-            matched = False
-
-        if matched:
-            deleted_count += 1
-        else:
-            kept_records.append(record)
-
-    if deleted_count:
-        _replace_platform_agent_runs(kept_records)
-    return deleted_count
-
-
 def _read_platform_approval_requests() -> list[dict[str, Any]]:
-    if not PLATFORM_APPROVAL_REQUESTS_PATH.exists():
-        return []
-
-    records: list[dict[str, Any]] = []
-    for line in PLATFORM_APPROVAL_REQUESTS_PATH.read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        try:
-            record = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(record, dict):
-            records.append(record)
-    return records
+    return approval_request_repository.read_all()
 
 
 def _load_platform_approval_requests(
@@ -5734,28 +4906,17 @@ def _load_platform_approval_requests(
     user_id: str | None = None,
     agent_id: str | None = None,
 ) -> list[dict[str, Any]]:
-    bounded_limit = min(max(limit, 1), 100)
-    records: list[dict[str, Any]] = []
-    for record in reversed(_read_platform_approval_requests()):
-        if status and record.get("status") != status:
-            continue
-        if tenant and record.get("tenant") != tenant:
-            continue
-        if user_id and record.get("user_id") != user_id:
-            continue
-        if agent_id and record.get("agent_id") != agent_id:
-            continue
-        records.append(record)
-        if len(records) >= bounded_limit:
-            break
-    return records
+    return approval_request_repository.list(
+        limit=limit,
+        status=status,
+        tenant=tenant,
+        user_id=user_id,
+        agent_id=agent_id,
+    )
 
 
 def _append_platform_approval_request(record: dict[str, Any]) -> None:
-    PLATFORM_APPROVAL_REQUESTS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with PLATFORM_APPROVAL_REQUESTS_PATH.open("a", encoding="utf-8") as file:
-        file.write(json.dumps(record, ensure_ascii=False, default=str))
-        file.write("\n")
+    approval_request_repository.append(record)
 
 
 def _create_platform_approval_request(
@@ -5793,12 +4954,7 @@ def _create_platform_approval_request(
 
 
 def _replace_platform_approval_requests(records: list[dict[str, Any]]) -> None:
-    PLATFORM_APPROVAL_REQUESTS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    lines = [json.dumps(record, ensure_ascii=False, default=str) for record in records]
-    PLATFORM_APPROVAL_REQUESTS_PATH.write_text(
-        "\n".join(lines) + ("\n" if lines else ""),
-        encoding="utf-8",
-    )
+    approval_request_repository.replace_all(records)
 
 
 def _get_platform_approval_request(approval_id: str) -> dict[str, Any]:

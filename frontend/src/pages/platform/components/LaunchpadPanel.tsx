@@ -36,7 +36,7 @@ export function LaunchpadPanel({
 	labels,
 }: LaunchpadPanelProps) {
 	return (
-		<section className="grid gap-3 rounded-lg border bg-muted/10 p-4">
+		<section className="grid gap-3 rounded-lg border bg-background p-4">
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 				<div>
 					<div className="flex flex-wrap items-center gap-2">
@@ -66,7 +66,7 @@ export function LaunchpadPanel({
 							className="grid gap-3 rounded-lg border bg-background p-3"
 						>
 							<div className="flex items-start justify-between gap-3">
-								<div className="flex size-9 items-center justify-center rounded-lg border bg-muted/30">
+								<div className="flex size-9 items-center justify-center rounded-lg border bg-background">
 									<Icon className="size-4 text-muted-foreground" />
 								</div>
 								<StateBadge state={step.state} label={labels.states[step.state]} />

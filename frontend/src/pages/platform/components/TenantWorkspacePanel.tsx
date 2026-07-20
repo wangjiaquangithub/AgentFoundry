@@ -143,7 +143,7 @@ export function TenantWorkspacePanel({
 						<div
 							key={tenantItem.tenant}
 							className={cn(
-								'grid gap-3 rounded-lg border bg-muted/20 p-3',
+								'grid gap-3 rounded-lg border bg-background p-3',
 								selectedIdentity?.tenant === tenantItem.tenant &&
 									'border-primary/60 bg-primary/5',
 							)}
@@ -244,7 +244,7 @@ export function TenantWorkspacePanel({
 
 			{selectedIdentity ? (
 				<div className="grid gap-3 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)_minmax(18rem,0.7fr)]">
-					<div className="grid gap-3 rounded-lg border bg-muted/20 p-3">
+					<div className="grid gap-3 rounded-lg border bg-background p-3">
 						<div className="flex items-start justify-between gap-3">
 							<div className="min-w-0">
 								<div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -288,7 +288,7 @@ export function TenantWorkspacePanel({
 						</div>
 					</div>
 
-					<div className="grid gap-3 rounded-lg border bg-muted/20 p-3">
+					<div className="grid gap-3 rounded-lg border bg-background p-3">
 						<div className="flex items-center justify-between gap-3">
 							<div className="flex items-center gap-2">
 								<Boxes className="size-4 text-muted-foreground" />
@@ -342,7 +342,7 @@ export function TenantWorkspacePanel({
 						</div>
 					</div>
 
-					<div className="grid content-start gap-3 rounded-lg border bg-muted/20 p-3">
+					<div className="grid content-start gap-3 rounded-lg border bg-background p-3">
 						<div className="flex items-center gap-2">
 							<ShieldCheck className="size-4 text-muted-foreground" />
 							<h3 className="text-sm font-medium">{labels.policy}</h3>

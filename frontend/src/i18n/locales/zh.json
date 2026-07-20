@@ -1151,6 +1151,9 @@
 				"runtimeConfig": "本次实例配置",
 				"configuredTenant": "配置租户",
 				"runtimeConnector": "运行连接器",
+				"runtimeAdapter": "Runtime 适配器",
+				"runtimeProvider": "Runtime 提供方",
+				"runtimeMode": "Runtime 模式",
 				"connectorSource": "连接器来源",
 				"connectorSourceSaved": "租户保存配置",
 				"connectorSourceGlobal": "全局默认配置",
@@ -1212,6 +1215,8 @@
 			"knowledgeHitsEmpty": "本次没有命中该 Agent 绑定的知识库。",
 			"knowledgeSource": "来源",
 			"knowledgeScore": "相似度",
+			"knowledgeProvider": "检索提供方",
+			"devKnowledgeFallback": "开发期本地知识",
 			"knowledgeError": "知识库检索未完全完成。",
 			"error": "Agent 运行失败。"
 		},

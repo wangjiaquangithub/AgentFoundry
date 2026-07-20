@@ -132,7 +132,7 @@ export function TenantGovernancePanel({
 	labels,
 }: TenantGovernancePanelProps) {
 	return (
-		<section className="grid gap-4 rounded-lg border bg-muted/10 p-4">
+		<section className="grid gap-4 rounded-lg border bg-background p-4">
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 				<div>
 					<h2 className="text-base font-semibold">{labels.title}</h2>
@@ -153,7 +153,7 @@ export function TenantGovernancePanel({
 				<div className="grid gap-3 lg:grid-cols-[0.9fr_1.1fr]">
 					<div className="grid gap-3 rounded-lg border bg-background p-3">
 						<div className="flex items-start gap-3">
-							<div className="flex size-9 items-center justify-center rounded-lg border bg-muted/30">
+							<div className="flex size-9 items-center justify-center rounded-lg border bg-background">
 								<UserRound className="size-4 text-muted-foreground" />
 							</div>
 							<div className="min-w-0 flex-1">
@@ -228,7 +228,7 @@ export function TenantGovernancePanel({
 								</Badge>
 							</div>
 							<div className="grid gap-3 sm:grid-cols-2">
-								<div className="grid gap-2 rounded-md bg-muted/20 p-3">
+								<div className="grid gap-2 rounded-md border bg-background p-3">
 									<div className="flex items-center justify-between gap-2">
 										<span className="text-xs font-medium">{labels.allowedTools}</span>
 										<Badge variant="secondary">
@@ -255,7 +255,7 @@ export function TenantGovernancePanel({
 									</div>
 								</div>
 
-								<div className="grid gap-2 rounded-md bg-muted/20 p-3">
+								<div className="grid gap-2 rounded-md border bg-background p-3">
 									<div className="flex items-center justify-between gap-2">
 										<span className="text-xs font-medium">{labels.deniedTools}</span>
 										<Badge variant="secondary">
@@ -282,7 +282,7 @@ export function TenantGovernancePanel({
 									</div>
 								</div>
 							</div>
-							<div className="grid gap-3 rounded-md bg-muted/20 p-3">
+							<div className="grid gap-3 rounded-md border bg-background p-3">
 								<div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
 									<div className="min-w-0">
 										<h4 className="text-xs font-medium">{labels.editToolPolicy}</h4>
@@ -497,7 +497,7 @@ export function TenantGovernancePanel({
 								</Badge>
 							</div>
 							<div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3 xl:grid-cols-6">
-								<div className="rounded-md bg-muted/20 px-3 py-2">
+								<div className="rounded-md border bg-background px-3 py-2">
 									<div className="text-muted-foreground">{labels.policies}</div>
 									<div className="mt-1 font-semibold tabular-nums">
 										{selectedIdentityWorkspace
@@ -505,7 +505,7 @@ export function TenantGovernancePanel({
 											: 0}
 									</div>
 								</div>
-								<div className="rounded-md bg-muted/20 px-3 py-2">
+								<div className="rounded-md border bg-background px-3 py-2">
 									<div className="text-muted-foreground">{labels.tickets}</div>
 									<div className="mt-1 font-semibold tabular-nums">
 										{selectedIdentityWorkspace
@@ -513,7 +513,7 @@ export function TenantGovernancePanel({
 											: 0}
 									</div>
 								</div>
-								<div className="rounded-md bg-muted/20 px-3 py-2">
+								<div className="rounded-md border bg-background px-3 py-2">
 									<div className="text-muted-foreground">{labels.departments}</div>
 									<div className="mt-1 font-semibold tabular-nums">
 										{selectedIdentityWorkspace
@@ -521,7 +521,7 @@ export function TenantGovernancePanel({
 											: 0}
 									</div>
 								</div>
-								<div className="rounded-md bg-muted/20 px-3 py-2">
+								<div className="rounded-md border bg-background px-3 py-2">
 									<div className="text-muted-foreground">{labels.knowledgeBases}</div>
 									<div className="mt-1 font-semibold tabular-nums">
 										{selectedIdentityWorkspace
@@ -529,7 +529,7 @@ export function TenantGovernancePanel({
 											: 0}
 									</div>
 								</div>
-								<div className="rounded-md bg-muted/20 px-3 py-2">
+								<div className="rounded-md border bg-background px-3 py-2">
 									<div className="text-muted-foreground">{labels.tools}</div>
 									<div className="mt-1 font-semibold tabular-nums">
 										{selectedIdentityWorkspace
@@ -537,7 +537,7 @@ export function TenantGovernancePanel({
 											: 0}
 									</div>
 								</div>
-								<div className="rounded-md bg-muted/20 px-3 py-2">
+								<div className="rounded-md border bg-background px-3 py-2">
 									<div className="text-muted-foreground">{labels.sampleQuestion}</div>
 									<div className="mt-1 font-semibold tabular-nums">
 										{selectedIdentityWorkspace?.sample_questions.length ?? 0}
@@ -560,7 +560,7 @@ export function TenantGovernancePanel({
 								<div
 									key={identity.user_id}
 									className={cn(
-										'grid gap-3 rounded-md border bg-muted/10 p-3',
+										'grid gap-3 rounded-md border bg-background p-3',
 										identity.user_id === selectedIdentity?.user_id &&
 											'border-primary/40 bg-primary/5',
 									)}

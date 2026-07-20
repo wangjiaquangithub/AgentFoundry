@@ -93,7 +93,7 @@ export function AgentManagementOverview({
 		<div className="grid gap-3">
 			<div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
 				{agentOpsSummary.map((item) => (
-					<div key={item.label} className="rounded-lg border bg-muted/20 p-3">
+					<div key={item.label} className="rounded-lg border bg-background p-3">
 						<div className="text-xs text-muted-foreground">{item.label}</div>
 						<div className="mt-1 text-2xl font-semibold tabular-nums">
 							{item.value}
@@ -133,7 +133,7 @@ export function AgentManagementOverview({
 								return (
 									<div
 										key={step.key}
-										className="grid min-h-28 gap-2 rounded-lg border bg-muted/10 p-3"
+										className="grid min-h-28 gap-2 rounded-lg border bg-background p-3 transition-colors hover:border-primary/30 hover:bg-primary/5"
 									>
 										<div className="flex items-start justify-between gap-2">
 											<div className="flex min-w-0 items-center gap-2">
@@ -305,7 +305,7 @@ export function AgentTemplateList({
 								key={template.id}
 								size="sm"
 								className={cn(
-									'rounded-lg shadow-none',
+									'rounded-lg shadow-none transition-colors hover:border-primary/30 hover:bg-primary/5',
 									isSelected && 'border-primary/60 bg-primary/5',
 								)}
 							>

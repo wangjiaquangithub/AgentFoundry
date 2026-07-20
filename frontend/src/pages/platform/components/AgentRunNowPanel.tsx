@@ -81,7 +81,7 @@ export function AgentRunNowPanel({
 	labels,
 }: AgentRunNowPanelProps) {
 	return (
-		<section className="grid gap-4 rounded-lg border bg-muted/10 p-4">
+		<section className="grid gap-4 rounded-lg border bg-background p-4">
 			<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 				<div className="min-w-0">
 					<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
@@ -138,7 +138,7 @@ export function AgentRunNowPanel({
 							</div>
 							<StateBadge state="ready" label={labels.publishedStatus} />
 						</div>
-						<div className="rounded-lg border bg-muted/20 p-3">
+						<div className="rounded-lg border bg-background p-3">
 							<div className="text-xs text-muted-foreground">{labels.sample}</div>
 							<div className="mt-1 text-sm leading-6">
 								{primaryAgentSampleQuestion}

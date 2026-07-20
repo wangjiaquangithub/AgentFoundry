@@ -1,8 +1,6 @@
 import {
 	Boxes,
 	CheckCircle2,
-	Code2,
-	ListChecks,
 	ShieldAlert,
 	Users,
 	Wrench,
@@ -23,7 +21,6 @@ import type {
 	EnterpriseToolDecision,
 	EnterpriseToolRunResponse,
 } from '@/api';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -164,28 +161,8 @@ export function ToolsViewPage({
 				/>
 			</section>
 
-			<Tabs defaultValue="catalog" className="grid gap-4">
-				<section className="flex flex-col gap-3 rounded-lg border bg-background/80 p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-					<div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
-						<Boxes className="size-4 shrink-0" />
-						<span className="truncate">
-							{availableToolItems.length} 个工具 / {allowedToolCount} 已允许 /{' '}
-							{deniedToolCount} 已拒绝
-						</span>
-					</div>
-					<TabsList className="grid w-full grid-cols-2 sm:w-auto">
-						<TabsTrigger value="catalog" className="flex-1 sm:flex-none">
-							<ListChecks className="size-4" />
-							工具目录
-						</TabsTrigger>
-						<TabsTrigger value="runner" className="flex-1 sm:flex-none">
-							<Code2 className="size-4" />
-							调用调试
-						</TabsTrigger>
-					</TabsList>
-				</section>
-
-				<TabsContent value="catalog" className="mt-0">
+			<section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(390px,0.72fr)] 2xl:grid-cols-[minmax(0,1.08fr)_minmax(440px,0.72fr)]">
+				<div className="min-w-0">
 					<ToolCatalogPanel
 						sectionRef={configManagementRef}
 						availableToolItems={availableToolItems}
@@ -195,9 +172,9 @@ export function ToolsViewPage({
 						onRefetchToolCatalog={onRefetchToolCatalog}
 						t={t}
 					/>
-				</TabsContent>
+				</div>
 
-				<TabsContent value="runner" className="mt-0">
+				<div className="min-w-0 xl:sticky xl:top-[4.75rem] xl:self-start">
 					<ToolRunnerPanel
 						sectionRef={toolRunnerRef}
 						selectedToolName={selectedToolName}
@@ -224,8 +201,8 @@ export function ToolsViewPage({
 						onRunEnterpriseTool={onRunEnterpriseTool}
 						t={t}
 					/>
-				</TabsContent>
-			</Tabs>
+				</div>
+			</section>
 		</PlatformPageShell>
 	);
 }

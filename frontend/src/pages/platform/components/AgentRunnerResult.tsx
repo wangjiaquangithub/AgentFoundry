@@ -56,6 +56,14 @@ function timestampText(value?: string) {
 	return Number.isNaN(createdAt.getTime()) ? value : createdAt.toLocaleString();
 }
 
+function knowledgeMetadataText(
+	metadata: Record<string, unknown> | undefined,
+	key: string,
+) {
+	const value = metadata?.[key];
+	return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
 export function AgentRunnerResult({
 	result,
 	toolCalls,
@@ -82,7 +90,7 @@ export function AgentRunnerResult({
 
 			{result ? (
 				<div className="grid gap-3">
-					<div className="rounded-lg border bg-muted/10 p-4">
+					<div className="rounded-lg border bg-background p-4">
 						<div className="mb-3 flex flex-wrap items-center gap-2">
 							<Badge
 								variant={result.routed ? 'outline' : 'destructive'}
@@ -129,7 +137,7 @@ export function AgentRunnerResult({
 					</div>
 
 					{evidence ? (
-						<div className="grid gap-3 rounded-lg border bg-muted/10 p-3">
+						<div className="grid gap-3 rounded-lg border bg-background p-3">
 							<div className="flex flex-wrap items-center justify-between gap-2">
 								<div className="flex items-center gap-2">
 									<FileClock className="size-4 text-muted-foreground" />
@@ -228,7 +236,7 @@ export function AgentRunnerResult({
 						</AgentRunnerNotice>
 					) : null}
 
-					<div className="grid gap-2 rounded-lg border bg-muted/10 p-3">
+					<div className="grid gap-2 rounded-lg border bg-background p-3">
 						<div className="text-xs font-medium text-muted-foreground">
 							{t('platform.agentRunner.runtimeConfig')}
 						</div>
@@ -246,6 +254,21 @@ export function AgentRunnerResult({
 							<Badge variant="outline" className="max-w-full truncate">
 								{t('platform.agentManagement.modelCredential')}: {modelLabel}
 							</Badge>
+							{result.runtime_adapter ? (
+								<>
+									<Badge variant="outline" className="max-w-full truncate">
+										{t('platform.agentRunner.runtimeAdapter')}:{' '}
+										{result.runtime_adapter.name}
+									</Badge>
+									<Badge variant="outline" className="max-w-full font-mono">
+										{t('platform.agentRunner.runtimeProvider')}:{' '}
+										{result.runtime_adapter.provider}
+									</Badge>
+									<Badge variant="outline" className="max-w-full font-mono">
+										{t('platform.agentRunner.runtimeMode')}: {result.runtime_adapter.mode}
+									</Badge>
+								</>
+							) : null}
 							<Badge
 								variant="outline"
 								className={cn(
@@ -319,7 +342,7 @@ export function AgentRunnerResult({
 						</div>
 					</div>
 
-					<div className="grid gap-2 rounded-lg border bg-muted/10 p-3">
+					<div className="grid gap-2 rounded-lg border bg-background p-3">
 						<div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
 							<Brain className="size-4" />
 							<span>{t('platform.agentRunner.memoryHits')}</span>
@@ -399,7 +422,7 @@ export function AgentRunnerResult({
 						)}
 					</div>
 
-					<div className="grid gap-2 rounded-lg border bg-muted/10 p-3">
+					<div className="grid gap-2 rounded-lg border bg-background p-3">
 						<div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
 							<LibraryBig className="size-4" />
 							<span>{t('platform.agentRunner.knowledgeHits')}</span>
@@ -418,6 +441,8 @@ export function AgentRunnerResult({
 										: hit.knowledge_base_id;
 									const source =
 										hit.source || hit.document_id || hit.knowledge_base_id;
+									const provider = knowledgeMetadataText(hit.metadata, 'provider');
+									const isDevFallback = hit.metadata?.dev_fallback === true;
 
 									return (
 										<div
@@ -439,6 +464,19 @@ export function AgentRunnerResult({
 												<Badge variant="outline" className="font-mono">
 													{t('platform.agentRunner.knowledgeScore')}: {scoreText(hit.score)}
 												</Badge>
+												{provider ? (
+													<Badge variant="outline" className="max-w-full truncate font-mono" title={provider}>
+														{t('platform.agentRunner.knowledgeProvider')}: {provider}
+													</Badge>
+												) : null}
+												{isDevFallback ? (
+													<Badge
+														variant="outline"
+														className="border-amber-500/30 bg-amber-500/10 text-amber-700"
+													>
+														{t('platform.agentRunner.devKnowledgeFallback')}
+													</Badge>
+												) : null}
 											</div>
 											<p className="whitespace-pre-wrap break-words text-xs leading-5 text-muted-foreground">
 												{hit.snippet}
@@ -489,7 +527,10 @@ export function AgentRunnerResult({
 							};
 
 							return (
-								<div key={`${toolName}-${index}`} className="grid gap-3 rounded-lg border bg-muted/10 p-3">
+								<div
+									key={`${toolName}-${index}`}
+									className="grid gap-3 rounded-lg border bg-background p-3"
+								>
 									<div className="flex flex-wrap items-center gap-2">
 										<Badge variant="outline" className="max-w-full truncate font-mono">
 											{toolName}

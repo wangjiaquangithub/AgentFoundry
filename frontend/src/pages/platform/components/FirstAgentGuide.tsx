@@ -37,7 +37,7 @@ export function FirstAgentGuide({
 	const primaryPublishing = primaryStep.key === 'agent' && Boolean(publishingTemplateId);
 
 	return (
-		<div className="grid gap-3 rounded-lg border bg-muted/10 p-3">
+		<div className="grid gap-3 rounded-lg border bg-background p-3">
 			<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 				<div className="min-w-0">
 					<h3 className="text-sm font-medium">{labels.title}</h3>
@@ -67,7 +67,7 @@ export function FirstAgentGuide({
 							key={step.key}
 							type="button"
 							onClick={step.onClick}
-							className="grid min-h-28 gap-2 rounded-lg border bg-background p-3 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+							className="grid min-h-28 gap-2 rounded-lg border bg-background p-3 text-left transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 						>
 							<div className="flex items-start justify-between gap-3">
 								<div className="flex items-center gap-2">
@@ -76,7 +76,7 @@ export function FirstAgentGuide({
 											'grid size-8 place-items-center rounded-md border',
 											done
 												? 'bg-primary text-primary-foreground'
-												: 'bg-muted/20',
+												: 'bg-background',
 										)}
 									>
 										{done ? (

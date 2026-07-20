@@ -1,10 +1,8 @@
 import {
 	AlertTriangle,
-	Building2,
 	CheckCircle2,
 	Database,
 	KeyRound,
-	ListChecks,
 	Network,
 	Play,
 	PlugZap,
@@ -36,7 +34,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -187,44 +184,11 @@ export function DashboardConnectorsSection({
 						<Skeleton className="h-48 w-full" />
 					</div>
 				) : connectors ? (
-					<Tabs defaultValue="configuration" className="grid gap-4">
-						<section className="rounded-lg border bg-background p-4 shadow-sm">
-							<div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-								<div className="min-w-0">
-									<div className="flex items-center gap-2">
-										<div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
-											<PlugZap className="size-4 text-muted-foreground" />
-										</div>
-										<h2 className="text-base font-semibold">连接器工作区</h2>
-									</div>
-									<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-										把连接器状态、配置测试、资源目录和租户映射分区处理，避免调试表单和运行数据挤在同一个长面板里。
-									</p>
-								</div>
-								<TabsList className="w-full sm:w-auto">
-									<TabsTrigger
-										value="configuration"
-										className="flex-1 sm:flex-none"
-									>
-										<ServerCog className="size-4" />
-										配置
-									</TabsTrigger>
-									<TabsTrigger value="catalog" className="flex-1 sm:flex-none">
-										<ListChecks className="size-4" />
-										资源
-									</TabsTrigger>
-									<TabsTrigger value="tenants" className="flex-1 sm:flex-none">
-										<Building2 className="size-4" />
-										租户
-									</TabsTrigger>
-								</TabsList>
-							</div>
-						</section>
-
-						<TabsContent value="configuration" className="mt-0">
+					<div className="grid gap-4">
+						<section>
 							<div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
 								<div className="grid gap-4">
-									<div className="grid gap-3 rounded-lg border bg-background p-4 shadow-sm">
+									<div className="grid gap-3 border-y py-4">
 										<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 											<div>
 												<h3 className="text-sm font-medium">
@@ -248,7 +212,7 @@ export function DashboardConnectorsSection({
 											) : null}
 										</div>
 
-										<div className="grid gap-3 rounded-md border bg-muted/10 p-3">
+										<div className="grid gap-3 rounded-lg border bg-background p-3">
 											<div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
 												<div>
 													<h4 className="text-sm font-medium">
@@ -267,7 +231,7 @@ export function DashboardConnectorsSection({
 													{savedConnectorConfigs.map((config) => (
 														<div
 															key={config.tenant}
-															className="grid gap-3 rounded-md border bg-background p-3 lg:grid-cols-[minmax(0,1fr)_auto]"
+															className="grid gap-3 rounded-md border bg-background p-3 transition-colors hover:border-primary/30 hover:bg-primary/5 lg:grid-cols-[minmax(0,1fr)_auto]"
 														>
 															<div className="min-w-0">
 																<div className="flex flex-wrap items-center gap-2">
@@ -338,7 +302,7 @@ export function DashboardConnectorsSection({
 										</div>
 
 										<div className="grid gap-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-											<div className="grid gap-3 rounded-md border bg-muted/10 p-3 lg:col-span-2">
+											<div className="grid gap-3 rounded-lg border bg-background p-3 lg:col-span-2">
 												<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 													<div>
 														<h4 className="text-sm font-medium">
@@ -670,7 +634,7 @@ export function DashboardConnectorsSection({
 													return (
 														<div
 															key={check.name}
-															className="grid gap-2 rounded-md border bg-muted/10 p-3"
+															className="grid gap-2 rounded-md border bg-background p-3"
 														>
 															<div className="flex flex-wrap items-center justify-between gap-2">
 																<div className="flex min-w-0 items-center gap-2">
@@ -722,10 +686,10 @@ export function DashboardConnectorsSection({
 								</div>
 
 								<aside className="grid gap-4 self-start xl:sticky xl:top-4">
-									<div className="grid gap-3 rounded-lg border bg-background p-4 shadow-sm">
+									<div className="grid gap-3 rounded-lg border bg-background/80 p-4 shadow-none">
 										<div className="flex items-start justify-between gap-3">
 											<div className="flex items-center gap-2">
-												<div className="flex size-9 items-center justify-center rounded-lg border bg-muted/30">
+												<div className="flex size-9 items-center justify-center rounded-lg border bg-background">
 													<Database className="size-4 text-muted-foreground" />
 												</div>
 												<div className="min-w-0">
@@ -743,7 +707,7 @@ export function DashboardConnectorsSection({
 											/>
 										</div>
 										<div className="grid gap-2 text-sm">
-											<div className="flex items-center justify-between gap-3 rounded-md bg-muted/30 px-3 py-2">
+											<div className="flex items-center justify-between gap-3 rounded-md border bg-background px-3 py-2">
 												<span className="text-muted-foreground">
 													{t('platform.connectors.mode')}
 												</span>
@@ -751,7 +715,7 @@ export function DashboardConnectorsSection({
 													{connectors.current.mode}
 												</span>
 											</div>
-											<div className="flex items-center justify-between gap-3 rounded-md bg-muted/30 px-3 py-2">
+											<div className="flex items-center justify-between gap-3 rounded-md border bg-background px-3 py-2">
 												<span className="text-muted-foreground">
 													{t('platform.connectors.status')}
 												</span>
@@ -763,7 +727,7 @@ export function DashboardConnectorsSection({
 										<p className="text-sm leading-6 text-muted-foreground">
 											{connectors.current.message}
 										</p>
-										<div className="grid gap-2 rounded-md border bg-muted/20 p-3 text-sm">
+										<div className="grid gap-2 rounded-md border bg-background p-3 text-sm">
 											<div className="flex items-center justify-between gap-3">
 												<div>
 													<p className="font-medium">
@@ -815,7 +779,7 @@ export function DashboardConnectorsSection({
 										</div>
 									</div>
 
-									<div className="grid gap-3 rounded-lg border bg-background p-4 shadow-sm">
+									<div className="grid gap-3 rounded-lg border bg-background/80 p-4 shadow-none">
 										<div className="flex items-center justify-between gap-3">
 											<h3 className="text-sm font-medium">
 												{t('platform.connectors.environment')}
@@ -826,7 +790,7 @@ export function DashboardConnectorsSection({
 											{connectors.env.map((envVar) => (
 												<div
 													key={envVar.name}
-													className="grid gap-2 rounded-md border bg-muted/10 p-3"
+													className="grid gap-2 rounded-md border bg-background p-3"
 												>
 													<div className="min-w-0">
 														<div className="flex flex-wrap items-center gap-2">
@@ -868,11 +832,11 @@ export function DashboardConnectorsSection({
 									</div>
 								</aside>
 							</div>
-						</TabsContent>
+						</section>
 
-						<TabsContent value="catalog" className="mt-0">
+						<section>
 							<div className="grid gap-4 xl:grid-cols-2">
-								<div className="grid gap-3 rounded-lg border bg-background p-4 shadow-sm">
+								<div className="grid gap-3 rounded-lg border bg-background/80 p-4 shadow-none">
 									<div className="flex items-center justify-between gap-3">
 										<h3 className="text-sm font-medium">
 											{t('platform.connectors.supported')}
@@ -885,7 +849,7 @@ export function DashboardConnectorsSection({
 										{connectors.supported.map((connector) => (
 											<div
 												key={connector.name}
-												className="grid gap-2 rounded-md border bg-muted/10 p-3"
+												className="grid gap-2 rounded-md border bg-background p-3"
 											>
 												<div className="flex flex-wrap items-center justify-between gap-2">
 													<div className="min-w-0">
@@ -916,7 +880,7 @@ export function DashboardConnectorsSection({
 									</div>
 								</div>
 
-								<div className="grid gap-3 rounded-lg border bg-background p-4 shadow-sm">
+								<div className="grid gap-3 rounded-lg border bg-background/80 p-4 shadow-none">
 									<div className="flex items-center justify-between gap-3">
 										<h3 className="text-sm font-medium">
 											{t('platform.connectors.httpPaths')}
@@ -930,7 +894,7 @@ export function DashboardConnectorsSection({
 											([name, path]) => (
 												<div
 													key={name}
-													className="grid gap-1 rounded-md border bg-muted/10 p-3"
+													className="grid gap-1 rounded-md border bg-background p-3"
 												>
 													<span className="text-xs text-muted-foreground">
 														{name}
@@ -944,11 +908,11 @@ export function DashboardConnectorsSection({
 									</div>
 								</div>
 							</div>
-						</TabsContent>
+						</section>
 
-						<TabsContent value="tenants" className="mt-0">
+						<section>
 							<div className="grid gap-4 xl:grid-cols-2">
-								<div className="grid gap-3 rounded-lg border bg-background p-4 shadow-sm">
+								<div className="grid gap-3 rounded-lg border bg-background/80 p-4 shadow-none">
 									<div className="flex items-center justify-between gap-3">
 										<h3 className="text-sm font-medium">
 											{t('platform.connectors.tenantPreview')}
@@ -959,7 +923,7 @@ export function DashboardConnectorsSection({
 										{tenantWorkspaces.map(([tenant, workspace]) => (
 											<div
 												key={tenant}
-												className="grid gap-3 rounded-md border bg-muted/10 p-3"
+												className="grid gap-3 rounded-md border bg-background p-3"
 											>
 												<div className="flex flex-wrap items-center gap-2">
 													<Badge variant="secondary">{tenant}</Badge>
@@ -1043,7 +1007,7 @@ export function DashboardConnectorsSection({
 									</div>
 								</div>
 
-								<div className="grid gap-3 rounded-lg border bg-background p-4 shadow-sm">
+								<div className="grid gap-3 rounded-lg border bg-background/80 p-4 shadow-none">
 									<div className="flex items-center justify-between gap-3">
 										<h3 className="text-sm font-medium">
 											{t('platform.connectors.identities')}
@@ -1056,7 +1020,7 @@ export function DashboardConnectorsSection({
 										{connectors.identities.map((identity) => (
 											<div
 												key={identity.user_id}
-												className="grid gap-2 rounded-md border bg-muted/10 p-3"
+												className="grid gap-2 rounded-md border bg-background p-3"
 											>
 												<div className="flex flex-wrap items-center justify-between gap-2">
 													<div className="min-w-0">
@@ -1093,8 +1057,8 @@ export function DashboardConnectorsSection({
 									</div>
 								</div>
 							</div>
-						</TabsContent>
-					</Tabs>
+						</section>
+					</div>
 				) : (
 					<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
 						{t('platform.connectors.empty')}

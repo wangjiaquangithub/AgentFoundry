@@ -71,7 +71,7 @@ export function TriggerOpsPanel({
 	labels,
 }: TriggerOpsPanelProps) {
 	return (
-		<section className="grid min-w-0 gap-4 rounded-lg border bg-muted/10 p-4">
+		<section className="grid min-w-0 gap-4 rounded-lg border bg-background p-4">
 			<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 				<div className="min-w-0">
 					<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
@@ -143,7 +143,7 @@ export function TriggerOpsPanel({
 						</Badge>
 					</div>
 					<div className="grid gap-2">
-						<div className="grid min-w-0 gap-2 rounded-md bg-muted/30 px-2 py-1.5 text-xs sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+						<div className="grid min-w-0 gap-2 rounded-md border bg-background px-2 py-1.5 text-xs sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
 							<span className="min-w-0 truncate">{labels.manualTrigger}</span>
 							<Button
 								type="button"
@@ -156,7 +156,7 @@ export function TriggerOpsPanel({
 								<ArrowRight className="size-4" />
 							</Button>
 						</div>
-						<div className="grid min-w-0 gap-2 rounded-md bg-muted/30 px-2 py-1.5 text-xs sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+						<div className="grid min-w-0 gap-2 rounded-md border bg-background px-2 py-1.5 text-xs sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
 							<span className="min-w-0 truncate">{labels.approvalGate}</span>
 							<Button
 								type="button"
@@ -204,7 +204,7 @@ export function TriggerOpsPanel({
 							{recentSchedules.map((schedule) => (
 								<div
 									key={schedule.id}
-									className="grid gap-1 rounded-md bg-muted/30 px-2 py-1.5 text-xs"
+									className="grid gap-1 rounded-md border bg-background px-2 py-1.5 text-xs"
 								>
 									<div className="flex items-center justify-between gap-3">
 										<span className="min-w-0 truncate font-medium">

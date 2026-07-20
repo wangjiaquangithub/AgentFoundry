@@ -128,9 +128,9 @@ export function ApprovalsPanel({
 
 	return (
 		<section className="grid gap-4 xl:grid-cols-[minmax(340px,0.62fr)_minmax(0,1.38fr)] xl:items-start">
-			<div className="grid gap-4 rounded-lg border bg-background p-4 shadow-sm xl:sticky xl:top-20">
+			<div className="grid gap-4 rounded-lg border bg-background p-4 xl:sticky xl:top-20">
 				<div className="flex items-start gap-2">
-					<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/20">
+					<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background">
 						<ShieldCheck className="size-4 text-muted-foreground" />
 					</div>
 					<div className="min-w-0">
@@ -347,10 +347,10 @@ export function ApprovalsPanel({
 				</div>
 			</div>
 
-			<div className="flex min-w-0 flex-col gap-4 rounded-lg border bg-background p-4 shadow-sm">
+			<div className="flex min-w-0 flex-col gap-4 rounded-lg border bg-background p-4">
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 					<div className="flex min-w-0 items-start gap-2">
-						<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/20">
+						<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background">
 							<ListChecks className="size-4 text-muted-foreground" />
 						</div>
 						<div className="min-w-0">
@@ -378,7 +378,7 @@ export function ApprovalsPanel({
 					</Button>
 				</div>
 
-				<div className="grid gap-3 rounded-lg border bg-muted/10 p-3 md:grid-cols-2 xl:grid-cols-[1.1fr_1fr_1fr_1.1fr_0.7fr_auto]">
+				<div className="grid gap-3 border-y bg-background/80 py-3 md:grid-cols-2 xl:grid-cols-[1.1fr_1fr_1fr_1.1fr_0.7fr_auto]">
 					<div className="grid gap-2">
 						<label className="text-xs font-medium text-muted-foreground">
 							{t('platform.approvals.filterStatus')}
@@ -507,7 +507,7 @@ export function ApprovalsPanel({
 						))}
 					</div>
 				) : approvalRequests.length === 0 ? (
-					<div className="rounded-lg border border-dashed bg-muted/10 p-6 text-sm text-muted-foreground">
+					<div className="rounded-lg border border-dashed bg-background/80 p-6 text-sm text-muted-foreground">
 						{t('platform.approvals.empty')}
 					</div>
 				) : (
@@ -536,7 +536,7 @@ export function ApprovalsPanel({
 							return (
 								<div
 									key={approval.approval_id}
-									className="rounded-lg border bg-background p-4 transition-colors hover:bg-muted/10"
+									className="rounded-lg border bg-background/80 p-4 transition-colors hover:border-primary/30 hover:bg-primary/5"
 								>
 									<div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto]">
 										<div className="min-w-0">
@@ -639,7 +639,7 @@ export function ApprovalsPanel({
 										) : null}
 									</div>
 
-									<div className="mt-4 grid gap-3 rounded-md border bg-muted/10 p-3 text-xs text-muted-foreground md:grid-cols-2 xl:grid-cols-4">
+									<div className="mt-4 grid gap-3 border-t pt-3 text-xs text-muted-foreground md:grid-cols-2 xl:grid-cols-4">
 										<div className="grid gap-1">
 											<span>{t('platform.approvals.approvalId')}</span>
 											<span className="break-all font-mono text-foreground">

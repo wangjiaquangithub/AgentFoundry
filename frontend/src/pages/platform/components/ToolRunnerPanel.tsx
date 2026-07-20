@@ -85,12 +85,12 @@ export function ToolRunnerPanel({
 	return (
 		<section
 			ref={sectionRef}
-			className="overflow-hidden rounded-lg border bg-background shadow-sm"
+			className="overflow-hidden rounded-lg border bg-background"
 		>
 			<div className="border-b p-4">
 				<div className="flex items-start justify-between gap-3">
 					<div className="flex min-w-0 gap-3">
-						<div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+						<div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-background">
 							<Code2 className="size-4 text-muted-foreground" />
 						</div>
 						<div className="min-w-0">
@@ -124,9 +124,9 @@ export function ToolRunnerPanel({
 				</div>
 			</div>
 
-			<div className="grid gap-0 lg:grid-cols-[minmax(320px,0.78fr)_minmax(0,1fr)]">
-				<div className="grid gap-4 border-b p-4 lg:border-b-0 lg:border-r">
-					<div className="rounded-lg border bg-slate-50/70 p-3">
+			<div className="grid gap-0 2xl:grid-cols-[minmax(320px,0.78fr)_minmax(0,1fr)]">
+				<div className="grid gap-4 border-b p-4 2xl:border-b-0 2xl:border-r">
+					<div className="rounded-lg border bg-background/80 p-3">
 						<div className="text-xs font-medium text-muted-foreground">
 							{t('platform.toolRunner.selectTool')}
 						</div>
@@ -202,7 +202,7 @@ export function ToolRunnerPanel({
 						/>
 					</div>
 
-					<div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+					<div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
 						<Button
 							variant="outline"
 							onClick={() => void onCreateRunApproval('tool_run')}
@@ -245,7 +245,7 @@ export function ToolRunnerPanel({
 					) : null}
 				</div>
 
-				<div className="bg-slate-50/70 p-4">
+				<div className="bg-background/80 p-4">
 					<div className="mb-3 flex items-center justify-between gap-3">
 						<div className="flex min-w-0 items-center gap-2">
 							<Code2 className="size-4 shrink-0 text-muted-foreground" />
@@ -260,11 +260,11 @@ export function ToolRunnerPanel({
 						) : null}
 					</div>
 					{toolRunResult ? (
-						<pre className="max-h-[34rem] min-h-[26rem] overflow-auto rounded-lg border bg-background p-4 text-xs leading-5">
+						<pre className="max-h-[34rem] min-h-[22rem] overflow-auto rounded-lg border bg-background p-4 text-xs leading-5">
 							{JSON.stringify(toolRunResult, null, 2)}
 						</pre>
 					) : (
-						<div className="flex min-h-[26rem] items-center rounded-lg border border-dashed bg-background p-6 text-sm text-muted-foreground">
+						<div className="flex min-h-[22rem] items-center rounded-lg border border-dashed bg-background p-6 text-sm text-muted-foreground">
 							{t('platform.toolRunner.emptyResult')}
 						</div>
 					)}

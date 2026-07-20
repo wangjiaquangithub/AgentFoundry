@@ -111,7 +111,7 @@ export function AgentRunnerPanel({
 		>
 			<div className="flex flex-col gap-3">
 				<div className="flex items-start gap-2">
-					<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/20">
+					<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background">
 						<BotMessageSquare className="size-4 text-muted-foreground" />
 					</div>
 					<div className="min-w-0">
@@ -124,7 +124,7 @@ export function AgentRunnerPanel({
 					</div>
 				</div>
 
-				<div className="grid gap-4 rounded-lg border bg-muted/10 p-4">
+				<div className="grid gap-4 rounded-lg border bg-background p-4">
 					<div className="grid gap-2">
 						<label className="text-xs font-medium text-muted-foreground">
 							{t('platform.agentRunner.instance')}

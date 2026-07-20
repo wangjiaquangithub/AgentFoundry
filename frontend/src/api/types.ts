@@ -469,6 +469,22 @@ export interface EnterpriseAgentToolCall {
 	answer?: string;
 }
 
+export interface EnterpriseAgentRuntimeAdapter {
+	id?: string;
+	name: string;
+	provider: string;
+	mode: string;
+	description?: string;
+	capabilities?: string[];
+	capability_details?: {
+		id: string;
+		name: string;
+		description: string;
+	}[];
+	agent_id?: string;
+	agent_name?: string;
+}
+
 export interface EnterpriseAgentRunResponse {
 	answer: string;
 	routed: boolean;
@@ -486,6 +502,7 @@ export interface EnterpriseAgentRunResponse {
 	configured_tools?: string[];
 	knowledge_base_ids?: string[];
 	model_config_id?: string | null;
+	runtime_adapter?: EnterpriseAgentRuntimeAdapter;
 	memory_enabled?: boolean;
 	workflow_enabled?: boolean;
 	allowed_user_ids?: string[];

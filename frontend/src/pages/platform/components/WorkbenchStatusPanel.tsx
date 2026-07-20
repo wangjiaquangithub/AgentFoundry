@@ -43,7 +43,7 @@ export function WorkbenchStatusPanel({
 }: WorkbenchStatusPanelProps) {
 	return (
 		<div className="grid gap-3 lg:grid-cols-[1.1fr_1.4fr]">
-			<div className="grid gap-3 rounded-lg border bg-muted/10 p-3">
+			<div className="grid gap-3 rounded-lg border bg-background p-3">
 				<div className="flex items-start justify-between gap-3">
 					<div className="min-w-0">
 						<h3 className="text-sm font-medium">{labels.statusTitle}</h3>
@@ -65,10 +65,10 @@ export function WorkbenchStatusPanel({
 								key={item.key}
 								type="button"
 								onClick={item.onClick}
-								className="grid gap-2 rounded-lg border bg-background p-3 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+								className="grid gap-2 rounded-lg border bg-background p-3 text-left transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 							>
 								<div className="flex items-center justify-between gap-3">
-									<div className="grid size-8 place-items-center rounded-md border bg-muted/20">
+									<div className="grid size-8 place-items-center rounded-md border bg-background">
 										<ItemIcon className="size-4 text-muted-foreground" />
 									</div>
 									<StateBadge state={item.state} label={labels.states[item.state]} />
@@ -99,7 +99,7 @@ export function WorkbenchStatusPanel({
 								'grid min-h-32 gap-3 rounded-lg border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 								action.primary
 									? 'bg-primary text-primary-foreground hover:bg-primary/90'
-									: 'bg-muted/10 hover:bg-muted/30',
+									: 'bg-background hover:border-primary/30 hover:bg-primary/5',
 							)}
 						>
 							<div className="flex items-start justify-between gap-3">

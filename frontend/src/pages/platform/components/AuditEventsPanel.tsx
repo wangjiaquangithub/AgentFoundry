@@ -76,7 +76,7 @@ export function AuditEventsPanel({
 	t,
 }: AuditEventsPanelProps) {
 	return (
-		<section className="flex flex-col gap-4 rounded-lg border bg-background p-4 shadow-sm">
+		<section className="flex flex-col gap-4 rounded-lg border bg-background p-4 shadow-none">
 			<div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
 				<div>
 					<h2 className="text-base font-semibold">{t('platform.audit.title')}</h2>
@@ -96,7 +96,7 @@ export function AuditEventsPanel({
 				</Button>
 			</div>
 
-			<div className="grid gap-3 rounded-lg border bg-muted/10 p-3 md:grid-cols-2 xl:grid-cols-[repeat(6,minmax(0,1fr))_auto]">
+			<div className="grid gap-3 border-y bg-background/80 py-3 md:grid-cols-2 xl:grid-cols-[repeat(6,minmax(0,1fr))_auto]">
 				<div className="grid gap-2">
 					<label className="text-xs font-medium text-muted-foreground">
 						{t('platform.audit.filterTenant')}
@@ -252,7 +252,7 @@ export function AuditEventsPanel({
 				<>
 					<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 						{auditStats.map((stat) => (
-							<div key={stat.label} className="rounded-lg border bg-muted/10 p-3">
+							<div key={stat.label} className="rounded-lg border bg-background/80 p-3">
 								<div className="text-xs text-muted-foreground">{stat.label}</div>
 								<div className="mt-1 font-mono text-xl font-semibold">
 									{stat.value}
@@ -278,7 +278,7 @@ export function AuditEventsPanel({
 										`${event.timestamp}-${event.tool_name}-${index}`
 									}
 									size="sm"
-									className="rounded-lg shadow-none"
+									className="rounded-lg shadow-none transition-colors hover:border-primary/30 hover:bg-primary/5"
 								>
 									<CardHeader className="grid-cols-[auto_1fr_auto] gap-3">
 										<div

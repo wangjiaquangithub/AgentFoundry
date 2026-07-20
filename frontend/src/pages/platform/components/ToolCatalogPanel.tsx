@@ -56,7 +56,7 @@ export function ToolCatalogPanel({
 	}, [availableToolItems, query, statusFilter]);
 
 	return (
-		<section ref={sectionRef} className="rounded-lg border bg-background shadow-sm">
+		<section ref={sectionRef} className="overflow-hidden rounded-lg border bg-background">
 			<div className="flex flex-col gap-4 border-b p-4">
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 					<div className="min-w-0">
@@ -89,7 +89,7 @@ export function ToolCatalogPanel({
 							className="pl-9"
 						/>
 					</div>
-					<div className="grid grid-cols-3 rounded-md border bg-muted/20 p-1">
+					<div className="grid grid-cols-3 rounded-md border bg-background p-1">
 						{(['all', 'allowed', 'denied'] as const).map((filter) => (
 							<Button
 								key={filter}
@@ -161,10 +161,13 @@ export function ToolCatalogPanel({
 						];
 
 						return (
-							<div key={tool.name} className="grid gap-3 p-4">
+							<div
+								key={tool.name}
+								className="grid gap-3 p-4 transition-colors hover:bg-primary/5"
+							>
 								<div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
 									<div className="flex min-w-0 gap-3">
-										<div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+										<div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-background">
 											<Boxes className="size-4 text-muted-foreground" />
 										</div>
 										<div className="min-w-0">
@@ -220,7 +223,7 @@ export function ToolCatalogPanel({
 									</div>
 								</div>
 
-								<div className="grid gap-3 rounded-lg border bg-slate-50/70 p-3 text-xs xl:grid-cols-[minmax(0,1fr)_minmax(260px,0.85fr)_minmax(220px,0.75fr)]">
+								<div className="grid gap-3 border-t pt-3 text-xs xl:grid-cols-[minmax(0,1fr)_minmax(260px,0.85fr)_minmax(220px,0.75fr)]">
 									<div className="grid gap-2 sm:grid-cols-3">
 										{statItems.slice(0, 3).map((item) => (
 											<div key={item.label} className="min-w-0">

@@ -90,19 +90,19 @@ export function OperationsPanel({
 			</div>
 
 			<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-				<div className="rounded-lg border bg-muted/20 p-3">
+				<div className="rounded-lg border bg-background p-3">
 					<div className="text-xs text-muted-foreground">{labels.totalAgents}</div>
 					<div className="mt-1 text-2xl font-semibold tabular-nums">
 						{activeAgents.length}
 					</div>
 				</div>
-				<div className="rounded-lg border bg-muted/20 p-3">
+				<div className="rounded-lg border bg-background p-3">
 					<div className="text-xs text-muted-foreground">{labels.readyAgents}</div>
 					<div className="mt-1 text-2xl font-semibold tabular-nums">
 						{readyAgents.length}
 					</div>
 				</div>
-				<div className="rounded-lg border bg-muted/20 p-3">
+				<div className="rounded-lg border bg-background p-3">
 					<div className="text-xs text-muted-foreground">
 						{labels.needsConfiguration}
 					</div>
@@ -110,7 +110,7 @@ export function OperationsPanel({
 						{blockedOrPartialAgents.length}
 					</div>
 				</div>
-				<div className="rounded-lg border bg-muted/20 p-3">
+				<div className="rounded-lg border bg-background p-3">
 					<div className="text-xs text-muted-foreground">
 						{labels.pendingApprovals}
 					</div>
@@ -147,7 +147,7 @@ export function OperationsPanel({
 								return (
 									<div
 										key={agent.id}
-										className="grid gap-3 rounded-lg border bg-muted/20 p-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"
+										className="grid gap-3 rounded-lg border bg-background p-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"
 									>
 										<div className="min-w-0">
 											<div className="flex flex-wrap items-center gap-2">
@@ -213,7 +213,7 @@ export function OperationsPanel({
 							<button
 								key={approval.approval_id}
 								type="button"
-								className="grid gap-1 rounded-lg border bg-muted/20 p-3 text-left text-sm transition hover:border-primary/50"
+								className="grid gap-1 rounded-lg border bg-background p-3 text-left text-sm transition hover:border-primary/30 hover:bg-primary/5"
 								onClick={() => onUseApproval(approval)}
 							>
 								<span className="truncate font-medium">

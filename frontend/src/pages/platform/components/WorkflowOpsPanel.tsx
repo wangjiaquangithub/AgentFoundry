@@ -83,7 +83,7 @@ export function WorkflowOpsPanel({
 	labels,
 }: WorkflowOpsPanelProps) {
 	return (
-		<section className="grid gap-4 rounded-lg border bg-muted/10 p-4">
+		<section className="grid gap-4 rounded-lg border bg-background p-4">
 			<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 				<div className="min-w-0">
 					<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
@@ -163,7 +163,7 @@ export function WorkflowOpsPanel({
 								{selectedWorkflowSteps.slice(0, 4).map((step, index) => (
 									<div
 										key={step.id}
-										className="flex items-center justify-between gap-3 rounded-md bg-muted/30 px-2 py-1.5 text-xs"
+										className="flex items-center justify-between gap-3 rounded-md border bg-background px-2 py-1.5 text-xs"
 									>
 										<span className="min-w-0 truncate">
 											{index + 1}. {step.title}
@@ -262,7 +262,7 @@ export function WorkflowOpsPanel({
 								<button
 									key={approval.approval_id}
 									type="button"
-									className="grid gap-1 rounded-md bg-muted/30 px-2 py-1.5 text-left text-xs transition hover:bg-muted/50"
+									className="grid gap-1 rounded-md border bg-background px-2 py-1.5 text-left text-xs transition hover:border-primary/30 hover:bg-primary/5"
 									onClick={() => onUseApproval(approval)}
 								>
 									<span className="truncate font-medium">

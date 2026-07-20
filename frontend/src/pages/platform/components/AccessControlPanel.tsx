@@ -174,7 +174,7 @@ export function AccessControlPanel({
 
 			<div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
 				{stats.map((item) => (
-					<div key={item.label} className="rounded-md border bg-muted/20 px-3 py-2">
+					<div key={item.label} className="rounded-md border bg-background px-3 py-2">
 						<div className="text-xs text-muted-foreground">{item.label}</div>
 						<div className="mt-1 text-xl font-semibold tabular-nums">{item.value}</div>
 					</div>
@@ -193,7 +193,7 @@ export function AccessControlPanel({
 			{enterpriseIdentities.length > 0 ? (
 				<div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.8fr)]">
 					<div className="grid gap-3">
-						<div className="rounded-lg border bg-muted/20 p-3">
+						<div className="rounded-lg border bg-background p-3">
 							<div className="mb-3 flex items-center justify-between gap-3">
 								<div className="flex items-center gap-2">
 									<Building2 className="size-4 text-muted-foreground" />
@@ -216,15 +216,15 @@ export function AccessControlPanel({
 											</Badge>
 										</div>
 										<div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-											<div className="rounded-md border bg-muted/20 px-2 py-1">
+											<div className="rounded-md border bg-background px-2 py-1">
 												<div className="text-muted-foreground">{labels.allowed}</div>
 												<div className="mt-1 font-semibold tabular-nums">{tenant.allowed}</div>
 											</div>
-											<div className="rounded-md border bg-muted/20 px-2 py-1">
+											<div className="rounded-md border bg-background px-2 py-1">
 												<div className="text-muted-foreground">{labels.denied}</div>
 												<div className="mt-1 font-semibold tabular-nums">{tenant.denied}</div>
 											</div>
-											<div className="rounded-md border bg-muted/20 px-2 py-1">
+											<div className="rounded-md border bg-background px-2 py-1">
 												<div className="text-muted-foreground">{labels.pending}</div>
 												<div className="mt-1 font-semibold tabular-nums">{tenant.pending}</div>
 											</div>
@@ -234,7 +234,7 @@ export function AccessControlPanel({
 							</div>
 						</div>
 
-						<div className="rounded-lg border bg-muted/20 p-3">
+						<div className="rounded-lg border bg-background p-3">
 							<div className="mb-3 flex items-center gap-2">
 								<UserRound className="size-4 text-muted-foreground" />
 								<h3 className="text-sm font-medium">{labels.identityDirectory}</h3>
@@ -280,7 +280,7 @@ export function AccessControlPanel({
 						</div>
 					</div>
 
-					<div className="grid content-start gap-3 rounded-lg border bg-muted/20 p-3">
+					<div className="grid content-start gap-3 rounded-lg border bg-background p-3">
 						<div className="flex items-center justify-between gap-3">
 							<div className="flex items-center gap-2">
 								<ShieldCheck className="size-4 text-muted-foreground" />
@@ -326,7 +326,7 @@ export function AccessControlPanel({
 										</Badge>
 									</div>
 									<div className="grid grid-cols-2 gap-2">
-										<div className="rounded-md border bg-muted/20 px-2 py-2">
+										<div className="rounded-md border bg-background px-2 py-2">
 											<div className="text-xs text-muted-foreground">
 												{labels.pendingApprovalsShort}
 											</div>
@@ -334,7 +334,7 @@ export function AccessControlPanel({
 												{selectedIdentityPendingApprovals.length}
 											</div>
 										</div>
-										<div className="rounded-md border bg-muted/20 px-2 py-2">
+										<div className="rounded-md border bg-background px-2 py-2">
 											<div className="text-xs text-muted-foreground">
 												{labels.failedAudits}
 											</div>
@@ -342,13 +342,13 @@ export function AccessControlPanel({
 												{selectedIdentityFailedAuditEvents.length}
 											</div>
 										</div>
-										<div className="rounded-md border bg-muted/20 px-2 py-2">
+										<div className="rounded-md border bg-background px-2 py-2">
 											<div className="text-xs text-muted-foreground">{labels.allowed}</div>
 											<div className="mt-1 text-lg font-semibold tabular-nums">
 												{selectedIdentityAllowedTools.length}
 											</div>
 										</div>
-										<div className="rounded-md border bg-muted/20 px-2 py-2">
+										<div className="rounded-md border bg-background px-2 py-2">
 											<div className="text-xs text-muted-foreground">
 												{labels.recentAudit}
 											</div>
@@ -366,7 +366,7 @@ export function AccessControlPanel({
 												<button
 													key={approval.approval_id}
 													type="button"
-													className="grid gap-1 rounded-md border bg-muted/20 p-2 text-left transition hover:border-primary/50"
+													className="grid gap-1 rounded-md border bg-background p-2 text-left transition hover:border-primary/30 hover:bg-primary/5"
 													onClick={() => onUseApproval(approval)}
 												>
 													<div className="flex items-center justify-between gap-2">

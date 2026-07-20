@@ -42,7 +42,7 @@ export function CapabilitiesPanel({ capabilities, t }: CapabilitiesPanelProps) {
 						<Card
 							key={capability.title}
 							size="sm"
-							className="rounded-lg shadow-none transition-colors hover:bg-muted/20"
+							className="rounded-lg shadow-none transition hover:border-primary/30 hover:bg-primary/5"
 						>
 							<CardHeader className="grid-cols-[auto_1fr_auto] items-start gap-3">
 								<div className="flex size-8 items-center justify-center rounded-lg border bg-background">

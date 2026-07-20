@@ -121,7 +121,7 @@ export function MemoryOperationsPanel({
 					return (
 						<div
 							key={item.label}
-							className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 p-3"
+							className="flex items-center justify-between gap-3 rounded-lg border bg-background p-3"
 						>
 							<div className="min-w-0">
 								<div className="truncate text-xs text-muted-foreground">
@@ -144,7 +144,7 @@ export function MemoryOperationsPanel({
 			) : (
 				<div className="grid gap-3 xl:grid-cols-2">
 					{items.slice(0, 6).map((item) => (
-						<div key={item.key} className="grid gap-3 rounded-lg border bg-muted/20 p-3">
+						<div key={item.key} className="grid gap-3 rounded-lg border bg-background p-3">
 							<div className="flex items-start justify-between gap-3">
 								<div className="min-w-0">
 									<div className="flex flex-wrap items-center gap-2">

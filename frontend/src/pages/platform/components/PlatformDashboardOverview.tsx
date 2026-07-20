@@ -84,7 +84,7 @@ export function PlatformDashboardOverview({
 					))}
 				</div>
 
-				<div className="grid gap-4 rounded-lg border bg-background p-4 shadow-sm">
+				<div className="grid gap-4 rounded-lg border bg-background p-4">
 					<div className="min-w-0">
 						<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
 							<ListChecks className="size-4" />

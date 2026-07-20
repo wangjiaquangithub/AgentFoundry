@@ -1,18 +1,19 @@
 # AgentFoundry
 
-AgentFoundry is an enterprise Agent platform prototype for building, running, and governing AI agents.
+AgentFoundry is an enterprise Agent platform for building, running, governing, and observing AI agents.
 
-It is split from the AgentScope example workspace into an independent product repository. AgentFoundry owns the platform console, backend APIs, tenant-aware tools, workflow demos, approval gates, and audit views. AgentScope remains the Agent runtime dependency.
+The repository is currently a runnable product prototype moving toward a production-grade SaaS platform. It is not a production system yet.
+
+AgentFoundry is an independent product repository. It owns the platform console, backend APIs, tenant-aware tools, workflows, approval gates, audit views, knowledge assistant flow, memory operations, and runtime adapter boundary. AgentScope is a replaceable Agent runtime provider behind the backend adapter, not the AgentFoundry backend itself.
 
 ## Repository Layout
 
 ```text
 agentfoundry/
   frontend/   React, TypeScript, Vite platform console
-  backend/    Python enterprise Agent backend built on AgentScope
+  backend/    Python platform API, services, repositories, and runtime adapter
   scripts/    Local start and smoke-test scripts
-  docs/       Product and architecture notes
-  examples/   Future platform examples
+  docs/       Product, architecture, data model, and production plan
 ```
 
 Expected local stack:
@@ -35,6 +36,24 @@ Open:
 
 ```text
 http://127.0.0.1:5176
+```
+
+The platform console is available at:
+
+```text
+http://127.0.0.1:5176/platform
+```
+
+If the default frontend port is already occupied, run the stack with an explicit port:
+
+```bash
+BACKEND_PORT=8000 FRONTEND_PORT=5186 ./scripts/start_agentfoundry.sh
+```
+
+Then open:
+
+```text
+http://127.0.0.1:5186/platform
 ```
 
 Platform routes:
@@ -64,6 +83,18 @@ Demo prompt:
 请查询 remote 政策、INC-1001 工单状态，并总结 engineering 部门指标。回答里说明信息来源。
 ```
 
+Enterprise knowledge assistant prompt:
+
+```text
+AgentFoundry 里的 AgentScope 起什么作用？
+```
+
+Current knowledge status:
+
+- The enterprise knowledge assistant can use the development knowledge base `dev-enterprise-handbook`.
+- Results from this local fallback are marked as `agentfoundry-dev-local` in run evidence.
+- Production RAG still needs an embedding-capable credential and a real indexing pipeline.
+
 ## Verify
 
 ```bash
@@ -78,4 +109,40 @@ AGENTSCOPE_DIR=/path/to/agentscope ./scripts/start_agentfoundry.sh
 
 ## Current Status
 
-This is a runnable enterprise Agent platform prototype, not a production SaaS platform yet. The platform console is now split into route-level management pages while reusing the current state model. The next productization steps are adding persistent platform storage, formalizing deployment, and extracting large route sections into maintainable feature modules.
+This is a runnable enterprise Agent platform prototype, not a production SaaS platform yet.
+
+Already in place:
+
+- Route-level platform console under `/platform/*`.
+- Python backend API with tenant, agent, tool, workflow, approval, memory, run, and settings capabilities.
+- Development local storage using JSON/JSONL files.
+- Enterprise knowledge assistant flow with a development knowledge fallback.
+- Initial service, repository, and runtime adapter direction.
+
+Still required for production:
+
+- Complete backend API/service/repository separation.
+- Production database, migrations, transactions, and tenant-scoped constraints.
+- Real knowledge ingestion, chunking, embedding, retrieval, and retrieval logs.
+- Stable AgentScope runtime adapter integration behind provider-neutral contracts.
+- Authentication, authorization, immutable audit, secret handling, deployment, and observability.
+- Continued `/platform/*` page work so each route behaves like an enterprise SaaS workspace.
+
+## Production Plan
+
+Use `docs/production-plan.md` as the execution source of truth for production-grade work.
+
+Execution should happen in small, verifiable slices. Do not treat "make AgentFoundry production-grade" as one large coding task. Each slice should state its phase, scope, non-goals, validation command, and whether it needs a commit or push.
+
+Recommended first slice:
+
+```text
+Stage 1.1: Extract backend request schemas from backend/main.py into a schemas module.
+```
+
+Related docs:
+
+- `docs/production-plan.md`
+- `docs/product-roadmap.md`
+- `docs/architecture.md`
+- `docs/data-model.md`

@@ -156,7 +156,7 @@ export function AppCenterPanel({
 			</div>
 
 			<div className="grid gap-3 lg:grid-cols-3">
-				<div className="grid content-start gap-3 rounded-lg border bg-muted/20 p-3">
+				<div className="grid content-start gap-3 rounded-lg border bg-background p-3">
 					<div className="flex items-center justify-between gap-3">
 						<h3 className="text-sm font-medium">{labels.templates}</h3>
 						<Badge variant="outline">{agentTemplates.length}</Badge>
@@ -178,7 +178,7 @@ export function AppCenterPanel({
 									role="button"
 									tabIndex={0}
 									className={cn(
-										'grid gap-3 rounded-lg border bg-background p-3 text-left transition hover:border-primary/50',
+										'grid gap-3 rounded-lg border bg-background p-3 text-left transition hover:border-primary/30 hover:bg-primary/5',
 										isSelected && 'border-primary/60 bg-primary/5',
 									)}
 									onClick={() =>
@@ -233,7 +233,7 @@ export function AppCenterPanel({
 					)}
 				</div>
 
-				<div className="grid content-start gap-3 rounded-lg border bg-muted/20 p-3">
+				<div className="grid content-start gap-3 rounded-lg border bg-background p-3">
 					<div className="flex items-center justify-between gap-3">
 						<h3 className="text-sm font-medium">{labels.published}</h3>
 						<Badge variant="outline">{activePlatformAgents.length}</Badge>
@@ -253,7 +253,7 @@ export function AppCenterPanel({
 									role="button"
 									tabIndex={0}
 									className={cn(
-										'grid gap-3 rounded-lg border bg-background p-3 text-left transition hover:border-primary/50',
+										'grid gap-3 rounded-lg border bg-background p-3 text-left transition hover:border-primary/30 hover:bg-primary/5',
 										inspectedAppCenterAgent?.id === agent.id &&
 											'border-primary/60 bg-primary/5',
 									)}
@@ -319,7 +319,7 @@ export function AppCenterPanel({
 					)}
 				</div>
 
-				<div className="grid content-start gap-3 rounded-lg border bg-muted/20 p-3">
+				<div className="grid content-start gap-3 rounded-lg border bg-background p-3">
 					<div className="flex items-center justify-between gap-3">
 						<h3 className="text-sm font-medium">{labels.governance}</h3>
 						<StateBadge
@@ -354,7 +354,7 @@ export function AppCenterPanel({
 							<button
 								key={approval.approval_id}
 								type="button"
-								className="grid gap-1 rounded-lg border bg-background p-3 text-left text-sm transition hover:border-primary/50"
+								className="grid gap-1 rounded-lg border bg-background p-3 text-left text-sm transition hover:border-primary/30 hover:bg-primary/5"
 								onClick={() => onUseApproval(approval)}
 							>
 								<span className="truncate font-medium">
@@ -380,7 +380,7 @@ export function AppCenterPanel({
 				</div>
 			</div>
 
-			<div className="grid gap-4 rounded-lg border bg-muted/20 p-4 lg:grid-cols-[1.2fr_0.8fr]">
+			<div className="grid gap-4 rounded-lg border bg-background p-4 lg:grid-cols-[1.2fr_0.8fr]">
 				<div className="min-w-0">
 					<div className="flex flex-wrap items-center gap-2">
 						<Badge variant="outline">

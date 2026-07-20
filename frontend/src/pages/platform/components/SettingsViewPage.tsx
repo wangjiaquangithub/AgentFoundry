@@ -28,7 +28,6 @@ import { ConfigManagementPanel } from './ConfigManagementPanel';
 import type { RuntimeStatusItem } from './RuntimeStatusPanel';
 import type { EnterprisePlatformConfigExportResponse } from '@/api';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 
@@ -179,42 +178,44 @@ export function SettingsViewPage({
 				))}
 			</section>
 
-			<Tabs defaultValue="runtime" className="grid gap-4">
-				<section className="flex flex-col gap-3 rounded-lg border bg-background p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
-					<div>
-						<h2 className="text-base font-semibold">设置工作区</h2>
-						<p className="mt-1 text-sm leading-6 text-muted-foreground">
-							运行连接和配置迁移分区处理，平台设置页默认只展示当前需要核对的状态。
-						</p>
-					</div>
-					<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-						<div className="grid grid-cols-2 gap-2 text-xs sm:w-72">
-							<div className="rounded-md border bg-muted/20 px-3 py-2">
-								<div className="text-muted-foreground">运行项</div>
-								<div className="mt-1 font-semibold tabular-nums">
-									{runtimeReadyCount}/{runtimeItems.length}
-								</div>
-							</div>
-							<div className="rounded-md border bg-muted/20 px-3 py-2">
-								<div className="text-muted-foreground">策略</div>
-								<div className="mt-1 font-semibold tabular-nums">{policyCount}</div>
-							</div>
+			<div className="grid gap-5">
+				<section className="grid gap-3 border-y py-4 sm:grid-cols-2 xl:grid-cols-4">
+					<div className="rounded-lg border bg-background/80 p-4 shadow-none">
+						<div className="flex items-center gap-2 text-xs text-muted-foreground">
+							<Activity className="size-4" />
+							运行项
 						</div>
-						<TabsList className="w-full sm:w-auto">
-							<TabsTrigger value="runtime" className="flex-1 sm:flex-none">
-								运行状态
-							</TabsTrigger>
-							<TabsTrigger value="config" className="flex-1 sm:flex-none">
-								配置迁移
-							</TabsTrigger>
-						</TabsList>
+						<div className="mt-2 text-xl font-semibold tabular-nums">
+							{runtimeReadyCount}/{runtimeItems.length}
+						</div>
+					</div>
+					<div className="rounded-lg border bg-background/80 p-4 shadow-none">
+						<div className="flex items-center gap-2 text-xs text-muted-foreground">
+							<KeyRound className="size-4" />
+							策略
+						</div>
+						<div className="mt-2 text-xl font-semibold tabular-nums">{policyCount}</div>
+					</div>
+					<div className="rounded-lg border bg-background/80 p-4 shadow-none sm:col-span-2">
+						<div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+							<div>
+								<h2 className="text-sm font-semibold">平台运行与配置治理</h2>
+								<p className="mt-1 text-xs leading-5 text-muted-foreground">
+									集中核对运行连接、导出平台治理数据，并完成配置迁移操作。
+								</p>
+							</div>
+							<StateBadge
+								state={hasErrors ? 'partial' : 'ready'}
+								label={hasErrors ? '待检查' : '可用'}
+							/>
+						</div>
 					</div>
 				</section>
 
-				<TabsContent value="runtime" className="mt-0">
+				<section className="border-b pb-5">
 					<section className="grid gap-4 xl:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)]">
 						<div className="grid content-start gap-4">
-							<div className="rounded-lg border bg-background p-4 shadow-sm">
+							<div className="rounded-lg border bg-background/80 p-4 shadow-none">
 								<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 									<div>
 										<h2 className="text-sm font-semibold">运行连接</h2>
@@ -247,7 +248,7 @@ export function SettingsViewPage({
 								</div>
 							</div>
 
-							<div className="rounded-lg border bg-background p-4 shadow-sm">
+							<div className="rounded-lg border bg-background/80 p-4 shadow-none">
 								<div className="mb-3 flex items-start justify-between gap-3">
 									<div>
 										<h2 className="text-sm font-semibold">配置范围</h2>
@@ -258,7 +259,7 @@ export function SettingsViewPage({
 									<FileJson className="size-4 text-muted-foreground" />
 								</div>
 								<div className="grid gap-2 text-sm">
-									<div className="flex items-center justify-between gap-3 rounded-md border bg-muted/10 p-3">
+									<div className="flex items-center justify-between gap-3 rounded-md border bg-background p-3">
 										<span className="flex min-w-0 items-center gap-2 text-muted-foreground">
 											<Database className="size-4" />
 											数据对象
@@ -267,14 +268,14 @@ export function SettingsViewPage({
 											{totalConfigObjects}
 										</span>
 									</div>
-									<div className="flex items-center justify-between gap-3 rounded-md border bg-muted/10 p-3">
+									<div className="flex items-center justify-between gap-3 rounded-md border bg-background p-3">
 										<span className="flex min-w-0 items-center gap-2 text-muted-foreground">
 											<KeyRound className="size-4" />
 											工具策略
 										</span>
 										<span className="font-medium tabular-nums">{policyCount}</span>
 									</div>
-									<div className="flex items-center justify-between gap-3 rounded-md border bg-muted/10 p-3">
+									<div className="flex items-center justify-between gap-3 rounded-md border bg-background p-3">
 										<span className="flex min-w-0 items-center gap-2 text-muted-foreground">
 											<Settings2 className="size-4" />
 											Schema
@@ -287,7 +288,7 @@ export function SettingsViewPage({
 							</div>
 						</div>
 
-						<div className="rounded-lg border bg-background p-4 shadow-sm">
+						<div className="rounded-lg border bg-background/80 p-4 shadow-none">
 							<div className="mb-3">
 								<h2 className="text-sm font-semibold">运行时状态</h2>
 								<p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -295,7 +296,7 @@ export function SettingsViewPage({
 								</p>
 							</div>
 							<div className="mb-3 grid gap-2 sm:grid-cols-3">
-								<div className="rounded-md border bg-muted/10 p-3">
+								<div className="rounded-md border bg-background p-3">
 									<div className="flex items-center gap-2 text-xs text-muted-foreground">
 										<Activity className="size-4" />
 										运行覆盖
@@ -304,7 +305,7 @@ export function SettingsViewPage({
 										{runtimeReadyCount}
 									</div>
 								</div>
-								<div className="rounded-md border bg-muted/10 p-3">
+								<div className="rounded-md border bg-background p-3">
 									<div className="flex items-center gap-2 text-xs text-muted-foreground">
 										<CheckCircle2 className="size-4" />
 										连接健康
@@ -313,7 +314,7 @@ export function SettingsViewPage({
 										{hasErrors ? '待检查' : '已连接'}
 									</div>
 								</div>
-								<div className="rounded-md border bg-muted/10 p-3">
+								<div className="rounded-md border bg-background p-3">
 									<div className="flex items-center gap-2 text-xs text-muted-foreground">
 										<Settings2 className="size-4" />
 										Schema
@@ -330,7 +331,7 @@ export function SettingsViewPage({
 									return (
 										<div
 											key={item.label}
-											className="grid grid-cols-[auto_minmax(5rem,0.38fr)_minmax(0,1fr)] items-center gap-3 rounded-lg border bg-muted/10 p-3 text-sm"
+											className="grid grid-cols-[auto_minmax(5rem,0.38fr)_minmax(0,1fr)] items-center gap-3 rounded-lg border bg-background p-3 text-sm"
 										>
 											<Icon className="size-4 text-muted-foreground" />
 											<span className="text-xs text-muted-foreground">
@@ -345,11 +346,11 @@ export function SettingsViewPage({
 							</div>
 						</div>
 					</section>
-				</TabsContent>
+				</section>
 
-				<TabsContent value="config" className="mt-0">
+				<section>
 					<section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
-						<div className="rounded-lg border bg-background p-4 shadow-sm">
+						<div className="rounded-lg border bg-background/80 p-4 shadow-none">
 							<ConfigManagementPanel
 								platformConfigExport={platformConfigExport}
 								platformConfigLoading={platformConfigLoading}
@@ -371,7 +372,7 @@ export function SettingsViewPage({
 							/>
 						</div>
 						<aside className="grid content-start gap-3 xl:sticky xl:top-20">
-							<div className="rounded-lg border bg-background p-4 shadow-sm">
+							<div className="rounded-lg border bg-background/80 p-4 shadow-none">
 								<h2 className="text-sm font-semibold">迁移检查</h2>
 								<p className="mt-1 text-xs leading-5 text-muted-foreground">
 									导入前先确认对象数量、模式和密钥处理，避免覆盖生产配置。
@@ -383,7 +384,7 @@ export function SettingsViewPage({
 										return (
 											<div
 												key={item.label}
-												className="flex items-center justify-between gap-3 rounded-md border bg-muted/10 p-3 text-sm"
+													className="flex items-center justify-between gap-3 rounded-md border bg-background p-3 text-sm"
 											>
 												<span className="flex min-w-0 items-center gap-2 text-muted-foreground">
 													<Icon className="size-4" />
@@ -397,13 +398,13 @@ export function SettingsViewPage({
 									})}
 								</div>
 							</div>
-							<div className="rounded-lg border bg-background p-4 text-xs leading-5 text-muted-foreground shadow-sm">
+							<div className="rounded-lg border bg-background/80 p-4 text-xs leading-5 text-muted-foreground shadow-none">
 								配置迁移只处理平台治理数据；外部系统凭证仍由连接器或运行环境单独管理。
 							</div>
 						</aside>
 					</section>
-				</TabsContent>
-			</Tabs>
+				</section>
+			</div>
 		</PlatformPageShell>
 	);
 }

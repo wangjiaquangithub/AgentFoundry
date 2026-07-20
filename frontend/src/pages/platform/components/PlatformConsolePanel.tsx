@@ -25,7 +25,7 @@ export function PlatformConsolePanel({
 	labels,
 }: PlatformConsolePanelProps) {
 	return (
-		<section className="grid gap-4 rounded-lg border bg-muted/10 p-4">
+		<section className="grid gap-4 rounded-lg border bg-background p-4">
 			<div className="min-w-0">
 				<h2 className="text-base font-semibold">{labels.title}</h2>
 				<p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
@@ -39,9 +39,9 @@ export function PlatformConsolePanel({
 					return (
 						<div
 							key={item.key}
-							className="grid gap-3 rounded-lg border bg-background p-3"
+							className="grid gap-3 rounded-lg border bg-background p-3 transition-colors hover:border-primary/30 hover:bg-primary/5"
 						>
-							<div className="flex size-9 items-center justify-center rounded-lg border bg-muted/30">
+							<div className="flex size-9 items-center justify-center rounded-lg border bg-background">
 								<Icon className="size-4 text-muted-foreground" />
 							</div>
 							<div className="min-w-0">

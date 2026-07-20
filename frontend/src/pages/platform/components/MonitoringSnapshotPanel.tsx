@@ -135,7 +135,7 @@ export function MonitoringSnapshotPanel({
 					const StatIcon = stat.icon;
 
 					return (
-						<div key={stat.label} className="grid gap-3 rounded-lg border bg-muted/10 p-3">
+						<div key={stat.label} className="grid gap-3 rounded-lg border bg-background p-3">
 							<div className="flex items-center justify-between gap-3">
 								<div className="text-sm font-medium">{stat.label}</div>
 								<div className="grid size-8 place-items-center rounded-md border bg-background">
@@ -150,7 +150,7 @@ export function MonitoringSnapshotPanel({
 			</div>
 
 			<div className="grid gap-3 lg:grid-cols-3">
-				<div className="grid gap-3 rounded-lg border bg-muted/10 p-3">
+				<div className="grid gap-3 rounded-lg border bg-background p-3">
 					<div>
 						<h3 className="text-sm font-medium">{labels.recentAgentRuns}</h3>
 						<p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -168,7 +168,7 @@ export function MonitoringSnapshotPanel({
 									key={turn.id}
 									type="button"
 									onClick={() => onSelectAgentTurn(turn)}
-									className="rounded-md border bg-background p-3 text-left text-xs transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+									className="rounded-md border bg-background p-3 text-left text-xs transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 								>
 									<div className="flex items-center justify-between gap-2">
 										<span className="truncate font-medium">{turn.question}</span>
@@ -185,7 +185,7 @@ export function MonitoringSnapshotPanel({
 					)}
 				</div>
 
-				<div className="grid gap-3 rounded-lg border bg-muted/10 p-3">
+				<div className="grid gap-3 rounded-lg border bg-background p-3">
 					<div>
 						<h3 className="text-sm font-medium">{labels.recentWorkflowRuns}</h3>
 						<p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -203,7 +203,7 @@ export function MonitoringSnapshotPanel({
 									key={run.run_id}
 									type="button"
 									onClick={onRunWorkflow}
-									className="rounded-md border bg-background p-3 text-left text-xs transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+									className="rounded-md border bg-background p-3 text-left text-xs transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 								>
 									<div className="flex items-center justify-between gap-2">
 										<span className="truncate font-medium">{run.workflow_name}</span>
@@ -223,7 +223,7 @@ export function MonitoringSnapshotPanel({
 					)}
 				</div>
 
-				<div className="grid gap-3 rounded-lg border bg-muted/10 p-3">
+				<div className="grid gap-3 rounded-lg border bg-background p-3">
 					<div>
 						<h3 className="text-sm font-medium">{labels.recentAudit}</h3>
 						<p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -241,7 +241,7 @@ export function MonitoringSnapshotPanel({
 									key={event.event_id ?? `${event.timestamp}-${index}`}
 									type="button"
 									onClick={onOpenGovernance}
-									className="rounded-md border bg-background p-3 text-left text-xs transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+									className="rounded-md border bg-background p-3 text-left text-xs transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 								>
 									<div className="flex items-center justify-between gap-2">
 										<span className="truncate font-medium">

@@ -80,7 +80,7 @@ export function ScenariosPanel({
 					))}
 				</div>
 			) : scenarios.length === 0 ? (
-				<div className="rounded-lg border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground">
+				<div className="rounded-lg border border-dashed bg-background/80 p-4 text-sm text-muted-foreground">
 					{labels.empty}
 				</div>
 			) : (
@@ -104,7 +104,7 @@ export function ScenariosPanel({
 						return (
 							<div
 								key={scenario.scenario_id}
-								className="grid content-between gap-4 rounded-lg border bg-muted/10 p-3"
+								className="grid content-between gap-4 rounded-lg border bg-background p-3"
 							>
 								<div className="grid gap-3">
 									<div className="flex items-start justify-between gap-3">

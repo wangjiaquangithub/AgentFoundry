@@ -89,7 +89,7 @@ export function MembersPanel({
 	return (
 		<section
 			ref={membersRef}
-			className="grid gap-4 rounded-lg border bg-muted/10 p-4"
+			className="grid gap-4 rounded-lg border bg-background p-4"
 		>
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 				<div className="min-w-0">
@@ -294,7 +294,7 @@ export function MembersPanel({
 							{platformMemberTenantSummaries.map((tenantSummary) => (
 								<div
 									key={tenantSummary.tenant}
-									className="grid gap-3 rounded-md border bg-muted/10 p-3"
+									className="grid gap-3 rounded-md border bg-background p-3"
 								>
 									<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 										<div className="min-w-0">

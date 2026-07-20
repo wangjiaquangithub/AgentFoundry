@@ -77,7 +77,7 @@ export function OrchestrationWorkbenchPanel({
 							key={step.key}
 							type="button"
 							onClick={step.onClick}
-							className="grid min-h-40 gap-3 rounded-lg border bg-muted/10 p-3 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+							className="grid min-h-40 gap-3 rounded-lg border bg-background p-3 text-left transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 						>
 							<div className="flex items-start justify-between gap-3">
 								<div className="flex min-w-0 items-center gap-2">

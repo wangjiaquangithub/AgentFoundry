@@ -1,7 +1,9 @@
 import { toast } from 'sonner';
 
-export const getBaseUrl = () => localStorage.getItem('server_url') ?? '';
-export const getUserId = () => localStorage.getItem('username') ?? '';
+import { DEMO_SERVER_URL, DEMO_USERNAME } from '@/config/demoDefaults';
+
+export const getBaseUrl = () => localStorage.getItem('server_url') ?? DEMO_SERVER_URL;
+export const getUserId = () => localStorage.getItem('username') ?? DEMO_USERNAME;
 
 /**
  * Structured error thrown for non-2xx HTTP responses.

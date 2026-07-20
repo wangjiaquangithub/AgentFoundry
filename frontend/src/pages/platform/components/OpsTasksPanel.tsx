@@ -85,7 +85,7 @@ export function OpsTasksPanel({
 					))}
 				</div>
 			) : tasks.length === 0 ? (
-				<div className="rounded-lg border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground">
+				<div className="rounded-lg border border-dashed bg-background/80 p-4 text-sm text-muted-foreground">
 					{labels.empty}
 				</div>
 			) : (
@@ -107,7 +107,7 @@ export function OpsTasksPanel({
 						return (
 							<div
 								key={task.task_id}
-								className="grid content-between gap-3 rounded-lg border bg-muted/10 p-3"
+								className="grid content-between gap-3 rounded-lg border bg-background p-3"
 							>
 								<div className="grid gap-2">
 									<div className="flex items-start justify-between gap-3">

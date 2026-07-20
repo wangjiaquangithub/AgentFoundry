@@ -48,7 +48,7 @@ export interface PlatformPageShellProps {
 
 export function PlatformPageShell({ children, className }: PlatformPageShellProps) {
 	return (
-		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-slate-50/80">
+		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-muted/20">
 			<div
 				className={cn(
 					'mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-5 sm:px-5 lg:px-8',
@@ -66,7 +66,7 @@ function PlatformSectionNav() {
 	return (
 		<nav
 			aria-label="平台模块"
-			className="sticky top-0 z-20 -mx-4 border-b bg-slate-50/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-slate-50/80 sm:-mx-5 sm:px-5 lg:-mx-8 lg:px-8"
+			className="sticky top-0 z-20 -mx-4 border-b bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/85 sm:-mx-5 sm:px-5 lg:hidden"
 		>
 			<div className="flex items-center gap-2 overflow-x-auto">
 				{platformSections.map(({ label, path, icon: Icon, end }) => (
@@ -79,8 +79,8 @@ function PlatformSectionNav() {
 								'inline-flex h-9 shrink-0 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors',
 								'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
 								isActive
-									? 'border-slate-900 bg-slate-900 text-white shadow-sm'
-									: 'border-slate-200 bg-background text-muted-foreground hover:border-slate-300 hover:text-foreground',
+									? 'border-primary bg-primary text-primary-foreground'
+									: 'border-border bg-background text-muted-foreground hover:border-primary/30 hover:text-foreground',
 							)
 						}
 					>
@@ -160,7 +160,7 @@ export function PlatformConnectionCard({
 	labels,
 }: PlatformConnectionCardProps) {
 	return (
-		<div className="grid min-w-0 gap-2 rounded-lg border bg-background p-3 text-xs shadow-sm sm:min-w-80">
+		<div className="grid min-w-0 gap-2 rounded-lg border bg-background p-3 text-xs sm:min-w-80">
 			<div className="flex items-center justify-between gap-3">
 				<span className="text-muted-foreground">{labels.server}</span>
 				<span className="truncate font-mono" title={serverUrl}>
@@ -206,7 +206,7 @@ export function StatCard({ label, value, helper, icon: Icon, loading }: StatCard
 						<div className="mt-2 text-3xl font-semibold tabular-nums">{value}</div>
 					)}
 				</div>
-				<div className="flex size-9 items-center justify-center rounded-lg border bg-muted/40">
+				<div className="flex size-9 items-center justify-center rounded-lg border bg-background">
 					<Icon className="size-4 text-muted-foreground" />
 				</div>
 			</CardHeader>

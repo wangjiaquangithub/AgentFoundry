@@ -181,7 +181,7 @@ export function AgentManagementPanel(props: AgentManagementPanelProps) {
 							{agentOpsSummary.map((item) => (
 								<div
 									key={item.label}
-									className="rounded-lg border bg-muted/20 p-3"
+									className="rounded-lg border bg-background p-3"
 								>
 									<div className="text-xs text-muted-foreground">
 										{item.label}
@@ -226,7 +226,7 @@ export function AgentManagementPanel(props: AgentManagementPanelProps) {
 											return (
 												<div
 													key={step.key}
-													className="grid min-h-28 gap-2 rounded-lg border bg-muted/10 p-3"
+													className="grid min-h-28 gap-2 rounded-lg border bg-background p-3"
 												>
 													<div className="flex items-start justify-between gap-2">
 														<div className="flex min-w-0 items-center gap-2">
@@ -504,7 +504,7 @@ export function AgentManagementPanel(props: AgentManagementPanelProps) {
 								) : null}
 							</CardHeader>
 							<CardContent className="grid gap-4">
-								<div className="grid gap-3 rounded-lg border bg-muted/10 p-3">
+								<div className="grid gap-3 rounded-lg border bg-background p-3">
 									<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 										<div className="min-w-0">
 											<div className="text-sm font-medium">
@@ -678,7 +678,7 @@ export function AgentManagementPanel(props: AgentManagementPanelProps) {
 											</div>
 											{knowledgeBases.length > 0 ||
 											publishForm.knowledge_base_ids.length > 0 ? (
-												<div className="grid max-h-36 gap-2 overflow-y-auto rounded-lg border bg-muted/10 p-3">
+												<div className="grid max-h-36 gap-2 overflow-y-auto rounded-lg border bg-background p-3">
 													{publishForm.knowledge_base_ids
 														.filter(
 															(knowledgeBaseId: string) =>
@@ -758,7 +758,7 @@ export function AgentManagementPanel(props: AgentManagementPanelProps) {
 											<label className="text-xs font-medium text-muted-foreground">
 												{t('platform.agentManagement.tools')}
 											</label>
-											<div className="grid gap-2 rounded-lg border bg-muted/10 p-3">
+											<div className="grid gap-2 rounded-lg border bg-background p-3">
 												{selectedTemplate.tools.map((toolName: string) => (
 													<label
 														key={toolName}
@@ -784,7 +784,7 @@ export function AgentManagementPanel(props: AgentManagementPanelProps) {
 											</div>
 										</div>
 
-										<div className="grid gap-3 rounded-lg border bg-muted/10 p-3">
+										<div className="grid gap-3 rounded-lg border bg-background p-3">
 											<div className="flex flex-col gap-1">
 												<div className="text-xs font-medium">
 													{t('platform.agentManagement.accessScope')}
@@ -951,7 +951,7 @@ export function AgentManagementPanel(props: AgentManagementPanelProps) {
 											ref={agentRuntimeStepRef}
 											className="grid gap-2 sm:grid-cols-2"
 										>
-											<div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/10 p-3">
+											<div className="flex items-center justify-between gap-3 rounded-lg border bg-background p-3">
 												<div>
 													<div className="text-xs font-medium">
 														{t('platform.agentManagement.memory')}
@@ -974,7 +974,7 @@ export function AgentManagementPanel(props: AgentManagementPanelProps) {
 													}
 												/>
 											</div>
-											<div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/10 p-3">
+											<div className="flex items-center justify-between gap-3 rounded-lg border bg-background p-3">
 												<div>
 													<div className="text-xs font-medium">
 														{t('platform.agentManagement.workflow')}
@@ -999,7 +999,7 @@ export function AgentManagementPanel(props: AgentManagementPanelProps) {
 											</div>
 										</div>
 
-										<div className="grid gap-3 rounded-lg border bg-muted/10 p-3">
+										<div className="grid gap-3 rounded-lg border bg-background p-3">
 											<div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
 												<div>
 													<div className="text-xs font-medium">
@@ -1544,7 +1544,7 @@ export function AgentManagementPanel(props: AgentManagementPanelProps) {
 													</div>
 												</div>
 												{readiness ? (
-													<div className="grid gap-2 rounded-lg border bg-muted/30 p-3">
+													<div className="grid gap-2 rounded-lg border bg-background p-3">
 														<div className="flex flex-wrap gap-2">
 															<Badge variant="outline">
 																{t(

@@ -68,7 +68,7 @@ export function RuntimeStatusPanel({
 						return (
 							<div
 								key={item.label}
-								className="grid grid-cols-[auto_1fr] gap-3 rounded-lg border bg-muted/10 p-3"
+								className="grid grid-cols-[auto_1fr] gap-3 rounded-lg border bg-background p-3"
 							>
 								<div className="flex size-8 items-center justify-center rounded-lg border bg-background">
 									<Icon className="size-4 text-muted-foreground" />

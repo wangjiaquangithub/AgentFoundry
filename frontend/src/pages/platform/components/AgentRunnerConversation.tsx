@@ -84,8 +84,8 @@ export function AgentRunnerConversation({
 									onSelectTurn(turn);
 								}}
 								className={cn(
-									'grid gap-2 rounded-md border p-3 text-left transition hover:bg-muted/50',
-									isActive && 'border-primary bg-primary/5',
+									'grid gap-2 rounded-md border bg-background p-3 text-left transition-colors hover:border-primary/30 hover:bg-primary/5',
+									isActive && 'border-primary/40 bg-primary/5',
 								)}
 							>
 								<div className="flex flex-wrap items-center gap-2">

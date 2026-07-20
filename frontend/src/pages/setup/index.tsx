@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/card.tsx';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field.tsx';
 import { Input } from '@/components/ui/input.tsx';
+import { DEMO_SERVER_URL, DEMO_USERNAME } from '@/config/demoDefaults';
 import { useTranslation } from '@/i18n/useI18n.ts';
 import { cn } from '@/lib/utils.ts';
 
@@ -17,9 +18,6 @@ interface Props {
 	onComplete: () => void;
 	className?: string;
 }
-
-const DEMO_SERVER_URL = 'http://127.0.0.1:8000';
-const DEMO_USERNAME = 'acme:alice';
 
 export const SetupPage = ({ onComplete, className }: Props) => {
 	const { t } = useTranslation();

@@ -1151,6 +1151,9 @@
 				"runtimeConfig": "Instance configuration for this run",
 				"configuredTenant": "Configured tenant",
 				"runtimeConnector": "Runtime connector",
+				"runtimeAdapter": "Runtime adapter",
+				"runtimeProvider": "Runtime provider",
+				"runtimeMode": "Runtime mode",
 				"connectorSource": "Connector source",
 				"connectorSourceSaved": "Tenant saved config",
 				"connectorSourceGlobal": "Global default config",
@@ -1212,6 +1215,8 @@
 			"knowledgeHitsEmpty": "This run did not match the knowledge bases attached to this agent.",
 			"knowledgeSource": "Source",
 			"knowledgeScore": "Score",
+			"knowledgeProvider": "Search provider",
+			"devKnowledgeFallback": "Development local knowledge",
 			"knowledgeError": "Knowledge search did not fully complete.",
 			"error": "Agent run failed."
 		},

@@ -36,7 +36,9 @@
       "enterprise_get_ticket_status",
       "enterprise_summarize_department_metrics"
     ],
-    "knowledge_base_ids": [],
+    "knowledge_base_ids": [
+      "dev-enterprise-handbook"
+    ],
     "model_config_id": "b8de00f47a114db49fa4c8fdec2da615",
     "memory_enabled": true,
     "workflow_enabled": true,

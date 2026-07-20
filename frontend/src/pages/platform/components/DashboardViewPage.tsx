@@ -35,7 +35,6 @@ import type {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 interface DashboardViewPageProps {
@@ -94,37 +93,30 @@ function DashboardModuleCard({
 	const navigate = useNavigate();
 
 	return (
-		<Card size="sm" className="rounded-lg shadow-none">
-			<CardHeader className="grid-cols-[1fr_auto] gap-3">
+		<button
+			type="button"
+			className="group grid min-h-28 w-full gap-3 rounded-lg border bg-background px-4 py-3 text-left transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+			onClick={() => navigate(href)}
+		>
+			<div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
+				<span className="grid size-9 place-items-center rounded-md border bg-background">
+					<Icon className="size-4 text-muted-foreground" />
+				</span>
 				<div className="min-w-0">
-					<div className="mb-3 flex items-center gap-2">
-						<span className="grid size-8 place-items-center rounded-md border bg-background">
-							<Icon className="size-4 text-muted-foreground" />
-						</span>
+					<div className="flex flex-wrap items-center gap-2">
+						<h3 className="truncate text-sm font-semibold">{title}</h3>
 						<StateBadge state={state} label={stateLabel} />
 					</div>
-					<CardTitle className="text-base">{title}</CardTitle>
+					<p className="mt-2 line-clamp-2 text-sm leading-5 text-muted-foreground">
+						{description}
+					</p>
 				</div>
-				<div className="text-right text-2xl font-semibold tabular-nums">
-					{metric}
+				<div className="flex flex-col items-end gap-2">
+					<div className="text-xl font-semibold tabular-nums">{metric}</div>
+					<Play className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
 				</div>
-			</CardHeader>
-			<CardContent className="space-y-4">
-				<p className="min-h-10 text-sm leading-5 text-muted-foreground">
-					{description}
-				</p>
-				<Button
-					type="button"
-					variant="outline"
-					size="sm"
-					className="w-full justify-between"
-					onClick={() => navigate(href)}
-				>
-					进入模块
-					<Play className="size-4" />
-				</Button>
-			</CardContent>
-		</Card>
+			</div>
+		</button>
 	);
 }
 
@@ -159,7 +151,7 @@ function ActivityList({
 						))}
 					</div>
 				) : (
-					<div className="rounded-md border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground">
+					<div className="rounded-md border border-dashed bg-background/80 p-4 text-sm text-muted-foreground">
 						{emptyText}
 					</div>
 				)}
@@ -447,161 +439,154 @@ export function DashboardViewPage({
 				</Card>
 			</section>
 
-			<section className="rounded-lg border bg-background p-4 shadow-sm">
-				<Tabs defaultValue="modules" className="gap-4">
-					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-						<div>
-							<h2 className="text-base font-semibold">平台工作区</h2>
-							<p className="mt-1 text-sm leading-6 text-muted-foreground">
-								首页只承载总控入口；模块作业和近期动态通过工作区切换查看。
-							</p>
-						</div>
-						<TabsList className="w-full sm:w-auto">
-							<TabsTrigger value="modules" className="flex-1 sm:flex-none">
-								模块入口
-							</TabsTrigger>
-							<TabsTrigger value="activity" className="flex-1 sm:flex-none">
-								实时动态
-							</TabsTrigger>
-						</TabsList>
+			<section className="grid gap-4 border-y py-5">
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+					<div className="min-w-0">
+						<h2 className="text-base font-semibold">模块入口</h2>
+						<p className="mt-1 text-sm leading-6 text-muted-foreground">
+							首页只保留总控入口和状态摘要，具体作业进入对应模块处理。
+						</p>
 					</div>
+					<Button
+						type="button"
+						size="sm"
+						variant="outline"
+						onClick={() => navigate('/platform/agents')}
+					>
+						进入 Agent 管理
+						<Play className="size-4" />
+					</Button>
+				</div>
+				<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+					{moduleShortcuts.map((shortcut) => (
+						<DashboardModuleCard key={shortcut.href} {...shortcut} />
+					))}
+				</div>
+			</section>
 
-					<TabsContent value="modules" className="mt-0">
-						<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-							{moduleShortcuts.map((shortcut) => (
-								<DashboardModuleCard key={shortcut.href} {...shortcut} />
-							))}
-						</div>
-					</TabsContent>
-
-					<TabsContent value="activity" className="mt-0">
-						<div className="grid gap-4 xl:grid-cols-3">
-							<ActivityList
-								title="待处理事项"
-								items={topOpsTasks}
-								emptyText="暂无运维待办。"
-								getKey={(item, index) =>
-									(item as EnterprisePlatformOpsTask).task_id ?? index
-								}
-								action={
-									<Button
-										type="button"
-										size="sm"
-										variant="outline"
-										onClick={() => navigate('/platform/runs')}
-									>
-										查看运行
-									</Button>
-								}
-								renderItem={(item) => (
-									<div className="space-y-1">
-										<div className="flex items-center justify-between gap-3">
-											<div className="truncate text-sm font-medium">
-												{(item as EnterprisePlatformOpsTask).title ??
-													(item as EnterprisePlatformOpsTask).code ??
-													'运维任务'}
-											</div>
-											<Badge variant="outline">
-												{(item as EnterprisePlatformOpsTask).severity ?? 'todo'}
-											</Badge>
-										</div>
-										<p className="line-clamp-2 text-xs leading-5 text-muted-foreground">
-											{(item as EnterprisePlatformOpsTask).description ??
-												'需要在对应模块继续处理。'}
-										</p>
+			<section className="grid gap-4 rounded-lg border bg-background p-4">
+				<div className="flex flex-col gap-1">
+					<h2 className="text-base font-semibold">近期动态</h2>
+					<p className="text-sm leading-6 text-muted-foreground">
+						聚合待办、工作流运行和审计事件，用于判断下一步处理优先级。
+					</p>
+				</div>
+				<div className="grid gap-4 xl:grid-cols-3">
+					<ActivityList
+						title="待处理事项"
+						items={topOpsTasks}
+						emptyText="暂无运维待办。"
+						getKey={(item, index) =>
+							(item as EnterprisePlatformOpsTask).task_id ?? index
+						}
+						action={
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={() => navigate('/platform/runs')}
+							>
+								查看运行
+							</Button>
+						}
+						renderItem={(item) => (
+							<div className="space-y-1">
+								<div className="flex items-center justify-between gap-3">
+									<div className="truncate text-sm font-medium">
+										{(item as EnterprisePlatformOpsTask).title ??
+											(item as EnterprisePlatformOpsTask).code ??
+											'运维任务'}
 									</div>
-								)}
-							/>
+									<Badge variant="outline">
+										{(item as EnterprisePlatformOpsTask).severity ?? 'todo'}
+									</Badge>
+								</div>
+								<p className="line-clamp-2 text-xs leading-5 text-muted-foreground">
+									{(item as EnterprisePlatformOpsTask).description ??
+										'需要在对应模块继续处理。'}
+								</p>
+							</div>
+						)}
+					/>
 
-							<ActivityList
-								title="最近工作流"
-								items={
-									Array.isArray(recentWorkflowRuns) ? recentWorkflowRuns : []
-								}
-								emptyText="暂无工作流运行记录。"
-								getKey={(item, index) =>
-									(item as EnterpriseWorkflowRunHistoryItem).run_id ?? index
-								}
-								action={
-									<Button
-										type="button"
-										size="sm"
-										variant="outline"
-										onClick={() => navigate('/platform/workflows')}
-									>
-										进入工作流
-									</Button>
-								}
-								renderItem={(item) => (
-									<div className="space-y-1">
-										<div className="flex items-center justify-between gap-3">
-											<div className="truncate text-sm font-medium">
-												{(item as EnterpriseWorkflowRunHistoryItem)
-													.workflow_name ??
-													(item as EnterpriseWorkflowRunHistoryItem)
-														.workflow_type ??
-													'工作流运行'}
-											</div>
-											<Badge variant="outline">
-												{(item as EnterpriseWorkflowRunHistoryItem).status ??
-													'unknown'}
-											</Badge>
-										</div>
-										<p className="truncate text-xs text-muted-foreground">
-											{(item as EnterpriseWorkflowRunHistoryItem).run_id ??
-												'无运行 ID'}
-										</p>
+					<ActivityList
+						title="最近工作流"
+						items={Array.isArray(recentWorkflowRuns) ? recentWorkflowRuns : []}
+						emptyText="暂无工作流运行记录。"
+						getKey={(item, index) =>
+							(item as EnterpriseWorkflowRunHistoryItem).run_id ?? index
+						}
+						action={
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={() => navigate('/platform/workflows')}
+							>
+								进入工作流
+							</Button>
+						}
+						renderItem={(item) => (
+							<div className="space-y-1">
+								<div className="flex items-center justify-between gap-3">
+									<div className="truncate text-sm font-medium">
+										{(item as EnterpriseWorkflowRunHistoryItem).workflow_name ??
+											(item as EnterpriseWorkflowRunHistoryItem).workflow_type ??
+											'工作流运行'}
 									</div>
-								)}
-							/>
+									<Badge variant="outline">
+										{(item as EnterpriseWorkflowRunHistoryItem).status ??
+											'unknown'}
+									</Badge>
+								</div>
+								<p className="truncate text-xs text-muted-foreground">
+									{(item as EnterpriseWorkflowRunHistoryItem).run_id ??
+										'无运行 ID'}
+								</p>
+							</div>
+						)}
+					/>
 
-							<ActivityList
-								title="最近审计"
-								items={
-									Array.isArray(recentAuditEvents) ? recentAuditEvents : []
-								}
-								emptyText="暂无审计事件。"
-								getKey={(item, index) =>
-									(item as EnterpriseAuditEvent).event_id ?? index
-								}
-								action={
-									<Button
-										type="button"
-										size="sm"
-										variant="outline"
-										onClick={() => navigate('/platform/approvals')}
-									>
-										查看治理
-									</Button>
-								}
-								renderItem={(item) => (
-									<div className="space-y-1">
-										<div className="flex items-center justify-between gap-3">
-											<div className="truncate text-sm font-medium">
-												{String(
-													(item as EnterpriseAuditEvent).event_type ??
-														'审计事件',
-												)}
-											</div>
-											<Badge variant="outline">
-												{String(
-													(item as EnterpriseAuditEvent).tenant ?? 'tenant',
-												)}
-											</Badge>
-										</div>
-										<p className="truncate text-xs text-muted-foreground">
-											{String(
-												(item as EnterpriseAuditEvent).user_id ??
-													(item as EnterpriseAuditEvent).timestamp ??
-													'系统记录',
-											)}
-										</p>
+					<ActivityList
+						title="最近审计"
+						items={Array.isArray(recentAuditEvents) ? recentAuditEvents : []}
+						emptyText="暂无审计事件。"
+						getKey={(item, index) =>
+							(item as EnterpriseAuditEvent).event_id ?? index
+						}
+						action={
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={() => navigate('/platform/approvals')}
+							>
+								查看治理
+							</Button>
+						}
+						renderItem={(item) => (
+							<div className="space-y-1">
+								<div className="flex items-center justify-between gap-3">
+									<div className="truncate text-sm font-medium">
+										{String(
+											(item as EnterpriseAuditEvent).event_type ?? '审计事件',
+										)}
 									</div>
-								)}
-							/>
-						</div>
-					</TabsContent>
-				</Tabs>
+									<Badge variant="outline">
+										{String((item as EnterpriseAuditEvent).tenant ?? 'tenant')}
+									</Badge>
+								</div>
+								<p className="truncate text-xs text-muted-foreground">
+									{String(
+										(item as EnterpriseAuditEvent).user_id ??
+											(item as EnterpriseAuditEvent).timestamp ??
+											'系统记录',
+									)}
+								</p>
+							</div>
+						)}
+					/>
+				</div>
 			</section>
 
 			<section className="flex flex-col gap-3 rounded-lg border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">

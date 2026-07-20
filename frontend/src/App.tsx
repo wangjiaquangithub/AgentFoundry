@@ -7,6 +7,7 @@ import { RouteError } from '@/components/error/RouteError';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { buildChatTour } from '@/components/tour/chatTourSteps';
 import { TourCard } from '@/components/tour/TourCard';
+import { DEMO_SERVER_URL, DEMO_USERNAME } from '@/config/demoDefaults';
 import { UploadProvider } from '@/context/UploadContext';
 import { useTranslation } from '@/i18n/useI18n';
 import { ChatPage } from '@/pages/chat';
@@ -68,7 +69,11 @@ const router = createBrowserRouter([
 
 function App() {
 	const { t } = useTranslation();
-	const [setupComplete, setSetupComplete] = useState(() => !!localStorage.getItem('server_url'));
+	const [setupComplete, setSetupComplete] = useState(() => {
+		if (!localStorage.getItem('server_url')) localStorage.setItem('server_url', DEMO_SERVER_URL);
+		if (!localStorage.getItem('username')) localStorage.setItem('username', DEMO_USERNAME);
+		return true;
+	});
 	const tours = useMemo(() => [buildChatTour(t)], [t]);
 
 	if (!setupComplete) {
