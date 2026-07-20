@@ -683,20 +683,6 @@ def _platform_member_registry(
         _raise_platform_member_service_error(exc)
 
 
-def _platform_member_by_user(
-    user_id: str,
-    *,
-    include_inactive: bool = True,
-) -> dict[str, Any] | None:
-    try:
-        return _platform_member_service().get_member_by_user(
-            user_id,
-            include_inactive=include_inactive,
-        )
-    except PlatformMemberServiceError as exc:
-        _raise_platform_member_service_error(exc)
-
-
 def _platform_agent_access_scope_diagnostics(
     tenant: str,
     access: dict[str, list[str]],
@@ -785,7 +771,13 @@ def _assert_platform_agent_access(agent: dict[str, Any], user_id: str) -> None:
     access = _platform_agent_access(agent)
     allowed_user_ids = access["allowed_user_ids"]
     allowed_roles = access["allowed_roles"]
-    member = _platform_member_by_user(user_id, include_inactive=True)
+    try:
+        member = _platform_member_service().get_member_by_user(
+            user_id,
+            include_inactive=True,
+        )
+    except PlatformMemberServiceError as exc:
+        _raise_platform_member_service_error(exc)
     if member is not None and member.get("status") != "active":
         raise HTTPException(
             status_code=403,
