@@ -252,7 +252,10 @@ def _platform_status_service() -> PlatformStatusService:
         load_workflow_runs=_platform_workflow_run_service().list_run_records,
         load_workflow_templates=workflow_template_service.list_templates,
         load_agents=agent_service.list_agents,
-        load_memories=_load_platform_memories,
+        load_memories=lambda **kwargs: platform_memory_service.list_memories(
+            limit=PLATFORM_MEMORY_MAX_RECORDS,
+            **kwargs,
+        ),
         agent_run_repository=agent_run_repository,
         audit_logger=tool_audit_logger,
         tool_policy=tool_authorization_policy,
@@ -971,21 +974,6 @@ def _extract_platform_memory_facts(
         facts.append(f"用户问过：{_truncate_text(question, 160)}")
 
     return _dedupe_strings(facts)
-
-
-def _load_platform_memories(
-    *,
-    tenant: str,
-    user_id: str,
-    agent_id: str,
-    limit: int = PLATFORM_MEMORY_MAX_RECORDS,
-) -> list[dict[str, Any]]:
-    return platform_memory_service.list_memories(
-        tenant=tenant,
-        user_id=user_id,
-        agent_id=agent_id,
-        limit=limit,
-    )
 
 
 def _append_platform_memory(
