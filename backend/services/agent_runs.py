@@ -433,6 +433,38 @@ class PlatformAgentRunService:
             "response": response,
         }
 
+    def append_response_record(
+        self,
+        *,
+        turn_id: str,
+        session_id: str,
+        agent_id: str,
+        agent_name: Any,
+        tenant: str,
+        user_id: str,
+        question: str,
+        answer: str,
+        created_at: str,
+        runtime_adapter: dict[str, Any],
+        evidence: dict[str, Any],
+        response: dict[str, Any],
+    ) -> dict[str, Any]:
+        record = self.build_run_record(
+            turn_id=turn_id,
+            session_id=session_id,
+            agent_id=agent_id,
+            agent_name=agent_name,
+            tenant=tenant,
+            user_id=user_id,
+            question=question,
+            answer=answer,
+            created_at=created_at,
+            runtime_adapter=runtime_adapter,
+            evidence=evidence,
+            response=response,
+        )
+        return self.append_run(record)
+
     def clear_runs(
         self,
         *,

@@ -1772,21 +1772,19 @@ async def run_enterprise_agent(
             decision=decision,
             evidence=evidence,
         )
-        agent_run_service.append_run(
-            agent_run_service.build_run_record(
-                turn_id=turn_id,
-                session_id=runner_session_id,
-                agent_id=runner_agent_id,
-                agent_name=agent_metadata.get("agent_name"),
-                tenant=tenant,
-                user_id=user_id,
-                question=question,
-                answer=answer,
-                created_at=created_at,
-                runtime_adapter=runtime_adapter_payload,
-                evidence=evidence,
-                response=response,
-            ),
+        agent_run_service.append_response_record(
+            turn_id=turn_id,
+            session_id=runner_session_id,
+            agent_id=runner_agent_id,
+            agent_name=agent_metadata.get("agent_name"),
+            tenant=tenant,
+            user_id=user_id,
+            question=question,
+            answer=answer,
+            created_at=created_at,
+            runtime_adapter=runtime_adapter_payload,
+            evidence=evidence,
+            response=response,
         )
         return response
 
@@ -1999,21 +1997,19 @@ async def run_enterprise_agent(
         memory_saved=memory_saved,
         evidence=evidence,
     )
-    agent_run_service.append_run(
-        agent_run_service.build_run_record(
-            turn_id=turn_id,
-            session_id=runner_session_id,
-            agent_id=runner_agent_id,
-            agent_name=agent_metadata.get("agent_name"),
-            tenant=tenant,
-            user_id=user_id,
-            question=question,
-            answer=answer,
-            created_at=created_at,
-            runtime_adapter=runtime_adapter_payload,
-            evidence=evidence,
-            response=response,
-        ),
+    agent_run_service.append_response_record(
+        turn_id=turn_id,
+        session_id=runner_session_id,
+        agent_id=runner_agent_id,
+        agent_name=agent_metadata.get("agent_name"),
+        tenant=tenant,
+        user_id=user_id,
+        question=question,
+        answer=answer,
+        created_at=created_at,
+        runtime_adapter=runtime_adapter_payload,
+        evidence=evidence,
+        response=response,
     )
     return response
 
