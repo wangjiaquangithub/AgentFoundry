@@ -1,4 +1,4 @@
-import { ListChecks, Play, Workflow } from 'lucide-react';
+import { History, ListChecks, Play, Workflow } from 'lucide-react';
 
 import { workflowInputLabelKeys } from '../platform-defaults';
 import {
@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -96,144 +97,264 @@ export function WorkflowRunnerPanel({
 	t,
 }: WorkflowRunnerPanelProps) {
 	return (
-		<section className="grid items-start gap-4 xl:grid-cols-[minmax(0,0.92fr)_minmax(24rem,0.8fr)]">
-			<div className="grid min-w-0 gap-4">
-				<div className="rounded-lg border bg-background p-4 shadow-sm">
-					<div className="flex items-start gap-3">
-						<div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/30">
-							<Workflow className="size-4 text-muted-foreground" />
-						</div>
-						<div className="min-w-0">
-							<h2 className="text-base font-semibold">
-								{t('platform.workflowRunner.title')}
-							</h2>
-							<p className="mt-1 text-sm leading-6 text-muted-foreground">
-								{t('platform.workflowRunner.description')}
-							</p>
-						</div>
-					</div>
+		<Tabs defaultValue="run" className="grid gap-4">
+			<section className="flex flex-col gap-3 rounded-lg border bg-background p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+				<div>
+					<h2 className="text-base font-semibold">工作流工作区</h2>
+					<p className="mt-1 text-sm leading-6 text-muted-foreground">
+						把执行、模板治理和历史记录分开操作，减少工作流页面的纵向堆叠。
+					</p>
+				</div>
+				<TabsList className="w-full sm:w-auto">
+					<TabsTrigger value="run" className="flex-1 sm:flex-none">
+						执行工作流
+					</TabsTrigger>
+					<TabsTrigger value="templates" className="flex-1 sm:flex-none">
+						模板治理
+					</TabsTrigger>
+					<TabsTrigger value="history" className="flex-1 sm:flex-none">
+						运行记录
+					</TabsTrigger>
+				</TabsList>
+			</section>
 
-					<div className="mt-4 grid gap-4 rounded-lg border bg-slate-50/70 p-4">
-						<div className="grid gap-2">
-							<label className="text-xs font-medium text-muted-foreground">
-								{t('platform.workflowRunner.selectWorkflow')}
-							</label>
-							<Select
-								value={selectedWorkflowType}
-								onValueChange={onWorkflowTypeChange}
-							>
-								<SelectTrigger className="w-full bg-background">
-									<SelectValue
-										placeholder={t('platform.workflowRunner.selectWorkflow')}
-									/>
-								</SelectTrigger>
-								<SelectContent>
-									{workflowOptions.map((workflow) => (
-										<SelectItem key={workflow.value} value={workflow.value}>
-											{workflow.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							{selectedWorkflowTemplate ? (
-								<div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-									<Badge
-										variant="outline"
+			<TabsContent value="run" className="mt-0">
+				<section className="grid items-start gap-4 xl:grid-cols-[minmax(0,0.92fr)_minmax(24rem,0.8fr)]">
+					<div className="rounded-lg border bg-background p-4 shadow-sm">
+						<div className="flex items-start gap-3">
+							<div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/30">
+								<Workflow className="size-4 text-muted-foreground" />
+							</div>
+							<div className="min-w-0">
+								<h2 className="text-base font-semibold">
+									{t('platform.workflowRunner.title')}
+								</h2>
+								<p className="mt-1 text-sm leading-6 text-muted-foreground">
+									{t('platform.workflowRunner.description')}
+								</p>
+							</div>
+						</div>
+
+						<div className="mt-4 grid gap-4 rounded-lg border bg-slate-50/70 p-4">
+							<div className="grid gap-2">
+								<label className="text-xs font-medium text-muted-foreground">
+									{t('platform.workflowRunner.selectWorkflow')}
+								</label>
+								<Select
+									value={selectedWorkflowType}
+									onValueChange={onWorkflowTypeChange}
+								>
+									<SelectTrigger className="w-full bg-background">
+										<SelectValue
+											placeholder={t('platform.workflowRunner.selectWorkflow')}
+										/>
+									</SelectTrigger>
+									<SelectContent>
+										{workflowOptions.map((workflow) => (
+											<SelectItem key={workflow.value} value={workflow.value}>
+												{workflow.label}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+								{selectedWorkflowTemplate ? (
+									<div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+										<Badge
+											variant="outline"
+											className={cn(
+												selectedWorkflowTemplate.enabled
+													? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700'
+													: 'border-slate-500/30 bg-slate-500/10 text-slate-700',
+											)}
+										>
+											{selectedWorkflowTemplate.enabled
+												? t('platform.workflowRunner.enabled')
+												: t('platform.workflowRunner.disabled')}
+										</Badge>
+										<span className="min-w-0">
+											{selectedWorkflowTemplate.description}
+										</span>
+									</div>
+								) : null}
+							</div>
+
+							<div className="grid gap-3 md:grid-cols-3">
+								{Object.entries(workflowInputs).map(([key, value]) => {
+									const labelKey = workflowInputLabelKeys[key];
+
+									return (
+										<div key={key} className="grid gap-2">
+											<label className="text-xs font-medium text-muted-foreground">
+												{labelKey
+													? t(`platform.workflowRunner.${labelKey}`)
+													: workflowInputLabel(key)}
+											</label>
+											<Input
+												value={value}
+												onChange={(event) =>
+													onWorkflowInputChange(key, event.target.value)
+												}
+												className="bg-background"
+											/>
+										</div>
+									);
+								})}
+							</div>
+
+							<div className="grid gap-2">
+								<label className="text-xs font-medium text-muted-foreground">
+									{t('platform.workflowRunner.approvalId')}
+								</label>
+								<Input
+									value={workflowApprovalId}
+									onChange={(event) =>
+										onWorkflowApprovalIdChange(event.target.value)
+									}
+									placeholder={t('platform.workflowRunner.approvalIdPlaceholder')}
+									className="bg-background font-mono"
+								/>
+							</div>
+
+							<div className="flex flex-wrap justify-end gap-2 border-t pt-4">
+								<Button
+									variant="outline"
+									onClick={onRequestApproval}
+									disabled={
+										creatingRunApproval === 'workflow_run' ||
+										workflowTemplatesLoading ||
+										selectedWorkflowDisabled ||
+										Boolean(platformError)
+									}
+								>
+									<ListChecks
 										className={cn(
-											selectedWorkflowTemplate.enabled
-												? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700'
-												: 'border-slate-500/30 bg-slate-500/10 text-slate-700',
+											creatingRunApproval === 'workflow_run' && 'animate-pulse',
 										)}
-									>
-										{selectedWorkflowTemplate.enabled
-											? t('platform.workflowRunner.enabled')
-											: t('platform.workflowRunner.disabled')}
-									</Badge>
-									<span className="min-w-0">{selectedWorkflowTemplate.description}</span>
+									/>
+									{creatingRunApproval === 'workflow_run'
+										? t('platform.workflowRunner.requestingApproval')
+										: t('platform.workflowRunner.requestApproval')}
+								</Button>
+								<Button
+									onClick={onRunWorkflow}
+									disabled={
+										runningWorkflow ||
+										workflowTemplatesLoading ||
+										selectedWorkflowDisabled ||
+										Boolean(platformError)
+									}
+								>
+									<Play className={cn(runningWorkflow && 'animate-pulse')} />
+									{runningWorkflow
+										? t('platform.workflowRunner.running')
+										: t('platform.workflowRunner.run')}
+								</Button>
+							</div>
+
+							{workflowRunError ? (
+								<div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+									{t('platform.workflowRunner.error')} {workflowRunError}
 								</div>
 							) : null}
 						</div>
-
-						<div className="grid gap-3 md:grid-cols-3">
-							{Object.entries(workflowInputs).map(([key, value]) => {
-								const labelKey = workflowInputLabelKeys[key];
-
-								return (
-									<div key={key} className="grid gap-2">
-										<label className="text-xs font-medium text-muted-foreground">
-											{labelKey
-												? t(`platform.workflowRunner.${labelKey}`)
-												: workflowInputLabel(key)}
-										</label>
-										<Input
-											value={value}
-											onChange={(event) =>
-												onWorkflowInputChange(key, event.target.value)
-											}
-											className="bg-background"
-										/>
-									</div>
-								);
-							})}
-						</div>
-
-						<div className="grid gap-2">
-							<label className="text-xs font-medium text-muted-foreground">
-								{t('platform.workflowRunner.approvalId')}
-							</label>
-							<Input
-								value={workflowApprovalId}
-								onChange={(event) => onWorkflowApprovalIdChange(event.target.value)}
-								placeholder={t('platform.workflowRunner.approvalIdPlaceholder')}
-								className="bg-background font-mono"
-							/>
-						</div>
-
-						<div className="flex flex-wrap justify-end gap-2 border-t pt-4">
-							<Button
-								variant="outline"
-								onClick={onRequestApproval}
-								disabled={
-									creatingRunApproval === 'workflow_run' ||
-									workflowTemplatesLoading ||
-									selectedWorkflowDisabled ||
-									Boolean(platformError)
-								}
-							>
-								<ListChecks
-									className={cn(
-										creatingRunApproval === 'workflow_run' && 'animate-pulse',
-									)}
-								/>
-								{creatingRunApproval === 'workflow_run'
-									? t('platform.workflowRunner.requestingApproval')
-									: t('platform.workflowRunner.requestApproval')}
-							</Button>
-							<Button
-								onClick={onRunWorkflow}
-								disabled={
-									runningWorkflow ||
-									workflowTemplatesLoading ||
-									selectedWorkflowDisabled ||
-									Boolean(platformError)
-								}
-							>
-								<Play className={cn(runningWorkflow && 'animate-pulse')} />
-								{runningWorkflow
-									? t('platform.workflowRunner.running')
-									: t('platform.workflowRunner.run')}
-							</Button>
-						</div>
-
-						{workflowRunError ? (
-							<div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-								{t('platform.workflowRunner.error')} {workflowRunError}
-							</div>
-						) : null}
 					</div>
-				</div>
 
-				<div className="grid gap-3 rounded-lg border bg-background p-4 shadow-sm">
+					<div className="rounded-lg border bg-background p-4 shadow-sm xl:sticky xl:top-20">
+						<div className="flex items-center gap-2 border-b pb-3">
+							<Workflow className="size-4 text-muted-foreground" />
+							<h3 className="text-sm font-semibold">
+								{t('platform.workflowRunner.summary')}
+							</h3>
+						</div>
+						{workflowRunResult ? (
+							<div className="mt-4 grid gap-4">
+								<div className="rounded-lg border bg-slate-50/70 p-4">
+									<div className="flex flex-wrap items-center gap-2">
+										<Badge variant="outline">
+											{workflowRunResult.workflow_name}
+										</Badge>
+										<span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
+											{workflowRunResult.agent_id}
+										</span>
+									</div>
+									<p className="mt-3 whitespace-pre-wrap text-sm leading-6">
+										{workflowRunResult.summary}
+									</p>
+								</div>
+
+								<div className="grid gap-2">
+									<div className="text-xs font-medium text-muted-foreground">
+										{t('platform.workflowRunner.steps')}
+									</div>
+									{workflowRunResult.steps.map((step) => {
+										const statusLabel =
+											step.status === 'success'
+												? t('platform.workflowRunner.statusSuccess')
+												: step.status === 'denied'
+													? t('platform.workflowRunner.statusDenied')
+													: t('platform.workflowRunner.statusFailed');
+
+										return (
+											<div
+												key={`${step.id}-${step.tool_name}`}
+												className="rounded-lg border bg-background p-3"
+											>
+												<div className="flex flex-wrap items-center gap-2">
+													<Badge
+														variant={
+															step.status === 'failed'
+																? 'destructive'
+																: 'outline'
+														}
+														className={cn(
+															step.status === 'success' &&
+																'border-emerald-500/30 bg-emerald-500/10 text-emerald-700',
+															step.status === 'denied' &&
+																'border-amber-500/30 bg-amber-500/10 text-amber-700',
+														)}
+													>
+														{statusLabel}
+													</Badge>
+													<span className="font-medium">{step.title}</span>
+													<span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
+														{step.tool_name}
+													</span>
+												</div>
+												{step.message ? (
+													<p className="mt-2 text-sm text-muted-foreground">
+														{step.message}
+													</p>
+												) : null}
+												{step.result ? (
+													<pre className="mt-3 max-h-44 overflow-auto rounded-md border bg-muted/20 p-3 text-xs leading-5">
+														{JSON.stringify(step.result, null, 2)}
+													</pre>
+												) : null}
+											</div>
+										);
+									})}
+								</div>
+
+								<div className="grid gap-2">
+									<div className="text-xs font-medium text-muted-foreground">
+										{t('platform.workflowRunner.toolCalls')}
+									</div>
+									<pre className="max-h-60 overflow-auto rounded-lg border bg-muted/20 p-4 text-xs leading-5">
+										{JSON.stringify(workflowRunResult.tool_calls, null, 2)}
+									</pre>
+								</div>
+							</div>
+						) : (
+							<div className="mt-4 flex min-h-72 items-center rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+								{t('platform.workflowRunner.emptyResult')}
+							</div>
+						)}
+					</div>
+				</section>
+			</TabsContent>
+
+			<TabsContent value="templates" className="mt-0">
+				<section className="grid gap-3 rounded-lg border bg-background p-4 shadow-sm">
 					<div className="flex items-start gap-3">
 						<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/30">
 							<ListChecks className="size-4 text-muted-foreground" />
@@ -335,104 +456,23 @@ export function WorkflowRunnerPanel({
 							})}
 						</div>
 					)}
-				</div>
-			</div>
+				</section>
+			</TabsContent>
 
-			<div className="grid min-w-0 gap-4 xl:sticky xl:top-20">
-				<div className="rounded-lg border bg-background p-4 shadow-sm">
-					<div className="flex items-center gap-2 border-b pb-3">
-						<Workflow className="size-4 text-muted-foreground" />
-						<h3 className="text-sm font-semibold">
-							{t('platform.workflowRunner.summary')}
-						</h3>
-					</div>
-				{workflowRunResult ? (
-					<div className="mt-4 grid gap-4">
-						<div className="rounded-lg border bg-slate-50/70 p-4">
-							<div className="flex flex-wrap items-center gap-2">
-								<Badge variant="outline">{workflowRunResult.workflow_name}</Badge>
-								<span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
-									{workflowRunResult.agent_id}
-								</span>
-							</div>
-							<p className="mt-3 whitespace-pre-wrap text-sm leading-6">
-								{workflowRunResult.summary}
+			<TabsContent value="history" className="mt-0">
+				<section className="grid gap-3 rounded-lg border bg-background p-4 shadow-sm">
+					<div className="flex items-start gap-3">
+						<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/30">
+							<History className="size-4 text-muted-foreground" />
+						</div>
+						<div className="min-w-0">
+							<h3 className="text-sm font-semibold">
+								{t('platform.workflowRunner.history')}
+							</h3>
+							<p className="mt-1 text-xs leading-5 text-muted-foreground">
+								{t('platform.workflowRunner.historyDescription')}
 							</p>
 						</div>
-
-						<div className="grid gap-2">
-							<div className="text-xs font-medium text-muted-foreground">
-								{t('platform.workflowRunner.steps')}
-							</div>
-							{workflowRunResult.steps.map((step) => {
-								const statusLabel =
-									step.status === 'success'
-										? t('platform.workflowRunner.statusSuccess')
-										: step.status === 'denied'
-											? t('platform.workflowRunner.statusDenied')
-											: t('platform.workflowRunner.statusFailed');
-
-								return (
-									<div
-										key={`${step.id}-${step.tool_name}`}
-										className="rounded-lg border bg-background p-3"
-									>
-										<div className="flex flex-wrap items-center gap-2">
-											<Badge
-												variant={step.status === 'failed' ? 'destructive' : 'outline'}
-												className={cn(
-													step.status === 'success' &&
-														'border-emerald-500/30 bg-emerald-500/10 text-emerald-700',
-													step.status === 'denied' &&
-														'border-amber-500/30 bg-amber-500/10 text-amber-700',
-												)}
-											>
-												{statusLabel}
-											</Badge>
-											<span className="font-medium">{step.title}</span>
-											<span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
-												{step.tool_name}
-											</span>
-										</div>
-										{step.message ? (
-											<p className="mt-2 text-sm text-muted-foreground">
-												{step.message}
-											</p>
-										) : null}
-										{step.result ? (
-											<pre className="mt-3 max-h-44 overflow-auto rounded-md border bg-muted/20 p-3 text-xs leading-5">
-												{JSON.stringify(step.result, null, 2)}
-											</pre>
-										) : null}
-									</div>
-								);
-							})}
-						</div>
-
-						<div className="grid gap-2">
-							<div className="text-xs font-medium text-muted-foreground">
-								{t('platform.workflowRunner.toolCalls')}
-							</div>
-							<pre className="max-h-60 overflow-auto rounded-lg border bg-muted/20 p-4 text-xs leading-5">
-								{JSON.stringify(workflowRunResult.tool_calls, null, 2)}
-							</pre>
-						</div>
-					</div>
-				) : (
-					<div className="mt-4 flex min-h-72 items-center rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-						{t('platform.workflowRunner.emptyResult')}
-					</div>
-				)}
-				</div>
-
-				<div className="grid gap-3 rounded-lg border bg-background p-4 shadow-sm">
-					<div>
-						<h3 className="text-sm font-semibold">
-							{t('platform.workflowRunner.history')}
-						</h3>
-						<p className="text-xs text-muted-foreground">
-							{t('platform.workflowRunner.historyDescription')}
-						</p>
 					</div>
 
 					{workflowRunsLoading ? (
@@ -515,8 +555,8 @@ export function WorkflowRunnerPanel({
 							})}
 						</div>
 					)}
-				</div>
-			</div>
-		</section>
+				</section>
+			</TabsContent>
+		</Tabs>
 	);
 }
