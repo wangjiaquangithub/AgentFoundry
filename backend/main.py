@@ -1329,11 +1329,11 @@ async def archive_enterprise_platform_agent(
     agent_id: str,
 ) -> dict[str, Any]:
     """Archive a platform agent while keeping its registry record."""
+    agent_service = _platform_agent_service()
     try:
-        agent, agents = _platform_agent_service().archive_agent(agent_id)
+        return agent_service.archive_agent_response_payload(agent_id)
     except PlatformAgentServiceError as exc:
         _raise_platform_agent_service_error(exc)
-    return _platform_agent_service().mutation_response(agent, agents)
 
 
 @app.get("/enterprise/platform/tools")

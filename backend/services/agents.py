@@ -594,6 +594,13 @@ class PlatformAgentService:
         self.save_agents(agents)
         return agent, agents
 
+    def archive_agent_response_payload(
+        self,
+        agent_id: str,
+    ) -> dict[str, Any]:
+        agent, agents = self.archive_agent(agent_id)
+        return self.mutation_response(agent, agents)
+
     def get_template(self, template_id: str) -> dict[str, Any]:
         template = next(
             (
