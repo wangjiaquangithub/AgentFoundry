@@ -286,6 +286,31 @@ class PlatformEnterpriseRouterService:
             if marker in normalized or marker in question
         ]
 
+    def department_routes_for_question(self, question: str) -> list[dict[str, Any]]:
+        normalized = question.lower()
+        department_keywords = {
+            "engineering": ("engineering", "Detected engineering metrics request."),
+            "工程": ("engineering", "Detected engineering metrics request."),
+            "研发": ("engineering", "Detected engineering metrics request."),
+            "support": ("support", "Detected support metrics request."),
+            "客服": ("support", "Detected support metrics request."),
+            "支持": ("support", "Detected support metrics request."),
+            "sales": ("sales", "Detected sales metrics request."),
+            "销售": ("sales", "Detected sales metrics request."),
+        }
+
+        return [
+            {
+                "routed": True,
+                "tool_name": "enterprise_summarize_department_metrics",
+                "inputs": {"department": department},
+                "reason": reason,
+                "source": self._default_source,
+            }
+            for marker, (department, reason) in department_keywords.items()
+            if marker in normalized or marker in question
+        ]
+
     def fallback_route(self) -> dict[str, Any]:
         return {
             "routed": False,

@@ -1058,28 +1058,7 @@ def _route_enterprise_agent_question_with_rules(
 
     routes.extend(enterprise_router_service.ticket_routes_for_question(question))
     routes.extend(enterprise_router_service.policy_routes_for_question(question))
-
-    department_keywords = {
-        "engineering": ("engineering", "Detected engineering metrics request."),
-        "工程": ("engineering", "Detected engineering metrics request."),
-        "研发": ("engineering", "Detected engineering metrics request."),
-        "support": ("support", "Detected support metrics request."),
-        "客服": ("support", "Detected support metrics request."),
-        "支持": ("support", "Detected support metrics request."),
-        "sales": ("sales", "Detected sales metrics request."),
-        "销售": ("sales", "Detected sales metrics request."),
-    }
-    for marker, (department, reason) in department_keywords.items():
-        if marker in normalized or marker in question:
-            routes.append(
-                {
-                    "routed": True,
-                    "tool_name": "enterprise_summarize_department_metrics",
-                    "inputs": {"department": department},
-                    "reason": reason,
-                    "source": ROUTING_SOURCE_RULES,
-                },
-            )
+    routes.extend(enterprise_router_service.department_routes_for_question(question))
 
     has_metrics_route = any(
         route.get("tool_name") == "enterprise_summarize_department_metrics"
