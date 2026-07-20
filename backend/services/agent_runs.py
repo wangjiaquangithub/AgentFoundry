@@ -864,6 +864,40 @@ class PlatformAgentRunService:
             "answer": answer,
         }
 
+    def append_pending_approval_routed_tool_call(
+        self,
+        *,
+        tool_calls: list[dict[str, Any]],
+        tool_name: str,
+        inputs: dict[str, Any],
+        approval_id: str,
+        tenant: str,
+        user_id: str,
+        connector: str,
+        connector_source: str,
+        routing_source: str,
+        routing_reason: str,
+        decision: dict[str, Any],
+        answer: str,
+    ) -> None:
+        tool_calls.append(
+            self.build_pending_approval_routed_tool_call(
+                **self.build_pending_approval_routed_tool_call_context(
+                    tool_name=tool_name,
+                    inputs=inputs,
+                    approval_id=approval_id,
+                    tenant=tenant,
+                    user_id=user_id,
+                    connector=connector,
+                    connector_source=connector_source,
+                    routing_source=routing_source,
+                    routing_reason=routing_reason,
+                    decision=decision,
+                    answer=answer,
+                ),
+            ),
+        )
+
     def build_pending_approval_response_context(
         self,
         *,
