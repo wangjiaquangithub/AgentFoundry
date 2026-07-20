@@ -1057,30 +1057,7 @@ def _route_enterprise_agent_question_with_rules(
     routes: list[dict[str, Any]] = []
 
     routes.extend(enterprise_router_service.ticket_routes_for_question(question))
-
-    policy_keywords = {
-        "remote": ("remote", "Remote-work policy request."),
-        "远程": ("remote", "Detected a remote-work policy request."),
-        "办公": ("remote", "Detected an office or remote-work policy request."),
-        "expense": ("expense", "Detected an expense policy request."),
-        "报销": ("expense", "Detected an expense policy request."),
-        "费用": ("expense", "Detected an expense policy request."),
-        "security": ("security", "Detected a security policy request."),
-        "安全": ("security", "Detected a security policy request."),
-        "policy": ("remote", "Detected a policy request."),
-        "制度": ("remote", "Detected a policy request."),
-    }
-    for marker, (keyword, reason) in policy_keywords.items():
-        if marker in normalized or marker in question:
-            routes.append(
-                {
-                    "routed": True,
-                    "tool_name": "enterprise_lookup_policy",
-                    "inputs": {"keyword": keyword},
-                    "reason": reason,
-                    "source": ROUTING_SOURCE_RULES,
-                },
-            )
+    routes.extend(enterprise_router_service.policy_routes_for_question(question))
 
     department_keywords = {
         "engineering": ("engineering", "Detected engineering metrics request."),

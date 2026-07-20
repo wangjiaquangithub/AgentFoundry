@@ -259,6 +259,33 @@ class PlatformEnterpriseRouterService:
             for ticket_id in re.findall(r"\b[A-Z]{2,5}-\d+\b", question.upper())
         ]
 
+    def policy_routes_for_question(self, question: str) -> list[dict[str, Any]]:
+        normalized = question.lower()
+        policy_keywords = {
+            "remote": ("remote", "Remote-work policy request."),
+            "远程": ("remote", "Detected a remote-work policy request."),
+            "办公": ("remote", "Detected an office or remote-work policy request."),
+            "expense": ("expense", "Detected an expense policy request."),
+            "报销": ("expense", "Detected an expense policy request."),
+            "费用": ("expense", "Detected an expense policy request."),
+            "security": ("security", "Detected a security policy request."),
+            "安全": ("security", "Detected a security policy request."),
+            "policy": ("remote", "Detected a policy request."),
+            "制度": ("remote", "Detected a policy request."),
+        }
+
+        return [
+            {
+                "routed": True,
+                "tool_name": "enterprise_lookup_policy",
+                "inputs": {"keyword": keyword},
+                "reason": reason,
+                "source": self._default_source,
+            }
+            for marker, (keyword, reason) in policy_keywords.items()
+            if marker in normalized or marker in question
+        ]
+
     def fallback_route(self) -> dict[str, Any]:
         return {
             "routed": False,
