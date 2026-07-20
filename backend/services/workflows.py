@@ -135,6 +135,20 @@ class PlatformWorkflowTemplateService:
     def save_templates(self, workflows: list[dict[str, Any]]) -> None:
         self._repository.save_all(workflows)
 
+    def normalize_import_templates(self, value: Any) -> list[dict[str, Any]]:
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            raise PlatformWorkflowTemplateServiceError(
+                400,
+                "workflow_templates must be a JSON array.",
+            )
+        return [
+            dict(item)
+            for item in value
+            if isinstance(item, dict) and item.get("workflow_type")
+        ]
+
     def list_templates(self) -> list[dict[str, Any]]:
         if not self._repository.exists():
             workflows = self.default_templates()

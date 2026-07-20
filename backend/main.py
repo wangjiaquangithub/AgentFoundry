@@ -1199,21 +1199,6 @@ def _normalize_import_members(value: Any, actor: str) -> list[dict[str, Any]]:
         _raise_platform_member_service_error(exc)
 
 
-def _normalize_import_workflow_templates(value: Any) -> list[dict[str, Any]]:
-    if value is None:
-        return []
-    if not isinstance(value, list):
-        raise HTTPException(
-            status_code=400,
-            detail="workflow_templates must be a JSON array.",
-        )
-    return [
-        dict(item)
-        for item in value
-        if isinstance(item, dict) and item.get("workflow_type")
-    ]
-
-
 def _merge_by_key(
     existing: list[dict[str, Any]],
     imported: list[dict[str, Any]],
@@ -2184,13 +2169,17 @@ async def import_enterprise_platform_config(
             _raise_platform_agent_service_error(exc)
 
     if "workflow_templates" in incoming:
-        imported_workflows = _normalize_import_workflow_templates(
-            incoming.get("workflow_templates"),
-        )
+        workflow_template_service = _platform_workflow_template_service()
+        try:
+            imported_workflows = workflow_template_service.normalize_import_templates(
+                incoming.get("workflow_templates"),
+            )
+        except PlatformWorkflowTemplateServiceError as exc:
+            _raise_platform_workflow_template_service_error(exc)
         workflows = imported_workflows
         if mode != "replace":
             try:
-                current_workflows = _platform_workflow_template_service().list_templates()
+                current_workflows = workflow_template_service.list_templates()
             except PlatformWorkflowTemplateServiceError as exc:
                 _raise_platform_workflow_template_service_error(exc)
             workflows = _merge_by_key(
@@ -2198,7 +2187,7 @@ async def import_enterprise_platform_config(
                 imported_workflows,
                 "workflow_type",
             )
-        _platform_workflow_template_service().save_templates(workflows)
+        workflow_template_service.save_templates(workflows)
 
     if "tool_policy" in incoming:
         raw_policy = incoming.get("tool_policy")
