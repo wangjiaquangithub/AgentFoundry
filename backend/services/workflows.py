@@ -241,6 +241,23 @@ class PlatformWorkflowRunService:
             ),
         }
 
+    def list_run_records(
+        self,
+        *,
+        workflow_type: str | None = None,
+        agent_id: str | None = None,
+        tenant: str | None = None,
+        user_id: str | None = None,
+        limit: int = 20,
+    ) -> list[dict[str, Any]]:
+        return self.list_runs(
+            limit=limit,
+            workflow_type=workflow_type,
+            agent_id=agent_id,
+            tenant=tenant,
+            user_id=user_id,
+        )["runs"]
+
     def append_run(self, record: dict[str, Any]) -> dict[str, Any]:
         self._repository.append(record)
         return record

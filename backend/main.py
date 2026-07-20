@@ -260,7 +260,7 @@ def _platform_status_service() -> PlatformStatusService:
     """Build the service object that composes platform console status payloads."""
     return PlatformStatusService(
         load_approval_requests=_load_platform_approval_requests,
-        load_workflow_runs=_load_workflow_runs,
+        load_workflow_runs=_platform_workflow_run_service().list_run_records,
         load_workflow_templates=_load_platform_workflow_templates,
         load_agents=_load_platform_agents,
         load_memories=_load_platform_memories,
@@ -3429,26 +3429,9 @@ def _build_workflow_step_specs(
     return step_specs
 
 
-def _load_workflow_runs(
-    *,
-    limit: int = 20,
-    workflow_type: str | None = None,
-    agent_id: str | None = None,
-    tenant: str | None = None,
-    user_id: str | None = None,
-) -> list[dict[str, Any]]:
-    return _platform_workflow_run_service().list_runs(
-        limit=limit,
-        workflow_type=workflow_type,
-        agent_id=agent_id,
-        tenant=tenant,
-        user_id=user_id,
-    )["runs"]
-
-
 def _enterprise_platform_scenarios() -> dict[str, Any]:
     workflows = _load_platform_workflow_templates()
-    workflow_runs = _load_workflow_runs(limit=100)
+    workflow_runs = _platform_workflow_run_service().list_run_records(limit=100)
     pending_approvals = _load_platform_approval_requests(limit=100, status="pending")
     scenarios: list[dict[str, Any]] = []
 
