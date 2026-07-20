@@ -356,6 +356,9 @@ class PlatformAgentRunService:
             },
         }
 
+    def resolve_requested_by(self, *, headers: Any, user_id: str) -> str:
+        return str(headers.get("X-User-ID") or user_id)
+
     def build_executed_routed_tool_call(
         self,
         *,

@@ -1791,7 +1791,10 @@ async def run_enterprise_agent(
                                 "该工具需要审批后才能运行。",
                             ),
                         ),
-                        requested_by=request.headers.get("X-User-ID") or user_id,
+                        requested_by=agent_run_service.resolve_requested_by(
+                            headers=request.headers,
+                            user_id=user_id,
+                        ),
                     )
                 except PlatformApprovalServiceError as service_exc:
                     _raise_platform_approval_service_error(service_exc)
