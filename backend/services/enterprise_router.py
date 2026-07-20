@@ -2,7 +2,7 @@
 
 import json
 import re
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Mapping
 from typing import Any
 
 import httpx
@@ -546,14 +546,20 @@ class PlatformEnterpriseRouterService:
         question: str,
         *,
         env: Mapping[str, str],
-        model_route_loader: Callable[[str], Awaitable[dict[str, Any]]],
     ) -> tuple[list[dict[str, Any]], str | None]:
         rule_routes = self.rule_routes_for_question(question)
         if not self.model_router_env_present(env):
             return rule_routes, None
 
         try:
-            model_route = await model_route_loader(question)
+            config = self.build_model_router_config(env)
+            if config is None:
+                raise EnterpriseRouterError("Router model is not configured.")
+
+            model_route = await self.route_question_with_model_config(
+                question,
+                config=config,
+            )
         except EnterpriseRouterError as exc:
             return rule_routes, str(exc)
 

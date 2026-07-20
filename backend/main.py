@@ -957,26 +957,12 @@ def _run_authorized_enterprise_tool(
     }
 
 
-async def _route_enterprise_agent_question_with_model(
-    question: str,
-) -> dict[str, Any]:
-    config = enterprise_router_service.build_model_router_config(os.environ)
-    if config is None:
-        raise EnterpriseRouterError("Router model is not configured.")
-
-    return await enterprise_router_service.route_question_with_model_config(
-        question,
-        config=config,
-    )
-
-
 async def _select_enterprise_agent_routes(
     question: str,
 ) -> tuple[list[dict[str, Any]], str | None]:
     return await enterprise_router_service.select_routes_for_question(
         question,
         env=os.environ,
-        model_route_loader=_route_enterprise_agent_question_with_model,
     )
 
 
