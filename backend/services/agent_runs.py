@@ -961,6 +961,18 @@ class PlatformAgentRunService:
     def executed_tool_tenant(self, tool_response: dict[str, Any]) -> str:
         return str(tool_response["tenant"])
 
+    def build_executed_tool_answer_context(
+        self,
+        *,
+        tool_name: str,
+        tool_response: dict[str, Any],
+    ) -> dict[str, Any]:
+        return {
+            "tool_name": tool_name,
+            "result": self.executed_tool_result(tool_response),
+            "tenant": self.executed_tool_tenant(tool_response),
+        }
+
     def build_executed_routed_tool_call_context(
         self,
         *,
