@@ -370,6 +370,15 @@ class PlatformMemoryService:
             },
         }
 
+    def agent_run_state(
+        self,
+        memory_payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        return {
+            "memory_enabled": bool(memory_payload["memory_enabled"]),
+            "memory_hits": list(memory_payload["memory_hits"]),
+        }
+
     def format_answer(self, memory_hits: list[dict[str, Any]]) -> str:
         snippets = _dedupe_strings(
             [

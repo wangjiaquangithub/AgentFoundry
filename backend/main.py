@@ -1685,8 +1685,9 @@ async def run_enterprise_agent(
         max_records=PLATFORM_MEMORY_MAX_RECORDS,
         limit=PLATFORM_MEMORY_SEARCH_LIMIT,
     )
-    memory_enabled = bool(memory_payload["memory_enabled"])
-    memory_hits = list(memory_payload["memory_hits"])
+    memory_state = platform_memory_service.agent_run_state(memory_payload)
+    memory_enabled = memory_state["memory_enabled"]
+    memory_hits = memory_state["memory_hits"]
     knowledge_hits, knowledge_error = (
         await knowledge_response_service.search_agent_knowledge_bases(
             knowledge_base_service=getattr(
