@@ -1698,30 +1698,22 @@ async def run_enterprise_agent(
             configured_tools=configured_tools,
         ):
             denial = _platform_agent_service().tool_denial_payload(tool_name)
-            answer = agent_run_service.denied_tool_answer(denial)
-            decision = agent_run_service.decide_denied_route_from_context(
+            agent_run_service.record_denied_routed_tool_call_from_context(
+                tool_calls=tool_calls,
                 decision_with_routing_context=(
                     enterprise_router_service.decision_with_routing_context
                 ),
                 denial=denial,
-                routing_reason=route_reason,
-                routing_source=route_source,
-                routing_mode=routing_mode,
-                routing_error=routing_error,
-            )
-
-            agent_run_service.append_denied_routed_tool_call(
-                tool_calls=tool_calls,
                 tool_name=tool_name,
                 inputs=route_inputs,
                 tenant=tenant,
                 user_id=user_id,
                 connector=connector_label,
                 connector_source=connector_source,
-                routing_source=route_source,
                 routing_reason=route_reason,
-                decision=decision,
-                answer=answer,
+                routing_source=route_source,
+                routing_mode=routing_mode,
+                routing_error=routing_error,
             )
             continue
 
