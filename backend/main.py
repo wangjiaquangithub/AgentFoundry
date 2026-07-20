@@ -622,6 +622,15 @@ def _published_platform_agent_tool_scope(
         _raise_platform_agent_service_error(exc)
 
 
+def _published_platform_agent_tool_scope_for_user(
+    agent_id: str,
+    user_id: str,
+) -> tuple[dict[str, Any], set[str]]:
+    agent, configured_tools = _published_platform_agent_tool_scope(agent_id)
+    _assert_platform_agent_access(agent, user_id)
+    return agent, configured_tools
+
+
 def _platform_member_service() -> PlatformMemberService:
     return PlatformMemberService(
         repository=member_repository,
@@ -2818,10 +2827,10 @@ async def run_enterprise_tool(
     runner_agent_id = "platform-console"
     configured_agent_id = (payload.agent_id or "").strip()
     if configured_agent_id:
-        agent, configured_tools = _published_platform_agent_tool_scope(
+        _, configured_tools = _published_platform_agent_tool_scope_for_user(
             configured_agent_id,
+            user_id,
         )
-        _assert_platform_agent_access(agent, user_id)
         runner_agent_id = configured_agent_id
         if payload.tool_name not in configured_tools:
             runtime = _enterprise_runtime_context(user_id)
@@ -2875,11 +2884,10 @@ async def run_enterprise_agent(
     question = payload.question.strip()
     agent = None
     if payload.agent_id:
-        agent, _ = _published_platform_agent_tool_scope(
+        agent, _ = _published_platform_agent_tool_scope_for_user(
             payload.agent_id,
+            user_id,
         )
-    if agent is not None:
-        _assert_platform_agent_access(agent, user_id)
 
     agent_metadata = _platform_agent_run_metadata(agent)
     runtime_adapter = get_runtime_adapter(agent_metadata)
@@ -3883,10 +3891,10 @@ async def run_enterprise_workflow(
     agent_id = requested_agent_id or "platform-workflow"
     configured_tools: set[str] | None = None
     if requested_agent_id:
-        agent, configured_tools = _published_platform_agent_tool_scope(
+        _, configured_tools = _published_platform_agent_tool_scope_for_user(
             requested_agent_id,
+            user_id,
         )
-        _assert_platform_agent_access(agent, user_id)
 
     workflow_type = payload.workflow_type.strip()
     workflow_template = _get_enabled_platform_workflow_template(workflow_type)
