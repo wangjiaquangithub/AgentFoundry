@@ -271,6 +271,9 @@ class PlatformWorkflowRunService:
         self._repository.append(record)
         return record
 
+    def workflow_name(self, template: dict[str, Any], workflow_type: str) -> str:
+        return str(template.get("name") or workflow_type)
+
     def input_value(
         self,
         inputs: dict[str, Any],
