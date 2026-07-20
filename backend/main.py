@@ -3936,27 +3936,17 @@ async def run_enterprise_workflow(
     for step_id, title, tool_name, step_inputs in step_specs:
         if configured_tools is not None and tool_name not in configured_tools:
             decision = _agent_tool_denial(tool_name)
-            message = str(decision["reason"])
-            step = {
-                "id": step_id,
-                "title": title,
-                "tool_name": tool_name,
-                "inputs": step_inputs,
-                "status": "denied",
-                "decision": decision,
-                "message": message,
-            }
-            tool_call = {
-                "tool_name": tool_name,
-                "inputs": step_inputs,
-                "allowed": False,
-                "tenant": tenant,
-                "user_id": user_id,
-                "connector": connector_label,
-                "connector_source": connector_source,
-                "decision": decision,
-                "answer": message,
-            }
+            step, tool_call = workflow_run_service.denied_step_record(
+                step_id=step_id,
+                title=title,
+                tool_name=tool_name,
+                inputs=step_inputs,
+                decision=decision,
+                tenant=tenant,
+                user_id=user_id,
+                connector=connector_label,
+                connector_source=connector_source,
+            )
         else:
             step, tool_call = _workflow_step(
                 user_id=user_id,

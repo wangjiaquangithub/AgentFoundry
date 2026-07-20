@@ -336,6 +336,42 @@ class PlatformWorkflowRunService:
             ),
         }
 
+    def denied_step_record(
+        self,
+        *,
+        step_id: str,
+        title: str,
+        tool_name: str,
+        inputs: dict[str, Any],
+        decision: dict[str, Any],
+        tenant: str,
+        user_id: str,
+        connector: str,
+        connector_source: str,
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        message = str(decision["reason"])
+        step = {
+            "id": step_id,
+            "title": title,
+            "tool_name": tool_name,
+            "inputs": inputs,
+            "status": "denied",
+            "decision": decision,
+            "message": message,
+        }
+        tool_call = {
+            "tool_name": tool_name,
+            "inputs": inputs,
+            "allowed": False,
+            "tenant": tenant,
+            "user_id": user_id,
+            "connector": connector,
+            "connector_source": connector_source,
+            "decision": decision,
+            "answer": message,
+        }
+        return step, tool_call
+
     def input_value(
         self,
         inputs: dict[str, Any],
