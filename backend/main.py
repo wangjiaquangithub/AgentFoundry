@@ -2369,10 +2369,7 @@ async def run_enterprise_workflow(
         run_id=uuid4().hex,
         started_at=_now_iso(),
     )
-    run_id = execution_context["run_id"]
-    started_at = execution_context["started_at"]
     session_id = execution_context["session_id"]
-    workflow_name = execution_context["workflow_name"]
     normalized_inputs = execution_context["normalized_inputs"]
     try:
         step_specs = workflow_run_service.build_step_specs(
@@ -2436,21 +2433,19 @@ async def run_enterprise_workflow(
 
     finished_at = _now_iso()
     response = workflow_run_service.build_run_record(
-        run_id=run_id,
-        workflow_type=workflow_type,
-        workflow_name=workflow_name,
-        started_at=started_at,
-        finished_at=finished_at,
-        tenant=tenant,
-        user_id=user_id,
-        agent_id=agent_id,
-        connector=connector_label,
-        connector_source=connector_source,
-        approval_id=approval_id,
-        inputs=normalized_inputs,
-        steps=steps,
-        tool_calls=tool_calls,
-        session_id=session_id,
+        **workflow_run_service.build_run_record_context(
+            workflow_type=workflow_type,
+            execution_context=execution_context,
+            finished_at=finished_at,
+            tenant=tenant,
+            user_id=user_id,
+            agent_id=agent_id,
+            connector=connector_label,
+            connector_source=connector_source,
+            approval_id=approval_id,
+            steps=steps,
+            tool_calls=tool_calls,
+        ),
     )
     workflow_run_service.append_run(response)
     return response

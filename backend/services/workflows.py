@@ -542,6 +542,39 @@ class PlatformWorkflowRunService:
             ),
         }
 
+    def build_run_record_context(
+        self,
+        *,
+        workflow_type: str,
+        execution_context: dict[str, Any],
+        finished_at: str,
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        connector: str,
+        connector_source: str,
+        approval_id: str | None,
+        steps: list[dict[str, Any]],
+        tool_calls: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        return {
+            "run_id": str(execution_context["run_id"]),
+            "workflow_type": workflow_type,
+            "workflow_name": str(execution_context["workflow_name"]),
+            "started_at": str(execution_context["started_at"]),
+            "finished_at": finished_at,
+            "tenant": tenant,
+            "user_id": user_id,
+            "agent_id": agent_id,
+            "connector": connector,
+            "connector_source": connector_source,
+            "approval_id": approval_id,
+            "inputs": execution_context["normalized_inputs"],
+            "steps": steps,
+            "tool_calls": tool_calls,
+            "session_id": str(execution_context["session_id"]),
+        }
+
     def denied_step_record(
         self,
         *,
