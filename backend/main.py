@@ -366,9 +366,10 @@ async def build_enterprise_tools(
         runtime = _platform_connector_config_service().enterprise_runtime_context(user_id)
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
-    tenant = str(runtime["tenant"])
-    runtime_connector = runtime["connector"]
-    connector_label = str(runtime["connector_label"])
+    tool_policy_service = _platform_tool_policy_service()
+    tenant = tool_policy_service.runtime_tenant(runtime)
+    runtime_connector = tool_policy_service.runtime_connector(runtime)
+    connector_label = tool_policy_service.runtime_connector_label(runtime)
 
     def audit_tool_call(
         tool_name: str,
@@ -886,10 +887,11 @@ def _run_authorized_enterprise_tool(
         runtime = _platform_connector_config_service().enterprise_runtime_context(user_id)
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
-    tenant = str(runtime["tenant"])
-    runtime_connector = runtime["connector"]
-    connector_label = str(runtime["connector_label"])
-    connector_source = str(runtime["connector_source"])
+    tool_policy_service = _platform_tool_policy_service()
+    tenant = tool_policy_service.runtime_tenant(runtime)
+    runtime_connector = tool_policy_service.runtime_connector(runtime)
+    connector_label = tool_policy_service.runtime_connector_label(runtime)
+    connector_source = tool_policy_service.runtime_connector_source(runtime)
 
     if tool_name not in ENTERPRISE_TOOL_NAMES:
         raise HTTPException(
@@ -898,7 +900,7 @@ def _run_authorized_enterprise_tool(
         )
 
     decision = tool_authorization_policy.authorize(tenant, user_id, tool_name)
-    decision_payload = _platform_tool_policy_service().decision_payload(
+    decision_payload = tool_policy_service.decision_payload(
         tool_name,
         decision,
     )
@@ -919,7 +921,7 @@ def _run_authorized_enterprise_tool(
             "decision": decision_payload,
         }
 
-    clean_inputs, call = _platform_tool_policy_service().build_connector_call(
+    clean_inputs, call = tool_policy_service.build_connector_call(
         tenant=tenant,
         tool_name=tool_name,
         inputs=inputs,

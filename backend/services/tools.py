@@ -81,6 +81,26 @@ class PlatformToolPolicyService:
             "reason": decision.reason,
         }
 
+    @staticmethod
+    def runtime_tenant(runtime: dict[str, Any]) -> str:
+        """Return the tenant selected for the tool runtime context."""
+        return str(runtime["tenant"])
+
+    @staticmethod
+    def runtime_connector(runtime: dict[str, Any]) -> Any:
+        """Return the enterprise connector selected for the runtime context."""
+        return runtime["connector"]
+
+    @staticmethod
+    def runtime_connector_label(runtime: dict[str, Any]) -> str:
+        """Return the display label for the selected tool connector."""
+        return str(runtime["connector_label"])
+
+    @staticmethod
+    def runtime_connector_source(runtime: dict[str, Any]) -> str:
+        """Return the configuration source for the selected tool connector."""
+        return str(runtime["connector_source"])
+
     def audit_stats(self, events: list[dict[str, Any]]) -> dict[str, Any]:
         calls = len(events)
         successes = sum(1 for event in events if event.get("success") is True)
@@ -200,7 +220,7 @@ class PlatformToolPolicyService:
     ) -> dict[str, Any]:
         resolved_user_id = user_id or "acme:alice"
         runtime = self._runtime_context(resolved_user_id)
-        resolved_tenant = tenant or str(runtime["tenant"])
+        resolved_tenant = tenant or self.runtime_tenant(runtime)
         identities = self._identity_metadata(resolved_user_id, resolved_tenant)
         return {
             "mode": authorization_policy.mode,
