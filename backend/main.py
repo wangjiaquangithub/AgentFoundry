@@ -1287,10 +1287,9 @@ async def publish_enterprise_platform_agent(
         **resource_inputs,
     )
     try:
-        agent, agents = agent_service.create_agent(payload, user_id)
+        return agent_service.publish_agent_response_payload(payload, user_id)
     except PlatformAgentServiceError as exc:
         _raise_platform_agent_service_error(exc)
-    return agent_service.mutation_response(agent, agents)
 
 
 @app.patch("/enterprise/platform/agents/{agent_id}")
