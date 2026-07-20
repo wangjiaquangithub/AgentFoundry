@@ -1034,29 +1034,16 @@ async def enterprise_platform_connectors(request: Request) -> dict[str, Any]:
 @app.get("/enterprise/platform/governance")
 async def enterprise_platform_governance(request: Request) -> dict[str, Any]:
     """Return tenant, identity, approval, and audit governance state."""
-    user_id = request.headers.get("X-User-ID") or "acme:alice"
-    try:
-        connector_config_service = _platform_connector_config_service()
-        runtime = connector_config_service.enterprise_runtime_context(user_id)
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
     status_service = _platform_status_service()
-    runtime_selection = status_service.runtime_selection(runtime)
-    tenant = runtime_selection["tenant"]
-    identities = _platform_identity_metadata(user_id, tenant)
     try:
-        tenant_workspaces = connector_config_service.tenant_workspaces(
-            identities=identities,
-            current_tenant=tenant,
-            runtime_connector_for_tenant=(
-                connector_config_service.runtime_enterprise_connector_for_tenant
-            ),
+        context = status_service.status_request_context(
+            user_id=request.headers.get("X-User-ID"),
         )
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
     return status_service.governance_snapshot(
-        identities=identities,
-        tenant_workspaces=tenant_workspaces,
+        identities=context["identities"],
+        tenant_workspaces=context["tenant_workspaces"],
     )
 
 
