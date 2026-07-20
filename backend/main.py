@@ -2135,14 +2135,15 @@ async def import_enterprise_platform_config(
     """Import portable platform configuration by merging or replacing sections."""
     global tool_authorization_policy
 
-    mode = payload.mode.strip().lower()
-    if mode not in {"merge", "replace"}:
-        raise HTTPException(status_code=400, detail="mode must be merge or replace.")
-
     actor = request.headers.get("X-User-ID") or "acme:alice"
-    incoming = payload.config.get("config", payload.config)
-    if not isinstance(incoming, dict):
-        raise HTTPException(status_code=400, detail="config must be a JSON object.")
+    try:
+        mode, incoming = (
+            _platform_connector_config_service().normalize_config_import_request(
+                payload,
+            )
+        )
+    except PlatformConnectorConfigServiceError as exc:
+        _raise_platform_connector_config_service_error(exc)
 
     if "members" in incoming:
         imported_members = _normalize_import_members(incoming.get("members"), actor)

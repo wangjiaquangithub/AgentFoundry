@@ -313,6 +313,22 @@ class PlatformConnectorConfigService:
             "config": config,
         }
 
+    def normalize_config_import_request(self, payload: Any) -> tuple[str, dict[str, Any]]:
+        mode = payload.mode.strip().lower()
+        if mode not in {"merge", "replace"}:
+            raise PlatformConnectorConfigServiceError(
+                400,
+                "mode must be merge or replace.",
+            )
+
+        incoming = payload.config.get("config", payload.config)
+        if not isinstance(incoming, dict):
+            raise PlatformConnectorConfigServiceError(
+                400,
+                "config must be a JSON object.",
+            )
+        return mode, incoming
+
     def list_configs_response(self) -> dict[str, Any]:
         return {"saved_configs": self.redacted_configs()}
 
