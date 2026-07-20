@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import Any, NoReturn
 from uuid import uuid4
 
-import httpx
 import uvicorn
 from fastapi import HTTPException, Request
 from fastapi.middleware import Middleware
@@ -965,41 +964,9 @@ async def _route_enterprise_agent_question_with_model(
     if config is None:
         raise EnterpriseRouterError("Router model is not configured.")
 
-    system_prompt, user_prompt = enterprise_router_service.build_model_prompt(question)
-    endpoint = enterprise_router_service.build_model_endpoint(
-        config["base_url"],
-        config["provider"],
-    )
-
-    headers, payload = enterprise_router_service.build_model_request(
-        provider=config["provider"],
-        api_key=config["api_key"],
-        model=config["model"],
-        system_prompt=system_prompt,
-        user_prompt=user_prompt,
-    )
-
-    try:
-        async with httpx.AsyncClient(
-            timeout=config["timeout_seconds"],
-        ) as client:
-            response = await client.post(endpoint, headers=headers, json=payload)
-            response.raise_for_status()
-            response_payload = response.json()
-    except httpx.HTTPStatusError as exc:
-        raise EnterpriseRouterError(
-            f"Router HTTP error: {exc.response.status_code}",
-        ) from exc
-    except httpx.HTTPError as exc:
-        raise EnterpriseRouterError(
-            f"Router request failed: {exc.__class__.__name__}",
-        ) from exc
-    except json.JSONDecodeError as exc:
-        raise EnterpriseRouterError("Router HTTP response is not JSON.") from exc
-
-    return enterprise_router_service.parse_model_response_payload(
-        provider=config["provider"],
-        response_payload=response_payload,
+    return await enterprise_router_service.route_question_with_model_config(
+        question,
+        config=config,
     )
 
 

@@ -5,6 +5,8 @@ import re
 from collections.abc import Awaitable, Callable, Mapping
 from typing import Any
 
+import httpx
+
 
 class EnterpriseRouterError(Exception):
     """Raised when enterprise model routing cannot produce a valid route."""
@@ -200,6 +202,48 @@ class PlatformEnterpriseRouterService:
             raise EnterpriseRouterError("Router response content is empty.")
 
         return self.parse_model_route_content(content)
+
+    async def route_question_with_model_config(
+        self,
+        question: str,
+        *,
+        config: dict[str, Any],
+    ) -> dict[str, Any]:
+        system_prompt, user_prompt = self.build_model_prompt(question)
+        endpoint = self.build_model_endpoint(
+            config["base_url"],
+            config["provider"],
+        )
+        headers, payload = self.build_model_request(
+            provider=config["provider"],
+            api_key=config["api_key"],
+            model=config["model"],
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+        )
+
+        try:
+            async with httpx.AsyncClient(
+                timeout=config["timeout_seconds"],
+            ) as client:
+                response = await client.post(endpoint, headers=headers, json=payload)
+                response.raise_for_status()
+                response_payload = response.json()
+        except httpx.HTTPStatusError as exc:
+            raise EnterpriseRouterError(
+                f"Router HTTP error: {exc.response.status_code}",
+            ) from exc
+        except httpx.HTTPError as exc:
+            raise EnterpriseRouterError(
+                f"Router request failed: {exc.__class__.__name__}",
+            ) from exc
+        except json.JSONDecodeError as exc:
+            raise EnterpriseRouterError("Router HTTP response is not JSON.") from exc
+
+        return self.parse_model_response_payload(
+            provider=config["provider"],
+            response_payload=response_payload,
+        )
 
     def extract_model_response_content(
         self,
