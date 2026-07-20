@@ -1975,13 +1975,10 @@ async def enterprise_platform_governance(request: Request) -> dict[str, Any]:
         current_tenant=tenant,
         runtime_connector_for_tenant=_runtime_enterprise_connector_for_tenant,
     )
-    try:
-        return _platform_status_service().governance_snapshot(
-            identities=identities,
-            tenant_workspaces=tenant_workspaces,
-        )
-    except PlatformApprovalServiceError as exc:
-        _raise_platform_approval_service_error(exc)
+    return _platform_status_service().governance_snapshot(
+        identities=identities,
+        tenant_workspaces=tenant_workspaces,
+    )
 
 
 @app.get("/enterprise/platform/members")
