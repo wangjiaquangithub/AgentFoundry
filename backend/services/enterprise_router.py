@@ -245,3 +245,13 @@ class PlatformEnterpriseRouterService:
             )
 
         return deduped
+
+    def fallback_route(self) -> dict[str, Any]:
+        return {
+            "routed": False,
+            "reason": (
+                "No demo route matched. Try a ticket id, a policy keyword, "
+                "or a department metrics request."
+            ),
+            "source": self._default_source,
+        }

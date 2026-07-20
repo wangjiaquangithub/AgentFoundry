@@ -1139,14 +1139,7 @@ def _route_enterprise_agent_question(question: str) -> dict[str, Any]:
     if routes:
         return routes[0]
 
-    return {
-        "routed": False,
-        "reason": (
-            "No demo route matched. Try a ticket id, a policy keyword, "
-            "or a department metrics request."
-        ),
-        "source": ROUTING_SOURCE_RULES,
-    }
+    return enterprise_router_service.fallback_route()
 
 
 async def _select_enterprise_agent_routes(
