@@ -1764,36 +1764,23 @@ async def run_enterprise_agent(
                     )
                 except PlatformApprovalServiceError as service_exc:
                     _raise_platform_approval_service_error(service_exc)
-                approval_id = agent_run_service.resolve_approval_id(approval)
-                decision = (
-                    agent_run_service.decide_created_pending_approval_route_from_context(
-                        decision_with_routing_context=(
-                            enterprise_router_service.decision_with_routing_context
-                        ),
-                        detail=detail,
-                        approval=approval,
-                        routing_reason=route_reason,
-                        routing_source=route_source,
-                        routing_mode=routing_mode,
-                        routing_error=routing_error,
-                    )
-                )
-                agent_run_service.append_pending_approval_routed_tool_call(
+                agent_run_service.record_created_pending_approval_routed_tool_call_from_context(
                     tool_calls=tool_calls,
+                    decision_with_routing_context=(
+                        enterprise_router_service.decision_with_routing_context
+                    ),
+                    detail=detail,
+                    approval=approval,
                     tool_name=tool_name,
                     inputs=route_inputs,
-                    approval_id=approval_id,
                     tenant=tenant,
                     user_id=user_id,
                     connector=connector_label,
                     connector_source=connector_source,
                     routing_source=route_source,
                     routing_reason=route_reason,
-                    decision=decision,
-                    answer=agent_run_service.created_pending_approval_message(
-                        detail=detail,
-                        approval=approval,
-                    ),
+                    routing_mode=routing_mode,
+                    routing_error=routing_error,
                 )
                 continue
 

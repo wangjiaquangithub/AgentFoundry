@@ -1206,6 +1206,50 @@ class PlatformAgentRunService:
             ),
         )
 
+    def record_created_pending_approval_routed_tool_call_from_context(
+        self,
+        *,
+        tool_calls: list[dict[str, Any]],
+        decision_with_routing_context: Callable[..., dict[str, Any]],
+        detail: dict[str, Any],
+        approval: dict[str, Any],
+        tool_name: str,
+        inputs: dict[str, Any],
+        tenant: str,
+        user_id: str,
+        connector: str,
+        connector_source: str,
+        routing_source: str,
+        routing_reason: str,
+        routing_mode: str,
+        routing_error: str | None,
+    ) -> None:
+        self.append_pending_approval_routed_tool_call(
+            tool_calls=tool_calls,
+            tool_name=tool_name,
+            inputs=inputs,
+            approval_id=self.resolve_approval_id(approval),
+            tenant=tenant,
+            user_id=user_id,
+            connector=connector,
+            connector_source=connector_source,
+            routing_source=routing_source,
+            routing_reason=routing_reason,
+            decision=self.decide_created_pending_approval_route_from_context(
+                decision_with_routing_context=decision_with_routing_context,
+                detail=detail,
+                approval=approval,
+                routing_reason=routing_reason,
+                routing_source=routing_source,
+                routing_mode=routing_mode,
+                routing_error=routing_error,
+            ),
+            answer=self.created_pending_approval_message(
+                detail=detail,
+                approval=approval,
+            ),
+        )
+
     def build_pending_approval_response_context(
         self,
         *,
