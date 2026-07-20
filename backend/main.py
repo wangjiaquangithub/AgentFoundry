@@ -1733,7 +1733,9 @@ async def run_enterprise_agent(
             try:
                 approved_by = _require_platform_approval(
                     **agent_run_service.build_tool_approval_requirement_context(
-                        approval_id=run_request["approval_id"],
+                        approval_id=agent_run_service.agent_run_approval_id(
+                            run_request,
+                        ),
                         tool_name=tool_name,
                         tenant=tenant,
                         user_id=user_id,

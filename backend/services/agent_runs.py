@@ -958,6 +958,10 @@ class PlatformAgentRunService:
     ) -> bool:
         return tool_name in approval_required_tools
 
+    @staticmethod
+    def agent_run_approval_id(run_request: dict[str, Any]) -> str | None:
+        return run_request["approval_id"]
+
     def build_tool_approval_requirement_context(
         self,
         *,
