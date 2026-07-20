@@ -809,22 +809,6 @@ def _platform_agent_access_scope_diagnostics(
     }
 
 
-def _validate_platform_agent_access_scope(
-    *,
-    tenant: str,
-    allowed_user_ids: list[str],
-    allowed_roles: list[str],
-) -> None:
-    try:
-        _platform_agent_service().validate_access_scope(
-            tenant=tenant,
-            allowed_user_ids=allowed_user_ids,
-            allowed_roles=allowed_roles,
-        )
-    except PlatformAgentServiceError as exc:
-        _raise_platform_agent_service_error(exc)
-
-
 def _identity_role_for_user(user_id: str) -> str:
     tenant_hint = _tenant_hint_from_user_id(user_id)
     current_tenant = (
