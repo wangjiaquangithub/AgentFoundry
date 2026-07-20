@@ -1019,37 +1019,6 @@ def _enterprise_router_endpoint(base_url: str, provider: str) -> str:
     return f"{normalized}/v1/chat/completions"
 
 
-def _enterprise_router_prompt(question: str) -> tuple[str, str]:
-    tool_schema = {
-        "enterprise_lookup_policy": {
-            "description": "Query tenant policy snippets.",
-            "inputs": {"keyword": "remote | expense | security"},
-        },
-        "enterprise_get_ticket_status": {
-            "description": "Query a tenant ticket by id.",
-            "inputs": {"ticket_id": "INC-1001"},
-        },
-        "enterprise_summarize_department_metrics": {
-            "description": "Summarize tenant department metrics.",
-            "inputs": {"department": "engineering | support | sales"},
-        },
-    }
-    system_prompt = (
-        "You route one enterprise business question to one allowed read-only "
-        "tool. Return strict JSON only. Do not explain outside JSON. "
-        "Allowed tools and inputs: "
-        f"{json.dumps(tool_schema, ensure_ascii=False)}. "
-        "If no tool fits, return "
-        '{"routed": false, "reason": "why no tool fits", "source": "model"}. '
-        "If a tool fits, return "
-        '{"routed": true, "tool_name": "enterprise_get_ticket_status", '
-        '"inputs": {"ticket_id": "INC-1001"}, '
-        '"reason": "why this tool fits", "source": "model"}.'
-    )
-    user_prompt = f"Business question:\n{question}\n\nReturn JSON only."
-    return system_prompt, user_prompt
-
-
 async def _route_enterprise_agent_question_with_model(
     question: str,
 ) -> dict[str, Any]:
@@ -1057,7 +1026,7 @@ async def _route_enterprise_agent_question_with_model(
     if config is None:
         raise EnterpriseRouterError("Router model is not configured.")
 
-    system_prompt, user_prompt = _enterprise_router_prompt(question)
+    system_prompt, user_prompt = enterprise_router_service.build_model_prompt(question)
     endpoint = _enterprise_router_endpoint(
         config["base_url"],
         config["provider"],

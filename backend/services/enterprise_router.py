@@ -24,6 +24,36 @@ class PlatformEnterpriseRouterService:
         self._default_source = default_source
         self._model_source = model_source
 
+    def build_model_prompt(self, question: str) -> tuple[str, str]:
+        tool_schema = {
+            "enterprise_lookup_policy": {
+                "description": "Query tenant policy snippets.",
+                "inputs": {"keyword": "remote | expense | security"},
+            },
+            "enterprise_get_ticket_status": {
+                "description": "Query a tenant ticket by id.",
+                "inputs": {"ticket_id": "INC-1001"},
+            },
+            "enterprise_summarize_department_metrics": {
+                "description": "Summarize tenant department metrics.",
+                "inputs": {"department": "engineering | support | sales"},
+            },
+        }
+        system_prompt = (
+            "You route one enterprise business question to one allowed read-only "
+            "tool. Return strict JSON only. Do not explain outside JSON. "
+            "Allowed tools and inputs: "
+            f"{json.dumps(tool_schema, ensure_ascii=False)}. "
+            "If no tool fits, return "
+            '{"routed": false, "reason": "why no tool fits", "source": "model"}. '
+            "If a tool fits, return "
+            '{"routed": true, "tool_name": "enterprise_get_ticket_status", '
+            '"inputs": {"ticket_id": "INC-1001"}, '
+            '"reason": "why this tool fits", "source": "model"}.'
+        )
+        user_prompt = f"Business question:\n{question}\n\nReturn JSON only."
+        return system_prompt, user_prompt
+
     def parse_model_route_content(self, content: str) -> dict[str, Any]:
         return self.normalize_model_route(self.parse_router_json(content))
 
