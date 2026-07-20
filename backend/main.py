@@ -200,20 +200,6 @@ def _platform_tool_policy_path() -> Path:
     return PLATFORM_TOOL_POLICY_PATH
 
 
-def _load_platform_tool_policy_config() -> dict[str, Any]:
-    try:
-        return _platform_tool_policy_service().load_policy()
-    except PlatformToolPolicyServiceError as exc:
-        _raise_platform_tool_policy_service_error(exc)
-
-
-def _save_platform_tool_policy_config(policy: dict[str, Any]) -> None:
-    try:
-        _platform_tool_policy_service().save_policy(policy)
-    except PlatformToolPolicyServiceError as exc:
-        _raise_platform_tool_policy_service_error(exc)
-
-
 def _build_tool_authorization_policy() -> ToolAuthorizationPolicy:
     try:
         return _platform_tool_policy_service().build_authorization_policy()
@@ -1181,12 +1167,17 @@ def _export_platform_config() -> dict[str, Any]:
     except PlatformWorkflowTemplateServiceError as exc:
         _raise_platform_workflow_template_service_error(exc)
 
+    try:
+        tool_policy = _platform_tool_policy_service().load_policy()
+    except PlatformToolPolicyServiceError as exc:
+        _raise_platform_tool_policy_service_error(exc)
+
     config = {
         "members": _platform_member_registry(include_inactive=True),
         "connector_configs": connector_configs,
         "agents": agents,
         "workflow_templates": workflow_templates,
-        "tool_policy": _load_platform_tool_policy_config(),
+        "tool_policy": tool_policy,
     }
     counts = connector_config_service.export_config_counts(config)
     return {
@@ -2471,12 +2462,18 @@ async def import_enterprise_platform_config(
                 status_code=400,
                 detail="tool_policy must be a JSON object.",
             )
-        policy = (
-            raw_policy
-            if mode == "replace"
-            else _deep_merge_dict(_load_platform_tool_policy_config(), raw_policy)
-        )
-        _save_platform_tool_policy_config(policy)
+        policy = raw_policy
+        tool_policy_service = _platform_tool_policy_service()
+        if mode != "replace":
+            try:
+                current_policy = tool_policy_service.load_policy()
+            except PlatformToolPolicyServiceError as exc:
+                _raise_platform_tool_policy_service_error(exc)
+            policy = _deep_merge_dict(current_policy, raw_policy)
+        try:
+            tool_policy_service.save_policy(policy)
+        except PlatformToolPolicyServiceError as exc:
+            _raise_platform_tool_policy_service_error(exc)
         tool_authorization_policy = _build_tool_authorization_policy()
 
     exported = _export_platform_config()
