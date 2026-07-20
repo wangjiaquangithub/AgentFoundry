@@ -38,6 +38,9 @@ class PlatformMemberService:
     def save_config(self, config: dict[str, Any]) -> None:
         self._repository.save_config(config)
 
+    def resolve_mutation_actor(self, actor: str | None) -> str:
+        return str(actor or "acme:alice").strip() or "acme:alice"
+
     def normalize_member(
         self,
         raw: dict[str, Any],

@@ -1103,7 +1103,9 @@ async def create_enterprise_platform_member(
     request: Request,
 ) -> dict[str, Any]:
     """Create or replace one enterprise platform member."""
-    actor = request.headers.get("X-User-ID") or "acme:alice"
+    actor = _platform_member_service().resolve_mutation_actor(
+        request.headers.get("X-User-ID"),
+    )
     try:
         member, members = _platform_member_service().upsert_member(
             payload.model_dump(),
@@ -1126,7 +1128,9 @@ async def update_enterprise_platform_member(
     request: Request,
 ) -> dict[str, Any]:
     """Update one enterprise platform member."""
-    actor = request.headers.get("X-User-ID") or "acme:alice"
+    actor = _platform_member_service().resolve_mutation_actor(
+        request.headers.get("X-User-ID"),
+    )
     try:
         member, members = _platform_member_service().patch_member(
             user_id,
@@ -1149,7 +1153,9 @@ async def deactivate_enterprise_platform_member(
     request: Request,
 ) -> dict[str, Any]:
     """Soft-delete one enterprise platform member by marking it inactive."""
-    actor = request.headers.get("X-User-ID") or "acme:alice"
+    actor = _platform_member_service().resolve_mutation_actor(
+        request.headers.get("X-User-ID"),
+    )
     try:
         existing, members = _platform_member_service().deactivate_member(
             user_id,
