@@ -1,424 +1,192 @@
-// @ts-nocheck
-
 import {
 	BotMessageSquare,
+	CheckCircle2,
+	Clock3,
+	Database,
+	GitBranch,
 	KeyRound,
 	ListChecks,
 	Play,
 	ShieldCheck,
+	Users,
+	Wrench,
 } from 'lucide-react';
+import type { ComponentType, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { DashboardAgentManagementSection } from './DashboardAgentManagementSection';
-import { DashboardAgentQuickStartSection } from './DashboardAgentQuickStartSection';
-import { DashboardAgentRunnerSection } from './DashboardAgentRunnerSection';
-import { DashboardAgentRunNowSection } from './DashboardAgentRunNowSection';
-import { DashboardApplicationSection } from './DashboardApplicationSection';
-import { DashboardApprovalsSection } from './DashboardApprovalsSection';
-import { DashboardAuditEventsSection } from './DashboardAuditEventsSection';
-import { DashboardCapabilitiesSection } from './DashboardCapabilitiesSection';
-import { DashboardConfigManagementSection } from './DashboardConfigManagementSection';
-import { DashboardConnectorsSection } from './DashboardConnectorsSection';
-import { DashboardLaunchOrchestrationSection } from './DashboardLaunchOrchestrationSection';
-import { DashboardMembersSection } from './DashboardMembersSection';
-import { DashboardOperationalHealthSection } from './DashboardOperationalHealthSection';
-import { DashboardOperationsConsoleSection } from './DashboardOperationsConsoleSection';
-import { DashboardOperationsSnapshotSection } from './DashboardOperationsSnapshotSection';
-import { DashboardPolicySubagentsSection } from './DashboardPolicySubagentsSection';
-import { DashboardRuntimeStatusSection } from './DashboardRuntimeStatusSection';
-import { DashboardTenantAccessSection } from './DashboardTenantAccessSection';
-import { DashboardTenantGovernancePanelSection } from './DashboardTenantGovernancePanelSection';
-import { DashboardWorkbenchSection } from './DashboardWorkbenchSection';
-import { DashboardToolCatalogSection } from './DashboardToolCatalogSection';
-import { DashboardToolRunnerSection } from './DashboardToolRunnerSection';
-import { DashboardWorkflowAutomationSection } from './DashboardWorkflowAutomationSection';
-import { DashboardWorkflowRunnerSection } from './DashboardWorkflowRunnerSection';
+import {
+	PlatformPageShell,
+	StateBadge,
+	type HealthState,
+	type StatCardProps,
+} from './common';
 import { PlatformDashboardOverview } from './PlatformDashboardOverview';
-import { PlatformPageShell } from './common';
+import type {
+	CredentialView,
+	EnterpriseApprovalRequestItem,
+	EnterpriseAuditEvent,
+	EnterprisePlatformOpsTask,
+	EnterprisePublishedAgent,
+	EnterpriseWorkflowRunHistoryItem,
+} from '@/api/types';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 interface DashboardViewPageProps {
-	[key: string]: any;
+	activeMemberCount: number;
+	activePlatformAgents: EnterprisePublishedAgent[];
+	approvedApprovalCount: number;
+	completedWorkflowRunCount: number;
+	credentials: CredentialView[];
+	failedWorkflowRunCount: number;
+	governanceError: string | null;
+	hasErrors: boolean;
+	handleNextStepPrimaryAction: () => void;
+	handleStartPublishing: () => void;
+	monitoringHealthState: HealthState;
+	nextStepMode: NextStepMode;
+	nextStepPrimaryDisabled: boolean;
+	opsTasks: EnterprisePlatformOpsTask[];
+	pendingApprovals: EnterpriseApprovalRequestItem[];
+	platformAgentsLoading: boolean;
+	platformLoading: boolean;
+	publishingTemplateId: string | null;
+	readyPlatformAgents: EnterprisePublishedAgent[];
+	recentAuditEvents: EnterpriseAuditEvent[];
+	recentWorkflowRuns: EnterpriseWorkflowRunHistoryItem[];
+	serverUrl: string;
+	stats: StatCardProps[];
+	t: (key: string) => string;
+	username: string;
+	workflowRunCount: number;
+	[key: string]: unknown;
+}
+
+type NextStepMode = 'model' | 'publish' | 'configure' | 'governance' | 'run';
+
+interface ModuleShortcut {
+	title: string;
+	description: string;
+	href: string;
+	icon: ComponentType<{ className?: string }>;
+	state: HealthState;
+	stateLabel: string;
+	metric: ReactNode;
+}
+
+function DashboardModuleCard({
+	title,
+	description,
+	href,
+	icon: Icon,
+	state,
+	stateLabel,
+	metric,
+}: ModuleShortcut) {
+	const navigate = useNavigate();
+
+	return (
+		<Card size="sm" className="rounded-lg shadow-none">
+			<CardHeader className="grid-cols-[1fr_auto] gap-3">
+				<div className="min-w-0">
+					<div className="mb-3 flex items-center gap-2">
+						<span className="grid size-8 place-items-center rounded-md border bg-background">
+							<Icon className="size-4 text-muted-foreground" />
+						</span>
+						<StateBadge state={state} label={stateLabel} />
+					</div>
+					<CardTitle className="text-base">{title}</CardTitle>
+				</div>
+				<div className="text-right text-2xl font-semibold tabular-nums">{metric}</div>
+			</CardHeader>
+			<CardContent className="space-y-4">
+				<p className="min-h-10 text-sm leading-5 text-muted-foreground">
+					{description}
+				</p>
+				<Button
+					type="button"
+					variant="outline"
+					size="sm"
+					className="w-full justify-between"
+					onClick={() => navigate(href)}
+				>
+					进入模块
+					<Play className="size-4" />
+				</Button>
+			</CardContent>
+		</Card>
+	);
+}
+
+function ActivityList({
+	title,
+	items,
+	emptyText,
+	renderItem,
+	action,
+	getKey,
+}: {
+	title: string;
+	items: readonly unknown[];
+	emptyText: string;
+	renderItem: (item: unknown, index: number) => ReactNode;
+	action: ReactNode;
+	getKey?: (item: unknown, index: number) => string | number;
+}) {
+	return (
+		<Card size="sm" className="rounded-lg shadow-none">
+			<CardHeader className="grid-cols-[1fr_auto] items-center gap-3">
+				<CardTitle className="text-base">{title}</CardTitle>
+				{action}
+			</CardHeader>
+			<CardContent>
+				{items.length > 0 ? (
+					<div className="divide-y rounded-md border bg-background">
+						{items.slice(0, 4).map((item, index) => (
+							<div key={getKey?.(item, index) ?? index} className="p-3">
+								{renderItem(item, index)}
+							</div>
+						))}
+					</div>
+				) : (
+					<div className="rounded-md border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground">
+						{emptyText}
+					</div>
+				)}
+			</CardContent>
+		</Card>
+	);
 }
 
 export function DashboardViewPage({
-	accessControlStats,
-	accessTenantSummaries,
-	activeConnectorTenant,
 	activeMemberCount,
 	activePlatformAgents,
-	activeSavedConnectorConfig,
-	agentAccessAllowed,
-	agentApprovalId,
-	agentKnowledgeStepRef,
-	agentManagementRef,
-	agentModelStepRef,
-	agentOpsSummary,
-	agentQuestion,
-	agentReleasePipeline,
-	agentResourceText,
-	agentRoutingLabel,
-	agentRoutingText,
-	agentRunConnectorSourceText,
-	agentRunError,
-	agentRunKnowledgeLabels,
-	agentRunModelLabel,
-	agentRunResult,
-	agentRunnerRef,
-	agentRunsError,
-	agentRunsLoading,
-	agentRuntimeStepRef,
-	agentSampleQuestions,
-	agentSetupSteps,
-	agentTemplateStepRef,
-	agentTemplates,
-	agentToolCallBadgeText,
-	agentToolCalls,
-	agentToolsStepRef,
-	agents,
-	agentsLoading,
-	appCenterAgents,
-	appCenterDetailIssues,
-	appCenterDetailResources,
-	appCenterDetailStatus,
-	appCenterPrimaryDisabled,
-	approvalError,
-	approvalFilters,
-	approvalForm,
-	approvalLoading,
-	approvalRequests,
-	approvalSummary,
 	approvedApprovalCount,
-	archivingAgentId,
-	auditError,
-	auditEventCount,
-	auditEvents,
-	auditFilters,
-	auditLoading,
-	auditStats,
-	availableToolItems,
-	bindingAgentKnowledgeId,
-	bindingAgentModelId,
-	bindingAgentToolsId,
-	blockedOrPartialPlatformAgents,
-	capabilities,
 	completedWorkflowRunCount,
-	configManagementRef,
-	connectorCenterRef,
-	connectorDraftIssues,
-	connectorDraftState,
-	connectorRuntimeSourceText,
-	connectorRuntimeState,
-	connectorSaveError,
-	connectorSaveSuccess,
-	connectorState,
-	connectorTestError,
-	connectorTestForm,
-	connectorTestPassed,
-	connectorTestResult,
-	connectors,
-	connectorsError,
-	connectorsLoading,
-	continuingApprovalId,
-	creatingApproval,
-	creatingRunApproval,
-	credentialById,
 	credentials,
-	credentialsLoading,
-	currentIdentityLabel,
-	dashboardOperations,
-	dashboardTodoItems,
-	decidingApprovalId,
-	defaultAgentTemplate,
-	editingAgentId,
-	enablingAgentMemoryId,
-	enablingAgentWorkflowId,
-	enterpriseIdentities,
-	enterpriseToolInputConfig,
 	failedWorkflowRunCount,
-	featuredAgents,
-	firstAgentGuidePrimaryStep,
-	firstAgentGuideSteps,
-	governance,
 	governanceError,
-	governanceHealthItems,
-	governanceLoading,
-	governanceRef,
-	governedWorkflowItems,
-	handleAppCenterDetailPrimaryAction,
-	handleAppCenterDetailSecondaryAction,
-	handleAppCenterPrimaryAction,
-	handleApproveAndRun,
-	handleArchiveAgent,
-	handleBindAvailableKnowledge,
-	handleBindDefaultModel,
-	handleBindTemplateTools,
-	handleCancelEdit,
-	handleClearAgentConversation,
-	handleConfigureTemplate,
-	handleCopyPlatformConfig,
-	handleCreateApproval,
-	handleCreateRunApproval,
-	handleDecideApproval,
-	handleEditAgent,
-	handleEditMember,
-	handleEnableAgentMemory,
-	handleEnableAgentWorkflow,
-	handleImportPlatformConfig,
-	handleInspectAgentRunAudit,
-	handleInspectIdentityApprovals,
-	handleInspectIdentityAudit,
-	handleInspectIdentityFailures,
-	handleInspectMemoryOperationAudit,
-	handleInspectTenantApprovals,
-	handleInspectTenantAudit,
-	handleNextAgentSetupStep,
-	handleNextStepPrimaryAction,
-	handleOpenMemoryOperation,
-	handleOperationAction,
-	handlePrepareTenantAgent,
-	handlePrimeAgentRunner,
-	handlePrimeAgentWorkflow,
-	handlePrimePublishedAgent,
-	handlePrimeToolApproval,
-	handlePublishAgent,
-	handlePublishTenantChange,
-	handleQuickPublishAgent,
-	handleResolveOpsTask,
-	handleRunEnterpriseAgent,
-	handleRunEnterpriseTool,
-	handleRunEnterpriseWorkflow,
-	handleRunScenario,
-	handleSaveConnectorConfig,
-	handleSaveMember,
-	handleSaveToolPolicy,
-	handleSelectAgentRun,
-	handleSelectRunAgent,
-	handleStartPublishing,
-	handleTestAndSaveConnectorConfig,
-	handleTestConnector,
-	handleToggleMemberStatus,
-	handleTogglePublishList,
-	handleToggleWorkflowTemplate,
-	handleUseApproval,
-	handleUseIdentity,
-	handleUseTenant,
 	hasErrors,
-	identityAccessRows,
-	importingPlatformConfig,
-	inspectedAppCenterAgent,
-	inspectedAppCenterTemplate,
-	knowledgeBaseById,
-	knowledgeBases,
-	lastPublishedAgent,
-	launchpadPrimaryStep,
-	launchpadReadyCount,
-	launchpadState,
-	launchpadSteps,
-	launchpadTotalCount,
-	loadSavedConnectorConfig,
-	memberForm,
-	membersRef,
-	memoryOperationsHitCount,
-	memoryOperationsItems,
-	memoryOperationsRef,
-	memoryOperationsRunCount,
-	memoryOperationsSavedCount,
+	handleNextStepPrimaryAction,
+	handleStartPublishing,
 	monitoringHealthState,
-	monitoringLoading,
-	monitoringStats,
-	nextAgentSetupStep,
 	nextStepMode,
 	nextStepPrimaryDisabled,
-	operationsAgentIssueText,
-	operationsHeadline,
 	opsTasks,
-	opsTasksError,
-	opsTasksLoading,
-	opsTasksSummary,
-	orchestrationPrimaryStep,
-	orchestrationReadyCount,
-	orchestrationWorkbenchSteps,
-	partialWorkflowRunCount,
 	pendingApprovals,
-	platformAgents,
-	platformAgentsError,
 	platformAgentsLoading,
-	platformConfigError,
-	platformConfigExport,
-	platformConfigImportMode,
-	platformConfigImportResult,
-	platformConfigImportText,
-	platformConfigLoading,
-	platformConsoleItems,
-	platformError,
 	platformLoading,
-	platformMemberTenantSummaries,
-	platformMembers,
-	platformMembersError,
-	platformMembersLoading,
-	platformStatus,
-	policyDecisions,
-	primaryAgentSampleQuestion,
-	publishAccessMembers,
-	publishAccessScopeSummary,
-	publishBlocked,
-	publishForm,
-	publishReleaseIssues,
-	publishRoleOptions,
-	publishRuntimeSummary,
-	publishSelectedModelLabel,
-	publishTenant,
-	publishedPlatformAgents,
 	publishingTemplateId,
 	readyPlatformAgents,
-	recentAgentTurns,
 	recentAuditEvents,
-	recentSchedules,
 	recentWorkflowRuns,
-	recommendedOperationActions,
-	refetchAgentRuns,
-	refetchApprovals,
-	refetchAuditEvents,
-	refetchConnectors,
-	refetchGovernance,
-	refetchMembers,
-	refetchOpsTasks,
-	refetchPlatform,
-	refetchPlatformAgents,
-	refetchPlatformConfigExport,
-	refetchScenarios,
-	refetchToolCatalog,
-	refetchWorkflowRuns,
-	resolvingOpsTaskCode,
-	riskToolItems,
-	rolloutPathSteps,
-	runningAgent,
-	runningTool,
-	runningWorkflow,
-	runtimeItems,
-	savedConnectorConfigs,
-	savingConnectorConfig,
-	savingMember,
-	savingToolPolicy,
-	savingWorkflowType,
-	scenarios,
-	scenariosError,
-	scenariosLoading,
-	schedulesError,
-	schedulesLoading,
-	scrollToAgentManagement,
-	scrollToAgentRunner,
-	scrollToConnectorCenter,
-	scrollToGovernance,
-	scrollToToolRunner,
-	scrollToWorkflowRunner,
-	selectedAgentConversation,
-	selectedIdentity,
-	selectedIdentityAllowedTools,
-	selectedIdentityDeniedTools,
-	selectedIdentityFailedAuditEvents,
-	selectedIdentityPendingApprovals,
-	selectedIdentityPendingToolNames,
-	selectedIdentityRecentAuditEvents,
-	selectedIdentityUserId,
-	selectedIdentityWorkspace,
-	selectedRunAgent,
-	selectedRunAgentAccessAllowed,
-	selectedRunAgentAccessLabel,
-	selectedRunAgentId,
-	selectedRunAgentKnowledgeCount,
-	selectedRunAgentKnowledgeLabels,
-	selectedRunAgentModelLabel,
-	selectedRunAgentReadinessLabel,
-	selectedRunAgentReadinessState,
-	selectedRunAgentToolCount,
-	selectedTemplate,
-	selectedTemplateId,
-	selectedToolAllowed,
-	selectedToolCatalogItem,
-	selectedToolConfig,
-	selectedToolDecision,
-	selectedToolInputKey,
-	selectedToolInputValue,
-	selectedToolName,
-	selectedToolReason,
-	selectedWorkflowDisabled,
-	selectedWorkflowLastRun,
-	selectedWorkflowName,
-	selectedWorkflowSteps,
-	selectedWorkflowTemplate,
-	selectedWorkflowType,
 	serverUrl,
-	setAgentApprovalId,
-	setAgentQuestion,
-	setAgentRunError,
-	setAgentRunResult,
-	setApprovalFilters,
-	setApprovalForm,
-	setAuditFilters,
-	setConnectorTestForm,
-	setMemberForm,
-	setPlatformConfigImportMode,
-	setPlatformConfigImportText,
-	setPublishForm,
-	setSelectedAppCenterItem,
-	setSelectedIdentityUserId,
-	setSelectedRunAgentId,
-	setSelectedToolName,
-	setSelectedWorkflowType,
-	setToolApprovalId,
-	setToolInputs,
-	setToolPolicyDraft,
-	setToolPolicySaveError,
-	setToolPolicySaveSuccess,
-	setToolRunError,
-	setWorkflowApprovalId,
-	setWorkflowInputs,
-	setWorkflowRunError,
 	stats,
-	subagentTemplates,
-	summarizeAuditObject,
 	t,
-	tenantOverviewItems,
-	tenantWorkspaces,
-	testingConnector,
-	toolApprovalId,
-	toolCatalogError,
-	toolCatalogLoading,
-	toolPolicyDraft,
-	toolPolicyMode,
-	toolPolicySaveError,
-	toolPolicySaveSuccess,
-	toolPolicySummary,
-	toolRunError,
-	toolRunResult,
-	toolRunnerRef,
-	topOperationsAgents,
-	triggerOpsStats,
-	triggerOpsSummary,
-	updatingMemberId,
 	username,
-	workbenchActions,
-	workbenchIndicators,
-	workbenchQuickActions,
-	workbenchReadinessItems,
-	workbenchRiskItems,
-	workflowApprovalId,
-	workflowInputs,
-	workflowOpsStats,
-	workflowOptions,
-	workflowPendingApprovals,
 	workflowRunCount,
-	workflowRunError,
-	workflowRunResult,
-	workflowRunnerRef,
-	workflowRuns,
-	workflowRunsError,
-	workflowRunsLoading,
-	workflowTemplates,
-	workflowTemplatesError,
-	workflowTemplatesLoading,
 }: DashboardViewPageProps) {
 	const navigate = useNavigate();
 	const NextStepIcon =
@@ -431,638 +199,322 @@ export function DashboardViewPage({
 					: nextStepMode === 'governance'
 						? ShieldCheck
 						: Play;
-	const appCenterPrimaryLabel =
-		credentials.length === 0
-			? t('platform.appCenter.configureModel')
-			: readyPlatformAgents.length > 0
-				? t('platform.appCenter.runReadyAgent')
-				: activePlatformAgents.length === 0
-					? t('platform.appCenter.quickPublish')
-					: t('platform.appCenter.fixAgents');
+	const workflowIssueCount = failedWorkflowRunCount + pendingApprovals.length;
+	const platformReady = !hasErrors && !governanceError;
+	const topOpsTasks = Array.isArray(opsTasks) ? opsTasks.slice(0, 4) : [];
+	const moduleShortcuts: ModuleShortcut[] = [
+		{
+			title: 'Agent 管理',
+			description: '发布、配置和运行企业助手，查看模型、知识库、工具和准入状态。',
+			href: '/platform/agents',
+			icon: BotMessageSquare,
+			state: readyPlatformAgents.length > 0 ? 'ready' : 'todo',
+			stateLabel: readyPlatformAgents.length > 0 ? '可运行' : '待发布',
+			metric: activePlatformAgents.length,
+		},
+		{
+			title: '工具与策略',
+			description: '维护企业工具目录，按租户和身份控制工具权限，执行工具调试。',
+			href: '/platform/tools',
+			icon: Wrench,
+			state: platformReady ? 'ready' : 'partial',
+			stateLabel: platformReady ? '策略正常' : '需检查',
+			metric: pendingApprovals.length,
+		},
+		{
+			title: '工作流编排',
+			description: '管理自动化模板、触发运行、审批续跑和近期执行结果。',
+			href: '/platform/workflows',
+			icon: GitBranch,
+			state: workflowIssueCount > 0 ? 'partial' : 'ready',
+			stateLabel: workflowIssueCount > 0 ? '有待处理' : '运行稳定',
+			metric: workflowRunCount,
+		},
+		{
+			title: '审批治理',
+			description: '集中处理高风险动作、租户访问、审计事件和治理健康度。',
+			href: '/platform/approvals',
+			icon: ShieldCheck,
+			state: pendingApprovals.length > 0 ? 'partial' : 'ready',
+			stateLabel: pendingApprovals.length > 0 ? '待审批' : '无阻塞',
+			metric: approvedApprovalCount,
+		},
+		{
+			title: '租户与成员',
+			description: '管理多租户空间、成员身份、角色授权和访问边界。',
+			href: '/platform/tenants',
+			icon: Users,
+			state: activeMemberCount > 0 ? 'ready' : 'todo',
+			stateLabel: activeMemberCount > 0 ? '已配置' : '待配置',
+			metric: activeMemberCount,
+		},
+		{
+			title: '知识库与记忆',
+			description: '查看长期记忆、知识命中、记忆写入和助手上下文能力。',
+			href: '/platform/memory',
+			icon: Database,
+			state: credentials.length > 0 ? 'ready' : 'todo',
+			stateLabel: credentials.length > 0 ? '可用' : '需模型',
+			metric: credentials.length,
+		},
+	];
 
 	return (
-		<PlatformPageShell>
-				<PlatformDashboardOverview
-					serverUrl={serverUrl}
-					username={username}
-					connectionState={hasErrors ? 'partial' : 'ready'}
-					stats={stats}
-					nextStepMode={nextStepMode}
-					nextStepIcon={NextStepIcon}
-					nextStepPrimaryDisabled={nextStepPrimaryDisabled}
-					publishingTemplateId={publishingTemplateId}
-					labels={{
-						eyebrow: t('platform.eyebrow'),
-						title: t('platform.title'),
-						subtitle: t('platform.subtitle'),
-						server: t('platform.connection.server'),
-						user: t('platform.connection.user'),
-						health: t('platform.connection.health'),
-						connectionState: hasErrors
-							? t('platform.connection.partial')
-							: t('platform.connection.connected'),
-						nextStepEyebrow: t('platform.nextStep.eyebrow'),
-						nextStepTitle: t(`platform.nextStep.${nextStepMode}.title`),
-						nextStepDescription: t(
-							`platform.nextStep.${nextStepMode}.description`,
-						),
-						nextStepManual: t('platform.nextStep.publish.manual'),
-						nextStepAction: t(`platform.nextStep.${nextStepMode}.action`),
-						publishing: t('platform.agentManagement.publishing'),
-					}}
-					onStartPublishing={handleStartPublishing}
-					onPrimaryAction={handleNextStepPrimaryAction}
-				/>
+		<PlatformPageShell className="gap-5">
+			<PlatformDashboardOverview
+				serverUrl={serverUrl}
+				username={username}
+				connectionState={hasErrors ? 'partial' : 'ready'}
+				stats={stats}
+				nextStepMode={nextStepMode}
+				nextStepIcon={NextStepIcon}
+				nextStepPrimaryDisabled={nextStepPrimaryDisabled}
+				publishingTemplateId={publishingTemplateId}
+				labels={{
+					eyebrow: t('platform.eyebrow'),
+					title: t('platform.title'),
+					subtitle: t('platform.subtitle'),
+					server: t('platform.connection.server'),
+					user: t('platform.connection.user'),
+					health: t('platform.connection.health'),
+					connectionState: hasErrors
+						? t('platform.connection.partial')
+						: t('platform.connection.connected'),
+					nextStepEyebrow: t('platform.nextStep.eyebrow'),
+					nextStepTitle: t(`platform.nextStep.${nextStepMode}.title`),
+					nextStepDescription: t(`platform.nextStep.${nextStepMode}.description`),
+					nextStepManual: t('platform.nextStep.publish.manual'),
+					nextStepAction: t(`platform.nextStep.${nextStepMode}.action`),
+					publishing: t('platform.agentManagement.publishing'),
+				}}
+				onStartPublishing={handleStartPublishing}
+				onPrimaryAction={handleNextStepPrimaryAction}
+			/>
 
-				<DashboardWorkbenchSection
-					t={t}
-					NextStepIcon={NextStepIcon}
-					dashboardTodoItems={dashboardTodoItems}
-					firstAgentGuidePrimaryStep={firstAgentGuidePrimaryStep}
-					firstAgentGuideSteps={firstAgentGuideSteps}
-					handleNextStepPrimaryAction={handleNextStepPrimaryAction}
-					handleStartPublishing={handleStartPublishing}
-					nextStepMode={nextStepMode}
-					nextStepPrimaryDisabled={nextStepPrimaryDisabled}
-					publishingTemplateId={publishingTemplateId}
-					rolloutPathSteps={rolloutPathSteps}
-					scrollToAgentRunner={scrollToAgentRunner}
-					selectedRunAgent={selectedRunAgent}
-					workbenchActions={workbenchActions}
-					workbenchIndicators={workbenchIndicators}
-					workbenchQuickActions={workbenchQuickActions}
-					workbenchReadinessItems={workbenchReadinessItems}
-					workbenchRiskItems={workbenchRiskItems}
-				/>
+			<section className="grid gap-3 md:grid-cols-3">
+				<Card size="sm" className="rounded-lg shadow-none">
+					<CardHeader className="grid-cols-[1fr_auto] items-center gap-3">
+						<CardTitle className="text-sm text-muted-foreground">平台状态</CardTitle>
+						<CheckCircle2
+							className={cn(
+								'size-4',
+								platformReady ? 'text-emerald-600' : 'text-amber-600',
+							)}
+						/>
+					</CardHeader>
+					<CardContent className="space-y-3">
+						<div className="text-lg font-semibold">
+							{platformReady ? '核心服务可用' : '存在需要处理的服务状态'}
+						</div>
+						<div className="flex flex-wrap gap-2">
+							<StateBadge
+								state={platformLoading ? 'todo' : platformReady ? 'ready' : 'partial'}
+								label={platformLoading ? '加载中' : platformReady ? '已连接' : '部分可用'}
+							/>
+							<StateBadge
+								state={monitoringHealthState === 'ready' ? 'ready' : 'partial'}
+								label={monitoringHealthState === 'ready' ? '监控正常' : '监控需检查'}
+							/>
+						</div>
+					</CardContent>
+				</Card>
 
-				<DashboardLaunchOrchestrationSection
-					t={t}
-					activePlatformAgents={activePlatformAgents}
-					launchpadPrimaryStep={launchpadPrimaryStep}
-					launchpadReadyCount={launchpadReadyCount}
-					launchpadState={launchpadState}
-					launchpadSteps={launchpadSteps}
-					launchpadTotalCount={launchpadTotalCount}
-					memoryOperationsRef={memoryOperationsRef}
-					orchestrationPrimaryStep={orchestrationPrimaryStep}
-					orchestrationReadyCount={orchestrationReadyCount}
-					orchestrationWorkbenchSteps={orchestrationWorkbenchSteps}
-					pendingApprovals={pendingApprovals}
-				/>
+				<Card size="sm" className="rounded-lg shadow-none">
+					<CardHeader className="grid-cols-[1fr_auto] items-center gap-3">
+						<CardTitle className="text-sm text-muted-foreground">运行概览</CardTitle>
+						<Clock3 className="size-4 text-muted-foreground" />
+					</CardHeader>
+					<CardContent className="grid grid-cols-3 gap-3 text-center">
+						<div>
+							<div className="text-2xl font-semibold tabular-nums">
+								{workflowRunCount}
+							</div>
+							<div className="text-xs text-muted-foreground">总运行</div>
+						</div>
+						<div>
+							<div className="text-2xl font-semibold tabular-nums">
+								{completedWorkflowRunCount}
+							</div>
+							<div className="text-xs text-muted-foreground">完成</div>
+						</div>
+						<div>
+							<div className="text-2xl font-semibold tabular-nums">
+								{failedWorkflowRunCount}
+							</div>
+							<div className="text-xs text-muted-foreground">失败</div>
+						</div>
+					</CardContent>
+				</Card>
 
-				<DashboardOperationsSnapshotSection
-					t={t}
-					handleInspectMemoryOperationAudit={handleInspectMemoryOperationAudit}
-					handleOpenMemoryOperation={handleOpenMemoryOperation}
-					handleResolveOpsTask={handleResolveOpsTask}
-					memoryOperationsHitCount={memoryOperationsHitCount}
-					memoryOperationsItems={memoryOperationsItems}
-					memoryOperationsRunCount={memoryOperationsRunCount}
-					memoryOperationsSavedCount={memoryOperationsSavedCount}
-					monitoringHealthState={monitoringHealthState}
-					monitoringLoading={monitoringLoading}
-					monitoringStats={monitoringStats}
-					opsTasks={opsTasks}
-					opsTasksError={opsTasksError}
-					opsTasksLoading={opsTasksLoading}
-					opsTasksSummary={opsTasksSummary}
-					recentAgentTurns={recentAgentTurns}
-					recentAuditEvents={recentAuditEvents}
-					recentWorkflowRuns={recentWorkflowRuns}
-					refetchAgentRuns={refetchAgentRuns}
-					refetchApprovals={refetchApprovals}
-					refetchAuditEvents={refetchAuditEvents}
-					refetchGovernance={refetchGovernance}
-					refetchOpsTasks={refetchOpsTasks}
-					refetchPlatform={refetchPlatform}
-					refetchWorkflowRuns={refetchWorkflowRuns}
-					resolvingOpsTaskCode={resolvingOpsTaskCode}
-					scrollToAgentRunner={scrollToAgentRunner}
-					scrollToGovernance={scrollToGovernance}
-					scrollToWorkflowRunner={scrollToWorkflowRunner}
-					setAgentRunResult={setAgentRunResult}
-					setSelectedRunAgentId={setSelectedRunAgentId}
-					summarizeAuditObject={summarizeAuditObject}
-				/>
+				<Card size="sm" className="rounded-lg shadow-none">
+					<CardHeader className="grid-cols-[1fr_auto] items-center gap-3">
+						<CardTitle className="text-sm text-muted-foreground">待办</CardTitle>
+						<ListChecks className="size-4 text-muted-foreground" />
+					</CardHeader>
+					<CardContent className="space-y-3">
+						<div className="flex items-baseline gap-2">
+							<span className="text-2xl font-semibold tabular-nums">
+								{topOpsTasks.length + pendingApprovals.length}
+							</span>
+							<span className="text-sm text-muted-foreground">项需要关注</span>
+						</div>
+						<div className="flex flex-wrap gap-2">
+							<Badge variant="outline">{pendingApprovals.length} 个审批</Badge>
+							<Badge variant="outline">{topOpsTasks.length} 个运维任务</Badge>
+						</div>
+					</CardContent>
+				</Card>
+			</section>
 
-				<DashboardApplicationSection
-					t={t}
-					agentTemplates={agentTemplates}
-					activePlatformAgents={activePlatformAgents}
-					readyPlatformAgents={readyPlatformAgents}
-					pendingApprovals={pendingApprovals}
-					appCenterAgents={appCenterAgents}
-					inspectedAppCenterAgent={inspectedAppCenterAgent}
-					inspectedAppCenterTemplate={inspectedAppCenterTemplate}
-					appCenterPrimaryLabel={appCenterPrimaryLabel}
-					appCenterPrimaryDisabled={appCenterPrimaryDisabled}
-					appCenterDetailResources={appCenterDetailResources}
-					appCenterDetailIssues={appCenterDetailIssues}
-					appCenterDetailStatus={appCenterDetailStatus}
-					agentResourceText={agentResourceText}
-					handleAppCenterPrimaryAction={handleAppCenterPrimaryAction}
-					setSelectedAppCenterItem={setSelectedAppCenterItem}
-					handleConfigureTemplate={handleConfigureTemplate}
-					scrollToAgentManagement={scrollToAgentManagement}
-					setSelectedRunAgentId={setSelectedRunAgentId}
-					handlePrimeAgentRunner={handlePrimeAgentRunner}
-					handleEditAgent={handleEditAgent}
-					handleUseApproval={handleUseApproval}
-					handleAppCenterDetailPrimaryAction={handleAppCenterDetailPrimaryAction}
-					handleAppCenterDetailSecondaryAction={
-						handleAppCenterDetailSecondaryAction
-					}
-					scrollToGovernance={scrollToGovernance}
-					scenarios={scenarios}
-					scenariosLoading={scenariosLoading}
-					scenariosError={scenariosError}
-					runningWorkflow={runningWorkflow}
-					refetchScenarios={refetchScenarios}
-					handleRunScenario={handleRunScenario}
-				/>
+			<section className="grid gap-4 xl:grid-cols-3">
+				<div className="grid gap-4 xl:col-span-2 md:grid-cols-2">
+					{moduleShortcuts.map((shortcut) => (
+						<DashboardModuleCard key={shortcut.href} {...shortcut} />
+					))}
+				</div>
 
-				<DashboardOperationalHealthSection
-					t={t}
-					governanceHealthItems={governanceHealthItems}
-					governanceError={governanceError}
-					governanceLoading={governanceLoading}
-					refetchGovernance={refetchGovernance}
-					scrollToGovernance={scrollToGovernance}
-					activePlatformAgents={activePlatformAgents}
-					readyPlatformAgents={readyPlatformAgents}
-					blockedOrPartialPlatformAgents={blockedOrPartialPlatformAgents}
-					topOperationsAgents={topOperationsAgents}
-					pendingApprovals={pendingApprovals}
-					operationsHeadline={operationsHeadline}
-					operationsAgentIssueText={operationsAgentIssueText}
-					scrollToAgentManagement={scrollToAgentManagement}
-					handlePrimeAgentRunner={handlePrimeAgentRunner}
-					handleStartPublishing={handleStartPublishing}
-					setSelectedRunAgentId={setSelectedRunAgentId}
-					handleEditAgent={handleEditAgent}
-					handleUseApproval={handleUseApproval}
-				/>
+				<div className="grid gap-4">
+					<ActivityList
+						title="待处理事项"
+						items={topOpsTasks}
+						emptyText="暂无运维待办。"
+						getKey={(item, index) =>
+							(item as EnterprisePlatformOpsTask).task_id ?? index
+						}
+						action={
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={() => navigate('/platform/runs')}
+							>
+								查看运行
+							</Button>
+						}
+						renderItem={(item) => (
+							<div className="space-y-1">
+								<div className="flex items-center justify-between gap-3">
+									<div className="truncate text-sm font-medium">
+										{(item as EnterprisePlatformOpsTask).title ??
+											(item as EnterprisePlatformOpsTask).code ??
+											'运维任务'}
+									</div>
+									<Badge variant="outline">
+										{(item as EnterprisePlatformOpsTask).severity ?? 'todo'}
+									</Badge>
+								</div>
+								<p className="line-clamp-2 text-xs leading-5 text-muted-foreground">
+									{(item as EnterprisePlatformOpsTask).description ??
+										'需要在对应模块继续处理。'}
+								</p>
+							</div>
+						)}
+					/>
 
-				<DashboardTenantAccessSection
-					t={t}
-					tenantOverviewItems={tenantOverviewItems}
-					selectedIdentity={selectedIdentity}
-					selectedIdentityWorkspace={selectedIdentityWorkspace}
-					selectedIdentityAllowedTools={selectedIdentityAllowedTools}
-					selectedIdentityDeniedTools={selectedIdentityDeniedTools}
-					enterpriseIdentities={enterpriseIdentities}
-					scrollToConnectorCenter={scrollToConnectorCenter}
-					handleUseIdentity={handleUseIdentity}
-					handleUseTenant={handleUseTenant}
-					handlePrepareTenantAgent={handlePrepareTenantAgent}
-					handleInspectTenantApprovals={handleInspectTenantApprovals}
-					handleInspectTenantAudit={handleInspectTenantAudit}
-					handleInspectIdentityAudit={handleInspectIdentityAudit}
-					scrollToGovernance={scrollToGovernance}
-					accessControlStats={accessControlStats}
-					governance={governance}
-					governanceLoading={governanceLoading}
-					governanceError={governanceError}
-					accessTenantSummaries={accessTenantSummaries}
-					identityAccessRows={identityAccessRows}
-					toolPolicyMode={toolPolicyMode}
-					selectedIdentityPendingApprovals={selectedIdentityPendingApprovals}
-					selectedIdentityFailedAuditEvents={selectedIdentityFailedAuditEvents}
-					selectedIdentityRecentAuditEvents={selectedIdentityRecentAuditEvents}
-					creatingRunApproval={creatingRunApproval}
-					refetchGovernance={refetchGovernance}
-					handleCreateRunApproval={handleCreateRunApproval}
-					setSelectedIdentityUserId={setSelectedIdentityUserId}
-					handleUseApproval={handleUseApproval}
-					handleInspectIdentityApprovals={handleInspectIdentityApprovals}
-					handleInspectIdentityFailures={handleInspectIdentityFailures}
-				/>
+					<ActivityList
+						title="最近工作流"
+						items={Array.isArray(recentWorkflowRuns) ? recentWorkflowRuns : []}
+						emptyText="暂无工作流运行记录。"
+						getKey={(item, index) =>
+							(item as EnterpriseWorkflowRunHistoryItem).run_id ?? index
+						}
+						action={
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={() => navigate('/platform/workflows')}
+							>
+								进入工作流
+							</Button>
+						}
+						renderItem={(item) => (
+							<div className="space-y-1">
+								<div className="flex items-center justify-between gap-3">
+									<div className="truncate text-sm font-medium">
+										{(item as EnterpriseWorkflowRunHistoryItem).workflow_name ??
+											(item as EnterpriseWorkflowRunHistoryItem).workflow_type ??
+											'工作流运行'}
+									</div>
+									<Badge variant="outline">
+										{(item as EnterpriseWorkflowRunHistoryItem).status ?? 'unknown'}
+									</Badge>
+								</div>
+								<p className="truncate text-xs text-muted-foreground">
+									{(item as EnterpriseWorkflowRunHistoryItem).run_id ?? '无运行 ID'}
+								</p>
+							</div>
+						)}
+					/>
 
-				<DashboardWorkflowAutomationSection
-					t={t}
-					activePlatformAgents={activePlatformAgents}
-					agents={agents}
-					creatingRunApproval={creatingRunApproval}
-					handleCreateRunApproval={handleCreateRunApproval}
-					handleRunEnterpriseWorkflow={handleRunEnterpriseWorkflow}
-					handleUseApproval={handleUseApproval}
-					navigate={navigate}
-					recentSchedules={recentSchedules}
-					runningWorkflow={runningWorkflow}
-					schedulesError={schedulesError}
-					schedulesLoading={schedulesLoading}
-					scrollToGovernance={scrollToGovernance}
-					scrollToWorkflowRunner={scrollToWorkflowRunner}
-					selectedWorkflowDisabled={selectedWorkflowDisabled}
-					selectedWorkflowLastRun={selectedWorkflowLastRun}
-					selectedWorkflowName={selectedWorkflowName}
-					selectedWorkflowSteps={selectedWorkflowSteps}
-					selectedWorkflowTemplate={selectedWorkflowTemplate}
-					triggerOpsStats={triggerOpsStats}
-					triggerOpsSummary={triggerOpsSummary}
-					workflowOpsStats={workflowOpsStats}
-					workflowPendingApprovals={workflowPendingApprovals}
-				/>
+					<ActivityList
+						title="最近审计"
+						items={Array.isArray(recentAuditEvents) ? recentAuditEvents : []}
+						emptyText="暂无审计事件。"
+						getKey={(item, index) =>
+							(item as EnterpriseAuditEvent).event_id ?? index
+						}
+						action={
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={() => navigate('/platform/approvals')}
+							>
+								查看治理
+							</Button>
+						}
+						renderItem={(item) => (
+							<div className="space-y-1">
+								<div className="flex items-center justify-between gap-3">
+									<div className="truncate text-sm font-medium">
+										{String(
+											(item as EnterpriseAuditEvent).event_type ?? '审计事件',
+										)}
+									</div>
+									<Badge variant="outline">
+										{String((item as EnterpriseAuditEvent).tenant ?? 'tenant')}
+									</Badge>
+								</div>
+								<p className="truncate text-xs text-muted-foreground">
+									{String(
+										(item as EnterpriseAuditEvent).user_id ??
+											(item as EnterpriseAuditEvent).timestamp ??
+											'系统记录',
+									)}
+								</p>
+							</div>
+						)}
+					/>
+				</div>
+			</section>
 
-				<DashboardOperationsConsoleSection
-					t={t}
-					NextStepIcon={NextStepIcon}
-					approvedApprovalCount={approvedApprovalCount}
-					auditEventCount={auditEventCount}
-					completedWorkflowRunCount={completedWorkflowRunCount}
-					dashboardOperations={dashboardOperations}
-					dashboardTodoItems={dashboardTodoItems}
-					failedWorkflowRunCount={failedWorkflowRunCount}
-					governedWorkflowItems={governedWorkflowItems}
-					handleNextStepPrimaryAction={handleNextStepPrimaryAction}
-					handleOperationAction={handleOperationAction}
-					nextStepMode={nextStepMode}
-					nextStepPrimaryDisabled={nextStepPrimaryDisabled}
-					partialWorkflowRunCount={partialWorkflowRunCount}
-					pendingApprovals={pendingApprovals}
-					platformConsoleItems={platformConsoleItems}
-					recentAuditEvents={recentAuditEvents}
-					recentWorkflowRuns={recentWorkflowRuns}
-					recommendedOperationActions={recommendedOperationActions}
-					riskToolItems={riskToolItems}
-					scrollToAgentRunner={scrollToAgentRunner}
-					scrollToGovernance={scrollToGovernance}
-					scrollToToolRunner={scrollToToolRunner}
-					scrollToWorkflowRunner={scrollToWorkflowRunner}
-					workflowRunCount={workflowRunCount}
-					workflowTemplates={workflowTemplates}
-				/>
-
-				<DashboardAgentRunNowSection
-					t={t}
-					currentIdentityLabel={currentIdentityLabel}
-					defaultAgentTemplate={defaultAgentTemplate}
-					handlePrimeAgentRunner={handlePrimeAgentRunner}
-					handleQuickPublishAgent={handleQuickPublishAgent}
-					handleStartPublishing={handleStartPublishing}
-					platformAgents={platformAgents}
-					platformAgentsLoading={platformAgentsLoading}
-					platformStatus={platformStatus}
-					primaryAgentSampleQuestion={primaryAgentSampleQuestion}
-					publishingTemplateId={publishingTemplateId}
-					scrollToAgentRunner={scrollToAgentRunner}
-					selectedRunAgent={selectedRunAgent}
-					selectedRunAgentKnowledgeCount={selectedRunAgentKnowledgeCount}
-					selectedRunAgentModelLabel={selectedRunAgentModelLabel}
-					selectedRunAgentToolCount={selectedRunAgentToolCount}
-				/>
-
-				<DashboardTenantGovernancePanelSection
-					t={t}
-					availableToolItems={availableToolItems}
-					connectors={connectors}
-					connectorsLoading={connectorsLoading}
-					currentIdentityLabel={currentIdentityLabel}
-					enterpriseIdentities={enterpriseIdentities}
-					handleInspectIdentityAudit={handleInspectIdentityAudit}
-					handleSaveToolPolicy={handleSaveToolPolicy}
-					handleUseIdentity={handleUseIdentity}
-					savingToolPolicy={savingToolPolicy}
-					scrollToAgentRunner={scrollToAgentRunner}
-					selectedIdentity={selectedIdentity}
-					selectedIdentityAllowedTools={selectedIdentityAllowedTools}
-					selectedIdentityDeniedTools={selectedIdentityDeniedTools}
-					selectedIdentityPendingToolNames={selectedIdentityPendingToolNames}
-					selectedIdentityWorkspace={selectedIdentityWorkspace}
-					setAgentQuestion={setAgentQuestion}
-					setSelectedIdentityUserId={setSelectedIdentityUserId}
-					setToolPolicyDraft={setToolPolicyDraft}
-					setToolPolicySaveError={setToolPolicySaveError}
-					setToolPolicySaveSuccess={setToolPolicySaveSuccess}
-					toolPolicyDraft={toolPolicyDraft}
-					toolPolicyMode={toolPolicyMode}
-					toolPolicySaveError={toolPolicySaveError}
-					toolPolicySaveSuccess={toolPolicySaveSuccess}
-					toolPolicySummary={toolPolicySummary}
-				/>
-
-				<DashboardConnectorsSection
-					t={t}
-					activeConnectorTenant={activeConnectorTenant}
-					activeSavedConnectorConfig={activeSavedConnectorConfig}
-					connectorCenterRef={connectorCenterRef}
-					connectorDraftIssues={connectorDraftIssues}
-					connectorDraftState={connectorDraftState}
-					connectorRuntimeSourceText={connectorRuntimeSourceText}
-					connectorRuntimeState={connectorRuntimeState}
-					connectorSaveError={connectorSaveError}
-					connectorSaveSuccess={connectorSaveSuccess}
-					connectorState={connectorState}
-					connectorTestError={connectorTestError}
-					connectorTestForm={connectorTestForm}
-					connectorTestPassed={connectorTestPassed}
-					connectorTestResult={connectorTestResult}
-					connectors={connectors}
-					connectorsError={connectorsError}
-					connectorsLoading={connectorsLoading}
-					handleSaveConnectorConfig={handleSaveConnectorConfig}
-					handleTestAndSaveConnectorConfig={handleTestAndSaveConnectorConfig}
-					handleTestConnector={handleTestConnector}
-					loadSavedConnectorConfig={loadSavedConnectorConfig}
-					refetchConnectors={refetchConnectors}
-					savedConnectorConfigs={savedConnectorConfigs}
-					savingConnectorConfig={savingConnectorConfig}
-					setConnectorTestForm={setConnectorTestForm}
-					tenantWorkspaces={tenantWorkspaces}
-					testingConnector={testingConnector}
-				/>
-
-				<DashboardMembersSection
-					t={t}
-					activeMemberCount={activeMemberCount}
-					activePlatformAgents={activePlatformAgents}
-					handleEditMember={handleEditMember}
-					handleSaveMember={handleSaveMember}
-					handleToggleMemberStatus={handleToggleMemberStatus}
-					memberForm={memberForm}
-					membersRef={membersRef}
-					pendingApprovals={pendingApprovals}
-					platformMemberTenantSummaries={platformMemberTenantSummaries}
-					platformMembers={platformMembers}
-					platformMembersError={platformMembersError}
-					platformMembersLoading={platformMembersLoading}
-					refetchMembers={refetchMembers}
-					savingMember={savingMember}
-					setMemberForm={setMemberForm}
-					updatingMemberId={updatingMemberId}
-				/>
-				<DashboardAgentManagementSection
-					agentManagementRef={agentManagementRef}
-					agentTemplateStepRef={agentTemplateStepRef}
-					agentModelStepRef={agentModelStepRef}
-					agentKnowledgeStepRef={agentKnowledgeStepRef}
-					agentToolsStepRef={agentToolsStepRef}
-					agentRuntimeStepRef={agentRuntimeStepRef}
-					platformAgents={platformAgents}
-					platformAgentsLoading={platformAgentsLoading}
-					platformAgentsError={platformAgentsError}
-					agentOpsSummary={agentOpsSummary}
-					agentReleasePipeline={agentReleasePipeline}
-					selectedRunAgent={selectedRunAgent}
-					selectedRunAgentReadinessState={selectedRunAgentReadinessState}
-					selectedRunAgentReadinessLabel={selectedRunAgentReadinessLabel}
-					selectedRunAgentModelLabel={selectedRunAgentModelLabel}
-					selectedRunAgentKnowledgeCount={selectedRunAgentKnowledgeCount}
-					selectedRunAgentToolCount={selectedRunAgentToolCount}
-					agentTemplates={agentTemplates}
-					selectedTemplateId={selectedTemplateId}
-					selectedTemplate={selectedTemplate}
-					publishingTemplateId={publishingTemplateId}
-					editingAgentId={editingAgentId}
-					agentSetupSteps={agentSetupSteps}
-					nextAgentSetupStep={nextAgentSetupStep}
-					publishForm={publishForm}
-					platformStatus={platformStatus}
-					credentials={credentials}
-					credentialsLoading={credentialsLoading}
-					credentialById={credentialById}
-					knowledgeBases={knowledgeBases}
-					knowledgeBaseById={knowledgeBaseById}
-					publishTenant={publishTenant}
-					publishAccessMembers={publishAccessMembers}
-					publishRoleOptions={publishRoleOptions}
-					publishBlocked={publishBlocked}
-					publishSelectedModelLabel={publishSelectedModelLabel}
-					publishAccessScopeSummary={publishAccessScopeSummary}
-					publishRuntimeSummary={publishRuntimeSummary}
-					publishReleaseIssues={publishReleaseIssues}
-					publishedPlatformAgents={publishedPlatformAgents}
-					activePlatformAgents={activePlatformAgents}
-					selectedRunAgentId={selectedRunAgentId}
-					selectedIdentity={selectedIdentity}
-					archivingAgentId={archivingAgentId}
-					bindingAgentModelId={bindingAgentModelId}
-					bindingAgentKnowledgeId={bindingAgentKnowledgeId}
-					bindingAgentToolsId={bindingAgentToolsId}
-					enablingAgentMemoryId={enablingAgentMemoryId}
-					enablingAgentWorkflowId={enablingAgentWorkflowId}
-					setPublishForm={setPublishForm}
-					refetchPlatformAgents={refetchPlatformAgents}
-					handleNextAgentSetupStep={handleNextAgentSetupStep}
-					scrollToAgentRunner={scrollToAgentRunner}
-					handlePrimeAgentWorkflow={handlePrimeAgentWorkflow}
-					handleEditAgent={handleEditAgent}
-					scrollToGovernance={scrollToGovernance}
-					handleConfigureTemplate={handleConfigureTemplate}
-					handleCancelEdit={handleCancelEdit}
-					handlePublishTenantChange={handlePublishTenantChange}
-					handleTogglePublishList={handleTogglePublishList}
-					handlePublishAgent={handlePublishAgent}
-					handleBindDefaultModel={handleBindDefaultModel}
-					handleBindAvailableKnowledge={handleBindAvailableKnowledge}
-					handleBindTemplateTools={handleBindTemplateTools}
-					handlePrimeToolApproval={handlePrimeToolApproval}
-					handleEnableAgentMemory={handleEnableAgentMemory}
-					handleEnableAgentWorkflow={handleEnableAgentWorkflow}
-					handleArchiveAgent={handleArchiveAgent}
-					handlePrimePublishedAgent={handlePrimePublishedAgent}
-					agentAccessAllowed={agentAccessAllowed}
-					t={t}
-					cn={cn}
-				/>
-
-				<DashboardRuntimeStatusSection
-					t={t}
-					governanceRef={governanceRef}
-					platformLoading={platformLoading}
-					platformStatus={platformStatus}
-					platformError={platformError}
-					runtimeItems={runtimeItems}
-					refetchPlatform={refetchPlatform}
-				/>
-
-				<DashboardAgentQuickStartSection
-					t={t}
-					agentsLoading={agentsLoading}
-					featuredAgents={featuredAgents}
-					navigate={navigate}
-				/>
-
-				<DashboardPolicySubagentsSection
-					t={t}
-					platformLoading={platformLoading}
-					platformStatus={platformStatus}
-					platformError={platformError}
-					toolPolicyMode={toolPolicyMode}
-					policyDecisions={policyDecisions}
-					subagentTemplates={subagentTemplates}
-				/>
-
-				<DashboardAgentRunnerSection
-					t={t}
-					agentRunnerRef={agentRunnerRef}
-					activePlatformAgents={activePlatformAgents}
-					selectedRunAgent={selectedRunAgent}
-					selectedRunAgentId={selectedRunAgentId}
-					selectedRunAgentModelLabel={selectedRunAgentModelLabel}
-					selectedRunAgentKnowledgeLabels={selectedRunAgentKnowledgeLabels}
-					selectedRunAgentToolCount={selectedRunAgentToolCount}
-					selectedRunAgentAccessAllowed={selectedRunAgentAccessAllowed}
-					selectedRunAgentAccessLabel={selectedRunAgentAccessLabel}
-					lastPublishedAgent={lastPublishedAgent}
-					agentQuestion={agentQuestion}
-					agentApprovalId={agentApprovalId}
-					agentSampleQuestions={agentSampleQuestions}
-					selectedAgentConversation={selectedAgentConversation}
-					agentRunResult={agentRunResult}
-					agentRunsLoading={agentRunsLoading}
-					agentRunsError={agentRunsError}
-					runningAgent={runningAgent}
-					agentRunError={agentRunError}
-					agentToolCalls={agentToolCalls}
-					agentToolCallBadgeText={agentToolCallBadgeText}
-					agentRoutingLabel={agentRoutingLabel}
-					agentRoutingText={agentRoutingText}
-					agentRunConnectorSourceText={agentRunConnectorSourceText}
-					agentRunModelLabel={agentRunModelLabel}
-					agentRunKnowledgeLabels={agentRunKnowledgeLabels}
-					knowledgeBaseById={knowledgeBaseById}
-					handleSelectRunAgent={handleSelectRunAgent}
-					setAgentQuestion={setAgentQuestion}
-					setAgentRunError={setAgentRunError}
-					setAgentApprovalId={setAgentApprovalId}
-					handleRunEnterpriseAgent={handleRunEnterpriseAgent}
-					handleClearAgentConversation={handleClearAgentConversation}
-					handleSelectAgentRun={handleSelectAgentRun}
-					handleInspectAgentRunAudit={handleInspectAgentRunAudit}
-					scrollToGovernance={scrollToGovernance}
-				/>
-
-				<DashboardWorkflowRunnerSection
-					t={t}
-					creatingRunApproval={creatingRunApproval}
-					handleCreateRunApproval={handleCreateRunApproval}
-					handleRunEnterpriseWorkflow={handleRunEnterpriseWorkflow}
-					handleToggleWorkflowTemplate={handleToggleWorkflowTemplate}
-					platformError={platformError}
-					runningWorkflow={runningWorkflow}
-					savingWorkflowType={savingWorkflowType}
-					selectedWorkflowDisabled={selectedWorkflowDisabled}
-					selectedWorkflowTemplate={selectedWorkflowTemplate}
-					selectedWorkflowType={selectedWorkflowType}
-					setSelectedWorkflowType={setSelectedWorkflowType}
-					setWorkflowApprovalId={setWorkflowApprovalId}
-					setWorkflowInputs={setWorkflowInputs}
-					setWorkflowRunError={setWorkflowRunError}
-					summarizeAuditObject={summarizeAuditObject}
-					workflowApprovalId={workflowApprovalId}
-					workflowInputs={workflowInputs}
-					workflowOptions={workflowOptions}
-					workflowRunError={workflowRunError}
-					workflowRunResult={workflowRunResult}
-					workflowRunnerRef={workflowRunnerRef}
-					workflowRuns={workflowRuns}
-					workflowRunsError={workflowRunsError}
-					workflowRunsLoading={workflowRunsLoading}
-					workflowTemplates={workflowTemplates}
-					workflowTemplatesError={workflowTemplatesError}
-					workflowTemplatesLoading={workflowTemplatesLoading}
-				/>
-
-				<DashboardApprovalsSection
-					t={t}
-					approvalForm={approvalForm}
-					setApprovalForm={setApprovalForm}
-					approvalFilters={approvalFilters}
-					setApprovalFilters={setApprovalFilters}
-					approvalSummary={approvalSummary}
-					approvalRequests={approvalRequests}
-					approvalLoading={approvalLoading}
-					approvalError={approvalError}
-					creatingApproval={creatingApproval}
-					decidingApprovalId={decidingApprovalId}
-					continuingApprovalId={continuingApprovalId}
-					workflowOptions={workflowOptions}
-					availableToolItems={availableToolItems}
-					activePlatformAgents={activePlatformAgents}
-					selectedRunAgentId={selectedRunAgentId}
-					selectedIdentityUserId={selectedIdentityUserId}
-					username={username}
-					platformStatus={platformStatus}
-					enterpriseToolInputConfig={enterpriseToolInputConfig}
-					handleCreateApproval={handleCreateApproval}
-					refetchApprovals={refetchApprovals}
-					handleApproveAndRun={handleApproveAndRun}
-					handleDecideApproval={handleDecideApproval}
-					handleUseApproval={handleUseApproval}
-					summarizeAuditObject={summarizeAuditObject}
-				/>
-
-				<DashboardToolCatalogSection
-					t={t}
-					configManagementRef={configManagementRef}
-					availableToolItems={availableToolItems}
-					publishedPlatformAgents={publishedPlatformAgents}
-					toolCatalogLoading={toolCatalogLoading}
-					toolCatalogError={toolCatalogError}
-					refetchToolCatalog={refetchToolCatalog}
-				/>
-
-				<DashboardToolRunnerSection
-					t={t}
-					toolRunnerRef={toolRunnerRef}
-					selectedToolName={selectedToolName}
-					availableToolItems={availableToolItems}
-					toolCatalogLoading={toolCatalogLoading}
-					selectedToolConfig={selectedToolConfig}
-					selectedToolCatalogItem={selectedToolCatalogItem}
-					selectedToolInputValue={selectedToolInputValue}
-					selectedToolInputKey={selectedToolInputKey}
-					toolApprovalId={toolApprovalId}
-					selectedToolDecision={selectedToolDecision}
-					selectedToolAllowed={selectedToolAllowed}
-					selectedToolReason={selectedToolReason}
-					creatingRunApproval={creatingRunApproval}
-					platformError={platformError}
-					runningTool={runningTool}
-					toolRunError={toolRunError}
-					toolRunResult={toolRunResult}
-					setSelectedToolName={setSelectedToolName}
-					setToolRunError={setToolRunError}
-					setToolInputs={setToolInputs}
-					setToolApprovalId={setToolApprovalId}
-					handleCreateRunApproval={handleCreateRunApproval}
-					handleRunEnterpriseTool={handleRunEnterpriseTool}
-				/>
-
-				<DashboardAuditEventsSection
-					t={t}
-					auditFilters={auditFilters}
-					activePlatformAgents={activePlatformAgents}
-					availableToolItems={availableToolItems}
-					platformStatus={platformStatus}
-					username={username}
-					auditLoading={auditLoading}
-					auditError={auditError}
-					auditEvents={auditEvents}
-					auditStats={auditStats}
-					setAuditFilters={setAuditFilters}
-					refetchAuditEvents={refetchAuditEvents}
-					summarizeAuditObject={summarizeAuditObject}
-				/>
-
-				<DashboardConfigManagementSection
-					t={t}
-					platformConfigExport={platformConfigExport}
-					platformConfigLoading={platformConfigLoading}
-					platformConfigError={platformConfigError}
-					platformConfigImportResult={platformConfigImportResult}
-					platformConfigImportMode={platformConfigImportMode}
-					platformConfigImportText={platformConfigImportText}
-					importingPlatformConfig={importingPlatformConfig}
-					refetchPlatformConfigExport={refetchPlatformConfigExport}
-					handleCopyPlatformConfig={handleCopyPlatformConfig}
-					handleImportPlatformConfig={handleImportPlatformConfig}
-					setPlatformConfigImportMode={setPlatformConfigImportMode}
-					setPlatformConfigImportText={setPlatformConfigImportText}
-				/>
-
-				<DashboardCapabilitiesSection capabilities={capabilities} t={t} />
+			<section className="flex flex-col gap-3 rounded-lg border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
+				<div className="min-w-0">
+					<h2 className="text-base font-semibold">继续配置平台</h2>
+					<p className="mt-1 text-sm leading-6 text-muted-foreground">
+						模型、连接器、导入导出等系统级配置已经移到设置页，首页只保留入口和状态摘要。
+					</p>
+				</div>
+				<div className="flex flex-wrap gap-2">
+					<Button
+						type="button"
+						size="sm"
+						variant="outline"
+						onClick={() => navigate('/platform/settings')}
+					>
+						系统设置
+					</Button>
+					<Button
+						type="button"
+						size="sm"
+						onClick={() => navigate('/platform/agents')}
+						disabled={platformAgentsLoading}
+					>
+						管理 Agent
+					</Button>
+				</div>
+			</section>
 		</PlatformPageShell>
 	);
 }
