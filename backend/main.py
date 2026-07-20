@@ -1233,10 +1233,11 @@ async def import_enterprise_platform_config(
     """Import portable platform configuration by merging or replacing sections."""
     global tool_authorization_policy
 
-    actor = request.headers.get("X-User-ID") or "acme:alice"
+    connector_config_service = _platform_connector_config_service()
+    actor = connector_config_service.import_actor(request.headers.get("X-User-ID"))
     try:
         mode, incoming = (
-            _platform_connector_config_service().normalize_config_import_request(
+            connector_config_service.normalize_config_import_request(
                 payload,
             )
         )

@@ -400,6 +400,9 @@ class PlatformConnectorConfigService:
         """Return the user id for platform connector metadata requests."""
         return user_id or "acme:alice"
 
+    def import_actor(self, user_id: str | None) -> str:
+        return self.resolve_request_user_id(user_id)
+
     def platform_connectors_response(
         self,
         *,
