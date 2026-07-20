@@ -1060,24 +1060,10 @@ async def _route_enterprise_agent_question_with_model(
     except json.JSONDecodeError as exc:
         raise EnterpriseRouterError("Router HTTP response is not JSON.") from exc
 
-    if config["provider"] == "anthropic":
-        content_blocks = response_payload.get("content")
-        if not isinstance(content_blocks, list):
-            raise EnterpriseRouterError("Router response is missing content.")
-        content = "\n".join(
-            str(block.get("text", ""))
-            for block in content_blocks
-            if isinstance(block, dict)
-        ).strip()
-    else:
-        choices = response_payload.get("choices")
-        if not isinstance(choices, list) or not choices:
-            raise EnterpriseRouterError("Router response is missing choices.")
-        message = choices[0].get("message")
-        if not isinstance(message, dict):
-            raise EnterpriseRouterError("Router response is missing message.")
-        content = str(message.get("content", "")).strip()
-
+    content = enterprise_router_service.extract_model_response_content(
+        provider=config["provider"],
+        response_payload=response_payload,
+    )
     if not content:
         raise EnterpriseRouterError("Router response content is empty.")
 

@@ -74,6 +74,30 @@ class PlatformEnterpriseRouterService:
     def parse_model_route_content(self, content: str) -> dict[str, Any]:
         return self.normalize_model_route(self.parse_router_json(content))
 
+    def extract_model_response_content(
+        self,
+        *,
+        provider: str,
+        response_payload: dict[str, Any],
+    ) -> str:
+        if provider == "anthropic":
+            content_blocks = response_payload.get("content")
+            if not isinstance(content_blocks, list):
+                raise EnterpriseRouterError("Router response is missing content.")
+            return "\n".join(
+                str(block.get("text", ""))
+                for block in content_blocks
+                if isinstance(block, dict)
+            ).strip()
+
+        choices = response_payload.get("choices")
+        if not isinstance(choices, list) or not choices:
+            raise EnterpriseRouterError("Router response is missing choices.")
+        message = choices[0].get("message")
+        if not isinstance(message, dict):
+            raise EnterpriseRouterError("Router response is missing message.")
+        return str(message.get("content", "")).strip()
+
     def parse_router_json(self, content: str) -> dict[str, Any]:
         text = content.strip()
         if text.startswith("```"):
