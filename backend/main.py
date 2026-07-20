@@ -1507,7 +1507,7 @@ async def run_enterprise_tool(
         tool_name=requested_tool_name,
         inputs=requested_inputs,
         agent_id=runner_agent_id,
-        session_id="platform-console",
+        session_id=tool_policy_service.tool_run_session_id(),
     )
     return tool_policy_service.tool_run_response(
         response,

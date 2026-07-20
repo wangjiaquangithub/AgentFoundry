@@ -308,6 +308,10 @@ class PlatformToolPolicyService:
     def tool_run_agent_id(requested_agent_id: str | None) -> str:
         return requested_agent_id or "platform-console"
 
+    @staticmethod
+    def tool_run_session_id() -> str:
+        return "platform-console"
+
     def run_platform_tool_from_context(
         self,
         *,
