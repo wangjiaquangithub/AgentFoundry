@@ -83,7 +83,10 @@ from services.connectors import (
     PlatformConnectorConfigServiceError,
 )
 from services.dev_knowledge import PlatformDevKnowledgeService
-from services.enterprise_router import PlatformEnterpriseRouterService
+from services.enterprise_router import (
+    EnterpriseRouterError,
+    PlatformEnterpriseRouterService,
+)
 from services.knowledge import PlatformKnowledgeResponseService
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
@@ -166,6 +169,7 @@ enterprise_router_service = PlatformEnterpriseRouterService(
     tool_names=ENTERPRISE_TOOL_NAMES,
     tool_input_fields=ENTERPRISE_TOOL_INPUT_FIELDS,
     default_source=ROUTING_SOURCE_RULES,
+    model_source=ROUTING_SOURCE_MODEL,
 )
 platform_memory_repository = PlatformMemoryRepository(PLATFORM_MEMORY_DIR)
 platform_memory_service = PlatformMemoryService(repository=platform_memory_repository)
@@ -1046,72 +1050,6 @@ def _enterprise_router_prompt(question: str) -> tuple[str, str]:
     return system_prompt, user_prompt
 
 
-def _parse_router_json(content: str) -> dict[str, Any]:
-    text = content.strip()
-    if text.startswith("```"):
-        lines = text.splitlines()
-        if lines and lines[0].startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].startswith("```"):
-            lines = lines[:-1]
-        text = "\n".join(lines).strip()
-
-    try:
-        data = json.loads(text)
-    except json.JSONDecodeError:
-        start = text.find("{")
-        end = text.rfind("}")
-        if start == -1 or end == -1 or end <= start:
-            raise EnterpriseRouterError("Router response is not valid JSON.")
-        try:
-            data = json.loads(text[start : end + 1])
-        except json.JSONDecodeError as exc:
-            raise EnterpriseRouterError(
-                "Router response is not valid JSON.",
-            ) from exc
-
-    if not isinstance(data, dict):
-        raise EnterpriseRouterError("Router JSON must be an object.")
-    return data
-
-
-def _normalize_model_route(data: dict[str, Any]) -> dict[str, Any]:
-    routed = bool(data.get("routed"))
-    reason = str(data.get("reason") or "Model router decision.").strip()
-
-    if not routed:
-        return {
-            "routed": False,
-            "reason": reason,
-            "source": ROUTING_SOURCE_MODEL,
-        }
-
-    tool_name = str(data.get("tool_name", "")).strip()
-    if tool_name not in ENTERPRISE_TOOL_NAMES:
-        raise EnterpriseRouterError(
-            f"Router selected unsupported tool: {tool_name or '<empty>'}",
-        )
-
-    raw_inputs = data.get("inputs")
-    if not isinstance(raw_inputs, dict):
-        raise EnterpriseRouterError("Router inputs must be a JSON object.")
-
-    input_field = ENTERPRISE_TOOL_INPUT_FIELDS[tool_name]
-    input_value = str(raw_inputs.get(input_field, "")).strip()
-    if not input_value:
-        raise EnterpriseRouterError(
-            f"Router omitted required input: {input_field}",
-        )
-
-    return {
-        "routed": True,
-        "tool_name": tool_name,
-        "inputs": {input_field: input_value},
-        "reason": reason,
-        "source": ROUTING_SOURCE_MODEL,
-    }
-
-
 async def _route_enterprise_agent_question_with_model(
     question: str,
 ) -> dict[str, Any]:
@@ -1192,7 +1130,7 @@ async def _route_enterprise_agent_question_with_model(
     if not content:
         raise EnterpriseRouterError("Router response content is empty.")
 
-    return _normalize_model_route(_parse_router_json(content))
+    return enterprise_router_service.parse_model_route_content(content)
 
 
 def _route_enterprise_agent_question_with_rules(
