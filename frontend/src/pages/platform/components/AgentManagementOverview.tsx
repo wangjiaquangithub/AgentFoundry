@@ -13,13 +13,13 @@ import {
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 
+import { StateBadge, type HealthState } from './common';
 import type { EnterpriseAgentTemplate, EnterprisePublishedAgent } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { StateBadge, type HealthState } from './common';
 
 interface AgentOpsSummaryItem {
 	label: string;
@@ -90,8 +90,8 @@ export function AgentManagementOverview({
 	onOpenGovernance,
 }: AgentManagementOverviewProps) {
 	return (
-		<div className="grid gap-3 xl:col-span-2">
-			<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+		<div className="grid gap-3">
+			<div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
 				{agentOpsSummary.map((item) => (
 					<div key={item.label} className="rounded-lg border bg-muted/20 p-3">
 						<div className="text-xs text-muted-foreground">{item.label}</div>
@@ -104,7 +104,7 @@ export function AgentManagementOverview({
 					</div>
 				))}
 			</div>
-			<div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.45fr)]">
+			<div className="grid gap-3 2xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.45fr)]">
 				<Card size="sm" className="rounded-lg shadow-none">
 					<CardHeader className="grid-cols-[1fr_auto] gap-3">
 						<div className="min-w-0">
@@ -127,7 +127,7 @@ export function AgentManagementOverview({
 						</Button>
 					</CardHeader>
 					<CardContent>
-						<div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+						<div className="grid gap-2 md:grid-cols-2 2xl:grid-cols-4">
 							{agentReleasePipeline.map((step) => {
 								const StepIcon = step.icon;
 								return (
