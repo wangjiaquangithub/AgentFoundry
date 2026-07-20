@@ -611,6 +611,17 @@ class PlatformWorkflowRunService:
         }
         return step, tool_call
 
+    def append_step_result(
+        self,
+        *,
+        steps: list[dict[str, Any]],
+        tool_calls: list[dict[str, Any]],
+        step_result: tuple[dict[str, Any], dict[str, Any]],
+    ) -> None:
+        step, tool_call = step_result
+        steps.append(step)
+        tool_calls.append(tool_call)
+
     def build_tool_result_answer_context(
         self,
         *,

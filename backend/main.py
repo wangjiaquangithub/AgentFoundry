@@ -2407,7 +2407,7 @@ async def run_enterprise_workflow(
     for step_id, title, tool_name, step_inputs in step_specs:
         if configured_tools is not None and tool_name not in configured_tools:
             decision = _platform_agent_service().tool_denial_payload(tool_name)
-            step, tool_call = workflow_run_service.denied_step_record(
+            step_result = workflow_run_service.denied_step_record(
                 step_id=step_id,
                 title=title,
                 tool_name=tool_name,
@@ -2419,7 +2419,7 @@ async def run_enterprise_workflow(
                 connector_source=connector_source,
             )
         else:
-            step, tool_call = _workflow_step(
+            step_result = _workflow_step(
                 user_id=user_id,
                 agent_id=agent_id,
                 session_id=session_id,
@@ -2428,8 +2428,11 @@ async def run_enterprise_workflow(
                 tool_name=tool_name,
                 inputs=step_inputs,
             )
-        steps.append(step)
-        tool_calls.append(tool_call)
+        workflow_run_service.append_step_result(
+            steps=steps,
+            tool_calls=tool_calls,
+            step_result=step_result,
+        )
 
     finished_at = _now_iso()
     response = workflow_run_service.build_run_record(
