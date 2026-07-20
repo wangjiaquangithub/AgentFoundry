@@ -753,22 +753,7 @@ def _assert_platform_agent_access(agent: dict[str, Any], user_id: str) -> None:
 def _platform_agent_run_metadata(
     agent: dict[str, Any] | None,
 ) -> dict[str, Any]:
-    if agent is None:
-        return {}
-    access = _platform_agent_service().agent_access(agent)
-
-    return {
-        "agent_id": agent.get("id"),
-        "agent_name": agent.get("name"),
-        "configured_tenant": agent.get("tenant"),
-        "configured_tools": list(agent.get("tools") or []),
-        "knowledge_base_ids": list(agent.get("knowledge_base_ids") or []),
-        "model_config_id": agent.get("model_config_id"),
-        "memory_enabled": bool(agent.get("memory_enabled", False)),
-        "workflow_enabled": bool(agent.get("workflow_enabled", False)),
-        "allowed_user_ids": access["allowed_user_ids"],
-        "allowed_roles": access["allowed_roles"],
-    }
+    return _platform_agent_service().run_metadata(agent)
 
 
 def _resource_record_id(record: Any) -> str | None:
