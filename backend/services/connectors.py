@@ -395,6 +395,37 @@ class PlatformConnectorConfigService:
             "saved_configs": self.redacted_configs(),
         }
 
+    @staticmethod
+    def resolve_request_user_id(user_id: str | None) -> str:
+        """Return the user id for platform connector metadata requests."""
+        return user_id or "acme:alice"
+
+    def platform_connectors_response(
+        self,
+        *,
+        user_id: str | None,
+        connector_name: str,
+        env: Mapping[str, str],
+        identity_metadata: Callable[[str, str], list[dict[str, Any]]],
+    ) -> dict[str, Any]:
+        """Build connector readiness, identity, and tenant workspace metadata."""
+        resolved_user_id = self.resolve_request_user_id(user_id)
+        runtime = self.enterprise_runtime_context(resolved_user_id)
+        tenant = str(runtime["tenant"])
+        response = self.metadata_response(
+            runtime=runtime,
+            connector_name=connector_name,
+            env=env,
+        )
+        identities = identity_metadata(resolved_user_id, tenant)
+        response["identities"] = identities
+        response["tenant_workspaces"] = self.tenant_workspaces(
+            identities=identities,
+            current_tenant=tenant,
+            runtime_connector_for_tenant=self.runtime_enterprise_connector_for_tenant,
+        )
+        return response
+
     def _env_configured(self, env: Mapping[str, str], name: str) -> bool:
         return bool(env.get(name, "").strip())
 

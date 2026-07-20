@@ -1019,33 +1019,16 @@ async def enterprise_platform_status(request: Request) -> dict[str, Any]:
 @app.get("/enterprise/platform/connectors")
 async def enterprise_platform_connectors(request: Request) -> dict[str, Any]:
     """Return enterprise data source connector readiness and tenant scope."""
-    user_id = request.headers.get("X-User-ID") or "acme:alice"
     try:
         connector_config_service = _platform_connector_config_service()
-        runtime = connector_config_service.enterprise_runtime_context(user_id)
-        response = connector_config_service.metadata_response(
-            runtime=runtime,
+        return connector_config_service.platform_connectors_response(
+            user_id=request.headers.get("X-User-ID"),
             connector_name=enterprise_connector.name,
             env=os.environ,
+            identity_metadata=_platform_identity_metadata,
         )
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
-
-    runtime_selection = _platform_status_service().runtime_selection(runtime)
-    tenant = runtime_selection["tenant"]
-    identities = _platform_identity_metadata(user_id, tenant)
-    response["identities"] = identities
-    try:
-        response["tenant_workspaces"] = connector_config_service.tenant_workspaces(
-            identities=identities,
-            current_tenant=tenant,
-            runtime_connector_for_tenant=(
-                connector_config_service.runtime_enterprise_connector_for_tenant
-            ),
-        )
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
-    return response
 
 
 @app.get("/enterprise/platform/governance")
