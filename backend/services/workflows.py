@@ -274,6 +274,21 @@ class PlatformWorkflowRunService:
     def workflow_name(self, template: dict[str, Any], workflow_type: str) -> str:
         return str(template.get("name") or workflow_type)
 
+    def audit_filter(
+        self,
+        *,
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        session_id: str,
+    ) -> dict[str, str]:
+        return {
+            "tenant": tenant,
+            "user_id": user_id,
+            "agent_id": agent_id,
+            "session_id": session_id,
+        }
+
     def input_value(
         self,
         inputs: dict[str, Any],

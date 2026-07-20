@@ -3991,12 +3991,12 @@ async def run_enterprise_workflow(
         "summary": workflow_run_service.summary(workflow_name, steps),
         "steps": steps,
         "tool_calls": tool_calls,
-        "audit_filter": {
-            "tenant": tenant,
-            "user_id": user_id,
-            "agent_id": agent_id,
-            "session_id": session_id,
-        },
+        "audit_filter": workflow_run_service.audit_filter(
+            tenant=tenant,
+            user_id=user_id,
+            agent_id=agent_id,
+            session_id=session_id,
+        ),
     }
     workflow_run_service.append_run(response)
     return response
