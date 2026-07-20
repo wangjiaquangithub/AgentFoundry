@@ -3489,20 +3489,14 @@ async def resolve_enterprise_platform_ops_task(
     runtime = _enterprise_runtime_context(user_id)
     tenant = str(runtime["tenant"])
     identities = _platform_identity_metadata(user_id, tenant)
-    return {
-        "task_code": normalized_code,
-        "resolved": bool(enabled_workflows),
-        "message": "Disabled workflows have been enabled."
-        if enabled_workflows
-        else "No disabled workflows were found.",
-        "enabled_workflows": enabled_workflows,
-        "workflows": workflows,
-        "ops_tasks": _platform_status_service().ops_tasks(
-            tenant=tenant,
-            user_id=user_id,
-            identities=identities,
-        ),
-    }
+    return _platform_status_service().resolved_disabled_workflows_payload(
+        task_code=normalized_code,
+        enabled_workflows=enabled_workflows,
+        workflows=workflows,
+        tenant=tenant,
+        user_id=user_id,
+        identities=identities,
+    )
 
 
 @app.patch("/enterprise/platform/workflows/{workflow_type}")

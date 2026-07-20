@@ -595,6 +595,32 @@ class PlatformStatusService:
         tasks.sort(key=lambda task: (severity_order.get(task["severity"], 3), task["code"]))
         return {"tasks": tasks, "summary": summary}
 
+    def resolved_disabled_workflows_payload(
+        self,
+        *,
+        task_code: str,
+        enabled_workflows: list[dict[str, Any]],
+        workflows: list[dict[str, Any]],
+        tenant: str,
+        user_id: str,
+        identities: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Build the console response after auto-resolving disabled workflows."""
+        return {
+            "task_code": task_code,
+            "resolved": bool(enabled_workflows),
+            "message": "Disabled workflows have been enabled."
+            if enabled_workflows
+            else "No disabled workflows were found.",
+            "enabled_workflows": enabled_workflows,
+            "workflows": workflows,
+            "ops_tasks": self.ops_tasks(
+                tenant=tenant,
+                user_id=user_id,
+                identities=identities,
+            ),
+        }
+
     def _governed_workflows(
         self,
         workflow_templates: list[dict[str, Any]],
