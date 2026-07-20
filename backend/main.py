@@ -321,18 +321,6 @@ def _platform_status_service() -> PlatformStatusService:
     )
 
 
-def _enterprise_platform_dashboard(
-    *,
-    tenant: str,
-    user_id: str,
-) -> dict[str, Any]:
-    """Build a compact platform operations snapshot for the console."""
-    return _platform_status_service().dashboard(
-        tenant=tenant,
-        user_id=user_id,
-    )
-
-
 def _enterprise_platform_launch_readiness(
     *,
     tenant: str,
@@ -2509,7 +2497,7 @@ async def enterprise_platform_status(request: Request) -> dict[str, Any]:
             "enabled": tool_audit_logger.enabled,
             "recent_events": tool_audit_logger.recent(limit=12),
         },
-        "dashboard": _enterprise_platform_dashboard(
+        "dashboard": _platform_status_service().dashboard(
             tenant=tenant,
             user_id=user_id,
         ),
