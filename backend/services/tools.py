@@ -330,6 +330,17 @@ class PlatformToolPolicyService:
             ),
         )
 
+    def update_user_policy_request_payload(
+        self,
+        payload: dict[str, Any],
+    ) -> tuple[ToolAuthorizationPolicy, dict[str, Any]]:
+        return self.update_user_policy_payload(
+            tenant=str(payload.get("tenant") or ""),
+            user_id=str(payload.get("user_id") or ""),
+            allow=payload.get("allow"),
+            deny=payload.get("deny"),
+        )
+
     def _repository(self) -> ToolPolicyRepository:
         return ToolPolicyRepository(
             self._policy_path(),

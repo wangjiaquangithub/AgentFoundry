@@ -1142,11 +1142,8 @@ async def update_enterprise_platform_tool_policy(
         (
             tool_authorization_policy,
             response_payload,
-        ) = _platform_tool_policy_service().update_user_policy_payload(
-            tenant=payload.tenant,
-            user_id=payload.user_id,
-            allow=payload.allow,
-            deny=payload.deny,
+        ) = _platform_tool_policy_service().update_user_policy_request_payload(
+            payload.model_dump(),
         )
     except PlatformToolPolicyServiceError as exc:
         _raise_platform_tool_policy_service_error(exc)
