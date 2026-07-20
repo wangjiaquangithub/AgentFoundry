@@ -1990,16 +1990,6 @@ async def _select_enterprise_agent_routes(
     return rule_routes, None
 
 
-def _enterprise_routing_mode(routes: list[dict[str, Any]]) -> str:
-    sources: list[str] = []
-    for route in routes:
-        source = str(route.get("source", ROUTING_SOURCE_RULES))
-        if source not in sources:
-            sources.append(source)
-
-    return "+".join(sources) if sources else ROUTING_SOURCE_RULES
-
-
 def _format_enterprise_agent_answer(
     *,
     tool_name: str,
@@ -2740,6 +2730,16 @@ async def run_enterprise_agent(
     request: Request,
 ) -> dict[str, Any]:
     """Route a business question through a published enterprise agent."""
+
+    def routing_mode_for(routes: list[dict[str, Any]]) -> str:
+        sources: list[str] = []
+        for route in routes:
+            source = str(route.get("source", ROUTING_SOURCE_RULES))
+            if source not in sources:
+                sources.append(source)
+
+        return "+".join(sources) if sources else ROUTING_SOURCE_RULES
+
     user_id = payload.user_id or request.headers.get("X-User-ID") or "acme:alice"
     runtime = _enterprise_runtime_context(user_id)
     tenant = str(runtime["tenant"])
@@ -2802,7 +2802,7 @@ async def run_enterprise_agent(
         **({"knowledge_error": knowledge_error} if knowledge_error else {}),
     }
     routes, routing_error = await _select_enterprise_agent_routes(question)
-    routing_mode = _enterprise_routing_mode(routes)
+    routing_mode = routing_mode_for(routes)
     routing_source = routing_mode
 
     if not routes:
