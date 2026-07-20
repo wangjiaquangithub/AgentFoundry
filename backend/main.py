@@ -1388,28 +1388,15 @@ async def enterprise_platform_tools(
         )
         decision = decisions.get(tool_name)
         tools.append(
-            {
-                "name": tool_name,
-                "description": catalog["description"],
-                "input_key": catalog["input_key"],
-                "default_input": catalog["default_input"],
-                "allowed": bool(decision and decision.get("allowed")),
-                "reason": decision.get("reason") if decision else "",
-                "configured_by_agents": [
-                    str(agent.get("id"))
-                    for agent in published_agents
-                    if tool_name in (agent.get("tools") or [])
-                ],
-                "configured_for_agent": (
-                    tool_name in configured_agent_tools
-                    if configured_agent is not None
-                    else None
-                ),
-                "configured_agent_id": (
-                    str(configured_agent.get("id")) if configured_agent else None
-                ),
-                "stats": tool_policy_service.audit_stats(events),
-            },
+            tool_policy_service.catalog_tool_payload(
+                tool_name=tool_name,
+                catalog=catalog,
+                decision=decision,
+                events=events,
+                published_agents=published_agents,
+                configured_agent=configured_agent,
+                configured_agent_tools=configured_agent_tools,
+            ),
         )
     return {
         "tools": tools,

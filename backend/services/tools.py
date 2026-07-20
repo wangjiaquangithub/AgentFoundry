@@ -170,6 +170,40 @@ class PlatformToolPolicyService:
             "limit": limit,
         }
 
+    def catalog_tool_payload(
+        self,
+        *,
+        tool_name: str,
+        catalog: dict[str, Any],
+        decision: dict[str, Any] | None,
+        events: list[dict[str, Any]],
+        published_agents: list[dict[str, Any]],
+        configured_agent: dict[str, Any] | None,
+        configured_agent_tools: set[str],
+    ) -> dict[str, Any]:
+        return {
+            "name": tool_name,
+            "description": catalog["description"],
+            "input_key": catalog["input_key"],
+            "default_input": catalog["default_input"],
+            "allowed": bool(decision and decision.get("allowed")),
+            "reason": decision.get("reason") if decision else "",
+            "configured_by_agents": [
+                str(agent.get("id"))
+                for agent in published_agents
+                if tool_name in (agent.get("tools") or [])
+            ],
+            "configured_for_agent": (
+                tool_name in configured_agent_tools
+                if configured_agent is not None
+                else None
+            ),
+            "configured_agent_id": (
+                str(configured_agent.get("id")) if configured_agent else None
+            ),
+            "stats": self.audit_stats(events),
+        }
+
     def normalize_policy_tools(self, value: list[str] | None) -> list[str]:
         if not value:
             return []
