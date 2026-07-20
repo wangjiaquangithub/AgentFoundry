@@ -578,6 +578,25 @@ class PlatformAgentRunService:
             "format_memory_answer": format_memory_answer,
         }
 
+    def compose_routed_answer_from_context(
+        self,
+        *,
+        tool_calls: list[dict[str, Any]],
+        knowledge_hits: list[dict[str, Any]],
+        memory_hits: list[dict[str, Any]],
+        format_knowledge_answer: Callable[[list[dict[str, Any]]], str],
+        format_memory_answer: Callable[[list[dict[str, Any]]], str],
+    ) -> str:
+        return self.compose_routed_answer(
+            **self.build_routed_answer_context(
+                tool_calls=tool_calls,
+                knowledge_hits=knowledge_hits,
+                memory_hits=memory_hits,
+                format_knowledge_answer=format_knowledge_answer,
+                format_memory_answer=format_memory_answer,
+            ),
+        )
+
     def compose_unrouted_answer(
         self,
         *,
