@@ -30,13 +30,11 @@ class PlatformConnectorConfigService:
         *,
         repository: ConnectorConfigRepository,
         global_connector: EnterpriseConnector,
-        tenant_hint_from_user_id: Callable[[str], str | None],
         preview_result: Callable[[Any], str] | None = None,
         now: Callable[[], str] | None = None,
     ) -> None:
         self._repository = repository
         self._global_connector = global_connector
-        self._tenant_hint_from_user_id = tenant_hint_from_user_id
         self._preview_result = preview_result or _preview_connector_result
         self._now = now or _utc_now_iso
 
@@ -404,6 +402,13 @@ class PlatformConnectorConfigService:
             .lower()
             .strip()
         )
+
+    def _tenant_hint_from_user_id(self, user_id: str) -> str | None:
+        if ":" not in user_id:
+            return None
+        tenant, _user = user_id.split(":", 1)
+        tenant = tenant.strip()
+        return tenant or None
 
     def runtime_tenant_for_user(self, user_id: str) -> str:
         hinted_tenant = self._tenant_hint_from_user_id(user_id)

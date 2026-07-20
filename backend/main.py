@@ -766,7 +766,6 @@ def _platform_connector_config_service() -> PlatformConnectorConfigService:
     return PlatformConnectorConfigService(
         repository=connector_config_repository,
         global_connector=enterprise_connector,
-        tenant_hint_from_user_id=_tenant_hint_from_user_id,
         now=_now_iso,
     )
 
