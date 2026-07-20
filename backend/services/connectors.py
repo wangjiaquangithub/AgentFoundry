@@ -132,6 +132,48 @@ class PlatformConnectorConfigService:
             },
         ]
 
+    def health_metadata(
+        self,
+        *,
+        connector_name: str,
+        connector_mode: str,
+        env_metadata: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        if connector_name == "http":
+            missing = [
+                item["name"]
+                for item in env_metadata
+                if item.get("required") and not item.get("configured")
+            ]
+            return {
+                "name": connector_name,
+                "mode": connector_mode,
+                "status": "error" if missing else "ready",
+                "message": (
+                    f"Missing required configuration: {', '.join(missing)}"
+                    if missing
+                    else "HTTP enterprise connector is configured."
+                ),
+            }
+
+        if connector_name == "mock":
+            return {
+                "name": connector_name,
+                "mode": connector_mode,
+                "status": "ready",
+                "message": "Using local tenant fixture data.",
+            }
+
+        return {
+            "name": connector_name,
+            "mode": connector_mode,
+            "status": "partial",
+            "message": (
+                "Connector metadata is available; verify runtime data access with a "
+                "tool call."
+            ),
+        }
+
     def list_configs(self) -> dict[str, dict[str, Any]]:
         try:
             return self._repository.list_by_tenant()

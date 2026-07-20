@@ -2005,41 +2005,11 @@ def _enterprise_supported_connectors() -> list[dict[str, Any]]:
 def _enterprise_connector_health() -> dict[str, Any]:
     connector_name = enterprise_connector.name
     connector_mode = os.getenv("ENTERPRISE_CONNECTOR", connector_name).lower().strip()
-
-    if connector_name == "http":
-        missing = [
-            item["name"]
-            for item in _enterprise_connector_env_metadata()
-            if item.get("required") and not item.get("configured")
-        ]
-        return {
-            "name": connector_name,
-            "mode": connector_mode,
-            "status": "error" if missing else "ready",
-            "message": (
-                f"Missing required configuration: {', '.join(missing)}"
-                if missing
-                else "HTTP enterprise connector is configured."
-            ),
-        }
-
-    if connector_name == "mock":
-        return {
-            "name": connector_name,
-            "mode": connector_mode,
-            "status": "ready",
-            "message": "Using local tenant fixture data.",
-        }
-
-    return {
-        "name": connector_name,
-        "mode": connector_mode,
-        "status": "partial",
-        "message": (
-            "Connector metadata is available; verify runtime data access with a "
-            "tool call."
-        ),
-    }
+    return _platform_connector_config_service().health_metadata(
+        connector_name=connector_name,
+        connector_mode=connector_mode,
+        env_metadata=_enterprise_connector_env_metadata(),
+    )
 
 
 def _create_platform_agent(
