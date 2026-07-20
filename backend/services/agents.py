@@ -61,6 +61,23 @@ class PlatformAgentService:
             "resource_inputs": self.resource_validation_inputs(payload),
         }
 
+    def update_request_payload(
+        self,
+        agent_id: str,
+        payload: Any,
+        *,
+        header_user_id: str | None = None,
+    ) -> dict[str, Any]:
+        user_id = self.resolve_request_user_id(header_user_id)
+        existing_agent = self.get_agent(agent_id)
+        return {
+            "user_id": user_id,
+            "resource_inputs": self.resource_validation_inputs(
+                payload,
+                existing_agent=existing_agent,
+            ),
+        }
+
     def import_agents_payload(self, value: Any, *, mode: str) -> None:
         imported_agents = self.normalize_import_agents(value)
         agents = (

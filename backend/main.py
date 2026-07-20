@@ -1303,19 +1303,19 @@ async def update_enterprise_platform_agent(
 ) -> dict[str, Any]:
     """Update a tenant-scoped platform agent instance."""
     agent_service = _platform_agent_service()
-    user_id = agent_service.resolve_request_user_id(request.headers.get("X-User-ID"))
     try:
-        existing_agent = agent_service.get_agent(agent_id)
+        update_request = agent_service.update_request_payload(
+            agent_id,
+            payload,
+            header_user_id=request.headers.get("X-User-ID"),
+        )
     except PlatformAgentServiceError as exc:
         _raise_platform_agent_service_error(exc)
-    resource_inputs = agent_service.resource_validation_inputs(
-        payload,
-        existing_agent=existing_agent,
-    )
+    user_id = update_request["user_id"]
     await _validate_platform_agent_resources(
         request,
         user_id,
-        **resource_inputs,
+        **update_request["resource_inputs"],
     )
     try:
         return agent_service.update_agent_response_payload(
