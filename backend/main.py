@@ -255,6 +255,18 @@ def _platform_status_service() -> PlatformStatusService:
         except PlatformApprovalServiceError as exc:
             _raise_platform_approval_service_error(exc)
 
+    def connector_health() -> dict[str, Any]:
+        connector_name = enterprise_connector.name
+        connector_mode = os.getenv("ENTERPRISE_CONNECTOR", connector_name).lower().strip()
+        try:
+            return _platform_connector_config_service().health_response(
+                connector_name=connector_name,
+                connector_mode=connector_mode,
+                env_configured=_env_configured,
+            )
+        except PlatformConnectorConfigServiceError as exc:
+            _raise_platform_connector_config_service_error(exc)
+
     return PlatformStatusService(
         list_approval_records=list_approval_records,
         load_workflow_runs=_platform_workflow_run_service().list_run_records,
@@ -267,7 +279,7 @@ def _platform_status_service() -> PlatformStatusService:
         agent_run_repository=agent_run_repository,
         audit_logger=tool_audit_logger,
         tool_policy=tool_authorization_policy,
-        connector_health=_enterprise_connector_health,
+        connector_health=connector_health,
         agent_readiness=agent_service.readiness,
         enterprise_tool_names=ENTERPRISE_TOOL_NAMES,
         enterprise_tool_catalog=ENTERPRISE_TOOL_CATALOG,
@@ -1496,19 +1508,6 @@ def _env_configured(name: str) -> bool:
 
 def _env_value(name: str, default: str) -> str:
     return os.getenv(name, default)
-
-
-def _enterprise_connector_health() -> dict[str, Any]:
-    connector_name = enterprise_connector.name
-    connector_mode = os.getenv("ENTERPRISE_CONNECTOR", connector_name).lower().strip()
-    try:
-        return _platform_connector_config_service().health_response(
-            connector_name=connector_name,
-            connector_mode=connector_mode,
-            env_configured=_env_configured,
-        )
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
 
 
 def _run_authorized_enterprise_tool(
