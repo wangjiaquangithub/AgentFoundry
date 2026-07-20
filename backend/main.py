@@ -1446,10 +1446,6 @@ def _save_platform_connector_configs(configs: dict[str, dict[str, Any]]) -> None
         _raise_platform_connector_config_service_error(exc)
 
 
-def _redact_connector_config(config: dict[str, Any]) -> dict[str, Any]:
-    return _platform_connector_config_service().redact_config(config)
-
-
 def _redacted_connector_configs() -> list[dict[str, Any]]:
     try:
         return _platform_connector_config_service().redacted_configs()
