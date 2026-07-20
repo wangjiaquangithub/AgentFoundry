@@ -1483,19 +1483,6 @@ def _configured_tenant_for_user(user_id: str) -> str:
         _raise_platform_connector_config_service_error(exc)
 
 
-def _connector_config_for_tenant(tenant: str) -> dict[str, Any] | None:
-    try:
-        return _platform_connector_config_service().connector_config_for_tenant(tenant)
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
-
-
-def _connector_from_saved_config(
-    config: dict[str, Any],
-) -> HttpEnterpriseConnector:
-    return _platform_connector_config_service().connector_from_saved_config(config)
-
-
 def _runtime_enterprise_connector_for_tenant(
     tenant: str,
 ) -> tuple[EnterpriseConnector, str]:
