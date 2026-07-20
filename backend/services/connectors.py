@@ -1,0 +1,265 @@
+"""Service-layer orchestration for enterprise connector configuration."""
+
+from datetime import datetime, timezone
+from time import perf_counter
+from typing import Any, Callable
+
+from connectors import EnterpriseConnector, HttpEnterpriseConnector
+from repositories.connectors import (
+    ConnectorConfigRegistryError,
+    ConnectorConfigRepository,
+)
+
+
+class PlatformConnectorConfigServiceError(ValueError):
+    """Raised when a connector configuration operation cannot be completed."""
+
+    def __init__(self, status_code: int, detail: Any) -> None:
+        super().__init__(str(detail))
+        self.status_code = status_code
+        self.detail = detail
+
+
+class PlatformConnectorConfigService:
+    """Manage tenant-scoped enterprise connector configuration records."""
+
+    def __init__(
+        self,
+        *,
+        repository: ConnectorConfigRepository,
+        global_connector: EnterpriseConnector,
+        tenant_hint_from_user_id: Callable[[str], str | None],
+        preview_result: Callable[[Any], str],
+        now: Callable[[], str] | None = None,
+    ) -> None:
+        self._repository = repository
+        self._global_connector = global_connector
+        self._tenant_hint_from_user_id = tenant_hint_from_user_id
+        self._preview_result = preview_result
+        self._now = now or _utc_now_iso
+
+    def list_configs(self) -> dict[str, dict[str, Any]]:
+        try:
+            return self._repository.list_by_tenant()
+        except ConnectorConfigRegistryError as exc:
+            raise PlatformConnectorConfigServiceError(500, str(exc)) from exc
+
+    def save_configs(self, configs: dict[str, dict[str, Any]]) -> None:
+        self._repository.save_all(configs)
+
+    def redact_config(self, config: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "tenant": str(config.get("tenant") or ""),
+            "base_url": str(config.get("base_url") or ""),
+            "policy_path": str(
+                config.get("policy_path") or HttpEnterpriseConnector.policy_path,
+            ),
+            "ticket_path": str(
+                config.get("ticket_path") or HttpEnterpriseConnector.ticket_path,
+            ),
+            "metrics_path": str(
+                config.get("metrics_path") or HttpEnterpriseConnector.metrics_path,
+            ),
+            "timeout_seconds": float(config.get("timeout_seconds") or 5.0),
+            "enabled": bool(config.get("enabled", True)),
+            "token_configured": bool(str(config.get("token") or "").strip()),
+            "updated_at": str(config.get("updated_at") or ""),
+            "updated_by": str(config.get("updated_by") or ""),
+        }
+
+    def redacted_configs(self) -> list[dict[str, Any]]:
+        return [
+            self.redact_config(config)
+            for _tenant, config in sorted(self.list_configs().items())
+        ]
+
+    def runtime_tenant_for_user(self, user_id: str) -> str:
+        hinted_tenant = self._tenant_hint_from_user_id(user_id)
+        if hinted_tenant:
+            hinted_config = self.list_configs().get(hinted_tenant)
+            if hinted_config and bool(hinted_config.get("enabled", True)):
+                return hinted_tenant
+        return self._global_connector.tenant_for_user(user_id)
+
+    def configured_tenant_for_user(self, user_id: str) -> str:
+        hinted_tenant = self._tenant_hint_from_user_id(user_id)
+        if hinted_tenant and hinted_tenant in self.list_configs():
+            return hinted_tenant
+        return self._global_connector.tenant_for_user(user_id)
+
+    def connector_config_for_tenant(self, tenant: str) -> dict[str, Any] | None:
+        config = self.list_configs().get(tenant)
+        if not config or not bool(config.get("enabled", True)):
+            return None
+        if not str(config.get("base_url") or "").strip():
+            return None
+        return config
+
+    def connector_from_saved_config(
+        self,
+        config: dict[str, Any],
+    ) -> HttpEnterpriseConnector:
+        return HttpEnterpriseConnector(
+            base_url=str(config.get("base_url") or "").strip().rstrip("/"),
+            token=str(config.get("token") or "").strip() or None,
+            timeout_seconds=float(config.get("timeout_seconds") or 5.0),
+            policy_path=str(
+                config.get("policy_path") or HttpEnterpriseConnector.policy_path,
+            ),
+            ticket_path=str(
+                config.get("ticket_path") or HttpEnterpriseConnector.ticket_path,
+            ),
+            metrics_path=str(
+                config.get("metrics_path") or HttpEnterpriseConnector.metrics_path,
+            ),
+        )
+
+    def runtime_enterprise_connector_for_tenant(
+        self,
+        tenant: str,
+    ) -> tuple[EnterpriseConnector, str]:
+        config = self.connector_config_for_tenant(tenant)
+        if config is not None:
+            return self.connector_from_saved_config(config), "saved_config"
+        return self._global_connector, "global"
+
+    def enterprise_runtime_context(self, user_id: str) -> dict[str, Any]:
+        tenant = self.runtime_tenant_for_user(user_id)
+        connector, source = self.runtime_enterprise_connector_for_tenant(tenant)
+        connector_label = (
+            f"{connector.name}:saved_config"
+            if source == "saved_config"
+            else connector.name
+        )
+        return {
+            "tenant": tenant,
+            "connector": connector,
+            "connector_source": source,
+            "connector_label": connector_label,
+            "saved_config_enabled": source == "saved_config",
+        }
+
+    def normalize_config_payload(
+        self,
+        payload: Any,
+        *,
+        user_id: str,
+        existing_config: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        base_url = payload.base_url.strip().rstrip("/")
+        if not base_url:
+            raise PlatformConnectorConfigServiceError(
+                400,
+                "Enterprise API URL is required.",
+            )
+
+        tenant = payload.tenant.strip() or self.configured_tenant_for_user(user_id)
+        token = payload.token.strip() if payload.token and payload.token.strip() else None
+        if token is None and existing_config is not None:
+            saved_token = str(existing_config.get("token") or "").strip()
+            token = saved_token or None
+
+        return {
+            "tenant": tenant,
+            "base_url": base_url,
+            "token": token,
+            "policy_path": payload.policy_path.strip()
+            or HttpEnterpriseConnector.policy_path,
+            "ticket_path": payload.ticket_path.strip()
+            or HttpEnterpriseConnector.ticket_path,
+            "metrics_path": payload.metrics_path.strip()
+            or HttpEnterpriseConnector.metrics_path,
+            "timeout_seconds": payload.timeout_seconds,
+            "enabled": payload.enabled,
+            "updated_at": self._now(),
+            "updated_by": user_id,
+        }
+
+    def test_connector(self, payload: Any) -> dict[str, Any]:
+        base_url = payload.base_url.strip().rstrip("/")
+        if not base_url:
+            raise PlatformConnectorConfigServiceError(
+                400,
+                "Enterprise API URL is required.",
+            )
+
+        saved_config = self.list_configs().get(payload.tenant.strip())
+        token = payload.token.strip() if payload.token and payload.token.strip() else None
+        if token is None and saved_config is not None:
+            saved_token = str(saved_config.get("token") or "").strip()
+            token = saved_token or None
+
+        connector = HttpEnterpriseConnector(
+            base_url=base_url,
+            token=token,
+            timeout_seconds=payload.timeout_seconds,
+            policy_path=payload.policy_path,
+            ticket_path=payload.ticket_path,
+            metrics_path=payload.metrics_path,
+        )
+        checks = []
+        test_cases = [
+            (
+                "policy",
+                "Policy lookup",
+                lambda: connector.lookup_policy(payload.tenant, payload.policy_keyword),
+            ),
+            (
+                "ticket",
+                "Ticket lookup",
+                lambda: connector.get_ticket_status(payload.tenant, payload.ticket_id),
+            ),
+            (
+                "metrics",
+                "Department metrics",
+                lambda: connector.summarize_department_metrics(
+                    payload.tenant,
+                    payload.department,
+                ),
+            ),
+        ]
+
+        for name, label, run_test in test_cases:
+            started_at = perf_counter()
+            try:
+                result = run_test()
+            except Exception as exc:  # pragma: no cover - depends on remote gateways
+                checks.append(
+                    {
+                        "name": name,
+                        "label": label,
+                        "status": "error",
+                        "latency_ms": round((perf_counter() - started_at) * 1000, 2),
+                        "message": str(exc),
+                        "preview": "",
+                    },
+                )
+                continue
+
+            checks.append(
+                {
+                    "name": name,
+                    "label": label,
+                    "status": "success",
+                    "latency_ms": round((perf_counter() - started_at) * 1000, 2),
+                    "message": "Connector request completed.",
+                    "preview": self._preview_result(result),
+                },
+            )
+
+        success_count = sum(1 for check in checks if check["status"] == "success")
+        if success_count == len(checks):
+            status = "success"
+        elif success_count:
+            status = "partial"
+        else:
+            status = "error"
+
+        return {
+            "status": status,
+            "checks": checks,
+        }
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
