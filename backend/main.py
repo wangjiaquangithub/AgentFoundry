@@ -691,10 +691,6 @@ def _validate_platform_agent_tools(
         _raise_platform_agent_service_error(exc)
 
 
-def _normalize_agent_access_values(values: list[Any] | None) -> list[str]:
-    return _platform_agent_service().normalize_access_values(values)
-
-
 def _normalize_platform_resource_ids(values: list[Any] | None) -> list[str]:
     return _platform_agent_service().normalize_resource_ids(values)
 
