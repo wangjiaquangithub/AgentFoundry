@@ -2873,11 +2873,10 @@ async def run_enterprise_agent(
     connector_label = str(runtime["connector_label"])
     connector_source = str(runtime["connector_source"])
     question = payload.question.strip()
-    agent = _get_platform_agent(payload.agent_id) if payload.agent_id else None
-    if agent is not None and agent.get("status") != "published":
-        raise HTTPException(
-            status_code=409,
-            detail="该 Agent 实例已停用，不能运行。",
+    agent = None
+    if payload.agent_id:
+        agent, _ = _published_platform_agent_tool_scope(
+            payload.agent_id,
         )
     if agent is not None:
         _assert_platform_agent_access(agent, user_id)
