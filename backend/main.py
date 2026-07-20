@@ -2013,15 +2013,15 @@ def _workflow_step(
     inputs: dict[str, Any],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     try:
-        tool_response = _run_authorized_enterprise_tool(
+        workflow_run_service = _platform_workflow_run_service()
+        tool_response = workflow_run_service.run_step_tool_from_context(
+            run_authorized_enterprise_tool=_run_authorized_enterprise_tool,
             user_id=user_id,
             tool_name=tool_name,
             inputs=inputs,
             agent_id=agent_id,
             session_id=session_id,
-            fail_on_denied=False,
         )
-        workflow_run_service = _platform_workflow_run_service()
         return workflow_run_service.executed_step_record_from_context(
             format_tool_result_answer=(
                 _platform_tool_policy_service().format_tool_result_answer

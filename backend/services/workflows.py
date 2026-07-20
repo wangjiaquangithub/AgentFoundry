@@ -622,6 +622,25 @@ class PlatformWorkflowRunService:
         steps.append(step)
         tool_calls.append(tool_call)
 
+    def run_step_tool_from_context(
+        self,
+        *,
+        run_authorized_enterprise_tool: Callable[..., dict[str, Any]],
+        user_id: str,
+        tool_name: str,
+        inputs: dict[str, Any],
+        agent_id: str,
+        session_id: str,
+    ) -> dict[str, Any]:
+        return run_authorized_enterprise_tool(
+            user_id=user_id,
+            tool_name=tool_name,
+            inputs=inputs,
+            agent_id=agent_id,
+            session_id=session_id,
+            fail_on_denied=False,
+        )
+
     def build_tool_result_answer_context(
         self,
         *,
