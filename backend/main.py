@@ -1359,10 +1359,13 @@ def _enterprise_governance_snapshot(
     tenant_workspaces: dict[str, Any],
 ) -> dict[str, Any]:
     """Build the platform governance model used by the enterprise console."""
-    pending_approvals = _load_platform_approval_requests(
-        status="pending",
-        limit=100,
-    )
+    try:
+        pending_approvals = _platform_approval_service().list_records(
+            status="pending",
+            limit=100,
+        )
+    except PlatformApprovalServiceError as exc:
+        _raise_platform_approval_service_error(exc)
     recent_audit_events = tool_audit_logger.recent(limit=100)
 
     pending_by_user: dict[str, int] = {}
@@ -3228,7 +3231,13 @@ def _enterprise_platform_scenarios() -> dict[str, Any]:
     except PlatformWorkflowTemplateServiceError as exc:
         _raise_platform_workflow_template_service_error(exc)
     workflow_runs = _platform_workflow_run_service().list_run_records(limit=100)
-    pending_approvals = _load_platform_approval_requests(limit=100, status="pending")
+    try:
+        pending_approvals = _platform_approval_service().list_records(
+            limit=100,
+            status="pending",
+        )
+    except PlatformApprovalServiceError as exc:
+        _raise_platform_approval_service_error(exc)
     scenarios: list[dict[str, Any]] = []
 
     for workflow in workflows:
