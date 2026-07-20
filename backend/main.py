@@ -1079,8 +1079,13 @@ async def _select_enterprise_agent_routes(
         except EnterpriseRouterError as exc:
             return rule_routes, str(exc)
 
-        model_routes = [model_route] if model_route.get("routed") else []
-        return enterprise_router_service.dedupe_routes(model_routes + rule_routes), None
+        return (
+            enterprise_router_service.merge_model_route_with_rule_routes(
+                model_route=model_route,
+                rule_routes=rule_routes,
+            ),
+            None,
+        )
 
     return rule_routes, None
 

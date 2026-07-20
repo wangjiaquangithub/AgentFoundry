@@ -349,6 +349,15 @@ class PlatformEnterpriseRouterService:
         routes.extend(self.generic_metrics_route_for_question(question, routes))
         return self.dedupe_routes(routes)
 
+    def merge_model_route_with_rule_routes(
+        self,
+        *,
+        model_route: dict[str, Any],
+        rule_routes: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        model_routes = [model_route] if model_route.get("routed") else []
+        return self.dedupe_routes(model_routes + rule_routes)
+
     def fallback_route(self) -> dict[str, Any]:
         return {
             "routed": False,
