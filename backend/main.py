@@ -980,17 +980,13 @@ def _enterprise_router_config() -> dict[str, Any] | None:
             "Router env is incomplete: missing " + ", ".join(missing),
         )
 
-    provider = (
-        os.getenv("ENTERPRISE_AGENT_ROUTER_PROVIDER", "openai")
-        .strip()
-        .lower()
-        or "openai"
+    provider = enterprise_router_service.normalize_model_provider(
+        os.getenv("ENTERPRISE_AGENT_ROUTER_PROVIDER", "openai"),
     )
     timeout_value = os.getenv("ENTERPRISE_AGENT_ROUTER_TIMEOUT_SECONDS", "8")
-    try:
-        timeout_seconds = max(1.0, float(timeout_value))
-    except ValueError:
-        timeout_seconds = 8.0
+    timeout_seconds = enterprise_router_service.normalize_model_timeout_seconds(
+        timeout_value,
+    )
 
     return {
         "base_url": base_url,

@@ -65,6 +65,15 @@ class PlatformEnterpriseRouterService:
             )
         )
 
+    def normalize_model_provider(self, provider: str) -> str:
+        return provider.strip().lower() or "openai"
+
+    def normalize_model_timeout_seconds(self, timeout_value: str) -> float:
+        try:
+            return max(1.0, float(timeout_value))
+        except ValueError:
+            return 8.0
+
     def build_model_endpoint(self, base_url: str, provider: str) -> str:
         normalized = base_url.rstrip("/")
         if provider == "anthropic":
