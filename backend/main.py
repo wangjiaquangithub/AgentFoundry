@@ -2087,14 +2087,15 @@ def _workflow_step(
             session_id=session_id,
             fail_on_denied=False,
         )
-        allowed = bool(tool_response.get("allowed"))
-        result = tool_response.get("result")
-        decision = tool_response.get("decision")
+        workflow_run_service = _platform_workflow_run_service()
+        allowed = workflow_run_service.tool_response_allowed(tool_response)
+        result = workflow_run_service.tool_response_result(tool_response)
+        decision = workflow_run_service.tool_response_decision(tool_response)
         message = (
             _platform_tool_policy_service().format_tool_result_answer(
                 tool_name=tool_name,
                 result=result,
-                tenant=str(tool_response["tenant"]),
+                tenant=workflow_run_service.tool_response_tenant(tool_response),
             )
             if allowed
             else str((decision or {}).get("reason") or "当前用户无权调用该工具。")
@@ -2115,10 +2116,12 @@ def _workflow_step(
             "tool_name": tool_name,
             "inputs": inputs,
             "allowed": allowed,
-            "tenant": tool_response.get("tenant"),
-            "user_id": tool_response.get("user_id"),
-            "connector": tool_response.get("connector"),
-            "connector_source": tool_response.get("connector_source"),
+            "tenant": workflow_run_service.tool_response_tenant(tool_response),
+            "user_id": workflow_run_service.tool_response_user_id(tool_response),
+            "connector": workflow_run_service.tool_response_connector(tool_response),
+            "connector_source": workflow_run_service.tool_response_connector_source(
+                tool_response,
+            ),
             "decision": decision,
             "result": result,
             "answer": message,

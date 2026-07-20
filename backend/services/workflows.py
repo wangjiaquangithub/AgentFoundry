@@ -522,6 +522,33 @@ class PlatformWorkflowRunService:
         }
         return step, tool_call
 
+    def tool_response_allowed(self, tool_response: dict[str, Any]) -> bool:
+        return bool(tool_response.get("allowed"))
+
+    def tool_response_result(self, tool_response: dict[str, Any]) -> Any:
+        return tool_response.get("result")
+
+    def tool_response_decision(
+        self,
+        tool_response: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        decision = tool_response.get("decision")
+        if isinstance(decision, dict):
+            return decision
+        return None
+
+    def tool_response_tenant(self, tool_response: dict[str, Any]) -> str:
+        return str(tool_response["tenant"])
+
+    def tool_response_user_id(self, tool_response: dict[str, Any]) -> Any:
+        return tool_response.get("user_id")
+
+    def tool_response_connector(self, tool_response: dict[str, Any]) -> Any:
+        return tool_response.get("connector")
+
+    def tool_response_connector_source(self, tool_response: dict[str, Any]) -> Any:
+        return tool_response.get("connector_source")
+
     def input_value(
         self,
         inputs: dict[str, Any],
