@@ -2087,10 +2087,9 @@ def _workflow_step(
 async def list_enterprise_workflows() -> dict[str, Any]:
     """List platform-managed workflow templates."""
     try:
-        workflows = _platform_workflow_template_service().list_templates()
+        return _platform_workflow_template_service().list_templates_response()
     except PlatformWorkflowTemplateServiceError as exc:
         _raise_platform_workflow_template_service_error(exc)
-    return {"workflows": workflows}
 
 
 @app.get("/enterprise/platform/scenarios")

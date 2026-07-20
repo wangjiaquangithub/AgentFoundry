@@ -177,6 +177,9 @@ class PlatformWorkflowTemplateService:
         except WorkflowTemplateRegistryError as exc:
             raise PlatformWorkflowTemplateServiceError(500, str(exc)) from exc
 
+    def list_templates_response(self) -> dict[str, Any]:
+        return {"workflows": self.list_templates()}
+
     def get_template(self, workflow_type: str) -> dict[str, Any]:
         for workflow in self.list_templates():
             if str(workflow.get("workflow_type", "")).strip() == workflow_type:
