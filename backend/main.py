@@ -2215,14 +2215,16 @@ async def list_enterprise_approval_requests(
     limit: int = 20,
 ) -> dict[str, Any]:
     """List recent platform governance approval requests."""
+    approval_service = _platform_approval_service()
+    list_context = approval_service.list_requests_request_payload(
+        status=status,
+        tenant=tenant,
+        user_id=user_id,
+        agent_id=agent_id,
+        limit=limit,
+    )
     try:
-        return _platform_approval_service().list_requests(
-            limit=limit,
-            status=status,
-            tenant=tenant,
-            user_id=user_id,
-            agent_id=agent_id,
-        )
+        return approval_service.list_requests(**list_context)
     except PlatformApprovalServiceError as exc:
         _raise_platform_approval_service_error(exc)
 

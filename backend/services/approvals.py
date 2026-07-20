@@ -50,6 +50,23 @@ class PlatformApprovalService:
             ),
         }
 
+    def list_requests_request_payload(
+        self,
+        *,
+        status: str | None = None,
+        tenant: str | None = None,
+        user_id: str | None = None,
+        agent_id: str | None = None,
+        limit: int = 20,
+    ) -> dict[str, Any]:
+        return {
+            "status": _optional_filter(status),
+            "tenant": _optional_filter(tenant),
+            "user_id": _optional_filter(user_id),
+            "agent_id": _optional_filter(agent_id),
+            "limit": limit,
+        }
+
     def list_records(
         self,
         *,
