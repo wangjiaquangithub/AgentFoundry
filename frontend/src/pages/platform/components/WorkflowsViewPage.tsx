@@ -1,4 +1,4 @@
-import { Activity, CheckCircle2, History, ListChecks, Workflow } from 'lucide-react';
+import { CheckCircle2, History, ListChecks, Workflow } from 'lucide-react';
 import type { RefObject } from 'react';
 
 
@@ -6,6 +6,7 @@ import {
 	PlatformConnectionCard,
 	PlatformPageHeader,
 	PlatformPageShell,
+	StatCard,
 } from './common';
 import { WorkflowRunnerPanel } from './WorkflowRunnerPanel';
 import type {
@@ -132,105 +133,73 @@ export function WorkflowsViewPage({
 				}
 			/>
 
-				<section className="grid gap-3 md:grid-cols-4">
-					<div className="rounded-lg border bg-background p-4 shadow-sm">
-						<div className="flex items-center justify-between gap-3">
-							<span className="text-sm font-medium text-muted-foreground">
-								{t('platform.workflowRunner.templates')}
-							</span>
-							<Workflow className="size-4 text-muted-foreground" />
-						</div>
-						<div className="mt-3 text-2xl font-semibold tabular-nums">
-							{workflowTemplates.length}
-						</div>
-						<p className="mt-1 truncate text-xs text-muted-foreground">
-							{t('platform.workflowRunner.selectWorkflow')}
-						</p>
-					</div>
-					<div className="rounded-lg border bg-background p-4 shadow-sm">
-						<div className="flex items-center justify-between gap-3">
-							<span className="text-sm font-medium text-muted-foreground">
-								{t('platform.workflowRunner.enabled')}
-							</span>
-							<CheckCircle2 className="size-4 text-muted-foreground" />
-						</div>
-						<div className="mt-3 text-2xl font-semibold tabular-nums">
-							{enabledWorkflowCount}
-						</div>
-						<p className="mt-1 truncate text-xs text-muted-foreground">
-							{workflowTemplatesLoading
-								? t('common.loading')
-								: t('platform.workflowRunner.disabled')}
-						</p>
-					</div>
-					<div className="rounded-lg border bg-background p-4 shadow-sm">
-						<div className="flex items-center justify-between gap-3">
-							<span className="text-sm font-medium text-muted-foreground">
-								{t('platform.workflowRunner.steps')}
-							</span>
-							<ListChecks className="size-4 text-muted-foreground" />
-						</div>
-						<div className="mt-3 text-2xl font-semibold tabular-nums">
-							{totalWorkflowSteps}
-						</div>
-						<p className="mt-1 truncate text-xs text-muted-foreground">
-							{selectedWorkflowTemplate
-								? t('platform.workflowRunner.stepsCount', {
-										count: selectedWorkflowTemplate.steps.length,
-									})
-								: t('platform.workflowRunner.noTemplates')}
-						</p>
-					</div>
-					<div className="rounded-lg border bg-background p-4 shadow-sm">
-						<div className="flex items-center justify-between gap-3">
-							<span className="text-sm font-medium text-muted-foreground">
-								{t('platform.workflowRunner.history')}
-							</span>
-							<History className="size-4 text-muted-foreground" />
-						</div>
-						<div className="mt-3 text-2xl font-semibold tabular-nums">
-							{workflowRuns.length}
-						</div>
-						<p className="mt-1 truncate text-xs text-muted-foreground">
-							{latestWorkflowStatusLabel}
-						</p>
-					</div>
-				</section>
+			<section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+				<StatCard
+					label={t('platform.workflowRunner.templates')}
+					value={workflowTemplates.length}
+					helper={t('platform.workflowRunner.selectWorkflow')}
+					icon={Workflow}
+					loading={workflowTemplatesLoading}
+				/>
+				<StatCard
+					label={t('platform.workflowRunner.enabled')}
+					value={enabledWorkflowCount}
+					helper={t('platform.workflowRunner.disabled')}
+					icon={CheckCircle2}
+					loading={workflowTemplatesLoading}
+				/>
+				<StatCard
+					label={t('platform.workflowRunner.steps')}
+					value={totalWorkflowSteps}
+					helper={
+						selectedWorkflowTemplate
+							? t('platform.workflowRunner.stepsCount', {
+									count: selectedWorkflowTemplate.steps.length,
+								})
+							: t('platform.workflowRunner.noTemplates')
+					}
+					icon={ListChecks}
+					loading={workflowTemplatesLoading}
+				/>
+				<StatCard
+					label={t('platform.workflowRunner.history')}
+					value={workflowRuns.length}
+					helper={latestWorkflowStatusLabel}
+					icon={History}
+					loading={workflowRunsLoading}
+				/>
+			</section>
 
-				<section ref={workflowRunnerRef}>
-					<div className="mb-3 flex items-center gap-2 text-sm font-medium text-muted-foreground">
-						<Activity className="size-4" />
-						<span>{t('platform.workflowRunner.summary')}</span>
-					</div>
-					<WorkflowRunnerPanel
-						selectedWorkflowType={selectedWorkflowType}
-						workflowOptions={workflowOptions}
-						selectedWorkflowTemplate={selectedWorkflowTemplate}
-						workflowInputs={workflowInputs}
-						workflowApprovalId={workflowApprovalId}
-						workflowRunError={workflowRunError}
-						workflowRunResult={workflowRunResult}
-						runningWorkflow={runningWorkflow}
-						workflowTemplatesLoading={workflowTemplatesLoading}
-						workflowTemplatesError={workflowTemplatesError}
-						workflowTemplates={workflowTemplates}
-						selectedWorkflowDisabled={selectedWorkflowDisabled}
-						savingWorkflowType={savingWorkflowType}
-						creatingRunApproval={creatingRunApproval}
-						platformError={platformError}
-						workflowRunsLoading={workflowRunsLoading}
-						workflowRunsError={workflowRunsError}
-						workflowRuns={workflowRuns}
-						onWorkflowTypeChange={onWorkflowTypeChange}
-						onWorkflowInputChange={onWorkflowInputChange}
-						onWorkflowApprovalIdChange={onWorkflowApprovalIdChange}
-						onRequestApproval={onRequestApproval}
-						onRunWorkflow={onRunWorkflow}
-						onToggleWorkflowTemplate={onToggleWorkflowTemplate}
-						summarizeAuditObject={summarizeAuditObject}
-						t={t}
-					/>
-				</section>
+			<section ref={workflowRunnerRef}>
+				<WorkflowRunnerPanel
+					selectedWorkflowType={selectedWorkflowType}
+					workflowOptions={workflowOptions}
+					selectedWorkflowTemplate={selectedWorkflowTemplate}
+					workflowInputs={workflowInputs}
+					workflowApprovalId={workflowApprovalId}
+					workflowRunError={workflowRunError}
+					workflowRunResult={workflowRunResult}
+					runningWorkflow={runningWorkflow}
+					workflowTemplatesLoading={workflowTemplatesLoading}
+					workflowTemplatesError={workflowTemplatesError}
+					workflowTemplates={workflowTemplates}
+					selectedWorkflowDisabled={selectedWorkflowDisabled}
+					savingWorkflowType={savingWorkflowType}
+					creatingRunApproval={creatingRunApproval}
+					platformError={platformError}
+					workflowRunsLoading={workflowRunsLoading}
+					workflowRunsError={workflowRunsError}
+					workflowRuns={workflowRuns}
+					onWorkflowTypeChange={onWorkflowTypeChange}
+					onWorkflowInputChange={onWorkflowInputChange}
+					onWorkflowApprovalIdChange={onWorkflowApprovalIdChange}
+					onRequestApproval={onRequestApproval}
+					onRunWorkflow={onRunWorkflow}
+					onToggleWorkflowTemplate={onToggleWorkflowTemplate}
+					summarizeAuditObject={summarizeAuditObject}
+					t={t}
+				/>
+			</section>
 		</PlatformPageShell>
 	);
 }

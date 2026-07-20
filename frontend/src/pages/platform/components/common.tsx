@@ -46,7 +46,7 @@ export interface PlatformPageShellProps {
 
 export function PlatformPageShell({ children, className }: PlatformPageShellProps) {
 	return (
-		<main className="h-full overflow-y-auto bg-slate-50/80">
+		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-slate-50/80">
 			<div
 				className={cn(
 					'mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-5 sm:px-5 lg:px-8',
