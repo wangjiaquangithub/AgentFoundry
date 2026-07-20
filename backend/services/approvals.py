@@ -74,6 +74,32 @@ class PlatformApprovalService:
             agent_id=_optional_filter(agent_id),
         )
 
+    def build_create_request_payload(
+        self,
+        *,
+        payload: Any,
+        tenant: str,
+        user_id: str,
+        requested_by: str,
+    ) -> dict[str, Any]:
+        request_type = payload.request_type.strip()
+        default_agent_id = (
+            "platform-workflow"
+            if request_type == "workflow_run"
+            else "platform-console"
+        )
+        return {
+            "request_type": request_type,
+            "tenant": tenant,
+            "user_id": user_id,
+            "agent_id": (payload.agent_id or "").strip() or default_agent_id,
+            "tool_name": _optional_filter(payload.tool_name),
+            "workflow_type": _optional_filter(payload.workflow_type),
+            "inputs": payload.inputs,
+            "reason": payload.reason,
+            "requested_by": requested_by,
+        }
+
     def create_request(
         self,
         *,
