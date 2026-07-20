@@ -4235,13 +4235,13 @@ def _load_workflow_runs(
     tenant: str | None = None,
     user_id: str | None = None,
 ) -> list[dict[str, Any]]:
-    return workflow_run_repository.list(
+    return _platform_workflow_run_service().list_runs(
         limit=limit,
         workflow_type=workflow_type,
         agent_id=agent_id,
         tenant=tenant,
         user_id=user_id,
-    )
+    )["runs"]
 
 
 def _enterprise_platform_scenarios() -> dict[str, Any]:
