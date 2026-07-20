@@ -1448,6 +1448,15 @@ class PlatformAgentRunService:
     ) -> bool:
         return status_code == 403 and bool(detail.get("approval_required"))
 
+    def approval_required_exception_detail(self, exc: Any) -> dict[str, Any] | None:
+        detail = self.approval_exception_detail(exc)
+        if not self.is_approval_required_exception(
+            status_code=exc.status_code,
+            detail=detail,
+        ):
+            return None
+        return detail
+
     def resolve_approval_required_reason(self, *, detail: dict[str, Any]) -> str:
         return str(
             detail.get(
