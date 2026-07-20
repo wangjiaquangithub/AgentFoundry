@@ -505,6 +505,35 @@ class PlatformAgentRunService:
         )
         return self.append_run(record)
 
+    def append_response_record_from_trace(
+        self,
+        *,
+        response_trace: dict[str, Any],
+        session_id: str,
+        agent_id: str,
+        agent_name: Any,
+        tenant: str,
+        user_id: str,
+        question: str,
+        answer: str,
+        runtime_adapter: dict[str, Any],
+        response: dict[str, Any],
+    ) -> dict[str, Any]:
+        return self.append_response_record(
+            turn_id=str(response_trace["turn_id"]),
+            session_id=session_id,
+            agent_id=agent_id,
+            agent_name=agent_name,
+            tenant=tenant,
+            user_id=user_id,
+            question=question,
+            answer=answer,
+            created_at=str(response_trace["created_at"]),
+            runtime_adapter=runtime_adapter,
+            evidence=dict(response_trace["evidence"]),
+            response=response,
+        )
+
     def clear_runs(
         self,
         *,

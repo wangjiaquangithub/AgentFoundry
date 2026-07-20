@@ -1750,7 +1750,6 @@ async def run_enterprise_agent(
             memory_saved=memory_saved,
         )
         turn_id = response_trace["turn_id"]
-        created_at = response_trace["created_at"]
         evidence = response_trace["evidence"]
         response = agent_run_service.build_unrouted_response(
             answer=answer,
@@ -1772,8 +1771,8 @@ async def run_enterprise_agent(
             decision=decision,
             evidence=evidence,
         )
-        agent_run_service.append_response_record(
-            turn_id=turn_id,
+        agent_run_service.append_response_record_from_trace(
+            response_trace=response_trace,
             session_id=runner_session_id,
             agent_id=runner_agent_id,
             agent_name=agent_metadata.get("agent_name"),
@@ -1781,9 +1780,7 @@ async def run_enterprise_agent(
             user_id=user_id,
             question=question,
             answer=answer,
-            created_at=created_at,
             runtime_adapter=runtime_adapter_payload,
-            evidence=evidence,
             response=response,
         )
         return response
@@ -1971,7 +1968,6 @@ async def run_enterprise_agent(
         memory_saved=memory_saved,
     )
     turn_id = response_trace["turn_id"]
-    created_at = response_trace["created_at"]
     evidence = response_trace["evidence"]
     response = agent_run_service.build_routed_response(
         answer=answer,
@@ -1995,8 +1991,8 @@ async def run_enterprise_agent(
         memory_saved=memory_saved,
         evidence=evidence,
     )
-    agent_run_service.append_response_record(
-        turn_id=turn_id,
+    agent_run_service.append_response_record_from_trace(
+        response_trace=response_trace,
         session_id=runner_session_id,
         agent_id=runner_agent_id,
         agent_name=agent_metadata.get("agent_name"),
@@ -2004,9 +2000,7 @@ async def run_enterprise_agent(
         user_id=user_id,
         question=question,
         answer=answer,
-        created_at=created_at,
         runtime_adapter=runtime_adapter_payload,
-        evidence=evidence,
         response=response,
     )
     return response
