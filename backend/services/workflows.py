@@ -5,6 +5,7 @@ from typing import Any, Callable
 
 from repositories.workflows import (
     WorkflowTemplateRegistryError,
+    WorkflowRunRepository,
     WorkflowTemplateRepository,
 )
 
@@ -215,5 +216,36 @@ class PlatformWorkflowTemplateService:
         return enabled_workflows, workflows
 
 
+class PlatformWorkflowRunService:
+    """Manage persisted enterprise workflow run history."""
+
+    def __init__(self, *, repository: WorkflowRunRepository) -> None:
+        self._repository = repository
+
+    def list_runs(
+        self,
+        *,
+        workflow_type: str | None = None,
+        agent_id: str | None = None,
+        tenant: str | None = None,
+        user_id: str | None = None,
+        limit: int = 20,
+    ) -> dict[str, Any]:
+        return {
+            "runs": self._repository.list(
+                limit=limit,
+                workflow_type=_optional_filter(workflow_type),
+                agent_id=_optional_filter(agent_id),
+                tenant=_optional_filter(tenant),
+                user_id=_optional_filter(user_id),
+            ),
+        }
+
+
 def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _optional_filter(value: str | None) -> str | None:
+    normalized = (value or "").strip()
+    return normalized or None

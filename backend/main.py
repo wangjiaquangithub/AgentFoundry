@@ -89,6 +89,7 @@ from services.tools import (
     PlatformToolPolicyServiceError,
 )
 from services.workflows import (
+    PlatformWorkflowRunService,
     PlatformWorkflowTemplateService,
     PlatformWorkflowTemplateServiceError,
 )
@@ -4079,6 +4080,10 @@ def _platform_workflow_template_service() -> PlatformWorkflowTemplateService:
     )
 
 
+def _platform_workflow_run_service() -> PlatformWorkflowRunService:
+    return PlatformWorkflowRunService(repository=workflow_run_repository)
+
+
 def _raise_platform_workflow_template_service_error(
     exc: PlatformWorkflowTemplateServiceError,
 ) -> NoReturn:
@@ -4750,15 +4755,13 @@ async def list_enterprise_workflow_runs(
     limit: int = 20,
 ) -> dict[str, Any]:
     """List recent platform workflow runs for review and audit."""
-    return {
-        "runs": _load_workflow_runs(
-            limit=limit,
-            workflow_type=(workflow_type or "").strip() or None,
-            agent_id=(agent_id or "").strip() or None,
-            tenant=(tenant or "").strip() or None,
-            user_id=(user_id or "").strip() or None,
-        ),
-    }
+    return _platform_workflow_run_service().list_runs(
+        limit=limit,
+        workflow_type=workflow_type,
+        agent_id=agent_id,
+        tenant=tenant,
+        user_id=user_id,
+    )
 
 
 @app.get("/enterprise/platform/approvals")
