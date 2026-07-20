@@ -613,22 +613,26 @@ def _get_platform_agent(agent_id: str) -> dict[str, Any]:
         _raise_platform_agent_service_error(exc)
 
 
-def _published_platform_agent_tool_scope(
-    agent_id: str,
-) -> tuple[dict[str, Any], set[str]]:
-    try:
-        return _platform_agent_service().published_tool_scope(agent_id)
-    except PlatformAgentServiceError as exc:
-        _raise_platform_agent_service_error(exc)
-
-
 def _published_platform_agent_tool_scope_for_user(
     agent_id: str,
     user_id: str,
 ) -> tuple[dict[str, Any], set[str]]:
-    agent, configured_tools = _published_platform_agent_tool_scope(agent_id)
-    _assert_platform_agent_access(agent, user_id)
-    return agent, configured_tools
+    try:
+        member = _platform_member_service().get_member_by_user(
+            user_id,
+            include_inactive=True,
+        )
+    except PlatformMemberServiceError as exc:
+        _raise_platform_member_service_error(exc)
+    try:
+        return _platform_agent_service().published_tool_scope_for_user(
+            agent_id,
+            user_id=user_id,
+            member=member,
+            role=_identity_role_for_user(user_id),
+        )
+    except PlatformAgentServiceError as exc:
+        _raise_platform_agent_service_error(exc)
 
 
 def _platform_member_service() -> PlatformMemberService:
@@ -729,25 +733,6 @@ def _identity_role_for_user(user_id: str) -> str:
         if identity.get("user_id") == user_id:
             return str(identity.get("role") or "").strip()
     return ""
-
-
-def _assert_platform_agent_access(agent: dict[str, Any], user_id: str) -> None:
-    try:
-        member = _platform_member_service().get_member_by_user(
-            user_id,
-            include_inactive=True,
-        )
-    except PlatformMemberServiceError as exc:
-        _raise_platform_member_service_error(exc)
-    try:
-        _platform_agent_service().assert_user_access(
-            agent,
-            user_id=user_id,
-            member=member,
-            role=_identity_role_for_user(user_id),
-        )
-    except PlatformAgentServiceError as exc:
-        _raise_platform_agent_service_error(exc)
 
 
 def _platform_agent_run_metadata(

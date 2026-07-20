@@ -69,6 +69,23 @@ class PlatformAgentService:
             )
         return agent, set(agent.get("tools") or [])
 
+    def published_tool_scope_for_user(
+        self,
+        agent_id: str,
+        *,
+        user_id: str,
+        member: dict[str, Any] | None,
+        role: str,
+    ) -> tuple[dict[str, Any], set[str]]:
+        agent, configured_tools = self.published_tool_scope(agent_id)
+        self.assert_user_access(
+            agent,
+            user_id=user_id,
+            member=member,
+            role=role,
+        )
+        return agent, configured_tools
+
     def template_metadata(self) -> list[dict[str, Any]]:
         return [
             {
