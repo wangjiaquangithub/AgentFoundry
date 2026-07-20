@@ -3222,15 +3222,6 @@ def _raise_platform_approval_service_error(
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
-def _get_enabled_platform_workflow_template(workflow_type: str) -> dict[str, Any]:
-    try:
-        return _platform_workflow_template_service().get_enabled_template(
-            workflow_type,
-        )
-    except PlatformWorkflowTemplateServiceError as exc:
-        _raise_platform_workflow_template_service_error(exc)
-
-
 def _enterprise_platform_scenarios() -> dict[str, Any]:
     try:
         workflows = _platform_workflow_template_service().list_templates()
@@ -3755,7 +3746,12 @@ async def run_enterprise_workflow(
         )
 
     workflow_type = payload.workflow_type.strip()
-    workflow_template = _get_enabled_platform_workflow_template(workflow_type)
+    try:
+        workflow_template = _platform_workflow_template_service().get_enabled_template(
+            workflow_type,
+        )
+    except PlatformWorkflowTemplateServiceError as exc:
+        _raise_platform_workflow_template_service_error(exc)
 
     runtime = _enterprise_runtime_context(user_id)
     tenant = str(runtime["tenant"])
