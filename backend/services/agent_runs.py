@@ -364,6 +364,28 @@ class PlatformAgentRunService:
             max_records=max_records,
         )
 
+    def build_unrouted_memory_append_context(
+        self,
+        *,
+        execution_context: dict[str, Any],
+        memory_context: dict[str, Any],
+        user_id: str,
+        answer: str,
+        max_records: int,
+    ) -> dict[str, Any]:
+        return self.build_memory_append_context(
+            enabled=bool(memory_context["memory_enabled"]),
+            tenant=str(execution_context["tenant"]),
+            user_id=user_id,
+            agent_id=str(execution_context["runner_agent_id"]),
+            session_id=str(execution_context["runner_session_id"]),
+            question=str(execution_context["question"]),
+            answer=answer,
+            tool_calls=[],
+            knowledge_base_ids=list(execution_context["knowledge_base_ids"]),
+            max_records=max_records,
+        )
+
     def build_knowledge_context(
         self,
         *,
