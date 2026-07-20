@@ -1440,45 +1440,17 @@ async def enterprise_platform_audit(
         success=success,
         limit=normalized_limit,
     )
-    stats = _platform_tool_policy_service().audit_stats(events)
-    return {
-        "events": events,
-        "summary": {
-            "total_returned": stats["calls"],
-            "successes": stats["successes"],
-            "failures": stats["failures"],
-            "avg_duration_ms": stats["avg_duration_ms"],
-            "unique_users": len(
-                {
-                    event.get("user_id")
-                    for event in events
-                    if event.get("user_id")
-                }
-            ),
-            "unique_agents": len(
-                {
-                    event.get("agent_id")
-                    for event in events
-                    if event.get("agent_id")
-                }
-            ),
-            "unique_tools": len(
-                {
-                    event.get("tool_name")
-                    for event in events
-                    if event.get("tool_name")
-                }
-            ),
-        },
-        "filters": {
+    return _platform_tool_policy_service().audit_log_response(
+        events=events,
+        filters={
             "tenant": tenant,
             "user_id": user_id,
             "agent_id": agent_id,
             "tool_name": tool_name,
             "success": success,
         },
-        "limit": normalized_limit,
-    }
+        limit=normalized_limit,
+    )
 
 
 @app.post("/enterprise/platform/tools/run")

@@ -129,6 +129,47 @@ class PlatformToolPolicyService:
             else None,
         }
 
+    def audit_log_response(
+        self,
+        *,
+        events: list[dict[str, Any]],
+        filters: dict[str, Any],
+        limit: int,
+    ) -> dict[str, Any]:
+        stats = self.audit_stats(events)
+        return {
+            "events": events,
+            "summary": {
+                "total_returned": stats["calls"],
+                "successes": stats["successes"],
+                "failures": stats["failures"],
+                "avg_duration_ms": stats["avg_duration_ms"],
+                "unique_users": len(
+                    {
+                        event.get("user_id")
+                        for event in events
+                        if event.get("user_id")
+                    }
+                ),
+                "unique_agents": len(
+                    {
+                        event.get("agent_id")
+                        for event in events
+                        if event.get("agent_id")
+                    }
+                ),
+                "unique_tools": len(
+                    {
+                        event.get("tool_name")
+                        for event in events
+                        if event.get("tool_name")
+                    }
+                ),
+            },
+            "filters": filters,
+            "limit": limit,
+        }
+
     def normalize_policy_tools(self, value: list[str] | None) -> list[str]:
         if not value:
             return []
