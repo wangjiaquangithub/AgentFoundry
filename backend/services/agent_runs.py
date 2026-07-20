@@ -300,6 +300,20 @@ class PlatformAgentRunService:
             "knowledge_base_ids": knowledge_base_ids,
         }
 
+    @staticmethod
+    def execution_context_view(execution_context: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "tenant": execution_context["tenant"],
+            "connector_label": execution_context["connector_label"],
+            "connector_source": execution_context["connector_source"],
+            "question": execution_context["question"],
+            "configured_tools": execution_context["configured_tools"],
+            "runner_agent_id": execution_context["runner_agent_id"],
+            "runner_session_id": execution_context["runner_session_id"],
+            "response_record_context": execution_context["response_record_context"],
+            "knowledge_base_ids": execution_context["knowledge_base_ids"],
+        }
+
     def resolve_runner_context(
         self,
         *,

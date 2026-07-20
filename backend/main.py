@@ -1560,15 +1560,18 @@ async def run_enterprise_agent(
         default_tool_names=set(ENTERPRISE_TOOL_NAMES),
         safe_path_part=_safe_path_part,
     )
-    tenant = execution_context["tenant"]
-    connector_label = execution_context["connector_label"]
-    connector_source = execution_context["connector_source"]
-    question = execution_context["question"]
-    configured_tools = execution_context["configured_tools"]
-    runner_agent_id = execution_context["runner_agent_id"]
-    runner_session_id = execution_context["runner_session_id"]
-    response_record_context = execution_context["response_record_context"]
-    knowledge_base_ids = execution_context["knowledge_base_ids"]
+    execution_context_view = agent_run_service.execution_context_view(
+        execution_context
+    )
+    tenant = execution_context_view["tenant"]
+    connector_label = execution_context_view["connector_label"]
+    connector_source = execution_context_view["connector_source"]
+    question = execution_context_view["question"]
+    configured_tools = execution_context_view["configured_tools"]
+    runner_agent_id = execution_context_view["runner_agent_id"]
+    runner_session_id = execution_context_view["runner_session_id"]
+    response_record_context = execution_context_view["response_record_context"]
+    knowledge_base_ids = execution_context_view["knowledge_base_ids"]
     memory_payload = platform_memory_service.build_agent_run_context(
         enabled=bool(agent_metadata.get("memory_enabled", False)),
         tenant=tenant,
