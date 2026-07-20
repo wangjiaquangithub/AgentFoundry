@@ -720,12 +720,6 @@ def _identity_role_for_user(user_id: str) -> str:
     return ""
 
 
-def _platform_agent_run_metadata(
-    agent: dict[str, Any] | None,
-) -> dict[str, Any]:
-    return _platform_agent_service().run_metadata(agent)
-
-
 def _resource_record_id(record: Any) -> str | None:
     if isinstance(record, dict):
         value = record.get("id")
@@ -2762,7 +2756,7 @@ async def run_enterprise_agent(
             user_id,
         )
 
-    agent_metadata = _platform_agent_run_metadata(agent)
+    agent_metadata = _platform_agent_service().run_metadata(agent)
     runtime_adapter = get_runtime_adapter(agent_metadata)
     runtime_adapter_payload = runtime_adapter.describe(agent_metadata)
     configured_tools = (
