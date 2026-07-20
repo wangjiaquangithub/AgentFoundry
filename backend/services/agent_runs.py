@@ -74,6 +74,23 @@ class PlatformAgentRunService:
             )
         return "\n\n".join(answer_parts)
 
+    def compose_unrouted_answer(
+        self,
+        *,
+        knowledge_hits: list[dict[str, Any]],
+        memory_hits: list[dict[str, Any]],
+        format_knowledge_answer: Callable[[list[dict[str, Any]]], str],
+        format_memory_answer: Callable[[list[dict[str, Any]]], str],
+    ) -> str:
+        if knowledge_hits:
+            return format_knowledge_answer(knowledge_hits)
+        if memory_hits:
+            return format_memory_answer(memory_hits)
+        return (
+            "这个演示 Agent 暂时只会处理三类问题：工单状态、制度查询、"
+            "部门指标。你可以试试：帮我查一下 INC-1001 的工单状态。"
+        )
+
     def build_evidence(
         self,
         *,

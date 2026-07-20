@@ -1741,17 +1741,11 @@ async def run_enterprise_agent(
         }
         if routing_error:
             decision["routing_error"] = routing_error
-        answer = (
-            knowledge_response_service.format_answer(knowledge_hits)
-            if knowledge_hits
-            else (
-                platform_memory_service.format_answer(memory_hits)
-                if memory_hits
-                else (
-                    "这个演示 Agent 暂时只会处理三类问题：工单状态、制度查询、"
-                    "部门指标。你可以试试：帮我查一下 INC-1001 的工单状态。"
-                )
-            )
+        answer = _platform_agent_run_service().compose_unrouted_answer(
+            knowledge_hits=knowledge_hits,
+            memory_hits=memory_hits,
+            format_knowledge_answer=knowledge_response_service.format_answer,
+            format_memory_answer=platform_memory_service.format_answer,
         )
         memory_saved = False
         if memory_enabled and not platform_memory_service.is_agent_turn_memory_lookup(
