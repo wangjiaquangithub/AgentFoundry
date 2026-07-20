@@ -3534,10 +3534,6 @@ def _raise_platform_approval_service_error(
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
-def _default_workflow_templates() -> list[dict[str, Any]]:
-    return _platform_workflow_template_service().default_templates()
-
-
 def _save_platform_workflow_templates(workflows: list[dict[str, Any]]) -> None:
     _platform_workflow_template_service().save_templates(workflows)
 
