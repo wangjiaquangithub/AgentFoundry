@@ -1050,17 +1050,16 @@ async def enterprise_platform_governance(request: Request) -> dict[str, Any]:
 @app.get("/enterprise/platform/members")
 async def enterprise_platform_members(request: Request) -> dict[str, Any]:
     """Return the editable enterprise member registry."""
-    user_id = request.headers.get("X-User-ID") or "acme:alice"
+    status_service = _platform_status_service()
     try:
-        runtime = _platform_connector_config_service().enterprise_runtime_context(user_id)
+        context = status_service.status_request_context(
+            user_id=request.headers.get("X-User-ID"),
+        )
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
-    runtime_selection = _platform_status_service().runtime_selection(runtime)
-    tenant = runtime_selection["tenant"]
-    identities = _platform_identity_metadata(user_id, tenant)
     try:
         return _platform_member_service().registry_payload(
-            identities=identities,
+            identities=context["identities"],
             registry_path=PLATFORM_MEMBERS_PATH,
         )
     except PlatformMemberServiceError as exc:
