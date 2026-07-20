@@ -1592,7 +1592,10 @@ async def run_enterprise_agent(
 
     agent_run_service = _platform_agent_run_service()
     user_id = payload.user_id or request.headers.get("X-User-ID") or "acme:alice"
-    runtime = _enterprise_runtime_context(user_id)
+    try:
+        runtime = _platform_connector_config_service().enterprise_runtime_context(user_id)
+    except PlatformConnectorConfigServiceError as exc:
+        _raise_platform_connector_config_service_error(exc)
     tenant = str(runtime["tenant"])
     connector_label = str(runtime["connector_label"])
     connector_source = str(runtime["connector_source"])
