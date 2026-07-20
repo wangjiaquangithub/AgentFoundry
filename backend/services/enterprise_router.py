@@ -341,6 +341,13 @@ class PlatformEnterpriseRouterService:
 
         return "+".join(sources) if sources else self._default_source
 
+    def routing_state_for(self, routes: list[dict[str, Any]]) -> dict[str, str]:
+        routing_mode = self.routing_mode_for(routes)
+        return {
+            "routing_mode": routing_mode,
+            "routing_source": routing_mode,
+        }
+
     def decision_with_routing_context(
         self,
         decision: dict[str, Any],
