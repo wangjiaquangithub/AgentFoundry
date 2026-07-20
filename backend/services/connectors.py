@@ -39,6 +39,46 @@ class PlatformConnectorConfigService:
         self._preview_result = preview_result or _preview_connector_result
         self._now = now or _utc_now_iso
 
+    def supported_connectors(self) -> list[dict[str, Any]]:
+        return [
+            {
+                "name": "mock",
+                "mode": "local",
+                "description": "Built-in tenant fixture data for local demos.",
+                "env_vars": ["ENTERPRISE_CONNECTOR"],
+            },
+            {
+                "name": "fixture",
+                "mode": "local",
+                "description": "Load tenant fixture data from a JSON file.",
+                "env_vars": [
+                    "ENTERPRISE_CONNECTOR",
+                    "ENTERPRISE_FIXTURE_PATH",
+                    "ENTERPRISE_MOCK_DATA_PATH",
+                ],
+            },
+            {
+                "name": "http",
+                "mode": "remote",
+                "description": (
+                    "Read tenant-scoped business data from an enterprise HTTP API."
+                ),
+                "env_vars": [
+                    "ENTERPRISE_CONNECTOR",
+                    "ENTERPRISE_API_BASE_URL",
+                    "ENTERPRISE_API_TOKEN",
+                    "ENTERPRISE_POLICY_PATH",
+                    "ENTERPRISE_TICKET_PATH",
+                    "ENTERPRISE_METRICS_PATH",
+                ],
+                "paths": {
+                    "policy": "/tenants/{tenant}/policies/search",
+                    "ticket": "/tenants/{tenant}/tickets/{ticket_id}",
+                    "metrics": "/tenants/{tenant}/departments/{department}/metrics",
+                },
+            },
+        ]
+
     def list_configs(self) -> dict[str, dict[str, Any]]:
         try:
             return self._repository.list_by_tenant()
