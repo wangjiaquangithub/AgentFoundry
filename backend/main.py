@@ -970,20 +970,6 @@ def _agent_tool_denial(tool_name: str) -> dict[str, Any]:
     }
 
 
-def _search_platform_dev_knowledge(
-    question: str,
-    knowledge_base_ids: list[str],
-    *,
-    top_k: int = 3,
-) -> list[dict[str, Any]]:
-    return dev_knowledge_service.search(
-        question=question,
-        knowledge_base_ids=knowledge_base_ids,
-        provider=PLATFORM_DEV_KNOWLEDGE_PROVIDER,
-        top_k=top_k,
-    )
-
-
 def _truncate_text(value: str, limit: int = 300) -> str:
     text = re.sub(r"\s+", " ", value).strip()
     if len(text) <= limit:
@@ -1268,9 +1254,10 @@ async def _search_agent_knowledge_bases(
             )
             for hit in hits
         }
-        for hit in _search_platform_dev_knowledge(
-            question,
-            knowledge_base_ids,
+        for hit in dev_knowledge_service.search(
+            question=question,
+            knowledge_base_ids=knowledge_base_ids,
+            provider=PLATFORM_DEV_KNOWLEDGE_PROVIDER,
             top_k=top_k,
         ):
             key = (
