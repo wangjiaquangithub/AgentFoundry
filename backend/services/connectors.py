@@ -209,6 +209,9 @@ class PlatformConnectorConfigService:
             for _tenant, config in sorted(self.list_configs().items())
         ]
 
+    def export_configs_payload(self) -> list[dict[str, Any]]:
+        return self.redacted_configs()
+
     def list_configs_response(self) -> dict[str, Any]:
         return {"saved_configs": self.redacted_configs()}
 

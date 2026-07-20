@@ -1432,13 +1432,6 @@ def _raise_platform_connector_config_service_error(
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
-def _redacted_connector_configs() -> list[dict[str, Any]]:
-    try:
-        return _platform_connector_config_service().redacted_configs()
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
-
-
 def _tenant_hint_from_user_id(user_id: str) -> str | None:
     if ":" not in user_id:
         return None
@@ -1504,9 +1497,16 @@ def _platform_config_counts(config: dict[str, Any]) -> dict[str, int]:
 
 
 def _export_platform_config() -> dict[str, Any]:
+    try:
+        connector_configs = (
+            _platform_connector_config_service().export_configs_payload()
+        )
+    except PlatformConnectorConfigServiceError as exc:
+        _raise_platform_connector_config_service_error(exc)
+
     config = {
         "members": _platform_member_registry(include_inactive=True),
-        "connector_configs": _redacted_connector_configs(),
+        "connector_configs": connector_configs,
         "agents": _load_platform_agents(),
         "workflow_templates": _load_platform_workflow_templates(),
         "tool_policy": _load_platform_tool_policy_config(),
