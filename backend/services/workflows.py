@@ -307,6 +307,23 @@ class PlatformWorkflowRunService:
             user_id=user_id,
         )["runs"]
 
+    def build_run_request_payload(
+        self,
+        *,
+        payload: Any,
+        actor: str | None,
+    ) -> dict[str, Any]:
+        user_id = payload.user_id or actor or "acme:alice"
+        requested_agent_id = _optional_filter(payload.agent_id) or ""
+        return {
+            "user_id": user_id,
+            "requested_agent_id": requested_agent_id,
+            "agent_id": requested_agent_id or "platform-workflow",
+            "workflow_type": payload.workflow_type.strip(),
+            "inputs": payload.inputs,
+            "approval_id": payload.approval_id,
+        }
+
     def build_platform_scenarios(
         self,
         *,

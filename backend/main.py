@@ -2400,9 +2400,14 @@ async def run_enterprise_workflow(
     request: Request,
 ) -> dict[str, Any]:
     """Run a predefined enterprise automation workflow from the platform."""
-    user_id = payload.user_id or request.headers.get("X-User-ID") or "acme:alice"
-    requested_agent_id = (payload.agent_id or "").strip()
-    agent_id = requested_agent_id or "platform-workflow"
+    workflow_run_service = _platform_workflow_run_service()
+    run_request = workflow_run_service.build_run_request_payload(
+        payload=payload,
+        actor=request.headers.get("X-User-ID"),
+    )
+    user_id = run_request["user_id"]
+    requested_agent_id = run_request["requested_agent_id"]
+    agent_id = run_request["agent_id"]
     configured_tools: set[str] | None = None
     if requested_agent_id:
         _, configured_tools = _published_platform_agent_tool_scope_for_user(
@@ -2410,7 +2415,7 @@ async def run_enterprise_workflow(
             user_id,
         )
 
-    workflow_type = payload.workflow_type.strip()
+    workflow_type = run_request["workflow_type"]
     try:
         workflow_template = _platform_workflow_template_service().get_enabled_template(
             workflow_type,
@@ -2429,12 +2434,11 @@ async def run_enterprise_workflow(
     connector_source = runtime_selection["connector_source"]
     run_id = uuid4().hex
     started_at = _now_iso()
-    workflow_run_service = _platform_workflow_run_service()
     session_id = workflow_run_service.session_id(workflow_type, run_id)
     workflow_name = workflow_run_service.workflow_name(workflow_template, workflow_type)
     default_inputs = workflow_run_service.default_inputs(workflow_template)
     normalized_inputs = workflow_run_service.normalize_inputs(
-        payload.inputs,
+        run_request["inputs"],
         default_inputs,
     )
     try:
@@ -2458,7 +2462,7 @@ async def run_enterprise_workflow(
         APPROVAL_REQUIRED_WORKFLOWS,
     ):
         approval_id = _require_platform_approval(
-            approval_id=payload.approval_id,
+            approval_id=run_request["approval_id"],
             request_type="workflow_run",
             target_key="workflow_type",
             target_value=workflow_type,
