@@ -4390,10 +4390,6 @@ def _build_agent_run_evidence(
     }
 
 
-def _read_platform_approval_requests() -> list[dict[str, Any]]:
-    return approval_request_repository.read_all()
-
-
 def _load_platform_approval_requests(
     *,
     limit: int = 20,
@@ -4411,14 +4407,6 @@ def _load_platform_approval_requests(
     )
 
 
-def _get_platform_approval_request(approval_id: str) -> dict[str, Any]:
-    normalized_id = approval_id.strip()
-    for record in _read_platform_approval_requests():
-        if record.get("approval_id") == normalized_id:
-            return record
-    raise HTTPException(status_code=404, detail=f"Unknown approval request: {normalized_id}")
-
-
 def _require_platform_approval(
     *,
     approval_id: str | None,
@@ -4430,66 +4418,19 @@ def _require_platform_approval(
     agent_id: str,
     inputs: dict[str, Any],
 ) -> str:
-    """Validate that a high-risk platform action has a matching approval."""
-    normalized_approval_id = (approval_id or "").strip()
-    if not normalized_approval_id:
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "approval_required": True,
-                "message": "该操作需要先在审批中心批准后才能运行。",
-                "request_type": request_type,
-                "target_key": target_key,
-                "target": target_value,
-                "tenant": tenant,
-                "user_id": user_id,
-                "agent_id": agent_id,
-                "inputs": inputs,
-            },
+    try:
+        return _platform_approval_service().require_approval(
+            approval_id=approval_id,
+            request_type=request_type,
+            target_key=target_key,
+            target_value=target_value,
+            tenant=tenant,
+            user_id=user_id,
+            agent_id=agent_id,
+            inputs=inputs,
         )
-
-    approval = _get_platform_approval_request(normalized_approval_id)
-    approval_agent_id = str(approval.get("agent_id") or "").strip()
-    approved_inputs = approval.get("inputs")
-    if not isinstance(approved_inputs, dict):
-        approved_inputs = {}
-
-    input_mismatch = any(
-        str(inputs.get(key)) != str(value) for key, value in approved_inputs.items()
-    )
-    if (
-        approval.get("status") != "approved"
-        or approval.get("request_type") != request_type
-        or approval.get(target_key) != target_value
-        or approval.get("tenant") != tenant
-        or approval.get("user_id") != user_id
-        or (
-            approval_agent_id
-            and approval_agent_id != agent_id
-            and not (
-                request_type == "workflow_run"
-                and approval_agent_id == "platform-console"
-                and agent_id == "platform-workflow"
-            )
-        )
-        or input_mismatch
-    ):
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "approval_required": True,
-                "message": "审批记录与本次操作不匹配，或尚未批准。",
-                "request_type": request_type,
-                "target_key": target_key,
-                "target": target_value,
-                "tenant": tenant,
-                "user_id": user_id,
-                "agent_id": agent_id,
-                "inputs": inputs,
-            },
-        )
-
-    return normalized_approval_id
+    except PlatformApprovalServiceError as exc:
+        _raise_platform_approval_service_error(exc)
 
 
 def _workflow_error_message(exc: HTTPException) -> str:

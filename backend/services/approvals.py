@@ -110,6 +110,77 @@ class PlatformApprovalService:
         self._repository.append(record)
         return record
 
+    def require_approval(
+        self,
+        *,
+        approval_id: str | None,
+        request_type: str,
+        target_key: str,
+        target_value: str,
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        inputs: dict[str, Any],
+    ) -> str:
+        """Validate that a high-risk platform action has a matching approval."""
+        normalized_approval_id = (approval_id or "").strip()
+        if not normalized_approval_id:
+            raise PlatformApprovalServiceError(
+                403,
+                _approval_required_detail(
+                    message="该操作需要先在审批中心批准后才能运行。",
+                    request_type=request_type,
+                    target_key=target_key,
+                    target_value=target_value,
+                    tenant=tenant,
+                    user_id=user_id,
+                    agent_id=agent_id,
+                    inputs=inputs,
+                ),
+            )
+
+        approval = self._get_request(normalized_approval_id)
+        approval_agent_id = str(approval.get("agent_id") or "").strip()
+        approved_inputs = approval.get("inputs")
+        if not isinstance(approved_inputs, dict):
+            approved_inputs = {}
+
+        input_mismatch = any(
+            str(inputs.get(key)) != str(value) for key, value in approved_inputs.items()
+        )
+        if (
+            approval.get("status") != "approved"
+            or approval.get("request_type") != request_type
+            or approval.get(target_key) != target_value
+            or approval.get("tenant") != tenant
+            or approval.get("user_id") != user_id
+            or (
+                approval_agent_id
+                and approval_agent_id != agent_id
+                and not (
+                    request_type == "workflow_run"
+                    and approval_agent_id == "platform-console"
+                    and agent_id == "platform-workflow"
+                )
+            )
+            or input_mismatch
+        ):
+            raise PlatformApprovalServiceError(
+                403,
+                _approval_required_detail(
+                    message="审批记录与本次操作不匹配，或尚未批准。",
+                    request_type=request_type,
+                    target_key=target_key,
+                    target_value=target_value,
+                    tenant=tenant,
+                    user_id=user_id,
+                    agent_id=agent_id,
+                    inputs=inputs,
+                ),
+            )
+
+        return normalized_approval_id
+
     def update_status(
         self,
         *,
@@ -151,7 +222,41 @@ class PlatformApprovalService:
             f"Unknown approval request: {normalized_id}",
         )
 
+    def _get_request(self, approval_id: str) -> dict[str, Any]:
+        normalized_id = approval_id.strip()
+        for record in self._repository.read_all():
+            if record.get("approval_id") == normalized_id:
+                return record
+        raise PlatformApprovalServiceError(
+            404,
+            f"Unknown approval request: {normalized_id}",
+        )
+
 
 def _optional_filter(value: str | None) -> str | None:
     normalized = (value or "").strip()
     return normalized or None
+
+
+def _approval_required_detail(
+    *,
+    message: str,
+    request_type: str,
+    target_key: str,
+    target_value: str,
+    tenant: str,
+    user_id: str,
+    agent_id: str,
+    inputs: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "approval_required": True,
+        "message": message,
+        "request_type": request_type,
+        "target_key": target_key,
+        "target": target_value,
+        "tenant": tenant,
+        "user_id": user_id,
+        "agent_id": agent_id,
+        "inputs": inputs,
+    }
