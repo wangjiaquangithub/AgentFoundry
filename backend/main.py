@@ -1426,7 +1426,6 @@ def _platform_connector_config_service() -> PlatformConnectorConfigService:
         repository=connector_config_repository,
         global_connector=enterprise_connector,
         tenant_hint_from_user_id=_tenant_hint_from_user_id,
-        preview_result=_preview_connector_result,
         now=_now_iso,
     )
 
@@ -2118,10 +2117,6 @@ def _enterprise_connector_health() -> dict[str, Any]:
             "tool call."
         ),
     }
-
-
-def _preview_connector_result(result: Any) -> str:
-    return json.dumps(result, ensure_ascii=False, default=str)[:500]
 
 
 def _create_platform_agent(

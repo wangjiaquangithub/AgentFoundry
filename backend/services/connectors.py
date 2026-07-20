@@ -1,5 +1,6 @@
 """Service-layer orchestration for enterprise connector configuration."""
 
+import json
 from datetime import datetime, timezone
 from time import perf_counter
 from typing import Any, Callable
@@ -29,13 +30,13 @@ class PlatformConnectorConfigService:
         repository: ConnectorConfigRepository,
         global_connector: EnterpriseConnector,
         tenant_hint_from_user_id: Callable[[str], str | None],
-        preview_result: Callable[[Any], str],
+        preview_result: Callable[[Any], str] | None = None,
         now: Callable[[], str] | None = None,
     ) -> None:
         self._repository = repository
         self._global_connector = global_connector
         self._tenant_hint_from_user_id = tenant_hint_from_user_id
-        self._preview_result = preview_result
+        self._preview_result = preview_result or _preview_connector_result
         self._now = now or _utc_now_iso
 
     def list_configs(self) -> dict[str, dict[str, Any]]:
@@ -263,3 +264,7 @@ class PlatformConnectorConfigService:
 
 def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _preview_connector_result(result: Any) -> str:
+    return json.dumps(result, ensure_ascii=False, default=str)[:500]
