@@ -1535,6 +1535,29 @@ class PlatformAgentRunService:
             ),
         )
 
+    def create_pending_tool_approval_request_from_context(
+        self,
+        *,
+        platform_approval_service: Callable[[], Any],
+        detail: dict[str, Any],
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        tool_name: str,
+        inputs: dict[str, Any],
+        headers: Any,
+    ) -> dict[str, Any]:
+        return self.create_pending_approval_request(
+            create_request=platform_approval_service().create_request,
+            detail=detail,
+            tenant=tenant,
+            user_id=user_id,
+            agent_id=agent_id,
+            tool_name=tool_name,
+            inputs=inputs,
+            headers=headers,
+        )
+
     def resolve_approval_id(self, approval: dict[str, Any]) -> str:
         return str(approval["approval_id"])
 

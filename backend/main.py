@@ -1740,15 +1740,17 @@ async def run_enterprise_agent(
                     raise
 
                 try:
-                    approval = agent_run_service.create_pending_approval_request(
-                        create_request=_platform_approval_service().create_request,
-                        detail=detail,
-                        tenant=tenant,
-                        user_id=user_id,
-                        agent_id=runner_agent_id,
-                        tool_name=tool_name,
-                        inputs=route_inputs,
-                        headers=request.headers,
+                    approval = (
+                        agent_run_service.create_pending_tool_approval_request_from_context(
+                            platform_approval_service=_platform_approval_service,
+                            detail=detail,
+                            tenant=tenant,
+                            user_id=user_id,
+                            agent_id=runner_agent_id,
+                            tool_name=tool_name,
+                            inputs=route_inputs,
+                            headers=request.headers,
+                        )
                     )
                 except PlatformApprovalServiceError as service_exc:
                     _raise_platform_approval_service_error(service_exc)
