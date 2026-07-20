@@ -548,12 +548,20 @@ class PlatformConnectorConfigService:
             "updated_by": user_id,
         }
 
-    def save_config_payload(self, payload: Any, *, user_id: str) -> dict[str, Any]:
+    def save_config_payload(
+        self,
+        payload: Any,
+        *,
+        user_id: str | None,
+    ) -> dict[str, Any]:
+        resolved_user_id = self.resolve_request_user_id(user_id)
         configs = self.list_configs()
-        tenant = payload.tenant.strip() or self.configured_tenant_for_user(user_id)
+        tenant = payload.tenant.strip() or self.configured_tenant_for_user(
+            resolved_user_id,
+        )
         config = self.normalize_config_payload(
             payload,
-            user_id=user_id,
+            user_id=resolved_user_id,
             existing_config=configs.get(tenant),
         )
         configs[config["tenant"]] = config

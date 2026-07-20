@@ -1199,11 +1199,10 @@ async def save_enterprise_platform_connector_config(
     request: Request,
 ) -> dict[str, Any]:
     """Persist a tenant-scoped connector configuration."""
-    user_id = request.headers.get("X-User-ID") or "acme:alice"
     try:
         return _platform_connector_config_service().save_config_payload(
             payload,
-            user_id=user_id,
+            user_id=request.headers.get("X-User-ID"),
         )
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
