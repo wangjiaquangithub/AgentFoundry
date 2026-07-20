@@ -329,6 +329,19 @@ class PlatformConnectorConfigService:
             )
         return mode, incoming
 
+    def import_config_response(
+        self,
+        *,
+        mode: str,
+        exported_config: dict[str, Any],
+    ) -> dict[str, Any]:
+        return {
+            "imported": True,
+            "mode": mode,
+            "counts": exported_config["counts"],
+            "config": exported_config,
+        }
+
     def list_configs_response(self) -> dict[str, Any]:
         return {"saved_configs": self.redacted_configs()}
 

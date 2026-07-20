@@ -2222,12 +2222,10 @@ async def import_enterprise_platform_config(
         tool_authorization_policy = _build_tool_authorization_policy()
 
     exported = _export_platform_config()
-    return {
-        "imported": True,
-        "mode": mode,
-        "counts": exported["counts"],
-        "config": exported,
-    }
+    return _platform_connector_config_service().import_config_response(
+        mode=mode,
+        exported_config=exported,
+    )
 
 
 @app.get("/enterprise/platform/agents")
