@@ -49,6 +49,35 @@ class PlatformAgentRunService:
         self._repository.append(record)
         return record
 
+    def resolve_runner_context(
+        self,
+        *,
+        agent_metadata: dict[str, Any],
+        agent: dict[str, Any] | None,
+        user_id: str,
+        session_id: str | None,
+        default_tool_names: set[str],
+        safe_path_part: Callable[[str], str],
+    ) -> dict[str, Any]:
+        configured_tools = (
+            set(agent_metadata["configured_tools"])
+            if agent is not None
+            else set(default_tool_names)
+        )
+        runner_agent_id = (
+            str(agent_metadata["agent_id"])
+            if agent_metadata.get("agent_id")
+            else "platform-agent-runner"
+        )
+        runner_session_id = (session_id or "").strip() or (
+            f"platform-agent:{runner_agent_id}:{safe_path_part(user_id)}"
+        )
+        return {
+            "configured_tools": configured_tools,
+            "runner_agent_id": runner_agent_id,
+            "runner_session_id": runner_session_id,
+        }
+
     def summarize_routed_tool_calls(
         self,
         tool_calls: list[dict[str, Any]],

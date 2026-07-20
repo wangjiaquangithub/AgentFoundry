@@ -1665,19 +1665,17 @@ async def run_enterprise_agent(
     agent_metadata = _platform_agent_service().run_metadata(agent)
     runtime_adapter = get_runtime_adapter(agent_metadata)
     runtime_adapter_payload = runtime_adapter.describe(agent_metadata)
-    configured_tools = (
-        set(agent_metadata["configured_tools"])
-        if agent is not None
-        else set(ENTERPRISE_TOOL_NAMES)
+    runner_context = _platform_agent_run_service().resolve_runner_context(
+        agent_metadata=agent_metadata,
+        agent=agent,
+        user_id=user_id,
+        session_id=payload.session_id,
+        default_tool_names=set(ENTERPRISE_TOOL_NAMES),
+        safe_path_part=_safe_path_part,
     )
-    runner_agent_id = (
-        str(agent_metadata["agent_id"])
-        if agent_metadata.get("agent_id")
-        else "platform-agent-runner"
-    )
-    runner_session_id = (payload.session_id or "").strip() or (
-        f"platform-agent:{runner_agent_id}:{_safe_path_part(user_id)}"
-    )
+    configured_tools = runner_context["configured_tools"]
+    runner_agent_id = runner_context["runner_agent_id"]
+    runner_session_id = runner_context["runner_session_id"]
     memory_payload = platform_memory_service.build_agent_run_context(
         enabled=bool(agent_metadata.get("memory_enabled", False)),
         tenant=tenant,
