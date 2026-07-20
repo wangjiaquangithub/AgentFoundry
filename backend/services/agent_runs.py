@@ -330,6 +330,32 @@ class PlatformAgentRunService:
             "answer": answer,
         }
 
+    def build_pending_approval_response_context(
+        self,
+        *,
+        detail: dict[str, Any],
+        approval_id: str,
+    ) -> dict[str, Any]:
+        reason = str(
+            detail.get(
+                "message",
+                "该工具需要审批后才能运行。",
+            ),
+        )
+        return {
+            "approval_message": (
+                f"该工具需要审批，已自动创建审批请求 {approval_id}。"
+                "请到审批中心批准后再运行。"
+            ),
+            "decision_payload": {
+                "allowed": False,
+                "reason": reason,
+                "approval_required": True,
+                "approval_id": approval_id,
+                "approval_status": "pending",
+            },
+        }
+
     def build_executed_routed_tool_call(
         self,
         *,

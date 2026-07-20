@@ -1796,21 +1796,14 @@ async def run_enterprise_agent(
                 except PlatformApprovalServiceError as service_exc:
                     _raise_platform_approval_service_error(service_exc)
                 approval_id = str(approval["approval_id"])
-                approval_message = (
-                    f"该工具需要审批，已自动创建审批请求 {approval_id}。"
-                    "请到审批中心批准后再运行。"
+                pending_approval_context = (
+                    agent_run_service.build_pending_approval_response_context(
+                        detail=detail,
+                        approval_id=approval_id,
+                    )
                 )
                 decision = enterprise_router_service.decision_with_routing_context(
-                    {
-                        "allowed": False,
-                        "reason": detail.get(
-                            "message",
-                            "该工具需要审批后才能运行。",
-                        ),
-                        "approval_required": True,
-                        "approval_id": approval_id,
-                        "approval_status": "pending",
-                    },
+                    pending_approval_context["decision_payload"],
                     routing_reason=route_reason,
                     routing_source=route_source,
                     routing_mode=routing_mode,
@@ -1828,7 +1821,7 @@ async def run_enterprise_agent(
                         routing_source=route_source,
                         routing_reason=route_reason,
                         decision=decision,
-                        answer=approval_message,
+                        answer=str(pending_approval_context["approval_message"]),
                     ),
                 )
                 continue
