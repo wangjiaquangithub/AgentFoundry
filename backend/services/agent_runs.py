@@ -57,6 +57,13 @@ class PlatformAgentRunService:
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
 
+    def build_runtime_identity(self, runtime: dict[str, Any]) -> dict[str, str]:
+        return {
+            "tenant": str(runtime["tenant"]),
+            "connector": str(runtime["connector_label"]),
+            "connector_source": str(runtime["connector_source"]),
+        }
+
     def build_response_trace(
         self,
         *,

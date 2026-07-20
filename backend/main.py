@@ -1595,9 +1595,10 @@ async def run_enterprise_agent(
         runtime = _platform_connector_config_service().enterprise_runtime_context(user_id)
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
-    tenant = str(runtime["tenant"])
-    connector_label = str(runtime["connector_label"])
-    connector_source = str(runtime["connector_source"])
+    runtime_identity = agent_run_service.build_runtime_identity(runtime)
+    tenant = runtime_identity["tenant"]
+    connector_label = runtime_identity["connector"]
+    connector_source = runtime_identity["connector_source"]
     question = payload.question.strip()
     agent = None
     if payload.agent_id:
