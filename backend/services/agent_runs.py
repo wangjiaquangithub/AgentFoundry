@@ -302,6 +302,18 @@ class PlatformAgentRunService:
     ) -> list[Any]:
         return list(agent_metadata.get("knowledge_base_ids") or [])
 
+    def build_memory_context(
+        self,
+        *,
+        memory_payload: dict[str, Any],
+        memory_state: dict[str, Any],
+    ) -> dict[str, Any]:
+        return {
+            "memory_payload": memory_payload,
+            "memory_enabled": bool(memory_state["memory_enabled"]),
+            "memory_hits": list(memory_state["memory_hits"]),
+        }
+
     def build_routing_context(
         self,
         *,
