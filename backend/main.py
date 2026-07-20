@@ -1794,7 +1794,7 @@ async def run_enterprise_agent(
                     )
                 except PlatformApprovalServiceError as service_exc:
                     _raise_platform_approval_service_error(service_exc)
-                approval_id = str(approval["approval_id"])
+                approval_id = agent_run_service.resolve_approval_id(approval)
                 pending_approval_context = (
                     agent_run_service.build_pending_approval_response_context(
                         detail=detail,

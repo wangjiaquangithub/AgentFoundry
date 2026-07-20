@@ -384,6 +384,9 @@ class PlatformAgentRunService:
             "requested_by": requested_by,
         }
 
+    def resolve_approval_id(self, approval: dict[str, Any]) -> str:
+        return str(approval["approval_id"])
+
     def build_executed_routed_tool_call(
         self,
         *,
