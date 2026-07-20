@@ -180,6 +180,29 @@ class PlatformToolPolicyService:
         self.save_policy(policy)
         return self.build_authorization_policy()
 
+    def update_user_policy_payload(
+        self,
+        *,
+        tenant: str,
+        user_id: str,
+        allow: list[str] | None,
+        deny: list[str] | None,
+    ) -> tuple[ToolAuthorizationPolicy, dict[str, Any]]:
+        authorization_policy = self.update_user_policy(
+            tenant=tenant,
+            user_id=user_id,
+            allow=allow,
+            deny=deny,
+        )
+        return (
+            authorization_policy,
+            self.policy_payload(
+                authorization_policy=authorization_policy,
+                user_id=user_id.strip(),
+                tenant=tenant.strip(),
+            ),
+        )
+
     def _repository(self) -> ToolPolicyRepository:
         return ToolPolicyRepository(
             self._policy_path(),

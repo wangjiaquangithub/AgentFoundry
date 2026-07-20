@@ -2090,7 +2090,10 @@ async def update_enterprise_platform_tool_policy(
     global tool_authorization_policy
 
     try:
-        tool_authorization_policy = _platform_tool_policy_service().update_user_policy(
+        (
+            tool_authorization_policy,
+            response_payload,
+        ) = _platform_tool_policy_service().update_user_policy_payload(
             tenant=payload.tenant,
             user_id=payload.user_id,
             allow=payload.allow,
@@ -2099,14 +2102,7 @@ async def update_enterprise_platform_tool_policy(
     except PlatformToolPolicyServiceError as exc:
         _raise_platform_tool_policy_service_error(exc)
 
-    try:
-        return _platform_tool_policy_service().policy_payload(
-            authorization_policy=tool_authorization_policy,
-            user_id=payload.user_id.strip(),
-            tenant=payload.tenant.strip(),
-        )
-    except PlatformToolPolicyServiceError as exc:
-        _raise_platform_tool_policy_service_error(exc)
+    return response_payload
 
 
 @app.get("/enterprise/platform/connectors/configs")
