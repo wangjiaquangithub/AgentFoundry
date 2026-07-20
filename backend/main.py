@@ -1389,7 +1389,12 @@ async def enterprise_platform_tools(
 ) -> dict[str, Any]:
     """Return tool catalog metadata, authorization, bindings, and stats."""
     resolved_user_id = user_id or request.headers.get("X-User-ID") or "acme:alice"
-    runtime = _enterprise_runtime_context(resolved_user_id)
+    try:
+        runtime = _platform_connector_config_service().enterprise_runtime_context(
+            resolved_user_id
+        )
+    except PlatformConnectorConfigServiceError as exc:
+        _raise_platform_connector_config_service_error(exc)
     tenant = str(runtime["tenant"])
     try:
         published_agents = _platform_agent_service().list_published_agents()
