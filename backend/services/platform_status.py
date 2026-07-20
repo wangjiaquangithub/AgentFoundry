@@ -10,7 +10,7 @@ class PlatformStatusService:
     def __init__(
         self,
         *,
-        load_approval_requests: Callable[..., list[dict[str, Any]]],
+        list_approval_records: Callable[..., list[dict[str, Any]]],
         load_workflow_runs: Callable[..., list[dict[str, Any]]],
         load_workflow_templates: Callable[[], list[dict[str, Any]]],
         load_agents: Callable[[], list[dict[str, Any]]],
@@ -25,7 +25,7 @@ class PlatformStatusService:
         approval_required_tools: set[str],
         approval_required_workflows: set[str],
     ) -> None:
-        self._load_approval_requests = load_approval_requests
+        self._list_approval_records = list_approval_records
         self._load_workflow_runs = load_workflow_runs
         self._load_workflow_templates = load_workflow_templates
         self._load_agents = load_agents
@@ -42,13 +42,13 @@ class PlatformStatusService:
 
     def dashboard(self, *, tenant: str, user_id: str) -> dict[str, Any]:
         """Build a compact platform operations snapshot for the console."""
-        pending_approvals = self._load_approval_requests(
+        pending_approvals = self._list_approval_records(
             limit=3,
             status="pending",
             tenant=tenant,
             user_id=user_id,
         )
-        approved_approvals = self._load_approval_requests(
+        approved_approvals = self._list_approval_records(
             limit=100,
             status="approved",
             tenant=tenant,
@@ -416,7 +416,7 @@ class PlatformStatusService:
                 },
             )
 
-        pending_approvals = self._load_approval_requests(
+        pending_approvals = self._list_approval_records(
             limit=100,
             status="pending",
             tenant=tenant,

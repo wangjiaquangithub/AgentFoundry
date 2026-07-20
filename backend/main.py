@@ -247,8 +247,16 @@ def _platform_status_service() -> PlatformStatusService:
     """Build the service object that composes platform console status payloads."""
     agent_service = _platform_agent_service()
     workflow_template_service = _platform_workflow_template_service()
+    approval_service = _platform_approval_service()
+
+    def list_approval_records(**kwargs: Any) -> list[dict[str, Any]]:
+        try:
+            return approval_service.list_records(**kwargs)
+        except PlatformApprovalServiceError as exc:
+            _raise_platform_approval_service_error(exc)
+
     return PlatformStatusService(
-        load_approval_requests=_load_platform_approval_requests,
+        list_approval_records=list_approval_records,
         load_workflow_runs=_platform_workflow_run_service().list_run_records,
         load_workflow_templates=workflow_template_service.list_templates,
         load_agents=agent_service.list_agents,
@@ -3378,26 +3386,6 @@ def _build_agent_run_evidence(
         "memory_saved": memory_saved,
         "audit_filter": audit_filter,
     }
-
-
-def _load_platform_approval_requests(
-    *,
-    limit: int = 20,
-    status: str | None = None,
-    tenant: str | None = None,
-    user_id: str | None = None,
-    agent_id: str | None = None,
-) -> list[dict[str, Any]]:
-    try:
-        return _platform_approval_service().list_records(
-            limit=limit,
-            status=status,
-            tenant=tenant,
-            user_id=user_id,
-            agent_id=agent_id,
-        )
-    except PlatformApprovalServiceError as exc:
-        _raise_platform_approval_service_error(exc)
 
 
 def _require_platform_approval(
