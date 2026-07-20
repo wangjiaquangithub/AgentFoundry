@@ -2169,7 +2169,12 @@ async def list_enterprise_platform_scenarios() -> dict[str, Any]:
 async def enterprise_platform_ops_tasks(request: Request) -> dict[str, Any]:
     """List open operator tasks for the current enterprise platform tenant."""
     user_id = request.headers.get("X-User-ID") or "acme:alice"
-    runtime = _enterprise_runtime_context(user_id)
+    try:
+        runtime = _platform_connector_config_service().enterprise_runtime_context(
+            user_id,
+        )
+    except PlatformConnectorConfigServiceError as exc:
+        _raise_platform_connector_config_service_error(exc)
     tenant = str(runtime["tenant"])
     identities = _platform_identity_metadata(user_id, tenant)
     return _platform_status_service().ops_tasks(
@@ -2204,7 +2209,12 @@ async def resolve_enterprise_platform_ops_task(
         _raise_platform_workflow_template_service_error(exc)
 
     user_id = request.headers.get("X-User-ID") or "acme:alice"
-    runtime = _enterprise_runtime_context(user_id)
+    try:
+        runtime = _platform_connector_config_service().enterprise_runtime_context(
+            user_id,
+        )
+    except PlatformConnectorConfigServiceError as exc:
+        _raise_platform_connector_config_service_error(exc)
     tenant = str(runtime["tenant"])
     identities = _platform_identity_metadata(user_id, tenant)
     return _platform_status_service().resolved_disabled_workflows_payload(
