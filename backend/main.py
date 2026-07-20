@@ -1884,22 +1884,19 @@ async def run_enterprise_agent(
                     routing_error=routing_error,
                 )
                 tool_calls.append(
-                    {
-                        "tool_name": tool_name,
-                        "inputs": route_inputs,
-                        "allowed": False,
-                        "approval_required": True,
-                        "approval_id": approval_id,
-                        "approval_status": "pending",
-                        "tenant": tenant,
-                        "user_id": user_id,
-                        "connector": connector_label,
-                        "connector_source": connector_source,
-                        "routing_source": route_source,
-                        "routing_reason": route_reason,
-                        "decision": decision,
-                        "answer": approval_message,
-                    },
+                    _platform_agent_run_service().build_pending_approval_routed_tool_call(
+                        tool_name=tool_name,
+                        inputs=route_inputs,
+                        approval_id=approval_id,
+                        tenant=tenant,
+                        user_id=user_id,
+                        connector=connector_label,
+                        connector_source=connector_source,
+                        routing_source=route_source,
+                        routing_reason=route_reason,
+                        decision=decision,
+                        answer=approval_message,
+                    ),
                 )
                 continue
 
