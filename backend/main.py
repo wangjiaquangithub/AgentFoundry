@@ -1862,13 +1862,15 @@ async def list_enterprise_agent_runs(
     limit: int = 20,
 ) -> dict[str, Any]:
     """List recent enterprise agent question-answer turns."""
-    return _platform_agent_run_service().list_runs(
+    agent_run_service = _platform_agent_run_service()
+    list_context = agent_run_service.list_runs_request_payload(
         limit=limit,
         agent_id=agent_id,
         tenant=tenant,
         user_id=user_id,
         session_id=session_id,
     )
+    return agent_run_service.list_runs(**list_context)
 
 
 @app.get("/enterprise/platform/agent/runs/{turn_id}")

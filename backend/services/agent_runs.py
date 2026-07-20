@@ -41,6 +41,23 @@ class PlatformAgentRunService:
             ),
         }
 
+    def list_runs_request_payload(
+        self,
+        *,
+        agent_id: str | None = None,
+        tenant: str | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
+        limit: int = 20,
+    ) -> dict[str, Any]:
+        return {
+            "agent_id": _optional_filter(agent_id),
+            "tenant": _optional_filter(tenant),
+            "user_id": _optional_filter(user_id),
+            "session_id": _optional_filter(session_id),
+            "limit": limit,
+        }
+
     def get_run(self, turn_id: str) -> dict[str, Any]:
         run = self._repository.get(turn_id.strip())
         if run is None:
