@@ -386,6 +386,21 @@ class PlatformToolPolicyService:
     ) -> str:
         return query_user_id or header_user_id or "acme:alice"
 
+    def catalog_request_payload(
+        self,
+        *,
+        query_user_id: str | None = None,
+        header_user_id: str | None = None,
+        agent_id: str | None = None,
+    ) -> dict[str, Any]:
+        return {
+            "user_id": self.catalog_request_user_id(
+                query_user_id=query_user_id,
+                header_user_id=header_user_id,
+            ),
+            "agent_id": _optional_filter(agent_id),
+        }
+
     @staticmethod
     def run_request_user_id(
         *,
@@ -478,3 +493,8 @@ def _deep_merge_dict(base: dict[str, Any], incoming: dict[str, Any]) -> dict[str
         else:
             merged[key] = value
     return merged
+
+
+def _optional_filter(value: str | None) -> str | None:
+    normalized = (value or "").strip()
+    return normalized or None

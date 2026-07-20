@@ -1344,10 +1344,13 @@ async def enterprise_platform_tools(
 ) -> dict[str, Any]:
     """Return tool catalog metadata, authorization, bindings, and stats."""
     tool_policy_service = _platform_tool_policy_service()
-    resolved_user_id = tool_policy_service.catalog_request_user_id(
+    catalog_request = tool_policy_service.catalog_request_payload(
         query_user_id=user_id,
         header_user_id=request.headers.get("X-User-ID"),
+        agent_id=agent_id,
     )
+    resolved_user_id = catalog_request["user_id"]
+    requested_agent_id = catalog_request["agent_id"]
     try:
         runtime = _platform_connector_config_service().enterprise_runtime_context(
             resolved_user_id
@@ -1361,9 +1364,11 @@ async def enterprise_platform_tools(
     except PlatformAgentServiceError as exc:
         _raise_platform_agent_service_error(exc)
     configured_agent = None
-    if agent_id:
+    if requested_agent_id:
         try:
-            configured_agent = _platform_agent_service().get_published_agent(agent_id)
+            configured_agent = _platform_agent_service().get_published_agent(
+                requested_agent_id
+            )
         except PlatformAgentServiceError as exc:
             _raise_platform_agent_service_error(exc)
 
@@ -1403,7 +1408,7 @@ async def enterprise_platform_tools(
         user_id=resolved_user_id,
         tenant=tenant,
         runtime_selection=runtime_selection,
-        agent_id=agent_id,
+        agent_id=requested_agent_id,
     )
 
 
