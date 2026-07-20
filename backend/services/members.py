@@ -99,6 +99,19 @@ class PlatformMemberService:
     ) -> list[dict[str, Any]]:
         return _merge_by_key(existing, imported, "user_id")
 
+    def import_members_payload(self, value: Any, *, actor: str, mode: str) -> None:
+        imported_members = self.normalize_import_members(value, actor=actor)
+        existing_members = self.list_members(include_inactive=True)
+        members = (
+            imported_members
+            if mode == "replace"
+            else self.merge_import_members(
+                existing_members,
+                imported_members,
+            )
+        )
+        self.save_config({"members": members})
+
     def list_members(self, *, include_inactive: bool = True) -> list[dict[str, Any]]:
         members = self._normalized_members()
         if not include_inactive:

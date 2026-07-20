@@ -2085,29 +2085,14 @@ async def import_enterprise_platform_config(
         _raise_platform_connector_config_service_error(exc)
 
     if "members" in incoming:
-        member_service = _platform_member_service()
         try:
-            imported_members = member_service.normalize_import_members(
+            _platform_member_service().import_members_payload(
                 incoming.get("members"),
                 actor=actor,
+                mode=mode,
             )
         except PlatformMemberServiceError as exc:
             _raise_platform_member_service_error(exc)
-        try:
-            existing_members = member_service.list_members(
-                include_inactive=True,
-            )
-        except PlatformMemberServiceError as exc:
-            _raise_platform_member_service_error(exc)
-        members = (
-            imported_members
-            if mode == "replace"
-            else member_service.merge_import_members(
-                existing_members,
-                imported_members,
-            )
-        )
-        member_service.save_config({"members": members})
 
     if "connector_configs" in incoming:
         try:
