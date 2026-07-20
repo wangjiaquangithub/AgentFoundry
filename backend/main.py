@@ -1604,6 +1604,14 @@ async def run_enterprise_agent(
         knowledge_hits=knowledge_hits,
         knowledge_error=knowledge_error,
     )
+    knowledge_context = agent_run_service.build_knowledge_context(
+        knowledge_hits=knowledge_hits,
+        knowledge_error=knowledge_error,
+        knowledge_payload=knowledge_payload,
+    )
+    knowledge_hits = knowledge_context["knowledge_hits"]
+    knowledge_error = knowledge_context["knowledge_error"]
+    knowledge_payload = knowledge_context["knowledge_payload"]
     routes, routing_error = await enterprise_router_service.select_routes_for_question(
         question,
         env=os.environ,

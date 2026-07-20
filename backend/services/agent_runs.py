@@ -314,6 +314,19 @@ class PlatformAgentRunService:
             "memory_hits": list(memory_state["memory_hits"]),
         }
 
+    def build_knowledge_context(
+        self,
+        *,
+        knowledge_hits: list[dict[str, Any]],
+        knowledge_error: str | None,
+        knowledge_payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        return {
+            "knowledge_hits": list(knowledge_hits),
+            "knowledge_error": knowledge_error,
+            "knowledge_payload": knowledge_payload,
+        }
+
     def build_routing_context(
         self,
         *,
