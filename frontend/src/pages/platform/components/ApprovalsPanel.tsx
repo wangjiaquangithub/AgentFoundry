@@ -124,9 +124,10 @@ export function ApprovalsPanel({
 	t,
 }: ApprovalsPanelProps) {
 	const enterpriseToolInputConfig = toolInputConfig;
+	const pendingCount = approvalRequests.filter((approval) => approval.status === 'pending').length;
 
 	return (
-		<section className="grid gap-5 xl:grid-cols-[minmax(360px,0.72fr)_minmax(0,1.28fr)] xl:items-start">
+		<section className="grid gap-4 xl:grid-cols-[minmax(340px,0.62fr)_minmax(0,1.38fr)] xl:items-start">
 			<div className="grid gap-4 rounded-lg border bg-background p-4 shadow-sm xl:sticky xl:top-20">
 				<div className="flex items-start gap-2">
 					<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/20">
@@ -142,559 +143,558 @@ export function ApprovalsPanel({
 					</div>
 				</div>
 
-							<div className="grid gap-3 md:grid-cols-2">
-								<div className="grid gap-2">
-									<label className="text-xs font-medium text-muted-foreground">
-										{t('platform.approvals.requestType')}
-									</label>
-									<Select
-										value={approvalForm.request_type}
-										onValueChange={(value) =>
-											onApprovalFormChange((current) => ({
-												...current,
-												request_type: value as EnterpriseApprovalRequestType,
-											}))
-										}
-									>
-										<SelectTrigger>
-											<SelectValue />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="tool_run">
-												{t('platform.approvals.toolRun')}
-											</SelectItem>
-											<SelectItem value="workflow_run">
-												{t('platform.approvals.workflowRun')}
-											</SelectItem>
-											<SelectItem value="agent_action">
-												{t('platform.approvals.agentAction')}
-											</SelectItem>
-										</SelectContent>
-									</Select>
-								</div>
-
-								{approvalForm.request_type === 'workflow_run' ? (
-									<div className="grid gap-2">
-										<label className="text-xs font-medium text-muted-foreground">
-											{t('platform.approvals.target')}
-										</label>
-										<Select
-											value={approvalForm.workflow_type}
-											onValueChange={(value) =>
-												onApprovalFormChange((current) => ({
-													...current,
-													workflow_type: value,
-												}))
-											}
-										>
-											<SelectTrigger>
-												<SelectValue />
-											</SelectTrigger>
-											<SelectContent>
-												{workflowOptions.map((workflow) => (
-													<SelectItem
-														key={workflow.value}
-														value={workflow.value}
-													>
-														{workflow.label}
-													</SelectItem>
-												))}
-											</SelectContent>
-										</Select>
-									</div>
-								) : approvalForm.request_type === 'tool_run' ? (
-									<div className="grid gap-2">
-										<label className="text-xs font-medium text-muted-foreground">
-											{t('platform.approvals.target')}
-										</label>
-										<Select
-											value={approvalForm.tool_name}
-											onValueChange={(value) =>
-												onApprovalFormChange((current) => ({
-													...current,
-													tool_name: value,
-													input_key:
-														enterpriseToolInputConfig[value]?.inputKey ||
-														current.input_key,
-													input_value:
-														enterpriseToolInputConfig[value]?.defaultValue ||
-														current.input_value,
-												}))
-											}
-										>
-											<SelectTrigger>
-												<SelectValue />
-											</SelectTrigger>
-											<SelectContent>
-												{availableToolItems.map((tool) => (
-													<SelectItem key={tool.name} value={tool.name}>
-														{tool.name}
-													</SelectItem>
-												))}
-											</SelectContent>
-										</Select>
-									</div>
-								) : (
-									<div className="grid gap-2">
-										<label className="text-xs font-medium text-muted-foreground">
-											{t('platform.approvals.agent')}
-										</label>
-										<Input
-											value={approvalForm.agent_id}
-											placeholder={selectedRunAgentId || 'platform-console'}
-											onChange={(event) =>
-												onApprovalFormChange((current) => ({
-													...current,
-													agent_id: event.target.value,
-												}))
-											}
-										/>
-									</div>
-								)}
-							</div>
-
-							<div className="grid gap-3 md:grid-cols-2">
-								<div className="grid gap-2">
-									<label className="text-xs font-medium text-muted-foreground">
-										{t('platform.approvals.inputKey')}
-									</label>
-									<Input
-										value={approvalForm.input_key}
-										onChange={(event) =>
-											onApprovalFormChange((current) => ({
-												...current,
-												input_key: event.target.value,
-											}))
-										}
-									/>
-								</div>
-								<div className="grid gap-2">
-									<label className="text-xs font-medium text-muted-foreground">
-										{t('platform.approvals.inputValue')}
-									</label>
-									<Input
-										value={approvalForm.input_value}
-										onChange={(event) =>
-											onApprovalFormChange((current) => ({
-												...current,
-												input_value: event.target.value,
-											}))
-										}
-									/>
-								</div>
-							</div>
-
-							<div className="grid gap-2">
-								<label className="text-xs font-medium text-muted-foreground">
-									{t('platform.approvals.reason')}
-								</label>
-								<Textarea
-									value={approvalForm.reason}
-									onChange={(event) =>
-										onApprovalFormChange((current) => ({
-											...current,
-											reason: event.target.value,
-										}))
-									}
-								/>
-							</div>
-
-							<div className="grid gap-3 md:grid-cols-2">
-								<div className="grid gap-2">
-									<label className="text-xs font-medium text-muted-foreground">
-										{t('platform.approvals.user')}
-									</label>
-									<Input
-										value={approvalForm.user_id}
-										placeholder={selectedIdentityUserId || username}
-										onChange={(event) =>
-											onApprovalFormChange((current) => ({
-												...current,
-												user_id: event.target.value,
-											}))
-										}
-									/>
-								</div>
-								<div className="grid gap-2">
-									<label className="text-xs font-medium text-muted-foreground">
-										{t('platform.approvals.agent')}
-									</label>
-									<Input
-										value={approvalForm.agent_id}
-										placeholder={selectedRunAgentId || 'platform-console'}
-										onChange={(event) =>
-											onApprovalFormChange((current) => ({
-												...current,
-												agent_id: event.target.value,
-											}))
-										}
-									/>
-								</div>
-							</div>
-
-							<div className="flex justify-end border-t pt-4">
-								<Button
-									className="w-full sm:w-auto"
-									onClick={onCreateApproval}
-									disabled={creatingApproval}
-								>
-									<ListChecks className={cn(creatingApproval && 'animate-pulse')} />
-									{creatingApproval
-										? t('platform.approvals.creating')
-										: t('platform.approvals.create')}
-								</Button>
-							</div>
-					</div>
-
-					<div className="flex min-w-0 flex-col gap-4 rounded-lg border bg-background p-4 shadow-sm">
-						<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-							<div className="flex min-w-0 items-start gap-2">
-								<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/20">
-									<ListChecks className="size-4 text-muted-foreground" />
-								</div>
-								<div className="min-w-0">
-									<h2 className="text-sm font-semibold">
-									{t('platform.approvals.listTitle')}
-									</h2>
-									<p className="mt-1 text-xs leading-5 text-muted-foreground">
-									{t('platform.approvals.listDescription')}
-									</p>
-								</div>
-							</div>
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								className="w-full sm:w-auto"
-								onClick={() => void onRefetchApprovals()}
-								disabled={approvalLoading}
+				<div className="grid gap-3">
+					<div className="grid gap-3 sm:grid-cols-2">
+						<div className="grid gap-2">
+							<label className="text-xs font-medium text-muted-foreground">
+								{t('platform.approvals.requestType')}
+							</label>
+							<Select
+								value={approvalForm.request_type}
+								onValueChange={(value) =>
+									onApprovalFormChange((current) => ({
+										...current,
+										request_type: value as EnterpriseApprovalRequestType,
+									}))
+								}
 							>
-								<RefreshCcw className={cn(approvalLoading && 'animate-spin')} />
-								{t('platform.approvals.refresh')}
-							</Button>
+								<SelectTrigger>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="tool_run">
+										{t('platform.approvals.toolRun')}
+									</SelectItem>
+									<SelectItem value="workflow_run">
+										{t('platform.approvals.workflowRun')}
+									</SelectItem>
+									<SelectItem value="agent_action">
+										{t('platform.approvals.agentAction')}
+									</SelectItem>
+								</SelectContent>
+							</Select>
 						</div>
 
-						<div className="grid gap-3 rounded-lg border bg-muted/10 p-3 md:grid-cols-2 xl:grid-cols-[repeat(5,minmax(0,1fr))_auto]">
+						{approvalForm.request_type === 'workflow_run' ? (
 							<div className="grid gap-2">
 								<label className="text-xs font-medium text-muted-foreground">
-									{t('platform.approvals.filterStatus')}
+									{t('platform.approvals.target')}
 								</label>
 								<Select
-									value={approvalFilters.status || ALL_APPROVAL_STATUSES_VALUE}
+									value={approvalForm.workflow_type}
 									onValueChange={(value) =>
-										onApprovalFiltersChange((current) => ({
+										onApprovalFormChange((current) => ({
 											...current,
-											status:
-												value === ALL_APPROVAL_STATUSES_VALUE ? '' : value,
+											workflow_type: value,
 										}))
 									}
 								>
-									<SelectTrigger className="w-full">
+									<SelectTrigger>
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value={ALL_APPROVAL_STATUSES_VALUE}>
-											{t('platform.approvals.allStatuses')}
-										</SelectItem>
-										<SelectItem value="pending">
-											{t('platform.approvals.pending')}
-										</SelectItem>
-										<SelectItem value="approved">
-											{t('platform.approvals.approved')}
-										</SelectItem>
-										<SelectItem value="rejected">
-											{t('platform.approvals.rejected')}
-										</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-							<div className="grid gap-2">
-								<label className="text-xs font-medium text-muted-foreground">
-									{t('platform.approvals.filterTenant')}
-								</label>
-								<Input
-									value={approvalFilters.tenant}
-									onChange={(event) =>
-										onApprovalFiltersChange((current) => ({
-											...current,
-											tenant: event.target.value,
-										}))
-									}
-									placeholder={currentTenant || 'default'}
-								/>
-							</div>
-							<div className="grid gap-2">
-								<label className="text-xs font-medium text-muted-foreground">
-									{t('platform.approvals.filterUser')}
-								</label>
-								<Input
-									value={approvalFilters.user_id}
-									onChange={(event) =>
-										onApprovalFiltersChange((current) => ({
-											...current,
-											user_id: event.target.value,
-										}))
-									}
-									placeholder={currentUserId || username}
-								/>
-							</div>
-							<div className="grid gap-2">
-								<label className="text-xs font-medium text-muted-foreground">
-									{t('platform.approvals.filterAgent')}
-								</label>
-								<Select
-									value={approvalFilters.agent_id || ALL_AGENTS_VALUE}
-									onValueChange={(value) =>
-										onApprovalFiltersChange((current) => ({
-											...current,
-											agent_id: value === ALL_AGENTS_VALUE ? '' : value,
-										}))
-									}
-								>
-									<SelectTrigger className="w-full">
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value={ALL_AGENTS_VALUE}>
-											{t('platform.approvals.allAgents')}
-										</SelectItem>
-										{activePlatformAgents.map((agent) => (
-											<SelectItem key={agent.id} value={agent.id}>
-												{agent.name}
+										{workflowOptions.map((workflow) => (
+											<SelectItem key={workflow.value} value={workflow.value}>
+												{workflow.label}
 											</SelectItem>
 										))}
 									</SelectContent>
 								</Select>
 							</div>
+						) : approvalForm.request_type === 'tool_run' ? (
 							<div className="grid gap-2">
 								<label className="text-xs font-medium text-muted-foreground">
-									{t('platform.approvals.filterLimit')}
+									{t('platform.approvals.target')}
+								</label>
+								<Select
+									value={approvalForm.tool_name}
+									onValueChange={(value) =>
+										onApprovalFormChange((current) => ({
+											...current,
+											tool_name: value,
+											input_key:
+												enterpriseToolInputConfig[value]?.inputKey ||
+												current.input_key,
+											input_value:
+												enterpriseToolInputConfig[value]?.defaultValue ||
+												current.input_value,
+										}))
+									}
+								>
+									<SelectTrigger>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{availableToolItems.map((tool) => (
+											<SelectItem key={tool.name} value={tool.name}>
+												{tool.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+						) : (
+							<div className="grid gap-2">
+								<label className="text-xs font-medium text-muted-foreground">
+									{t('platform.approvals.agent')}
 								</label>
 								<Input
-									type="number"
-									min={1}
-									max={200}
-									value={approvalFilters.limit}
+									value={approvalForm.agent_id}
+									placeholder={selectedRunAgentId || 'platform-console'}
 									onChange={(event) =>
-										onApprovalFiltersChange((current) => ({
+										onApprovalFormChange((current) => ({
 											...current,
-											limit: event.target.value,
+											agent_id: event.target.value,
 										}))
 									}
 								/>
 							</div>
-							<Button
-								type="button"
-								size="sm"
-								className="self-end md:col-span-2 xl:col-span-1"
-								onClick={() => void onRefetchApprovals()}
-								disabled={approvalLoading}
-							>
-								<ListChecks />
-								{t('platform.approvals.applyFilters')}
-							</Button>
+						)}
+					</div>
+
+					<div className="grid gap-3 sm:grid-cols-2">
+						<div className="grid gap-2">
+							<label className="text-xs font-medium text-muted-foreground">
+								{t('platform.approvals.inputKey')}
+							</label>
+							<Input
+								value={approvalForm.input_key}
+								onChange={(event) =>
+									onApprovalFormChange((current) => ({
+										...current,
+										input_key: event.target.value,
+									}))
+								}
+							/>
 						</div>
+						<div className="grid gap-2">
+							<label className="text-xs font-medium text-muted-foreground">
+								{t('platform.approvals.inputValue')}
+							</label>
+							<Input
+								value={approvalForm.input_value}
+								onChange={(event) =>
+									onApprovalFormChange((current) => ({
+										...current,
+										input_value: event.target.value,
+									}))
+								}
+							/>
+						</div>
+					</div>
 
-						{approvalError ? <PlatformNotice>{approvalError}</PlatformNotice> : null}
+					<div className="grid gap-2">
+						<label className="text-xs font-medium text-muted-foreground">
+							{t('platform.approvals.reason')}
+						</label>
+						<Textarea
+							value={approvalForm.reason}
+							className="min-h-24"
+							onChange={(event) =>
+								onApprovalFormChange((current) => ({
+									...current,
+									reason: event.target.value,
+								}))
+							}
+						/>
+					</div>
 
-						{approvalLoading ? (
-							<div className="grid gap-2">
-								{[0, 1, 2].map((item) => (
-									<Skeleton key={item} className="h-32 rounded-lg" />
+					<div className="grid gap-3 sm:grid-cols-2">
+						<div className="grid gap-2">
+							<label className="text-xs font-medium text-muted-foreground">
+								{t('platform.approvals.user')}
+							</label>
+							<Input
+								value={approvalForm.user_id}
+								placeholder={selectedIdentityUserId || username}
+								onChange={(event) =>
+									onApprovalFormChange((current) => ({
+										...current,
+										user_id: event.target.value,
+									}))
+								}
+							/>
+						</div>
+						<div className="grid gap-2">
+							<label className="text-xs font-medium text-muted-foreground">
+								{t('platform.approvals.agent')}
+							</label>
+							<Input
+								value={approvalForm.agent_id}
+								placeholder={selectedRunAgentId || 'platform-console'}
+								onChange={(event) =>
+									onApprovalFormChange((current) => ({
+										...current,
+										agent_id: event.target.value,
+									}))
+								}
+							/>
+						</div>
+					</div>
+				</div>
+
+				<div className="flex justify-end border-t pt-4">
+					<Button
+						className="w-full sm:w-auto"
+						onClick={onCreateApproval}
+						disabled={creatingApproval}
+					>
+						<ListChecks className={cn(creatingApproval && 'animate-pulse')} />
+						{creatingApproval
+							? t('platform.approvals.creating')
+							: t('platform.approvals.create')}
+					</Button>
+				</div>
+			</div>
+
+			<div className="flex min-w-0 flex-col gap-4 rounded-lg border bg-background p-4 shadow-sm">
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+					<div className="flex min-w-0 items-start gap-2">
+						<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/20">
+							<ListChecks className="size-4 text-muted-foreground" />
+						</div>
+						<div className="min-w-0">
+							<div className="flex flex-wrap items-center gap-2">
+								<h2 className="text-sm font-semibold">
+									{t('platform.approvals.listTitle')}
+								</h2>
+								<Badge variant="secondary">{pendingCount} pending</Badge>
+							</div>
+							<p className="mt-1 text-xs leading-5 text-muted-foreground">
+								{t('platform.approvals.listDescription')}
+							</p>
+						</div>
+					</div>
+					<Button
+						type="button"
+						size="sm"
+						variant="outline"
+						className="w-full sm:w-auto"
+						onClick={() => void onRefetchApprovals()}
+						disabled={approvalLoading}
+					>
+						<RefreshCcw className={cn(approvalLoading && 'animate-spin')} />
+						{t('platform.approvals.refresh')}
+					</Button>
+				</div>
+
+				<div className="grid gap-3 rounded-lg border bg-muted/10 p-3 md:grid-cols-2 xl:grid-cols-[1.1fr_1fr_1fr_1.1fr_0.7fr_auto]">
+					<div className="grid gap-2">
+						<label className="text-xs font-medium text-muted-foreground">
+							{t('platform.approvals.filterStatus')}
+						</label>
+						<Select
+							value={approvalFilters.status || ALL_APPROVAL_STATUSES_VALUE}
+							onValueChange={(value) =>
+								onApprovalFiltersChange((current) => ({
+									...current,
+									status: value === ALL_APPROVAL_STATUSES_VALUE ? '' : value,
+								}))
+							}
+						>
+							<SelectTrigger className="w-full">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value={ALL_APPROVAL_STATUSES_VALUE}>
+									{t('platform.approvals.allStatuses')}
+								</SelectItem>
+								<SelectItem value="pending">
+									{t('platform.approvals.pending')}
+								</SelectItem>
+								<SelectItem value="approved">
+									{t('platform.approvals.approved')}
+								</SelectItem>
+								<SelectItem value="rejected">
+									{t('platform.approvals.rejected')}
+								</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+					<div className="grid gap-2">
+						<label className="text-xs font-medium text-muted-foreground">
+							{t('platform.approvals.filterTenant')}
+						</label>
+						<Input
+							value={approvalFilters.tenant}
+							onChange={(event) =>
+								onApprovalFiltersChange((current) => ({
+									...current,
+									tenant: event.target.value,
+								}))
+							}
+							placeholder={currentTenant || 'default'}
+						/>
+					</div>
+					<div className="grid gap-2">
+						<label className="text-xs font-medium text-muted-foreground">
+							{t('platform.approvals.filterUser')}
+						</label>
+						<Input
+							value={approvalFilters.user_id}
+							onChange={(event) =>
+								onApprovalFiltersChange((current) => ({
+									...current,
+									user_id: event.target.value,
+								}))
+							}
+							placeholder={currentUserId || username}
+						/>
+					</div>
+					<div className="grid gap-2">
+						<label className="text-xs font-medium text-muted-foreground">
+							{t('platform.approvals.filterAgent')}
+						</label>
+						<Select
+							value={approvalFilters.agent_id || ALL_AGENTS_VALUE}
+							onValueChange={(value) =>
+								onApprovalFiltersChange((current) => ({
+									...current,
+									agent_id: value === ALL_AGENTS_VALUE ? '' : value,
+								}))
+							}
+						>
+							<SelectTrigger className="w-full">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value={ALL_AGENTS_VALUE}>
+									{t('platform.approvals.allAgents')}
+								</SelectItem>
+								{activePlatformAgents.map((agent) => (
+									<SelectItem key={agent.id} value={agent.id}>
+										{agent.name}
+									</SelectItem>
 								))}
-							</div>
-						) : approvalRequests.length === 0 ? (
-							<div className="rounded-lg border border-dashed bg-muted/10 p-6 text-sm text-muted-foreground">
-								{t('platform.approvals.empty')}
-							</div>
-						) : (
-							<div className="grid gap-3">
-								{approvalRequests.map((approval) => {
-									const target =
-										approval.tool_name ||
-										approval.workflow_type ||
-										approval.agent_id ||
-										approval.request_type;
-									const isDeciding = decidingApprovalId === approval.approval_id;
-									const isContinuing =
-										continuingApprovalId === approval.approval_id;
-									const canApproveAndRun =
-										approval.status === 'pending' &&
-										((approval.request_type === 'tool_run' &&
-											Boolean(approval.tool_name)) ||
-											(approval.request_type === 'workflow_run' &&
-												Boolean(approval.workflow_type)));
-									const canUseApproval =
-										approval.status === 'approved' &&
-										((approval.request_type === 'tool_run' &&
-											Boolean(approval.tool_name)) ||
-											(approval.request_type === 'workflow_run' &&
-												Boolean(approval.workflow_type)));
+							</SelectContent>
+						</Select>
+					</div>
+					<div className="grid gap-2">
+						<label className="text-xs font-medium text-muted-foreground">
+							{t('platform.approvals.filterLimit')}
+						</label>
+						<Input
+							type="number"
+							min={1}
+							max={200}
+							value={approvalFilters.limit}
+							onChange={(event) =>
+								onApprovalFiltersChange((current) => ({
+									...current,
+									limit: event.target.value,
+								}))
+							}
+						/>
+					</div>
+					<Button
+						type="button"
+						size="sm"
+						className="self-end md:col-span-2 xl:col-span-1"
+						onClick={() => void onRefetchApprovals()}
+						disabled={approvalLoading}
+					>
+						<ListChecks />
+						{t('platform.approvals.applyFilters')}
+					</Button>
+				</div>
 
-									return (
-										<div
-											key={approval.approval_id}
-											className="rounded-lg border bg-background p-4 transition-colors hover:bg-muted/10"
-										>
-											<div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
-												<div className="min-w-0">
-													<div className="flex flex-wrap items-center gap-2">
-														<Badge
-															variant="outline"
-															className={cn(
-																approvalStatusClassName(approval.status),
-															)}
-														>
-															{t(`platform.approvals.${approval.status}`)}
-														</Badge>
-														<Badge variant="secondary">
-															{t(
-																`platform.approvals.${approval.request_type === 'tool_run' ? 'toolRun' : approval.request_type === 'workflow_run' ? 'workflowRun' : 'agentAction'}`,
-															)}
-														</Badge>
-														<span className="min-w-0 break-all font-mono text-xs text-muted-foreground">
-															{target}
-														</span>
-													</div>
-													<p className="mt-3 text-sm leading-6">
-														{approval.reason || '-'}
-													</p>
-												</div>
-												{approval.status === 'pending' ? (
-													<div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
-														{canApproveAndRun ? (
-															<Button
-																type="button"
-																size="sm"
-																className="w-full sm:w-auto"
-																onClick={() =>
-																	void onApproveAndRun(approval)
-																}
-																disabled={isDeciding || isContinuing}
-															>
-																<Play
-																	className={cn(
-																		isContinuing && 'animate-pulse',
-																	)}
-																/>
-																{isContinuing
-																	? t(
-																			'platform.approvals.approvingAndRunning',
-																		)
-																	: t('platform.approvals.approveAndRun')}
-															</Button>
-														) : null}
-														<Button
-															type="button"
-															size="sm"
-															variant="outline"
-															className="w-full sm:w-auto"
-															onClick={() =>
-																void onDecideApproval(
-																	approval.approval_id,
-																	'approved',
-																)
-															}
-															disabled={isDeciding || isContinuing}
-														>
-															<CheckCircle2
-																className={cn(
-																	isDeciding && 'animate-pulse',
-																)}
-															/>
-															{isDeciding
-																? t('platform.approvals.approving')
-																: t('platform.approvals.approve')}
-														</Button>
-														<Button
-															type="button"
-															size="sm"
-															variant="outline"
-															className="w-full sm:w-auto"
-															onClick={() =>
-																void onDecideApproval(
-																	approval.approval_id,
-																	'rejected',
-																)
-															}
-															disabled={isDeciding || isContinuing}
-														>
-															<XCircle
-																className={cn(
-																	isDeciding && 'animate-pulse',
-																)}
-															/>
-															{isDeciding
-																? t('platform.approvals.rejecting')
-																: t('platform.approvals.reject')}
-														</Button>
-													</div>
-												) : canUseApproval ? (
+				{approvalError ? <PlatformNotice>{approvalError}</PlatformNotice> : null}
+
+				{approvalLoading ? (
+					<div className="grid gap-2">
+						{[0, 1, 2].map((item) => (
+							<Skeleton key={item} className="h-32 rounded-lg" />
+						))}
+					</div>
+				) : approvalRequests.length === 0 ? (
+					<div className="rounded-lg border border-dashed bg-muted/10 p-6 text-sm text-muted-foreground">
+						{t('platform.approvals.empty')}
+					</div>
+				) : (
+					<div className="grid gap-3">
+						{approvalRequests.map((approval) => {
+							const target =
+								approval.tool_name ||
+								approval.workflow_type ||
+								approval.agent_id ||
+								approval.request_type;
+							const isDeciding = decidingApprovalId === approval.approval_id;
+							const isContinuing = continuingApprovalId === approval.approval_id;
+							const canApproveAndRun =
+								approval.status === 'pending' &&
+								((approval.request_type === 'tool_run' &&
+									Boolean(approval.tool_name)) ||
+									(approval.request_type === 'workflow_run' &&
+										Boolean(approval.workflow_type)));
+							const canUseApproval =
+								approval.status === 'approved' &&
+								((approval.request_type === 'tool_run' &&
+									Boolean(approval.tool_name)) ||
+									(approval.request_type === 'workflow_run' &&
+										Boolean(approval.workflow_type)));
+
+							return (
+								<div
+									key={approval.approval_id}
+									className="rounded-lg border bg-background p-4 transition-colors hover:bg-muted/10"
+								>
+									<div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto]">
+										<div className="min-w-0">
+											<div className="flex flex-wrap items-center gap-2">
+												<Badge
+													variant="outline"
+													className={cn(
+														approvalStatusClassName(approval.status),
+													)}
+												>
+													{t(`platform.approvals.${approval.status}`)}
+												</Badge>
+												<Badge variant="secondary">
+													{t(
+														`platform.approvals.${approval.request_type === 'tool_run' ? 'toolRun' : approval.request_type === 'workflow_run' ? 'workflowRun' : 'agentAction'}`,
+													)}
+												</Badge>
+												<span className="min-w-0 break-all font-mono text-xs text-muted-foreground">
+													{target}
+												</span>
+											</div>
+											<p className="mt-3 text-sm leading-6">
+												{approval.reason || '-'}
+											</p>
+										</div>
+										{approval.status === 'pending' ? (
+											<div className="flex flex-col gap-2 sm:flex-row xl:justify-end">
+												{canApproveAndRun ? (
 													<Button
 														type="button"
 														size="sm"
-														variant="outline"
 														className="w-full sm:w-auto"
-														onClick={() => onUseApproval(approval)}
+														onClick={() => void onApproveAndRun(approval)}
+														disabled={isDeciding || isContinuing}
 													>
-														<ArrowRight />
-														{t('platform.approvals.useForRun')}
+														<Play
+															className={cn(
+																isContinuing && 'animate-pulse',
+															)}
+														/>
+														{isContinuing
+															? t(
+																	'platform.approvals.approvingAndRunning',
+																)
+															: t('platform.approvals.approveAndRun')}
 													</Button>
 												) : null}
+												<Button
+													type="button"
+													size="sm"
+													variant="outline"
+													className="w-full sm:w-auto"
+													onClick={() =>
+														void onDecideApproval(
+															approval.approval_id,
+															'approved',
+														)
+													}
+													disabled={isDeciding || isContinuing}
+												>
+													<CheckCircle2
+														className={cn(isDeciding && 'animate-pulse')}
+													/>
+													{isDeciding
+														? t('platform.approvals.approving')
+														: t('platform.approvals.approve')}
+												</Button>
+												<Button
+													type="button"
+													size="sm"
+													variant="outline"
+													className="w-full sm:w-auto"
+													onClick={() =>
+														void onDecideApproval(
+															approval.approval_id,
+															'rejected',
+														)
+													}
+													disabled={isDeciding || isContinuing}
+												>
+													<XCircle
+														className={cn(isDeciding && 'animate-pulse')}
+													/>
+													{isDeciding
+														? t('platform.approvals.rejecting')
+														: t('platform.approvals.reject')}
+												</Button>
 											</div>
+										) : canUseApproval ? (
+											<Button
+												type="button"
+												size="sm"
+												variant="outline"
+												className="w-full sm:w-auto"
+												onClick={() => onUseApproval(approval)}
+											>
+												<ArrowRight />
+												{t('platform.approvals.useForRun')}
+											</Button>
+										) : null}
+									</div>
 
-											<div className="mt-4 grid gap-2 rounded-md border bg-muted/10 p-3 text-xs text-muted-foreground md:grid-cols-2">
-												<div className="grid gap-1">
-													<span>{t('platform.approvals.approvalId')}:</span>
-													<span className="break-all font-mono">
-														{approval.approval_id}
-													</span>
-												</div>
-												<div className="grid gap-1">
-													<span>{t('platform.audit.inputs')}:</span>
-													<span className="break-words">
-														{summarizeAuditObject(approval.inputs)}
-													</span>
-												</div>
-												<div className="grid gap-1">
-													<span>{t('platform.approvals.requestedBy')}:</span>
-													<span className="break-all font-mono">
-														{approval.requested_by} / {approval.user_id}
-													</span>
-												</div>
-												<div className="grid gap-1">
-													<span>{t('platform.approvals.requestedAt')}:</span>
-													<span>{formatTimestamp(approval.requested_at)}</span>
-												</div>
-												{approval.decided_at ? (
-													<div className="grid gap-1">
-														<span>{t('platform.approvals.decidedAt')}:</span>
-														<span>{formatTimestamp(approval.decided_at)}</span>
-													</div>
-												) : null}
-												{approval.decided_by ? (
-													<div className="grid gap-1">
-														<span>{t('platform.approvals.decidedBy')}:</span>
-														<span className="break-all font-mono">
-															{approval.decided_by}
-														</span>
-													</div>
-												) : null}
-												{approval.decision_note ? (
-													<div className="grid gap-1 md:col-span-2">
-														<span>{t('platform.approvals.decisionNote')}:</span>
-														<span className="break-words">
-															{approval.decision_note}
-														</span>
-													</div>
-												) : null}
-											</div>
+									<div className="mt-4 grid gap-3 rounded-md border bg-muted/10 p-3 text-xs text-muted-foreground md:grid-cols-2 xl:grid-cols-4">
+										<div className="grid gap-1">
+											<span>{t('platform.approvals.approvalId')}</span>
+											<span className="break-all font-mono text-foreground">
+												{approval.approval_id}
+											</span>
 										</div>
-									);
-								})}
-							</div>
-						)}
+										<div className="grid gap-1">
+											<span>{t('platform.audit.inputs')}</span>
+											<span className="break-words text-foreground">
+												{summarizeAuditObject(approval.inputs)}
+											</span>
+										</div>
+										<div className="grid gap-1">
+											<span>{t('platform.approvals.requestedBy')}</span>
+											<span className="break-all font-mono text-foreground">
+												{approval.requested_by} / {approval.user_id}
+											</span>
+										</div>
+										<div className="grid gap-1">
+											<span>{t('platform.approvals.requestedAt')}</span>
+											<span className="text-foreground">
+												{formatTimestamp(approval.requested_at)}
+											</span>
+										</div>
+										{approval.decided_at ? (
+											<div className="grid gap-1">
+												<span>{t('platform.approvals.decidedAt')}</span>
+												<span className="text-foreground">
+													{formatTimestamp(approval.decided_at)}
+												</span>
+											</div>
+										) : null}
+										{approval.decided_by ? (
+											<div className="grid gap-1">
+												<span>{t('platform.approvals.decidedBy')}</span>
+												<span className="break-all font-mono text-foreground">
+													{approval.decided_by}
+												</span>
+											</div>
+										) : null}
+										{approval.decision_note ? (
+											<div className="grid gap-1 md:col-span-2">
+												<span>{t('platform.approvals.decisionNote')}</span>
+												<span className="break-words text-foreground">
+													{approval.decision_note}
+												</span>
+											</div>
+										) : null}
+									</div>
+								</div>
+							);
+						})}
 					</div>
-				</section>
+				)}
+			</div>
+		</section>
 	);
 }
