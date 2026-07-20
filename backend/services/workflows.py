@@ -19,6 +19,15 @@ class PlatformWorkflowTemplateServiceError(ValueError):
         self.detail = detail
 
 
+class PlatformWorkflowRunServiceError(ValueError):
+    """Raised when a workflow run operation cannot be completed."""
+
+    def __init__(self, status_code: int, detail: Any) -> None:
+        super().__init__(str(detail))
+        self.status_code = status_code
+        self.detail = detail
+
+
 class PlatformWorkflowTemplateService:
     """Manage platform workflow template registry records."""
 
@@ -286,6 +295,59 @@ class PlatformWorkflowRunService:
             key: self.input_value(inputs, default_inputs, key)
             for key in sorted(keys)
         }
+
+    def build_step_specs(
+        self,
+        template: dict[str, Any],
+        inputs: dict[str, str],
+        *,
+        enterprise_tool_names: set[str],
+        enterprise_tool_catalog: dict[str, dict[str, Any]],
+    ) -> list[tuple[str, str, str, dict[str, Any]]]:
+        raw_steps = template.get("steps")
+        if not isinstance(raw_steps, list) or not raw_steps:
+            raise PlatformWorkflowRunServiceError(
+                400,
+                f"Workflow {template.get('workflow_type')} has no runnable steps.",
+            )
+
+        step_specs: list[tuple[str, str, str, dict[str, Any]]] = []
+        for index, raw_step in enumerate(raw_steps, start=1):
+            if not isinstance(raw_step, dict):
+                continue
+
+            tool_name = str(raw_step.get("tool_name", "")).strip()
+            if tool_name not in enterprise_tool_names:
+                raise PlatformWorkflowRunServiceError(
+                    400,
+                    f"Workflow step uses an unknown tool: {tool_name}",
+                )
+
+            input_map = raw_step.get("input_map")
+            if not isinstance(input_map, dict):
+                catalog = enterprise_tool_catalog[tool_name]
+                input_map = {catalog["input_key"]: catalog["input_key"]}
+
+            step_inputs = {
+                str(tool_input): inputs.get(str(workflow_input), "")
+                for tool_input, workflow_input in input_map.items()
+            }
+            step_specs.append(
+                (
+                    str(raw_step.get("id") or f"step_{index}"),
+                    str(raw_step.get("title") or tool_name),
+                    tool_name,
+                    step_inputs,
+                ),
+            )
+
+        if not step_specs:
+            raise PlatformWorkflowRunServiceError(
+                400,
+                f"Workflow {template.get('workflow_type')} has no valid steps.",
+            )
+
+        return step_specs
 
     def status_counts(self, steps: list[dict[str, Any]]) -> dict[str, int]:
         counts = {"success": 0, "denied": 0, "failed": 0}

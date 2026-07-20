@@ -93,6 +93,7 @@ from services.tools import (
 )
 from services.workflows import (
     PlatformWorkflowRunService,
+    PlatformWorkflowRunServiceError,
     PlatformWorkflowTemplateService,
     PlatformWorkflowTemplateServiceError,
 )
@@ -3334,6 +3335,12 @@ def _raise_platform_workflow_template_service_error(
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
+def _raise_platform_workflow_run_service_error(
+    exc: PlatformWorkflowRunServiceError,
+) -> NoReturn:
+    raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
+
+
 def _raise_platform_approval_service_error(
     exc: PlatformApprovalServiceError,
 ) -> NoReturn:
@@ -3352,56 +3359,6 @@ def _get_platform_workflow_template(workflow_type: str) -> dict[str, Any]:
         return _platform_workflow_template_service().get_template(workflow_type)
     except PlatformWorkflowTemplateServiceError as exc:
         _raise_platform_workflow_template_service_error(exc)
-
-
-def _build_workflow_step_specs(
-    template: dict[str, Any],
-    inputs: dict[str, str],
-) -> list[tuple[str, str, str, dict[str, Any]]]:
-    raw_steps = template.get("steps")
-    if not isinstance(raw_steps, list) or not raw_steps:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Workflow {template.get('workflow_type')} has no runnable steps.",
-        )
-
-    step_specs: list[tuple[str, str, str, dict[str, Any]]] = []
-    for index, raw_step in enumerate(raw_steps, start=1):
-        if not isinstance(raw_step, dict):
-            continue
-
-        tool_name = str(raw_step.get("tool_name", "")).strip()
-        if tool_name not in ENTERPRISE_TOOL_NAMES:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Workflow step uses an unknown tool: {tool_name}",
-            )
-
-        input_map = raw_step.get("input_map")
-        if not isinstance(input_map, dict):
-            catalog = ENTERPRISE_TOOL_CATALOG[tool_name]
-            input_map = {catalog["input_key"]: catalog["input_key"]}
-
-        step_inputs = {
-            str(tool_input): inputs.get(str(workflow_input), "")
-            for tool_input, workflow_input in input_map.items()
-        }
-        step_specs.append(
-            (
-                str(raw_step.get("id") or f"step_{index}"),
-                str(raw_step.get("title") or tool_name),
-                tool_name,
-                step_inputs,
-            ),
-        )
-
-    if not step_specs:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Workflow {template.get('workflow_type')} has no valid steps.",
-        )
-
-    return step_specs
 
 
 def _enterprise_platform_scenarios() -> dict[str, Any]:
@@ -3945,7 +3902,15 @@ async def run_enterprise_workflow(
         payload.inputs,
         default_inputs,
     )
-    step_specs = _build_workflow_step_specs(workflow_template, normalized_inputs)
+    try:
+        step_specs = workflow_run_service.build_step_specs(
+            workflow_template,
+            normalized_inputs,
+            enterprise_tool_names=ENTERPRISE_TOOL_NAMES,
+            enterprise_tool_catalog=ENTERPRISE_TOOL_CATALOG,
+        )
+    except PlatformWorkflowRunServiceError as exc:
+        _raise_platform_workflow_run_service_error(exc)
     approval_required_tools = sorted(
         {
             tool_name
