@@ -349,6 +349,19 @@ class PlatformWorkflowRunService:
 
         return step_specs
 
+    def approval_required_tools(
+        self,
+        step_specs: list[tuple[str, str, str, dict[str, Any]]],
+        approval_required_tools: set[str],
+    ) -> list[str]:
+        return sorted(
+            {
+                tool_name
+                for _step_id, _title, tool_name, _step_inputs in step_specs
+                if tool_name in approval_required_tools
+            },
+        )
+
     def status_counts(self, steps: list[dict[str, Any]]) -> dict[str, int]:
         counts = {"success": 0, "denied": 0, "failed": 0}
         for step in steps:

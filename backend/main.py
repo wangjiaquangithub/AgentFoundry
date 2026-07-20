@@ -3911,12 +3911,9 @@ async def run_enterprise_workflow(
         )
     except PlatformWorkflowRunServiceError as exc:
         _raise_platform_workflow_run_service_error(exc)
-    approval_required_tools = sorted(
-        {
-            tool_name
-            for _step_id, _title, tool_name, _step_inputs in step_specs
-            if tool_name in APPROVAL_REQUIRED_TOOLS
-        },
+    approval_required_tools = workflow_run_service.approval_required_tools(
+        step_specs,
+        APPROVAL_REQUIRED_TOOLS,
     )
 
     approval_id = None
