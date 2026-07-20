@@ -631,6 +631,48 @@ class PlatformWorkflowRunService:
         }
         return step, tool_call
 
+    def error_detail_decision(self, detail: Any) -> dict[str, Any] | None:
+        if isinstance(detail, dict) and isinstance(detail.get("decision"), dict):
+            return detail["decision"]
+        return None
+
+    def error_detail_message(self, detail: Any) -> str:
+        if isinstance(detail, dict):
+            decision = detail.get("decision")
+            if isinstance(decision, dict) and decision.get("reason"):
+                return str(decision["reason"])
+            if detail.get("detail"):
+                return str(detail["detail"])
+        return str(detail)
+
+    def failed_step_record(
+        self,
+        *,
+        step_id: str,
+        title: str,
+        tool_name: str,
+        inputs: dict[str, Any],
+        decision: dict[str, Any] | None,
+        message: str,
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        step = {
+            "id": step_id,
+            "title": title,
+            "tool_name": tool_name,
+            "inputs": inputs,
+            "status": "failed",
+            "decision": decision,
+            "message": message,
+        }
+        tool_call = {
+            "tool_name": tool_name,
+            "inputs": inputs,
+            "allowed": False,
+            "decision": decision,
+            "answer": message,
+        }
+        return step, tool_call
+
     def tool_response_allowed(self, tool_response: dict[str, Any]) -> bool:
         return bool(tool_response.get("allowed"))
 

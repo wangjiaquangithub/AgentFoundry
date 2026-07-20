@@ -2030,17 +2030,6 @@ def _require_platform_approval(
         _raise_platform_approval_service_error(exc)
 
 
-def _workflow_error_message(exc: HTTPException) -> str:
-    detail = exc.detail
-    if isinstance(detail, dict):
-        decision = detail.get("decision")
-        if isinstance(decision, dict) and decision.get("reason"):
-            return str(decision["reason"])
-        if detail.get("detail"):
-            return str(detail["detail"])
-    return str(detail)
-
-
 def _workflow_step(
     *,
     user_id: str,
@@ -2082,31 +2071,22 @@ def _workflow_step(
             message=message,
         )
     except HTTPException as exc:
-        decision = None
-        if isinstance(exc.detail, dict) and isinstance(exc.detail.get("decision"), dict):
-            decision = exc.detail["decision"]
-        message = _workflow_error_message(exc)
+        workflow_run_service = _platform_workflow_run_service()
+        decision = workflow_run_service.error_detail_decision(exc.detail)
+        message = workflow_run_service.error_detail_message(exc.detail)
     except Exception as exc:  # pragma: no cover - defensive platform boundary.
+        workflow_run_service = _platform_workflow_run_service()
         decision = None
         message = f"{exc.__class__.__name__}: {exc}"
 
-    step = {
-        "id": step_id,
-        "title": title,
-        "tool_name": tool_name,
-        "inputs": inputs,
-        "status": "failed",
-        "decision": decision,
-        "message": message,
-    }
-    tool_call = {
-        "tool_name": tool_name,
-        "inputs": inputs,
-        "allowed": False,
-        "decision": decision,
-        "answer": message,
-    }
-    return step, tool_call
+    return workflow_run_service.failed_step_record(
+        step_id=step_id,
+        title=title,
+        tool_name=tool_name,
+        inputs=inputs,
+        decision=decision,
+        message=message,
+    )
 
 
 @app.get("/enterprise/platform/workflows")
