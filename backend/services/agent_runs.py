@@ -1399,6 +1399,50 @@ class PlatformAgentRunService:
             ),
         )
 
+    def record_executed_routed_tool_call_from_context(
+        self,
+        *,
+        tool_calls: list[dict[str, Any]],
+        decision_with_routing_context: Callable[..., dict[str, Any]],
+        format_tool_result_answer: Callable[..., str],
+        tool_name: str,
+        inputs: dict[str, Any],
+        tool_response: dict[str, Any],
+        connector: str,
+        connector_source: str,
+        routing_source: str,
+        routing_reason: str,
+        routing_mode: str,
+        routing_error: str | None,
+        approval_id: str | None,
+    ) -> None:
+        decision = self.decide_executed_tool_route_from_context(
+            decision_with_routing_context=decision_with_routing_context,
+            tool_response=tool_response,
+            routing_reason=routing_reason,
+            routing_source=routing_source,
+            routing_mode=routing_mode,
+            routing_error=routing_error,
+        )
+        answer = self.format_executed_tool_answer_from_context(
+            format_tool_result_answer=format_tool_result_answer,
+            tool_name=tool_name,
+            tool_response=tool_response,
+        )
+        self.append_executed_routed_tool_call(
+            tool_calls=tool_calls,
+            tool_name=tool_name,
+            inputs=inputs,
+            tool_response=tool_response,
+            connector=connector,
+            connector_source=connector_source,
+            routing_source=routing_source,
+            routing_reason=routing_reason,
+            approval_id=approval_id,
+            decision=decision,
+            answer=answer,
+        )
+
     def build_executed_routed_tool_call(
         self,
         *,

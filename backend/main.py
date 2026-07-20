@@ -1799,25 +1799,14 @@ async def run_enterprise_agent(
             session_id=runner_session_id,
             fail_on_denied=False,
         )
-        decision = agent_run_service.decide_executed_tool_route_from_context(
+        agent_run_service.record_executed_routed_tool_call_from_context(
+            tool_calls=tool_calls,
             decision_with_routing_context=(
                 enterprise_router_service.decision_with_routing_context
             ),
-            tool_response=tool_response,
-            routing_reason=route_reason,
-            routing_source=route_source,
-            routing_mode=routing_mode,
-            routing_error=routing_error,
-        )
-        call_answer = agent_run_service.format_executed_tool_answer_from_context(
             format_tool_result_answer=(
                 _platform_tool_policy_service().format_tool_result_answer
             ),
-            tool_name=tool_name,
-            tool_response=tool_response,
-        )
-        agent_run_service.append_executed_routed_tool_call(
-            tool_calls=tool_calls,
             tool_name=tool_name,
             inputs=route_inputs,
             tool_response=tool_response,
@@ -1825,9 +1814,9 @@ async def run_enterprise_agent(
             connector_source=connector_source,
             routing_source=route_source,
             routing_reason=route_reason,
+            routing_mode=routing_mode,
+            routing_error=routing_error,
             approval_id=approved_by,
-            decision=decision,
-            answer=call_answer,
         )
 
     routed_summary_context = agent_run_service.build_routed_summary_context(
