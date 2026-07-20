@@ -991,19 +991,6 @@ def _truncate_text(value: str, limit: int = 300) -> str:
     return f"{text[: limit - 3]}..."
 
 
-def _platform_memory_path(
-    *,
-    tenant: str,
-    user_id: str,
-    agent_id: str,
-) -> Path:
-    return platform_memory_service.path_for(
-        tenant=tenant,
-        user_id=user_id,
-        agent_id=agent_id,
-    )
-
-
 def _question_is_memory_lookup(question: str) -> bool:
     normalized = question.lower()
     english_markers = (
