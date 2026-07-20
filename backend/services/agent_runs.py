@@ -351,6 +351,18 @@ class PlatformAgentRunService:
             },
         }
 
+    def pending_approval_decision_payload(
+        self,
+        context: dict[str, Any],
+    ) -> dict[str, Any]:
+        return dict(context["decision_payload"])
+
+    def pending_approval_message(
+        self,
+        context: dict[str, Any],
+    ) -> str:
+        return str(context["approval_message"])
+
     def resolve_requested_by(self, *, headers: Any, user_id: str) -> str:
         return str(headers.get("X-User-ID") or user_id)
 
