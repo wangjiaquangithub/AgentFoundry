@@ -313,7 +313,7 @@ def _platform_status_service() -> PlatformStatusService:
         audit_logger=tool_audit_logger,
         tool_policy=tool_authorization_policy,
         connector_health=_enterprise_connector_health,
-        agent_readiness=_platform_agent_readiness,
+        agent_readiness=_platform_agent_service().readiness,
         enterprise_tool_names=ENTERPRISE_TOOL_NAMES,
         enterprise_tool_catalog=ENTERPRISE_TOOL_CATALOG,
         approval_required_tools=APPROVAL_REQUIRED_TOOLS,
@@ -975,10 +975,6 @@ def _platform_agent_run_metadata(
         "allowed_user_ids": access["allowed_user_ids"],
         "allowed_roles": access["allowed_roles"],
     }
-
-
-def _platform_agent_readiness(agent: dict[str, Any]) -> dict[str, Any]:
-    return _platform_agent_service().readiness(agent)
 
 
 def _resource_record_id(record: Any) -> str | None:
