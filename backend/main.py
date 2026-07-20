@@ -2327,7 +2327,10 @@ async def create_enterprise_approval_request(
             _raise_platform_workflow_template_service_error(exc)
 
     user_id = payload.user_id or request.headers.get("X-User-ID") or "acme:alice"
-    runtime = _enterprise_runtime_context(user_id)
+    try:
+        runtime = _platform_connector_config_service().enterprise_runtime_context(user_id)
+    except PlatformConnectorConfigServiceError as exc:
+        _raise_platform_connector_config_service_error(exc)
     default_agent_id = "platform-workflow" if request_type == "workflow_run" else "platform-console"
     try:
         record = _platform_approval_service().create_request(
