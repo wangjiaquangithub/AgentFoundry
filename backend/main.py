@@ -1053,30 +1053,17 @@ async def _route_enterprise_agent_question_with_model(
 def _route_enterprise_agent_question_with_rules(
     question: str,
 ) -> list[dict[str, Any]]:
-    normalized = question.lower()
     routes: list[dict[str, Any]] = []
 
     routes.extend(enterprise_router_service.ticket_routes_for_question(question))
     routes.extend(enterprise_router_service.policy_routes_for_question(question))
     routes.extend(enterprise_router_service.department_routes_for_question(question))
-
-    has_metrics_route = any(
-        route.get("tool_name") == "enterprise_summarize_department_metrics"
-        for route in routes
+    routes.extend(
+        enterprise_router_service.generic_metrics_route_for_question(
+            question,
+            routes,
+        ),
     )
-    if (
-        not has_metrics_route
-        and ("部门" in question or "指标" in question or "metrics" in normalized)
-    ):
-        routes.append(
-            {
-                "routed": True,
-                "tool_name": "enterprise_summarize_department_metrics",
-                "inputs": {"department": "engineering"},
-                "reason": "Detected a generic department metrics request.",
-                "source": ROUTING_SOURCE_RULES,
-            },
-        )
 
     return enterprise_router_service.dedupe_routes(routes)
 

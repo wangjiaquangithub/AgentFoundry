@@ -311,6 +311,36 @@ class PlatformEnterpriseRouterService:
             if marker in normalized or marker in question
         ]
 
+    def generic_metrics_route_for_question(
+        self,
+        question: str,
+        existing_routes: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        normalized = question.lower()
+        has_metrics_route = any(
+            route.get("tool_name") == "enterprise_summarize_department_metrics"
+            for route in existing_routes
+        )
+        if (
+            has_metrics_route
+            or (
+                "部门" not in question
+                and "指标" not in question
+                and "metrics" not in normalized
+            )
+        ):
+            return []
+
+        return [
+            {
+                "routed": True,
+                "tool_name": "enterprise_summarize_department_metrics",
+                "inputs": {"department": "engineering"},
+                "reason": "Detected a generic department metrics request.",
+                "source": self._default_source,
+            },
+        ]
+
     def fallback_route(self) -> dict[str, Any]:
         return {
             "routed": False,
