@@ -1726,14 +1726,14 @@ async def run_enterprise_agent(
         ):
             try:
                 approved_by = _require_platform_approval(
-                    approval_id=run_request["approval_id"],
-                    request_type="tool_run",
-                    target_key="tool_name",
-                    target_value=tool_name,
-                    tenant=tenant,
-                    user_id=user_id,
-                    agent_id=runner_agent_id,
-                    inputs=route_inputs,
+                    **agent_run_service.build_tool_approval_requirement_context(
+                        approval_id=run_request["approval_id"],
+                        tool_name=tool_name,
+                        tenant=tenant,
+                        user_id=user_id,
+                        agent_id=runner_agent_id,
+                        inputs=route_inputs,
+                    ),
                 )
             except HTTPException as exc:
                 detail = exc.detail if isinstance(exc.detail, dict) else {}

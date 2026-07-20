@@ -565,6 +565,27 @@ class PlatformAgentRunService:
     ) -> bool:
         return tool_name in approval_required_tools
 
+    def build_tool_approval_requirement_context(
+        self,
+        *,
+        approval_id: str | None,
+        tool_name: str,
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        inputs: dict[str, Any],
+    ) -> dict[str, Any]:
+        return {
+            "approval_id": approval_id,
+            "request_type": "tool_run",
+            "target_key": "tool_name",
+            "target_value": tool_name,
+            "tenant": tenant,
+            "user_id": user_id,
+            "agent_id": agent_id,
+            "inputs": inputs,
+        }
+
     def build_tool_execution_request_context(
         self,
         *,
