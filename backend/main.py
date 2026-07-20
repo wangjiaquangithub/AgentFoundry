@@ -1363,34 +1363,6 @@ def _search_platform_memories(
     )
 
 
-def _format_memory_answer(memory_hits: list[dict[str, Any]]) -> str:
-    snippets = _dedupe_strings(
-        [
-            str(hit.get("snippet", "")).strip()
-            for hit in memory_hits
-            if str(hit.get("snippet", "")).strip()
-        ],
-    )
-    lines = [
-        f"{index}. {snippet}"
-        for index, snippet in enumerate(snippets[:3], start=1)
-    ]
-    return "我找到这些长期记忆：\n" + "\n".join(lines)
-
-
-def _format_memory_context(memory_hits: list[dict[str, Any]]) -> str:
-    context_lines: list[str] = []
-    for hit in memory_hits[:3]:
-        facts = [
-            str(fact)
-            for fact in hit.get("facts", [])
-            if str(fact).strip()
-        ]
-        context_lines.extend(facts[:4] or [str(hit.get("snippet", ""))])
-
-    return "\n".join(_dedupe_strings(context_lines))
-
-
 def _append_platform_memory(
     *,
     tenant: str,
@@ -3528,7 +3500,7 @@ async def run_enterprise_agent(
             _format_knowledge_answer(knowledge_hits)
             if knowledge_hits
             else (
-                _format_memory_answer(memory_hits)
+                platform_memory_service.format_answer(memory_hits)
                 if memory_hits
                 else (
                     "这个演示 Agent 暂时只会处理三类问题：工单状态、制度查询、"
@@ -3772,7 +3744,10 @@ async def run_enterprise_agent(
     if knowledge_hits:
         answer_parts.append(f"知识库: {_format_knowledge_answer(knowledge_hits)}")
     if memory_hits:
-        answer_parts.insert(0, f"长期记忆: {_format_memory_answer(memory_hits)}")
+        answer_parts.insert(
+            0,
+            f"长期记忆: {platform_memory_service.format_answer(memory_hits)}",
+        )
     answer = "\n\n".join(answer_parts)
     memory_saved = False
     if memory_enabled and not _question_is_memory_lookup(question):

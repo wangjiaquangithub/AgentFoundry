@@ -95,6 +95,18 @@ def _format_platform_memory_hit(
     }
 
 
+def _dedupe_strings(values: list[str]) -> list[str]:
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        normalized = value.strip()
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        deduped.append(normalized)
+    return deduped
+
+
 class PlatformMemoryService:
     """Manage tenant-scoped long-term memory records."""
 
@@ -180,6 +192,32 @@ class PlatformMemoryService:
             _format_platform_memory_hit(record, score)
             for score, _index, record in scored[:limit]
         ]
+
+    def format_answer(self, memory_hits: list[dict[str, Any]]) -> str:
+        snippets = _dedupe_strings(
+            [
+                str(hit.get("snippet", "")).strip()
+                for hit in memory_hits
+                if str(hit.get("snippet", "")).strip()
+            ],
+        )
+        lines = [
+            f"{index}. {snippet}"
+            for index, snippet in enumerate(snippets[:3], start=1)
+        ]
+        return "我找到这些长期记忆：\n" + "\n".join(lines)
+
+    def format_context(self, memory_hits: list[dict[str, Any]]) -> str:
+        context_lines: list[str] = []
+        for hit in memory_hits[:3]:
+            facts = [
+                str(fact)
+                for fact in hit.get("facts", [])
+                if str(fact).strip()
+            ]
+            context_lines.extend(facts[:4] or [str(hit.get("snippet", ""))])
+
+        return "\n".join(_dedupe_strings(context_lines))
 
     def append_capped(
         self,
