@@ -1378,14 +1378,17 @@ async def enterprise_platform_tools(
     user_id: str | None = None,
 ) -> dict[str, Any]:
     """Return tool catalog metadata, authorization, bindings, and stats."""
-    resolved_user_id = user_id or request.headers.get("X-User-ID") or "acme:alice"
+    tool_policy_service = _platform_tool_policy_service()
+    resolved_user_id = tool_policy_service.catalog_request_user_id(
+        query_user_id=user_id,
+        header_user_id=request.headers.get("X-User-ID"),
+    )
     try:
         runtime = _platform_connector_config_service().enterprise_runtime_context(
             resolved_user_id
         )
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
-    tool_policy_service = _platform_tool_policy_service()
     runtime_selection = tool_policy_service.runtime_selection(runtime)
     tenant = runtime_selection["tenant"]
     try:

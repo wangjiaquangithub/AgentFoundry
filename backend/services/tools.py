@@ -256,6 +256,14 @@ class PlatformToolPolicyService:
             tenant=tenant,
         )
 
+    @staticmethod
+    def catalog_request_user_id(
+        *,
+        query_user_id: str | None = None,
+        header_user_id: str | None = None,
+    ) -> str:
+        return query_user_id or header_user_id or "acme:alice"
+
     def update_user_policy(
         self,
         *,
