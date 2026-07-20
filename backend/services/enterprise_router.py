@@ -332,6 +332,15 @@ class PlatformEnterpriseRouterService:
 
         return deduped
 
+    def routing_mode_for(self, routes: list[dict[str, Any]]) -> str:
+        sources: list[str] = []
+        for route in routes:
+            source = str(route.get("source", self._default_source))
+            if source not in sources:
+                sources.append(source)
+
+        return "+".join(sources) if sources else self._default_source
+
     def ticket_routes_for_question(self, question: str) -> list[dict[str, Any]]:
         return [
             {
