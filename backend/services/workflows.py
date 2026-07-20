@@ -274,6 +274,9 @@ class PlatformWorkflowRunService:
     def workflow_name(self, template: dict[str, Any], workflow_type: str) -> str:
         return str(template.get("name") or workflow_type)
 
+    def session_id(self, workflow_type: str, run_id: str) -> str:
+        return f"platform-workflow:{workflow_type}:{run_id[:8]}"
+
     def audit_filter(
         self,
         *,

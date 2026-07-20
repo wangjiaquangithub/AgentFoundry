@@ -3891,9 +3891,9 @@ async def run_enterprise_workflow(
     connector_label = str(runtime["connector_label"])
     connector_source = str(runtime["connector_source"])
     run_id = uuid4().hex
-    session_id = f"platform-workflow:{workflow_type}:{run_id[:8]}"
     started_at = _now_iso()
     workflow_run_service = _platform_workflow_run_service()
+    session_id = workflow_run_service.session_id(workflow_type, run_id)
     workflow_name = workflow_run_service.workflow_name(workflow_template, workflow_type)
     default_inputs = workflow_run_service.default_inputs(workflow_template)
     normalized_inputs = workflow_run_service.normalize_inputs(
