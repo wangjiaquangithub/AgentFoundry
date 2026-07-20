@@ -426,6 +426,18 @@ class PlatformAgentRunService:
     def resolve_approval_id(self, approval: dict[str, Any]) -> str:
         return str(approval["approval_id"])
 
+    def executed_tool_decision_payload(
+        self,
+        tool_response: dict[str, Any],
+    ) -> dict[str, Any]:
+        return dict(tool_response["decision"])
+
+    def executed_tool_result(self, tool_response: dict[str, Any]) -> Any:
+        return tool_response.get("result")
+
+    def executed_tool_tenant(self, tool_response: dict[str, Any]) -> str:
+        return str(tool_response["tenant"])
+
     def build_executed_routed_tool_call(
         self,
         *,

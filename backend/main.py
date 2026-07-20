@@ -1847,7 +1847,7 @@ async def run_enterprise_agent(
             fail_on_denied=False,
         )
         decision = enterprise_router_service.decision_with_routing_context(
-            tool_response["decision"],
+            agent_run_service.executed_tool_decision_payload(tool_response),
             routing_reason=route_reason,
             routing_source=route_source,
             routing_mode=routing_mode,
@@ -1855,8 +1855,8 @@ async def run_enterprise_agent(
         )
         call_answer = _platform_tool_policy_service().format_tool_result_answer(
             tool_name=tool_name,
-            result=tool_response.get("result"),
-            tenant=tool_response["tenant"],
+            result=agent_run_service.executed_tool_result(tool_response),
+            tenant=agent_run_service.executed_tool_tenant(tool_response),
         )
         tool_calls.append(
             agent_run_service.build_executed_routed_tool_call(
