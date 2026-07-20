@@ -247,9 +247,10 @@ class PlatformToolPolicyService:
         *,
         approval_id: str | None = None,
     ) -> dict[str, Any]:
+        payload = dict(response)
         if approval_id:
-            response["approval_id"] = approval_id
-        return response
+            payload["approval_id"] = approval_id
+        return payload
 
     def run_platform_tool_from_context(
         self,
