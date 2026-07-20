@@ -113,6 +113,10 @@ export function TenantsViewPage({
 				(identity) => identity.tenant === selectedTenantSummary.tenant,
 			).length
 		: 0;
+	const workspaceCount = tenantWorkspaces.length;
+	const tenantsWithWorkspaceCount = platformMemberTenantSummaries.filter((tenantSummary) =>
+		tenantWorkspaces.some(([tenant]) => tenant === tenantSummary.tenant),
+	).length;
 
 	return (
 		<PlatformPageShell>
@@ -191,8 +195,8 @@ export function TenantsViewPage({
 				})}
 			</section>
 
-			<section className="grid gap-4 xl:grid-cols-[minmax(300px,0.72fr)_minmax(0,1.28fr)]">
-				<div className="grid max-h-none content-start gap-4 rounded-lg border bg-background p-4 shadow-sm xl:max-h-[calc(100vh-14rem)]">
+			<section className="grid gap-4 xl:grid-cols-[minmax(320px,0.42fr)_minmax(0,1fr)] xl:items-start">
+				<div className="grid max-h-none content-start gap-4 rounded-lg border bg-background p-4 shadow-sm xl:sticky xl:top-20 xl:max-h-[calc(100vh-8rem)]">
 					<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 						<div>
 							<h2 className="text-sm font-semibold text-foreground">
@@ -235,7 +239,7 @@ export function TenantsViewPage({
 										className={cn(
 											'grid w-full gap-3 rounded-lg border p-3 text-left transition-all',
 											isSelected
-												? 'border-slate-900 bg-slate-900 text-white shadow-sm'
+												? 'border-slate-900 bg-slate-50 shadow-sm'
 												: 'bg-background hover:border-slate-300 hover:bg-muted/20',
 										)}
 									>
@@ -254,7 +258,7 @@ export function TenantsViewPage({
 													className={cn(
 														'mt-3 grid grid-cols-2 gap-2 text-xs',
 														isSelected
-															? 'text-slate-200'
+															? 'text-slate-700'
 															: 'text-muted-foreground',
 													)}
 												>
@@ -277,7 +281,7 @@ export function TenantsViewPage({
 											<ArrowRight
 												className={cn(
 													'mt-1 size-4 shrink-0',
-													isSelected ? 'text-white' : 'text-muted-foreground',
+													isSelected ? 'text-slate-900' : 'text-muted-foreground',
 												)}
 											/>
 										</div>
@@ -296,7 +300,7 @@ export function TenantsViewPage({
 					{selectedTenantSummary ? (
 						<>
 							<section className="rounded-lg border bg-background p-4 shadow-sm">
-								<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+								<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 									<div className="min-w-0">
 										<div className="flex flex-wrap items-center gap-2">
 											<h2 className="break-words text-base font-semibold">
@@ -310,6 +314,11 @@ export function TenantsViewPage({
 												<Badge variant="outline">
 													{selectedTenantSummary.inactiveMemberCount}{' '}
 													{t('platform.members.inactiveMembers')}
+												</Badge>
+											) : null}
+											{selectedWorkspace ? (
+												<Badge variant="outline">
+													连接器工作区
 												</Badge>
 											) : null}
 										</div>
@@ -370,6 +379,39 @@ export function TenantsViewPage({
 										);
 									})}
 								</div>
+
+								<div className="mt-4 grid gap-3 lg:grid-cols-3">
+									<div className="rounded-lg border bg-muted/10 p-3">
+										<div className="text-xs font-medium text-muted-foreground">身份覆盖</div>
+										<div className="mt-2 text-sm font-semibold">
+											{selectedIdentityCount} {t('platform.connectors.identities')}
+										</div>
+										<p className="mt-1 text-xs leading-5 text-muted-foreground">
+											用于判断连接器身份映射是否覆盖该租户。
+										</p>
+									</div>
+									<div className="rounded-lg border bg-muted/10 p-3">
+										<div className="text-xs font-medium text-muted-foreground">连接器工作区</div>
+										<div className="mt-2 text-sm font-semibold">
+											{selectedWorkspace
+												? t('platform.connectors.tenantPreview')
+												: t('platform.connectors.empty')}
+										</div>
+										<p className="mt-1 break-words text-xs leading-5 text-muted-foreground">
+											{selectedWorkspace?.source ?? '暂未绑定外部系统来源。'}
+										</p>
+									</div>
+									<div className="rounded-lg border bg-muted/10 p-3">
+										<div className="text-xs font-medium text-muted-foreground">平台覆盖</div>
+										<div className="mt-2 text-sm font-semibold">
+											{workspaceCount} 个工作区
+										</div>
+										<p className="mt-1 text-xs leading-5 text-muted-foreground">
+											覆盖 {tenantsWithWorkspaceCount} / {platformMemberTenantSummaries.length}{' '}
+											个租户。
+										</p>
+									</div>
+								</div>
 							</section>
 
 							<section className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(300px,0.9fr)]">
@@ -416,10 +458,15 @@ export function TenantsViewPage({
 												</div>
 											</div>
 										))}
+										{selectedTenantSummary.members.length > 8 ? (
+											<div className="rounded-md border border-dashed bg-muted/10 p-3 text-xs text-muted-foreground">
+												仅显示前 8 个成员，其余成员可通过搜索定位。
+											</div>
+										) : null}
 									</div>
 								</div>
 
-								<aside className="rounded-lg border bg-background p-4 shadow-sm">
+								<aside className="rounded-lg border bg-background p-4 shadow-sm xl:sticky xl:top-20">
 									<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 										<div className="min-w-0">
 											<h3 className="text-sm font-semibold">
