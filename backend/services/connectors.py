@@ -179,9 +179,9 @@ class PlatformConnectorConfigService:
         self,
         *,
         connector_name: str,
-        connector_mode: str,
         env: Mapping[str, str],
     ) -> dict[str, Any]:
+        connector_mode = self._connector_mode(env, connector_name)
         env_metadata = self.env_metadata(
             connector_mode=connector_mode,
             env=env,
@@ -351,9 +351,9 @@ class PlatformConnectorConfigService:
         *,
         runtime: dict[str, Any],
         connector_name: str,
-        connector_mode: str,
         env: Mapping[str, str],
     ) -> dict[str, Any]:
+        connector_mode = self._connector_mode(env, connector_name)
         env_metadata = self.env_metadata(
             connector_mode=connector_mode,
             env=env,
@@ -397,6 +397,13 @@ class PlatformConnectorConfigService:
 
     def _env_value(self, env: Mapping[str, str], name: str, default: str) -> str:
         return env.get(name, default)
+
+    def _connector_mode(self, env: Mapping[str, str], connector_name: str) -> str:
+        return (
+            self._env_value(env, "ENTERPRISE_CONNECTOR", connector_name)
+            .lower()
+            .strip()
+        )
 
     def runtime_tenant_for_user(self, user_id: str) -> str:
         hinted_tenant = self._tenant_hint_from_user_id(user_id)

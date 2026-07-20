@@ -263,11 +263,9 @@ def _platform_status_service() -> PlatformStatusService:
 
     def connector_health() -> dict[str, Any]:
         connector_name = enterprise_connector.name
-        connector_mode = os.getenv("ENTERPRISE_CONNECTOR", connector_name).lower().strip()
         try:
             return _platform_connector_config_service().health_response(
                 connector_name=connector_name,
-                connector_mode=connector_mode,
                 env=os.environ,
             )
         except PlatformConnectorConfigServiceError as exc:
@@ -1005,14 +1003,11 @@ async def enterprise_platform_connectors(request: Request) -> dict[str, Any]:
     runtime = _enterprise_runtime_context(user_id)
     tenant = str(runtime["tenant"])
     identities = _platform_identity_metadata(user_id, tenant)
-    connector_mode = os.getenv("ENTERPRISE_CONNECTOR", enterprise_connector.name)
-    connector_mode = connector_mode.lower().strip()
 
     try:
         response = _platform_connector_config_service().metadata_response(
             runtime=runtime,
             connector_name=enterprise_connector.name,
-            connector_mode=connector_mode,
             env=os.environ,
         )
     except PlatformConnectorConfigServiceError as exc:
