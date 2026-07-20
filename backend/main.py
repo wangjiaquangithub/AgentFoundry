@@ -4224,7 +4224,7 @@ def _workflow_run_status(counts: dict[str, int]) -> str:
 
 
 def _append_workflow_run(record: dict[str, Any]) -> None:
-    workflow_run_repository.append(record)
+    _platform_workflow_run_service().append_run(record)
 
 
 def _load_workflow_runs(

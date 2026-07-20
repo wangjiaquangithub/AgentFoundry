@@ -241,6 +241,10 @@ class PlatformWorkflowRunService:
             ),
         }
 
+    def append_run(self, record: dict[str, Any]) -> dict[str, Any]:
+        self._repository.append(record)
+        return record
+
 
 def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
