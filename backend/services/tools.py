@@ -204,6 +204,24 @@ class PlatformToolPolicyService:
             "stats": self.audit_stats(events),
         }
 
+    @staticmethod
+    def catalog_response(
+        *,
+        tools: list[dict[str, Any]],
+        user_id: str,
+        tenant: str,
+        runtime_selection: dict[str, Any],
+        agent_id: str | None,
+    ) -> dict[str, Any]:
+        return {
+            "tools": tools,
+            "user_id": user_id,
+            "tenant": tenant,
+            "connector": runtime_selection["connector_label"],
+            "connector_source": runtime_selection["connector_source"],
+            "agent_id": agent_id,
+        }
+
     def normalize_policy_tools(self, value: list[str] | None) -> list[str]:
         if not value:
             return []

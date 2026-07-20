@@ -1398,14 +1398,13 @@ async def enterprise_platform_tools(
                 configured_agent_tools=configured_agent_tools,
             ),
         )
-    return {
-        "tools": tools,
-        "user_id": resolved_user_id,
-        "tenant": tenant,
-        "connector": runtime_selection["connector_label"],
-        "connector_source": runtime_selection["connector_source"],
-        "agent_id": agent_id,
-    }
+    return tool_policy_service.catalog_response(
+        tools=tools,
+        user_id=resolved_user_id,
+        tenant=tenant,
+        runtime_selection=runtime_selection,
+        agent_id=agent_id,
+    )
 
 
 @app.get("/enterprise/platform/audit")
