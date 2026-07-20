@@ -1235,7 +1235,7 @@ def _platform_memory_path(
     user_id: str,
     agent_id: str,
 ) -> Path:
-    return platform_memory_repository.path_for(
+    return platform_memory_service.path_for(
         tenant=tenant,
         user_id=user_id,
         agent_id=agent_id,
@@ -1463,7 +1463,7 @@ def _load_platform_memories(
     agent_id: str,
     limit: int = PLATFORM_MEMORY_MAX_RECORDS,
 ) -> list[dict[str, Any]]:
-    return platform_memory_repository.list(
+    return platform_memory_service.list_memories(
         tenant=tenant,
         user_id=user_id,
         agent_id=agent_id,
