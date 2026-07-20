@@ -1,5 +1,17 @@
-import { AlertTriangle } from 'lucide-react';
+import {
+	AlertTriangle,
+	Bot,
+	Boxes,
+	Brain,
+	GitBranch,
+	LayoutDashboard,
+	PlayCircle,
+	ShieldCheck,
+	UsersRound,
+	Wrench,
+} from 'lucide-react';
 import type { ComponentType, ReactNode } from 'react';
+import { NavLink } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +22,23 @@ export type HealthState = 'ready' | 'partial' | 'todo' | 'blocked';
 
 type PlatformIcon = ComponentType<{ className?: string }>;
 
+const platformSections: Array<{
+	label: string;
+	path: string;
+	icon: PlatformIcon;
+	end?: boolean;
+}> = [
+	{ label: '总览', path: '/platform', icon: LayoutDashboard, end: true },
+	{ label: 'Agent', path: '/platform/agents', icon: Bot },
+	{ label: '工具', path: '/platform/tools', icon: Wrench },
+	{ label: '工作流', path: '/platform/workflows', icon: GitBranch },
+	{ label: '审批', path: '/platform/approvals', icon: ShieldCheck },
+	{ label: '运行', path: '/platform/runs', icon: PlayCircle },
+	{ label: '租户', path: '/platform/tenants', icon: UsersRound },
+	{ label: '记忆', path: '/platform/memory', icon: Brain },
+	{ label: '设置', path: '/platform/settings', icon: Boxes },
+];
+
 export interface PlatformPageShellProps {
 	children: ReactNode;
 	className?: string;
@@ -17,16 +46,48 @@ export interface PlatformPageShellProps {
 
 export function PlatformPageShell({ children, className }: PlatformPageShellProps) {
 	return (
-		<main className="h-full overflow-y-auto bg-slate-50/70">
+		<main className="h-full overflow-y-auto bg-slate-50/80">
 			<div
 				className={cn(
-					'mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 lg:px-8',
+					'mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-5 sm:px-5 lg:px-8',
 					className,
 				)}
 			>
+				<PlatformSectionNav />
 				{children}
 			</div>
 		</main>
+	);
+}
+
+function PlatformSectionNav() {
+	return (
+		<nav
+			aria-label="平台模块"
+			className="sticky top-0 z-20 -mx-4 border-b bg-slate-50/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-slate-50/80 sm:-mx-5 sm:px-5 lg:-mx-8 lg:px-8"
+		>
+			<div className="flex items-center gap-2 overflow-x-auto">
+				{platformSections.map(({ label, path, icon: Icon, end }) => (
+					<NavLink
+						key={path}
+						to={path}
+						end={end}
+						className={({ isActive }) =>
+							cn(
+								'inline-flex h-9 shrink-0 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors',
+								'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+								isActive
+									? 'border-slate-900 bg-slate-900 text-white shadow-sm'
+									: 'border-slate-200 bg-background text-muted-foreground hover:border-slate-300 hover:text-foreground',
+							)
+						}
+					>
+						<Icon className="size-4" />
+						<span>{label}</span>
+					</NavLink>
+				))}
+			</div>
+		</nav>
 	);
 }
 
