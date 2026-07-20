@@ -3258,7 +3258,10 @@ def _get_enabled_platform_workflow_template(workflow_type: str) -> dict[str, Any
 
 
 def _enterprise_platform_scenarios() -> dict[str, Any]:
-    workflows = _load_platform_workflow_templates()
+    try:
+        workflows = _platform_workflow_template_service().list_templates()
+    except PlatformWorkflowTemplateServiceError as exc:
+        _raise_platform_workflow_template_service_error(exc)
     workflow_runs = _platform_workflow_run_service().list_run_records(limit=100)
     pending_approvals = _load_platform_approval_requests(limit=100, status="pending")
     scenarios: list[dict[str, Any]] = []
