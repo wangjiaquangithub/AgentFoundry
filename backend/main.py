@@ -1279,12 +1279,15 @@ async def publish_enterprise_platform_agent(
 ) -> dict[str, Any]:
     """Publish one business template as a tenant-scoped platform agent."""
     agent_service = _platform_agent_service()
-    user_id = agent_service.resolve_request_user_id(request.headers.get("X-User-ID"))
-    resource_inputs = agent_service.resource_validation_inputs(payload)
+    publish_request = agent_service.publish_request_payload(
+        payload,
+        header_user_id=request.headers.get("X-User-ID"),
+    )
+    user_id = publish_request["user_id"]
     await _validate_platform_agent_resources(
         request,
         user_id,
-        **resource_inputs,
+        **publish_request["resource_inputs"],
     )
     try:
         return agent_service.publish_agent_response_payload(payload, user_id)

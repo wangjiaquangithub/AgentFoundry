@@ -49,6 +49,18 @@ class PlatformAgentService:
     def resolve_request_user_id(user_id: str | None) -> str:
         return user_id or "acme:alice"
 
+    def publish_request_payload(
+        self,
+        payload: Any,
+        *,
+        header_user_id: str | None = None,
+    ) -> dict[str, Any]:
+        user_id = self.resolve_request_user_id(header_user_id)
+        return {
+            "user_id": user_id,
+            "resource_inputs": self.resource_validation_inputs(payload),
+        }
+
     def import_agents_payload(self, value: Any, *, mode: str) -> None:
         imported_agents = self.normalize_import_agents(value)
         agents = (
