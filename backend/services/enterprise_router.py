@@ -341,6 +341,14 @@ class PlatformEnterpriseRouterService:
             },
         ]
 
+    def rule_routes_for_question(self, question: str) -> list[dict[str, Any]]:
+        routes: list[dict[str, Any]] = []
+        routes.extend(self.ticket_routes_for_question(question))
+        routes.extend(self.policy_routes_for_question(question))
+        routes.extend(self.department_routes_for_question(question))
+        routes.extend(self.generic_metrics_route_for_question(question, routes))
+        return self.dedupe_routes(routes)
+
     def fallback_route(self) -> dict[str, Any]:
         return {
             "routed": False,

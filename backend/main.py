@@ -1053,19 +1053,7 @@ async def _route_enterprise_agent_question_with_model(
 def _route_enterprise_agent_question_with_rules(
     question: str,
 ) -> list[dict[str, Any]]:
-    routes: list[dict[str, Any]] = []
-
-    routes.extend(enterprise_router_service.ticket_routes_for_question(question))
-    routes.extend(enterprise_router_service.policy_routes_for_question(question))
-    routes.extend(enterprise_router_service.department_routes_for_question(question))
-    routes.extend(
-        enterprise_router_service.generic_metrics_route_for_question(
-            question,
-            routes,
-        ),
-    )
-
-    return enterprise_router_service.dedupe_routes(routes)
+    return enterprise_router_service.rule_routes_for_question(question)
 
 
 def _route_enterprise_agent_question(question: str) -> dict[str, Any]:
