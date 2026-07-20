@@ -1354,13 +1354,6 @@ async def _search_agent_knowledge_bases(
     return hits[:top_k], "; ".join(errors) if errors and not hits else None
 
 
-def _save_platform_agents(agents: list[dict[str, Any]]) -> None:
-    try:
-        _platform_agent_service().save_agents(agents)
-    except PlatformAgentServiceError as exc:
-        _raise_platform_agent_service_error(exc)
-
-
 def _platform_connector_config_service() -> PlatformConnectorConfigService:
     return PlatformConnectorConfigService(
         repository=connector_config_repository,
@@ -2732,7 +2725,10 @@ async def import_enterprise_platform_config(
             if mode == "replace"
             else _merge_by_key(_load_platform_agents(), imported_agents, "id")
         )
-        _save_platform_agents(agents)
+        try:
+            _platform_agent_service().save_agents(agents)
+        except PlatformAgentServiceError as exc:
+            _raise_platform_agent_service_error(exc)
 
     if "workflow_templates" in incoming:
         imported_workflows = _normalize_import_workflow_templates(
