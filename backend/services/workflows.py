@@ -731,6 +731,25 @@ class PlatformWorkflowRunService:
             for key in sorted(keys)
         }
 
+    def build_execution_context(
+        self,
+        *,
+        workflow_type: str,
+        workflow_template: dict[str, Any],
+        inputs: dict[str, Any],
+        run_id: str,
+        started_at: str,
+    ) -> dict[str, Any]:
+        default_inputs = self.default_inputs(workflow_template)
+        return {
+            "run_id": run_id,
+            "started_at": started_at,
+            "session_id": self.session_id(workflow_type, run_id),
+            "workflow_name": self.workflow_name(workflow_template, workflow_type),
+            "default_inputs": default_inputs,
+            "normalized_inputs": self.normalize_inputs(inputs, default_inputs),
+        }
+
     def build_step_specs(
         self,
         template: dict[str, Any],

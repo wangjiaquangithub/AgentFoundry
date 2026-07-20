@@ -2362,15 +2362,18 @@ async def run_enterprise_workflow(
     tenant = runtime_selection["tenant"]
     connector_label = runtime_selection["connector_label"]
     connector_source = runtime_selection["connector_source"]
-    run_id = uuid4().hex
-    started_at = _now_iso()
-    session_id = workflow_run_service.session_id(workflow_type, run_id)
-    workflow_name = workflow_run_service.workflow_name(workflow_template, workflow_type)
-    default_inputs = workflow_run_service.default_inputs(workflow_template)
-    normalized_inputs = workflow_run_service.normalize_inputs(
-        run_request["inputs"],
-        default_inputs,
+    execution_context = workflow_run_service.build_execution_context(
+        workflow_type=workflow_type,
+        workflow_template=workflow_template,
+        inputs=run_request["inputs"],
+        run_id=uuid4().hex,
+        started_at=_now_iso(),
     )
+    run_id = execution_context["run_id"]
+    started_at = execution_context["started_at"]
+    session_id = execution_context["session_id"]
+    workflow_name = execution_context["workflow_name"]
+    normalized_inputs = execution_context["normalized_inputs"]
     try:
         step_specs = workflow_run_service.build_step_specs(
             workflow_template,
