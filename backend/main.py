@@ -1175,12 +1175,16 @@ def _export_platform_config() -> dict[str, Any]:
         agents = _platform_agent_service().list_agents()
     except PlatformAgentServiceError as exc:
         _raise_platform_agent_service_error(exc)
+    try:
+        workflow_templates = _platform_workflow_template_service().list_templates()
+    except PlatformWorkflowTemplateServiceError as exc:
+        _raise_platform_workflow_template_service_error(exc)
 
     config = {
         "members": _platform_member_registry(include_inactive=True),
         "connector_configs": connector_configs,
         "agents": agents,
-        "workflow_templates": _load_platform_workflow_templates(),
+        "workflow_templates": workflow_templates,
         "tool_policy": _load_platform_tool_policy_config(),
     }
     counts = connector_config_service.export_config_counts(config)
