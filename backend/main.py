@@ -2138,25 +2138,11 @@ async def import_enterprise_platform_config(
             _raise_platform_workflow_template_service_error(exc)
 
     if "tool_policy" in incoming:
-        raw_policy = incoming.get("tool_policy")
-        if not isinstance(raw_policy, dict):
-            raise HTTPException(
-                status_code=400,
-                detail="tool_policy must be a JSON object.",
-            )
-        policy = raw_policy
-        tool_policy_service = _platform_tool_policy_service()
-        if mode != "replace":
-            try:
-                current_policy = tool_policy_service.load_policy()
-            except PlatformToolPolicyServiceError as exc:
-                _raise_platform_tool_policy_service_error(exc)
-            policy = tool_policy_service.merge_import_policy(
-                current_policy,
-                raw_policy,
-            )
         try:
-            tool_policy_service.save_policy(policy)
+            _platform_tool_policy_service().import_policy_payload(
+                incoming.get("tool_policy"),
+                mode=mode,
+            )
         except PlatformToolPolicyServiceError as exc:
             _raise_platform_tool_policy_service_error(exc)
         tool_authorization_policy = _build_tool_authorization_policy()

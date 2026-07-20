@@ -53,6 +53,21 @@ class PlatformToolPolicyService:
     ) -> dict[str, Any]:
         return _deep_merge_dict(current_policy, imported_policy)
 
+    def import_policy_payload(self, value: Any, *, mode: str) -> None:
+        if not isinstance(value, dict):
+            raise PlatformToolPolicyServiceError(
+                400,
+                "tool_policy must be a JSON object.",
+            )
+
+        policy = value
+        if mode != "replace":
+            policy = self.merge_import_policy(
+                self.load_policy(),
+                value,
+            )
+        self.save_policy(policy)
+
     def build_authorization_policy(self) -> ToolAuthorizationPolicy:
         return ToolAuthorizationPolicy(
             self.load_policy(),
