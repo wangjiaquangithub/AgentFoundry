@@ -11,7 +11,7 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 from time import perf_counter
-from typing import Any, Iterable
+from typing import Any
 from uuid import uuid4
 
 import httpx
@@ -62,7 +62,7 @@ from permissions import (
     ENTERPRISE_TOOL_NAMES,
     ToolAuthorizationPolicy,
 )
-from repositories.agents import AgentRegistryError, AgentRepository
+from repositories.agents import AgentRepository
 from repositories.agent_runs import AgentRunRepository
 from repositories.approvals import ApprovalRequestRepository
 from repositories.connectors import (
@@ -79,6 +79,7 @@ from repositories.workflows import (
     WorkflowTemplateRepository,
 )
 from runtime import get_runtime_adapter
+from services.agents import PlatformAgentService, PlatformAgentServiceError
 from services.platform_status import PlatformStatusService
 
 
@@ -641,99 +642,61 @@ def _enterprise_subagent_template_metadata() -> list[dict[str, Any]]:
     ]
 
 
+def _platform_agent_service() -> PlatformAgentService:
+    return PlatformAgentService(
+        repository=agent_repository,
+        templates=ENTERPRISE_AGENT_TEMPLATES,
+        approval_required_tools=APPROVAL_REQUIRED_TOOLS,
+        tenant_for_user=_runtime_tenant_for_user,
+        access_scope_diagnostics=_platform_agent_access_scope_diagnostics,
+    )
+
+
+def _raise_platform_agent_service_error(exc: PlatformAgentServiceError) -> None:
+    raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
+
+
 def _load_platform_agents() -> list[dict[str, Any]]:
     try:
-        return agent_repository.list()
-    except AgentRegistryError as exc:
-        raise HTTPException(
-            status_code=500,
-            detail=str(exc),
-        ) from exc
+        return _platform_agent_service().list_agents()
+    except PlatformAgentServiceError as exc:
+        _raise_platform_agent_service_error(exc)
 
 
 def _get_platform_agent(agent_id: str) -> dict[str, Any]:
     try:
-        agent = agent_repository.get(agent_id)
-    except AgentRegistryError as exc:
-        raise HTTPException(
-            status_code=500,
-            detail=str(exc),
-        ) from exc
-
-    if agent is not None:
-        return agent
-
-    raise HTTPException(
-        status_code=404,
-        detail=f"Unknown platform agent: {agent_id}",
-    )
+        return _platform_agent_service().get_agent(agent_id)
+    except PlatformAgentServiceError as exc:
+        _raise_platform_agent_service_error(exc)
 
 
 def _get_platform_agent_template(template_id: str) -> dict[str, Any]:
-    template = next(
-        (
-            item
-            for item in ENTERPRISE_AGENT_TEMPLATES
-            if item["id"] == template_id
-        ),
-        None,
-    )
-    if template is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Unknown platform agent template: {template_id}",
-        )
-
-    return template
+    try:
+        return _platform_agent_service().get_template(template_id)
+    except PlatformAgentServiceError as exc:
+        _raise_platform_agent_service_error(exc)
 
 
 def _validate_platform_agent_tools(
     template: dict[str, Any],
     selected_tools: list[str],
 ) -> None:
-    template_tools = list(template["tools"])
-    unsupported_tools = [
-        tool_name for tool_name in selected_tools if tool_name not in template_tools
-    ]
-    if unsupported_tools:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "message": "Requested tools are not allowed by the template.",
-                "unsupported_tools": unsupported_tools,
-            },
-        )
+    try:
+        _platform_agent_service().validate_tools(template, selected_tools)
+    except PlatformAgentServiceError as exc:
+        _raise_platform_agent_service_error(exc)
 
 
-def _normalize_agent_access_values(values: Iterable[Any] | None) -> list[str]:
-    normalized: list[str] = []
-    seen: set[str] = set()
-    for value in values or []:
-        item = str(value).strip()
-        if item and item not in seen:
-            normalized.append(item)
-            seen.add(item)
-    return normalized
+def _normalize_agent_access_values(values: list[Any] | None) -> list[str]:
+    return _platform_agent_service().normalize_access_values(values)
 
 
-def _normalize_platform_resource_ids(values: Iterable[Any] | None) -> list[str]:
-    normalized: list[str] = []
-    seen: set[str] = set()
-    for value in values or []:
-        item = str(value).strip()
-        if item and item not in seen:
-            normalized.append(item)
-            seen.add(item)
-    return normalized
+def _normalize_platform_resource_ids(values: list[Any] | None) -> list[str]:
+    return _platform_agent_service().normalize_resource_ids(values)
 
 
 def _platform_agent_access(agent: dict[str, Any]) -> dict[str, list[str]]:
-    return {
-        "allowed_user_ids": _normalize_agent_access_values(
-            agent.get("allowed_user_ids"),
-        ),
-        "allowed_roles": _normalize_agent_access_values(agent.get("allowed_roles")),
-    }
+    return _platform_agent_service().agent_access(agent)
 
 
 def _load_platform_members_config() -> dict[str, Any]:
@@ -813,10 +776,10 @@ def _platform_member_roles(members: list[dict[str, Any]]) -> list[str]:
 
 
 def _normalize_platform_agent_tenant(value: Any, user_id: str) -> str:
-    tenant = str(value or "").strip() or _runtime_tenant_for_user(user_id)
-    if not tenant:
-        raise HTTPException(status_code=400, detail="Agent tenant is required.")
-    return tenant
+    try:
+        return _platform_agent_service().normalize_tenant(value, user_id)
+    except PlatformAgentServiceError as exc:
+        _raise_platform_agent_service_error(exc)
 
 
 def _platform_identities_for_tenant(tenant: str) -> list[dict[str, Any]]:
@@ -896,39 +859,18 @@ def _validate_platform_agent_access_scope(
     allowed_user_ids: list[str],
     allowed_roles: list[str],
 ) -> None:
-    diagnostics = _platform_agent_access_scope_diagnostics(
-        tenant,
-        {
-            "allowed_user_ids": allowed_user_ids,
-            "allowed_roles": allowed_roles,
-        },
-    )
-    if diagnostics["tenant_mismatched_user_ids"] or diagnostics["unknown_roles"]:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "message": "Agent access scope must stay inside the selected tenant.",
-                "tenant": tenant,
-                "tenant_mismatched_user_ids": diagnostics[
-                    "tenant_mismatched_user_ids"
-                ],
-                "unknown_roles": diagnostics["unknown_roles"],
-            },
+    try:
+        _platform_agent_service().validate_access_scope(
+            tenant=tenant,
+            allowed_user_ids=allowed_user_ids,
+            allowed_roles=allowed_roles,
         )
+    except PlatformAgentServiceError as exc:
+        _raise_platform_agent_service_error(exc)
 
 
 def _platform_agent_access_summary(agent: dict[str, Any]) -> dict[str, Any]:
-    tenant = str(agent.get("tenant") or "").strip()
-    access = _platform_agent_access(agent)
-    diagnostics = _platform_agent_access_scope_diagnostics(tenant, access)
-    return {
-        **diagnostics,
-        "allowed_user_count": len(access["allowed_user_ids"]),
-        "allowed_role_count": len(access["allowed_roles"]),
-        "open_to_tenant": not access["allowed_user_ids"] and not access["allowed_roles"],
-        "access_scope_valid": not diagnostics["tenant_mismatched_user_ids"]
-        and not diagnostics["unknown_roles"],
-    }
+    return _platform_agent_service().access_summary(agent)
 
 
 def _identity_role_for_user(user_id: str) -> str:
@@ -997,127 +939,11 @@ def _platform_agent_run_metadata(
 
 
 def _platform_agent_readiness(agent: dict[str, Any]) -> dict[str, Any]:
-    tools = list(agent.get("tools") or [])
-    knowledge_base_ids = list(agent.get("knowledge_base_ids") or [])
-    tenant = str(agent.get("tenant") or "").strip()
-    model_configured = bool(agent.get("model_config_id"))
-    memory_enabled = bool(agent.get("memory_enabled", False))
-    workflow_enabled = bool(agent.get("workflow_enabled", False))
-    access = _platform_agent_access(agent)
-    access_summary = _platform_agent_access_summary(agent)
-    access_restricted = bool(access["allowed_user_ids"] or access["allowed_roles"])
-    approval_required_tools = [
-        tool_name for tool_name in tools if tool_name in APPROVAL_REQUIRED_TOOLS
-    ]
-    checks = {
-        "tenant_configured": bool(tenant),
-        "model_configured": model_configured,
-        "knowledge_configured": bool(knowledge_base_ids),
-        "tools_configured": bool(tools),
-        "memory_enabled": memory_enabled,
-        "workflow_enabled": workflow_enabled,
-        "access_restricted": access_restricted,
-        "access_scope_valid": bool(access_summary["access_scope_valid"]),
-        "approval_required_tools": approval_required_tools,
-    }
-    issues = []
-
-    if not tenant:
-        issues.append(
-            {
-                "code": "missing_tenant",
-                "severity": "blocking",
-                "message": "未配置租户，Agent 不能安全发布给企业身份。",
-            },
-        )
-    if not model_configured:
-        issues.append(
-            {
-                "code": "missing_model",
-                "severity": "blocking",
-                "message": "未绑定模型配置，Agent 不能稳定执行。",
-            },
-        )
-    if not tools:
-        issues.append(
-            {
-                "code": "missing_tools",
-                "severity": "warning",
-                "message": "未启用工具，只能做纯对话或知识检索。",
-            },
-        )
-    if not knowledge_base_ids:
-        issues.append(
-            {
-                "code": "missing_knowledge",
-                "severity": "warning",
-                "message": "未绑定知识库，回答不会引用企业资料。",
-            },
-        )
-    if approval_required_tools:
-        issues.append(
-            {
-                "code": "approval_required_tools",
-                "severity": "warning",
-                "message": "包含需要审批的高风险工具，运行时会进入审批流。",
-                "tools": approval_required_tools,
-            },
-        )
-    if not memory_enabled:
-        issues.append(
-            {
-                "code": "memory_disabled",
-                "severity": "info",
-                "message": "长期记忆未启用，跨轮偏好和上下文不会沉淀。",
-            },
-        )
-    if not workflow_enabled:
-        issues.append(
-            {
-                "code": "workflow_disabled",
-                "severity": "info",
-                "message": "工作流未启用，复杂任务不会自动编排。",
-            },
-        )
-    if not access_summary["access_scope_valid"]:
-        issues.append(
-            {
-                "code": "invalid_access_scope",
-                "severity": "blocking",
-                "message": "访问范围包含跨租户用户或未知角色，请重新配置。",
-            },
-        )
-
-    if not tenant or not model_configured or not access_summary["access_scope_valid"]:
-        status = "blocked"
-    elif any(issue["severity"] == "warning" for issue in issues):
-        status = "partial"
-    else:
-        status = "ready"
-
-    return {
-        "status": status,
-        "summary": {
-            "knowledge_base_count": len(knowledge_base_ids),
-            "tool_count": len(tools),
-            "approval_required_tool_count": len(approval_required_tools),
-            "tenant_configured": bool(tenant),
-            "model_configured": model_configured,
-            "memory_enabled": memory_enabled,
-            "workflow_enabled": workflow_enabled,
-            "access_restricted": access_restricted,
-            "access_scope_valid": bool(access_summary["access_scope_valid"]),
-        },
-        "checks": checks,
-        "issues": issues,
-    }
+    return _platform_agent_service().readiness(agent)
 
 
 def _platform_agent_response(agent: dict[str, Any]) -> dict[str, Any]:
-    response = dict(agent)
-    response["access_summary"] = _platform_agent_access_summary(agent)
-    response["readiness"] = _platform_agent_readiness(agent)
-    return response
+    return _platform_agent_service().response(agent)
 
 
 def _resource_record_id(record: Any) -> str | None:
@@ -1805,7 +1631,10 @@ async def _search_agent_knowledge_bases(
 
 
 def _save_platform_agents(agents: list[dict[str, Any]]) -> None:
-    agent_repository.save_all(agents)
+    try:
+        _platform_agent_service().save_agents(agents)
+    except PlatformAgentServiceError as exc:
+        _raise_platform_agent_service_error(exc)
 
 
 def _load_platform_connector_configs() -> dict[str, dict[str, Any]]:
@@ -2161,16 +1990,7 @@ def _normalize_policy_tools(value: list[str] | None) -> list[str]:
 
 
 def _platform_agent_template_metadata() -> list[dict[str, Any]]:
-    return [
-        {
-            "id": template["id"],
-            "name": template["name"],
-            "description": template["description"],
-            "tools": list(template["tools"]),
-            "capabilities": list(template["capabilities"]),
-        }
-        for template in ENTERPRISE_AGENT_TEMPLATES
-    ]
+    return _platform_agent_service().template_metadata()
 
 
 def _platform_identity_metadata(
@@ -2584,48 +2404,10 @@ def _create_platform_agent(
     payload: EnterpriseAgentPublishRequest,
     user_id: str,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    template = _get_platform_agent_template(payload.template_id)
-    template_tools = list(template["tools"])
-    selected_tools = payload.tools if payload.tools is not None else template_tools
-    _validate_platform_agent_tools(template, selected_tools)
-
-    now = datetime.now(timezone.utc).isoformat()
-    tenant = _normalize_platform_agent_tenant(payload.tenant, user_id)
-    name = (payload.name or "").strip() or str(template["name"])
-    description = (payload.description or "").strip() or str(template["description"])
-    model_config_id = (payload.model_config_id or "").strip() or None
-    knowledge_base_ids = _normalize_platform_resource_ids(payload.knowledge_base_ids)
-    allowed_user_ids = _normalize_agent_access_values(payload.allowed_user_ids)
-    allowed_roles = _normalize_agent_access_values(payload.allowed_roles)
-    _validate_platform_agent_access_scope(
-        tenant=tenant,
-        allowed_user_ids=allowed_user_ids,
-        allowed_roles=allowed_roles,
-    )
-    agent = {
-        "id": str(uuid4()),
-        "template_id": template["id"],
-        "name": name,
-        "description": description,
-        "tenant": tenant,
-        "tools": list(selected_tools),
-        "knowledge_base_ids": knowledge_base_ids,
-        "model_config_id": model_config_id,
-        "memory_enabled": payload.memory_enabled,
-        "workflow_enabled": payload.workflow_enabled,
-        "allowed_user_ids": allowed_user_ids,
-        "allowed_roles": allowed_roles,
-        "capabilities": list(template["capabilities"]),
-        "status": "published",
-        "created_by": user_id,
-        "created_at": now,
-        "updated_at": now,
-    }
-
-    agents = _load_platform_agents()
-    agents.append(agent)
-    _save_platform_agents(agents)
-    return agent, agents
+    try:
+        return _platform_agent_service().create_agent(payload, user_id)
+    except PlatformAgentServiceError as exc:
+        _raise_platform_agent_service_error(exc)
 
 
 def _update_platform_agent(
@@ -2633,83 +2415,24 @@ def _update_platform_agent(
     payload: EnterpriseAgentUpdateRequest,
     user_id: str,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    agents = _load_platform_agents()
-    agent_index = next(
-        (
-            index
-            for index, item in enumerate(agents)
-            if str(item.get("id", "")) == agent_id
-        ),
-        None,
-    )
-    if agent_index is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Unknown platform agent: {agent_id}",
-        )
-
-    agent = dict(agents[agent_index])
-    template = _get_platform_agent_template(str(agent.get("template_id", "")))
-    changes = payload.model_dump(exclude_unset=True)
-
-    if "name" in changes:
-        agent["name"] = (payload.name or "").strip() or str(template["name"])
-    if "description" in changes:
-        agent["description"] = (payload.description or "").strip() or str(
-            template["description"],
-        )
-    if "tenant" in changes:
-        agent["tenant"] = _normalize_platform_agent_tenant(payload.tenant, user_id)
-    if "tools" in changes:
-        selected_tools = payload.tools if payload.tools is not None else []
-        _validate_platform_agent_tools(template, selected_tools)
-        agent["tools"] = list(selected_tools)
-    if "knowledge_base_ids" in changes:
-        agent["knowledge_base_ids"] = _normalize_platform_resource_ids(
-            payload.knowledge_base_ids,
-        )
-    if "model_config_id" in changes:
-        agent["model_config_id"] = (payload.model_config_id or "").strip() or None
-    if "memory_enabled" in changes:
-        agent["memory_enabled"] = bool(payload.memory_enabled)
-    if "workflow_enabled" in changes:
-        agent["workflow_enabled"] = bool(payload.workflow_enabled)
-    if "allowed_user_ids" in changes:
-        agent["allowed_user_ids"] = _normalize_agent_access_values(
-            payload.allowed_user_ids,
-        )
-    if "allowed_roles" in changes:
-        agent["allowed_roles"] = _normalize_agent_access_values(payload.allowed_roles)
-    if "status" in changes:
-        status = (payload.status or "").strip()
-        if status not in {"published", "archived"}:
-            raise HTTPException(
-                status_code=400,
-                detail="Platform agent status must be published or archived.",
-            )
-        agent["status"] = status
-
-    _validate_platform_agent_access_scope(
-        tenant=str(agent.get("tenant") or "").strip(),
-        allowed_user_ids=_normalize_agent_access_values(agent.get("allowed_user_ids")),
-        allowed_roles=_normalize_agent_access_values(agent.get("allowed_roles")),
-    )
-    agent["capabilities"] = list(template["capabilities"])
-    agent["updated_at"] = datetime.now(timezone.utc).isoformat()
-    agents[agent_index] = agent
-    _save_platform_agents(agents)
-    return agent, agents
+    try:
+        return _platform_agent_service().update_agent(agent_id, payload, user_id)
+    except PlatformAgentServiceError as exc:
+        _raise_platform_agent_service_error(exc)
 
 
 def _archive_platform_agent(
     agent_id: str,
     user_id: str,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    return _update_platform_agent(
-        agent_id,
-        EnterpriseAgentUpdateRequest(status="archived"),
-        user_id,
-    )
+    try:
+        return _platform_agent_service().archive_agent(
+            agent_id,
+            EnterpriseAgentUpdateRequest(status="archived"),
+            user_id,
+        )
+    except PlatformAgentServiceError as exc:
+        _raise_platform_agent_service_error(exc)
 
 
 def _run_authorized_enterprise_tool(
