@@ -674,13 +674,6 @@ def _get_platform_agent(agent_id: str) -> dict[str, Any]:
         _raise_platform_agent_service_error(exc)
 
 
-def _get_platform_agent_template(template_id: str) -> dict[str, Any]:
-    try:
-        return _platform_agent_service().get_template(template_id)
-    except PlatformAgentServiceError as exc:
-        _raise_platform_agent_service_error(exc)
-
-
 def _validate_platform_agent_tools(
     template: dict[str, Any],
     selected_tools: list[str],
