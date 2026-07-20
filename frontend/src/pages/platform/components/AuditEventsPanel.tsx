@@ -1,6 +1,8 @@
 import { CheckCircle2, ListChecks, RefreshCcw, XCircle } from 'lucide-react';
 import type { Dispatch, SetStateAction } from 'react';
 
+import { formatTimestamp } from '../platform-utils';
+import { PlatformNotice } from './common';
 import type {
 	EnterpriseAuditEvent,
 	EnterprisePublishedAgent,
@@ -19,8 +21,6 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { formatTimestamp } from '../platform-utils';
-import { PlatformNotice } from './common';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -76,7 +76,7 @@ export function AuditEventsPanel({
 	t,
 }: AuditEventsPanelProps) {
 	return (
-		<section className="flex flex-col gap-3">
+		<section className="flex flex-col gap-4 rounded-lg border bg-background p-4 shadow-sm">
 			<div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
 				<div>
 					<h2 className="text-base font-semibold">{t('platform.audit.title')}</h2>
@@ -252,7 +252,7 @@ export function AuditEventsPanel({
 				<>
 					<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 						{auditStats.map((stat) => (
-							<div key={stat.label} className="rounded-lg border bg-card p-3">
+							<div key={stat.label} className="rounded-lg border bg-muted/10 p-3">
 								<div className="text-xs text-muted-foreground">{stat.label}</div>
 								<div className="mt-1 font-mono text-xl font-semibold">
 									{stat.value}

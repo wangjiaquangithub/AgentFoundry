@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import type { Dispatch, SetStateAction } from 'react';
 
+import { approvalStatusClassName, formatTimestamp } from '../platform-utils';
+import { PlatformNotice } from './common';
 import type {
 	EnterpriseApprovalRequestItem,
 	EnterpriseApprovalRequestType,
@@ -28,8 +30,6 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { approvalStatusClassName, formatTimestamp } from '../platform-utils';
-import { PlatformNotice } from './common';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -52,13 +52,6 @@ interface ApprovalFilters {
 	limit: string;
 }
 
-interface ApprovalSummary {
-	total: number;
-	pending: number;
-	approved: number;
-	rejected: number;
-}
-
 interface WorkflowOption {
 	value: string;
 	label: string;
@@ -69,7 +62,6 @@ interface ApprovalsPanelProps {
 	onApprovalFormChange: Dispatch<SetStateAction<ApprovalFormState>>;
 	approvalFilters: ApprovalFilters;
 	onApprovalFiltersChange: Dispatch<SetStateAction<ApprovalFilters>>;
-	approvalSummary: ApprovalSummary;
 	approvalRequests: EnterpriseApprovalRequestItem[];
 	approvalLoading: boolean;
 	approvalError: string | null;
@@ -108,7 +100,6 @@ export function ApprovalsPanel({
 	onApprovalFormChange,
 	approvalFilters,
 	onApprovalFiltersChange,
-	approvalSummary,
 	approvalRequests,
 	approvalLoading,
 	approvalError,
@@ -135,23 +126,23 @@ export function ApprovalsPanel({
 	const enterpriseToolInputConfig = toolInputConfig;
 
 	return (
-				<section className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(360px,1.1fr)]">
-					<div className="flex flex-col gap-3">
-						<div className="flex items-start gap-2">
-							<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/20">
-								<ShieldCheck className="size-4 text-muted-foreground" />
-							</div>
-							<div className="min-w-0">
-								<h2 className="text-base font-semibold">
-									{t('platform.approvals.title')}
-								</h2>
-								<p className="text-sm text-muted-foreground">
-									{t('platform.approvals.description')}
-								</p>
-							</div>
-						</div>
+		<section className="grid gap-6 xl:grid-cols-[minmax(360px,0.72fr)_minmax(0,1.28fr)] xl:items-start">
+			<div className="flex flex-col gap-3 xl:sticky xl:top-6">
+				<div className="flex items-start gap-2">
+					<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/20">
+						<ShieldCheck className="size-4 text-muted-foreground" />
+					</div>
+					<div className="min-w-0">
+						<h2 className="text-base font-semibold">
+							{t('platform.approvals.title')}
+						</h2>
+						<p className="text-sm text-muted-foreground">
+							{t('platform.approvals.description')}
+						</p>
+					</div>
+				</div>
 
-						<div className="grid gap-4 rounded-lg border bg-muted/10 p-4">
+						<div className="grid gap-4 rounded-lg border bg-background p-4 shadow-sm">
 							<div>
 								<h3 className="text-sm font-semibold">
 									{t('platform.approvals.createTitle')}
@@ -362,7 +353,7 @@ export function ApprovalsPanel({
 						</div>
 					</div>
 
-					<div className="flex flex-col gap-3">
+					<div className="flex flex-col gap-3 rounded-lg border bg-background p-4 shadow-sm">
 						<div className="flex items-start justify-between gap-3">
 							<div>
 								<h3 className="text-sm font-semibold">
@@ -382,39 +373,6 @@ export function ApprovalsPanel({
 								<RefreshCcw className={cn(approvalLoading && 'animate-spin')} />
 								{t('platform.approvals.refresh')}
 							</Button>
-						</div>
-
-						<div className="grid gap-2 sm:grid-cols-4">
-							<div className="rounded-lg border bg-muted/10 p-3">
-								<div className="text-xs text-muted-foreground">
-									{t('platform.approvals.total')}
-								</div>
-								<div className="mt-1 text-lg font-semibold">{approvalSummary.total}</div>
-							</div>
-							<div className="rounded-lg border bg-amber-500/10 p-3">
-								<div className="text-xs text-amber-800">
-									{t('platform.approvals.pending')}
-								</div>
-								<div className="mt-1 text-lg font-semibold text-amber-900">
-									{approvalSummary.pending}
-								</div>
-							</div>
-							<div className="rounded-lg border bg-emerald-500/10 p-3">
-								<div className="text-xs text-emerald-800">
-									{t('platform.approvals.approved')}
-								</div>
-								<div className="mt-1 text-lg font-semibold text-emerald-900">
-									{approvalSummary.approved}
-								</div>
-							</div>
-							<div className="rounded-lg border bg-red-500/10 p-3">
-								<div className="text-xs text-red-800">
-									{t('platform.approvals.rejected')}
-								</div>
-								<div className="mt-1 text-lg font-semibold text-red-900">
-									{approvalSummary.rejected}
-								</div>
-							</div>
 						</div>
 
 						<div className="grid gap-3 rounded-lg border bg-muted/10 p-3 md:grid-cols-2 xl:grid-cols-[repeat(5,minmax(0,1fr))_auto]">

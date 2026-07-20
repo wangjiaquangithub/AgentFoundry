@@ -1,17 +1,18 @@
-import { ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Clock3, ListChecks, ShieldCheck, XCircle } from 'lucide-react';
 import type { Dispatch, SetStateAction } from 'react';
 
-import type {
-	EnterpriseApprovalRequestItem,
-	EnterprisePublishedAgent,
-	EnterpriseToolCatalogItem,
-} from '@/api';
 import { ApprovalsPanel, type ApprovalFormState } from './ApprovalsPanel';
 import {
 	PlatformConnectionCard,
 	PlatformPageHeader,
 	PlatformPageShell,
+	StatCard,
 } from './common';
+import type {
+	EnterpriseApprovalRequestItem,
+	EnterprisePublishedAgent,
+	EnterpriseToolCatalogItem,
+} from '@/api';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -107,6 +108,11 @@ export function ApprovalsViewPage({
 	summarizeAuditObject,
 	t,
 }: ApprovalsViewPageProps) {
+	const pendingApprovalRate =
+		approvalSummary.total > 0
+			? Math.round((approvalSummary.pending / approvalSummary.total) * 100)
+			: 0;
+
 	return (
 		<PlatformPageShell>
 			<PlatformPageHeader
@@ -130,35 +136,65 @@ export function ApprovalsViewPage({
 				}
 			/>
 
-				<ApprovalsPanel
-					approvalForm={approvalForm}
-					onApprovalFormChange={onApprovalFormChange}
-					approvalFilters={approvalFilters}
-					onApprovalFiltersChange={onApprovalFiltersChange}
-					approvalSummary={approvalSummary}
-					approvalRequests={approvalRequests}
-					approvalLoading={approvalLoading}
-					approvalError={approvalError}
-					creatingApproval={creatingApproval}
-					decidingApprovalId={decidingApprovalId}
-					continuingApprovalId={continuingApprovalId}
-					workflowOptions={workflowOptions}
-					availableToolItems={availableToolItems}
-					activePlatformAgents={activePlatformAgents}
-					selectedRunAgentId={selectedRunAgentId}
-					selectedIdentityUserId={selectedIdentityUserId}
-					username={username}
-					currentTenant={currentTenant}
-					currentUserId={currentUserId}
-					toolInputConfig={toolInputConfig}
-					onCreateApproval={onCreateApproval}
-					onRefetchApprovals={onRefetchApprovals}
-					onApproveAndRun={onApproveAndRun}
-					onDecideApproval={onDecideApproval}
-					onUseApproval={onUseApproval}
-					summarizeAuditObject={summarizeAuditObject}
-					t={t}
+			<section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+				<StatCard
+					label={t('platform.approvals.total')}
+					value={approvalSummary.total}
+					helper={t('platform.approvals.listDescription')}
+					icon={ListChecks}
+					loading={approvalLoading}
 				/>
+				<StatCard
+					label={t('platform.approvals.pending')}
+					value={approvalSummary.pending}
+					helper={`${pendingApprovalRate}%`}
+					icon={Clock3}
+					loading={approvalLoading}
+				/>
+				<StatCard
+					label={t('platform.approvals.approved')}
+					value={approvalSummary.approved}
+					helper={t('platform.approvals.approve')}
+					icon={CheckCircle2}
+					loading={approvalLoading}
+				/>
+				<StatCard
+					label={t('platform.approvals.rejected')}
+					value={approvalSummary.rejected}
+					helper={t('platform.approvals.reject')}
+					icon={XCircle}
+					loading={approvalLoading}
+				/>
+			</section>
+
+			<ApprovalsPanel
+				approvalForm={approvalForm}
+				onApprovalFormChange={onApprovalFormChange}
+				approvalFilters={approvalFilters}
+				onApprovalFiltersChange={onApprovalFiltersChange}
+				approvalRequests={approvalRequests}
+				approvalLoading={approvalLoading}
+				approvalError={approvalError}
+				creatingApproval={creatingApproval}
+				decidingApprovalId={decidingApprovalId}
+				continuingApprovalId={continuingApprovalId}
+				workflowOptions={workflowOptions}
+				availableToolItems={availableToolItems}
+				activePlatformAgents={activePlatformAgents}
+				selectedRunAgentId={selectedRunAgentId}
+				selectedIdentityUserId={selectedIdentityUserId}
+				username={username}
+				currentTenant={currentTenant}
+				currentUserId={currentUserId}
+				toolInputConfig={toolInputConfig}
+				onCreateApproval={onCreateApproval}
+				onRefetchApprovals={onRefetchApprovals}
+				onApproveAndRun={onApproveAndRun}
+				onDecideApproval={onDecideApproval}
+				onUseApproval={onUseApproval}
+				summarizeAuditObject={summarizeAuditObject}
+				t={t}
+			/>
 		</PlatformPageShell>
 	);
 }
