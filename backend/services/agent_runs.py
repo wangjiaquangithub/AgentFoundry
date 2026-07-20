@@ -516,6 +516,14 @@ class PlatformAgentRunService:
             "routing_error": routing_error,
         }
 
+    @staticmethod
+    def routing_context_view(routing_context: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "routing_mode": routing_context["routing_mode"],
+            "routing_source": routing_context["routing_source"],
+            "routing_error": routing_context["routing_error"],
+        }
+
     def summarize_routed_tool_calls(
         self,
         tool_calls: list[dict[str, Any]],
