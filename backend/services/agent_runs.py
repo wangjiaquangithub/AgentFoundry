@@ -270,6 +270,9 @@ class PlatformAgentRunService:
             "source": str(route.get("source", default_source)),
         }
 
+    def denied_tool_answer(self, denial: dict[str, Any]) -> str:
+        return str(denial["reason"])
+
     def build_denied_routed_tool_call(
         self,
         *,
