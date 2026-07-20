@@ -1066,23 +1066,15 @@ async def create_enterprise_platform_member(
     request: Request,
 ) -> dict[str, Any]:
     """Create or replace one enterprise platform member."""
-    actor = _platform_member_service().resolve_mutation_actor(
-        request.headers.get("X-User-ID"),
-    )
     try:
-        member, members = _platform_member_service().upsert_member(
-            payload.model_dump(),
-            actor=actor,
+        return _platform_member_service().create_member_response_payload(
+            payload=payload.model_dump(),
+            actor=request.headers.get("X-User-ID"),
+            identity_metadata=_platform_identity_metadata,
+            registry_path=PLATFORM_MEMBERS_PATH,
         )
     except PlatformMemberServiceError as exc:
         _raise_platform_member_service_error(exc)
-    return _platform_member_service().mutation_response_payload(
-        actor=actor,
-        member=member,
-        members=members,
-        identity_metadata=_platform_identity_metadata,
-        registry_path=PLATFORM_MEMBERS_PATH,
-    )
 
 
 @app.patch("/enterprise/platform/members/{user_id:path}")
