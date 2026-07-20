@@ -126,31 +126,21 @@ export function ApprovalsPanel({
 	const enterpriseToolInputConfig = toolInputConfig;
 
 	return (
-		<section className="grid gap-6 xl:grid-cols-[minmax(360px,0.72fr)_minmax(0,1.28fr)] xl:items-start">
-			<div className="flex flex-col gap-3 xl:sticky xl:top-6">
+		<section className="grid gap-5 xl:grid-cols-[minmax(360px,0.72fr)_minmax(0,1.28fr)] xl:items-start">
+			<div className="grid gap-4 rounded-lg border bg-background p-4 shadow-sm xl:sticky xl:top-20">
 				<div className="flex items-start gap-2">
 					<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/20">
 						<ShieldCheck className="size-4 text-muted-foreground" />
 					</div>
 					<div className="min-w-0">
-						<h2 className="text-base font-semibold">
-							{t('platform.approvals.title')}
+						<h2 className="text-sm font-semibold">
+							{t('platform.approvals.createTitle')}
 						</h2>
-						<p className="text-sm text-muted-foreground">
-							{t('platform.approvals.description')}
+						<p className="mt-1 text-xs leading-5 text-muted-foreground">
+							{t('platform.approvals.createDescription')}
 						</p>
 					</div>
 				</div>
-
-						<div className="grid gap-4 rounded-lg border bg-background p-4 shadow-sm">
-							<div>
-								<h3 className="text-sm font-semibold">
-									{t('platform.approvals.createTitle')}
-								</h3>
-								<p className="text-xs text-muted-foreground">
-									{t('platform.approvals.createDescription')}
-								</p>
-							</div>
 
 							<div className="grid gap-3 md:grid-cols-2">
 								<div className="grid gap-2">
@@ -342,31 +332,40 @@ export function ApprovalsPanel({
 								</div>
 							</div>
 
-							<div className="flex justify-end">
-								<Button onClick={onCreateApproval} disabled={creatingApproval}>
+							<div className="flex justify-end border-t pt-4">
+								<Button
+									className="w-full sm:w-auto"
+									onClick={onCreateApproval}
+									disabled={creatingApproval}
+								>
 									<ListChecks className={cn(creatingApproval && 'animate-pulse')} />
 									{creatingApproval
 										? t('platform.approvals.creating')
 										: t('platform.approvals.create')}
 								</Button>
 							</div>
-						</div>
 					</div>
 
-					<div className="flex flex-col gap-3 rounded-lg border bg-background p-4 shadow-sm">
-						<div className="flex items-start justify-between gap-3">
-							<div>
-								<h3 className="text-sm font-semibold">
+					<div className="flex min-w-0 flex-col gap-4 rounded-lg border bg-background p-4 shadow-sm">
+						<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+							<div className="flex min-w-0 items-start gap-2">
+								<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/20">
+									<ListChecks className="size-4 text-muted-foreground" />
+								</div>
+								<div className="min-w-0">
+									<h2 className="text-sm font-semibold">
 									{t('platform.approvals.listTitle')}
-								</h3>
-								<p className="text-xs text-muted-foreground">
+									</h2>
+									<p className="mt-1 text-xs leading-5 text-muted-foreground">
 									{t('platform.approvals.listDescription')}
-								</p>
+									</p>
+								</div>
 							</div>
 							<Button
 								type="button"
 								size="sm"
 								variant="outline"
+								className="w-full sm:w-auto"
 								onClick={() => void onRefetchApprovals()}
 								disabled={approvalLoading}
 							>
@@ -487,7 +486,7 @@ export function ApprovalsPanel({
 							<Button
 								type="button"
 								size="sm"
-								className="self-end"
+								className="self-end md:col-span-2 xl:col-span-1"
 								onClick={() => void onRefetchApprovals()}
 								disabled={approvalLoading}
 							>
@@ -505,11 +504,11 @@ export function ApprovalsPanel({
 								))}
 							</div>
 						) : approvalRequests.length === 0 ? (
-							<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+							<div className="rounded-lg border border-dashed bg-muted/10 p-6 text-sm text-muted-foreground">
 								{t('platform.approvals.empty')}
 							</div>
 						) : (
-							<div className="grid gap-2">
+							<div className="grid gap-3">
 								{approvalRequests.map((approval) => {
 									const target =
 										approval.tool_name ||
@@ -535,9 +534,9 @@ export function ApprovalsPanel({
 									return (
 										<div
 											key={approval.approval_id}
-											className="rounded-lg border bg-background p-3"
+											className="rounded-lg border bg-background p-4 transition-colors hover:bg-muted/10"
 										>
-											<div className="flex flex-wrap items-start justify-between gap-3">
+											<div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
 												<div className="min-w-0">
 													<div className="flex flex-wrap items-center gap-2">
 														<Badge
@@ -553,20 +552,21 @@ export function ApprovalsPanel({
 																`platform.approvals.${approval.request_type === 'tool_run' ? 'toolRun' : approval.request_type === 'workflow_run' ? 'workflowRun' : 'agentAction'}`,
 															)}
 														</Badge>
-														<span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
+														<span className="min-w-0 break-all font-mono text-xs text-muted-foreground">
 															{target}
 														</span>
 													</div>
-													<p className="mt-2 text-sm">
+													<p className="mt-3 text-sm leading-6">
 														{approval.reason || '-'}
 													</p>
 												</div>
 												{approval.status === 'pending' ? (
-													<div className="flex shrink-0 gap-2">
+													<div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
 														{canApproveAndRun ? (
 															<Button
 																type="button"
 																size="sm"
+																className="w-full sm:w-auto"
 																onClick={() =>
 																	void onApproveAndRun(approval)
 																}
@@ -588,6 +588,7 @@ export function ApprovalsPanel({
 															type="button"
 															size="sm"
 															variant="outline"
+															className="w-full sm:w-auto"
 															onClick={() =>
 																void onDecideApproval(
 																	approval.approval_id,
@@ -609,6 +610,7 @@ export function ApprovalsPanel({
 															type="button"
 															size="sm"
 															variant="outline"
+															className="w-full sm:w-auto"
 															onClick={() =>
 																void onDecideApproval(
 																	approval.approval_id,
@@ -632,6 +634,7 @@ export function ApprovalsPanel({
 														type="button"
 														size="sm"
 														variant="outline"
+														className="w-full sm:w-auto"
 														onClick={() => onUseApproval(approval)}
 													>
 														<ArrowRight />
@@ -640,45 +643,49 @@ export function ApprovalsPanel({
 												) : null}
 											</div>
 
-											<div className="mt-3 grid gap-1 text-xs text-muted-foreground">
-												<div className="flex flex-wrap gap-1">
+											<div className="mt-4 grid gap-2 rounded-md border bg-muted/10 p-3 text-xs text-muted-foreground md:grid-cols-2">
+												<div className="grid gap-1">
 													<span>{t('platform.approvals.approvalId')}:</span>
 													<span className="break-all font-mono">
 														{approval.approval_id}
 													</span>
 												</div>
-												<div className="flex flex-wrap gap-1">
+												<div className="grid gap-1">
 													<span>{t('platform.audit.inputs')}:</span>
-													<span>{summarizeAuditObject(approval.inputs)}</span>
+													<span className="break-words">
+														{summarizeAuditObject(approval.inputs)}
+													</span>
 												</div>
-												<div className="flex flex-wrap gap-1">
+												<div className="grid gap-1">
 													<span>{t('platform.approvals.requestedBy')}:</span>
-													<span className="font-mono">
+													<span className="break-all font-mono">
 														{approval.requested_by} / {approval.user_id}
 													</span>
 												</div>
-												<div className="flex flex-wrap gap-1">
+												<div className="grid gap-1">
 													<span>{t('platform.approvals.requestedAt')}:</span>
 													<span>{formatTimestamp(approval.requested_at)}</span>
 												</div>
 												{approval.decided_at ? (
-													<div className="flex flex-wrap gap-1">
+													<div className="grid gap-1">
 														<span>{t('platform.approvals.decidedAt')}:</span>
 														<span>{formatTimestamp(approval.decided_at)}</span>
 													</div>
 												) : null}
 												{approval.decided_by ? (
-													<div className="flex flex-wrap gap-1">
+													<div className="grid gap-1">
 														<span>{t('platform.approvals.decidedBy')}:</span>
-														<span className="font-mono">
+														<span className="break-all font-mono">
 															{approval.decided_by}
 														</span>
 													</div>
 												) : null}
 												{approval.decision_note ? (
-													<div className="flex flex-wrap gap-1">
+													<div className="grid gap-1 md:col-span-2">
 														<span>{t('platform.approvals.decisionNote')}:</span>
-														<span>{approval.decision_note}</span>
+														<span className="break-words">
+															{approval.decision_note}
+														</span>
 													</div>
 												) : null}
 											</div>
