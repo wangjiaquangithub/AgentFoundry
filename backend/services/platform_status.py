@@ -212,6 +212,162 @@ class PlatformStatusService:
             ],
         }
 
+    def governance_snapshot(
+        self,
+        *,
+        identities: list[dict[str, Any]],
+        tenant_workspaces: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Build the platform governance model used by the enterprise console."""
+        pending_approvals = self._list_approval_records(
+            status="pending",
+            limit=100,
+        )
+        recent_audit_events = self._audit_logger.recent(limit=100)
+
+        pending_by_user: dict[str, int] = {}
+        pending_by_tenant: dict[str, int] = {}
+        for approval in pending_approvals:
+            user_id = str(approval.get("user_id") or "")
+            tenant = str(approval.get("tenant") or "")
+            if user_id:
+                pending_by_user[user_id] = pending_by_user.get(user_id, 0) + 1
+            if tenant:
+                pending_by_tenant[tenant] = pending_by_tenant.get(tenant, 0) + 1
+
+        audit_by_user: dict[str, list[dict[str, Any]]] = {}
+        audit_by_tenant: dict[str, list[dict[str, Any]]] = {}
+        for event in recent_audit_events:
+            user_id = str(event.get("user_id") or "")
+            tenant = str(event.get("tenant") or "")
+            if user_id:
+                audit_by_user.setdefault(user_id, []).append(event)
+            if tenant:
+                audit_by_tenant.setdefault(tenant, []).append(event)
+
+        identity_summaries: list[dict[str, Any]] = []
+        tenant_summaries: dict[str, dict[str, Any]] = {
+            tenant: {
+                "tenant": tenant,
+                "identity_count": 0,
+                "roles": set(),
+                "allowed_count": 0,
+                "denied_count": 0,
+                "pending_approvals": pending_by_tenant.get(tenant, 0),
+                "audit_events": len(audit_by_tenant.get(tenant, [])),
+                "failed_audit_events": sum(
+                    1
+                    for event in audit_by_tenant.get(tenant, [])
+                    if event.get("success") is False
+                ),
+                "workspace_source": str(
+                    (tenant_workspaces.get(tenant) or {}).get("source")
+                    or (tenant_workspaces.get(tenant) or {}).get(
+                        "runtime_connector_source",
+                        "",
+                    ),
+                ),
+            }
+            for tenant in tenant_workspaces
+        }
+
+        for identity in identities:
+            user_id = str(identity.get("user_id") or "")
+            tenant = str(identity.get("tenant") or "")
+            decisions = (
+                ((identity.get("tool_policy") or {}).get("decisions") or [])
+                if isinstance(identity.get("tool_policy"), dict)
+                else []
+            )
+            allowed_count = sum(1 for decision in decisions if decision.get("allowed"))
+            denied_count = len(decisions) - allowed_count
+            user_events = audit_by_user.get(user_id, [])
+            failed_user_events = sum(
+                1 for event in user_events if event.get("success") is False
+            )
+            pending_count = pending_by_user.get(user_id, 0)
+
+            identity_summaries.append(
+                {
+                    "user_id": user_id,
+                    "tenant": tenant,
+                    "display_name": str(identity.get("display_name") or user_id),
+                    "role": str(identity.get("role") or "Enterprise user"),
+                    "allowed_count": allowed_count,
+                    "denied_count": denied_count,
+                    "pending_approvals": pending_count,
+                    "recent_audit_events": len(user_events),
+                    "failed_audit_events": failed_user_events,
+                },
+            )
+
+            tenant_summary = tenant_summaries.setdefault(
+                tenant,
+                {
+                    "tenant": tenant,
+                    "identity_count": 0,
+                    "roles": set(),
+                    "allowed_count": 0,
+                    "denied_count": 0,
+                    "pending_approvals": pending_by_tenant.get(tenant, 0),
+                    "audit_events": len(audit_by_tenant.get(tenant, [])),
+                    "failed_audit_events": sum(
+                        1
+                        for event in audit_by_tenant.get(tenant, [])
+                        if event.get("success") is False
+                    ),
+                    "workspace_source": "",
+                },
+            )
+            tenant_summary["identity_count"] += 1
+            tenant_summary["roles"].add(str(identity.get("role") or "Enterprise user"))
+            tenant_summary["allowed_count"] += allowed_count
+            tenant_summary["denied_count"] += denied_count
+
+        normalized_tenant_summaries = []
+        for tenant_summary in tenant_summaries.values():
+            normalized_tenant_summaries.append(
+                {
+                    **tenant_summary,
+                    "roles": sorted(tenant_summary["roles"]),
+                },
+            )
+
+        risky_identity_count = sum(
+            1
+            for summary in identity_summaries
+            if summary["denied_count"]
+            or summary["pending_approvals"]
+            or summary["failed_audit_events"]
+        )
+
+        return {
+            "identities": identities,
+            "tenant_workspaces": tenant_workspaces,
+            "tenant_summaries": sorted(
+                normalized_tenant_summaries,
+                key=lambda item: item["tenant"],
+            ),
+            "identity_summaries": sorted(
+                identity_summaries,
+                key=lambda item: (item["tenant"], item["user_id"]),
+            ),
+            "pending_approvals": pending_approvals,
+            "recent_audit_events": recent_audit_events[:20],
+            "summary": {
+                "tenant_count": len(normalized_tenant_summaries),
+                "identity_count": len(identities),
+                "risky_identity_count": risky_identity_count,
+                "pending_approval_count": len(pending_approvals),
+                "audit_event_count": len(recent_audit_events),
+                "failed_audit_event_count": sum(
+                    1
+                    for event in recent_audit_events
+                    if event.get("success") is False
+                ),
+            },
+        }
+
     def launch_readiness(
         self,
         *,
