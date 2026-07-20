@@ -1819,16 +1819,18 @@ async def run_enterprise_agent(
         )
         tool_calls.append(
             agent_run_service.build_executed_routed_tool_call(
-                tool_name=tool_name,
-                inputs=route_inputs,
-                tool_response=tool_response,
-                connector=connector_label,
-                connector_source=connector_source,
-                routing_source=route_source,
-                routing_reason=route_reason,
-                approval_id=approved_by,
-                decision=decision,
-                answer=call_answer,
+                **agent_run_service.build_executed_routed_tool_call_context(
+                    tool_name=tool_name,
+                    inputs=route_inputs,
+                    tool_response=tool_response,
+                    connector=connector_label,
+                    connector_source=connector_source,
+                    routing_source=route_source,
+                    routing_reason=route_reason,
+                    approval_id=approved_by,
+                    decision=decision,
+                    answer=call_answer,
+                ),
             ),
         )
 
