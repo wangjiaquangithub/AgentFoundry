@@ -744,65 +744,6 @@ async def _validate_platform_agent_resources(
         )
 
 
-async def _search_agent_knowledge_bases(
-    request: Request,
-    *,
-    user_id: str,
-    question: str,
-    knowledge_base_ids: list[str],
-    top_k: int = 3,
-) -> tuple[list[dict[str, Any]], str | None]:
-    service = getattr(request.app.state, "knowledge_base_service", None)
-    if not knowledge_base_ids:
-        return [], None
-
-    hits: list[dict[str, Any]] = []
-    errors: list[str] = []
-    if service is not None:
-        for knowledge_base_id in knowledge_base_ids:
-            try:
-                results = await service.search(
-                    user_id=user_id,
-                    knowledge_base_id=knowledge_base_id,
-                    query=question,
-                    top_k=top_k,
-                )
-            except Exception as exc:  # Do not let RAG failures break tool answers.
-                errors.append(f"{knowledge_base_id}: {exc}")
-                continue
-
-            hits.extend(
-                knowledge_response_service.format_hit(knowledge_base_id, hit)
-                for hit in results
-            )
-
-    if len(hits) < top_k:
-        seen = {
-            (
-                str(hit.get("knowledge_base_id") or ""),
-                str(hit.get("document_id") or ""),
-            )
-            for hit in hits
-        }
-        for hit in dev_knowledge_service.search(
-            question=question,
-            knowledge_base_ids=knowledge_base_ids,
-            provider=PLATFORM_DEV_KNOWLEDGE_PROVIDER,
-            top_k=top_k,
-        ):
-            key = (
-                str(hit.get("knowledge_base_id") or ""),
-                str(hit.get("document_id") or ""),
-            )
-            if key in seen:
-                continue
-            seen.add(key)
-            hits.append(hit)
-
-    hits.sort(key=lambda item: item["score"], reverse=True)
-    return hits[:top_k], "; ".join(errors) if errors and not hits else None
-
-
 def _platform_connector_config_service() -> PlatformConnectorConfigService:
     return PlatformConnectorConfigService(
         repository=connector_config_repository,
@@ -2127,11 +2068,19 @@ async def run_enterprise_agent(
             "agent_id": runner_agent_id,
         },
     }
-    knowledge_hits, knowledge_error = await _search_agent_knowledge_bases(
-        request,
-        user_id=user_id,
-        question=question,
-        knowledge_base_ids=list(agent_metadata.get("knowledge_base_ids") or []),
+    knowledge_hits, knowledge_error = (
+        await knowledge_response_service.search_agent_knowledge_bases(
+            knowledge_base_service=getattr(
+                request.app.state,
+                "knowledge_base_service",
+                None,
+            ),
+            dev_knowledge_service=dev_knowledge_service,
+            dev_knowledge_provider=PLATFORM_DEV_KNOWLEDGE_PROVIDER,
+            user_id=user_id,
+            question=question,
+            knowledge_base_ids=list(agent_metadata.get("knowledge_base_ids") or []),
+        )
     )
     knowledge_payload = {
         "knowledge_hits": knowledge_hits,

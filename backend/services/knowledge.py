@@ -46,6 +46,66 @@ class PlatformKnowledgeResponseService:
             "metadata": _json_safe(metadata or {}),
         }
 
+    async def search_agent_knowledge_bases(
+        self,
+        *,
+        knowledge_base_service: Any | None,
+        dev_knowledge_service: Any,
+        dev_knowledge_provider: str,
+        user_id: str,
+        question: str,
+        knowledge_base_ids: list[str],
+        top_k: int = 3,
+    ) -> tuple[list[dict[str, Any]], str | None]:
+        if not knowledge_base_ids:
+            return [], None
+
+        hits: list[dict[str, Any]] = []
+        errors: list[str] = []
+        if knowledge_base_service is not None:
+            for knowledge_base_id in knowledge_base_ids:
+                try:
+                    results = await knowledge_base_service.search(
+                        user_id=user_id,
+                        knowledge_base_id=knowledge_base_id,
+                        query=question,
+                        top_k=top_k,
+                    )
+                except Exception as exc:  # Do not let RAG failures break tool answers.
+                    errors.append(f"{knowledge_base_id}: {exc}")
+                    continue
+
+                hits.extend(
+                    self.format_hit(knowledge_base_id, hit)
+                    for hit in results
+                )
+
+        if len(hits) < top_k:
+            seen = {
+                (
+                    str(hit.get("knowledge_base_id") or ""),
+                    str(hit.get("document_id") or ""),
+                )
+                for hit in hits
+            }
+            for hit in dev_knowledge_service.search(
+                question=question,
+                knowledge_base_ids=knowledge_base_ids,
+                provider=dev_knowledge_provider,
+                top_k=top_k,
+            ):
+                key = (
+                    str(hit.get("knowledge_base_id") or ""),
+                    str(hit.get("document_id") or ""),
+                )
+                if key in seen:
+                    continue
+                seen.add(key)
+                hits.append(hit)
+
+        hits.sort(key=lambda item: item["score"], reverse=True)
+        return hits[:top_k], "; ".join(errors) if errors and not hits else None
+
     def format_answer(
         self,
         knowledge_hits: list[dict[str, Any]],
