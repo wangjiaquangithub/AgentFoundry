@@ -1058,7 +1058,8 @@ async def enterprise_platform_governance(request: Request) -> dict[str, Any]:
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
     status_service = _platform_status_service()
-    tenant = status_service.runtime_tenant(runtime)
+    runtime_selection = status_service.runtime_selection(runtime)
+    tenant = runtime_selection["tenant"]
     identities = _platform_identity_metadata(user_id, tenant)
     try:
         tenant_workspaces = connector_config_service.tenant_workspaces(
