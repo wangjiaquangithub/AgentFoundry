@@ -806,19 +806,6 @@ async def _validate_platform_agent_resources(
         )
 
 
-def _agent_tool_denial(tool_name: str) -> dict[str, Any]:
-    reason = (
-        f"该 Agent 实例未启用工具 {tool_name}，所以本次没有执行。"
-        "请在发布配置里启用对应工具，或选择具备该能力的 Agent 实例。"
-    )
-    return {
-        "name": tool_name,
-        "allowed": False,
-        "reason": reason,
-        "denied_by_agent_config": True,
-    }
-
-
 def _question_is_memory_lookup(question: str) -> bool:
     normalized = question.lower()
     english_markers = (
@@ -2122,7 +2109,7 @@ async def run_enterprise_tool(
         runner_agent_id = configured_agent_id
         if payload.tool_name not in configured_tools:
             runtime = _enterprise_runtime_context(user_id)
-            decision = _agent_tool_denial(payload.tool_name)
+            decision = _platform_agent_service().tool_denial_payload(payload.tool_name)
             return {
                 "tool_name": payload.tool_name,
                 "allowed": False,
@@ -2340,7 +2327,7 @@ async def run_enterprise_agent(
         route_source = str(route.get("source", ROUTING_SOURCE_RULES))
 
         if tool_name not in configured_tools:
-            denial = _agent_tool_denial(tool_name)
+            denial = _platform_agent_service().tool_denial_payload(tool_name)
             reason = str(denial["reason"])
             decision = {
                 **denial,
@@ -3151,7 +3138,7 @@ async def run_enterprise_workflow(
     tool_calls: list[dict[str, Any]] = []
     for step_id, title, tool_name, step_inputs in step_specs:
         if configured_tools is not None and tool_name not in configured_tools:
-            decision = _agent_tool_denial(tool_name)
+            decision = _platform_agent_service().tool_denial_payload(tool_name)
             step, tool_call = workflow_run_service.denied_step_record(
                 step_id=step_id,
                 title=title,

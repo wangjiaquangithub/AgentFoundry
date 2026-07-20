@@ -368,6 +368,18 @@ class PlatformAgentService:
             "allowed_roles": access["allowed_roles"],
         }
 
+    def tool_denial_payload(self, tool_name: str) -> dict[str, Any]:
+        reason = (
+            f"该 Agent 实例未启用工具 {tool_name}，所以本次没有执行。"
+            "请在发布配置里启用对应工具，或选择具备该能力的 Agent 实例。"
+        )
+        return {
+            "name": tool_name,
+            "allowed": False,
+            "reason": reason,
+            "denied_by_agent_config": True,
+        }
+
     def resource_validation_inputs(
         self,
         payload: Any,
