@@ -1848,11 +1848,13 @@ async def run_enterprise_agent(
         tool_calls=tool_calls,
     )
     answer = agent_run_service.compose_routed_answer(
-        tool_calls=tool_calls,
-        knowledge_hits=knowledge_hits,
-        memory_hits=memory_hits,
-        format_knowledge_answer=knowledge_response_service.format_answer,
-        format_memory_answer=platform_memory_service.format_answer,
+        **agent_run_service.build_routed_answer_context(
+            tool_calls=tool_calls,
+            knowledge_hits=knowledge_hits,
+            memory_hits=memory_hits,
+            format_knowledge_answer=knowledge_response_service.format_answer,
+            format_memory_answer=platform_memory_service.format_answer,
+        ),
     )
     memory_saved = platform_memory_service.append_agent_turn_if_enabled(
         **agent_run_service.build_memory_append_context(
