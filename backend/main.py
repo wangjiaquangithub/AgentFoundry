@@ -981,11 +981,14 @@ app = create_app(
 async def enterprise_platform_status(request: Request) -> dict[str, Any]:
     """Return enterprise platform state for the frontend console."""
     user_id = request.headers.get("X-User-ID") or "acme:alice"
-    runtime = _enterprise_runtime_context(user_id)
+    try:
+        connector_config_service = _platform_connector_config_service()
+        runtime = connector_config_service.enterprise_runtime_context(user_id)
+    except PlatformConnectorConfigServiceError as exc:
+        _raise_platform_connector_config_service_error(exc)
     tenant = str(runtime["tenant"])
     identities = _platform_identity_metadata(user_id, tenant)
     try:
-        connector_config_service = _platform_connector_config_service()
         tenant_workspaces = connector_config_service.tenant_workspaces(
             identities=identities,
             current_tenant=tenant,
@@ -1012,12 +1015,10 @@ async def enterprise_platform_status(request: Request) -> dict[str, Any]:
 async def enterprise_platform_connectors(request: Request) -> dict[str, Any]:
     """Return enterprise data source connector readiness and tenant scope."""
     user_id = request.headers.get("X-User-ID") or "acme:alice"
-    runtime = _enterprise_runtime_context(user_id)
-    tenant = str(runtime["tenant"])
-    identities = _platform_identity_metadata(user_id, tenant)
-
     try:
-        response = _platform_connector_config_service().metadata_response(
+        connector_config_service = _platform_connector_config_service()
+        runtime = connector_config_service.enterprise_runtime_context(user_id)
+        response = connector_config_service.metadata_response(
             runtime=runtime,
             connector_name=enterprise_connector.name,
             env=os.environ,
@@ -1025,9 +1026,10 @@ async def enterprise_platform_connectors(request: Request) -> dict[str, Any]:
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
 
+    tenant = str(runtime["tenant"])
+    identities = _platform_identity_metadata(user_id, tenant)
     response["identities"] = identities
     try:
-        connector_config_service = _platform_connector_config_service()
         response["tenant_workspaces"] = connector_config_service.tenant_workspaces(
             identities=identities,
             current_tenant=tenant,
@@ -1044,11 +1046,14 @@ async def enterprise_platform_connectors(request: Request) -> dict[str, Any]:
 async def enterprise_platform_governance(request: Request) -> dict[str, Any]:
     """Return tenant, identity, approval, and audit governance state."""
     user_id = request.headers.get("X-User-ID") or "acme:alice"
-    runtime = _enterprise_runtime_context(user_id)
+    try:
+        connector_config_service = _platform_connector_config_service()
+        runtime = connector_config_service.enterprise_runtime_context(user_id)
+    except PlatformConnectorConfigServiceError as exc:
+        _raise_platform_connector_config_service_error(exc)
     tenant = str(runtime["tenant"])
     identities = _platform_identity_metadata(user_id, tenant)
     try:
-        connector_config_service = _platform_connector_config_service()
         tenant_workspaces = connector_config_service.tenant_workspaces(
             identities=identities,
             current_tenant=tenant,
