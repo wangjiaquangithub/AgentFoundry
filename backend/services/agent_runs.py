@@ -211,6 +211,7 @@ class PlatformAgentRunService:
     def build_response_record_context(
         self,
         *,
+        build_runtime_context_payload: Callable[..., dict[str, Any]],
         session_id: str,
         agent_id: str,
         agent_name: Any,
@@ -219,12 +220,20 @@ class PlatformAgentRunService:
         question: str,
         runtime_adapter: dict[str, Any],
     ) -> dict[str, Any]:
+        runtime_context = build_runtime_context_payload(
+            tenant=tenant,
+            user_id=user_id,
+            session_id=session_id,
+            agent_id=agent_id,
+            agent_name=agent_name,
+            metadata={"source": "enterprise_agent_run"},
+        )
         return {
-            "session_id": session_id,
-            "agent_id": agent_id,
-            "agent_name": agent_name,
-            "tenant": tenant,
-            "user_id": user_id,
+            "session_id": runtime_context["session_id"],
+            "agent_id": runtime_context["agent_id"],
+            "agent_name": runtime_context.get("agent_name"),
+            "tenant": runtime_context["tenant"],
+            "user_id": runtime_context["user_id"],
             "question": question,
             "runtime_adapter": runtime_adapter,
         }
@@ -237,6 +246,7 @@ class PlatformAgentRunService:
         agent_metadata: dict[str, Any],
         runtime: dict[str, Any],
         runtime_adapter: dict[str, Any],
+        build_runtime_context_payload: Callable[..., dict[str, Any]],
         default_tool_names: set[str],
         safe_path_part: Callable[[str], str],
     ) -> dict[str, Any]:
@@ -252,6 +262,7 @@ class PlatformAgentRunService:
             safe_path_part=safe_path_part,
         )
         response_record_context = self.build_response_record_context(
+            build_runtime_context_payload=build_runtime_context_payload,
             session_id=runner_context["runner_session_id"],
             agent_id=runner_context["runner_agent_id"],
             agent_name=agent_metadata.get("agent_name"),

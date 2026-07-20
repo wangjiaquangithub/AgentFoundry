@@ -223,6 +223,26 @@ def build_runtime_context(
     )
 
 
+def build_runtime_context_payload(
+    *,
+    tenant: str,
+    user_id: str,
+    session_id: str,
+    agent_id: str,
+    agent_name: str | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build a serialized provider-neutral runtime context."""
+    return build_runtime_context(
+        tenant=tenant,
+        user_id=user_id,
+        session_id=session_id,
+        agent_id=agent_id,
+        agent_name=agent_name,
+        metadata=metadata,
+    ).to_dict()
+
+
 def get_runtime_adapter(_agent_metadata: dict[str, Any] | None = None) -> RuntimeAdapter:
     """Return the runtime adapter for platform agent runs."""
     return AGENTSCOPE_PLATFORM_ADAPTER
