@@ -1494,22 +1494,6 @@ def _enterprise_runtime_context(user_id: str) -> dict[str, Any]:
         _raise_platform_connector_config_service_error(exc)
 
 
-def _normalize_connector_config_payload(
-    payload: EnterpriseConnectorConfigSaveRequest,
-    *,
-    user_id: str,
-    existing_config: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    try:
-        return _platform_connector_config_service().normalize_config_payload(
-            payload,
-            user_id=user_id,
-            existing_config=existing_config,
-        )
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
-
-
 def _platform_config_counts(config: dict[str, Any]) -> dict[str, int]:
     tool_policy = config.get("tool_policy") if isinstance(config, dict) else {}
     tenants = tool_policy.get("tenants", {}) if isinstance(tool_policy, dict) else {}
