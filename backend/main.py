@@ -744,29 +744,6 @@ async def _validate_platform_agent_resources(
         )
 
 
-def _question_is_memory_lookup(question: str) -> bool:
-    normalized = question.lower()
-    english_markers = (
-        "what did i",
-        "what was i",
-        "what were we",
-        "what did we",
-        "do you remember",
-    )
-    chinese_markers = (
-        "我刚才",
-        "刚才我",
-        "我之前",
-        "之前我",
-        "我上次",
-        "上次我",
-        "还记得",
-    )
-    return any(marker in normalized for marker in english_markers) or any(
-        marker in question for marker in chinese_markers
-    )
-
-
 async def _search_agent_knowledge_bases(
     request: Request,
     *,
@@ -2187,7 +2164,9 @@ async def run_enterprise_agent(
             )
         )
         memory_saved = False
-        if memory_enabled and not _question_is_memory_lookup(question):
+        if memory_enabled and not platform_memory_service.is_agent_turn_memory_lookup(
+            question,
+        ):
             platform_memory_service.append_agent_turn_memory(
                 tenant=tenant,
                 user_id=user_id,
@@ -2431,7 +2410,9 @@ async def run_enterprise_agent(
         )
     answer = "\n\n".join(answer_parts)
     memory_saved = False
-    if memory_enabled and not _question_is_memory_lookup(question):
+    if memory_enabled and not platform_memory_service.is_agent_turn_memory_lookup(
+        question,
+    ):
         platform_memory_service.append_agent_turn_memory(
             tenant=tenant,
             user_id=user_id,

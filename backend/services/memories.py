@@ -266,6 +266,28 @@ class PlatformMemoryService:
     def extract_keywords(self, value: str, *, limit: int = 80) -> list[str]:
         return sorted(_memory_text_terms(value))[:limit]
 
+    def is_agent_turn_memory_lookup(self, question: str) -> bool:
+        normalized = question.lower()
+        english_markers = (
+            "what did i",
+            "what was i",
+            "what were we",
+            "what did we",
+            "do you remember",
+        )
+        chinese_markers = (
+            "我刚才",
+            "刚才我",
+            "我之前",
+            "之前我",
+            "我上次",
+            "上次我",
+            "还记得",
+        )
+        return any(marker in normalized for marker in english_markers) or any(
+            marker in question for marker in chinese_markers
+        )
+
     def search_memories(
         self,
         *,
