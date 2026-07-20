@@ -1992,52 +1992,10 @@ def _env_configured(name: str) -> bool:
 
 def _enterprise_connector_env_metadata() -> list[dict[str, Any]]:
     connector_mode = os.getenv("ENTERPRISE_CONNECTOR", "mock").lower().strip()
-    return [
-        {
-            "name": "ENTERPRISE_CONNECTOR",
-            "configured": _env_configured("ENTERPRISE_CONNECTOR"),
-            "required": False,
-            "description": "Connector mode: mock, fixture, or http.",
-        },
-        {
-            "name": "ENTERPRISE_API_BASE_URL",
-            "configured": _env_configured("ENTERPRISE_API_BASE_URL"),
-            "required": connector_mode == "http",
-            "description": "Base URL for the enterprise HTTP data API.",
-        },
-        {
-            "name": "ENTERPRISE_API_TOKEN",
-            "configured": _env_configured("ENTERPRISE_API_TOKEN"),
-            "required": False,
-            "secret": True,
-            "description": "Bearer token for the enterprise HTTP API.",
-        },
-        {
-            "name": "ENTERPRISE_FIXTURE_PATH",
-            "configured": _env_configured("ENTERPRISE_FIXTURE_PATH")
-            or _env_configured("ENTERPRISE_MOCK_DATA_PATH"),
-            "required": False,
-            "description": "Local JSON fixture path for mock/fixture connector data.",
-        },
-        {
-            "name": "ENTERPRISE_POLICY_PATH",
-            "configured": _env_configured("ENTERPRISE_POLICY_PATH"),
-            "required": False,
-            "description": "HTTP path template for tenant policy search.",
-        },
-        {
-            "name": "ENTERPRISE_TICKET_PATH",
-            "configured": _env_configured("ENTERPRISE_TICKET_PATH"),
-            "required": False,
-            "description": "HTTP path template for tenant ticket lookup.",
-        },
-        {
-            "name": "ENTERPRISE_METRICS_PATH",
-            "configured": _env_configured("ENTERPRISE_METRICS_PATH"),
-            "required": False,
-            "description": "HTTP path template for tenant department metrics.",
-        },
-    ]
+    return _platform_connector_config_service().env_metadata(
+        connector_mode=connector_mode,
+        env_configured=_env_configured,
+    )
 
 
 def _enterprise_supported_connectors() -> list[dict[str, Any]]:

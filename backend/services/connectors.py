@@ -79,6 +79,59 @@ class PlatformConnectorConfigService:
             },
         ]
 
+    def env_metadata(
+        self,
+        *,
+        connector_mode: str,
+        env_configured: Callable[[str], bool],
+    ) -> list[dict[str, Any]]:
+        return [
+            {
+                "name": "ENTERPRISE_CONNECTOR",
+                "configured": env_configured("ENTERPRISE_CONNECTOR"),
+                "required": False,
+                "description": "Connector mode: mock, fixture, or http.",
+            },
+            {
+                "name": "ENTERPRISE_API_BASE_URL",
+                "configured": env_configured("ENTERPRISE_API_BASE_URL"),
+                "required": connector_mode == "http",
+                "description": "Base URL for the enterprise HTTP data API.",
+            },
+            {
+                "name": "ENTERPRISE_API_TOKEN",
+                "configured": env_configured("ENTERPRISE_API_TOKEN"),
+                "required": False,
+                "secret": True,
+                "description": "Bearer token for the enterprise HTTP API.",
+            },
+            {
+                "name": "ENTERPRISE_FIXTURE_PATH",
+                "configured": env_configured("ENTERPRISE_FIXTURE_PATH")
+                or env_configured("ENTERPRISE_MOCK_DATA_PATH"),
+                "required": False,
+                "description": "Local JSON fixture path for mock/fixture connector data.",
+            },
+            {
+                "name": "ENTERPRISE_POLICY_PATH",
+                "configured": env_configured("ENTERPRISE_POLICY_PATH"),
+                "required": False,
+                "description": "HTTP path template for tenant policy search.",
+            },
+            {
+                "name": "ENTERPRISE_TICKET_PATH",
+                "configured": env_configured("ENTERPRISE_TICKET_PATH"),
+                "required": False,
+                "description": "HTTP path template for tenant ticket lookup.",
+            },
+            {
+                "name": "ENTERPRISE_METRICS_PATH",
+                "configured": env_configured("ENTERPRISE_METRICS_PATH"),
+                "required": False,
+                "description": "HTTP path template for tenant department metrics.",
+            },
+        ]
+
     def list_configs(self) -> dict[str, dict[str, Any]]:
         try:
             return self._repository.list_by_tenant()
