@@ -2205,7 +2205,7 @@ async def run_enterprise_agent(
 
         turn_id = uuid4().hex
         created_at = _now_iso()
-        evidence = _build_agent_run_evidence(
+        evidence = _platform_agent_run_service().build_evidence(
             turn_id=turn_id,
             created_at=created_at,
             tenant=tenant,
@@ -2447,7 +2447,7 @@ async def run_enterprise_agent(
 
     turn_id = uuid4().hex
     created_at = _now_iso()
-    evidence = _build_agent_run_evidence(
+    evidence = _platform_agent_run_service().build_evidence(
         turn_id=turn_id,
         created_at=created_at,
         tenant=primary_call.get("tenant", tenant),
@@ -2607,68 +2607,6 @@ def _enterprise_platform_scenarios() -> dict[str, Any]:
         approval_required_tools=APPROVAL_REQUIRED_TOOLS,
         approval_required_workflows=APPROVAL_REQUIRED_WORKFLOWS,
     )
-
-
-def _build_agent_run_evidence(
-    *,
-    turn_id: str,
-    created_at: str,
-    tenant: str,
-    user_id: str,
-    agent_id: str,
-    session_id: str,
-    tool_calls: list[dict[str, Any]],
-    knowledge_hits: list[dict[str, Any]],
-    memory_hits: list[dict[str, Any]],
-    memory_saved: bool,
-) -> dict[str, Any]:
-    """Build a compact evidence summary for enterprise traceability."""
-    allowed_tool_calls = [call for call in tool_calls if call.get("allowed")]
-    denied_tool_calls = [call for call in tool_calls if call.get("allowed") is False]
-    approval_required_calls = [
-        call for call in tool_calls if call.get("approval_required")
-    ]
-    approval_ids = sorted(
-        {
-            str(call.get("approval_id"))
-            for call in tool_calls
-            if call.get("approval_id")
-        },
-    )
-    tool_names = [
-        str(call.get("tool_name"))
-        for call in tool_calls
-        if call.get("tool_name")
-    ]
-    audit_filter: dict[str, Any] = {
-        "tenant": tenant,
-        "user_id": user_id,
-        "agent_id": agent_id,
-        "session_id": session_id,
-    }
-    if tool_names:
-        audit_filter["tool_names"] = sorted(set(tool_names))
-    if approval_ids:
-        audit_filter["approval_ids"] = approval_ids
-
-    return {
-        "run_id": turn_id,
-        "turn_id": turn_id,
-        "created_at": created_at,
-        "tenant": tenant,
-        "user_id": user_id,
-        "agent_id": agent_id,
-        "session_id": session_id,
-        "tool_call_count": len(tool_calls),
-        "allowed_tool_call_count": len(allowed_tool_calls),
-        "denied_tool_call_count": len(denied_tool_calls),
-        "approval_required_count": len(approval_required_calls),
-        "approval_ids": approval_ids,
-        "knowledge_hit_count": len(knowledge_hits),
-        "memory_hit_count": len(memory_hits),
-        "memory_saved": memory_saved,
-        "audit_filter": audit_filter,
-    }
 
 
 def _require_platform_approval(
