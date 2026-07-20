@@ -262,6 +262,31 @@ class PlatformWorkflowRunService:
         self._repository.append(record)
         return record
 
+    def input_value(
+        self,
+        inputs: dict[str, Any],
+        default_inputs: dict[str, Any],
+        key: str,
+        fallback: str = "",
+    ) -> str:
+        value = inputs.get(key)
+        if value is None:
+            value = default_inputs.get(key, fallback)
+
+        normalized = str(value).strip()
+        return normalized or fallback
+
+    def normalize_inputs(
+        self,
+        inputs: dict[str, Any],
+        default_inputs: dict[str, Any],
+    ) -> dict[str, str]:
+        keys = set(default_inputs) | set(inputs)
+        return {
+            key: self.input_value(inputs, default_inputs, key)
+            for key in sorted(keys)
+        }
+
     def status_counts(self, steps: list[dict[str, Any]]) -> dict[str, int]:
         counts = {"success": 0, "denied": 0, "failed": 0}
         for step in steps:

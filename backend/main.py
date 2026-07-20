@@ -3354,31 +3354,6 @@ def _get_platform_workflow_template(workflow_type: str) -> dict[str, Any]:
         _raise_platform_workflow_template_service_error(exc)
 
 
-def _workflow_input_value(
-    inputs: dict[str, Any],
-    default_inputs: dict[str, Any],
-    key: str,
-    fallback: str = "",
-) -> str:
-    value = inputs.get(key)
-    if value is None:
-        value = default_inputs.get(key, fallback)
-
-    normalized = str(value).strip()
-    return normalized or fallback
-
-
-def _normalize_workflow_inputs(
-    inputs: dict[str, Any],
-    default_inputs: dict[str, Any],
-) -> dict[str, str]:
-    keys = set(default_inputs) | set(inputs)
-    return {
-        key: _workflow_input_value(inputs, default_inputs, key)
-        for key in sorted(keys)
-    }
-
-
 def _build_workflow_step_specs(
     template: dict[str, Any],
     inputs: dict[str, str],
@@ -3965,7 +3940,11 @@ async def run_enterprise_workflow(
     default_inputs = workflow_template.get("default_inputs")
     if not isinstance(default_inputs, dict):
         default_inputs = {}
-    normalized_inputs = _normalize_workflow_inputs(payload.inputs, default_inputs)
+    workflow_run_service = _platform_workflow_run_service()
+    normalized_inputs = workflow_run_service.normalize_inputs(
+        payload.inputs,
+        default_inputs,
+    )
     step_specs = _build_workflow_step_specs(workflow_template, normalized_inputs)
     approval_required_tools = sorted(
         {
@@ -4028,7 +4007,6 @@ async def run_enterprise_workflow(
         tool_calls.append(tool_call)
 
     finished_at = _now_iso()
-    workflow_run_service = _platform_workflow_run_service()
     status_counts = workflow_run_service.status_counts(steps)
     status = workflow_run_service.run_status(status_counts)
     response = {
