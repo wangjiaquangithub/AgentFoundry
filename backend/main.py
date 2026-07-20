@@ -1697,21 +1697,13 @@ async def run_enterprise_agent(
             max_records=PLATFORM_MEMORY_MAX_RECORDS,
         )
 
-        response_trace = agent_run_service.build_unrouted_response_trace(
-            tenant=tenant,
-            user_id=user_id,
-            agent_id=runner_agent_id,
-            session_id=runner_session_id,
-            knowledge_hits=knowledge_hits,
-            memory_hits=memory_hits,
-            memory_saved=memory_saved,
-        )
-        response = agent_run_service.build_unrouted_response_from_trace(
-            response_trace=response_trace,
+        response = agent_run_service.finalize_unrouted_response(
+            response_record_context=response_record_context,
             answer=answer,
             session_id=runner_session_id,
             tenant=tenant,
             user_id=user_id,
+            agent_id=runner_agent_id,
             connector=connector_label,
             connector_source=connector_source,
             routing_mode=routing_mode,
@@ -1720,16 +1712,12 @@ async def run_enterprise_agent(
             routing_error=routing_error,
             agent_metadata=agent_metadata,
             runtime_adapter=runtime_adapter_payload,
+            knowledge_hits=knowledge_hits,
+            memory_hits=memory_hits,
             knowledge_payload=knowledge_payload,
             memory_payload=memory_payload,
             memory_saved=memory_saved,
             decision=decision,
-        )
-        agent_run_service.append_response_record_from_context(
-            response_trace=response_trace,
-            context=response_record_context,
-            answer=answer,
-            response=response,
         )
         return response
 

@@ -723,6 +723,66 @@ class PlatformAgentRunService:
             response=response,
         )
 
+    def finalize_unrouted_response(
+        self,
+        *,
+        response_record_context: dict[str, Any],
+        answer: str,
+        session_id: str,
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        connector: str,
+        connector_source: str,
+        routing_mode: str,
+        routing_source: str,
+        routing_reason: str,
+        routing_error: str | None,
+        agent_metadata: dict[str, Any],
+        runtime_adapter: dict[str, Any],
+        knowledge_hits: list[dict[str, Any]],
+        memory_hits: list[dict[str, Any]],
+        knowledge_payload: dict[str, Any],
+        memory_payload: dict[str, Any],
+        memory_saved: bool,
+        decision: dict[str, Any],
+    ) -> dict[str, Any]:
+        response_trace = self.build_unrouted_response_trace(
+            tenant=tenant,
+            user_id=user_id,
+            agent_id=agent_id,
+            session_id=session_id,
+            knowledge_hits=knowledge_hits,
+            memory_hits=memory_hits,
+            memory_saved=memory_saved,
+        )
+        response = self.build_unrouted_response_from_trace(
+            response_trace=response_trace,
+            answer=answer,
+            session_id=session_id,
+            tenant=tenant,
+            user_id=user_id,
+            connector=connector,
+            connector_source=connector_source,
+            routing_mode=routing_mode,
+            routing_source=routing_source,
+            routing_reason=routing_reason,
+            routing_error=routing_error,
+            agent_metadata=agent_metadata,
+            runtime_adapter=runtime_adapter,
+            knowledge_payload=knowledge_payload,
+            memory_payload=memory_payload,
+            memory_saved=memory_saved,
+            decision=decision,
+        )
+        self.append_response_record_from_context(
+            response_trace=response_trace,
+            context=response_record_context,
+            answer=answer,
+            response=response,
+        )
+        return response
+
     def finalize_routed_response(
         self,
         *,
