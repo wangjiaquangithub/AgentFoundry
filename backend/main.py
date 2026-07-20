@@ -2260,15 +2260,6 @@ async def _select_enterprise_agent_routes(
     return rule_routes, None
 
 
-async def _select_enterprise_agent_route(
-    question: str,
-) -> tuple[dict[str, Any], str | None]:
-    routes, routing_error = await _select_enterprise_agent_routes(question)
-    if routes:
-        return routes[0], routing_error
-    return _route_enterprise_agent_question(question), routing_error
-
-
 def _enterprise_routing_mode(routes: list[dict[str, Any]]) -> str:
     sources: list[str] = []
     for route in routes:
