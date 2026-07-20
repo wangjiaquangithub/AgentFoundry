@@ -1528,7 +1528,10 @@ async def run_enterprise_tool(
 ) -> dict[str, Any]:
     """Run one tenant-aware enterprise tool from the platform console."""
     user_id = payload.user_id or request.headers.get("X-User-ID") or "acme:alice"
-    runtime = _enterprise_runtime_context(user_id)
+    try:
+        runtime = _platform_connector_config_service().enterprise_runtime_context(user_id)
+    except PlatformConnectorConfigServiceError as exc:
+        _raise_platform_connector_config_service_error(exc)
     runner_agent_id = "platform-console"
     configured_agent_id = (payload.agent_id or "").strip()
     if configured_agent_id:
@@ -1538,7 +1541,12 @@ async def run_enterprise_tool(
         )
         runner_agent_id = configured_agent_id
         if payload.tool_name not in configured_tools:
-            runtime = _enterprise_runtime_context(user_id)
+            try:
+                runtime = _platform_connector_config_service().enterprise_runtime_context(
+                    user_id
+                )
+            except PlatformConnectorConfigServiceError as exc:
+                _raise_platform_connector_config_service_error(exc)
             decision = _platform_agent_service().tool_denial_payload(payload.tool_name)
             return {
                 "tool_name": payload.tool_name,
