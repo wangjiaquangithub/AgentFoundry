@@ -52,6 +52,13 @@ class PlatformToolPolicyService:
             mode=self._policy_mode(),  # type: ignore[arg-type]
         )
 
+    def decision_payload(self, tool_name: str, decision: Any) -> dict[str, Any]:
+        return {
+            "name": tool_name,
+            "allowed": decision.allowed,
+            "reason": decision.reason,
+        }
+
     def normalize_policy_tools(self, value: list[str] | None) -> list[str]:
         if not value:
             return []

@@ -365,14 +365,6 @@ def _enterprise_platform_ops_tasks(
     )
 
 
-def _tool_decision_payload(tool_name: str, decision: Any) -> dict[str, Any]:
-    return {
-        "name": tool_name,
-        "allowed": decision.allowed,
-        "reason": decision.reason,
-    }
-
-
 class ReadOnlyEnterpriseTool(FunctionTool):
     """Read-only function tool gated by enterprise authorization policy."""
 
@@ -2189,7 +2181,10 @@ def _run_authorized_enterprise_tool(
         )
 
     decision = tool_authorization_policy.authorize(tenant, user_id, tool_name)
-    decision_payload = _tool_decision_payload(tool_name, decision)
+    decision_payload = _platform_tool_policy_service().decision_payload(
+        tool_name,
+        decision,
+    )
     if not decision.allowed:
         if fail_on_denied:
             raise HTTPException(
