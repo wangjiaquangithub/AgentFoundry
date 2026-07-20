@@ -595,6 +595,21 @@ class PlatformAgentRunService:
             "部门指标。你可以试试：帮我查一下 INC-1001 的工单状态。"
         )
 
+    def build_unrouted_answer_context(
+        self,
+        *,
+        knowledge_hits: list[dict[str, Any]],
+        memory_hits: list[dict[str, Any]],
+        format_knowledge_answer: Callable[[list[dict[str, Any]]], str],
+        format_memory_answer: Callable[[list[dict[str, Any]]], str],
+    ) -> dict[str, Any]:
+        return {
+            "knowledge_hits": knowledge_hits,
+            "memory_hits": memory_hits,
+            "format_knowledge_answer": format_knowledge_answer,
+            "format_memory_answer": format_memory_answer,
+        }
+
     def normalize_route_context(
         self,
         route: dict[str, Any],
