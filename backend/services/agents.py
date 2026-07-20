@@ -28,6 +28,8 @@ class PlatformAgentService:
         tenant_for_user: Callable[[str], str],
         tenant_hint_from_user_id: Callable[[str], str | None],
         identity_metadata: Callable[[str, str], list[dict[str, Any]]],
+        member_for_user: Callable[[str], dict[str, Any] | None],
+        role_for_user: Callable[[str], str],
     ) -> None:
         self._repository = repository
         self._templates = templates
@@ -35,6 +37,8 @@ class PlatformAgentService:
         self._tenant_for_user = tenant_for_user
         self._tenant_hint_from_user_id = tenant_hint_from_user_id
         self._identity_metadata = identity_metadata
+        self._member_for_user = member_for_user
+        self._role_for_user = role_for_user
 
     def list_agents(self) -> list[dict[str, Any]]:
         try:
@@ -163,6 +167,19 @@ class PlatformAgentService:
             role=role,
         )
         return agent, configured_tools
+
+    def published_tool_scope_access_context(
+        self,
+        agent_id: str,
+        *,
+        user_id: str,
+    ) -> tuple[dict[str, Any], set[str]]:
+        return self.published_tool_scope_for_user(
+            agent_id,
+            user_id=user_id,
+            member=self._member_for_user(user_id),
+            role=self._role_for_user(user_id),
+        )
 
     def template_metadata(self) -> list[dict[str, Any]]:
         return [

@@ -630,6 +630,11 @@ def _platform_agent_service() -> PlatformAgentService:
         tenant_for_user=tenant_for_user,
         tenant_hint_from_user_id=_tenant_hint_from_user_id,
         identity_metadata=_platform_identity_metadata,
+        member_for_user=lambda user_id: _platform_member_service().get_member_by_user(
+            user_id,
+            include_inactive=True,
+        ),
+        role_for_user=_identity_role_for_user,
     )
 
 
@@ -652,19 +657,12 @@ def _published_platform_agent_tool_scope_for_user(
     user_id: str,
 ) -> tuple[dict[str, Any], set[str]]:
     try:
-        member = _platform_member_service().get_member_by_user(
-            user_id,
-            include_inactive=True,
+        return _platform_agent_service().published_tool_scope_access_context(
+            agent_id,
+            user_id=user_id,
         )
     except PlatformMemberServiceError as exc:
         _raise_platform_member_service_error(exc)
-    try:
-        return _platform_agent_service().published_tool_scope_for_user(
-            agent_id,
-            user_id=user_id,
-            member=member,
-            role=_identity_role_for_user(user_id),
-        )
     except PlatformAgentServiceError as exc:
         _raise_platform_agent_service_error(exc)
 
