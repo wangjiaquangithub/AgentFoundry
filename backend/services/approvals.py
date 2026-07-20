@@ -100,6 +100,19 @@ class PlatformApprovalService:
             "requested_by": requested_by,
         }
 
+    def build_decision_payload(
+        self,
+        *,
+        payload: Any,
+        actor: str | None,
+    ) -> dict[str, Any]:
+        return {
+            "decided_by": _optional_filter(payload.decided_by)
+            or actor
+            or "platform-admin",
+            "decision_note": payload.decision_note,
+        }
+
     def create_request(
         self,
         *,

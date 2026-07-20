@@ -2357,17 +2357,15 @@ async def approve_enterprise_approval_request(
     request: Request,
 ) -> dict[str, Any]:
     """Approve a pending platform governance request."""
-    decided_by = (
-        (payload.decided_by or "").strip()
-        or request.headers.get("X-User-ID")
-        or "platform-admin"
+    decision_payload = _platform_approval_service().build_decision_payload(
+        payload=payload,
+        actor=request.headers.get("X-User-ID"),
     )
     try:
         approval = _platform_approval_service().update_status(
             approval_id=approval_id,
             status="approved",
-            decided_by=decided_by,
-            decision_note=payload.decision_note,
+            **decision_payload,
         )
     except PlatformApprovalServiceError as exc:
         _raise_platform_approval_service_error(exc)
@@ -2381,17 +2379,15 @@ async def reject_enterprise_approval_request(
     request: Request,
 ) -> dict[str, Any]:
     """Reject a pending platform governance request."""
-    decided_by = (
-        (payload.decided_by or "").strip()
-        or request.headers.get("X-User-ID")
-        or "platform-admin"
+    decision_payload = _platform_approval_service().build_decision_payload(
+        payload=payload,
+        actor=request.headers.get("X-User-ID"),
     )
     try:
         approval = _platform_approval_service().update_status(
             approval_id=approval_id,
             status="rejected",
-            decided_by=decided_by,
-            decision_note=payload.decision_note,
+            **decision_payload,
         )
     except PlatformApprovalServiceError as exc:
         _raise_platform_approval_service_error(exc)
