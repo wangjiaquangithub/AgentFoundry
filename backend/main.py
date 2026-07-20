@@ -1508,7 +1508,8 @@ async def run_enterprise_tool(
             inputs=requested_inputs,
         )
 
-    response = _run_authorized_enterprise_tool(
+    response = tool_policy_service.run_platform_tool_from_context(
+        run_authorized_enterprise_tool=_run_authorized_enterprise_tool,
         user_id=user_id,
         tool_name=requested_tool_name,
         inputs=requested_inputs,

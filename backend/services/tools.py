@@ -251,6 +251,24 @@ class PlatformToolPolicyService:
             response["approval_id"] = approval_id
         return response
 
+    def run_platform_tool_from_context(
+        self,
+        *,
+        run_authorized_enterprise_tool: Callable[..., dict[str, Any]],
+        user_id: str,
+        tool_name: str,
+        inputs: dict[str, Any],
+        agent_id: str,
+        session_id: str,
+    ) -> dict[str, Any]:
+        return run_authorized_enterprise_tool(
+            user_id=user_id,
+            tool_name=tool_name,
+            inputs=inputs,
+            agent_id=agent_id,
+            session_id=session_id,
+        )
+
     def normalize_policy_tools(self, value: list[str] | None) -> list[str]:
         if not value:
             return []
