@@ -637,10 +637,6 @@ def _normalize_platform_resource_ids(values: list[Any] | None) -> list[str]:
     return _platform_agent_service().normalize_resource_ids(values)
 
 
-def _platform_agent_access(agent: dict[str, Any]) -> dict[str, list[str]]:
-    return _platform_agent_service().agent_access(agent)
-
-
 def _platform_member_service() -> PlatformMemberService:
     return PlatformMemberService(
         repository=member_repository,
@@ -768,7 +764,7 @@ def _assert_platform_agent_access(agent: dict[str, Any], user_id: str) -> None:
             detail="当前身份不属于该 Agent 租户，无法运行该 Agent 实例。",
         )
 
-    access = _platform_agent_access(agent)
+    access = _platform_agent_service().agent_access(agent)
     allowed_user_ids = access["allowed_user_ids"]
     allowed_roles = access["allowed_roles"]
     try:
@@ -801,7 +797,7 @@ def _platform_agent_run_metadata(
 ) -> dict[str, Any]:
     if agent is None:
         return {}
-    access = _platform_agent_access(agent)
+    access = _platform_agent_service().agent_access(agent)
 
     return {
         "agent_id": agent.get("id"),
