@@ -1810,11 +1810,12 @@ async def run_enterprise_agent(
             routing_mode=routing_mode,
             routing_error=routing_error,
         )
-        call_answer = _platform_tool_policy_service().format_tool_result_answer(
-            **agent_run_service.build_executed_tool_answer_context(
-                tool_name=tool_name,
-                tool_response=tool_response,
+        call_answer = agent_run_service.format_executed_tool_answer_from_context(
+            format_tool_result_answer=(
+                _platform_tool_policy_service().format_tool_result_answer
             ),
+            tool_name=tool_name,
+            tool_response=tool_response,
         )
         agent_run_service.append_executed_routed_tool_call(
             tool_calls=tool_calls,
