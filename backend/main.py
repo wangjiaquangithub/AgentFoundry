@@ -1380,14 +1380,12 @@ async def enterprise_platform_tools(
     configured_agent_tools = (
         set(configured_agent.get("tools") or []) if configured_agent else set()
     )
-    decisions = {
-        decision["name"]: decision
-        for decision in tool_authorization_policy.describe_for_user(
-            tenant,
-            resolved_user_id,
-            ENTERPRISE_TOOL_NAMES,
-        )
-    }
+    decisions = tool_policy_service.catalog_decisions_by_name(
+        authorization_policy=tool_authorization_policy,
+        tenant=tenant,
+        user_id=resolved_user_id,
+        tool_names=ENTERPRISE_TOOL_NAMES,
+    )
     tools = []
     for tool_name in ENTERPRISE_TOOL_NAMES:
         catalog = ENTERPRISE_TOOL_CATALOG[tool_name]

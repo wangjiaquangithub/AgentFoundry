@@ -205,6 +205,23 @@ class PlatformToolPolicyService:
         }
 
     @staticmethod
+    def catalog_decisions_by_name(
+        *,
+        authorization_policy: ToolAuthorizationPolicy,
+        tenant: str,
+        user_id: str,
+        tool_names: list[str],
+    ) -> dict[str, dict[str, Any]]:
+        return {
+            decision["name"]: decision
+            for decision in authorization_policy.describe_for_user(
+                tenant,
+                user_id,
+                tool_names,
+            )
+        }
+
+    @staticmethod
     def catalog_response(
         *,
         tools: list[dict[str, Any]],
