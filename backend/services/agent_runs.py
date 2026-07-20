@@ -1,6 +1,8 @@
 """Service-layer orchestration for enterprise agent run history."""
 
+from datetime import datetime, timezone
 from typing import Any, Callable
+from uuid import uuid4
 
 from repositories.agent_runs import AgentRunRepository
 
@@ -48,6 +50,12 @@ class PlatformAgentRunService:
     def append_run(self, record: dict[str, Any]) -> dict[str, Any]:
         self._repository.append(record)
         return record
+
+    def build_run_identity(self) -> dict[str, str]:
+        return {
+            "turn_id": uuid4().hex,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
 
     def resolve_runner_context(
         self,

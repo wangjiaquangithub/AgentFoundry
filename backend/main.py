@@ -1738,8 +1738,9 @@ async def run_enterprise_agent(
             max_records=PLATFORM_MEMORY_MAX_RECORDS,
         )
 
-        turn_id = uuid4().hex
-        created_at = _now_iso()
+        run_identity = _platform_agent_run_service().build_run_identity()
+        turn_id = run_identity["turn_id"]
+        created_at = run_identity["created_at"]
         evidence = _platform_agent_run_service().build_evidence(
             turn_id=turn_id,
             created_at=created_at,
@@ -1961,8 +1962,9 @@ async def run_enterprise_agent(
         max_records=PLATFORM_MEMORY_MAX_RECORDS,
     )
 
-    turn_id = uuid4().hex
-    created_at = _now_iso()
+    run_identity = _platform_agent_run_service().build_run_identity()
+    turn_id = run_identity["turn_id"]
+    created_at = run_identity["created_at"]
     evidence = _platform_agent_run_service().build_evidence(
         turn_id=turn_id,
         created_at=created_at,
