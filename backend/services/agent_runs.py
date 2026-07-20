@@ -1718,6 +1718,51 @@ class PlatformAgentRunService:
             answer=answer,
         )
 
+    def run_and_record_executed_routed_tool_call_from_context(
+        self,
+        *,
+        tool_calls: list[dict[str, Any]],
+        run_authorized_enterprise_tool: Callable[..., dict[str, Any]],
+        decision_with_routing_context: Callable[..., dict[str, Any]],
+        format_tool_result_answer: Callable[..., str],
+        user_id: str,
+        tool_name: str,
+        inputs: dict[str, Any],
+        agent_id: str,
+        session_id: str,
+        connector: str,
+        connector_source: str,
+        routing_source: str,
+        routing_reason: str,
+        routing_mode: str,
+        routing_error: str | None,
+        approval_id: str | None,
+    ) -> None:
+        tool_response = self.run_tool_from_execution_context(
+            run_authorized_enterprise_tool=run_authorized_enterprise_tool,
+            user_id=user_id,
+            tool_name=tool_name,
+            inputs=inputs,
+            agent_id=agent_id,
+            session_id=session_id,
+            fail_on_denied=False,
+        )
+        self.record_executed_routed_tool_call_from_context(
+            tool_calls=tool_calls,
+            decision_with_routing_context=decision_with_routing_context,
+            format_tool_result_answer=format_tool_result_answer,
+            tool_name=tool_name,
+            inputs=inputs,
+            tool_response=tool_response,
+            connector=connector,
+            connector_source=connector_source,
+            routing_source=routing_source,
+            routing_reason=routing_reason,
+            routing_mode=routing_mode,
+            routing_error=routing_error,
+            approval_id=approval_id,
+        )
+
     def build_executed_routed_tool_call(
         self,
         *,
