@@ -591,11 +591,17 @@ ENTERPRISE_AGENT_TEMPLATES = [
 
 
 def _platform_agent_service() -> PlatformAgentService:
+    def tenant_for_user(user_id: str) -> str:
+        try:
+            return _platform_connector_config_service().runtime_tenant_for_user(user_id)
+        except PlatformConnectorConfigServiceError as exc:
+            _raise_platform_connector_config_service_error(exc)
+
     return PlatformAgentService(
         repository=agent_repository,
         templates=ENTERPRISE_AGENT_TEMPLATES,
         approval_required_tools=APPROVAL_REQUIRED_TOOLS,
-        tenant_for_user=_runtime_tenant_for_user,
+        tenant_for_user=tenant_for_user,
         tenant_hint_from_user_id=_tenant_hint_from_user_id,
         identity_metadata=_platform_identity_metadata,
     )
@@ -651,7 +657,15 @@ def _raise_platform_member_service_error(exc: PlatformMemberServiceError) -> NoR
 
 def _identity_role_for_user(user_id: str) -> str:
     tenant_hint = _tenant_hint_from_user_id(user_id)
-    current_tenant = tenant_hint or _runtime_tenant_for_user(user_id)
+    if tenant_hint:
+        current_tenant = tenant_hint
+    else:
+        try:
+            current_tenant = (
+                _platform_connector_config_service().runtime_tenant_for_user(user_id)
+            )
+        except PlatformConnectorConfigServiceError as exc:
+            _raise_platform_connector_config_service_error(exc)
     if not current_tenant:
         try:
             current_tenant = (
@@ -769,13 +783,6 @@ def _tenant_hint_from_user_id(user_id: str) -> str | None:
     tenant, _user = user_id.split(":", 1)
     tenant = tenant.strip()
     return tenant or None
-
-
-def _runtime_tenant_for_user(user_id: str) -> str:
-    try:
-        return _platform_connector_config_service().runtime_tenant_for_user(user_id)
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
 
 
 def _runtime_enterprise_connector_for_tenant(
