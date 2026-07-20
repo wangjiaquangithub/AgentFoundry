@@ -268,7 +268,7 @@ def _platform_status_service() -> PlatformStatusService:
             return _platform_connector_config_service().health_response(
                 connector_name=connector_name,
                 connector_mode=connector_mode,
-                env_configured=_env_configured,
+                env=os.environ,
             )
         except PlatformConnectorConfigServiceError as exc:
             _raise_platform_connector_config_service_error(exc)
@@ -873,14 +873,6 @@ def _platform_identity_metadata(
         _raise_platform_member_service_error(exc)
 
 
-def _env_configured(name: str) -> bool:
-    return bool(os.getenv(name, "").strip())
-
-
-def _env_value(name: str, default: str) -> str:
-    return os.getenv(name, default)
-
-
 def _run_authorized_enterprise_tool(
     *,
     user_id: str,
@@ -1021,8 +1013,7 @@ async def enterprise_platform_connectors(request: Request) -> dict[str, Any]:
             runtime=runtime,
             connector_name=enterprise_connector.name,
             connector_mode=connector_mode,
-            env_configured=_env_configured,
-            env_value=_env_value,
+            env=os.environ,
         )
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)

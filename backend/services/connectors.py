@@ -1,6 +1,7 @@
 """Service-layer orchestration for enterprise connector configuration."""
 
 import json
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from time import perf_counter
 from typing import Any, Callable
@@ -83,50 +84,50 @@ class PlatformConnectorConfigService:
         self,
         *,
         connector_mode: str,
-        env_configured: Callable[[str], bool],
+        env: Mapping[str, str],
     ) -> list[dict[str, Any]]:
         return [
             {
                 "name": "ENTERPRISE_CONNECTOR",
-                "configured": env_configured("ENTERPRISE_CONNECTOR"),
+                "configured": self._env_configured(env, "ENTERPRISE_CONNECTOR"),
                 "required": False,
                 "description": "Connector mode: mock, fixture, or http.",
             },
             {
                 "name": "ENTERPRISE_API_BASE_URL",
-                "configured": env_configured("ENTERPRISE_API_BASE_URL"),
+                "configured": self._env_configured(env, "ENTERPRISE_API_BASE_URL"),
                 "required": connector_mode == "http",
                 "description": "Base URL for the enterprise HTTP data API.",
             },
             {
                 "name": "ENTERPRISE_API_TOKEN",
-                "configured": env_configured("ENTERPRISE_API_TOKEN"),
+                "configured": self._env_configured(env, "ENTERPRISE_API_TOKEN"),
                 "required": False,
                 "secret": True,
                 "description": "Bearer token for the enterprise HTTP API.",
             },
             {
                 "name": "ENTERPRISE_FIXTURE_PATH",
-                "configured": env_configured("ENTERPRISE_FIXTURE_PATH")
-                or env_configured("ENTERPRISE_MOCK_DATA_PATH"),
+                "configured": self._env_configured(env, "ENTERPRISE_FIXTURE_PATH")
+                or self._env_configured(env, "ENTERPRISE_MOCK_DATA_PATH"),
                 "required": False,
                 "description": "Local JSON fixture path for mock/fixture connector data.",
             },
             {
                 "name": "ENTERPRISE_POLICY_PATH",
-                "configured": env_configured("ENTERPRISE_POLICY_PATH"),
+                "configured": self._env_configured(env, "ENTERPRISE_POLICY_PATH"),
                 "required": False,
                 "description": "HTTP path template for tenant policy search.",
             },
             {
                 "name": "ENTERPRISE_TICKET_PATH",
-                "configured": env_configured("ENTERPRISE_TICKET_PATH"),
+                "configured": self._env_configured(env, "ENTERPRISE_TICKET_PATH"),
                 "required": False,
                 "description": "HTTP path template for tenant ticket lookup.",
             },
             {
                 "name": "ENTERPRISE_METRICS_PATH",
-                "configured": env_configured("ENTERPRISE_METRICS_PATH"),
+                "configured": self._env_configured(env, "ENTERPRISE_METRICS_PATH"),
                 "required": False,
                 "description": "HTTP path template for tenant department metrics.",
             },
@@ -179,11 +180,11 @@ class PlatformConnectorConfigService:
         *,
         connector_name: str,
         connector_mode: str,
-        env_configured: Callable[[str], bool],
+        env: Mapping[str, str],
     ) -> dict[str, Any]:
         env_metadata = self.env_metadata(
             connector_mode=connector_mode,
-            env_configured=env_configured,
+            env=env,
         )
         return self.health_metadata(
             connector_name=connector_name,
@@ -351,12 +352,11 @@ class PlatformConnectorConfigService:
         runtime: dict[str, Any],
         connector_name: str,
         connector_mode: str,
-        env_configured: Callable[[str], bool],
-        env_value: Callable[[str, str], str],
+        env: Mapping[str, str],
     ) -> dict[str, Any]:
         env_metadata = self.env_metadata(
             connector_mode=connector_mode,
-            env_configured=env_configured,
+            env=env,
         )
         return {
             "current": self.health_metadata(
@@ -373,21 +373,30 @@ class PlatformConnectorConfigService:
             "supported": self.supported_connectors(),
             "env": env_metadata,
             "http_paths": {
-                "policy": env_value(
+                "policy": self._env_value(
+                    env,
                     "ENTERPRISE_POLICY_PATH",
                     "/tenants/{tenant}/policies/search",
                 ),
-                "ticket": env_value(
+                "ticket": self._env_value(
+                    env,
                     "ENTERPRISE_TICKET_PATH",
                     "/tenants/{tenant}/tickets/{ticket_id}",
                 ),
-                "metrics": env_value(
+                "metrics": self._env_value(
+                    env,
                     "ENTERPRISE_METRICS_PATH",
                     "/tenants/{tenant}/departments/{department}/metrics",
                 ),
             },
             "saved_configs": self.redacted_configs(),
         }
+
+    def _env_configured(self, env: Mapping[str, str], name: str) -> bool:
+        return bool(env.get(name, "").strip())
+
+    def _env_value(self, env: Mapping[str, str], name: str, default: str) -> str:
+        return env.get(name, default)
 
     def runtime_tenant_for_user(self, user_id: str) -> str:
         hinted_tenant = self._tenant_hint_from_user_id(user_id)
