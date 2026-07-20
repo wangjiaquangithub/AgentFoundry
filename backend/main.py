@@ -738,10 +738,6 @@ def _platform_member_by_user(
         _raise_platform_member_service_error(exc)
 
 
-def _platform_member_roles(members: list[dict[str, Any]]) -> list[str]:
-    return _platform_member_service().roles(members)
-
-
 def _normalize_platform_agent_tenant(value: Any, user_id: str) -> str:
     try:
         return _platform_agent_service().normalize_tenant(value, user_id)
@@ -2501,7 +2497,7 @@ async def enterprise_platform_members(request: Request) -> dict[str, Any]:
     return {
         "members": members,
         "identities": identities,
-        "roles": _platform_member_roles(identities),
+        "roles": _platform_member_service().roles(identities),
         "path": str(PLATFORM_MEMBERS_PATH),
     }
 
@@ -2523,7 +2519,9 @@ async def create_enterprise_platform_member(
     return {
         "member": member,
         "members": members,
-        "roles": _platform_member_roles(_platform_identity_metadata(actor, member["tenant"])),
+        "roles": _platform_member_service().roles(
+            _platform_identity_metadata(actor, member["tenant"]),
+        ),
         "path": str(PLATFORM_MEMBERS_PATH),
     }
 
@@ -2547,7 +2545,9 @@ async def update_enterprise_platform_member(
     return {
         "member": member,
         "members": members,
-        "roles": _platform_member_roles(_platform_identity_metadata(actor, member["tenant"])),
+        "roles": _platform_member_service().roles(
+            _platform_identity_metadata(actor, member["tenant"]),
+        ),
         "path": str(PLATFORM_MEMBERS_PATH),
     }
 
@@ -2569,7 +2569,9 @@ async def deactivate_enterprise_platform_member(
     return {
         "member": existing,
         "members": members,
-        "roles": _platform_member_roles(_platform_identity_metadata(actor, existing["tenant"])),
+        "roles": _platform_member_service().roles(
+            _platform_identity_metadata(actor, existing["tenant"]),
+        ),
         "path": str(PLATFORM_MEMBERS_PATH),
     }
 
