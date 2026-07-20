@@ -1906,9 +1906,10 @@ async def run_enterprise_agent(
         max_records=PLATFORM_MEMORY_MAX_RECORDS,
     )
 
-    response_trace = agent_run_service.build_response_trace(
-        tenant=primary_call.get("tenant", tenant),
-        user_id=primary_call.get("user_id", user_id),
+    response_trace = agent_run_service.build_routed_response_trace(
+        primary_call=primary_call,
+        tenant=tenant,
+        user_id=user_id,
         agent_id=runner_agent_id,
         session_id=runner_session_id,
         tool_calls=tool_calls,

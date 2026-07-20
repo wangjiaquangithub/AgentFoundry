@@ -96,6 +96,30 @@ class PlatformAgentRunService:
             ),
         }
 
+    def build_routed_response_trace(
+        self,
+        *,
+        primary_call: dict[str, Any],
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        session_id: str,
+        tool_calls: list[dict[str, Any]],
+        knowledge_hits: list[dict[str, Any]],
+        memory_hits: list[dict[str, Any]],
+        memory_saved: bool,
+    ) -> dict[str, Any]:
+        return self.build_response_trace(
+            tenant=str(primary_call.get("tenant", tenant)),
+            user_id=str(primary_call.get("user_id", user_id)),
+            agent_id=agent_id,
+            session_id=session_id,
+            tool_calls=tool_calls,
+            knowledge_hits=knowledge_hits,
+            memory_hits=memory_hits,
+            memory_saved=memory_saved,
+        )
+
     def build_response_record_context(
         self,
         *,
