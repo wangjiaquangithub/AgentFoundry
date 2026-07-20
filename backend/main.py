@@ -1399,7 +1399,8 @@ async def enterprise_platform_tools(
         )
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
-    tenant = str(runtime["tenant"])
+    tool_policy_service = _platform_tool_policy_service()
+    tenant = tool_policy_service.runtime_tenant(runtime)
     try:
         published_agents = _platform_agent_service().list_published_agents()
     except PlatformAgentServiceError as exc:
@@ -1452,15 +1453,15 @@ async def enterprise_platform_tools(
                 "configured_agent_id": (
                     str(configured_agent.get("id")) if configured_agent else None
                 ),
-                "stats": _platform_tool_policy_service().audit_stats(events),
+                "stats": tool_policy_service.audit_stats(events),
             },
         )
     return {
         "tools": tools,
         "user_id": resolved_user_id,
         "tenant": tenant,
-        "connector": runtime["connector_label"],
-        "connector_source": runtime["connector_source"],
+        "connector": tool_policy_service.runtime_connector_label(runtime),
+        "connector_source": tool_policy_service.runtime_connector_source(runtime),
         "agent_id": agent_id,
     }
 
@@ -1536,6 +1537,8 @@ async def run_enterprise_tool(
         runtime = _platform_connector_config_service().enterprise_runtime_context(user_id)
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
+    tool_policy_service = _platform_tool_policy_service()
+    tenant = tool_policy_service.runtime_tenant(runtime)
     runner_agent_id = "platform-console"
     configured_agent_id = (payload.agent_id or "").strip()
     if configured_agent_id:
@@ -1555,10 +1558,10 @@ async def run_enterprise_tool(
             return {
                 "tool_name": payload.tool_name,
                 "allowed": False,
-                "tenant": runtime["tenant"],
+                "tenant": tenant,
                 "user_id": user_id,
-                "connector": runtime["connector_label"],
-                "connector_source": runtime["connector_source"],
+                "connector": tool_policy_service.runtime_connector_label(runtime),
+                "connector_source": tool_policy_service.runtime_connector_source(runtime),
                 "decision": decision,
             }
 
@@ -1569,7 +1572,7 @@ async def run_enterprise_tool(
             request_type="tool_run",
             target_key="tool_name",
             target_value=payload.tool_name,
-            tenant=str(runtime["tenant"]),
+            tenant=tenant,
             user_id=user_id,
             agent_id=runner_agent_id,
             inputs=payload.inputs,
