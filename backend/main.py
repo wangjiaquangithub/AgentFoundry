@@ -3552,10 +3552,6 @@ def _workflow_run_status(counts: dict[str, int]) -> str:
     return "failed"
 
 
-def _append_workflow_run(record: dict[str, Any]) -> None:
-    _platform_workflow_run_service().append_run(record)
-
-
 def _load_workflow_runs(
     *,
     limit: int = 20,
@@ -4217,7 +4213,7 @@ async def run_enterprise_workflow(
             "session_id": session_id,
         },
     }
-    _append_workflow_run(response)
+    _platform_workflow_run_service().append_run(response)
     return response
 
 
