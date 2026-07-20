@@ -1462,13 +1462,12 @@ async def run_enterprise_tool(
         _raise_platform_connector_config_service_error(exc)
     runtime_selection = tool_policy_service.runtime_selection(runtime)
     tenant = runtime_selection["tenant"]
-    runner_agent_id = "platform-console"
+    runner_agent_id = tool_policy_service.tool_run_agent_id(requested_agent_id)
     if requested_agent_id:
         _, configured_tools = _published_platform_agent_tool_scope_for_user(
             requested_agent_id,
             user_id,
         )
-        runner_agent_id = requested_agent_id
         if requested_tool_name not in configured_tools:
             try:
                 runtime = _platform_connector_config_service().enterprise_runtime_context(
