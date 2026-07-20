@@ -1340,21 +1340,6 @@ def _platform_identity_metadata(
     return normalized
 
 
-def _platform_tool_policy_payload(
-    *,
-    user_id: str | None = None,
-    tenant: str | None = None,
-) -> dict[str, Any]:
-    try:
-        return _platform_tool_policy_service().policy_payload(
-            authorization_policy=tool_authorization_policy,
-            user_id=user_id,
-            tenant=tenant,
-        )
-    except PlatformToolPolicyServiceError as exc:
-        _raise_platform_tool_policy_service_error(exc)
-
-
 def _enterprise_governance_snapshot(
     *,
     identities: list[dict[str, Any]],
@@ -2314,7 +2299,14 @@ async def enterprise_platform_tool_policy(
 ) -> dict[str, Any]:
     """Return editable enterprise tool authorization policy state."""
     resolved_user_id = user_id or request.headers.get("X-User-ID") or "acme:alice"
-    return _platform_tool_policy_payload(user_id=resolved_user_id, tenant=tenant)
+    try:
+        return _platform_tool_policy_service().policy_payload(
+            authorization_policy=tool_authorization_policy,
+            user_id=resolved_user_id,
+            tenant=tenant,
+        )
+    except PlatformToolPolicyServiceError as exc:
+        _raise_platform_tool_policy_service_error(exc)
 
 
 @app.patch("/enterprise/platform/policies/tools")
@@ -2334,10 +2326,14 @@ async def update_enterprise_platform_tool_policy(
     except PlatformToolPolicyServiceError as exc:
         _raise_platform_tool_policy_service_error(exc)
 
-    return _platform_tool_policy_payload(
-        user_id=payload.user_id.strip(),
-        tenant=payload.tenant.strip(),
-    )
+    try:
+        return _platform_tool_policy_service().policy_payload(
+            authorization_policy=tool_authorization_policy,
+            user_id=payload.user_id.strip(),
+            tenant=payload.tenant.strip(),
+        )
+    except PlatformToolPolicyServiceError as exc:
+        _raise_platform_tool_policy_service_error(exc)
 
 
 @app.get("/enterprise/platform/connectors/configs")
