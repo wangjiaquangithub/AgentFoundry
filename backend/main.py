@@ -1461,34 +1461,10 @@ def _enterprise_runtime_context(user_id: str) -> dict[str, Any]:
         _raise_platform_connector_config_service_error(exc)
 
 
-def _platform_config_counts(config: dict[str, Any]) -> dict[str, int]:
-    tool_policy = config.get("tool_policy") if isinstance(config, dict) else {}
-    tenants = tool_policy.get("tenants", {}) if isinstance(tool_policy, dict) else {}
-    tenant_count = len(tenants) if isinstance(tenants, dict) else 0
-    user_policy_count = 0
-    if isinstance(tenants, dict):
-        for tenant_policy in tenants.values():
-            if isinstance(tenant_policy, dict) and isinstance(
-                tenant_policy.get("users"),
-                dict,
-            ):
-                user_policy_count += len(tenant_policy["users"])
-
-    return {
-        "members": len(config.get("members") or []),
-        "connector_configs": len(config.get("connector_configs") or []),
-        "agents": len(config.get("agents") or []),
-        "workflow_templates": len(config.get("workflow_templates") or []),
-        "tool_policy_tenants": tenant_count,
-        "tool_policy_users": user_policy_count,
-    }
-
-
 def _export_platform_config() -> dict[str, Any]:
     try:
-        connector_configs = (
-            _platform_connector_config_service().export_configs_payload()
-        )
+        connector_config_service = _platform_connector_config_service()
+        connector_configs = connector_config_service.export_configs_payload()
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
 
@@ -1499,7 +1475,7 @@ def _export_platform_config() -> dict[str, Any]:
         "workflow_templates": _load_platform_workflow_templates(),
         "tool_policy": _load_platform_tool_policy_config(),
     }
-    counts = _platform_config_counts(config)
+    counts = connector_config_service.export_config_counts(config)
     return {
         "schema_version": 1,
         "platform_version": PLATFORM_VERSION,

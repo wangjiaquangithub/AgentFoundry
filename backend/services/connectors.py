@@ -229,6 +229,28 @@ class PlatformConnectorConfigService:
     def export_configs_payload(self) -> list[dict[str, Any]]:
         return self.redacted_configs()
 
+    def export_config_counts(self, config: dict[str, Any]) -> dict[str, int]:
+        tool_policy = config.get("tool_policy") if isinstance(config, dict) else {}
+        tenants = tool_policy.get("tenants", {}) if isinstance(tool_policy, dict) else {}
+        tenant_count = len(tenants) if isinstance(tenants, dict) else 0
+        user_policy_count = 0
+        if isinstance(tenants, dict):
+            for tenant_policy in tenants.values():
+                if isinstance(tenant_policy, dict) and isinstance(
+                    tenant_policy.get("users"),
+                    dict,
+                ):
+                    user_policy_count += len(tenant_policy["users"])
+
+        return {
+            "members": len(config.get("members") or []),
+            "connector_configs": len(config.get("connector_configs") or []),
+            "agents": len(config.get("agents") or []),
+            "workflow_templates": len(config.get("workflow_templates") or []),
+            "tool_policy_tenants": tenant_count,
+            "tool_policy_users": user_policy_count,
+        }
+
     def list_configs_response(self) -> dict[str, Any]:
         return {"saved_configs": self.redacted_configs()}
 
