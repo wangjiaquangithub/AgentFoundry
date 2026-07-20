@@ -1,6 +1,8 @@
 import {
 	Activity,
 	BotMessageSquare,
+	ClipboardList,
+	FileSearch,
 	RefreshCcw,
 	ShieldCheck,
 	Workflow,
@@ -133,23 +135,6 @@ export function RunsViewPage({
 							/>
 							{t('platform.monitoring.refresh')}
 						</Button>
-						<Button type="button" size="sm" variant="outline" onClick={onRunAgent}>
-							<BotMessageSquare className="size-4" />
-							{t('platform.monitoring.runAgent')}
-						</Button>
-						<Button
-							type="button"
-							size="sm"
-							variant="outline"
-							onClick={onRunWorkflow}
-						>
-							<Workflow className="size-4" />
-							{t('platform.monitoring.runWorkflow')}
-						</Button>
-						<Button type="button" size="sm" onClick={onOpenGovernance}>
-							<ShieldCheck className="size-4" />
-							{t('platform.monitoring.openGovernance')}
-						</Button>
 					</>
 				}
 			/>
@@ -171,18 +156,60 @@ export function RunsViewPage({
 			</section>
 
 			<Tabs defaultValue="overview" className="grid gap-4">
-				<section className="flex flex-col gap-3 rounded-lg border bg-background p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-					<div>
-						<h2 className="text-base font-semibold">运行工作区</h2>
-						<p className="mt-1 text-sm leading-6 text-muted-foreground">
-							运行摘要和审计检索分区查看，避免监控页默认承载过长列表。
-						</p>
+				<section className="rounded-lg border bg-background p-4 shadow-sm">
+					<div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+						<div className="min-w-0">
+							<div className="flex items-center gap-2">
+								<div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+									<Activity className="size-4 text-muted-foreground" />
+								</div>
+								<h2 className="text-base font-semibold">运行工作区</h2>
+							</div>
+							<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+								运行摘要和审计检索分区查看，把启动调试、流程运行和治理入口集中在当前工作区。
+							</p>
+						</div>
+
+						<div className="grid gap-2 sm:grid-cols-3 xl:min-w-[34rem]">
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={onRunAgent}
+								className="justify-start"
+							>
+								<BotMessageSquare className="size-4" />
+								{t('platform.monitoring.runAgent')}
+							</Button>
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={onRunWorkflow}
+								className="justify-start"
+							>
+								<Workflow className="size-4" />
+								{t('platform.monitoring.runWorkflow')}
+							</Button>
+							<Button
+								type="button"
+								size="sm"
+								onClick={onOpenGovernance}
+								className="justify-start"
+							>
+								<ShieldCheck className="size-4" />
+								{t('platform.monitoring.openGovernance')}
+							</Button>
+						</div>
 					</div>
-					<TabsList className="w-full sm:w-auto">
+
+					<TabsList className="mt-4 w-full sm:w-auto">
 						<TabsTrigger value="overview" className="flex-1 sm:flex-none">
+							<ClipboardList className="size-4" />
 							运行概览
 						</TabsTrigger>
 						<TabsTrigger value="audit" className="flex-1 sm:flex-none">
+							<FileSearch className="size-4" />
 							审计检索
 						</TabsTrigger>
 					</TabsList>
@@ -191,13 +218,18 @@ export function RunsViewPage({
 				<TabsContent value="overview" className="mt-0">
 					<section className="grid gap-4 lg:grid-cols-3">
 						<div className="grid min-h-80 content-start gap-3 rounded-lg border bg-background p-4 shadow-sm">
-							<div>
-								<h2 className="text-sm font-medium">
-									{t('platform.monitoring.recentAgentRuns')}
-								</h2>
-								<p className="mt-1 text-xs leading-5 text-muted-foreground">
-									{t('platform.monitoring.recentAgentRunsHelper')}
-								</p>
+							<div className="flex items-start gap-3">
+								<div className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+									<BotMessageSquare className="size-4 text-muted-foreground" />
+								</div>
+								<div className="min-w-0">
+									<h2 className="text-sm font-medium">
+										{t('platform.monitoring.recentAgentRuns')}
+									</h2>
+									<p className="mt-1 text-xs leading-5 text-muted-foreground">
+										{t('platform.monitoring.recentAgentRunsHelper')}
+									</p>
+								</div>
 							</div>
 							{recentAgentTurns.length === 0 ? (
 								<div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
@@ -230,13 +262,18 @@ export function RunsViewPage({
 						</div>
 
 						<div className="grid min-h-80 content-start gap-3 rounded-lg border bg-background p-4 shadow-sm">
-							<div>
-								<h2 className="text-sm font-medium">
-									{t('platform.monitoring.recentWorkflowRuns')}
-								</h2>
-								<p className="mt-1 text-xs leading-5 text-muted-foreground">
-									{t('platform.monitoring.recentWorkflowRunsHelper')}
-								</p>
+							<div className="flex items-start gap-3">
+								<div className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+									<Workflow className="size-4 text-muted-foreground" />
+								</div>
+								<div className="min-w-0">
+									<h2 className="text-sm font-medium">
+										{t('platform.monitoring.recentWorkflowRuns')}
+									</h2>
+									<p className="mt-1 text-xs leading-5 text-muted-foreground">
+										{t('platform.monitoring.recentWorkflowRunsHelper')}
+									</p>
+								</div>
 							</div>
 							{recentWorkflowRuns.length === 0 ? (
 								<div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
@@ -275,13 +312,18 @@ export function RunsViewPage({
 						</div>
 
 						<div className="grid min-h-80 content-start gap-3 rounded-lg border bg-background p-4 shadow-sm">
-							<div>
-								<h2 className="text-sm font-medium">
-									{t('platform.monitoring.recentAudit')}
-								</h2>
-								<p className="mt-1 text-xs leading-5 text-muted-foreground">
-									{t('platform.monitoring.recentAuditHelper')}
-								</p>
+							<div className="flex items-start gap-3">
+								<div className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+									<FileSearch className="size-4 text-muted-foreground" />
+								</div>
+								<div className="min-w-0">
+									<h2 className="text-sm font-medium">
+										{t('platform.monitoring.recentAudit')}
+									</h2>
+									<p className="mt-1 text-xs leading-5 text-muted-foreground">
+										{t('platform.monitoring.recentAuditHelper')}
+									</p>
+								</div>
 							</div>
 							{recentAuditEvents.length === 0 ? (
 								<div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
