@@ -1097,6 +1097,38 @@ class PlatformAgentRunService:
             "answer": answer,
         }
 
+    def append_executed_routed_tool_call(
+        self,
+        *,
+        tool_calls: list[dict[str, Any]],
+        tool_name: str,
+        inputs: dict[str, Any],
+        tool_response: dict[str, Any],
+        connector: str,
+        connector_source: str,
+        routing_source: str,
+        routing_reason: str,
+        approval_id: str | None,
+        decision: dict[str, Any],
+        answer: str,
+    ) -> None:
+        tool_calls.append(
+            self.build_executed_routed_tool_call(
+                **self.build_executed_routed_tool_call_context(
+                    tool_name=tool_name,
+                    inputs=inputs,
+                    tool_response=tool_response,
+                    connector=connector,
+                    connector_source=connector_source,
+                    routing_source=routing_source,
+                    routing_reason=routing_reason,
+                    approval_id=approval_id,
+                    decision=decision,
+                    answer=answer,
+                ),
+            ),
+        )
+
     def build_executed_routed_tool_call(
         self,
         *,
