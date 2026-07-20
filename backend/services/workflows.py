@@ -180,6 +180,14 @@ class PlatformWorkflowTemplateService:
     def list_templates_response(self) -> dict[str, Any]:
         return {"workflows": self.list_templates()}
 
+    @staticmethod
+    def update_template_response(
+        *,
+        workflow: dict[str, Any],
+        workflows: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        return {"workflow": workflow, "workflows": workflows}
+
     def get_template(self, workflow_type: str) -> dict[str, Any]:
         for workflow in self.list_templates():
             if str(workflow.get("workflow_type", "")).strip() == workflow_type:

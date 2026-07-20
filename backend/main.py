@@ -2180,7 +2180,10 @@ async def update_enterprise_workflow(
         )
     except PlatformWorkflowTemplateServiceError as exc:
         _raise_platform_workflow_template_service_error(exc)
-    return {"workflow": workflow, "workflows": workflows}
+    return workflow_service.update_template_response(
+        workflow=workflow,
+        workflows=workflows,
+    )
 
 
 @app.get("/enterprise/platform/workflows/runs")
