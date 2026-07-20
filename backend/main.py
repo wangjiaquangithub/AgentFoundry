@@ -2195,13 +2195,15 @@ async def list_enterprise_workflow_runs(
     limit: int = 20,
 ) -> dict[str, Any]:
     """List recent platform workflow runs for review and audit."""
-    return _platform_workflow_run_service().list_runs(
-        limit=limit,
+    workflow_run_service = _platform_workflow_run_service()
+    list_context = workflow_run_service.list_runs_request_payload(
         workflow_type=workflow_type,
         agent_id=agent_id,
         tenant=tenant,
         user_id=user_id,
+        limit=limit,
     )
+    return workflow_run_service.list_runs(**list_context)
 
 
 @app.get("/enterprise/platform/approvals")

@@ -312,6 +312,23 @@ class PlatformWorkflowRunService:
             ),
         }
 
+    def list_runs_request_payload(
+        self,
+        *,
+        workflow_type: str | None = None,
+        agent_id: str | None = None,
+        tenant: str | None = None,
+        user_id: str | None = None,
+        limit: int = 20,
+    ) -> dict[str, Any]:
+        return {
+            "workflow_type": _optional_filter(workflow_type),
+            "agent_id": _optional_filter(agent_id),
+            "tenant": _optional_filter(tenant),
+            "user_id": _optional_filter(user_id),
+            "limit": limit,
+        }
+
     def list_run_records(
         self,
         *,
