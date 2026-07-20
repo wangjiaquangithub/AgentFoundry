@@ -87,6 +87,7 @@ from services.connectors import (
     PlatformConnectorConfigServiceError,
 )
 from services.dev_knowledge import PlatformDevKnowledgeService
+from services.knowledge import PlatformKnowledgeResponseService
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
 from services.platform_status import PlatformStatusService
@@ -162,6 +163,7 @@ dev_knowledge_repository = DevKnowledgeRepository(PLATFORM_DEV_KNOWLEDGE_PATH)
 dev_knowledge_service = PlatformDevKnowledgeService(
     repository=dev_knowledge_repository,
 )
+knowledge_response_service = PlatformKnowledgeResponseService()
 platform_memory_repository = PlatformMemoryRepository(PLATFORM_MEMORY_DIR)
 platform_memory_service = PlatformMemoryService(repository=platform_memory_repository)
 
@@ -1091,56 +1093,6 @@ def _agent_tool_denial(tool_name: str) -> dict[str, Any]:
     }
 
 
-def _json_safe(value: Any) -> Any:
-    return json.loads(json.dumps(value, ensure_ascii=False, default=str))
-
-
-def _chunk_text(chunk: Any) -> str:
-    content = getattr(chunk, "content", None)
-    if getattr(content, "type", None) == "text":
-        return str(getattr(content, "text", "")).strip()
-
-    name = getattr(content, "name", None)
-    if name:
-        return str(name).strip()
-
-    source = getattr(chunk, "source", None)
-    return str(source or "").strip()
-
-
-def _format_knowledge_hit(
-    knowledge_base_id: str,
-    hit: Any,
-) -> dict[str, Any]:
-    chunk = getattr(hit, "chunk", None)
-    snippet = _chunk_text(chunk)
-    if len(snippet) > 500:
-        snippet = f"{snippet[:497]}..."
-
-    metadata = getattr(chunk, "metadata", {}) if chunk is not None else {}
-    return {
-        "knowledge_base_id": knowledge_base_id,
-        "score": float(getattr(hit, "score", 0.0) or 0.0),
-        "document_id": str(getattr(hit, "document_id", "")),
-        "source": str(getattr(chunk, "source", "") or ""),
-        "chunk_index": getattr(chunk, "chunk_index", None),
-        "total_chunks": getattr(chunk, "total_chunks", None),
-        "snippet": snippet,
-        "metadata": _json_safe(metadata or {}),
-    }
-
-
-def _format_knowledge_answer(
-    knowledge_hits: list[dict[str, Any]],
-) -> str:
-    snippets = []
-    for index, hit in enumerate(knowledge_hits[:3], start=1):
-        source = hit.get("source") or hit.get("document_id") or hit["knowledge_base_id"]
-        snippets.append(f"{index}. {source}: {hit.get('snippet', '')}")
-
-    return "我在该 Agent 绑定的知识库中找到这些相关内容：\n" + "\n".join(snippets)
-
-
 def _search_platform_dev_knowledge(
     question: str,
     knowledge_base_ids: list[str],
@@ -1440,7 +1392,7 @@ async def _search_agent_knowledge_bases(
                 continue
 
             hits.extend(
-                _format_knowledge_hit(knowledge_base_id, hit)
+                knowledge_response_service.format_hit(knowledge_base_id, hit)
                 for hit in results
             )
 
@@ -3497,7 +3449,7 @@ async def run_enterprise_agent(
         if routing_error:
             decision["routing_error"] = routing_error
         answer = (
-            _format_knowledge_answer(knowledge_hits)
+            knowledge_response_service.format_answer(knowledge_hits)
             if knowledge_hits
             else (
                 platform_memory_service.format_answer(memory_hits)
@@ -3742,7 +3694,9 @@ async def run_enterprise_agent(
         if call.get("answer")
     ]
     if knowledge_hits:
-        answer_parts.append(f"知识库: {_format_knowledge_answer(knowledge_hits)}")
+        answer_parts.append(
+            f"知识库: {knowledge_response_service.format_answer(knowledge_hits)}",
+        )
     if memory_hits:
         answer_parts.insert(
             0,
