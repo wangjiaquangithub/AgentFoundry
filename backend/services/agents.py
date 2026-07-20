@@ -268,6 +268,26 @@ class PlatformAgentService:
         response["readiness"] = self.readiness(agent)
         return response
 
+    def registry_response(
+        self,
+        agents: Iterable[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        listed_agents = self.list_agents() if agents is None else list(agents)
+        return {
+            "templates": self.template_metadata(),
+            "agents": [self.response(agent) for agent in listed_agents],
+        }
+
+    def mutation_response(
+        self,
+        agent: dict[str, Any],
+        agents: Iterable[dict[str, Any]],
+    ) -> dict[str, Any]:
+        return {
+            "agent": self.response(agent),
+            "agents": [self.response(item) for item in agents],
+        }
+
     def run_metadata(self, agent: dict[str, Any] | None) -> dict[str, Any]:
         if agent is None:
             return {}

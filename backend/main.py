@@ -2554,13 +2554,7 @@ async def import_enterprise_platform_config(
 @app.get("/enterprise/platform/agents")
 async def enterprise_platform_agents() -> dict[str, Any]:
     """Return platform agent templates and published tenant instances."""
-    return {
-        "templates": _platform_agent_service().template_metadata(),
-        "agents": [
-            _platform_agent_service().response(agent)
-            for agent in _load_platform_agents()
-        ],
-    }
+    return _platform_agent_service().registry_response()
 
 
 @app.post("/enterprise/platform/agents/publish")
@@ -2577,10 +2571,7 @@ async def publish_enterprise_platform_agent(
         **resource_inputs,
     )
     agent, agents = _create_platform_agent(payload, user_id)
-    return {
-        "agent": _platform_agent_service().response(agent),
-        "agents": [_platform_agent_service().response(item) for item in agents],
-    }
+    return _platform_agent_service().mutation_response(agent, agents)
 
 
 @app.patch("/enterprise/platform/agents/{agent_id}")
@@ -2602,10 +2593,7 @@ async def update_enterprise_platform_agent(
         **resource_inputs,
     )
     agent, agents = _update_platform_agent(agent_id, payload, user_id)
-    return {
-        "agent": _platform_agent_service().response(agent),
-        "agents": [_platform_agent_service().response(item) for item in agents],
-    }
+    return _platform_agent_service().mutation_response(agent, agents)
 
 
 @app.delete("/enterprise/platform/agents/{agent_id}")
@@ -2616,10 +2604,7 @@ async def archive_enterprise_platform_agent(
     """Archive a platform agent while keeping its registry record."""
     user_id = request.headers.get("X-User-ID") or "acme:alice"
     agent, agents = _archive_platform_agent(agent_id, user_id)
-    return {
-        "agent": _platform_agent_service().response(agent),
-        "agents": [_platform_agent_service().response(item) for item in agents],
-    }
+    return _platform_agent_service().mutation_response(agent, agents)
 
 
 @app.get("/enterprise/platform/tools")
