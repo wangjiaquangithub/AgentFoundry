@@ -1007,10 +1007,6 @@ async def _route_enterprise_agent_question_with_model(
     )
 
 
-def _route_enterprise_agent_question(question: str) -> dict[str, Any]:
-    return enterprise_router_service.primary_rule_route_for_question(question)
-
-
 async def _select_enterprise_agent_routes(
     question: str,
 ) -> tuple[list[dict[str, Any]], str | None]:
