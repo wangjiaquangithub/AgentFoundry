@@ -1561,36 +1561,6 @@ def _enterprise_connector_health() -> dict[str, Any]:
         _raise_platform_connector_config_service_error(exc)
 
 
-def _create_platform_agent(
-    payload: EnterpriseAgentPublishRequest,
-    user_id: str,
-) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    try:
-        return _platform_agent_service().create_agent(payload, user_id)
-    except PlatformAgentServiceError as exc:
-        _raise_platform_agent_service_error(exc)
-
-
-def _update_platform_agent(
-    agent_id: str,
-    payload: EnterpriseAgentUpdateRequest,
-    user_id: str,
-) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    try:
-        return _platform_agent_service().update_agent(agent_id, payload, user_id)
-    except PlatformAgentServiceError as exc:
-        _raise_platform_agent_service_error(exc)
-
-
-def _archive_platform_agent(
-    agent_id: str,
-) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    try:
-        return _platform_agent_service().archive_agent(agent_id)
-    except PlatformAgentServiceError as exc:
-        _raise_platform_agent_service_error(exc)
-
-
 def _run_authorized_enterprise_tool(
     *,
     user_id: str,
@@ -2550,7 +2520,10 @@ async def publish_enterprise_platform_agent(
         user_id,
         **resource_inputs,
     )
-    agent, agents = _create_platform_agent(payload, user_id)
+    try:
+        agent, agents = _platform_agent_service().create_agent(payload, user_id)
+    except PlatformAgentServiceError as exc:
+        _raise_platform_agent_service_error(exc)
     return _platform_agent_service().mutation_response(agent, agents)
 
 
@@ -2572,7 +2545,14 @@ async def update_enterprise_platform_agent(
         user_id,
         **resource_inputs,
     )
-    agent, agents = _update_platform_agent(agent_id, payload, user_id)
+    try:
+        agent, agents = _platform_agent_service().update_agent(
+            agent_id,
+            payload,
+            user_id,
+        )
+    except PlatformAgentServiceError as exc:
+        _raise_platform_agent_service_error(exc)
     return _platform_agent_service().mutation_response(agent, agents)
 
 
@@ -2581,7 +2561,10 @@ async def archive_enterprise_platform_agent(
     agent_id: str,
 ) -> dict[str, Any]:
     """Archive a platform agent while keeping its registry record."""
-    agent, agents = _archive_platform_agent(agent_id)
+    try:
+        agent, agents = _platform_agent_service().archive_agent(agent_id)
+    except PlatformAgentServiceError as exc:
+        _raise_platform_agent_service_error(exc)
     return _platform_agent_service().mutation_response(agent, agents)
 
 
