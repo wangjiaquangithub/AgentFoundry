@@ -18,6 +18,11 @@ from backend.persistence.database import (
     create_postgres_database,
     create_sqlite_database,
 )
+from backend.persistence.documents import (
+    DocumentRecord,
+    PostgresDocumentReadRepository,
+    SQLiteDocumentReadRepository,
+)
 from backend.persistence.knowledge_bases import (
     KnowledgeBaseRecord,
     PostgresKnowledgeBaseReadRepository,
@@ -57,6 +62,7 @@ __all__ = [
     "AgentRunRecord",
     "AgentVersionRecord",
     "ApprovalRecord",
+    "DocumentRecord",
     "KnowledgeBaseRecord",
     "MembershipRecord",
     "ModelConfigRecord",
@@ -64,6 +70,7 @@ __all__ = [
     "PostgresAgentCatalogReadRepository",
     "PostgresAgentRunReadRepository",
     "PostgresDatabase",
+    "PostgresDocumentReadRepository",
     "PostgresKnowledgeBaseReadRepository",
     "PostgresModelConfigReadRepository",
     "PostgresTenancyReadRepository",
@@ -73,6 +80,7 @@ __all__ = [
     "SQLiteApprovalReadRepository",
     "SQLiteAgentRunReadRepository",
     "SQLiteDatabase",
+    "SQLiteDocumentReadRepository",
     "SQLiteKnowledgeBaseReadRepository",
     "SQLiteModelConfigReadRepository",
     "SQLiteTenancyReadRepository",
