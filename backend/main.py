@@ -7,13 +7,21 @@ and custom sub-agent templates.
 """
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any, NoReturn
+from urllib.parse import urlparse
 
 import uvicorn
 from fastapi import HTTPException, Request
 from fastapi.middleware import Middleware
 from fastapi.middleware.cors import CORSMiddleware
+
+BACKEND_DIR = Path(__file__).resolve().parent
+REPO_ROOT = BACKEND_DIR.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 from api.agent_runtime import (
     AgentRuntimeRouteDependencies,
     create_agent_runtime_router,
@@ -77,7 +85,15 @@ from platform_config import (
     safe_path_part,
 )
 from repositories.agents import AgentRepository
-from repositories.agent_runs import AgentRunRepository
+from backend.persistence import (
+    PostgresAgentRunReadRepository,
+    create_postgres_database,
+)
+from repositories.agent_runs import (
+    AgentRunRepository,
+    AgentRunRepositoryProtocol,
+    PostgresAgentRunReadThroughRepository,
+)
 from repositories.approvals import ApprovalRequestRepository
 from repositories.connectors import ConnectorConfigRepository
 from repositories.dev_knowledge import DevKnowledgeRepository
@@ -120,8 +136,26 @@ from services.workflows import (
     PlatformWorkflowTemplateService,
 )
 
+load_local_env()
+
 agent_repository = AgentRepository(PLATFORM_AGENTS_PATH)
-agent_run_repository = AgentRunRepository(PLATFORM_AGENT_RUNS_PATH)
+agent_run_fallback_repository = AgentRunRepository(PLATFORM_AGENT_RUNS_PATH)
+
+
+def _build_agent_run_repository() -> AgentRunRepositoryProtocol:
+    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
+    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+        return agent_run_fallback_repository
+
+    return PostgresAgentRunReadThroughRepository(
+        postgres_reader=PostgresAgentRunReadRepository(
+            create_postgres_database(database_url),
+        ),
+        fallback_repository=agent_run_fallback_repository,
+    )
+
+
+agent_run_repository = _build_agent_run_repository()
 connector_config_repository = ConnectorConfigRepository(
     PLATFORM_CONNECTOR_CONFIGS_PATH,
 )
@@ -146,8 +180,6 @@ enterprise_router_service = PlatformEnterpriseRouterService(
 )
 platform_memory_repository = PlatformMemoryRepository(PLATFORM_MEMORY_DIR)
 platform_memory_service = PlatformMemoryService(repository=platform_memory_repository)
-
-load_local_env()
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 enterprise_connector = build_enterprise_connector()
 tool_audit_logger = ToolAuditLogger.from_env(

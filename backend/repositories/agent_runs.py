@@ -2,7 +2,40 @@
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
+
+from backend.persistence.runs import AgentRunRecord, PostgresAgentRunReadRepository
+
+
+class AgentRunRepositoryProtocol(Protocol):
+    """Repository contract used by the platform agent run service."""
+
+    def list(
+        self,
+        *,
+        limit: int = 20,
+        agent_id: str | None = None,
+        tenant: str | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
+    ) -> list[dict[str, Any]]:
+        ...
+
+    def get(self, turn_id: str, *, tenant: str | None = None) -> dict[str, Any] | None:
+        ...
+
+    def append(self, record: dict[str, Any]) -> None:
+        ...
+
+    def delete(
+        self,
+        *,
+        agent_id: str | None = None,
+        tenant: str | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
+    ) -> int:
+        ...
 
 
 class AgentRunRepository:
@@ -52,12 +85,14 @@ class AgentRunRepository:
                 break
         return records
 
-    def get(self, turn_id: str) -> dict[str, Any] | None:
+    def get(self, turn_id: str, *, tenant: str | None = None) -> dict[str, Any] | None:
         if not turn_id:
             return None
 
         for record in reversed(self.read_all()):
             if record.get("turn_id") == turn_id:
+                if tenant and record.get("tenant") != tenant:
+                    continue
                 return record
         return None
 
@@ -107,3 +142,117 @@ class AgentRunRepository:
         if deleted_count:
             self.replace_all(kept_records)
         return deleted_count
+
+
+class PostgresAgentRunReadThroughRepository:
+    """Read agent runs from PostgreSQL while preserving the existing write path.
+
+    This is a transition boundary for phase 2: read APIs can consume the
+    production PostgreSQL schema, while append/delete remain on the legacy
+    development repository until their own write-migration slice.
+    """
+
+    def __init__(
+        self,
+        *,
+        postgres_reader: PostgresAgentRunReadRepository,
+        fallback_repository: AgentRunRepository,
+    ) -> None:
+        self._postgres_reader = postgres_reader
+        self._fallback_repository = fallback_repository
+
+    def list(
+        self,
+        *,
+        limit: int = 20,
+        agent_id: str | None = None,
+        tenant: str | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
+    ) -> list[dict[str, Any]]:
+        if not tenant:
+            return self._fallback_repository.list(
+                limit=limit,
+                agent_id=agent_id,
+                tenant=tenant,
+                user_id=user_id,
+                session_id=session_id,
+            )
+
+        postgres_records = [
+            _postgres_run_to_platform_record(record)
+            for record in self._postgres_reader.list_runs(
+                tenant_id=tenant,
+                agent_id=agent_id,
+                user_id=user_id,
+                session_id=session_id,
+                limit=limit,
+            )
+        ]
+        if len(postgres_records) >= _clamp_limit(limit):
+            return postgres_records
+
+        seen_turn_ids = {record["turn_id"] for record in postgres_records}
+        fallback_records = [
+            record
+            for record in self._fallback_repository.list(
+                limit=limit,
+                agent_id=agent_id,
+                tenant=tenant,
+                user_id=user_id,
+                session_id=session_id,
+            )
+            if record.get("turn_id") not in seen_turn_ids
+        ]
+        return (postgres_records + fallback_records)[: _clamp_limit(limit)]
+
+    def get(self, turn_id: str, *, tenant: str | None = None) -> dict[str, Any] | None:
+        if tenant:
+            record = self._postgres_reader.get_run(tenant_id=tenant, run_id=turn_id)
+            if record is not None:
+                return _postgres_run_to_platform_record(record)
+        return self._fallback_repository.get(turn_id, tenant=tenant)
+
+    def append(self, record: dict[str, Any]) -> None:
+        self._fallback_repository.append(record)
+
+    def delete(
+        self,
+        *,
+        agent_id: str | None = None,
+        tenant: str | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
+    ) -> int:
+        return self._fallback_repository.delete(
+            agent_id=agent_id,
+            tenant=tenant,
+            user_id=user_id,
+            session_id=session_id,
+        )
+
+
+def _postgres_run_to_platform_record(record: AgentRunRecord) -> dict[str, Any]:
+    return {
+        "turn_id": record.id,
+        "tenant": record.tenant_id,
+        "agent_id": record.agent_id,
+        "agent_version_id": record.agent_version_id,
+        "user_id": record.user_id,
+        "session_id": record.session_id,
+        "status": record.status,
+        "question": record.question,
+        "answer": record.answer,
+        "runtime_adapter": {
+            "provider": record.runtime_provider,
+            "runtime_invocation_id": record.runtime_invocation_id,
+        },
+        "runtime_invocation_id": record.runtime_invocation_id,
+        "created_at": record.created_at,
+        "completed_at": record.completed_at,
+        "source": "postgres",
+    }
+
+
+def _clamp_limit(limit: int) -> int:
+    return min(max(limit, 1), 100)

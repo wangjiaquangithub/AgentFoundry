@@ -255,10 +255,13 @@ def create_agent_runtime_router(
         return agent_run_service.list_runs(**list_context)
 
     @router.get("/enterprise/platform/agent/runs/{turn_id}")
-    async def get_enterprise_agent_run(turn_id: str) -> dict[str, Any]:
+    async def get_enterprise_agent_run(
+        turn_id: str,
+        tenant: str | None = None,
+    ) -> dict[str, Any]:
         """Get a single enterprise agent question-answer turn by run ID."""
         try:
-            return deps.agent_run_service().get_run(turn_id)
+            return deps.agent_run_service().get_run(turn_id, tenant=tenant)
         except PlatformAgentRunServiceError as exc:
             _raise_service_error(exc)
 

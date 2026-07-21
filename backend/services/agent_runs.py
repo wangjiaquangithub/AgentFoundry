@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import Any, Callable
 from uuid import uuid4
 
-from repositories.agent_runs import AgentRunRepository
+from repositories.agent_runs import AgentRunRepositoryProtocol
 from services.approvals import PlatformApprovalServiceError
 
 
@@ -20,7 +20,7 @@ class PlatformAgentRunServiceError(ValueError):
 class PlatformAgentRunService:
     """Manage persisted enterprise agent question-answer turns."""
 
-    def __init__(self, *, repository: AgentRunRepository) -> None:
+    def __init__(self, *, repository: AgentRunRepositoryProtocol) -> None:
         self._repository = repository
 
     def list_runs(
@@ -59,8 +59,8 @@ class PlatformAgentRunService:
             "limit": limit,
         }
 
-    def get_run(self, turn_id: str) -> dict[str, Any]:
-        run = self._repository.get(turn_id.strip())
+    def get_run(self, turn_id: str, *, tenant: str | None = None) -> dict[str, Any]:
+        run = self._repository.get(turn_id.strip(), tenant=_optional_filter(tenant))
         if run is None:
             raise PlatformAgentRunServiceError(404, "Agent run not found.")
         return run
