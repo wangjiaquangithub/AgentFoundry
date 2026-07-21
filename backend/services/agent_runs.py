@@ -139,6 +139,14 @@ class PlatformAgentRunService:
         }
 
     @staticmethod
+    def agent_context_view(agent_context: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "agent": agent_context["agent"],
+            "agent_metadata": agent_context["agent_metadata"],
+            "runtime_adapter": agent_context["runtime_adapter"],
+        }
+
+    @staticmethod
     def resolve_runtime_context(
         *,
         user_id: str,
