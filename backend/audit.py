@@ -10,8 +10,10 @@ import time
 from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any, Protocol, TypeVar
 from uuid import uuid4
+
+from backend.persistence import ToolCallRecord
 
 
 LOGGER = logging.getLogger(__name__)
@@ -31,21 +33,44 @@ SENSITIVE_KEY_PARTS = (
 )
 
 
-class ToolAuditLogger:
-    """Append compact tool-call audit events to a local JSONL file."""
+class ToolCallWriteRepository(Protocol):
+    """Persistence boundary for production tool-call audit writes."""
 
-    def __init__(self, path: Path | str, *, enabled: bool = True) -> None:
+    def append_tool_call(self, record: ToolCallRecord) -> None:
+        """Persist one tool-call audit record."""
+
+
+class ToolAuditLogger:
+    """Persist compact tool-call audit events with JSONL as local fallback."""
+
+    def __init__(
+        self,
+        path: Path | str,
+        *,
+        enabled: bool = True,
+        tool_call_writer: ToolCallWriteRepository | None = None,
+    ) -> None:
         self.path = Path(path).expanduser()
         self.enabled = enabled
+        self._tool_call_writer = tool_call_writer
         self._lock = threading.Lock()
 
     @classmethod
-    def from_env(cls, default_path: Path) -> "ToolAuditLogger":
+    def from_env(
+        cls,
+        default_path: Path,
+        *,
+        tool_call_writer: ToolCallWriteRepository | None = None,
+    ) -> "ToolAuditLogger":
         """Build a logger from enterprise audit environment variables."""
         enabled_value = os.getenv("ENTERPRISE_AUDIT_ENABLED", "1").lower().strip()
         enabled = enabled_value not in {"0", "false", "no", "off"}
         path = os.getenv("ENTERPRISE_AUDIT_LOG_PATH")
-        return cls(Path(path).expanduser() if path else default_path, enabled=enabled)
+        return cls(
+            Path(path).expanduser() if path else default_path,
+            enabled=enabled,
+            tool_call_writer=tool_call_writer,
+        )
 
     def capture(
         self,
@@ -155,7 +180,17 @@ class ToolAuditLogger:
         return self.query(limit=limit)
 
     def _write(self, event: dict[str, Any]) -> None:
-        """Best-effort local append; audit storage failure should not break demo calls."""
+        """Best-effort audit write; storage failure should not break tool calls."""
+        if self._tool_call_writer is not None:
+            try:
+                self._tool_call_writer.append_tool_call(_event_to_tool_call_record(event))
+                return
+            except Exception as exc:
+                LOGGER.warning(
+                    "Failed to write enterprise audit event to PostgreSQL: %s",
+                    exc,
+                )
+
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             line = json.dumps(event, ensure_ascii=False, sort_keys=True)
@@ -164,6 +199,40 @@ class ToolAuditLogger:
                     file.write(f"{line}\n")
         except OSError as exc:
             LOGGER.warning("Failed to write enterprise audit log: %s", exc)
+
+
+def _event_to_tool_call_record(event: dict[str, Any]) -> ToolCallRecord:
+    success = event.get("success") is True
+    result: dict[str, Any] = {
+        "success": success,
+        "duration_ms": event.get("duration_ms"),
+    }
+    if success:
+        result["result"] = event.get("result")
+    else:
+        result["error"] = event.get("error")
+
+    return ToolCallRecord(
+        id=str(event["event_id"]),
+        tenant_id=str(event["tenant"]),
+        agent_run_id=None,
+        tool_id=None,
+        inputs={
+            "event_type": event.get("event_type"),
+            "schema_version": event.get("schema_version"),
+            "user_id": event.get("user_id"),
+            "agent_id": event.get("agent_id"),
+            "session_id": event.get("session_id"),
+            "tool_name": event.get("tool_name"),
+            "connector": event.get("connector"),
+            "arguments": event.get("inputs", {}),
+        },
+        result=result,
+        allowed=True,
+        approval_id=None,
+        created_at=str(event["timestamp"]),
+        completed_at=str(event["timestamp"]),
+    )
 
 
 def _format_timestamp(value: datetime) -> str:
