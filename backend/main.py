@@ -1735,37 +1735,22 @@ async def run_enterprise_agent(
                     inputs=route_inputs,
                 )
             except HTTPException as exc:
-                detail = (
-                    agent_run_service.require_approval_required_exception_detail(
-                        exc,
-                    )
-                )
-                approval = (
-                    agent_run_service.create_pending_tool_approval_request_or_raise_from_context(
-                        platform_approval_service=_platform_approval_service,
-                        raise_platform_approval_service_error=(
-                            _raise_platform_approval_service_error
-                        ),
-                        detail=detail,
-                        tenant=tenant,
-                        user_id=user_id,
-                        agent_id=runner_agent_id,
-                        tool_name=tool_name,
-                        inputs=route_inputs,
-                        headers=request.headers,
-                    )
-                )
-                agent_run_service.record_created_pending_approval_routed_tool_call_from_context(
+                agent_run_service.record_pending_tool_approval_from_exception_context(
+                    exc=exc,
                     tool_calls=tool_calls,
+                    platform_approval_service=_platform_approval_service,
+                    raise_platform_approval_service_error=(
+                        _raise_platform_approval_service_error
+                    ),
                     decision_with_routing_context=(
                         enterprise_router_service.decision_with_routing_context
                     ),
-                    detail=detail,
-                    approval=approval,
-                    tool_name=tool_name,
-                    inputs=route_inputs,
                     tenant=tenant,
                     user_id=user_id,
+                    agent_id=runner_agent_id,
+                    tool_name=tool_name,
+                    inputs=route_inputs,
+                    headers=request.headers,
                     connector=connector_label,
                     connector_source=connector_source,
                     routing_source=route_source,
