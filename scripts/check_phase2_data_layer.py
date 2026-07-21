@@ -1704,6 +1704,60 @@ def _check_postgres_document_chunk_reads_guarded() -> list[str]:
     return errors
 
 
+def _check_postgres_embedding_record_reads_guarded() -> list[str]:
+    errors: list[str] = []
+    embedding_path = PERSISTENCE_DIR / "embedding_records.py"
+    embedding_source = embedding_path.read_text(encoding="utf-8")
+    embedding_tree = ast.parse(embedding_source, filename=str(embedding_path))
+
+    if "PostgresEmbeddingRecordReadRepository" not in embedding_source:
+        errors.append(
+            "backend/persistence/embedding_records.py must define "
+            "PostgresEmbeddingRecordReadRepository",
+        )
+        return errors
+
+    required_methods = {
+        "list_embedding_records": ["FROM embedding_records", "WHERE tenant_id = %s"],
+        "get_embedding_record": ["FROM embedding_records", "WHERE tenant_id = %s AND id = %s"],
+    }
+    for method_name, sql_tokens in required_methods.items():
+        method_node = _find_class_method(
+            embedding_tree,
+            class_name="PostgresEmbeddingRecordReadRepository",
+            method_name=method_name,
+        )
+        if method_node is None:
+            errors.append(
+                "PostgreSQL embedding record read repository missing method: "
+                "backend/persistence/embedding_records.py:"
+                f"PostgresEmbeddingRecordReadRepository.{method_name}",
+            )
+            continue
+        if not _method_has_required_argument(method_node, "tenant_id"):
+            errors.append(
+                "PostgreSQL embedding record read method must require tenant_id: "
+                "backend/persistence/embedding_records.py:"
+                f"PostgresEmbeddingRecordReadRepository.{method_name}",
+            )
+        if not _method_uses_database_call(method_node, "connect"):
+            errors.append(
+                "PostgreSQL embedding record read method must read through PostgreSQL: "
+                "backend/persistence/embedding_records.py:"
+                f"PostgresEmbeddingRecordReadRepository.{method_name}",
+            )
+        normalized_sql = " ".join(_normalized_sql_literals(method_node))
+        for sql_token in sql_tokens:
+            if sql_token.lower() not in normalized_sql:
+                errors.append(
+                    "PostgreSQL embedding record read method must query tenant-scoped "
+                    "embedding records: backend/persistence/embedding_records.py:"
+                    f"PostgresEmbeddingRecordReadRepository.{method_name}",
+                )
+
+    return errors
+
+
 def _find_class_method(
     tree: ast.AST,
     *,
@@ -1771,6 +1825,7 @@ def main() -> int:
         *_check_postgres_knowledge_base_reads_guarded(),
         *_check_postgres_document_reads_guarded(),
         *_check_postgres_document_chunk_reads_guarded(),
+        *_check_postgres_embedding_record_reads_guarded(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -1811,6 +1866,7 @@ def main() -> int:
     print("- PostgreSQL knowledge base reads guarded: yes")
     print("- PostgreSQL document reads guarded: yes")
     print("- PostgreSQL document chunk reads guarded: yes")
+    print("- PostgreSQL embedding record reads guarded: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:
