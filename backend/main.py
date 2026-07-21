@@ -7,8 +7,6 @@ and custom sub-agent templates.
 """
 import json
 import os
-import re
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, NoReturn
 
@@ -55,6 +53,28 @@ from permissions import (
     ENTERPRISE_TOOL_NAMES,
     ToolAuthorizationPolicy,
 )
+from platform_config import (
+    DATA_DIR,
+    PLATFORM_AGENT_RUNS_PATH,
+    PLATFORM_AGENTS_PATH,
+    PLATFORM_APPROVAL_REQUESTS_PATH,
+    PLATFORM_CONNECTOR_CONFIGS_PATH,
+    PLATFORM_DEV_KNOWLEDGE_PATH,
+    PLATFORM_DEV_KNOWLEDGE_PROVIDER,
+    PLATFORM_MEMBERS_PATH,
+    PLATFORM_MEMORY_DIR,
+    PLATFORM_MEMORY_MAX_RECORDS,
+    PLATFORM_MEMORY_SEARCH_LIMIT,
+    PLATFORM_TOOL_POLICY_PATH,
+    PLATFORM_VERSION,
+    PLATFORM_WORKFLOW_RUNS_PATH,
+    PLATFORM_WORKFLOW_TEMPLATES_PATH,
+    ROUTING_SOURCE_MODEL,
+    ROUTING_SOURCE_RULES,
+    load_local_env,
+    now_iso,
+    safe_path_part,
+)
 from repositories.agents import AgentRepository
 from repositories.agent_runs import AgentRunRepository
 from repositories.approvals import ApprovalRequestRepository
@@ -99,25 +119,6 @@ from services.workflows import (
     PlatformWorkflowTemplateService,
 )
 
-
-BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "data"
-PLATFORM_AGENTS_PATH = DATA_DIR / "platform_agents.json"
-PLATFORM_CONNECTOR_CONFIGS_PATH = DATA_DIR / "platform_connector_configs.json"
-PLATFORM_WORKFLOW_TEMPLATES_PATH = DATA_DIR / "platform_workflow_templates.json"
-PLATFORM_WORKFLOW_RUNS_PATH = DATA_DIR / "platform_workflow_runs.jsonl"
-PLATFORM_AGENT_RUNS_PATH = DATA_DIR / "platform_agent_runs.jsonl"
-PLATFORM_APPROVAL_REQUESTS_PATH = DATA_DIR / "platform_approval_requests.jsonl"
-PLATFORM_TOOL_POLICY_PATH = DATA_DIR / "platform_tool_policy.json"
-PLATFORM_MEMBERS_PATH = DATA_DIR / "platform_members.json"
-PLATFORM_DEV_KNOWLEDGE_PATH = DATA_DIR / "platform_dev_knowledge.json"
-PLATFORM_MEMORY_DIR = DATA_DIR / "platform_memory"
-PLATFORM_VERSION = "0.1.0"
-PLATFORM_DEV_KNOWLEDGE_PROVIDER = "agentfoundry-dev-local"
-ROUTING_SOURCE_MODEL = "model"
-ROUTING_SOURCE_RULES = "rules"
-PLATFORM_MEMORY_MAX_RECORDS = 200
-PLATFORM_MEMORY_SEARCH_LIMIT = 4
 agent_repository = AgentRepository(PLATFORM_AGENTS_PATH)
 agent_run_repository = AgentRunRepository(PLATFORM_AGENT_RUNS_PATH)
 connector_config_repository = ConnectorConfigRepository(
@@ -145,28 +146,7 @@ enterprise_router_service = PlatformEnterpriseRouterService(
 platform_memory_repository = PlatformMemoryRepository(PLATFORM_MEMORY_DIR)
 platform_memory_service = PlatformMemoryService(repository=platform_memory_repository)
 
-
-def _load_local_env() -> None:
-    """Load example-local .env values before building service components."""
-    env_path = BASE_DIR / ".env"
-    if not env_path.exists():
-        return
-
-    try:
-        from dotenv import load_dotenv
-    except ModuleNotFoundError:
-        for line in env_path.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            os.environ.setdefault(key.strip(), value.strip().strip("'\""))
-        return
-
-    load_dotenv(env_path, override=False)
-
-
-_load_local_env()
+load_local_env()
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 enterprise_connector = build_enterprise_connector()
 tool_audit_logger = ToolAuditLogger.from_env(
@@ -246,17 +226,6 @@ enterprise_tool_runtime = EnterpriseToolRuntimeFactory(
     tool_names=ENTERPRISE_TOOL_NAMES,
 )
 
-
-def _safe_path_part(value: str) -> str:
-    """Turn an external id into a filesystem-safe path segment."""
-    return re.sub(r"[^a-zA-Z0-9._-]+", "_", value).strip("_") or "unknown"
-
-
-def _now_iso() -> str:
-    """Return the current UTC time as an ISO-8601 string."""
-    return datetime.now(timezone.utc).isoformat()
-
-
 def _platform_status_service() -> PlatformStatusService:
     """Build the service object that composes platform console status payloads."""
     agent_service = _platform_agent_service()
@@ -322,9 +291,9 @@ async def build_enterprise_middlewares(
     memory_workdir = (
         DATA_DIR
         / "memory"
-        / _safe_path_part(user_id)
-        / _safe_path_part(agent_id)
-        / _safe_path_part(session_id)
+        / safe_path_part(user_id)
+        / safe_path_part(agent_id)
+        / safe_path_part(session_id)
     )
     return [
         AgenticMemoryMiddleware(
@@ -425,7 +394,7 @@ def _platform_member_service() -> PlatformMemberService:
     return PlatformMemberService(
         repository=member_repository,
         tenant_hint_from_user_id=_tenant_hint_from_user_id,
-        now=_now_iso,
+        now=now_iso,
     )
 
 
@@ -544,7 +513,7 @@ def _platform_connector_config_service() -> PlatformConnectorConfigService:
     return PlatformConnectorConfigService(
         repository=connector_config_repository,
         global_connector=enterprise_connector,
-        now=_now_iso,
+        now=now_iso,
     )
 
 
@@ -647,7 +616,7 @@ app = create_app(
 def _platform_workflow_template_service() -> PlatformWorkflowTemplateService:
     return PlatformWorkflowTemplateService(
         repository=workflow_template_repository,
-        now=_now_iso,
+        now=now_iso,
     )
 
 
@@ -658,7 +627,7 @@ def _platform_workflow_run_service() -> PlatformWorkflowRunService:
 def _platform_approval_service() -> PlatformApprovalService:
     return PlatformApprovalService(
         repository=approval_request_repository,
-        now=_now_iso,
+        now=now_iso,
     )
 
 
@@ -714,7 +683,7 @@ app.include_router(
             workflow_template_service=_platform_workflow_template_service,
             identity_metadata=_platform_identity_metadata,
             tool_policy_path=_platform_tool_policy_path,
-            now=_now_iso,
+            now=now_iso,
             get_tool_authorization_policy=_get_tool_authorization_policy,
             set_tool_authorization_policy=_set_tool_authorization_policy,
             build_tool_authorization_policy=_build_tool_authorization_policy,
@@ -775,7 +744,7 @@ app.include_router(
             ),
             require_platform_approval=_require_platform_approval,
             run_authorized_enterprise_tool=_run_authorized_enterprise_tool,
-            safe_path_part=_safe_path_part,
+            safe_path_part=safe_path_part,
             describe_runtime_adapter=describe_runtime_adapter,
             build_runtime_invocation_request_payload=(
                 build_runtime_invocation_request_payload
@@ -807,7 +776,7 @@ app.include_router(
             ),
             require_platform_approval=_require_platform_approval,
             run_authorized_enterprise_tool=_run_authorized_enterprise_tool,
-            now=_now_iso,
+            now=now_iso,
         )
     )
 )
