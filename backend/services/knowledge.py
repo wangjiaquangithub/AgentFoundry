@@ -17,6 +17,61 @@ class RetrievalEventWriter(Protocol):
         ...
 
 
+class KnowledgeBaseReadRepository(Protocol):
+    def get_knowledge_base(
+        self,
+        *,
+        tenant_id: str,
+        knowledge_base_id: str,
+    ) -> Any | None:
+        ...
+
+
+class DocumentReadRepository(Protocol):
+    def list_documents(
+        self,
+        *,
+        tenant_id: str,
+        knowledge_base_id: str | None = None,
+        status: str | None = None,
+        limit: int = 50,
+    ) -> list[Any]:
+        ...
+
+
+class DocumentChunkReadRepository(Protocol):
+    def list_document_chunks(
+        self,
+        *,
+        tenant_id: str,
+        document_id: str,
+        limit: int = 100,
+    ) -> list[Any]:
+        ...
+
+
+class EmbeddingRecordReadRepository(Protocol):
+    def list_embedding_records(
+        self,
+        *,
+        tenant_id: str,
+        chunk_id: str | None = None,
+        model_config_id: str | None = None,
+        limit: int = 100,
+    ) -> list[Any]:
+        ...
+
+
+class ModelConfigReadRepository(Protocol):
+    def get_model_config(
+        self,
+        *,
+        tenant_id: str,
+        model_config_id: str,
+    ) -> Any | None:
+        ...
+
+
 def _json_safe(value: Any) -> Any:
     return json.loads(json.dumps(value, ensure_ascii=False, default=str))
 
@@ -32,6 +87,248 @@ def _chunk_text(chunk: Any) -> str:
 
     source = getattr(chunk, "source", None)
     return str(source or "").strip()
+
+
+def _record_id(record: Any) -> str:
+    return str(getattr(record, "id", "") or "").strip()
+
+
+def _record_status(record: Any) -> str:
+    return str(getattr(record, "status", "") or "").strip().lower()
+
+
+def _is_ready_status(status: str) -> bool:
+    return status in {"active", "ready", "indexed", "completed"}
+
+
+class PlatformKnowledgeDocumentReadinessService:
+    """Summarize whether bound knowledge bases are indexed for retrieval."""
+
+    def __init__(
+        self,
+        *,
+        knowledge_base_repository: KnowledgeBaseReadRepository,
+        document_repository: DocumentReadRepository,
+        document_chunk_repository: DocumentChunkReadRepository,
+        embedding_record_repository: EmbeddingRecordReadRepository,
+        model_config_repository: ModelConfigReadRepository,
+        document_limit: int = 100,
+        chunk_limit: int = 200,
+    ) -> None:
+        self._knowledge_base_repository = knowledge_base_repository
+        self._document_repository = document_repository
+        self._document_chunk_repository = document_chunk_repository
+        self._embedding_record_repository = embedding_record_repository
+        self._model_config_repository = model_config_repository
+        self._document_limit = document_limit
+        self._chunk_limit = chunk_limit
+
+    def build_readiness(
+        self,
+        *,
+        tenant_id: str,
+        knowledge_base_ids: list[str],
+    ) -> dict[str, Any]:
+        bound_knowledge_base_ids = [
+            str(knowledge_base_id).strip()
+            for knowledge_base_id in knowledge_base_ids
+            if str(knowledge_base_id).strip()
+        ]
+        if not bound_knowledge_base_ids:
+            return {
+                "status": "not_configured",
+                "bound_knowledge_base_ids": [],
+                "knowledge_bases": [],
+                "guidance": "Bind at least one knowledge base to enable production retrieval.",
+            }
+
+        knowledge_bases = [
+            self._build_knowledge_base_readiness(
+                tenant_id=tenant_id,
+                knowledge_base_id=knowledge_base_id,
+            )
+            for knowledge_base_id in bound_knowledge_base_ids
+        ]
+        statuses = {item["status"] for item in knowledge_bases}
+        if "blocked" in statuses:
+            status = "blocked"
+            guidance = "Resolve blocked knowledge base indexing or embedding configuration before retrieval."
+        elif "not_configured" in statuses:
+            status = "not_configured"
+            guidance = "Create documents, chunks, embeddings, and an active embedding model config."
+        elif "degraded" in statuses:
+            status = "degraded"
+            guidance = "Some bound knowledge bases are only partially indexed."
+        else:
+            status = "ready"
+            guidance = None
+
+        payload: dict[str, Any] = {
+            "status": status,
+            "bound_knowledge_base_ids": bound_knowledge_base_ids,
+            "knowledge_bases": knowledge_bases,
+            "summary": {
+                "knowledge_base_count": len(knowledge_bases),
+                "ready_knowledge_base_count": sum(
+                    1 for item in knowledge_bases if item["status"] == "ready"
+                ),
+                "document_count": sum(item["document_count"] for item in knowledge_bases),
+                "ready_document_count": sum(
+                    item["ready_document_count"] for item in knowledge_bases
+                ),
+                "chunk_count": sum(item["chunk_count"] for item in knowledge_bases),
+                "embedded_chunk_count": sum(
+                    item["embedded_chunk_count"] for item in knowledge_bases
+                ),
+                "embedding_record_count": sum(
+                    item["embedding_record_count"] for item in knowledge_bases
+                ),
+            },
+        }
+        if guidance:
+            payload["guidance"] = guidance
+        return payload
+
+    def _build_knowledge_base_readiness(
+        self,
+        *,
+        tenant_id: str,
+        knowledge_base_id: str,
+    ) -> dict[str, Any]:
+        knowledge_base = self._knowledge_base_repository.get_knowledge_base(
+            tenant_id=tenant_id,
+            knowledge_base_id=knowledge_base_id,
+        )
+        if knowledge_base is None:
+            return {
+                "id": knowledge_base_id,
+                "status": "not_configured",
+                "knowledge_base_status": None,
+                "embedding_model_config_id": None,
+                "embedding_model_config_status": None,
+                "document_count": 0,
+                "ready_document_count": 0,
+                "chunk_count": 0,
+                "embedded_chunk_count": 0,
+                "embedding_record_count": 0,
+                "guidance": "Knowledge base metadata was not found for this tenant.",
+            }
+
+        knowledge_base_status = _record_status(knowledge_base)
+        embedding_model_config_id = str(
+            getattr(knowledge_base, "embedding_model_config_id", "") or ""
+        ).strip()
+        model_config = (
+            self._model_config_repository.get_model_config(
+                tenant_id=tenant_id,
+                model_config_id=embedding_model_config_id,
+            )
+            if embedding_model_config_id
+            else None
+        )
+        model_config_status = _record_status(model_config) if model_config else None
+        documents = self._document_repository.list_documents(
+            tenant_id=tenant_id,
+            knowledge_base_id=knowledge_base_id,
+            limit=self._document_limit,
+        )
+        ready_documents = [
+            document for document in documents if _is_ready_status(_record_status(document))
+        ]
+
+        chunk_count = 0
+        embedded_chunk_ids: set[str] = set()
+        embedding_record_count = 0
+        documents_with_chunks = 0
+        documents_with_embeddings = 0
+        for document in ready_documents:
+            chunks = self._document_chunk_repository.list_document_chunks(
+                tenant_id=tenant_id,
+                document_id=_record_id(document),
+                limit=self._chunk_limit,
+            )
+            if chunks:
+                documents_with_chunks += 1
+            document_has_embedding = False
+            chunk_count += len(chunks)
+            for chunk in chunks:
+                embeddings = self._embedding_record_repository.list_embedding_records(
+                    tenant_id=tenant_id,
+                    chunk_id=_record_id(chunk),
+                    model_config_id=embedding_model_config_id or None,
+                    limit=1,
+                )
+                embedding_record_count += len(embeddings)
+                if embeddings:
+                    embedded_chunk_ids.add(_record_id(chunk))
+                    document_has_embedding = True
+            if document_has_embedding:
+                documents_with_embeddings += 1
+
+        status, guidance = self._classify_knowledge_base(
+            knowledge_base_status=knowledge_base_status,
+            document_count=len(documents),
+            ready_document_count=len(ready_documents),
+            chunk_count=chunk_count,
+            embedded_chunk_count=len(embedded_chunk_ids),
+            embedding_model_config_id=embedding_model_config_id,
+            embedding_model_config_status=model_config_status,
+            documents_with_chunks=documents_with_chunks,
+            documents_with_embeddings=documents_with_embeddings,
+        )
+        return {
+            "id": knowledge_base_id,
+            "status": status,
+            "knowledge_base_status": knowledge_base_status,
+            "embedding_model_config_id": embedding_model_config_id or None,
+            "embedding_model_config_status": model_config_status,
+            "document_count": len(documents),
+            "ready_document_count": len(ready_documents),
+            "document_with_chunk_count": documents_with_chunks,
+            "document_with_embedding_count": documents_with_embeddings,
+            "chunk_count": chunk_count,
+            "embedded_chunk_count": len(embedded_chunk_ids),
+            "embedding_record_count": embedding_record_count,
+            "guidance": guidance,
+        }
+
+    def _classify_knowledge_base(
+        self,
+        *,
+        knowledge_base_status: str,
+        document_count: int,
+        ready_document_count: int,
+        chunk_count: int,
+        embedded_chunk_count: int,
+        embedding_model_config_id: str,
+        embedding_model_config_status: str | None,
+        documents_with_chunks: int,
+        documents_with_embeddings: int,
+    ) -> tuple[str, str | None]:
+        if not _is_ready_status(knowledge_base_status):
+            return "blocked", "Knowledge base is not active."
+        if not embedding_model_config_id:
+            return "not_configured", "Assign an embedding model config to this knowledge base."
+        if not embedding_model_config_status:
+            return "blocked", "Embedding model config record was not found."
+        if not _is_ready_status(embedding_model_config_status):
+            return "blocked", "Embedding model config is not active."
+        if document_count == 0:
+            return "not_configured", "Upload at least one document."
+        if ready_document_count == 0:
+            return "blocked", "No documents are ready for indexing."
+        if chunk_count == 0:
+            return "blocked", "Ready documents do not have indexed chunks."
+        if embedded_chunk_count == 0:
+            return "blocked", "Document chunks do not have embedding records."
+        if (
+            ready_document_count < document_count
+            or documents_with_chunks < ready_document_count
+            or documents_with_embeddings < ready_document_count
+            or embedded_chunk_count < chunk_count
+        ):
+            return "degraded", "Knowledge base is partially indexed."
+        return "ready", None
 
 
 class PlatformKnowledgeResponseService:
