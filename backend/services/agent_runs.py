@@ -312,7 +312,6 @@ class PlatformAgentRunService:
             "runner_agent_id": execution_context["runner_agent_id"],
             "runner_session_id": execution_context["runner_session_id"],
             "response_record_context": execution_context["response_record_context"],
-            "knowledge_base_ids": execution_context["knowledge_base_ids"],
         }
 
     def resolve_runner_context(
