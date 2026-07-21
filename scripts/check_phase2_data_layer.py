@@ -109,6 +109,10 @@ POSTGRES_AUTHORITATIVE_PERSISTENCE_REPOSITORIES = {
         "PostgresAgentRunReadRepository",
         "PostgresAgentRunWriteRepository",
     },
+    "tenancy.py": {
+        "PostgresTenancyReadRepository",
+        "PostgresTenancyWriteRepository",
+    },
     "tool_calls.py": {
         "PostgresToolCallReadRepository",
         "PostgresToolCallWriteRepository",
