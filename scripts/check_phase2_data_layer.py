@@ -2031,6 +2031,60 @@ def _check_postgres_agent_catalog_reads_guarded() -> list[str]:
     return errors
 
 
+def _check_postgres_agent_run_reads_guarded() -> list[str]:
+    errors: list[str] = []
+    run_path = PERSISTENCE_DIR / "runs.py"
+    run_source = run_path.read_text(encoding="utf-8")
+    run_tree = ast.parse(run_source, filename=str(run_path))
+
+    if "PostgresAgentRunReadRepository" not in run_source:
+        errors.append(
+            "backend/persistence/runs.py must define "
+            "PostgresAgentRunReadRepository",
+        )
+        return errors
+
+    required_methods = {
+        "list_runs": ["FROM agent_runs", "WHERE tenant_id = %s"],
+        "get_run": ["FROM agent_runs", "WHERE tenant_id = %s AND id = %s"],
+    }
+    for method_name, sql_tokens in required_methods.items():
+        method_node = _find_class_method(
+            run_tree,
+            class_name="PostgresAgentRunReadRepository",
+            method_name=method_name,
+        )
+        if method_node is None:
+            errors.append(
+                "PostgreSQL agent run read repository missing method: "
+                "backend/persistence/runs.py:"
+                f"PostgresAgentRunReadRepository.{method_name}",
+            )
+            continue
+        if not _method_has_required_argument(method_node, "tenant_id"):
+            errors.append(
+                "PostgreSQL agent run read method must require tenant_id: "
+                "backend/persistence/runs.py:"
+                f"PostgresAgentRunReadRepository.{method_name}",
+            )
+        if not _method_uses_database_call(method_node, "connect"):
+            errors.append(
+                "PostgreSQL agent run read method must read through PostgreSQL: "
+                "backend/persistence/runs.py:"
+                f"PostgresAgentRunReadRepository.{method_name}",
+            )
+        normalized_sql = " ".join(_normalized_sql_literals(method_node))
+        for sql_token in sql_tokens:
+            if sql_token.lower() not in normalized_sql:
+                errors.append(
+                    "PostgreSQL agent run read method must query tenant-scoped "
+                    "agent runs: backend/persistence/runs.py:"
+                    f"PostgresAgentRunReadRepository.{method_name}",
+                )
+
+    return errors
+
+
 def _find_class_method(
     tree: ast.AST,
     *,
@@ -2104,6 +2158,7 @@ def main() -> int:
         *_check_postgres_workflow_run_reads_guarded(),
         *_check_postgres_workflow_template_reads_guarded(),
         *_check_postgres_agent_catalog_reads_guarded(),
+        *_check_postgres_agent_run_reads_guarded(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -2150,6 +2205,7 @@ def main() -> int:
     print("- PostgreSQL workflow run reads guarded: yes")
     print("- PostgreSQL workflow template reads guarded: yes")
     print("- PostgreSQL agent catalog reads guarded: yes")
+    print("- PostgreSQL agent run reads guarded: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:
