@@ -1,11 +1,15 @@
-"""Enterprise knowledge ingestion HTTP routes."""
+"""Enterprise knowledge HTTP routes."""
 
 from dataclasses import dataclass
-from typing import Callable, NoReturn
+from typing import Any, Callable, NoReturn
 
 from fastapi import APIRouter, HTTPException, Request
 
-from api.schemas import EnterpriseKnowledgeIngestRequest
+from api.schemas import (
+    EnterpriseKnowledgeIngestRequest,
+    EnterpriseKnowledgeReadinessRequest,
+)
+from services.knowledge import PlatformKnowledgeDocumentReadinessService
 from services.knowledge_ingestion import (
     KnowledgeIngestionRequest,
     PlatformKnowledgeIngestionService,
@@ -19,6 +23,12 @@ def _raise_ingestion_error(exc: ValueError) -> NoReturn:
 @dataclass(frozen=True)
 class KnowledgeIngestionRouteDependencies:
     ingestion_service: Callable[[], PlatformKnowledgeIngestionService | None]
+    tenant_hint_from_user_id: Callable[[str], str | None]
+
+
+@dataclass(frozen=True)
+class KnowledgeReadinessRouteDependencies:
+    readiness_service: Callable[[], PlatformKnowledgeDocumentReadinessService | None]
     tenant_hint_from_user_id: Callable[[str], str | None]
 
 
@@ -76,6 +86,47 @@ def create_knowledge_ingestion_router(
             "embedding_required": result.embedding_required,
             "embedding_model_config_id": result.embedding_model_config_id,
             "guidance": result.guidance,
+        }
+
+    return router
+
+
+def create_knowledge_readiness_router(
+    deps: KnowledgeReadinessRouteDependencies,
+) -> APIRouter:
+    router = APIRouter()
+
+    @router.post("/enterprise/platform/knowledge/readiness")
+    async def read_enterprise_knowledge_readiness(
+        payload: EnterpriseKnowledgeReadinessRequest,
+        request: Request,
+    ) -> dict[str, Any]:
+        """Summarize tenant knowledge base indexing readiness from PostgreSQL."""
+        service = deps.readiness_service()
+        if service is None:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Production knowledge readiness requires PostgreSQL. "
+                    "Local JSON or SQLite storage is not a production readiness target."
+                ),
+            )
+
+        tenant_id = payload.tenant or deps.tenant_hint_from_user_id(
+            request.headers.get("X-User-ID") or "",
+        )
+        if not tenant_id:
+            raise HTTPException(
+                status_code=400,
+                detail="tenant is required when X-User-ID does not imply a tenant.",
+            )
+
+        return {
+            "tenant": tenant_id,
+            "knowledge_readiness": service.build_readiness(
+                tenant_id=tenant_id,
+                knowledge_base_ids=payload.knowledge_base_ids,
+            ),
         }
 
     return router

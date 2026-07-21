@@ -112,6 +112,11 @@ class EnterpriseKnowledgeIngestRequest(BaseModel):
     document_id: str | None = None
 
 
+class EnterpriseKnowledgeReadinessRequest(BaseModel):
+    knowledge_base_ids: list[str]
+    tenant: str | None = None
+
+
 class EnterpriseWorkflowTemplateUpdateRequest(BaseModel):
     name: str | None = None
     description: str | None = None

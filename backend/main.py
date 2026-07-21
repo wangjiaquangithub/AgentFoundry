@@ -28,7 +28,9 @@ from api.agent_runtime import (
 from api.agents import AgentCatalogRouteDependencies, create_agent_catalog_router
 from api.knowledge import (
     KnowledgeIngestionRouteDependencies,
+    KnowledgeReadinessRouteDependencies,
     create_knowledge_ingestion_router,
+    create_knowledge_readiness_router,
 )
 from api.platform_admin import (
     PlatformAdminRouteDependencies,
@@ -871,6 +873,15 @@ app.include_router(
     create_knowledge_ingestion_router(
         KnowledgeIngestionRouteDependencies(
             ingestion_service=_build_knowledge_ingestion_service,
+            tenant_hint_from_user_id=tenant_hint_from_user_id,
+        )
+    )
+)
+
+app.include_router(
+    create_knowledge_readiness_router(
+        KnowledgeReadinessRouteDependencies(
+            readiness_service=_build_knowledge_document_readiness_service,
             tenant_hint_from_user_id=tenant_hint_from_user_id,
         )
     )
