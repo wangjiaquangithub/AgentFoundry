@@ -1,12 +1,14 @@
 """Platform member persistence for AgentFoundry."""
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Protocol
 
 from backend.persistence.tenancy import (
     MembershipRecord,
     PostgresTenancyReadRepository,
+    PostgresTenancyWriteRepository,
     TenantRecord,
     UserRecord,
 )
@@ -50,20 +52,21 @@ class MemberRepository:
 
 
 class PostgresMemberReadThroughRepository:
-    """Read member registry records from PostgreSQL with a JSON fallback.
+    """Read and write member registry records through PostgreSQL.
 
     The production tenancy model stores members as users joined through
-    memberships. This adapter presents that data in the legacy registry shape
-    while member writes are migrated in a later slice.
+    memberships. This adapter presents that data in the legacy registry shape.
     """
 
     def __init__(
         self,
         *,
         postgres_reader: PostgresTenancyReadRepository,
+        postgres_writer: PostgresTenancyWriteRepository,
         fallback_repository: MemberRepository,
     ) -> None:
         self._postgres_reader = postgres_reader
+        self._postgres_writer = postgres_writer
         self._fallback_repository = fallback_repository
 
     def load_config(self) -> dict[str, Any]:
@@ -92,7 +95,24 @@ class PostgresMemberReadThroughRepository:
             return self._fallback_repository.load_config()
 
     def save_config(self, config: dict[str, Any]) -> None:
-        self._fallback_repository.save_config(config)
+        members = config.get("members")
+        if not isinstance(members, list):
+            self._fallback_repository.save_config(config)
+            return
+
+        for raw_member in members:
+            if not isinstance(raw_member, dict):
+                continue
+            member = _normalized_member_for_postgres(raw_member)
+            self._postgres_writer.upsert_member(
+                tenant_id=member["tenant"],
+                user_id=member["user_id"],
+                display_name=member["display_name"],
+                role=member["role"],
+                status=member["status"],
+                created_at=member["created_at"],
+                updated_at=member["updated_at"],
+            )
 
 
 def _postgres_membership_to_member(
@@ -120,4 +140,30 @@ def _postgres_membership_to_member(
         "updated_at": membership.updated_at,
         "updated_by": membership.user_id,
         "source": "postgres",
+    }
+
+
+def _normalized_member_for_postgres(raw: dict[str, Any]) -> dict[str, str]:
+    timestamp = datetime.now(timezone.utc).isoformat()
+    tenant = str(raw.get("tenant") or "").strip()
+    user_id = str(raw.get("user_id") or "").strip()
+    if not tenant:
+        raise ValueError("Member tenant is required for PostgreSQL writes.")
+    if not user_id:
+        raise ValueError("Member user_id is required for PostgreSQL writes.")
+
+    display_name = str(raw.get("display_name") or user_id).strip()
+    role = str(raw.get("role") or "Enterprise user").strip()
+    status = str(raw.get("status") or "active").strip().lower()
+    if status not in {"active", "inactive"}:
+        raise ValueError("Member status must be active or inactive.")
+
+    return {
+        "tenant": tenant,
+        "user_id": user_id,
+        "display_name": display_name,
+        "role": role,
+        "status": status,
+        "created_at": str(raw.get("created_at") or timestamp).strip(),
+        "updated_at": str(raw.get("updated_at") or timestamp).strip(),
     }

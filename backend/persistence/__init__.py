@@ -79,6 +79,7 @@ from backend.persistence.runtime_records import (
 from backend.persistence.tenancy import (
     MembershipRecord,
     PostgresTenancyReadRepository,
+    PostgresTenancyWriteRepository,
     SQLiteTenancyReadRepository,
     TenantRecord,
     UserRecord,
@@ -133,6 +134,7 @@ __all__ = [
     "PostgresRetrievalEventReadRepository",
     "PostgresRuntimeReadRepository",
     "PostgresTenancyReadRepository",
+    "PostgresTenancyWriteRepository",
     "PostgresToolCallReadRepository",
     "PostgresToolCallWriteRepository",
     "PostgresToolGovernanceReadRepository",

@@ -1,8 +1,7 @@
-"""Tenancy read repositories.
+"""Tenancy repositories.
 
-These repositories are intentionally read-only while phase 2 establishes the
-production data layer. API wiring can switch to them later after write paths
-and compatibility behavior are explicit.
+Phase 2 keeps tenancy access behind small repository boundaries so the platform
+can move member registry behavior to PostgreSQL without coupling services to SQL.
 """
 
 from __future__ import annotations
@@ -242,3 +241,92 @@ class PostgresTenancyReadRepository:
                 cursor.execute(query, tuple(parameters))
                 rows = cursor.fetchall()
         return [_membership_from_row(dict(row)) for row in rows]
+
+
+class PostgresTenancyWriteRepository:
+    """Write tenant, user, and membership registry records to PostgreSQL."""
+
+    def __init__(self, database: PostgresDatabase) -> None:
+        self._database = database
+
+    def upsert_member(
+        self,
+        *,
+        tenant_id: str,
+        user_id: str,
+        display_name: str,
+        role: str,
+        status: str,
+        created_at: str,
+        updated_at: str,
+    ) -> None:
+        with self._database.transaction() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO tenants (id, name, status, plan, created_at, updated_at)
+                    VALUES (%s, %s, 'active', 'development', %s, %s)
+                    ON CONFLICT(id) DO UPDATE SET
+                      name = excluded.name,
+                      status = excluded.status,
+                      updated_at = excluded.updated_at
+                    """,
+                    (
+                        tenant_id,
+                        _display_name_from_id(tenant_id),
+                        created_at,
+                        updated_at,
+                    ),
+                )
+                cursor.execute(
+                    """
+                    INSERT INTO users (
+                      id, display_name, email, status, created_at, updated_at
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    ON CONFLICT(id) DO UPDATE SET
+                      display_name = excluded.display_name,
+                      status = excluded.status,
+                      updated_at = excluded.updated_at
+                    """,
+                    (
+                        user_id,
+                        display_name,
+                        _email_from_user_id(user_id),
+                        status,
+                        created_at,
+                        updated_at,
+                    ),
+                )
+                cursor.execute(
+                    """
+                    INSERT INTO memberships (
+                      id, tenant_id, user_id, role, workspace_ids, created_at, updated_at
+                    )
+                    VALUES (%s, %s, %s, %s, '[]', %s, %s)
+                    ON CONFLICT(tenant_id, user_id) DO UPDATE SET
+                      role = excluded.role,
+                      updated_at = excluded.updated_at
+                    """,
+                    (
+                        f"{tenant_id}:{user_id}",
+                        tenant_id,
+                        user_id,
+                        role,
+                        created_at,
+                        updated_at,
+                    ),
+                )
+
+
+def _display_name_from_id(value: str) -> str:
+    return value.replace("_", " ").replace("-", " ").title() or value
+
+
+def _email_from_user_id(user_id: str) -> str | None:
+    if ":" not in user_id:
+        return None
+    tenant, username = user_id.split(":", 1)
+    if not tenant or not username:
+        return None
+    return f"{username}@{tenant}.example"

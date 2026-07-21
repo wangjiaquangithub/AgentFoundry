@@ -93,6 +93,7 @@ from backend.persistence import (
     PostgresAuditEventReadRepository,
     PostgresMemoryItemReadRepository,
     PostgresTenancyReadRepository,
+    PostgresTenancyWriteRepository,
     PostgresToolCallReadRepository,
     PostgresToolCallWriteRepository,
     PostgresToolGovernanceReadRepository,
@@ -249,6 +250,7 @@ def _build_member_repository() -> MemberRepositoryProtocol:
     database = create_postgres_database(database_url)
     return PostgresMemberReadThroughRepository(
         postgres_reader=PostgresTenancyReadRepository(database),
+        postgres_writer=PostgresTenancyWriteRepository(database),
         fallback_repository=member_fallback_repository,
     )
 
