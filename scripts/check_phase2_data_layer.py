@@ -93,7 +93,7 @@ POSTGRES_TENANT_SCOPED_READ_METHOD_EXEMPTIONS = {
 }
 POSTGRES_TENANT_SCOPED_READ_KNOWN_GAPS = {
     "agents.py": {
-        "PostgresAgentCatalogReadRepository": {"get_agent_by_id", "list_all_agents"},
+        "PostgresAgentCatalogReadRepository": {"list_all_agents"},
     },
 }
 

@@ -18,7 +18,7 @@ class AgentRepositoryProtocol(Protocol):
     def list(self) -> list[dict[str, Any]]:
         ...
 
-    def get(self, agent_id: str) -> dict[str, Any] | None:
+    def get(self, agent_id: str, *, tenant: str | None = None) -> dict[str, Any] | None:
         ...
 
     def save_all(self, agents: list[dict[str, Any]]) -> None:
@@ -53,10 +53,13 @@ class AgentRepository:
 
         return agents
 
-    def get(self, agent_id: str) -> dict[str, Any] | None:
+    def get(self, agent_id: str, *, tenant: str | None = None) -> dict[str, Any] | None:
         for agent in self.list():
-            if str(agent.get("id", "")) == agent_id:
-                return agent
+            if str(agent.get("id", "")) != agent_id:
+                continue
+            if tenant is not None and str(agent.get("tenant") or "").strip() != tenant:
+                continue
+            return agent
         return None
 
     def save_all(self, agents: list[dict[str, Any]]) -> None:
@@ -85,8 +88,15 @@ class PostgresAgentCatalogWriteThroughRepository:
             for record in self._postgres_reader.list_all_agents()
         ]
 
-    def get(self, agent_id: str) -> dict[str, Any] | None:
-        record = self._postgres_reader.get_agent_by_id(agent_id=agent_id)
+    def get(self, agent_id: str, *, tenant: str | None = None) -> dict[str, Any] | None:
+        if not tenant:
+            raise AgentRegistryError(
+                "PostgreSQL agent catalog reads require tenant scope.",
+            )
+        record = self._postgres_reader.get_agent(
+            tenant_id=tenant,
+            agent_id=agent_id,
+        )
         if record is None:
             return None
         return self._agent_catalog_item(record)

@@ -101,7 +101,8 @@ class PlatformAgentService:
         header_user_id: str | None = None,
     ) -> dict[str, Any]:
         user_id = self.resolve_request_user_id(header_user_id)
-        existing_agent = self.get_agent(agent_id)
+        user_tenant = self._tenant_for_user(user_id)
+        existing_agent = self.get_agent(agent_id, tenant=user_tenant)
         return {
             "user_id": user_id,
             "resource_inputs": self.resource_validation_inputs(
@@ -140,9 +141,14 @@ class PlatformAgentService:
             if isinstance(item, dict) and item.get("id")
         ]
 
-    def get_agent(self, agent_id: str) -> dict[str, Any]:
+    def get_agent(
+        self,
+        agent_id: str,
+        *,
+        tenant: str | None = None,
+    ) -> dict[str, Any]:
         try:
-            agent = self._repository.get(agent_id)
+            agent = self._repository.get(agent_id, tenant=tenant)
         except AgentRegistryError as exc:
             raise PlatformAgentServiceError(500, str(exc)) from exc
 
@@ -154,8 +160,13 @@ class PlatformAgentService:
             f"Unknown platform agent: {agent_id}",
         )
 
-    def published_tool_scope(self, agent_id: str) -> tuple[dict[str, Any], set[str]]:
-        agent = self.get_agent(agent_id)
+    def published_tool_scope(
+        self,
+        agent_id: str,
+        *,
+        tenant: str | None = None,
+    ) -> tuple[dict[str, Any], set[str]]:
+        agent = self.get_agent(agent_id, tenant=tenant)
         if agent.get("status") != "published":
             raise PlatformAgentServiceError(
                 409,
@@ -193,8 +204,18 @@ class PlatformAgentService:
         user_id: str,
         member: dict[str, Any] | None,
         role: str,
+        tenant: str | None = None,
     ) -> tuple[dict[str, Any], set[str]]:
-        agent, configured_tools = self.published_tool_scope(agent_id)
+        try:
+            agent, configured_tools = self.published_tool_scope(
+                agent_id,
+                tenant=tenant,
+            )
+        except PlatformAgentServiceError as exc:
+            if tenant is None or exc.status_code != 404:
+                raise
+            agent = self.get_published_agent(agent_id)
+            configured_tools = set(agent.get("tools") or [])
         self.assert_user_access(
             agent,
             user_id=user_id,
@@ -214,6 +235,7 @@ class PlatformAgentService:
             user_id=user_id,
             member=self._member_for_user(user_id),
             role=self._role_for_user(user_id),
+            tenant=self._tenant_for_user(user_id),
         )
 
     def template_metadata(self) -> list[dict[str, Any]]:

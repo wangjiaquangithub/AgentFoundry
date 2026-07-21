@@ -304,24 +304,6 @@ class PostgresAgentCatalogReadRepository:
             return None
         return _agent_from_row(dict(row))
 
-    def get_agent_by_id(self, *, agent_id: str) -> AgentRecord | None:
-        with self._database.connect() as connection:
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT id, tenant_id, template_id, name, description, status,
-                      owner_user_id, current_version_id, memory_enabled, workflow_enabled,
-                      allowed_user_ids, allowed_roles, capabilities, created_at, updated_at
-                    FROM agents
-                    WHERE id = %s
-                    """,
-                    (agent_id,),
-                )
-                row = cursor.fetchone()
-        if row is None:
-            return None
-        return _agent_from_row(dict(row))
-
     def list_versions(
         self,
         *,
