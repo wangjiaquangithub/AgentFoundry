@@ -1199,6 +1199,46 @@ class PlatformAgentRunService:
             answer=self.denied_tool_answer(denial),
         )
 
+    def record_unconfigured_routed_tool_denial_from_context(
+        self,
+        *,
+        tool_calls: list[dict[str, Any]],
+        tool_denial_payload: Callable[..., dict[str, Any]],
+        decision_with_routing_context: Callable[..., dict[str, Any]],
+        configured_tools: set[str],
+        tool_name: str,
+        inputs: dict[str, Any],
+        tenant: str,
+        user_id: str,
+        connector: str,
+        connector_source: str,
+        routing_source: str,
+        routing_reason: str,
+        routing_mode: str,
+        routing_error: str | None,
+    ) -> bool:
+        if self.is_configured_tool(
+            tool_name=tool_name,
+            configured_tools=configured_tools,
+        ):
+            return False
+        self.record_denied_routed_tool_call_from_context(
+            tool_calls=tool_calls,
+            decision_with_routing_context=decision_with_routing_context,
+            denial=tool_denial_payload(tool_name),
+            tool_name=tool_name,
+            inputs=inputs,
+            tenant=tenant,
+            user_id=user_id,
+            connector=connector,
+            connector_source=connector_source,
+            routing_source=routing_source,
+            routing_reason=routing_reason,
+            routing_mode=routing_mode,
+            routing_error=routing_error,
+        )
+        return True
+
     def build_pending_approval_routed_tool_call(
         self,
         *,
