@@ -1325,25 +1325,6 @@ class PlatformAgentRunService:
             "inputs": route_context_view["inputs"],
         }
 
-    def build_tool_execution_request_context(
-        self,
-        *,
-        user_id: str,
-        tool_name: str,
-        inputs: dict[str, Any],
-        agent_id: str,
-        session_id: str,
-        fail_on_denied: bool,
-    ) -> dict[str, Any]:
-        return {
-            "user_id": user_id,
-            "tool_name": tool_name,
-            "inputs": inputs,
-            "agent_id": agent_id,
-            "session_id": session_id,
-            "fail_on_denied": fail_on_denied,
-        }
-
     def run_tool_from_execution_context(
         self,
         *,
@@ -1356,14 +1337,12 @@ class PlatformAgentRunService:
         fail_on_denied: bool,
     ) -> dict[str, Any]:
         return run_authorized_enterprise_tool(
-            **self.build_tool_execution_request_context(
-                user_id=user_id,
-                tool_name=tool_name,
-                inputs=inputs,
-                agent_id=agent_id,
-                session_id=session_id,
-                fail_on_denied=fail_on_denied,
-            ),
+            user_id=user_id,
+            tool_name=tool_name,
+            inputs=inputs,
+            agent_id=agent_id,
+            session_id=session_id,
+            fail_on_denied=fail_on_denied,
         )
 
     def build_denied_routed_tool_call(
