@@ -886,6 +886,16 @@ class PlatformAgentRunService:
             "source": route_context["source"],
         }
 
+    def routed_route_context_view_from_route(
+        self,
+        route: dict[str, Any],
+        *,
+        default_source: str,
+    ) -> dict[str, Any]:
+        return self.route_context_view(
+            self.normalize_route_context(route, default_source=default_source)
+        )
+
     def build_routed_decision_context(
         self,
         *,

@@ -1683,11 +1683,10 @@ async def run_enterprise_agent(
 
     tool_calls: list[dict[str, Any]] = []
     for route in routes:
-        route_context = agent_run_service.normalize_route_context(
+        route_context_view = agent_run_service.routed_route_context_view_from_route(
             route,
             default_source=ROUTING_SOURCE_RULES,
         )
-        route_context_view = agent_run_service.route_context_view(route_context)
         tool_name = route_context_view["tool_name"]
         route_inputs = route_context_view["inputs"]
         route_reason = route_context_view["reason"]
