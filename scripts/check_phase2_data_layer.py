@@ -7,6 +7,7 @@ repository modules cover the Phase 2 core model without opening a database.
 
 from __future__ import annotations
 
+import ast
 import re
 import sys
 from pathlib import Path
@@ -15,6 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATIONS_DIR = ROOT / "backend" / "persistence" / "migrations"
 PERSISTENCE_DIR = ROOT / "backend" / "persistence"
+REPOSITORIES_DIR = ROOT / "backend" / "repositories"
 
 REQUIRED_TABLES = {
     "tenants",
@@ -64,6 +66,14 @@ REQUIRED_REPOSITORIES = {
 }
 
 TARGET_COLUMN_WARNINGS: dict[str, set[str]] = {}
+
+POSTGRES_AUTHORITATIVE_REPOSITORIES = {
+    "agents.py": {"PostgresAgentCatalogWriteThroughRepository"},
+    "agent_runs.py": {"PostgresAgentRunReadThroughRepository"},
+    "approvals.py": {"PostgresApprovalReadThroughRepository"},
+    "members.py": {"PostgresMemberReadThroughRepository"},
+    "workflows.py": {"PostgresWorkflowRunReadThroughRepository"},
+}
 
 
 def _read_migrations() -> str:
@@ -126,6 +136,52 @@ def _collect_warnings(schema: dict[str, set[str]]) -> list[str]:
     return warnings
 
 
+def _uses_fallback_repository(node: ast.AST) -> bool:
+    for child in ast.walk(node):
+        if isinstance(child, ast.Attribute) and child.attr == "_fallback_repository":
+            value = child.value
+            if isinstance(value, ast.Name) and value.id == "self":
+                return True
+    return False
+
+
+def _check_authoritative_postgres_repositories() -> list[str]:
+    errors: list[str] = []
+    for filename, class_names in sorted(POSTGRES_AUTHORITATIVE_REPOSITORIES.items()):
+        path = REPOSITORIES_DIR / filename
+        if not path.exists():
+            errors.append(f"missing repository module: backend/repositories/{filename}")
+            continue
+
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        classes = {
+            node.name: node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ClassDef)
+        }
+        for class_name in sorted(class_names):
+            class_node = classes.get(class_name)
+            if class_node is None:
+                errors.append(
+                    "missing authoritative PostgreSQL repository class: "
+                    f"backend/repositories/{filename}:{class_name}",
+                )
+                continue
+
+            for item in class_node.body:
+                if not isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    continue
+                if item.name == "__init__":
+                    continue
+                if _uses_fallback_repository(item):
+                    errors.append(
+                        "PostgreSQL repository uses local fallback in production path: "
+                        f"backend/repositories/{filename}:{class_name}.{item.name}",
+                    )
+
+    return errors
+
+
 def main() -> int:
     sql = _read_migrations()
     schema = _extract_schema(sql)
@@ -133,6 +189,7 @@ def main() -> int:
     errors = [
         *_check_required_tables(schema),
         *_check_required_repositories(),
+        *_check_authoritative_postgres_repositories(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -140,6 +197,7 @@ def main() -> int:
     print(f"- migrations scanned: {len(list(MIGRATIONS_DIR.glob('*.sql')))}")
     print(f"- required tables covered: {len(REQUIRED_TABLES) - len([e for e in errors if e.startswith('missing migration table')])}/{len(REQUIRED_TABLES)}")
     print(f"- required repositories covered: {len(REQUIRED_REPOSITORIES) - len([e for e in errors if e.startswith('missing persistence repository')])}/{len(REQUIRED_REPOSITORIES)}")
+    print(f"- authoritative PostgreSQL adapters guarded: {sum(len(classes) for classes in POSTGRES_AUTHORITATIVE_REPOSITORIES.values())}")
 
     if warnings:
         print("\nWarnings:")
