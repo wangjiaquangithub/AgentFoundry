@@ -92,6 +92,7 @@ from backend.persistence import (
     PostgresApprovalWriteRepository,
     PostgresAuditEventReadRepository,
     PostgresMemoryItemReadRepository,
+    PostgresTenancyReadRepository,
     PostgresToolCallReadRepository,
     PostgresToolCallWriteRepository,
     PostgresToolGovernanceReadRepository,
@@ -110,7 +111,11 @@ from repositories.approvals import (
 from repositories.connectors import ConnectorConfigRepository
 from repositories.dev_knowledge import DevKnowledgeRepository
 from repositories.memories import PlatformMemoryRepository
-from repositories.members import MemberRepository
+from repositories.members import (
+    MemberRepository,
+    MemberRepositoryProtocol,
+    PostgresMemberReadThroughRepository,
+)
 from repositories.workflows import (
     WorkflowRunRepository,
     WorkflowTemplateRepository,
@@ -155,6 +160,7 @@ agent_run_fallback_repository = AgentRunRepository(PLATFORM_AGENT_RUNS_PATH)
 approval_request_fallback_repository = ApprovalRequestRepository(
     PLATFORM_APPROVAL_REQUESTS_PATH,
 )
+member_fallback_repository = MemberRepository(PLATFORM_MEMBERS_PATH)
 
 
 def _build_agent_run_repository() -> AgentRunRepositoryProtocol:
@@ -235,6 +241,18 @@ def _build_audit_event_read_repository() -> (
     return PostgresAuditEventReadRepository(create_postgres_database(database_url))
 
 
+def _build_member_repository() -> MemberRepositoryProtocol:
+    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
+    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+        return member_fallback_repository
+
+    database = create_postgres_database(database_url)
+    return PostgresMemberReadThroughRepository(
+        postgres_reader=PostgresTenancyReadRepository(database),
+        fallback_repository=member_fallback_repository,
+    )
+
+
 connector_config_repository = ConnectorConfigRepository(
     PLATFORM_CONNECTOR_CONFIGS_PATH,
 )
@@ -242,7 +260,7 @@ workflow_template_repository = WorkflowTemplateRepository(
     PLATFORM_WORKFLOW_TEMPLATES_PATH,
 )
 workflow_run_repository = WorkflowRunRepository(PLATFORM_WORKFLOW_RUNS_PATH)
-member_repository = MemberRepository(PLATFORM_MEMBERS_PATH)
+member_repository = _build_member_repository()
 dev_knowledge_repository = DevKnowledgeRepository(PLATFORM_DEV_KNOWLEDGE_PATH)
 dev_knowledge_service = PlatformDevKnowledgeService(
     repository=dev_knowledge_repository,

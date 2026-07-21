@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 from typing import Any, Callable
 
-from repositories.members import MemberRepository
+from repositories.members import MemberRepositoryProtocol
 
 
 class PlatformMemberServiceError(ValueError):
@@ -21,7 +21,7 @@ class PlatformMemberService:
     def __init__(
         self,
         *,
-        repository: MemberRepository,
+        repository: MemberRepositoryProtocol,
         tenant_hint_from_user_id: Callable[[str], str | None],
         now: Callable[[], str] | None = None,
     ) -> None:
@@ -62,6 +62,10 @@ class PlatformMemberService:
         if status not in {"active", "inactive"}:
             raise PlatformMemberServiceError(400, "成员状态只能是 active 或 inactive。")
 
+        updated_at = timestamp if updated_by is not None else str(
+            raw.get("updated_at") or timestamp,
+        )
+
         return {
             "user_id": user_id,
             "tenant": tenant,
@@ -70,9 +74,9 @@ class PlatformMemberService:
             "status": status,
             "sample_questions": list(raw.get("sample_questions") or []),
             "created_at": str(raw.get("created_at") or timestamp),
-            "updated_at": timestamp,
+            "updated_at": updated_at,
             "updated_by": str(updated_by or raw.get("updated_by") or user_id),
-            "source": "member_registry",
+            "source": str(raw.get("source") or "member_registry"),
         }
 
     def normalize_import_members(
