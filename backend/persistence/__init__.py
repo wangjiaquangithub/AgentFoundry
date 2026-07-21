@@ -16,6 +16,7 @@ from backend.persistence.database import (
 from backend.persistence.runs import AgentRunRecord, SQLiteAgentRunReadRepository
 from backend.persistence.tenancy import (
     MembershipRecord,
+    PostgresTenancyReadRepository,
     SQLiteTenancyReadRepository,
     TenantRecord,
     UserRecord,
@@ -37,6 +38,7 @@ __all__ = [
     "ApprovalRecord",
     "MembershipRecord",
     "PostgresDatabase",
+    "PostgresTenancyReadRepository",
     "SQLiteAgentCatalogReadRepository",
     "SQLiteApprovalReadRepository",
     "SQLiteAgentRunReadRepository",
