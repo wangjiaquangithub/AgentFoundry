@@ -90,6 +90,7 @@ from backend.persistence import (
     PostgresAgentRunWriteRepository,
     PostgresApprovalReadRepository,
     PostgresApprovalWriteRepository,
+    PostgresMemoryItemReadRepository,
     PostgresToolCallReadRepository,
     PostgresToolCallWriteRepository,
     PostgresToolGovernanceReadRepository,
@@ -213,6 +214,16 @@ def _build_tool_governance_read_repository() -> (
     return PostgresToolGovernanceReadRepository(create_postgres_database(database_url))
 
 
+def _build_memory_item_read_repository() -> (
+    PostgresMemoryItemReadRepository | None
+):
+    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
+    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+        return None
+
+    return PostgresMemoryItemReadRepository(create_postgres_database(database_url))
+
+
 connector_config_repository = ConnectorConfigRepository(
     PLATFORM_CONNECTOR_CONFIGS_PATH,
 )
@@ -232,7 +243,10 @@ enterprise_router_service = PlatformEnterpriseRouterService(
     default_source=ROUTING_SOURCE_RULES,
     model_source=ROUTING_SOURCE_MODEL,
 )
-platform_memory_repository = PlatformMemoryRepository(PLATFORM_MEMORY_DIR)
+platform_memory_repository = PlatformMemoryRepository(
+    PLATFORM_MEMORY_DIR,
+    memory_item_reader=_build_memory_item_read_repository(),
+)
 platform_memory_service = PlatformMemoryService(repository=platform_memory_repository)
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 enterprise_connector = build_enterprise_connector()
