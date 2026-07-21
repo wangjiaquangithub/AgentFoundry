@@ -1685,79 +1685,35 @@ async def run_enterprise_agent(
         routes,
         default_source=ROUTING_SOURCE_RULES,
     )
-    tool_calls: list[dict[str, Any]] = []
-    for route_context_view in route_context_views:
-
-        if agent_run_service.record_unconfigured_routed_tool_denial_from_route_view_context(
-            tool_calls=tool_calls,
-            tool_denial_payload=_platform_agent_service().tool_denial_payload,
-            decision_with_routing_context=(
-                enterprise_router_service.decision_with_routing_context
-            ),
-            configured_tools=configured_tools,
-            route_context_view=route_context_view,
-            tenant=tenant,
-            user_id=user_id,
-            connector=connector_label,
-            connector_source=connector_source,
-            routing_mode=routing_mode,
-            routing_error=routing_error,
-        ):
-            continue
-
-        try:
-            approved_by = agent_run_service.resolve_routed_tool_approval_from_route_view(
-                require_platform_approval=_require_platform_approval,
-                run_request=run_request,
-                approval_required_tools=APPROVAL_REQUIRED_TOOLS,
-                route_context_view=route_context_view,
-                tenant=tenant,
-                user_id=user_id,
-                agent_id=runner_agent_id,
-            )
-        except HTTPException as exc:
-            agent_run_service.record_pending_tool_approval_from_route_view_exception_context(
-                exc=exc,
-                tool_calls=tool_calls,
-                platform_approval_service=_platform_approval_service,
-                raise_platform_approval_service_error=(
-                    _raise_platform_approval_service_error
-                ),
-                decision_with_routing_context=(
-                    enterprise_router_service.decision_with_routing_context
-                ),
-                tenant=tenant,
-                user_id=user_id,
-                agent_id=runner_agent_id,
-                route_context_view=route_context_view,
-                headers=request.headers,
-                connector=connector_label,
-                connector_source=connector_source,
-                routing_mode=routing_mode,
-                routing_error=routing_error,
-            )
-            continue
-
-        agent_run_service.run_and_record_executed_routed_tool_call_from_route_view_context(
-            tool_calls=tool_calls,
-            run_authorized_enterprise_tool=_run_authorized_enterprise_tool,
-            decision_with_routing_context=(
-                enterprise_router_service.decision_with_routing_context
-            ),
-            format_tool_result_answer=(
-                _platform_tool_policy_service().format_tool_result_answer
-            ),
-            user_id=user_id,
-            route_context_view=route_context_view,
-            agent_id=runner_agent_id,
-            session_id=runner_session_id,
-            connector=connector_label,
-            connector_source=connector_source,
-            routing_mode=routing_mode,
-            routing_error=routing_error,
-            approval_id=approved_by,
-        )
-
+    tool_calls = agent_run_service.process_routed_route_views(
+        route_context_views=route_context_views,
+        tool_denial_payload=_platform_agent_service().tool_denial_payload,
+        decision_with_routing_context=(
+            enterprise_router_service.decision_with_routing_context
+        ),
+        configured_tools=configured_tools,
+        require_platform_approval=_require_platform_approval,
+        approval_exception_type=HTTPException,
+        run_request=run_request,
+        approval_required_tools=APPROVAL_REQUIRED_TOOLS,
+        platform_approval_service=_platform_approval_service,
+        raise_platform_approval_service_error=(
+            _raise_platform_approval_service_error
+        ),
+        run_authorized_enterprise_tool=_run_authorized_enterprise_tool,
+        format_tool_result_answer=(
+            _platform_tool_policy_service().format_tool_result_answer
+        ),
+        tenant=tenant,
+        user_id=user_id,
+        agent_id=runner_agent_id,
+        session_id=runner_session_id,
+        headers=request.headers,
+        connector=connector_label,
+        connector_source=connector_source,
+        routing_mode=routing_mode,
+        routing_error=routing_error,
+    )
     routed_summary_context = agent_run_service.build_routed_summary_context(
         tool_calls=tool_calls,
     )

@@ -910,6 +910,99 @@ class PlatformAgentRunService:
             for route in routes
         ]
 
+    def process_routed_route_views(
+        self,
+        *,
+        route_context_views: list[dict[str, Any]],
+        tool_denial_payload: Callable[..., dict[str, Any]],
+        decision_with_routing_context: Callable[..., dict[str, Any]],
+        configured_tools: set[str],
+        require_platform_approval: Callable[..., str | None],
+        approval_exception_type: type[Exception],
+        run_request: dict[str, Any],
+        approval_required_tools: set[str],
+        platform_approval_service: Callable[[], Any],
+        raise_platform_approval_service_error: Callable[
+            [PlatformApprovalServiceError],
+            Any,
+        ],
+        run_authorized_enterprise_tool: Callable[..., dict[str, Any]],
+        format_tool_result_answer: Callable[..., str],
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        session_id: str,
+        headers: Any,
+        connector: str,
+        connector_source: str,
+        routing_mode: str,
+        routing_error: str | None,
+    ) -> list[dict[str, Any]]:
+        tool_calls: list[dict[str, Any]] = []
+        for route_context_view in route_context_views:
+            if self.record_unconfigured_routed_tool_denial_from_route_view_context(
+                tool_calls=tool_calls,
+                tool_denial_payload=tool_denial_payload,
+                decision_with_routing_context=decision_with_routing_context,
+                configured_tools=configured_tools,
+                route_context_view=route_context_view,
+                tenant=tenant,
+                user_id=user_id,
+                connector=connector,
+                connector_source=connector_source,
+                routing_mode=routing_mode,
+                routing_error=routing_error,
+            ):
+                continue
+
+            try:
+                approved_by = self.resolve_routed_tool_approval_from_route_view(
+                    require_platform_approval=require_platform_approval,
+                    run_request=run_request,
+                    approval_required_tools=approval_required_tools,
+                    route_context_view=route_context_view,
+                    tenant=tenant,
+                    user_id=user_id,
+                    agent_id=agent_id,
+                )
+            except approval_exception_type as exc:
+                self.record_pending_tool_approval_from_route_view_exception_context(
+                    exc=exc,
+                    tool_calls=tool_calls,
+                    platform_approval_service=platform_approval_service,
+                    raise_platform_approval_service_error=(
+                        raise_platform_approval_service_error
+                    ),
+                    decision_with_routing_context=decision_with_routing_context,
+                    tenant=tenant,
+                    user_id=user_id,
+                    agent_id=agent_id,
+                    route_context_view=route_context_view,
+                    headers=headers,
+                    connector=connector,
+                    connector_source=connector_source,
+                    routing_mode=routing_mode,
+                    routing_error=routing_error,
+                )
+                continue
+
+            self.run_and_record_executed_routed_tool_call_from_route_view_context(
+                tool_calls=tool_calls,
+                run_authorized_enterprise_tool=run_authorized_enterprise_tool,
+                decision_with_routing_context=decision_with_routing_context,
+                format_tool_result_answer=format_tool_result_answer,
+                user_id=user_id,
+                route_context_view=route_context_view,
+                agent_id=agent_id,
+                session_id=session_id,
+                connector=connector,
+                connector_source=connector_source,
+                routing_mode=routing_mode,
+                routing_error=routing_error,
+                approval_id=approved_by,
+            )
+        return tool_calls
+
     def build_routed_decision_context(
         self,
         *,
