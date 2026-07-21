@@ -1,7 +1,9 @@
-"""Seed local development data into the persistence baseline.
+"""Seed local development data into explicit SQLite compatibility storage.
 
 The seed command treats JSON files as development inputs only. It does not
 replace repository storage or make local JSON the production source of truth.
+PostgreSQL is the production database target; this command is intentionally
+limited to local SQLite compatibility while the production seed path is defined.
 """
 
 from __future__ import annotations
@@ -111,12 +113,12 @@ def seed_development_data(
     tool_policy_path: Path = DEFAULT_TOOL_POLICY_PATH,
     apply_schema_migrations: bool = True,
 ) -> SeedSummary:
-    if apply_schema_migrations:
-        apply_migrations(database_url)
-
-    database_path = sqlite_path_from_database_url(database_url)
+    database_path = sqlite_path_from_development_seed_url(database_url)
     if str(database_path) == ":memory:":
         raise ValueError("The seed command requires a file-backed SQLite database.")
+
+    if apply_schema_migrations:
+        apply_migrations(database_url)
 
     tenant_fixture = load_json(tenant_fixture_path, {"tenants": {}})
     agents = load_json(agents_path, [])
@@ -157,6 +159,16 @@ def seed_development_data(
                 summary.warnings,
             ) = upsert_agents(connection, agents, user_ids, timestamp)
     return summary
+
+
+def sqlite_path_from_development_seed_url(database_url: str) -> Path:
+    try:
+        return sqlite_path_from_database_url(database_url)
+    except ValueError as exc:
+        raise ValueError(
+            "The development seed command only accepts explicit sqlite:// URLs. "
+            "Use PostgreSQL migrations for production schema setup."
+        ) from exc
 
 
 def upsert_tenants(
@@ -479,12 +491,18 @@ def upsert_agents(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Seed AgentFoundry development data into SQLite.",
+        description=(
+            "Seed AgentFoundry development JSON data into explicit local SQLite "
+            "compatibility storage."
+        ),
     )
     parser.add_argument(
         "--database-url",
-        default="sqlite:///backend/data/agentfoundry.db",
-        help="SQLite URL for the local persistence baseline.",
+        required=True,
+        help=(
+            "Explicit sqlite:// URL for local development compatibility storage. "
+            "PostgreSQL is the production target and is managed by migrations."
+        ),
     )
     parser.add_argument(
         "--tenant-fixture-path",
@@ -511,13 +529,16 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    summary = seed_development_data(
-        database_url=args.database_url,
-        tenant_fixture_path=args.tenant_fixture_path,
-        agents_path=args.agents_path,
-        tool_policy_path=args.tool_policy_path,
-        apply_schema_migrations=not args.skip_migrations,
-    )
+    try:
+        summary = seed_development_data(
+            database_url=args.database_url,
+            tenant_fixture_path=args.tenant_fixture_path,
+            agents_path=args.agents_path,
+            tool_policy_path=args.tool_policy_path,
+            apply_schema_migrations=not args.skip_migrations,
+        )
+    except ValueError as exc:
+        parser.error(str(exc))
     print(
         "seeded "
         f"tenants={summary.tenants} "
