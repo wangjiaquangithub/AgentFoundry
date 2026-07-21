@@ -1160,7 +1160,7 @@ class PlatformAgentRunService:
                     execution_context=execution_context,
                 )
             except approval_exception_type as exc:
-                self.record_pending_tool_approval_from_route_view_exception_context(
+                self.record_pending_tool_approval_from_exception_context(
                     exc=exc,
                     tool_calls=tool_calls,
                     platform_approval_service=platform_approval_service,
@@ -2011,38 +2011,6 @@ class PlatformAgentRunService:
             connector_source=execution_context_view["connector_source"],
             routing_source=route_context_view["source"],
             routing_reason=route_context_view["reason"],
-            routing_mode=routing_mode,
-            routing_error=routing_error,
-        )
-
-    def record_pending_tool_approval_from_route_view_exception_context(
-        self,
-        *,
-        exc: Any,
-        tool_calls: list[dict[str, Any]],
-        platform_approval_service: Callable[[], Any],
-        raise_platform_approval_service_error: Callable[
-            [PlatformApprovalServiceError],
-            Any,
-        ],
-        decision_with_routing_context: Callable[..., dict[str, Any]],
-        execution_context: dict[str, Any],
-        route_context_view: dict[str, Any],
-        headers: Any,
-        routing_mode: str,
-        routing_error: str | None,
-    ) -> None:
-        self.record_pending_tool_approval_from_exception_context(
-            exc=exc,
-            tool_calls=tool_calls,
-            platform_approval_service=platform_approval_service,
-            raise_platform_approval_service_error=(
-                raise_platform_approval_service_error
-            ),
-            decision_with_routing_context=decision_with_routing_context,
-            execution_context=execution_context,
-            route_context_view=route_context_view,
-            headers=headers,
             routing_mode=routing_mode,
             routing_error=routing_error,
         )
