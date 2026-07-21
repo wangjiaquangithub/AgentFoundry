@@ -5,6 +5,7 @@ from backend.persistence.agents import (
     AgentVersionRecord,
     SQLiteAgentCatalogReadRepository,
 )
+from backend.persistence.approvals import ApprovalRecord, SQLiteApprovalReadRepository
 from backend.persistence.database import SQLiteDatabase, create_sqlite_database
 from backend.persistence.tenancy import (
     MembershipRecord,
@@ -21,8 +22,10 @@ from backend.persistence.tools import (
 __all__ = [
     "AgentRecord",
     "AgentVersionRecord",
+    "ApprovalRecord",
     "MembershipRecord",
     "SQLiteAgentCatalogReadRepository",
+    "SQLiteApprovalReadRepository",
     "SQLiteDatabase",
     "SQLiteTenancyReadRepository",
     "SQLiteToolGovernanceReadRepository",
