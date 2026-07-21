@@ -1425,7 +1425,7 @@ class PlatformAgentRunService:
         routing_mode: str,
         routing_error: str | None,
     ) -> None:
-        approval_id = self.resolve_approval_id(approval)
+        approval_id = str(approval["approval_id"])
         pending_approval_context = self.build_pending_approval_response_context(
             detail=detail,
             approval_id=approval_id,
@@ -1642,9 +1642,6 @@ class PlatformAgentRunService:
             routing_mode=routing_mode,
             routing_error=routing_error,
         )
-
-    def resolve_approval_id(self, approval: dict[str, Any]) -> str:
-        return str(approval["approval_id"])
 
     def append_executed_routed_tool_call(
         self,
