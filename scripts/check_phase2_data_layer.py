@@ -88,6 +88,10 @@ POSTGRES_AUTHORITATIVE_PERSISTENCE_REPOSITORIES = {
     "embedding_records.py": {"PostgresEmbeddingRecordReadRepository"},
     "knowledge_bases.py": {"PostgresKnowledgeBaseReadRepository"},
     "model_configs.py": {"PostgresModelConfigReadRepository"},
+    "retrieval_events.py": {
+        "PostgresRetrievalEventReadRepository",
+        "PostgresRetrievalEventWriteRepository",
+    },
 }
 
 POSTGRES_SCHEME_LITERALS = {"postgres", "postgresql"}
