@@ -299,5 +299,6 @@ CREATE INDEX idx_retrieval_events_tenant_run ON retrieval_events(tenant_id, agen
 CREATE INDEX idx_retrieval_events_tenant_kb_created ON retrieval_events(tenant_id, knowledge_base_id, created_at, id);
 CREATE INDEX idx_memory_items_tenant_scope ON memory_items(tenant_id, user_id, agent_id);
 CREATE INDEX idx_memory_items_tenant_session_created ON memory_items(tenant_id, session_id, created_at, id);
+CREATE INDEX idx_memory_items_tenant_source_run_created ON memory_items(tenant_id, source_run_id, created_at, id);
 CREATE INDEX idx_workflow_runs_tenant_template ON workflow_runs(tenant_id, workflow_template_id);
 CREATE INDEX idx_audit_events_tenant_created ON audit_events(tenant_id, created_at);
