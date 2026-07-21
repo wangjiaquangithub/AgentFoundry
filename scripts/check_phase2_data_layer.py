@@ -922,6 +922,83 @@ def _check_postgres_approval_requests_wired() -> list[str]:
     return errors
 
 
+def _check_postgres_knowledge_readiness_wired() -> list[str]:
+    errors: list[str] = []
+    main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    knowledge_source = (SERVICES_DIR / "knowledge.py").read_text(encoding="utf-8")
+    agents_source = (SERVICES_DIR / "agents.py").read_text(encoding="utf-8")
+    main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+
+    required_main_imports = [
+        "PostgresKnowledgeBaseReadRepository",
+        "PostgresDocumentReadRepository",
+        "PostgresDocumentChunkReadRepository",
+        "PostgresEmbeddingRecordReadRepository",
+        "PostgresModelConfigReadRepository",
+    ]
+    for imported_name in required_main_imports:
+        if not _module_imports_name(main_tree, imported_name):
+            errors.append(
+                f"backend/main.py must import {imported_name} for knowledge readiness reads",
+            )
+
+    if not _module_defines_function(main_tree, "_build_knowledge_document_readiness_service"):
+        errors.append(
+            "backend/main.py must define _build_knowledge_document_readiness_service for PostgreSQL knowledge readiness",
+        )
+
+    required_constructor_wiring = [
+        "knowledge_base_repository=PostgresKnowledgeBaseReadRepository(database)",
+        "document_repository=PostgresDocumentReadRepository(database)",
+        "document_chunk_repository=PostgresDocumentChunkReadRepository(database)",
+        "embedding_record_repository=PostgresEmbeddingRecordReadRepository(database)",
+        "model_config_repository=PostgresModelConfigReadRepository(database)",
+    ]
+    for wiring in required_constructor_wiring:
+        if wiring not in main_source:
+            errors.append(
+                "backend/main.py must wire PostgreSQL knowledge readiness reader: "
+                f"{wiring}",
+            )
+
+    required_protocols = [
+        "KnowledgeBaseReadRepository",
+        "DocumentReadRepository",
+        "DocumentChunkReadRepository",
+        "EmbeddingRecordReadRepository",
+        "ModelConfigReadRepository",
+    ]
+    for protocol_name in required_protocols:
+        if protocol_name not in knowledge_source:
+            errors.append(
+                f"backend/services/knowledge.py must define {protocol_name} for knowledge readiness",
+            )
+
+    required_read_calls = [
+        "get_knowledge_base",
+        "list_documents",
+        "list_document_chunks",
+        "list_embedding_records",
+        "get_model_config",
+    ]
+    for call_name in required_read_calls:
+        if call_name not in knowledge_source:
+            errors.append(
+                f"backend/services/knowledge.py must read {call_name} for knowledge readiness",
+            )
+
+    if "document_readiness_service" not in agents_source:
+        errors.append(
+            "backend/services/agents.py must accept a document_readiness_service for agent readiness",
+        )
+    if "build_readiness" not in agents_source:
+        errors.append(
+            "backend/services/agents.py must use knowledge document readiness during agent readiness checks",
+        )
+
+    return errors
+
+
 def _find_class_method(
     tree: ast.AST,
     *,
@@ -978,6 +1055,7 @@ def main() -> int:
         *_check_postgres_audit_events_wired(),
         *_check_postgres_retrieval_events_wired(),
         *_check_postgres_approval_requests_wired(),
+        *_check_postgres_knowledge_readiness_wired(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -1007,6 +1085,7 @@ def main() -> int:
     print("- PostgreSQL audit events wired: yes")
     print("- PostgreSQL retrieval events wired: yes")
     print("- PostgreSQL approval requests wired: yes")
+    print("- PostgreSQL knowledge readiness reads wired: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:
