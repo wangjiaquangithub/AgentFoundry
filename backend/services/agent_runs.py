@@ -1512,9 +1512,7 @@ class PlatformAgentRunService:
             routing_source=routing_source,
             routing_reason=routing_reason,
             decision=decision_with_routing_context(
-                decision=self.pending_approval_decision_payload(
-                    pending_approval_context,
-                ),
+                decision=dict(pending_approval_context["decision_payload"]),
                 **self.build_routed_decision_context(
                     routing_reason=routing_reason,
                     routing_source=routing_source,
@@ -1522,9 +1520,7 @@ class PlatformAgentRunService:
                     routing_error=routing_error,
                 ),
             ),
-            answer=self.pending_approval_message(
-                pending_approval_context,
-            ),
+            answer=str(pending_approval_context["approval_message"]),
         )
 
     def build_pending_approval_response_context(
@@ -1547,18 +1543,6 @@ class PlatformAgentRunService:
                 "approval_status": "pending",
             },
         }
-
-    def pending_approval_decision_payload(
-        self,
-        context: dict[str, Any],
-    ) -> dict[str, Any]:
-        return dict(context["decision_payload"])
-
-    def pending_approval_message(
-        self,
-        context: dict[str, Any],
-    ) -> str:
-        return str(context["approval_message"])
 
     def resolve_requested_by(self, *, headers: Any, user_id: str) -> str:
         return str(headers.get("X-User-ID") or user_id)
