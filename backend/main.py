@@ -104,6 +104,8 @@ from backend.persistence import (
     PostgresToolCallWriteRepository,
     PostgresToolGovernanceReadRepository,
     PostgresToolGovernanceWriteRepository,
+    PostgresWorkflowReadRepository,
+    PostgresWorkflowWriteRepository,
     create_postgres_database,
 )
 from repositories.agent_runs import (
@@ -125,6 +127,8 @@ from repositories.members import (
     PostgresMemberReadThroughRepository,
 )
 from repositories.workflows import (
+    PostgresWorkflowRunReadThroughRepository,
+    WorkflowRunRepositoryProtocol,
     WorkflowRunRepository,
     WorkflowTemplateRepository,
 )
@@ -292,8 +296,24 @@ connector_config_repository = ConnectorConfigRepository(
 workflow_template_repository = WorkflowTemplateRepository(
     PLATFORM_WORKFLOW_TEMPLATES_PATH,
 )
-workflow_run_repository = WorkflowRunRepository(PLATFORM_WORKFLOW_RUNS_PATH)
+workflow_run_fallback_repository = WorkflowRunRepository(PLATFORM_WORKFLOW_RUNS_PATH)
 member_repository = _build_member_repository()
+
+
+def _build_workflow_run_repository() -> WorkflowRunRepositoryProtocol:
+    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
+    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+        return workflow_run_fallback_repository
+
+    database = create_postgres_database(database_url)
+    return PostgresWorkflowRunReadThroughRepository(
+        postgres_reader=PostgresWorkflowReadRepository(database),
+        postgres_writer=PostgresWorkflowWriteRepository(database),
+        fallback_repository=workflow_run_fallback_repository,
+    )
+
+
+workflow_run_repository = _build_workflow_run_repository()
 dev_knowledge_repository = DevKnowledgeRepository(PLATFORM_DEV_KNOWLEDGE_PATH)
 dev_knowledge_service = PlatformDevKnowledgeService(
     repository=dev_knowledge_repository,

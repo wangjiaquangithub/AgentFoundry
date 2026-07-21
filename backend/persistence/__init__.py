@@ -100,6 +100,7 @@ from backend.persistence.tools import (
 )
 from backend.persistence.workflows import (
     PostgresWorkflowReadRepository,
+    PostgresWorkflowWriteRepository,
     SQLiteWorkflowReadRepository,
     WorkflowRunRecord,
     WorkflowTemplateRecord,
@@ -142,6 +143,7 @@ __all__ = [
     "PostgresToolCallWriteRepository",
     "PostgresToolGovernanceReadRepository",
     "PostgresToolGovernanceWriteRepository",
+    "PostgresWorkflowWriteRepository",
     "RetrievalEventRecord",
     "RuntimeInvocationRecord",
     "RuntimeProviderRecord",

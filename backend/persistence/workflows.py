@@ -307,3 +307,46 @@ class PostgresWorkflowReadRepository:
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
+
+
+class PostgresWorkflowWriteRepository:
+    """Write tenant-scoped workflow run records to PostgreSQL."""
+
+    def __init__(self, database: PostgresDatabase) -> None:
+        self._database = database
+
+    def append_run(self, record: WorkflowRunRecord) -> None:
+        with self._database.transaction() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO workflow_runs (
+                      id, tenant_id, workflow_template_id, user_id, status,
+                      input, output, error, created_at, completed_at
+                    )
+                    VALUES (
+                      %s, %s, %s, %s, %s,
+                      %s, %s, %s, %s, %s
+                    )
+                    """,
+                    (
+                        record.id,
+                        record.tenant_id,
+                        record.workflow_template_id,
+                        record.user_id,
+                        record.status,
+                        json.dumps(record.input, ensure_ascii=False, default=str),
+                        (
+                            None
+                            if record.output is None
+                            else json.dumps(
+                                record.output,
+                                ensure_ascii=False,
+                                default=str,
+                            )
+                        ),
+                        record.error,
+                        record.created_at,
+                        record.completed_at,
+                    ),
+                )
