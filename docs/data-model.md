@@ -48,11 +48,17 @@ This document defines the production data model target for AgentFoundry. The cur
 
 - `id`
 - `tenant_id`
+- `template_id`
 - `name`
 - `description`
 - `status`
 - `owner_user_id`
 - `current_version_id`
+- `memory_enabled`
+- `workflow_enabled`
+- `allowed_user_ids`
+- `allowed_roles`
+- `capabilities`
 - `created_at`
 - `updated_at`
 

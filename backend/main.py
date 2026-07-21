@@ -90,6 +90,7 @@ from repositories.agents import (
     PostgresAgentCatalogWriteThroughRepository,
 )
 from backend.persistence import (
+    PostgresAgentCatalogReadRepository,
     PostgresAgentCatalogWriteRepository,
     PostgresAgentRunReadRepository,
     PostgresAgentRunWriteRepository,
@@ -177,6 +178,7 @@ def _build_agent_repository() -> AgentRepositoryProtocol:
 
     database = create_postgres_database(database_url)
     return PostgresAgentCatalogWriteThroughRepository(
+        postgres_reader=PostgresAgentCatalogReadRepository(database),
         postgres_writer=PostgresAgentCatalogWriteRepository(database),
         fallback_repository=agent_fallback_repository,
     )

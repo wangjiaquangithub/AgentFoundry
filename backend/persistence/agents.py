@@ -14,11 +14,17 @@ from backend.persistence.database import PostgresDatabase, SQLiteDatabase
 class AgentRecord:
     id: str
     tenant_id: str
+    template_id: str
     name: str
     description: str | None
     status: str
     owner_user_id: str
     current_version_id: str | None
+    memory_enabled: bool
+    workflow_enabled: bool
+    allowed_user_ids: list[str]
+    allowed_roles: list[str]
+    capabilities: list[str]
     created_at: str
     updated_at: str
 
@@ -60,6 +66,39 @@ def _agent_version_from_row(row: dict[str, Any]) -> AgentVersionRecord:
     )
 
 
+def _agent_from_row(row: dict[str, Any]) -> AgentRecord:
+    record_id = row["id"]
+    return AgentRecord(
+        id=record_id,
+        tenant_id=row["tenant_id"],
+        template_id=row["template_id"],
+        name=row["name"],
+        description=row["description"],
+        status=row["status"],
+        owner_user_id=row["owner_user_id"],
+        current_version_id=row["current_version_id"],
+        memory_enabled=_bool_from_storage(row["memory_enabled"]),
+        workflow_enabled=_bool_from_storage(row["workflow_enabled"]),
+        allowed_user_ids=_string_list_from_json(
+            row["allowed_user_ids"],
+            record_id,
+            "allowed_user_ids",
+        ),
+        allowed_roles=_string_list_from_json(
+            row["allowed_roles"],
+            record_id,
+            "allowed_roles",
+        ),
+        capabilities=_string_list_from_json(
+            row["capabilities"],
+            record_id,
+            "capabilities",
+        ),
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+    )
+
+
 def _string_list_from_json(
     value: str,
     record_id: str,
@@ -68,9 +107,19 @@ def _string_list_from_json(
     parsed = json.loads(value)
     if not isinstance(parsed, list) or not all(isinstance(item, str) for item in parsed):
         raise ValueError(
-            f"Agent version {record_id} has invalid {field_name} JSON.",
+            f"Agent catalog record {record_id} has invalid {field_name} JSON.",
         )
     return parsed
+
+
+def _bool_from_storage(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int):
+        return value != 0
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "t", "yes", "y", "on"}
+    return bool(value)
 
 
 def _clean_string(value: Any) -> str:
@@ -108,8 +157,9 @@ class SQLiteAgentCatalogReadRepository:
         status: str | None = None,
     ) -> list[AgentRecord]:
         query = """
-            SELECT id, tenant_id, name, description, status, owner_user_id,
-              current_version_id, created_at, updated_at
+            SELECT id, tenant_id, template_id, name, description, status,
+              owner_user_id, current_version_id, memory_enabled, workflow_enabled,
+              allowed_user_ids, allowed_roles, capabilities, created_at, updated_at
             FROM agents
             WHERE tenant_id = ?
         """
@@ -121,7 +171,7 @@ class SQLiteAgentCatalogReadRepository:
 
         with self._database.connect() as connection:
             return [
-                AgentRecord(**dict(row))
+                _agent_from_row(dict(row))
                 for row in connection.execute(query, parameters).fetchall()
             ]
 
@@ -129,8 +179,9 @@ class SQLiteAgentCatalogReadRepository:
         with self._database.connect() as connection:
             row = connection.execute(
                 """
-                SELECT id, tenant_id, name, description, status, owner_user_id,
-                  current_version_id, created_at, updated_at
+                SELECT id, tenant_id, template_id, name, description, status,
+                  owner_user_id, current_version_id, memory_enabled, workflow_enabled,
+                  allowed_user_ids, allowed_roles, capabilities, created_at, updated_at
                 FROM agents
                 WHERE tenant_id = ? AND id = ?
                 """,
@@ -138,7 +189,7 @@ class SQLiteAgentCatalogReadRepository:
             ).fetchone()
         if row is None:
             return None
-        return AgentRecord(**dict(row))
+        return _agent_from_row(dict(row))
 
     def list_versions(
         self,
@@ -204,8 +255,9 @@ class PostgresAgentCatalogReadRepository:
         status: str | None = None,
     ) -> list[AgentRecord]:
         query = """
-            SELECT id, tenant_id, name, description, status, owner_user_id,
-              current_version_id, created_at, updated_at
+            SELECT id, tenant_id, template_id, name, description, status,
+              owner_user_id, current_version_id, memory_enabled, workflow_enabled,
+              allowed_user_ids, allowed_roles, capabilities, created_at, updated_at
             FROM agents
             WHERE tenant_id = %s
         """
@@ -218,15 +270,30 @@ class PostgresAgentCatalogReadRepository:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, tuple(parameters))
-                return [AgentRecord(**dict(row)) for row in cursor.fetchall()]
+                return [_agent_from_row(dict(row)) for row in cursor.fetchall()]
+
+    def list_all_agents(self) -> list[AgentRecord]:
+        with self._database.connect() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT id, tenant_id, template_id, name, description, status,
+                      owner_user_id, current_version_id, memory_enabled, workflow_enabled,
+                      allowed_user_ids, allowed_roles, capabilities, created_at, updated_at
+                    FROM agents
+                    ORDER BY updated_at DESC, id
+                    """,
+                )
+                return [_agent_from_row(dict(row)) for row in cursor.fetchall()]
 
     def get_agent(self, *, tenant_id: str, agent_id: str) -> AgentRecord | None:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT id, tenant_id, name, description, status, owner_user_id,
-                      current_version_id, created_at, updated_at
+                    SELECT id, tenant_id, template_id, name, description, status,
+                      owner_user_id, current_version_id, memory_enabled, workflow_enabled,
+                      allowed_user_ids, allowed_roles, capabilities, created_at, updated_at
                     FROM agents
                     WHERE tenant_id = %s AND id = %s
                     """,
@@ -235,7 +302,25 @@ class PostgresAgentCatalogReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return AgentRecord(**dict(row))
+        return _agent_from_row(dict(row))
+
+    def get_agent_by_id(self, *, agent_id: str) -> AgentRecord | None:
+        with self._database.connect() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT id, tenant_id, template_id, name, description, status,
+                      owner_user_id, current_version_id, memory_enabled, workflow_enabled,
+                      allowed_user_ids, allowed_roles, capabilities, created_at, updated_at
+                    FROM agents
+                    WHERE id = %s
+                    """,
+                    (agent_id,),
+                )
+                row = cursor.fetchone()
+        if row is None:
+            return None
+        return _agent_from_row(dict(row))
 
     def list_versions(
         self,
@@ -324,25 +409,39 @@ class PostgresAgentCatalogWriteRepository:
         cursor.execute(
             """
             INSERT INTO agents (
-              id, tenant_id, name, description, status, owner_user_id,
-              current_version_id, created_at, updated_at
+              id, tenant_id, template_id, name, description, status, owner_user_id,
+              current_version_id, memory_enabled, workflow_enabled, allowed_user_ids,
+              allowed_roles, capabilities, created_at, updated_at
             )
-            VALUES (%s, %s, %s, %s, %s, %s, NULL, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, NULL, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (id) DO UPDATE
             SET tenant_id = EXCLUDED.tenant_id,
+              template_id = EXCLUDED.template_id,
               name = EXCLUDED.name,
               description = EXCLUDED.description,
               status = EXCLUDED.status,
               owner_user_id = EXCLUDED.owner_user_id,
+              memory_enabled = EXCLUDED.memory_enabled,
+              workflow_enabled = EXCLUDED.workflow_enabled,
+              allowed_user_ids = EXCLUDED.allowed_user_ids,
+              allowed_roles = EXCLUDED.allowed_roles,
+              capabilities = EXCLUDED.capabilities,
               updated_at = EXCLUDED.updated_at
             """,
             (
                 agent_id,
                 tenant_id,
+                _clean_string(agent.get("template_id"))
+                or "enterprise_knowledge_assistant",
                 _clean_string(agent.get("name")) or agent_id,
                 _optional_clean_string(agent.get("description")),
                 _clean_string(agent.get("status")) or "draft",
                 owner_user_id,
+                bool(agent.get("memory_enabled", False)),
+                bool(agent.get("workflow_enabled", False)),
+                _json_string_list(agent.get("allowed_user_ids")),
+                _json_string_list(agent.get("allowed_roles")),
+                _json_string_list(agent.get("capabilities")),
                 created_at or updated_at,
                 updated_at or created_at,
             ),

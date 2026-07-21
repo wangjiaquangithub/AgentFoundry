@@ -1,0 +1,6 @@
+ALTER TABLE agents ADD COLUMN template_id TEXT NOT NULL DEFAULT 'enterprise_knowledge_assistant';
+ALTER TABLE agents ADD COLUMN memory_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE agents ADD COLUMN workflow_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE agents ADD COLUMN allowed_user_ids TEXT NOT NULL DEFAULT '[]';
+ALTER TABLE agents ADD COLUMN allowed_roles TEXT NOT NULL DEFAULT '[]';
+ALTER TABLE agents ADD COLUMN capabilities TEXT NOT NULL DEFAULT '[]';

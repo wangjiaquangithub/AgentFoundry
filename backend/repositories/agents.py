@@ -4,7 +4,12 @@ import json
 from pathlib import Path
 from typing import Any, Protocol
 
-from backend.persistence.agents import PostgresAgentCatalogWriteRepository
+from backend.persistence.agents import (
+    AgentRecord,
+    AgentVersionRecord,
+    PostgresAgentCatalogReadRepository,
+    PostgresAgentCatalogWriteRepository,
+)
 
 
 class AgentRepositoryProtocol(Protocol):
@@ -63,23 +68,68 @@ class AgentRepository:
 
 
 class PostgresAgentCatalogWriteThroughRepository:
-    """Write agent catalog changes to PostgreSQL, then keep JSON as a snapshot."""
+    """Read agent catalog from PostgreSQL, then keep JSON as a dev snapshot."""
 
     def __init__(
         self,
         *,
+        postgres_reader: PostgresAgentCatalogReadRepository,
         postgres_writer: PostgresAgentCatalogWriteRepository,
         fallback_repository: AgentRepository,
     ) -> None:
+        self._postgres_reader = postgres_reader
         self._postgres_writer = postgres_writer
         self._fallback_repository = fallback_repository
 
     def list(self) -> list[dict[str, Any]]:
-        return self._fallback_repository.list()
+        return [
+            self._agent_catalog_item(record)
+            for record in self._postgres_reader.list_all_agents()
+        ]
 
     def get(self, agent_id: str) -> dict[str, Any] | None:
-        return self._fallback_repository.get(agent_id)
+        record = self._postgres_reader.get_agent_by_id(agent_id=agent_id)
+        if record is None:
+            return None
+        return self._agent_catalog_item(record)
 
     def save_all(self, agents: list[dict[str, Any]]) -> None:
         self._postgres_writer.save_agents(agents)
         self._fallback_repository.save_all(agents)
+
+    def _agent_catalog_item(self, record: AgentRecord) -> dict[str, Any]:
+        version = self._postgres_reader.get_current_version(
+            tenant_id=record.tenant_id,
+            agent_id=record.id,
+        )
+        return _agent_catalog_item(record, version)
+
+
+def _agent_catalog_item(
+    record: AgentRecord,
+    version: AgentVersionRecord | None,
+) -> dict[str, Any]:
+    return {
+        "id": record.id,
+        "template_id": record.template_id,
+        "name": record.name,
+        "description": record.description,
+        "tenant": record.tenant_id,
+        "tools": list(version.tool_ids) if version is not None else [],
+        "knowledge_base_ids": (
+            list(version.knowledge_base_ids) if version is not None else []
+        ),
+        "model_config_id": version.model_config_id if version is not None else None,
+        "runtime_provider": (
+            version.runtime_provider if version is not None else "local-dev-runtime"
+        ),
+        "memory_enabled": record.memory_enabled,
+        "workflow_enabled": record.workflow_enabled,
+        "allowed_user_ids": list(record.allowed_user_ids),
+        "allowed_roles": list(record.allowed_roles),
+        "capabilities": list(record.capabilities),
+        "status": record.status,
+        "created_by": record.owner_user_id,
+        "created_at": record.created_at,
+        "updated_at": record.updated_at,
+    }
