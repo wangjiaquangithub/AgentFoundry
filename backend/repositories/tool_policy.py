@@ -56,7 +56,7 @@ class ToolPolicyRepository:
 
 
 class PostgresToolPolicyWriteThroughRepository:
-    """Write tool policy to PostgreSQL while using JSON only for read defaults."""
+    """Use PostgreSQL as the authoritative tool policy store when configured."""
 
     def __init__(
         self,
@@ -80,12 +80,9 @@ class PostgresToolPolicyWriteThroughRepository:
         if self._postgres_reader is None:
             return fallback_policy
 
-        try:
-            snapshot = self._postgres_reader.load_policy_snapshot(
-                fallback_policy=fallback_policy,
-            )
-        except Exception:
-            return fallback_policy
+        snapshot = self._postgres_reader.load_policy_snapshot(
+            fallback_policy=fallback_policy,
+        )
         return snapshot or fallback_policy
 
     def save(self, policy: dict[str, Any]) -> None:
