@@ -40,6 +40,18 @@ class ToolCallWriteRepository(Protocol):
         """Persist one tool-call audit record."""
 
 
+class ToolCallReadRepository(Protocol):
+    """Persistence boundary for production tool-call audit reads."""
+
+    def list_tool_calls(
+        self,
+        *,
+        tenant_id: str,
+        limit: int = 20,
+    ) -> list[ToolCallRecord]:
+        """Return tenant-scoped tool-call audit records."""
+
+
 class ToolAuditLogger:
     """Persist compact tool-call audit events with JSONL as local fallback."""
 
@@ -49,10 +61,12 @@ class ToolAuditLogger:
         *,
         enabled: bool = True,
         tool_call_writer: ToolCallWriteRepository | None = None,
+        tool_call_reader: ToolCallReadRepository | None = None,
     ) -> None:
         self.path = Path(path).expanduser()
         self.enabled = enabled
         self._tool_call_writer = tool_call_writer
+        self._tool_call_reader = tool_call_reader
         self._lock = threading.Lock()
 
     @classmethod
@@ -61,6 +75,7 @@ class ToolAuditLogger:
         default_path: Path,
         *,
         tool_call_writer: ToolCallWriteRepository | None = None,
+        tool_call_reader: ToolCallReadRepository | None = None,
     ) -> "ToolAuditLogger":
         """Build a logger from enterprise audit environment variables."""
         enabled_value = os.getenv("ENTERPRISE_AUDIT_ENABLED", "1").lower().strip()
@@ -70,6 +85,7 @@ class ToolAuditLogger:
             Path(path).expanduser() if path else default_path,
             enabled=enabled,
             tool_call_writer=tool_call_writer,
+            tool_call_reader=tool_call_reader,
         )
 
     def capture(
@@ -140,9 +156,84 @@ class ToolAuditLogger:
         success: bool | None = None,
         limit: int = 50,
     ) -> list[dict[str, Any]]:
-        """Return filtered audit events from the JSONL log, newest first."""
+        """Return filtered audit events, preferring tenant-scoped PostgreSQL reads."""
         normalized_limit = max(1, min(limit, 200))
-        if not self.enabled or not self.path.exists():
+        if not self.enabled:
+            return []
+
+        if tenant and self._tool_call_reader is not None:
+            events = self._query_tool_call_records(
+                tenant=tenant,
+                user_id=user_id,
+                agent_id=agent_id,
+                tool_name=tool_name,
+                success=success,
+                limit=normalized_limit,
+            )
+            if events is not None:
+                return events
+
+        return self._query_jsonl(
+            tenant=tenant,
+            user_id=user_id,
+            agent_id=agent_id,
+            tool_name=tool_name,
+            success=success,
+            limit=normalized_limit,
+        )
+
+    def _query_tool_call_records(
+        self,
+        *,
+        tenant: str,
+        user_id: str | None,
+        agent_id: str | None,
+        tool_name: str | None,
+        success: bool | None,
+        limit: int,
+    ) -> list[dict[str, Any]] | None:
+        read_limit = (
+            200
+            if any((user_id, agent_id, tool_name)) or success is not None
+            else limit
+        )
+        try:
+            records = self._tool_call_reader.list_tool_calls(
+                tenant_id=tenant,
+                limit=read_limit,
+            )
+        except Exception as exc:
+            LOGGER.warning(
+                "Failed to read enterprise audit events from PostgreSQL: %s",
+                exc,
+            )
+            return None
+
+        events = [_tool_call_record_to_event(record) for record in records]
+        return [
+            event
+            for event in events
+            if _matches_event_filters(
+                event,
+                user_id=user_id,
+                agent_id=agent_id,
+                tool_name=tool_name,
+                success=success,
+            )
+        ][:limit]
+
+    def _query_jsonl(
+        self,
+        *,
+        tenant: str | None = None,
+        user_id: str | None = None,
+        agent_id: str | None = None,
+        tool_name: str | None = None,
+        success: bool | None = None,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        """Return filtered audit events from the JSONL log, newest first."""
+        if not self.path.exists():
             return []
 
         try:
@@ -163,7 +254,7 @@ class ToolAuditLogger:
         }
         events: list[dict[str, Any]] = []
         for line in reversed(lines):
-            if len(events) >= normalized_limit:
+            if len(events) >= limit:
                 break
             try:
                 event = json.loads(line)
@@ -232,6 +323,57 @@ def _event_to_tool_call_record(event: dict[str, Any]) -> ToolCallRecord:
         approval_id=None,
         created_at=str(event["timestamp"]),
         completed_at=str(event["timestamp"]),
+    )
+
+
+def _tool_call_record_to_event(record: ToolCallRecord) -> dict[str, Any]:
+    inputs = record.inputs if isinstance(record.inputs, dict) else {}
+    result = record.result if isinstance(record.result, dict) else {}
+    success = result.get("success")
+    if success is None:
+        success = record.allowed if record.completed_at else None
+
+    event: dict[str, Any] = {
+        "schema_version": inputs.get("schema_version", 1),
+        "event_id": record.id,
+        "event_type": inputs.get("event_type", "enterprise_tool_call"),
+        "timestamp": record.created_at,
+        "user_id": inputs.get("user_id"),
+        "tenant": record.tenant_id,
+        "agent_id": inputs.get("agent_id"),
+        "session_id": inputs.get("session_id"),
+        "tool_name": inputs.get("tool_name") or record.tool_id,
+        "connector": inputs.get("connector"),
+        "inputs": inputs.get("arguments", {}),
+        "duration_ms": result.get("duration_ms"),
+        "success": success,
+    }
+    if success is True and "result" in result:
+        event["result"] = result["result"]
+    if success is False and "error" in result:
+        event["error"] = result["error"]
+    return event
+
+
+def _matches_event_filters(
+    event: dict[str, Any],
+    *,
+    user_id: str | None,
+    agent_id: str | None,
+    tool_name: str | None,
+    success: bool | None,
+) -> bool:
+    filters = {
+        key: value
+        for key, value in {
+            "user_id": user_id,
+            "agent_id": agent_id,
+            "tool_name": tool_name,
+        }.items()
+        if value
+    }
+    return all(event.get(key) == value for key, value in filters.items()) and (
+        success is None or event.get("success") is success
     )
 
 

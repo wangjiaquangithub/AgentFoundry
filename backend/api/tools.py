@@ -85,6 +85,7 @@ def create_tool_audit_router(deps: ToolAuditRouteDependencies) -> APIRouter:
             tool_catalog=deps.tool_catalog,
             decisions=decisions,
             audit_events_for_tool=lambda tool_name: deps.audit_logger.query(
+                tenant=tenant,
                 user_id=resolved_user_id,
                 tool_name=tool_name,
                 limit=200,

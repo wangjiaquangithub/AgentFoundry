@@ -90,6 +90,7 @@ from backend.persistence import (
     PostgresAgentRunWriteRepository,
     PostgresApprovalReadRepository,
     PostgresApprovalWriteRepository,
+    PostgresToolCallReadRepository,
     PostgresToolCallWriteRepository,
     create_postgres_database,
 )
@@ -193,6 +194,14 @@ def _build_tool_call_write_repository() -> PostgresToolCallWriteRepository | Non
     return PostgresToolCallWriteRepository(create_postgres_database(database_url))
 
 
+def _build_tool_call_read_repository() -> PostgresToolCallReadRepository | None:
+    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
+    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+        return None
+
+    return PostgresToolCallReadRepository(create_postgres_database(database_url))
+
+
 connector_config_repository = ConnectorConfigRepository(
     PLATFORM_CONNECTOR_CONFIGS_PATH,
 )
@@ -219,6 +228,7 @@ enterprise_connector = build_enterprise_connector()
 tool_audit_logger = ToolAuditLogger.from_env(
     DATA_DIR / "audit" / "tool_calls.jsonl",
     tool_call_writer=_build_tool_call_write_repository(),
+    tool_call_reader=_build_tool_call_read_repository(),
 )
 
 
