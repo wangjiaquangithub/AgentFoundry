@@ -1,8 +1,4 @@
-"""Agent run read repositories.
-
-This repository is intentionally read-only while AgentFoundry migrates run
-history from development JSONL files into the production data layer.
-"""
+"""Agent run persistence repositories."""
 
 from __future__ import annotations
 
@@ -160,3 +156,72 @@ class PostgresAgentRunReadRepository:
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
+
+
+class PostgresAgentRunWriteRepository:
+    """Write tenant-scoped agent run records to PostgreSQL."""
+
+    def __init__(self, database: PostgresDatabase) -> None:
+        self._database = database
+
+    def append_run(self, record: AgentRunRecord) -> None:
+        with self._database.transaction() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO agent_runs (
+                      id, tenant_id, agent_id, agent_version_id, user_id, session_id,
+                      status, question, answer, runtime_provider,
+                      runtime_invocation_id, created_at, completed_at
+                    )
+                    VALUES (
+                      %s, %s, %s, %s, %s, %s,
+                      %s, %s, %s, %s,
+                      %s, %s, %s
+                    )
+                    """,
+                    (
+                        record.id,
+                        record.tenant_id,
+                        record.agent_id,
+                        record.agent_version_id,
+                        record.user_id,
+                        record.session_id,
+                        record.status,
+                        record.question,
+                        record.answer,
+                        record.runtime_provider,
+                        record.runtime_invocation_id,
+                        record.created_at,
+                        record.completed_at,
+                    ),
+                )
+
+    def delete_runs(
+        self,
+        *,
+        tenant_id: str,
+        agent_id: str | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
+        status: str | None = None,
+    ) -> int:
+        query = "DELETE FROM agent_runs WHERE tenant_id = %s"
+        parameters: list[Any] = [tenant_id]
+        if agent_id is not None:
+            query += " AND agent_id = %s"
+            parameters.append(agent_id)
+        if user_id is not None:
+            query += " AND user_id = %s"
+            parameters.append(user_id)
+        if session_id is not None:
+            query += " AND session_id = %s"
+            parameters.append(session_id)
+        if status is not None:
+            query += " AND status = %s"
+            parameters.append(status)
+
+        with self._database.transaction() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(query, tuple(parameters))
+                return cursor.rowcount

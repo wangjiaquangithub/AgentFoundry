@@ -66,6 +66,7 @@ from backend.persistence.retrieval_events import (
 from backend.persistence.runs import (
     AgentRunRecord,
     PostgresAgentRunReadRepository,
+    PostgresAgentRunWriteRepository,
     SQLiteAgentRunReadRepository,
 )
 from backend.persistence.runtime_records import (
@@ -117,6 +118,7 @@ __all__ = [
     "PostgresApprovalReadRepository",
     "PostgresAgentCatalogReadRepository",
     "PostgresAgentRunReadRepository",
+    "PostgresAgentRunWriteRepository",
     "PostgresDatabase",
     "PostgresDocumentChunkReadRepository",
     "PostgresDocumentReadRepository",
