@@ -78,6 +78,12 @@ POSTGRES_AUTHORITATIVE_REPOSITORIES = {
     "tool_policy.py": {"PostgresToolPolicyWriteThroughRepository"},
     "workflows.py": {"PostgresWorkflowRunReadThroughRepository"},
 }
+POSTGRES_AUTHORITATIVE_PERSISTENCE_REPOSITORIES = {
+    "audit_events.py": {
+        "PostgresAuditEventReadRepository",
+        "PostgresAuditEventWriteRepository",
+    },
+}
 
 POSTGRES_SCHEME_LITERALS = {"postgres", "postgresql"}
 POSTGRES_TENANT_SCOPED_READ_CLASS_EXEMPTIONS = {
@@ -234,6 +240,30 @@ def _check_authoritative_postgres_repositories() -> list[str]:
                         "PostgreSQL repository uses local fallback in production path: "
                         f"backend/repositories/{filename}:{class_name}.{item.name}",
                     )
+
+    return errors
+
+
+def _check_authoritative_postgres_persistence_repositories() -> list[str]:
+    errors: list[str] = []
+    for filename, class_names in sorted(POSTGRES_AUTHORITATIVE_PERSISTENCE_REPOSITORIES.items()):
+        path = PERSISTENCE_DIR / filename
+        if not path.exists():
+            errors.append(f"missing persistence repository module: backend/persistence/{filename}")
+            continue
+
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        classes = {
+            node.name: node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ClassDef)
+        }
+        for class_name in sorted(class_names):
+            if class_name not in classes:
+                errors.append(
+                    "missing authoritative PostgreSQL persistence class: "
+                    f"backend/persistence/{filename}:{class_name}",
+                )
 
     return errors
 
@@ -422,6 +452,7 @@ def main() -> int:
         *_check_required_tables(schema),
         *_check_required_repositories(),
         *_check_authoritative_postgres_repositories(),
+        *_check_authoritative_postgres_persistence_repositories(),
         *_check_postgres_url_detection_boundary(),
         *_check_postgres_write_transaction_boundary(),
         *_check_postgres_read_tenant_boundary(),
@@ -432,7 +463,18 @@ def main() -> int:
     print(f"- migrations scanned: {len(list(MIGRATIONS_DIR.glob('*.sql')))}")
     print(f"- required tables covered: {len(REQUIRED_TABLES) - len([e for e in errors if e.startswith('missing migration table')])}/{len(REQUIRED_TABLES)}")
     print(f"- required repositories covered: {len(REQUIRED_REPOSITORIES) - len([e for e in errors if e.startswith('missing persistence repository')])}/{len(REQUIRED_REPOSITORIES)}")
-    print(f"- authoritative PostgreSQL adapters guarded: {sum(len(classes) for classes in POSTGRES_AUTHORITATIVE_REPOSITORIES.values())}")
+    authoritative_repository_count = sum(
+        len(classes)
+        for classes in POSTGRES_AUTHORITATIVE_REPOSITORIES.values()
+    )
+    authoritative_persistence_count = sum(
+        len(classes)
+        for classes in POSTGRES_AUTHORITATIVE_PERSISTENCE_REPOSITORIES.values()
+    )
+    print(
+        "- authoritative PostgreSQL adapters guarded: "
+        f"{authoritative_repository_count + authoritative_persistence_count}",
+    )
     print("- PostgreSQL URL detection centralized: yes")
     print("- PostgreSQL write transaction boundary guarded: yes")
     print("- PostgreSQL read tenant boundary guarded: yes")
