@@ -891,29 +891,30 @@ class PlatformAgentRunService:
         *,
         build_runtime_invocation_result_payload: Callable[..., dict[str, Any]],
         append_agent_turn_if_enabled: Callable[..., bool],
-        response_record_context: dict[str, Any],
         execution_context: dict[str, Any],
         memory_context: dict[str, Any],
         knowledge_hits: list[dict[str, Any]],
         memory_hits: list[dict[str, Any]],
         format_knowledge_answer: Callable[[list[dict[str, Any]]], str],
         format_memory_answer: Callable[[list[dict[str, Any]]], str],
-        session_id: str,
-        tenant: str,
-        user_id: str,
-        agent_id: str,
-        connector: str,
-        connector_source: str,
         routing_mode: str,
         routing_source: str,
         routing_error: str | None,
-        agent_metadata: dict[str, Any],
-        runtime_adapter: dict[str, Any],
         knowledge_payload: dict[str, Any],
         memory_payload: dict[str, Any],
         max_records: int,
         decision: dict[str, Any],
     ) -> dict[str, Any]:
+        execution_context_view = self.execution_context_view(execution_context)
+        response_record_context = execution_context_view["response_record_context"]
+        session_id = execution_context_view["runner_session_id"]
+        tenant = execution_context_view["tenant"]
+        user_id = response_record_context["user_id"]
+        agent_id = execution_context_view["runner_agent_id"]
+        connector = execution_context_view["connector_label"]
+        connector_source = execution_context_view["connector_source"]
+        agent_metadata = execution_context_view["agent_metadata"]
+        runtime_adapter = execution_context_view["runtime_adapter"]
         answer = self.compose_unrouted_answer_from_context(
             knowledge_hits=knowledge_hits,
             memory_hits=memory_hits,
