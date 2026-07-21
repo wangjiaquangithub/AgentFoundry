@@ -163,7 +163,8 @@ class PostgresApprovalReadThroughRepository:
 
     Once configured, platform list reads and writes must carry tenant context so
     the repository never falls back to local JSONL as a production data source.
-    Approval id reads and decisions are authoritative in PostgreSQL.
+    Approval id reads and decisions are authoritative in PostgreSQL and tenant
+    scoped.
     """
 
     def __init__(
@@ -255,6 +256,7 @@ class PostgresApprovalReadThroughRepository:
                 "decision_note": decision_note,
             }
             updated = self._postgres_writer.update_approval_status(
+                tenant_id=tenant,
                 approval_id=approval_id,
                 status=status,
                 approved_by=decided_by,

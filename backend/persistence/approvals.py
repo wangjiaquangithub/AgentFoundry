@@ -1,8 +1,7 @@
 """Approval persistence repositories.
 
-Approval records are governance data and must always be queried through an
-explicit tenant boundary for list/read surfaces. Decision writes may resolve by
-globally unique approval id because the id is the table primary key.
+Approval records are governance data and must always be queried and updated
+through an explicit tenant boundary.
 """
 
 from __future__ import annotations
@@ -284,6 +283,7 @@ class PostgresApprovalWriteRepository:
     def update_approval_status(
         self,
         *,
+        tenant_id: str,
         approval_id: str,
         status: str,
         approved_by: str,
@@ -299,7 +299,7 @@ class PostgresApprovalWriteRepository:
                       approved_by = %s,
                       resolved_at = %s,
                       payload = %s
-                    WHERE id = %s
+                    WHERE tenant_id = %s AND id = %s
                     RETURNING id, tenant_id, request_type, target_type, target_id,
                       status, requested_by, approved_by, reason, payload, created_at,
                       resolved_at
@@ -309,6 +309,7 @@ class PostgresApprovalWriteRepository:
                         approved_by,
                         resolved_at,
                         json.dumps(payload, ensure_ascii=False, default=str),
+                        tenant_id,
                         approval_id,
                     ),
                 )

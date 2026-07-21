@@ -83,6 +83,10 @@ POSTGRES_AUTHORITATIVE_PERSISTENCE_REPOSITORIES = {
         "PostgresAgentCatalogReadRepository",
         "PostgresAgentCatalogWriteRepository",
     },
+    "approvals.py": {
+        "PostgresApprovalReadRepository",
+        "PostgresApprovalWriteRepository",
+    },
     "audit_events.py": {
         "PostgresAuditEventReadRepository",
         "PostgresAuditEventWriteRepository",
