@@ -509,15 +509,15 @@ class PlatformAgentRunService:
         *,
         execution_context: dict[str, Any],
         memory_context: dict[str, Any],
-        user_id: str,
         answer: str,
         tool_calls: list[dict[str, Any]],
         max_records: int,
     ) -> dict[str, Any]:
+        response_record_context = execution_context["response_record_context"]
         return self.build_memory_append_context(
             enabled=bool(memory_context["memory_enabled"]),
             tenant=str(execution_context["tenant"]),
-            user_id=user_id,
+            user_id=str(response_record_context["user_id"]),
             agent_id=str(execution_context["runner_agent_id"]),
             session_id=str(execution_context["runner_session_id"]),
             question=str(execution_context["question"]),
@@ -533,7 +533,6 @@ class PlatformAgentRunService:
         append_agent_turn_if_enabled: Callable[..., bool],
         execution_context: dict[str, Any],
         memory_context: dict[str, Any],
-        user_id: str,
         answer: str,
         tool_calls: list[dict[str, Any]],
         max_records: int,
@@ -542,7 +541,6 @@ class PlatformAgentRunService:
             **self.build_routed_memory_append_context(
                 execution_context=execution_context,
                 memory_context=memory_context,
-                user_id=user_id,
                 answer=answer,
                 tool_calls=tool_calls,
                 max_records=max_records,
@@ -856,7 +854,6 @@ class PlatformAgentRunService:
             append_agent_turn_if_enabled=append_agent_turn_if_enabled,
             execution_context=execution_context,
             memory_context=memory_context,
-            user_id=user_id,
             answer=answer,
             tool_calls=tool_calls,
             max_records=max_records,
