@@ -17,18 +17,16 @@ import uvicorn
 from fastapi import HTTPException, Request
 from fastapi.middleware import Middleware
 from fastapi.middleware.cors import CORSMiddleware
+from api.platform_admin import (
+    PlatformAdminRouteDependencies,
+    create_platform_admin_router,
+)
 from api.schemas import (
     EnterpriseAgentPublishRequest,
     EnterpriseAgentRunRequest,
     EnterpriseAgentUpdateRequest,
     EnterpriseApprovalCreateRequest,
     EnterpriseApprovalDecisionRequest,
-    EnterpriseConnectorConfigSaveRequest,
-    EnterpriseConnectorTestRequest,
-    EnterprisePlatformConfigImportRequest,
-    EnterprisePlatformMemberPatchRequest,
-    EnterprisePlatformMemberUpsertRequest,
-    EnterpriseToolPolicyUpdateRequest,
     EnterpriseToolRunRequest,
     EnterpriseWorkflowRunRequest,
     EnterpriseWorkflowTemplateUpdateRequest,
@@ -249,6 +247,15 @@ def _raise_platform_tool_policy_service_error(
 
 
 tool_authorization_policy = _build_tool_authorization_policy()
+
+
+def _get_tool_authorization_policy() -> ToolAuthorizationPolicy:
+    return tool_authorization_policy
+
+
+def _set_tool_authorization_policy(policy: ToolAuthorizationPolicy) -> None:
+    global tool_authorization_policy
+    tool_authorization_policy = policy
 
 
 def _safe_path_part(value: str) -> str:
@@ -812,51 +819,6 @@ def _tenant_hint_from_user_id(user_id: str) -> str | None:
     return tenant or None
 
 
-def _export_platform_config() -> dict[str, Any]:
-    try:
-        connector_config_service = _platform_connector_config_service()
-        connector_configs = connector_config_service.export_configs_payload()
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
-    try:
-        agents = _platform_agent_service().list_agents()
-    except PlatformAgentServiceError as exc:
-        _raise_platform_agent_service_error(exc)
-    try:
-        workflow_templates = _platform_workflow_template_service().list_templates()
-    except PlatformWorkflowTemplateServiceError as exc:
-        _raise_platform_workflow_template_service_error(exc)
-
-    try:
-        tool_policy = _platform_tool_policy_service().load_policy()
-    except PlatformToolPolicyServiceError as exc:
-        _raise_platform_tool_policy_service_error(exc)
-    try:
-        members = _platform_member_service().list_members(include_inactive=True)
-    except PlatformMemberServiceError as exc:
-        _raise_platform_member_service_error(exc)
-
-    config = {
-        "members": members,
-        "connector_configs": connector_configs,
-        "agents": agents,
-        "workflow_templates": workflow_templates,
-        "tool_policy": tool_policy,
-    }
-    return connector_config_service.export_config_response(
-        config=config,
-        platform_version=PLATFORM_VERSION,
-        exported_at=_now_iso(),
-        file_paths={
-            "members": str(PLATFORM_MEMBERS_PATH),
-            "connector_configs": str(PLATFORM_CONNECTOR_CONFIGS_PATH),
-            "agents": str(PLATFORM_AGENTS_PATH),
-            "workflow_templates": str(PLATFORM_WORKFLOW_TEMPLATES_PATH),
-            "tool_policy": str(_platform_tool_policy_path()),
-        },
-    )
-
-
 def _platform_identity_metadata(
     current_user_id: str,
     current_tenant: str,
@@ -993,279 +955,6 @@ app = create_app(
     ],
     title="AgentScope Enterprise Knowledge Assistant",
 )
-
-
-@app.get("/enterprise/platform/status")
-async def enterprise_platform_status(request: Request) -> dict[str, Any]:
-    """Return enterprise platform state for the frontend console."""
-    status_service = _platform_status_service()
-    try:
-        context = status_service.status_request_context(
-            user_id=request.headers.get("X-User-ID"),
-        )
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
-
-    return status_service.platform_snapshot(
-        platform_version=PLATFORM_VERSION,
-        data_dir=DATA_DIR,
-        runtime=context["runtime"],
-        tenant=context["tenant"],
-        user_id=context["user_id"],
-        identities=context["identities"],
-        tenant_workspaces=context["tenant_workspaces"],
-        subagent_templates=ENTERPRISE_SUBAGENT_TEMPLATES,
-    )
-
-
-@app.get("/enterprise/platform/connectors")
-async def enterprise_platform_connectors(request: Request) -> dict[str, Any]:
-    """Return enterprise data source connector readiness and tenant scope."""
-    try:
-        connector_config_service = _platform_connector_config_service()
-        return connector_config_service.platform_connectors_response(
-            user_id=request.headers.get("X-User-ID"),
-            connector_name=enterprise_connector.name,
-            env=os.environ,
-            identity_metadata=_platform_identity_metadata,
-        )
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
-
-
-@app.get("/enterprise/platform/governance")
-async def enterprise_platform_governance(request: Request) -> dict[str, Any]:
-    """Return tenant, identity, approval, and audit governance state."""
-    status_service = _platform_status_service()
-    try:
-        return status_service.governance_request_payload(
-            user_id=request.headers.get("X-User-ID"),
-        )
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
-
-
-@app.get("/enterprise/platform/members")
-async def enterprise_platform_members(request: Request) -> dict[str, Any]:
-    """Return the editable enterprise member registry."""
-    try:
-        return _platform_member_service().registry_response_payload(
-            user_id=request.headers.get("X-User-ID"),
-            request_context=lambda user_id: _platform_status_service().status_request_context(
-                user_id=user_id,
-            ),
-            registry_path=PLATFORM_MEMBERS_PATH,
-        )
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
-    except PlatformMemberServiceError as exc:
-        _raise_platform_member_service_error(exc)
-
-
-@app.post("/enterprise/platform/members")
-async def create_enterprise_platform_member(
-    payload: EnterprisePlatformMemberUpsertRequest,
-    request: Request,
-) -> dict[str, Any]:
-    """Create or replace one enterprise platform member."""
-    try:
-        return _platform_member_service().create_member_response_payload(
-            payload=payload.model_dump(),
-            actor=request.headers.get("X-User-ID"),
-            identity_metadata=_platform_identity_metadata,
-            registry_path=PLATFORM_MEMBERS_PATH,
-        )
-    except PlatformMemberServiceError as exc:
-        _raise_platform_member_service_error(exc)
-
-
-@app.patch("/enterprise/platform/members/{user_id:path}")
-async def update_enterprise_platform_member(
-    user_id: str,
-    payload: EnterprisePlatformMemberPatchRequest,
-    request: Request,
-) -> dict[str, Any]:
-    """Update one enterprise platform member."""
-    try:
-        return _platform_member_service().update_member_response_payload(
-            user_id=user_id,
-            payload=payload.model_dump(exclude_unset=True),
-            actor=request.headers.get("X-User-ID"),
-            identity_metadata=_platform_identity_metadata,
-            registry_path=PLATFORM_MEMBERS_PATH,
-        )
-    except PlatformMemberServiceError as exc:
-        _raise_platform_member_service_error(exc)
-
-
-@app.delete("/enterprise/platform/members/{user_id:path}")
-async def deactivate_enterprise_platform_member(
-    user_id: str,
-    request: Request,
-) -> dict[str, Any]:
-    """Soft-delete one enterprise platform member by marking it inactive."""
-    try:
-        return _platform_member_service().deactivate_member_response_payload(
-            user_id=user_id,
-            actor=request.headers.get("X-User-ID"),
-            identity_metadata=_platform_identity_metadata,
-            registry_path=PLATFORM_MEMBERS_PATH,
-        )
-    except PlatformMemberServiceError as exc:
-        _raise_platform_member_service_error(exc)
-
-
-@app.get("/enterprise/platform/policies/tools")
-async def enterprise_platform_tool_policy(
-    request: Request,
-    user_id: str | None = None,
-    tenant: str | None = None,
-) -> dict[str, Any]:
-    """Return editable enterprise tool authorization policy state."""
-    try:
-        return _platform_tool_policy_service().policy_request_payload(
-            authorization_policy=tool_authorization_policy,
-            query_user_id=user_id,
-            header_user_id=request.headers.get("X-User-ID"),
-            tenant=tenant,
-        )
-    except PlatformToolPolicyServiceError as exc:
-        _raise_platform_tool_policy_service_error(exc)
-
-
-@app.patch("/enterprise/platform/policies/tools")
-async def update_enterprise_platform_tool_policy(
-    payload: EnterpriseToolPolicyUpdateRequest,
-) -> dict[str, Any]:
-    """Persist one tenant user's enterprise tool authorization policy."""
-    global tool_authorization_policy
-
-    try:
-        (
-            tool_authorization_policy,
-            response_payload,
-        ) = _platform_tool_policy_service().update_user_policy_request_payload(
-            payload.model_dump(),
-        )
-    except PlatformToolPolicyServiceError as exc:
-        _raise_platform_tool_policy_service_error(exc)
-
-    return response_payload
-
-
-@app.get("/enterprise/platform/connectors/configs")
-async def enterprise_platform_connector_configs() -> dict[str, Any]:
-    """Return tenant connector configurations without exposing secrets."""
-    try:
-        return _platform_connector_config_service().list_configs_response()
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
-
-
-@app.post("/enterprise/platform/connectors/configs")
-async def save_enterprise_platform_connector_config(
-    payload: EnterpriseConnectorConfigSaveRequest,
-    request: Request,
-) -> dict[str, Any]:
-    """Persist a tenant-scoped connector configuration."""
-    try:
-        return _platform_connector_config_service().save_config_payload(
-            payload,
-            user_id=request.headers.get("X-User-ID"),
-        )
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
-
-
-@app.post("/enterprise/platform/connectors/test")
-async def test_enterprise_platform_connector(
-    payload: EnterpriseConnectorTestRequest,
-) -> dict[str, Any]:
-    """Validate an enterprise HTTP connector against core business endpoints."""
-    try:
-        return _platform_connector_config_service().test_connector(payload)
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
-
-
-@app.get("/enterprise/platform/config/export")
-async def export_enterprise_platform_config() -> dict[str, Any]:
-    """Export portable platform configuration without runtime data or secrets."""
-    return _export_platform_config()
-
-
-@app.post("/enterprise/platform/config/import")
-async def import_enterprise_platform_config(
-    payload: EnterprisePlatformConfigImportRequest,
-    request: Request,
-) -> dict[str, Any]:
-    """Import portable platform configuration by merging or replacing sections."""
-    global tool_authorization_policy
-
-    connector_config_service = _platform_connector_config_service()
-    actor = connector_config_service.import_actor(request.headers.get("X-User-ID"))
-    try:
-        mode, incoming = (
-            connector_config_service.normalize_config_import_request(
-                payload,
-            )
-        )
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
-
-    if "members" in incoming:
-        try:
-            _platform_member_service().import_members_payload(
-                incoming.get("members"),
-                actor=actor,
-                mode=mode,
-            )
-        except PlatformMemberServiceError as exc:
-            _raise_platform_member_service_error(exc)
-
-    if "connector_configs" in incoming:
-        try:
-            _platform_connector_config_service().import_configs_payload(
-                incoming.get("connector_configs"),
-                actor=actor,
-                mode=mode,
-            )
-        except PlatformConnectorConfigServiceError as exc:
-            _raise_platform_connector_config_service_error(exc)
-
-    if "agents" in incoming:
-        try:
-            _platform_agent_service().import_agents_payload(
-                incoming.get("agents"),
-                mode=mode,
-            )
-        except PlatformAgentServiceError as exc:
-            _raise_platform_agent_service_error(exc)
-
-    if "workflow_templates" in incoming:
-        try:
-            _platform_workflow_template_service().import_templates_payload(
-                incoming.get("workflow_templates"),
-                mode=mode,
-            )
-        except PlatformWorkflowTemplateServiceError as exc:
-            _raise_platform_workflow_template_service_error(exc)
-
-    if "tool_policy" in incoming:
-        try:
-            _platform_tool_policy_service().import_policy_payload(
-                incoming.get("tool_policy"),
-                mode=mode,
-            )
-        except PlatformToolPolicyServiceError as exc:
-            _raise_platform_tool_policy_service_error(exc)
-        tool_authorization_policy = _build_tool_authorization_policy()
-
-    exported = _export_platform_config()
-    return _platform_connector_config_service().import_config_response(
-        mode=mode,
-        exported_config=exported,
-    )
 
 
 @app.get("/enterprise/platform/agents")
@@ -2237,6 +1926,35 @@ async def run_enterprise_workflow(
     )
     workflow_run_service.append_run(response)
     return response
+
+
+app.include_router(
+    create_platform_admin_router(
+        PlatformAdminRouteDependencies(
+            platform_version=PLATFORM_VERSION,
+            data_dir=DATA_DIR,
+            members_path=PLATFORM_MEMBERS_PATH,
+            connector_configs_path=PLATFORM_CONNECTOR_CONFIGS_PATH,
+            agents_path=PLATFORM_AGENTS_PATH,
+            workflow_templates_path=PLATFORM_WORKFLOW_TEMPLATES_PATH,
+            connector_name=enterprise_connector.name,
+            env=os.environ,
+            subagent_templates=ENTERPRISE_SUBAGENT_TEMPLATES,
+            status_service=_platform_status_service,
+            connector_config_service=_platform_connector_config_service,
+            member_service=_platform_member_service,
+            tool_policy_service=_platform_tool_policy_service,
+            agent_service=_platform_agent_service,
+            workflow_template_service=_platform_workflow_template_service,
+            identity_metadata=_platform_identity_metadata,
+            tool_policy_path=_platform_tool_policy_path,
+            now=_now_iso,
+            get_tool_authorization_policy=_get_tool_authorization_policy,
+            set_tool_authorization_policy=_set_tool_authorization_policy,
+            build_tool_authorization_policy=_build_tool_authorization_policy,
+        )
+    )
+)
 
 
 if __name__ == "__main__":
