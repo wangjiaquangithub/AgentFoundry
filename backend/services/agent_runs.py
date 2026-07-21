@@ -1196,25 +1196,6 @@ class PlatformAgentRunService:
             "routing_error": routing_error,
         }
 
-    def build_denied_route_decision_context(
-        self,
-        *,
-        denial: dict[str, Any],
-        routing_reason: str,
-        routing_source: str,
-        routing_mode: str,
-        routing_error: str | None,
-    ) -> dict[str, Any]:
-        return {
-            "decision": denial,
-            **self.build_routed_decision_context(
-                routing_reason=routing_reason,
-                routing_source=routing_source,
-                routing_mode=routing_mode,
-                routing_error=routing_error,
-            ),
-        }
-
     def decide_denied_route_from_context(
         self,
         *,
@@ -1226,8 +1207,8 @@ class PlatformAgentRunService:
         routing_error: str | None,
     ) -> dict[str, Any]:
         return decision_with_routing_context(
-            **self.build_denied_route_decision_context(
-                denial=denial,
+            decision=denial,
+            **self.build_routed_decision_context(
                 routing_reason=routing_reason,
                 routing_source=routing_source,
                 routing_mode=routing_mode,
