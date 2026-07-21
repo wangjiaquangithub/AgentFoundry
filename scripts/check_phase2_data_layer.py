@@ -1040,6 +1040,91 @@ def _check_postgres_workflow_runs_wired() -> list[str]:
     return errors
 
 
+def _check_postgres_agent_catalog_wired() -> list[str]:
+    errors: list[str] = []
+    main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    agent_repository_source = (REPOSITORIES_DIR / "agents.py").read_text(
+        encoding="utf-8",
+    )
+    agent_persistence_source = (PERSISTENCE_DIR / "agents.py").read_text(
+        encoding="utf-8",
+    )
+    main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+
+    required_main_imports = [
+        "PostgresAgentCatalogReadRepository",
+        "PostgresAgentCatalogWriteRepository",
+        "PostgresAgentCatalogWriteThroughRepository",
+    ]
+    for imported_name in required_main_imports:
+        if not _module_imports_name(main_tree, imported_name):
+            errors.append(
+                f"backend/main.py must import {imported_name} for agent catalog PostgreSQL wiring",
+            )
+
+    if not _module_defines_function(main_tree, "_build_agent_repository"):
+        errors.append(
+            "backend/main.py must define _build_agent_repository for PostgreSQL agent catalog records",
+        )
+    if "agent_repository = _build_agent_repository()" not in main_source:
+        errors.append(
+            "backend/main.py must build agent_repository through the PostgreSQL selector",
+        )
+    if "PostgresAgentCatalogWriteThroughRepository(" not in main_source:
+        errors.append(
+            "backend/main.py must wrap PostgreSQL agent catalog repositories with "
+            "PostgresAgentCatalogWriteThroughRepository",
+        )
+    if "postgres_reader=PostgresAgentCatalogReadRepository(database)" not in main_source:
+        errors.append(
+            "backend/main.py must pass the PostgreSQL agent catalog reader into the write-through repository",
+        )
+    if "postgres_writer=PostgresAgentCatalogWriteRepository(database)" not in main_source:
+        errors.append(
+            "backend/main.py must pass the PostgreSQL agent catalog writer into the write-through repository",
+        )
+    if "repository=agent_repository" not in main_source:
+        errors.append(
+            "backend/main.py must pass agent_repository into PlatformAgentService",
+        )
+
+    required_write_through_tokens = [
+        "class PostgresAgentCatalogWriteThroughRepository",
+        "PostgreSQL agent catalog list reads require tenant scope.",
+        "PostgreSQL agent catalog reads require tenant scope.",
+        "list_agents",
+        "get_agent",
+        "save_agents",
+        "_agent_catalog_item",
+    ]
+    for token in required_write_through_tokens:
+        if token not in agent_repository_source:
+            errors.append(
+                "backend/repositories/agents.py must provide the PostgreSQL agent catalog write-through adapter: "
+                f"{token}",
+            )
+
+    required_persistence_tokens = [
+        "class PostgresAgentCatalogReadRepository",
+        "class PostgresAgentCatalogWriteRepository",
+        "def list_agents",
+        "def get_agent",
+        "def get_current_version",
+        "def save_agents",
+        "FROM agents",
+        "INSERT INTO agents",
+        "INSERT INTO agent_versions",
+    ]
+    for token in required_persistence_tokens:
+        if token not in agent_persistence_source:
+            errors.append(
+                "backend/persistence/agents.py must persist agent catalog records in PostgreSQL: "
+                f"{token}",
+            )
+
+    return errors
+
+
 def _check_postgres_agent_runs_wired() -> list[str]:
     errors: list[str] = []
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
@@ -1312,6 +1397,7 @@ def main() -> int:
         *_check_postgres_audit_events_wired(),
         *_check_postgres_retrieval_events_wired(),
         *_check_postgres_workflow_runs_wired(),
+        *_check_postgres_agent_catalog_wired(),
         *_check_postgres_agent_runs_wired(),
         *_check_postgres_approval_requests_wired(),
         *_check_postgres_knowledge_readiness_wired(),
@@ -1345,6 +1431,7 @@ def main() -> int:
     print("- PostgreSQL audit events wired: yes")
     print("- PostgreSQL retrieval events wired: yes")
     print("- PostgreSQL workflow runs wired: yes")
+    print("- PostgreSQL agent catalog wired: yes")
     print("- PostgreSQL agent runs wired: yes")
     print("- PostgreSQL approval requests wired: yes")
     print("- PostgreSQL knowledge readiness reads wired: yes")
