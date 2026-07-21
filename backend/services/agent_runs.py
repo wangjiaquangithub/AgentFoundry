@@ -1495,11 +1495,16 @@ class PlatformAgentRunService:
         routing_mode: str,
         routing_error: str | None,
     ) -> None:
+        approval_id = self.resolve_approval_id(approval)
+        pending_approval_context = self.build_pending_approval_response_context(
+            detail=detail,
+            approval_id=approval_id,
+        )
         self.append_pending_approval_routed_tool_call(
             tool_calls=tool_calls,
             tool_name=tool_name,
             inputs=inputs,
-            approval_id=self.resolve_approval_id(approval),
+            approval_id=approval_id,
             tenant=tenant,
             user_id=user_id,
             connector=connector,
@@ -1508,10 +1513,7 @@ class PlatformAgentRunService:
             routing_reason=routing_reason,
             decision=decision_with_routing_context(
                 decision=self.pending_approval_decision_payload(
-                    self.build_created_pending_approval_response_context(
-                        detail=detail,
-                        approval=approval,
-                    ),
+                    pending_approval_context,
                 ),
                 **self.build_routed_decision_context(
                     routing_reason=routing_reason,
@@ -1521,10 +1523,7 @@ class PlatformAgentRunService:
                 ),
             ),
             answer=self.pending_approval_message(
-                self.build_created_pending_approval_response_context(
-                    detail=detail,
-                    approval=approval,
-                ),
+                pending_approval_context,
             ),
         )
 
@@ -1548,17 +1547,6 @@ class PlatformAgentRunService:
                 "approval_status": "pending",
             },
         }
-
-    def build_created_pending_approval_response_context(
-        self,
-        *,
-        detail: dict[str, Any],
-        approval: dict[str, Any],
-    ) -> dict[str, Any]:
-        return self.build_pending_approval_response_context(
-            detail=detail,
-            approval_id=self.resolve_approval_id(approval),
-        )
 
     def pending_approval_decision_payload(
         self,
