@@ -283,7 +283,7 @@ class PlatformToolPolicyService:
         fallback_tool_names: list[str],
         fallback_tool_catalog: dict[str, dict[str, Any]],
     ) -> dict[str, Any]:
-        """Return tenant tool catalog metadata, preferring PostgreSQL records."""
+        """Return tenant tool catalog metadata from the configured source."""
         fallback = {
             "tool_names": list(fallback_tool_names),
             "tool_catalog": {
@@ -306,26 +306,56 @@ class PlatformToolPolicyService:
         tool_catalog: dict[str, dict[str, Any]] = {}
         for record in records:
             name = str(getattr(record, "name", ""))
-            if name not in fallback_tool_catalog:
+            if not name:
                 continue
 
-            catalog = dict(fallback_tool_catalog[name])
-            description = getattr(record, "description", None)
-            if description:
-                catalog["description"] = str(description)
-
-            schema = getattr(record, "schema", None)
-            if isinstance(schema, dict):
-                input_key = schema.get("input_key")
-                if isinstance(input_key, str) and input_key:
-                    catalog["input_key"] = input_key
-                if "default_input" in schema:
-                    catalog["default_input"] = schema["default_input"]
-
+            catalog = self._catalog_from_tool_record(
+                record=record,
+                fallback_catalog=fallback_tool_catalog.get(name),
+            )
             tool_names.append(name)
             tool_catalog[name] = catalog
 
         return {"tool_names": tool_names, "tool_catalog": tool_catalog}
+
+    @staticmethod
+    def _catalog_from_tool_record(
+        *,
+        record: Any,
+        fallback_catalog: dict[str, Any] | None,
+    ) -> dict[str, Any]:
+        catalog = dict(fallback_catalog or {})
+        name = str(getattr(record, "name", ""))
+
+        description = getattr(record, "description", None)
+        catalog["description"] = (
+            str(description)
+            if description
+            else str(catalog.get("description") or name)
+        )
+
+        schema = getattr(record, "schema", None)
+        if isinstance(schema, dict):
+            catalog["schema"] = dict(schema)
+            input_key = schema.get("input_key")
+            if isinstance(input_key, str) and input_key:
+                catalog["input_key"] = input_key
+            if "default_input" in schema:
+                catalog["default_input"] = schema["default_input"]
+
+        if not catalog.get("input_key"):
+            catalog["input_key"] = "input"
+        if "default_input" not in catalog:
+            catalog["default_input"] = ""
+
+        category = getattr(record, "category", None)
+        if category:
+            catalog["category"] = str(category)
+        status = getattr(record, "status", None)
+        if status:
+            catalog["status"] = str(status)
+
+        return catalog
 
     @staticmethod
     def catalog_decisions_by_name(
