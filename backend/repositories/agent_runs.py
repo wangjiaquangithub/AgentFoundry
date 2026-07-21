@@ -220,21 +220,21 @@ class PostgresAgentRunReadThroughRepository:
         user_id: str | None = None,
         session_id: str | None = None,
     ) -> int:
+        if tenant:
+            return self._postgres_writer.delete_runs(
+                tenant_id=tenant,
+                agent_id=agent_id,
+                user_id=user_id,
+                session_id=session_id,
+            )
+
         fallback_deleted = self._fallback_repository.delete(
             agent_id=agent_id,
             tenant=tenant,
             user_id=user_id,
             session_id=session_id,
         )
-        if not tenant:
-            return fallback_deleted
-
-        return fallback_deleted + self._postgres_writer.delete_runs(
-            tenant_id=tenant,
-            agent_id=agent_id,
-            user_id=user_id,
-            session_id=session_id,
-        )
+        return fallback_deleted
 
 
 def _postgres_run_to_platform_record(record: AgentRunRecord) -> dict[str, Any]:
