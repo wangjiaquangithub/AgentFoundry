@@ -12,6 +12,12 @@ from urllib.parse import urlparse
 
 from backend.persistence.migrations import sqlite_path_from_database_url
 
+POSTGRES_DATABASE_SCHEMES = frozenset({"postgresql", "postgres"})
+
+
+def is_postgres_database_url(database_url: str) -> bool:
+    return urlparse(database_url.strip()).scheme in POSTGRES_DATABASE_SCHEMES
+
 
 @dataclass(frozen=True)
 class SQLiteDatabase:
@@ -76,15 +82,14 @@ class PostgresDatabase:
 
 
 def create_postgres_database(database_url: str) -> PostgresDatabase:
-    parsed = urlparse(database_url)
-    if parsed.scheme not in {"postgresql", "postgres"}:
+    if not is_postgres_database_url(database_url):
         raise ValueError("PostgreSQL database URLs must use postgresql:// or postgres://.")
     return PostgresDatabase(database_url=database_url)
 
 
 def create_database(database_url: str) -> SQLiteDatabase | PostgresDatabase:
     parsed = urlparse(database_url)
-    if parsed.scheme in {"postgresql", "postgres"}:
+    if is_postgres_database_url(database_url):
         return create_postgres_database(database_url)
     if parsed.scheme == "sqlite":
         return create_sqlite_database(database_url)

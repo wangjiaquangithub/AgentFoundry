@@ -10,7 +10,6 @@ import os
 import sys
 from pathlib import Path
 from typing import Any, NoReturn
-from urllib.parse import urlparse
 
 import uvicorn
 from fastapi import HTTPException, Request
@@ -90,6 +89,7 @@ from repositories.agents import (
     PostgresAgentCatalogWriteThroughRepository,
 )
 from backend.persistence import (
+    PostgresDatabase,
     PostgresAgentCatalogReadRepository,
     PostgresAgentCatalogWriteRepository,
     PostgresAgentRunReadRepository,
@@ -115,6 +115,7 @@ from backend.persistence import (
     PostgresWorkflowReadRepository,
     PostgresWorkflowWriteRepository,
     create_postgres_database,
+    is_postgres_database_url,
 )
 from repositories.agent_runs import (
     AgentRunRepository,
@@ -187,12 +188,18 @@ approval_request_fallback_repository = ApprovalRequestRepository(
 member_fallback_repository = MemberRepository(PLATFORM_MEMBERS_PATH)
 
 
-def _build_agent_repository() -> AgentRepositoryProtocol:
+def _configured_postgres_database() -> PostgresDatabase | None:
     database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
-    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+    if not is_postgres_database_url(database_url):
+        return None
+    return create_postgres_database(database_url)
+
+
+def _build_agent_repository() -> AgentRepositoryProtocol:
+    database = _configured_postgres_database()
+    if database is None:
         return agent_fallback_repository
 
-    database = create_postgres_database(database_url)
     return PostgresAgentCatalogWriteThroughRepository(
         postgres_reader=PostgresAgentCatalogReadRepository(database),
         postgres_writer=PostgresAgentCatalogWriteRepository(database),
@@ -200,11 +207,10 @@ def _build_agent_repository() -> AgentRepositoryProtocol:
 
 
 def _build_agent_run_repository() -> AgentRunRepositoryProtocol:
-    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
-    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+    database = _configured_postgres_database()
+    if database is None:
         return agent_run_fallback_repository
 
-    database = create_postgres_database(database_url)
     return PostgresAgentRunReadThroughRepository(
         postgres_reader=PostgresAgentRunReadRepository(database),
         postgres_writer=PostgresAgentRunWriteRepository(database),
@@ -216,11 +222,10 @@ agent_run_repository = _build_agent_run_repository()
 
 
 def _build_approval_request_repository() -> ApprovalRequestRepositoryProtocol:
-    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
-    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+    database = _configured_postgres_database()
+    if database is None:
         return approval_request_fallback_repository
 
-    database = create_postgres_database(database_url)
     return PostgresApprovalReadThroughRepository(
         postgres_reader=PostgresApprovalReadRepository(database),
         postgres_writer=PostgresApprovalWriteRepository(database),
@@ -231,97 +236,96 @@ approval_request_repository = _build_approval_request_repository()
 
 
 def _build_tool_call_write_repository() -> PostgresToolCallWriteRepository | None:
-    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
-    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+    database = _configured_postgres_database()
+    if database is None:
         return None
 
-    return PostgresToolCallWriteRepository(create_postgres_database(database_url))
+    return PostgresToolCallWriteRepository(database)
 
 
 def _build_tool_call_read_repository() -> PostgresToolCallReadRepository | None:
-    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
-    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+    database = _configured_postgres_database()
+    if database is None:
         return None
 
-    return PostgresToolCallReadRepository(create_postgres_database(database_url))
+    return PostgresToolCallReadRepository(database)
 
 
 def _build_tool_governance_read_repository() -> (
     PostgresToolGovernanceReadRepository | None
 ):
-    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
-    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+    database = _configured_postgres_database()
+    if database is None:
         return None
 
-    return PostgresToolGovernanceReadRepository(create_postgres_database(database_url))
+    return PostgresToolGovernanceReadRepository(database)
 
 
 def _build_tool_governance_write_repository() -> (
     PostgresToolGovernanceWriteRepository | None
 ):
-    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
-    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+    database = _configured_postgres_database()
+    if database is None:
         return None
 
-    return PostgresToolGovernanceWriteRepository(create_postgres_database(database_url))
+    return PostgresToolGovernanceWriteRepository(database)
 
 
 def _build_memory_item_read_repository() -> (
     PostgresMemoryItemReadRepository | None
 ):
-    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
-    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+    database = _configured_postgres_database()
+    if database is None:
         return None
 
-    return PostgresMemoryItemReadRepository(create_postgres_database(database_url))
+    return PostgresMemoryItemReadRepository(database)
 
 
 def _build_memory_item_write_repository() -> (
     PostgresMemoryItemWriteRepository | None
 ):
-    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
-    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+    database = _configured_postgres_database()
+    if database is None:
         return None
 
-    return PostgresMemoryItemWriteRepository(create_postgres_database(database_url))
+    return PostgresMemoryItemWriteRepository(database)
 
 
 def _build_audit_event_read_repository() -> (
     PostgresAuditEventReadRepository | None
 ):
-    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
-    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+    database = _configured_postgres_database()
+    if database is None:
         return None
 
-    return PostgresAuditEventReadRepository(create_postgres_database(database_url))
+    return PostgresAuditEventReadRepository(database)
 
 
 def _build_audit_event_write_repository() -> (
     PostgresAuditEventWriteRepository | None
 ):
-    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
-    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+    database = _configured_postgres_database()
+    if database is None:
         return None
 
-    return PostgresAuditEventWriteRepository(create_postgres_database(database_url))
+    return PostgresAuditEventWriteRepository(database)
 
 
 def _build_retrieval_event_write_repository() -> (
     PostgresRetrievalEventWriteRepository | None
 ):
-    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
-    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+    database = _configured_postgres_database()
+    if database is None:
         return None
 
-    return PostgresRetrievalEventWriteRepository(create_postgres_database(database_url))
+    return PostgresRetrievalEventWriteRepository(database)
 
 
 def _build_member_repository() -> MemberRepositoryProtocol:
-    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
-    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+    database = _configured_postgres_database()
+    if database is None:
         return member_fallback_repository
 
-    database = create_postgres_database(database_url)
     return PostgresMemberReadThroughRepository(
         postgres_reader=PostgresTenancyReadRepository(database),
         postgres_writer=PostgresTenancyWriteRepository(database),
@@ -339,11 +343,10 @@ member_repository = _build_member_repository()
 
 
 def _build_workflow_run_repository() -> WorkflowRunRepositoryProtocol:
-    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
-    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+    database = _configured_postgres_database()
+    if database is None:
         return workflow_run_fallback_repository
 
-    database = create_postgres_database(database_url)
     return PostgresWorkflowRunReadThroughRepository(
         postgres_reader=PostgresWorkflowReadRepository(database),
         postgres_writer=PostgresWorkflowWriteRepository(database),
@@ -365,11 +368,10 @@ knowledge_response_service = PlatformKnowledgeResponseService(
 def _build_knowledge_document_readiness_service() -> (
     PlatformKnowledgeDocumentReadinessService | None
 ):
-    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
-    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+    database = _configured_postgres_database()
+    if database is None:
         return None
 
-    database = create_postgres_database(database_url)
     return PlatformKnowledgeDocumentReadinessService(
         knowledge_base_repository=PostgresKnowledgeBaseReadRepository(database),
         document_repository=PostgresDocumentReadRepository(database),

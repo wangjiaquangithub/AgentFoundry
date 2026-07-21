@@ -25,6 +25,7 @@ from backend.persistence.database import (
     create_database,
     create_postgres_database,
     create_sqlite_database,
+    is_postgres_database_url,
 )
 from backend.persistence.document_chunks import (
     DocumentChunkRecord,
@@ -180,6 +181,7 @@ __all__ = [
     "create_database",
     "create_postgres_database",
     "create_sqlite_database",
+    "is_postgres_database_url",
     "PostgresWorkflowReadRepository",
     "SQLiteWorkflowReadRepository",
 ]
