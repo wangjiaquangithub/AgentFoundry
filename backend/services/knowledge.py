@@ -4,7 +4,12 @@ import json
 from typing import Any, Callable, Protocol
 from uuid import uuid4
 
-from backend.persistence import RetrievalEventRecord
+from backend.persistence import AuditEventRecord, RetrievalEventRecord
+
+
+class AuditEventWriter(Protocol):
+    def append_audit_event(self, record: AuditEventRecord) -> None:
+        ...
 
 
 class RetrievalEventWriter(Protocol):
@@ -36,9 +41,11 @@ class PlatformKnowledgeResponseService:
         self,
         *,
         retrieval_event_writer: RetrievalEventWriter | None = None,
+        audit_event_writer: AuditEventWriter | None = None,
         now: Callable[[], str] | None = None,
     ) -> None:
         self._retrieval_event_writer = retrieval_event_writer
+        self._audit_event_writer = audit_event_writer
         self._now = now
 
     def format_hit(
@@ -100,6 +107,7 @@ class PlatformKnowledgeResponseService:
                 hits.extend(formatted_results)
                 self._append_retrieval_event(
                     tenant=tenant,
+                    user_id=user_id,
                     knowledge_base_id=knowledge_base_id,
                     question=question,
                     hits=formatted_results,
@@ -135,6 +143,7 @@ class PlatformKnowledgeResponseService:
         self,
         *,
         tenant: str,
+        user_id: str,
         knowledge_base_id: str,
         question: str,
         hits: list[dict[str, Any]],
@@ -142,16 +151,71 @@ class PlatformKnowledgeResponseService:
         if self._retrieval_event_writer is None or self._now is None:
             return
 
+        event_id = uuid4().hex
+        created_at = self._now()
+        safe_hits = _json_safe(hits)
         try:
             self._retrieval_event_writer.append_retrieval_event(
                 RetrievalEventRecord(
-                    id=uuid4().hex,
+                    id=event_id,
                     tenant_id=tenant,
                     agent_run_id=None,
                     knowledge_base_id=knowledge_base_id,
                     query=question,
-                    hits=_json_safe(hits),
-                    created_at=self._now(),
+                    hits=safe_hits,
+                    created_at=created_at,
+                ),
+            )
+        except Exception:
+            return
+        self._append_retrieval_audit_event(
+            event_id=event_id,
+            tenant=tenant,
+            user_id=user_id,
+            knowledge_base_id=knowledge_base_id,
+            question=question,
+            hits=safe_hits,
+            created_at=created_at,
+        )
+
+    def _append_retrieval_audit_event(
+        self,
+        *,
+        event_id: str,
+        tenant: str,
+        user_id: str,
+        knowledge_base_id: str,
+        question: str,
+        hits: list[dict[str, Any]],
+        created_at: str,
+    ) -> None:
+        if self._audit_event_writer is None:
+            return
+
+        try:
+            self._audit_event_writer.append_audit_event(
+                AuditEventRecord(
+                    id=str(uuid4()),
+                    tenant_id=tenant,
+                    actor_user_id=user_id,
+                    event_type="knowledge_base.retrieved",
+                    target_type="knowledge_base",
+                    target_id=knowledge_base_id,
+                    payload={
+                        "schema_version": 1,
+                        "retrieval_event_id": event_id,
+                        "tenant": tenant,
+                        "user_id": user_id,
+                        "knowledge_base_id": knowledge_base_id,
+                        "query": question,
+                        "hit_count": len(hits),
+                        "document_ids": [
+                            str(hit.get("document_id") or "")
+                            for hit in hits
+                            if str(hit.get("document_id") or "").strip()
+                        ],
+                    },
+                    created_at=created_at,
                 ),
             )
         except Exception:

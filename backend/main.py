@@ -353,6 +353,7 @@ dev_knowledge_service = PlatformDevKnowledgeService(
 )
 knowledge_response_service = PlatformKnowledgeResponseService(
     retrieval_event_writer=_build_retrieval_event_write_repository(),
+    audit_event_writer=_build_audit_event_write_repository(),
     now=now_iso,
 )
 enterprise_router_service = PlatformEnterpriseRouterService(
