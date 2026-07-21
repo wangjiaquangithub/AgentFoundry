@@ -1734,28 +1734,6 @@ class PlatformAgentRunService:
             ),
         )
 
-    def create_pending_tool_approval_request_from_context(
-        self,
-        *,
-        platform_approval_service: Callable[[], Any],
-        detail: dict[str, Any],
-        execution_context: dict[str, Any],
-        route_context_view: dict[str, Any],
-        headers: Any,
-    ) -> dict[str, Any]:
-        execution_context_view = self.execution_context_view(execution_context)
-        response_record_context = execution_context_view["response_record_context"]
-        return self.create_pending_approval_request(
-            create_request=platform_approval_service().create_request,
-            detail=detail,
-            tenant=execution_context_view["tenant"],
-            user_id=response_record_context["user_id"],
-            agent_id=execution_context_view["runner_agent_id"],
-            tool_name=route_context_view["tool_name"],
-            inputs=route_context_view["inputs"],
-            headers=headers,
-        )
-
     def create_pending_tool_approval_request_or_raise_from_context(
         self,
         *,
@@ -1770,11 +1748,18 @@ class PlatformAgentRunService:
         headers: Any,
     ) -> dict[str, Any]:
         try:
-            return self.create_pending_tool_approval_request_from_context(
-                platform_approval_service=platform_approval_service,
+            execution_context_view = self.execution_context_view(execution_context)
+            response_record_context = execution_context_view[
+                "response_record_context"
+            ]
+            return self.create_pending_approval_request(
+                create_request=platform_approval_service().create_request,
                 detail=detail,
-                execution_context=execution_context,
-                route_context_view=route_context_view,
+                tenant=execution_context_view["tenant"],
+                user_id=response_record_context["user_id"],
+                agent_id=execution_context_view["runner_agent_id"],
+                tool_name=route_context_view["tool_name"],
+                inputs=route_context_view["inputs"],
                 headers=headers,
             )
         except PlatformApprovalServiceError as exc:
