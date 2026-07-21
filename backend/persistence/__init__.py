@@ -28,6 +28,11 @@ from backend.persistence.documents import (
     PostgresDocumentReadRepository,
     SQLiteDocumentReadRepository,
 )
+from backend.persistence.embedding_records import (
+    EmbeddingRecord,
+    PostgresEmbeddingRecordReadRepository,
+    SQLiteEmbeddingRecordReadRepository,
+)
 from backend.persistence.knowledge_bases import (
     KnowledgeBaseRecord,
     PostgresKnowledgeBaseReadRepository,
@@ -69,6 +74,7 @@ __all__ = [
     "ApprovalRecord",
     "DocumentChunkRecord",
     "DocumentRecord",
+    "EmbeddingRecord",
     "KnowledgeBaseRecord",
     "MembershipRecord",
     "ModelConfigRecord",
@@ -78,6 +84,7 @@ __all__ = [
     "PostgresDatabase",
     "PostgresDocumentChunkReadRepository",
     "PostgresDocumentReadRepository",
+    "PostgresEmbeddingRecordReadRepository",
     "PostgresKnowledgeBaseReadRepository",
     "PostgresModelConfigReadRepository",
     "PostgresTenancyReadRepository",
@@ -89,6 +96,7 @@ __all__ = [
     "SQLiteDatabase",
     "SQLiteDocumentChunkReadRepository",
     "SQLiteDocumentReadRepository",
+    "SQLiteEmbeddingRecordReadRepository",
     "SQLiteKnowledgeBaseReadRepository",
     "SQLiteModelConfigReadRepository",
     "SQLiteTenancyReadRepository",
