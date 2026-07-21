@@ -1540,12 +1540,14 @@ async def run_enterprise_agent(
         runtime_context_error_type=PlatformConnectorConfigServiceError,
         raise_runtime_context_error=_raise_platform_connector_config_service_error,
     )
-    agent = agent_run_service.resolve_run_agent(
+    agent_context = agent_run_service.resolve_run_agent_context(
         run_request=run_request,
         load_published_agent=_published_platform_agent_tool_scope_for_user,
+        build_run_metadata=_platform_agent_service().run_metadata,
     )
+    agent = agent_context["agent"]
+    agent_metadata = agent_context["agent_metadata"]
 
-    agent_metadata = _platform_agent_service().run_metadata(agent)
     runtime_adapter_payload = agent_run_service.runtime_adapter_payload_from_metadata(
         describe_runtime_adapter=describe_runtime_adapter,
         agent_metadata=agent_metadata,

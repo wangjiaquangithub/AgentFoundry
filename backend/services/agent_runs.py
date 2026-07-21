@@ -116,6 +116,22 @@ class PlatformAgentRunService:
         agent, _ = load_published_agent(agent_id, run_request["user_id"])
         return agent
 
+    def resolve_run_agent_context(
+        self,
+        *,
+        run_request: dict[str, Any],
+        load_published_agent: Callable[[str, str], tuple[dict[str, Any], Any]],
+        build_run_metadata: Callable[[dict[str, Any] | None], dict[str, Any]],
+    ) -> dict[str, Any]:
+        agent = self.resolve_run_agent(
+            run_request=run_request,
+            load_published_agent=load_published_agent,
+        )
+        return {
+            "agent": agent,
+            "agent_metadata": build_run_metadata(agent),
+        }
+
     @staticmethod
     def resolve_runtime_context(
         *,
