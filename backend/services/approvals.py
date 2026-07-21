@@ -3,7 +3,7 @@
 from typing import Any, Callable
 from uuid import uuid4
 
-from repositories.approvals import ApprovalRequestRepository
+from repositories.approvals import ApprovalRequestRepositoryProtocol
 
 
 class PlatformApprovalServiceError(ValueError):
@@ -25,7 +25,7 @@ class PlatformApprovalService:
     def __init__(
         self,
         *,
-        repository: ApprovalRequestRepository,
+        repository: ApprovalRequestRepositoryProtocol,
         now: Callable[[], str],
     ) -> None:
         self._repository = repository
@@ -289,36 +289,37 @@ class PlatformApprovalService:
                 f"Unknown approval decision: {normalized_status}",
             )
 
-        records = self._repository.read_all()
-        for index, record in enumerate(records):
-            if record.get("approval_id") != normalized_id:
-                continue
-            if record.get("status") != "pending":
-                raise PlatformApprovalServiceError(
-                    409,
-                    f"Approval request is already {record.get('status')}.",
-                )
-            updated = {
-                **record,
-                "status": normalized_status,
-                "decided_at": self._now(),
-                "decided_by": decided_by,
-                "decision_note": _optional_filter(decision_note),
-            }
-            records[index] = updated
-            self._repository.replace_all(records)
-            return updated
+        record = self._repository.get(normalized_id)
+        if record is None:
+            raise PlatformApprovalServiceError(
+                404,
+                f"Unknown approval request: {normalized_id}",
+            )
+        if record.get("status") != "pending":
+            raise PlatformApprovalServiceError(
+                409,
+                f"Approval request is already {record.get('status')}.",
+            )
 
-        raise PlatformApprovalServiceError(
-            404,
-            f"Unknown approval request: {normalized_id}",
+        updated = self._repository.update_status(
+            approval_id=normalized_id,
+            status=normalized_status,
+            decided_by=decided_by,
+            decided_at=self._now(),
+            decision_note=_optional_filter(decision_note),
         )
+        if updated is None:
+            raise PlatformApprovalServiceError(
+                404,
+                f"Unknown approval request: {normalized_id}",
+            )
+        return updated
 
     def _get_request(self, approval_id: str) -> dict[str, Any]:
         normalized_id = approval_id.strip()
-        for record in self._repository.read_all():
-            if record.get("approval_id") == normalized_id:
-                return record
+        record = self._repository.get(normalized_id)
+        if record is not None:
+            return record
         raise PlatformApprovalServiceError(
             404,
             f"Unknown approval request: {normalized_id}",

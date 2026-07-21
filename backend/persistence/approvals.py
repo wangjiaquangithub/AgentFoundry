@@ -1,8 +1,8 @@
-"""Approval read repositories.
+"""Approval persistence repositories.
 
 Approval records are governance data and must always be queried through an
-explicit tenant boundary. This repository is read-only while write paths remain
-on the existing development storage during the data-layer migration.
+explicit tenant boundary for list/read surfaces. Decision writes may resolve by
+globally unique approval id because the id is the table primary key.
 """
 
 from __future__ import annotations
@@ -212,6 +212,24 @@ class PostgresApprovalReadRepository:
             return None
         return _approval_from_row(dict(row))
 
+    def get_approval_by_id(self, *, approval_id: str) -> ApprovalRecord | None:
+        with self._database.connect() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT id, tenant_id, request_type, target_type, target_id,
+                      status, requested_by, approved_by, reason, payload, created_at,
+                      resolved_at
+                    FROM approvals
+                    WHERE id = %s
+                    """,
+                    (approval_id,),
+                )
+                row = cursor.fetchone()
+        if row is None:
+            return None
+        return _approval_from_row(dict(row))
+
     def list_for_target(
         self,
         *,
@@ -241,3 +259,78 @@ class PostgresApprovalReadRepository:
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
+
+
+class PostgresApprovalWriteRepository:
+    """Write tenant-scoped approval records to PostgreSQL."""
+
+    def __init__(self, database: PostgresDatabase) -> None:
+        self._database = database
+
+    def append_approval(self, record: ApprovalRecord) -> None:
+        with self._database.transaction() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO approvals (
+                      id, tenant_id, request_type, target_type, target_id, status,
+                      requested_by, approved_by, reason, payload, created_at,
+                      resolved_at
+                    )
+                    VALUES (
+                      %s, %s, %s, %s, %s, %s,
+                      %s, %s, %s, %s, %s,
+                      %s
+                    )
+                    """,
+                    (
+                        record.id,
+                        record.tenant_id,
+                        record.request_type,
+                        record.target_type,
+                        record.target_id,
+                        record.status,
+                        record.requested_by,
+                        record.approved_by,
+                        record.reason,
+                        json.dumps(record.payload, ensure_ascii=False, default=str),
+                        record.created_at,
+                        record.resolved_at,
+                    ),
+                )
+
+    def update_approval_status(
+        self,
+        *,
+        approval_id: str,
+        status: str,
+        approved_by: str,
+        resolved_at: str,
+        payload: dict[str, Any],
+    ) -> ApprovalRecord | None:
+        with self._database.transaction() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    UPDATE approvals
+                    SET status = %s,
+                      approved_by = %s,
+                      resolved_at = %s,
+                      payload = %s
+                    WHERE id = %s
+                    RETURNING id, tenant_id, request_type, target_type, target_id,
+                      status, requested_by, approved_by, reason, payload, created_at,
+                      resolved_at
+                    """,
+                    (
+                        status,
+                        approved_by,
+                        resolved_at,
+                        json.dumps(payload, ensure_ascii=False, default=str),
+                        approval_id,
+                    ),
+                )
+                row = cursor.fetchone()
+        if row is None:
+            return None
+        return _approval_from_row(dict(row))

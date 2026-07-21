@@ -14,6 +14,7 @@ from backend.persistence.audit_events import (
 from backend.persistence.approvals import (
     ApprovalRecord,
     PostgresApprovalReadRepository,
+    PostgresApprovalWriteRepository,
     SQLiteApprovalReadRepository,
 )
 from backend.persistence.database import (
@@ -116,6 +117,7 @@ __all__ = [
     "ModelConfigRecord",
     "PostgresAuditEventReadRepository",
     "PostgresApprovalReadRepository",
+    "PostgresApprovalWriteRepository",
     "PostgresAgentCatalogReadRepository",
     "PostgresAgentRunReadRepository",
     "PostgresAgentRunWriteRepository",

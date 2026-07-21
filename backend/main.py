@@ -88,6 +88,8 @@ from repositories.agents import AgentRepository
 from backend.persistence import (
     PostgresAgentRunReadRepository,
     PostgresAgentRunWriteRepository,
+    PostgresApprovalReadRepository,
+    PostgresApprovalWriteRepository,
     create_postgres_database,
 )
 from repositories.agent_runs import (
@@ -95,7 +97,11 @@ from repositories.agent_runs import (
     AgentRunRepositoryProtocol,
     PostgresAgentRunReadThroughRepository,
 )
-from repositories.approvals import ApprovalRequestRepository
+from repositories.approvals import (
+    ApprovalRequestRepository,
+    ApprovalRequestRepositoryProtocol,
+    PostgresApprovalReadThroughRepository,
+)
 from repositories.connectors import ConnectorConfigRepository
 from repositories.dev_knowledge import DevKnowledgeRepository
 from repositories.memories import PlatformMemoryRepository
@@ -141,6 +147,9 @@ load_local_env()
 
 agent_repository = AgentRepository(PLATFORM_AGENTS_PATH)
 agent_run_fallback_repository = AgentRunRepository(PLATFORM_AGENT_RUNS_PATH)
+approval_request_fallback_repository = ApprovalRequestRepository(
+    PLATFORM_APPROVAL_REQUESTS_PATH,
+)
 
 
 def _build_agent_run_repository() -> AgentRunRepositoryProtocol:
@@ -157,6 +166,22 @@ def _build_agent_run_repository() -> AgentRunRepositoryProtocol:
 
 
 agent_run_repository = _build_agent_run_repository()
+
+
+def _build_approval_request_repository() -> ApprovalRequestRepositoryProtocol:
+    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
+    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+        return approval_request_fallback_repository
+
+    database = create_postgres_database(database_url)
+    return PostgresApprovalReadThroughRepository(
+        postgres_reader=PostgresApprovalReadRepository(database),
+        postgres_writer=PostgresApprovalWriteRepository(database),
+        fallback_repository=approval_request_fallback_repository,
+    )
+
+
+approval_request_repository = _build_approval_request_repository()
 connector_config_repository = ConnectorConfigRepository(
     PLATFORM_CONNECTOR_CONFIGS_PATH,
 )
@@ -164,9 +189,6 @@ workflow_template_repository = WorkflowTemplateRepository(
     PLATFORM_WORKFLOW_TEMPLATES_PATH,
 )
 workflow_run_repository = WorkflowRunRepository(PLATFORM_WORKFLOW_RUNS_PATH)
-approval_request_repository = ApprovalRequestRepository(
-    PLATFORM_APPROVAL_REQUESTS_PATH,
-)
 member_repository = MemberRepository(PLATFORM_MEMBERS_PATH)
 dev_knowledge_repository = DevKnowledgeRepository(PLATFORM_DEV_KNOWLEDGE_PATH)
 dev_knowledge_service = PlatformDevKnowledgeService(
