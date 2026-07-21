@@ -392,6 +392,53 @@ def build_runtime_invocation_result_payload(
     ).to_dict()
 
 
+def build_adapter_backed_local_invocation_result_payload(
+    *,
+    answer: str,
+    status: str,
+    evidence: dict[str, Any],
+    agent_metadata: dict[str, Any] | None = None,
+    runtime_adapter: dict[str, Any] | None = None,
+    runtime_invocation_id: str | None = None,
+    agent_run_id: str | None = None,
+    provider_run_id: str | None = None,
+    completed_at: str | None = None,
+    latency_ms: int | None = None,
+    token_usage: dict[str, Any] | None = None,
+    error: str | None = None,
+    raw: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build a local service result through the configured runtime adapter.
+
+    This records the current AgentFoundry-local execution path behind the
+    runtime boundary without claiming that AgentScope provider invocation is
+    wired yet.
+    """
+    adapter_metadata = get_runtime_adapter(agent_metadata).describe(agent_metadata)
+    raw_payload = {
+        **(raw or {}),
+        "runtime_bridge": {
+            "type": "agentfoundry_local_service_completion",
+            "provider_invocation_wired": False,
+            "adapter_id": adapter_metadata["id"],
+        },
+    }
+    return build_runtime_invocation_result_payload(
+        answer=answer,
+        status=status,
+        evidence=evidence,
+        runtime_adapter=adapter_metadata,
+        runtime_invocation_id=runtime_invocation_id,
+        agent_run_id=agent_run_id,
+        provider_run_id=provider_run_id,
+        completed_at=completed_at,
+        latency_ms=latency_ms,
+        token_usage=token_usage,
+        error=error,
+        raw=raw_payload,
+    )
+
+
 def get_runtime_adapter(_agent_metadata: dict[str, Any] | None = None) -> RuntimeAdapter:
     """Return the runtime adapter for platform agent runs."""
     return AGENTSCOPE_PLATFORM_ADAPTER

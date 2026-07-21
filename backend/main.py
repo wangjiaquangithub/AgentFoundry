@@ -141,8 +141,8 @@ from repositories.workflows import (
     WorkflowTemplateRepository,
 )
 from runtime import (
+    build_adapter_backed_local_invocation_result_payload,
     build_runtime_invocation_request_payload,
-    build_runtime_invocation_result_payload,
     describe_runtime_adapter,
     describe_runtime_provider_health,
 )
@@ -870,7 +870,7 @@ app.include_router(
                 build_runtime_invocation_request_payload
             ),
             build_runtime_invocation_result_payload=(
-                build_runtime_invocation_result_payload
+                build_adapter_backed_local_invocation_result_payload
             ),
         )
     )
