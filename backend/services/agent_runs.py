@@ -1239,27 +1239,6 @@ class PlatformAgentRunService:
     def agent_run_approval_id(run_request: dict[str, Any]) -> str | None:
         return run_request["approval_id"]
 
-    def build_tool_approval_requirement_context(
-        self,
-        *,
-        approval_id: str | None,
-        tool_name: str,
-        tenant: str,
-        user_id: str,
-        agent_id: str,
-        inputs: dict[str, Any],
-    ) -> dict[str, Any]:
-        return {
-            "approval_id": approval_id,
-            "request_type": "tool_run",
-            "target_key": "tool_name",
-            "target_value": tool_name,
-            "tenant": tenant,
-            "user_id": user_id,
-            "agent_id": agent_id,
-            "inputs": inputs,
-        }
-
     def require_tool_approval_from_context(
         self,
         *,
@@ -1272,14 +1251,14 @@ class PlatformAgentRunService:
         inputs: dict[str, Any],
     ) -> str | None:
         return require_platform_approval(
-            **self.build_tool_approval_requirement_context(
-                approval_id=approval_id,
-                tool_name=tool_name,
-                tenant=tenant,
-                user_id=user_id,
-                agent_id=agent_id,
-                inputs=inputs,
-            ),
+            approval_id=approval_id,
+            request_type="tool_run",
+            target_key="tool_name",
+            target_value=tool_name,
+            tenant=tenant,
+            user_id=user_id,
+            agent_id=agent_id,
+            inputs=inputs,
         )
 
     def resolve_routed_tool_approval_from_context(
