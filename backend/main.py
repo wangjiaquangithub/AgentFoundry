@@ -97,6 +97,7 @@ from backend.persistence import (
     PostgresApprovalReadRepository,
     PostgresApprovalWriteRepository,
     PostgresAuditEventReadRepository,
+    PostgresAuditEventWriteRepository,
     PostgresMemoryItemReadRepository,
     PostgresMemoryItemWriteRepository,
     PostgresTenancyReadRepository,
@@ -288,6 +289,16 @@ def _build_audit_event_read_repository() -> (
     return PostgresAuditEventReadRepository(create_postgres_database(database_url))
 
 
+def _build_audit_event_write_repository() -> (
+    PostgresAuditEventWriteRepository | None
+):
+    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
+    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+        return None
+
+    return PostgresAuditEventWriteRepository(create_postgres_database(database_url))
+
+
 def _build_member_repository() -> MemberRepositoryProtocol:
     database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
     if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
@@ -388,6 +399,7 @@ def _platform_tool_policy_service() -> PlatformToolPolicyService:
         ),
         tool_governance_reader=_build_tool_governance_read_repository(),
         tool_governance_writer=_build_tool_governance_write_repository(),
+        audit_event_writer=_build_audit_event_write_repository(),
         enterprise_tool_catalog=ENTERPRISE_TOOL_CATALOG,
         approval_required_tools=APPROVAL_REQUIRED_TOOLS,
         now=now_iso,

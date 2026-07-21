@@ -238,6 +238,7 @@ def create_platform_admin_router(
 
     @router.patch("/enterprise/platform/policies/tools")
     async def update_enterprise_platform_tool_policy(
+        request: Request,
         payload: EnterpriseToolPolicyUpdateRequest,
     ) -> dict[str, Any]:
         """Persist one tenant user's enterprise tool authorization policy."""
@@ -247,6 +248,7 @@ def create_platform_admin_router(
                 response_payload,
             ) = deps.tool_policy_service().update_user_policy_request_payload(
                 payload.model_dump(),
+                actor_user_id=request.headers.get("X-User-ID"),
             )
         except PlatformToolPolicyServiceError as exc:
             _raise_service_error(exc)

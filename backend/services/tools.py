@@ -3,7 +3,9 @@
 import json
 from pathlib import Path
 from typing import Any, Callable, Protocol
+from uuid import uuid4
 
+from backend.persistence import AuditEventRecord
 from permissions import ToolAuthorizationPolicy
 from repositories.tool_policy import (
     PostgresToolPolicyWriteThroughRepository,
@@ -31,6 +33,13 @@ class ToolGovernanceReadRepository(Protocol):
         """Return tenant-scoped tool records."""
 
 
+class AuditEventWriteRepository(Protocol):
+    """Write tenant-scoped governance audit events."""
+
+    def append_audit_event(self, record: AuditEventRecord) -> None:
+        """Persist one audit event."""
+
+
 class PlatformToolPolicyServiceError(ValueError):
     """Raised when a tool policy operation cannot be completed."""
 
@@ -54,6 +63,7 @@ class PlatformToolPolicyService:
         identity_metadata: Callable[[str, str], list[dict[str, Any]]],
         tool_governance_reader: ToolGovernanceReadRepository | None = None,
         tool_governance_writer: ToolPolicyWriteRepository | None = None,
+        audit_event_writer: AuditEventWriteRepository | None = None,
         enterprise_tool_catalog: dict[str, dict[str, Any]] | None = None,
         approval_required_tools: set[str] | None = None,
         now: Callable[[], str] | None = None,
@@ -66,6 +76,7 @@ class PlatformToolPolicyService:
         self._identity_metadata = identity_metadata
         self._tool_governance_reader = tool_governance_reader
         self._tool_governance_writer = tool_governance_writer
+        self._audit_event_writer = audit_event_writer
         self._enterprise_tool_catalog = enterprise_tool_catalog or {}
         self._approval_required_tools = approval_required_tools or set()
         self._now = now
@@ -637,10 +648,18 @@ class PlatformToolPolicyService:
         user_id: str,
         allow: list[str] | None,
         deny: list[str] | None,
+        actor_user_id: str | None = None,
     ) -> tuple[ToolAuthorizationPolicy, dict[str, Any]]:
         authorization_policy = self.update_user_policy(
             tenant=tenant,
             user_id=user_id,
+            allow=allow,
+            deny=deny,
+        )
+        self._append_user_policy_audit_event(
+            tenant=tenant,
+            user_id=user_id,
+            actor_user_id=actor_user_id,
             allow=allow,
             deny=deny,
         )
@@ -656,13 +675,62 @@ class PlatformToolPolicyService:
     def update_user_policy_request_payload(
         self,
         payload: dict[str, Any],
+        *,
+        actor_user_id: str | None = None,
     ) -> tuple[ToolAuthorizationPolicy, dict[str, Any]]:
         return self.update_user_policy_payload(
             tenant=str(payload.get("tenant") or ""),
             user_id=str(payload.get("user_id") or ""),
             allow=payload.get("allow"),
             deny=payload.get("deny"),
+            actor_user_id=actor_user_id,
         )
+
+    def _append_user_policy_audit_event(
+        self,
+        *,
+        tenant: str,
+        user_id: str,
+        actor_user_id: str | None,
+        allow: list[str] | None,
+        deny: list[str] | None,
+    ) -> None:
+        if self._audit_event_writer is None:
+            return
+        if self._now is None:
+            raise PlatformToolPolicyServiceError(
+                500,
+                "Tool policy audit PostgreSQL writer requires a clock.",
+            )
+
+        normalized_tenant = tenant.strip()
+        normalized_user_id = user_id.strip()
+        normalized_actor = str(actor_user_id or "platform-admin").strip()
+        normalized_allow = self.normalize_tool_list(allow, field_name="allow")
+        normalized_deny = self.normalize_tool_list(deny, field_name="deny")
+        try:
+            self._audit_event_writer.append_audit_event(
+                AuditEventRecord(
+                    id=str(uuid4()),
+                    tenant_id=normalized_tenant,
+                    actor_user_id=normalized_actor or "platform-admin",
+                    event_type="tool_policy.user_policy_updated",
+                    target_type="tool_policy_user",
+                    target_id=f"{normalized_tenant}:{normalized_user_id}",
+                    payload={
+                        "schema_version": 1,
+                        "tenant": normalized_tenant,
+                        "user_id": normalized_user_id,
+                        "allow": normalized_allow,
+                        "deny": normalized_deny,
+                    },
+                    created_at=self._now(),
+                ),
+            )
+        except ValueError:
+            raise
+        except Exception as exc:
+            raise PlatformToolPolicyServiceError(500, str(exc)) from exc
 
     def _repository(self) -> ToolPolicyRepository | PostgresToolPolicyWriteThroughRepository:
         fallback_repository = ToolPolicyRepository(
