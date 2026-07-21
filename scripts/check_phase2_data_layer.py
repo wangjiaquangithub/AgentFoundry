@@ -113,6 +113,10 @@ POSTGRES_AUTHORITATIVE_PERSISTENCE_REPOSITORIES = {
         "PostgresToolCallReadRepository",
         "PostgresToolCallWriteRepository",
     },
+    "tools.py": {
+        "PostgresToolGovernanceReadRepository",
+        "PostgresToolGovernanceWriteRepository",
+    },
     "workflows.py": {
         "PostgresWorkflowReadRepository",
         "PostgresWorkflowWriteRepository",
