@@ -2144,6 +2144,67 @@ def _check_postgres_approval_request_reads_guarded() -> list[str]:
     return errors
 
 
+def _check_postgres_membership_reads_guarded() -> list[str]:
+    errors: list[str] = []
+    tenancy_path = PERSISTENCE_DIR / "tenancy.py"
+    tenancy_source = tenancy_path.read_text(encoding="utf-8")
+    tenancy_tree = ast.parse(tenancy_source, filename=str(tenancy_path))
+
+    if "PostgresTenancyReadRepository" not in tenancy_source:
+        errors.append(
+            "backend/persistence/tenancy.py must define "
+            "PostgresTenancyReadRepository",
+        )
+        return errors
+
+    required_methods = {
+        "list_tenants": ["FROM tenants"],
+        "get_tenant": ["FROM tenants", "WHERE id = %s"],
+        "list_users": ["FROM users", "INNER JOIN memberships", "WHERE memberships.tenant_id = %s"],
+        "list_memberships": ["FROM memberships", "tenant_id = %s", "user_id = %s"],
+    }
+    tenant_argument_methods = {"get_tenant", "list_users", "list_memberships"}
+    for method_name, sql_tokens in required_methods.items():
+        method_node = _find_class_method(
+            tenancy_tree,
+            class_name="PostgresTenancyReadRepository",
+            method_name=method_name,
+        )
+        if method_node is None:
+            errors.append(
+                "PostgreSQL membership read repository missing method: "
+                "backend/persistence/tenancy.py:"
+                f"PostgresTenancyReadRepository.{method_name}",
+            )
+            continue
+        method_arguments = {
+            argument.arg
+            for argument in [*method_node.args.args, *method_node.args.kwonlyargs]
+        }
+        if method_name in tenant_argument_methods and "tenant_id" not in method_arguments:
+            errors.append(
+                "PostgreSQL membership read method must accept tenant_id: "
+                "backend/persistence/tenancy.py:"
+                f"PostgresTenancyReadRepository.{method_name}",
+            )
+        if not _method_uses_database_call(method_node, "connect"):
+            errors.append(
+                "PostgreSQL membership read method must read through PostgreSQL: "
+                "backend/persistence/tenancy.py:"
+                f"PostgresTenancyReadRepository.{method_name}",
+            )
+        normalized_sql = " ".join(_normalized_sql_literals(method_node))
+        for sql_token in sql_tokens:
+            if sql_token.lower() not in normalized_sql:
+                errors.append(
+                    "PostgreSQL membership read method must query expected "
+                    "tenancy tables and filters: backend/persistence/tenancy.py:"
+                    f"PostgresTenancyReadRepository.{method_name}",
+                )
+
+    return errors
+
+
 def _find_class_method(
     tree: ast.AST,
     *,
@@ -2219,6 +2280,7 @@ def main() -> int:
         *_check_postgres_agent_catalog_reads_guarded(),
         *_check_postgres_agent_run_reads_guarded(),
         *_check_postgres_approval_request_reads_guarded(),
+        *_check_postgres_membership_reads_guarded(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -2267,6 +2329,7 @@ def main() -> int:
     print("- PostgreSQL agent catalog reads guarded: yes")
     print("- PostgreSQL agent run reads guarded: yes")
     print("- PostgreSQL approval request reads guarded: yes")
+    print("- PostgreSQL membership reads guarded: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:
