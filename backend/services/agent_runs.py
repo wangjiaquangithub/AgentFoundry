@@ -2027,18 +2027,12 @@ class PlatformAgentRunService:
         decision_with_routing_context: Callable[..., dict[str, Any]],
         execution_context: dict[str, Any],
         route_context_view: dict[str, Any],
-        tenant: str,
-        user_id: str,
-        tool_name: str,
-        inputs: dict[str, Any],
         headers: Any,
-        connector: str,
-        connector_source: str,
-        routing_source: str,
-        routing_reason: str,
         routing_mode: str,
         routing_error: str | None,
     ) -> None:
+        execution_context_view = self.execution_context_view(execution_context)
+        response_record_context = execution_context_view["response_record_context"]
         detail = self.require_approval_required_exception_detail(exc)
         approval = self.create_pending_tool_approval_request_or_raise_from_context(
             platform_approval_service=platform_approval_service,
@@ -2055,14 +2049,14 @@ class PlatformAgentRunService:
             decision_with_routing_context=decision_with_routing_context,
             detail=detail,
             approval=approval,
-            tool_name=tool_name,
-            inputs=inputs,
-            tenant=tenant,
-            user_id=user_id,
-            connector=connector,
-            connector_source=connector_source,
-            routing_source=routing_source,
-            routing_reason=routing_reason,
+            tool_name=route_context_view["tool_name"],
+            inputs=route_context_view["inputs"],
+            tenant=execution_context_view["tenant"],
+            user_id=response_record_context["user_id"],
+            connector=execution_context_view["connector_label"],
+            connector_source=execution_context_view["connector_source"],
+            routing_source=route_context_view["source"],
+            routing_reason=route_context_view["reason"],
             routing_mode=routing_mode,
             routing_error=routing_error,
         )
@@ -2084,8 +2078,6 @@ class PlatformAgentRunService:
         routing_mode: str,
         routing_error: str | None,
     ) -> None:
-        execution_context_view = self.execution_context_view(execution_context)
-        response_record_context = execution_context_view["response_record_context"]
         self.record_pending_tool_approval_from_exception_context(
             exc=exc,
             tool_calls=tool_calls,
@@ -2096,15 +2088,7 @@ class PlatformAgentRunService:
             decision_with_routing_context=decision_with_routing_context,
             execution_context=execution_context,
             route_context_view=route_context_view,
-            tenant=execution_context_view["tenant"],
-            user_id=response_record_context["user_id"],
-            tool_name=route_context_view["tool_name"],
-            inputs=route_context_view["inputs"],
             headers=headers,
-            connector=execution_context_view["connector_label"],
-            connector_source=execution_context_view["connector_source"],
-            routing_source=route_context_view["source"],
-            routing_reason=route_context_view["reason"],
             routing_mode=routing_mode,
             routing_error=routing_error,
         )
