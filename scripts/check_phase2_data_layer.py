@@ -1812,6 +1812,60 @@ def _check_postgres_memory_item_reads_guarded() -> list[str]:
     return errors
 
 
+def _check_postgres_retrieval_event_reads_guarded() -> list[str]:
+    errors: list[str] = []
+    retrieval_event_path = PERSISTENCE_DIR / "retrieval_events.py"
+    retrieval_event_source = retrieval_event_path.read_text(encoding="utf-8")
+    retrieval_event_tree = ast.parse(retrieval_event_source, filename=str(retrieval_event_path))
+
+    if "PostgresRetrievalEventReadRepository" not in retrieval_event_source:
+        errors.append(
+            "backend/persistence/retrieval_events.py must define "
+            "PostgresRetrievalEventReadRepository",
+        )
+        return errors
+
+    required_methods = {
+        "list_retrieval_events": ["FROM retrieval_events", "WHERE tenant_id = %s"],
+        "get_retrieval_event": ["FROM retrieval_events", "WHERE tenant_id = %s AND id = %s"],
+    }
+    for method_name, sql_tokens in required_methods.items():
+        method_node = _find_class_method(
+            retrieval_event_tree,
+            class_name="PostgresRetrievalEventReadRepository",
+            method_name=method_name,
+        )
+        if method_node is None:
+            errors.append(
+                "PostgreSQL retrieval event read repository missing method: "
+                "backend/persistence/retrieval_events.py:"
+                f"PostgresRetrievalEventReadRepository.{method_name}",
+            )
+            continue
+        if not _method_has_required_argument(method_node, "tenant_id"):
+            errors.append(
+                "PostgreSQL retrieval event read method must require tenant_id: "
+                "backend/persistence/retrieval_events.py:"
+                f"PostgresRetrievalEventReadRepository.{method_name}",
+            )
+        if not _method_uses_database_call(method_node, "connect"):
+            errors.append(
+                "PostgreSQL retrieval event read method must read through PostgreSQL: "
+                "backend/persistence/retrieval_events.py:"
+                f"PostgresRetrievalEventReadRepository.{method_name}",
+            )
+        normalized_sql = " ".join(_normalized_sql_literals(method_node))
+        for sql_token in sql_tokens:
+            if sql_token.lower() not in normalized_sql:
+                errors.append(
+                    "PostgreSQL retrieval event read method must query tenant-scoped "
+                    "retrieval events: backend/persistence/retrieval_events.py:"
+                    f"PostgresRetrievalEventReadRepository.{method_name}",
+                )
+
+    return errors
+
+
 def _find_class_method(
     tree: ast.AST,
     *,
@@ -1881,6 +1935,7 @@ def main() -> int:
         *_check_postgres_document_chunk_reads_guarded(),
         *_check_postgres_embedding_record_reads_guarded(),
         *_check_postgres_memory_item_reads_guarded(),
+        *_check_postgres_retrieval_event_reads_guarded(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -1923,6 +1978,7 @@ def main() -> int:
     print("- PostgreSQL document chunk reads guarded: yes")
     print("- PostgreSQL embedding record reads guarded: yes")
     print("- PostgreSQL memory item reads guarded: yes")
+    print("- PostgreSQL retrieval event reads guarded: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:
