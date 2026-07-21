@@ -9,6 +9,7 @@ from backend.persistence.approvals import ApprovalRecord, SQLiteApprovalReadRepo
 from backend.persistence.database import (
     PostgresDatabase,
     SQLiteDatabase,
+    create_database,
     create_postgres_database,
     create_sqlite_database,
 )
@@ -48,6 +49,7 @@ __all__ = [
     "ToolPolicyRecord",
     "ToolRecord",
     "UserRecord",
+    "create_database",
     "create_postgres_database",
     "create_sqlite_database",
 ]

@@ -80,3 +80,15 @@ def create_postgres_database(database_url: str) -> PostgresDatabase:
     if parsed.scheme not in {"postgresql", "postgres"}:
         raise ValueError("PostgreSQL database URLs must use postgresql:// or postgres://.")
     return PostgresDatabase(database_url=database_url)
+
+
+def create_database(database_url: str) -> SQLiteDatabase | PostgresDatabase:
+    parsed = urlparse(database_url)
+    if parsed.scheme in {"postgresql", "postgres"}:
+        return create_postgres_database(database_url)
+    if parsed.scheme == "sqlite":
+        return create_sqlite_database(database_url)
+    raise ValueError(
+        "Unsupported database URL scheme. Use postgresql:// for production "
+        "or sqlite:// for explicit local development compatibility."
+    )
