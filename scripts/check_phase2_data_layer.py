@@ -84,6 +84,7 @@ POSTGRES_AUTHORITATIVE_PERSISTENCE_REPOSITORIES = {
         "PostgresAuditEventWriteRepository",
     },
     "documents.py": {"PostgresDocumentReadRepository"},
+    "document_chunks.py": {"PostgresDocumentChunkReadRepository"},
     "knowledge_bases.py": {"PostgresKnowledgeBaseReadRepository"},
     "model_configs.py": {"PostgresModelConfigReadRepository"},
 }
