@@ -155,11 +155,9 @@ class PostgresApprovalReadThroughRepository:
         *,
         postgres_reader: PostgresApprovalReadRepository,
         postgres_writer: PostgresApprovalWriteRepository,
-        fallback_repository: ApprovalRequestRepository,
     ) -> None:
         self._postgres_reader = postgres_reader
         self._postgres_writer = postgres_writer
-        self._fallback_repository = fallback_repository
 
     def list(
         self,

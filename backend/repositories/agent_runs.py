@@ -160,11 +160,9 @@ class PostgresAgentRunReadThroughRepository:
         *,
         postgres_reader: PostgresAgentRunReadRepository,
         postgres_writer: PostgresAgentRunWriteRepository,
-        fallback_repository: AgentRunRepository,
     ) -> None:
         self._postgres_reader = postgres_reader
         self._postgres_writer = postgres_writer
-        self._fallback_repository = fallback_repository
 
     def list(
         self,

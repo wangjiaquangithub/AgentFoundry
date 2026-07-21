@@ -63,11 +63,9 @@ class PostgresMemberReadThroughRepository:
         *,
         postgres_reader: PostgresTenancyReadRepository,
         postgres_writer: PostgresTenancyWriteRepository,
-        fallback_repository: MemberRepository,
     ) -> None:
         self._postgres_reader = postgres_reader
         self._postgres_writer = postgres_writer
-        self._fallback_repository = fallback_repository
 
     def load_config(self) -> dict[str, Any]:
         memberships = self._postgres_reader.list_memberships()

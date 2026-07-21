@@ -134,11 +134,9 @@ class PostgresWorkflowRunReadThroughRepository:
         *,
         postgres_reader: PostgresWorkflowReadRepository,
         postgres_writer: PostgresWorkflowWriteRepository,
-        fallback_repository: WorkflowRunRepository,
     ) -> None:
         self._postgres_reader = postgres_reader
         self._postgres_writer = postgres_writer
-        self._fallback_repository = fallback_repository
 
     def list(
         self,

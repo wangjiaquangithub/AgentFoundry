@@ -75,11 +75,9 @@ class PostgresAgentCatalogWriteThroughRepository:
         *,
         postgres_reader: PostgresAgentCatalogReadRepository,
         postgres_writer: PostgresAgentCatalogWriteRepository,
-        fallback_repository: AgentRepository,
     ) -> None:
         self._postgres_reader = postgres_reader
         self._postgres_writer = postgres_writer
-        self._fallback_repository = fallback_repository
 
     def list(self) -> list[dict[str, Any]]:
         return [

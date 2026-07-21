@@ -187,7 +187,6 @@ def _build_agent_repository() -> AgentRepositoryProtocol:
     return PostgresAgentCatalogWriteThroughRepository(
         postgres_reader=PostgresAgentCatalogReadRepository(database),
         postgres_writer=PostgresAgentCatalogWriteRepository(database),
-        fallback_repository=agent_fallback_repository,
     )
 
 
@@ -200,7 +199,6 @@ def _build_agent_run_repository() -> AgentRunRepositoryProtocol:
     return PostgresAgentRunReadThroughRepository(
         postgres_reader=PostgresAgentRunReadRepository(database),
         postgres_writer=PostgresAgentRunWriteRepository(database),
-        fallback_repository=agent_run_fallback_repository,
     )
 
 
@@ -217,7 +215,6 @@ def _build_approval_request_repository() -> ApprovalRequestRepositoryProtocol:
     return PostgresApprovalReadThroughRepository(
         postgres_reader=PostgresApprovalReadRepository(database),
         postgres_writer=PostgresApprovalWriteRepository(database),
-        fallback_repository=approval_request_fallback_repository,
     )
 
 
@@ -319,7 +316,6 @@ def _build_member_repository() -> MemberRepositoryProtocol:
     return PostgresMemberReadThroughRepository(
         postgres_reader=PostgresTenancyReadRepository(database),
         postgres_writer=PostgresTenancyWriteRepository(database),
-        fallback_repository=member_fallback_repository,
     )
 
 
@@ -342,7 +338,6 @@ def _build_workflow_run_repository() -> WorkflowRunRepositoryProtocol:
     return PostgresWorkflowRunReadThroughRepository(
         postgres_reader=PostgresWorkflowReadRepository(database),
         postgres_writer=PostgresWorkflowWriteRepository(database),
-        fallback_repository=workflow_run_fallback_repository,
     )
 
 
