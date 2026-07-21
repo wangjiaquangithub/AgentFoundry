@@ -2055,6 +2055,42 @@ class PlatformAgentRunService:
             approval_id=approval_id,
         )
 
+    def run_and_record_executed_routed_tool_call_from_route_view_context(
+        self,
+        *,
+        tool_calls: list[dict[str, Any]],
+        run_authorized_enterprise_tool: Callable[..., dict[str, Any]],
+        decision_with_routing_context: Callable[..., dict[str, Any]],
+        format_tool_result_answer: Callable[..., str],
+        user_id: str,
+        route_context_view: dict[str, Any],
+        agent_id: str,
+        session_id: str,
+        connector: str,
+        connector_source: str,
+        routing_mode: str,
+        routing_error: str | None,
+        approval_id: str | None,
+    ) -> None:
+        self.run_and_record_executed_routed_tool_call_from_context(
+            tool_calls=tool_calls,
+            run_authorized_enterprise_tool=run_authorized_enterprise_tool,
+            decision_with_routing_context=decision_with_routing_context,
+            format_tool_result_answer=format_tool_result_answer,
+            user_id=user_id,
+            tool_name=route_context_view["tool_name"],
+            inputs=route_context_view["inputs"],
+            agent_id=agent_id,
+            session_id=session_id,
+            connector=connector,
+            connector_source=connector_source,
+            routing_source=route_context_view["source"],
+            routing_reason=route_context_view["reason"],
+            routing_mode=routing_mode,
+            routing_error=routing_error,
+            approval_id=approval_id,
+        )
+
     def build_executed_routed_tool_call(
         self,
         *,
