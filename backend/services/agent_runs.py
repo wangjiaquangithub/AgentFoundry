@@ -1208,14 +1208,6 @@ class PlatformAgentRunService:
     ) -> bool:
         return tool_name in configured_tools
 
-    def requires_tool_approval(
-        self,
-        *,
-        tool_name: str,
-        approval_required_tools: set[str],
-    ) -> bool:
-        return tool_name in approval_required_tools
-
     def resolve_routed_tool_approval_from_context(
         self,
         *,
@@ -1228,10 +1220,7 @@ class PlatformAgentRunService:
         agent_id: str,
         inputs: dict[str, Any],
     ) -> str | None:
-        if not self.requires_tool_approval(
-            tool_name=tool_name,
-            approval_required_tools=approval_required_tools,
-        ):
+        if tool_name not in approval_required_tools:
             return None
         return require_platform_approval(
             approval_id=run_request["approval_id"],
