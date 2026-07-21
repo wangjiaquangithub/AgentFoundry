@@ -1200,9 +1200,6 @@ class PlatformAgentRunService:
             "routing_error": routing_error,
         }
 
-    def denied_tool_answer(self, denial: dict[str, Any]) -> str:
-        return str(denial["reason"])
-
     def is_configured_tool(
         self,
         *,
@@ -1382,7 +1379,7 @@ class PlatformAgentRunService:
                     routing_error=routing_error,
                 ),
             ),
-            answer=self.denied_tool_answer(denial),
+            answer=str(denial["reason"]),
         )
 
     def record_unconfigured_routed_tool_denial_from_context(
