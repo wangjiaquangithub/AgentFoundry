@@ -1,9 +1,8 @@
-"""Tool call read repositories.
+"""Tool call repositories.
 
 Tool call records are execution evidence and must always be read through an
-explicit tenant boundary. This repository is read-only while AgentFoundry moves
-tool execution history from development JSONL files into the production data
-layer.
+explicit tenant boundary. PostgreSQL writes return the persisted row so callers
+can audit the database record instead of the input payload.
 """
 
 from __future__ import annotations
@@ -228,7 +227,7 @@ class PostgresToolCallWriteRepository:
     def __init__(self, database: PostgresDatabase) -> None:
         self._database = database
 
-    def append_tool_call(self, record: ToolCallRecord) -> None:
+    def append_tool_call(self, record: ToolCallRecord) -> ToolCallRecord:
         with self._database.transaction() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
@@ -241,7 +240,18 @@ class PostgresToolCallWriteRepository:
                       %s, %s, %s, %s, %s, %s, %s,
                       %s, %s, %s
                     )
-                    ON CONFLICT (id) DO NOTHING
+                    ON CONFLICT (id) DO UPDATE SET
+                      tenant_id = EXCLUDED.tenant_id,
+                      agent_run_id = EXCLUDED.agent_run_id,
+                      tool_id = EXCLUDED.tool_id,
+                      inputs = EXCLUDED.inputs,
+                      result = EXCLUDED.result,
+                      allowed = EXCLUDED.allowed,
+                      approval_id = EXCLUDED.approval_id,
+                      created_at = EXCLUDED.created_at,
+                      completed_at = EXCLUDED.completed_at
+                    RETURNING id, tenant_id, agent_run_id, tool_id, inputs, result,
+                      allowed, approval_id, created_at, completed_at
                     """,
                     (
                         record.id,
@@ -264,3 +274,7 @@ class PostgresToolCallWriteRepository:
                         record.completed_at,
                     ),
                 )
+                row = cursor.fetchone()
+        if row is None:
+            raise ValueError("Tool call upsert did not return a row.")
+        return _tool_call_from_row(dict(row))

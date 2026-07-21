@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class ToolCallWriteRepositoryProtocol(Protocol):
     """Persistence boundary for production tool-call execution evidence."""
 
-    def append_tool_call(self, record: ToolCallRecord) -> None:
+    def append_tool_call(self, record: ToolCallRecord) -> ToolCallRecord:
         """Persist one tenant-scoped tool-call record."""
 
 

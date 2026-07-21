@@ -36,7 +36,7 @@ SENSITIVE_KEY_PARTS = (
 class ToolCallWriteRepository(Protocol):
     """Persistence boundary for production tool-call audit writes."""
 
-    def append_tool_call(self, record: ToolCallRecord) -> None:
+    def append_tool_call(self, record: ToolCallRecord) -> ToolCallRecord:
         """Persist one tool-call audit record."""
 
 

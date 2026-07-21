@@ -690,6 +690,22 @@ def _check_postgres_tool_calls_wired() -> list[str]:
         errors.append(
             "backend/services/agent_runs.py must call the tool call writer",
         )
+    tool_call_persistence_source = (PERSISTENCE_DIR / "tool_calls.py").read_text(
+        encoding="utf-8",
+    )
+    for token in (
+        "def append_tool_call(",
+        ") -> ToolCallRecord:",
+        "RETURNING id, tenant_id, agent_run_id, tool_id, inputs, result",
+        "row = cursor.fetchone()",
+        "Tool call upsert did not return a row.",
+        "return _tool_call_from_row(dict(row))",
+    ):
+        if token not in tool_call_persistence_source:
+            errors.append(
+                "backend/persistence/tool_calls.py must return persisted "
+                f"PostgreSQL tool call write records: {token}",
+            )
 
     return errors
 
