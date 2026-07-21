@@ -1536,12 +1536,10 @@ async def run_enterprise_agent(
         runtime = _platform_connector_config_service().enterprise_runtime_context(user_id)
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
-    agent = None
-    if run_request["agent_id"]:
-        agent, _ = _published_platform_agent_tool_scope_for_user(
-            run_request["agent_id"],
-            user_id,
-        )
+    agent = agent_run_service.resolve_run_agent(
+        run_request=run_request,
+        load_published_agent=_published_platform_agent_tool_scope_for_user,
+    )
 
     agent_metadata = _platform_agent_service().run_metadata(agent)
     runtime_adapter_payload = agent_run_service.runtime_adapter_payload_from_metadata(

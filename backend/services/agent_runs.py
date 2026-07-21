@@ -105,6 +105,18 @@ class PlatformAgentRunService:
         }
 
     @staticmethod
+    def resolve_run_agent(
+        *,
+        run_request: dict[str, Any],
+        load_published_agent: Callable[[str, str], tuple[dict[str, Any], Any]],
+    ) -> dict[str, Any] | None:
+        agent_id = run_request["agent_id"]
+        if not agent_id:
+            return None
+        agent, _ = load_published_agent(agent_id, run_request["user_id"])
+        return agent
+
+    @staticmethod
     def runtime_adapter_payload_from_metadata(
         *,
         describe_runtime_adapter: Callable[[dict[str, Any]], dict[str, Any]],
