@@ -14,7 +14,11 @@ from backend.persistence.database import (
     create_postgres_database,
     create_sqlite_database,
 )
-from backend.persistence.runs import AgentRunRecord, SQLiteAgentRunReadRepository
+from backend.persistence.runs import (
+    AgentRunRecord,
+    PostgresAgentRunReadRepository,
+    SQLiteAgentRunReadRepository,
+)
 from backend.persistence.tenancy import (
     MembershipRecord,
     PostgresTenancyReadRepository,
@@ -40,6 +44,7 @@ __all__ = [
     "ApprovalRecord",
     "MembershipRecord",
     "PostgresAgentCatalogReadRepository",
+    "PostgresAgentRunReadRepository",
     "PostgresDatabase",
     "PostgresTenancyReadRepository",
     "PostgresToolGovernanceReadRepository",
