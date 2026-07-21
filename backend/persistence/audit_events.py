@@ -1,4 +1,4 @@
-"""Audit event read repositories.
+"""Audit event persistence repositories.
 
 Audit events are tenant-scoped governance records. PostgreSQL is the
 production path; SQLite remains an explicit local development compatibility
@@ -209,3 +209,44 @@ class PostgresAuditEventReadRepository:
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
+
+
+class PostgresAuditEventWriteRepository:
+    """Write tenant-scoped audit events to PostgreSQL."""
+
+    def __init__(self, database: PostgresDatabase) -> None:
+        self._database = database
+
+    def append_audit_event(self, record: AuditEventRecord) -> None:
+        with self._database.transaction() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO audit_events (
+                      id, tenant_id, actor_user_id, event_type, target_type,
+                      target_id, payload, created_at
+                    )
+                    VALUES (
+                      %s, %s, %s, %s, %s,
+                      %s, %s, %s
+                    )
+                    ON CONFLICT (id) DO UPDATE SET
+                      tenant_id = EXCLUDED.tenant_id,
+                      actor_user_id = EXCLUDED.actor_user_id,
+                      event_type = EXCLUDED.event_type,
+                      target_type = EXCLUDED.target_type,
+                      target_id = EXCLUDED.target_id,
+                      payload = EXCLUDED.payload,
+                      created_at = EXCLUDED.created_at
+                    """,
+                    (
+                        record.id,
+                        record.tenant_id,
+                        record.actor_user_id,
+                        record.event_type,
+                        record.target_type,
+                        record.target_id,
+                        json.dumps(record.payload, ensure_ascii=False),
+                        record.created_at,
+                    ),
+                )

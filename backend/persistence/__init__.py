@@ -10,6 +10,7 @@ from backend.persistence.agents import (
 from backend.persistence.audit_events import (
     AuditEventRecord,
     PostgresAuditEventReadRepository,
+    PostgresAuditEventWriteRepository,
     SQLiteAuditEventReadRepository,
 )
 from backend.persistence.approvals import (
@@ -122,6 +123,7 @@ __all__ = [
     "MemoryPolicyRecord",
     "ModelConfigRecord",
     "PostgresAuditEventReadRepository",
+    "PostgresAuditEventWriteRepository",
     "PostgresApprovalReadRepository",
     "PostgresApprovalWriteRepository",
     "PostgresAgentCatalogReadRepository",
