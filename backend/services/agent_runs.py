@@ -1753,6 +1753,49 @@ class PlatformAgentRunService:
             routing_error=routing_error,
         )
 
+    def record_pending_tool_approval_from_route_view_exception_context(
+        self,
+        *,
+        exc: Any,
+        tool_calls: list[dict[str, Any]],
+        platform_approval_service: Callable[[], Any],
+        raise_platform_approval_service_error: Callable[
+            [PlatformApprovalServiceError],
+            Any,
+        ],
+        decision_with_routing_context: Callable[..., dict[str, Any]],
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        route_context_view: dict[str, Any],
+        headers: Any,
+        connector: str,
+        connector_source: str,
+        routing_mode: str,
+        routing_error: str | None,
+    ) -> None:
+        self.record_pending_tool_approval_from_exception_context(
+            exc=exc,
+            tool_calls=tool_calls,
+            platform_approval_service=platform_approval_service,
+            raise_platform_approval_service_error=(
+                raise_platform_approval_service_error
+            ),
+            decision_with_routing_context=decision_with_routing_context,
+            tenant=tenant,
+            user_id=user_id,
+            agent_id=agent_id,
+            tool_name=route_context_view["tool_name"],
+            inputs=route_context_view["inputs"],
+            headers=headers,
+            connector=connector,
+            connector_source=connector_source,
+            routing_source=route_context_view["source"],
+            routing_reason=route_context_view["reason"],
+            routing_mode=routing_mode,
+            routing_error=routing_error,
+        )
+
     def resolve_approval_id(self, approval: dict[str, Any]) -> str:
         return str(approval["approval_id"])
 

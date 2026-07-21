@@ -1723,7 +1723,7 @@ async def run_enterprise_agent(
                 agent_id=runner_agent_id,
             )
         except HTTPException as exc:
-            agent_run_service.record_pending_tool_approval_from_exception_context(
+            agent_run_service.record_pending_tool_approval_from_route_view_exception_context(
                 exc=exc,
                 tool_calls=tool_calls,
                 platform_approval_service=_platform_approval_service,
@@ -1736,13 +1736,10 @@ async def run_enterprise_agent(
                 tenant=tenant,
                 user_id=user_id,
                 agent_id=runner_agent_id,
-                tool_name=tool_name,
-                inputs=route_inputs,
+                route_context_view=route_context_view,
                 headers=request.headers,
                 connector=connector_label,
                 connector_source=connector_source,
-                routing_source=route_source,
-                routing_reason=route_reason,
                 routing_mode=routing_mode,
                 routing_error=routing_error,
             )
