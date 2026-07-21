@@ -625,6 +625,88 @@ def _check_postgres_runtime_invocation_writes_wired() -> list[str]:
     return errors
 
 
+def _check_postgres_memory_item_writes_wired() -> list[str]:
+    errors: list[str] = []
+    main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    memory_source = (REPOSITORIES_DIR / "memories.py").read_text(encoding="utf-8")
+    main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+    memory_tree = ast.parse(memory_source, filename=str(REPOSITORIES_DIR / "memories.py"))
+
+    if not _module_imports_name(main_tree, "PostgresMemoryItemWriteRepository"):
+        errors.append(
+            "backend/main.py must import PostgresMemoryItemWriteRepository for memory item writes",
+        )
+    if not _module_defines_function(main_tree, "_build_memory_item_write_repository"):
+        errors.append(
+            "backend/main.py must define _build_memory_item_write_repository for PostgreSQL memory item writes",
+        )
+    if "memory_item_writer=_build_memory_item_write_repository()" not in main_source:
+        errors.append(
+            "backend/main.py must pass the PostgreSQL memory_item_writer into PlatformMemoryRepository",
+        )
+    if "memory_item_writer" not in memory_source:
+        errors.append(
+            "backend/repositories/memories.py must accept a memory_item_writer",
+        )
+    if "append_memory_item" not in memory_source:
+        errors.append(
+            "backend/repositories/memories.py must call the memory item writer",
+        )
+
+    append_capped = _find_class_method(
+        memory_tree,
+        class_name="PlatformMemoryRepository",
+        method_name="append_capped",
+    )
+    if append_capped is None:
+        errors.append(
+            "backend/repositories/memories.py must define PlatformMemoryRepository.append_capped",
+        )
+        return errors
+
+    if not _append_capped_returns_after_postgres_memory_write(append_capped):
+        errors.append(
+            "backend/repositories/memories.py must return after PostgreSQL memory_item_writer writes to avoid JSONL fallthrough",
+        )
+
+    return errors
+
+
+def _find_class_method(
+    tree: ast.AST,
+    *,
+    class_name: str,
+    method_name: str,
+) -> ast.FunctionDef | ast.AsyncFunctionDef | None:
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ClassDef) or node.name != class_name:
+            continue
+        for child in node.body:
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)) and child.name == method_name:
+                return child
+    return None
+
+
+def _append_capped_returns_after_postgres_memory_write(
+    method_node: ast.FunctionDef | ast.AsyncFunctionDef,
+) -> bool:
+    for child in method_node.body:
+        if not isinstance(child, ast.If):
+            continue
+        has_postgres_write = False
+        has_return = False
+        for body_node in ast.walk(child):
+            if isinstance(body_node, ast.Call):
+                function = body_node.func
+                if isinstance(function, ast.Attribute) and function.attr == "append_memory_item":
+                    has_postgres_write = True
+            if isinstance(body_node, ast.Return):
+                has_return = True
+        if has_postgres_write and has_return:
+            return True
+    return False
+
+
 def main() -> int:
     sql = _read_migrations()
     schema = _extract_schema(sql)
@@ -641,6 +723,7 @@ def main() -> int:
         *_check_postgres_read_tenant_boundary(),
         *_check_postgres_runtime_provider_reads_wired(),
         *_check_postgres_runtime_invocation_writes_wired(),
+        *_check_postgres_memory_item_writes_wired(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -665,6 +748,7 @@ def main() -> int:
     print("- PostgreSQL read tenant boundary guarded: yes")
     print("- PostgreSQL runtime provider reads wired: yes")
     print("- PostgreSQL runtime invocation writes wired: yes")
+    print("- PostgreSQL memory item writes wired: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:
