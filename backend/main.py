@@ -1573,7 +1573,6 @@ async def run_enterprise_agent(
         build_agent_run_context=platform_memory_service.build_agent_run_context,
         agent_run_state=platform_memory_service.agent_run_state,
         execution_context=execution_context,
-        agent_metadata=agent_metadata,
         user_id=user_id,
         max_records=PLATFORM_MEMORY_MAX_RECORDS,
         limit=PLATFORM_MEMORY_SEARCH_LIMIT,
