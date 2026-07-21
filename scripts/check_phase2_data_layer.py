@@ -105,6 +105,10 @@ POSTGRES_AUTHORITATIVE_PERSISTENCE_REPOSITORIES = {
         "PostgresRetrievalEventReadRepository",
         "PostgresRetrievalEventWriteRepository",
     },
+    "runs.py": {
+        "PostgresAgentRunReadRepository",
+        "PostgresAgentRunWriteRepository",
+    },
 }
 
 POSTGRES_SCHEME_LITERALS = {"postgres", "postgresql"}
