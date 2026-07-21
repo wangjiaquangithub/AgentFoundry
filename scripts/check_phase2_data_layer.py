@@ -18,6 +18,8 @@ ROOT = Path(__file__).resolve().parents[1]
 MIGRATIONS_DIR = ROOT / "backend" / "persistence" / "migrations"
 PERSISTENCE_DIR = ROOT / "backend" / "persistence"
 REPOSITORIES_DIR = ROOT / "backend" / "repositories"
+MAIN_MODULE = ROOT / "backend" / "main.py"
+DATABASE_MODULE = ROOT / "backend" / "persistence" / "database.py"
 
 REQUIRED_TABLES = {
     "tenants",
@@ -76,6 +78,8 @@ POSTGRES_AUTHORITATIVE_REPOSITORIES = {
     "tool_policy.py": {"PostgresToolPolicyWriteThroughRepository"},
     "workflows.py": {"PostgresWorkflowRunReadThroughRepository"},
 }
+
+POSTGRES_SCHEME_LITERALS = {"postgres", "postgresql"}
 
 
 def _read_migrations() -> str:
@@ -184,6 +188,74 @@ def _check_authoritative_postgres_repositories() -> list[str]:
     return errors
 
 
+def _module_defines_function(tree: ast.AST, function_name: str) -> bool:
+    return any(
+        isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == function_name
+        for node in ast.iter_child_nodes(tree)
+    )
+
+
+def _module_imports_name(tree: ast.AST, imported_name: str) -> bool:
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == imported_name or alias.asname == imported_name:
+                    return True
+        if isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                if alias.name == imported_name or alias.asname == imported_name:
+                    return True
+    return False
+
+
+def _module_uses_name(tree: ast.AST, name: str) -> bool:
+    return any(isinstance(node, ast.Name) and node.id == name for node in ast.walk(tree))
+
+
+def _string_literals(tree: ast.AST) -> list[str]:
+    return [
+        node.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    ]
+
+
+def _check_postgres_url_detection_boundary() -> list[str]:
+    errors: list[str] = []
+
+    database_tree = ast.parse(DATABASE_MODULE.read_text(encoding="utf-8"), filename=str(DATABASE_MODULE))
+    main_tree = ast.parse(MAIN_MODULE.read_text(encoding="utf-8"), filename=str(MAIN_MODULE))
+
+    if not _module_defines_function(database_tree, "is_postgres_database_url"):
+        errors.append(
+            "missing centralized PostgreSQL URL helper: "
+            "backend/persistence/database.py:is_postgres_database_url",
+        )
+
+    if _module_imports_name(main_tree, "urlparse"):
+        errors.append("backend/main.py must not parse database URL schemes directly; use is_postgres_database_url")
+
+    if not _module_uses_name(main_tree, "is_postgres_database_url"):
+        errors.append("backend/main.py must use backend.persistence.is_postgres_database_url for PostgreSQL detection")
+
+    main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    database_url_occurrences = main_source.count("AGENTFOUNDRY_DATABASE_URL")
+    if database_url_occurrences > 1:
+        errors.append(
+            "backend/main.py repeats AGENTFOUNDRY_DATABASE_URL checks; route database selection through "
+            "_configured_postgres_database",
+        )
+
+    scheme_literals = sorted(POSTGRES_SCHEME_LITERALS & set(_string_literals(main_tree)))
+    if scheme_literals:
+        errors.append(
+            "backend/main.py must not duplicate PostgreSQL scheme literals: "
+            f"{', '.join(scheme_literals)}",
+        )
+
+    return errors
+
+
 def main() -> int:
     sql = _read_migrations()
     schema = _extract_schema(sql)
@@ -192,6 +264,7 @@ def main() -> int:
         *_check_required_tables(schema),
         *_check_required_repositories(),
         *_check_authoritative_postgres_repositories(),
+        *_check_postgres_url_detection_boundary(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -200,6 +273,7 @@ def main() -> int:
     print(f"- required tables covered: {len(REQUIRED_TABLES) - len([e for e in errors if e.startswith('missing migration table')])}/{len(REQUIRED_TABLES)}")
     print(f"- required repositories covered: {len(REQUIRED_REPOSITORIES) - len([e for e in errors if e.startswith('missing persistence repository')])}/{len(REQUIRED_REPOSITORIES)}")
     print(f"- authoritative PostgreSQL adapters guarded: {sum(len(classes) for classes in POSTGRES_AUTHORITATIVE_REPOSITORIES.values())}")
+    print("- PostgreSQL URL detection centralized: yes")
 
     if warnings:
         print("\nWarnings:")
