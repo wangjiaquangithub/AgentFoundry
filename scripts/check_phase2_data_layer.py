@@ -2278,6 +2278,79 @@ def _check_postgres_runtime_reads_guarded() -> list[str]:
     return errors
 
 
+def _check_postgres_tool_call_reads_guarded() -> list[str]:
+    errors: list[str] = []
+    tool_calls_path = PERSISTENCE_DIR / "tool_calls.py"
+    tool_calls_source = tool_calls_path.read_text(encoding="utf-8")
+    tool_calls_tree = ast.parse(tool_calls_source, filename=str(tool_calls_path))
+
+    if "PostgresToolCallReadRepository" not in tool_calls_source:
+        errors.append(
+            "backend/persistence/tool_calls.py must define "
+            "PostgresToolCallReadRepository",
+        )
+        return errors
+
+    required_methods = {
+        "list_tool_calls": [
+            "FROM tool_calls",
+            "WHERE tenant_id = %s",
+            "agent_run_id = %s",
+            "tool_id = %s",
+            "allowed = %s",
+            "approval_id = %s",
+        ],
+        "get_tool_call": [
+            "FROM tool_calls",
+            "WHERE tenant_id = %s AND id = %s",
+        ],
+    }
+    required_arguments = {
+        "list_tool_calls": {"tenant_id"},
+        "get_tool_call": {"tenant_id", "tool_call_id"},
+    }
+    for method_name, sql_tokens in required_methods.items():
+        method_node = _find_class_method(
+            tool_calls_tree,
+            class_name="PostgresToolCallReadRepository",
+            method_name=method_name,
+        )
+        if method_node is None:
+            errors.append(
+                "PostgreSQL tool call read repository missing method: "
+                "backend/persistence/tool_calls.py:"
+                f"PostgresToolCallReadRepository.{method_name}",
+            )
+            continue
+        method_arguments = {
+            argument.arg
+            for argument in [*method_node.args.args, *method_node.args.kwonlyargs]
+        }
+        for required_argument in required_arguments[method_name]:
+            if required_argument not in method_arguments:
+                errors.append(
+                    "PostgreSQL tool call read method must accept required scope: "
+                    "backend/persistence/tool_calls.py:"
+                    f"PostgresToolCallReadRepository.{method_name}",
+                )
+        if not _method_uses_database_call(method_node, "connect"):
+            errors.append(
+                "PostgreSQL tool call read method must read through PostgreSQL: "
+                "backend/persistence/tool_calls.py:"
+                f"PostgresToolCallReadRepository.{method_name}",
+            )
+        normalized_sql = " ".join(_normalized_sql_literals(method_node))
+        for sql_token in sql_tokens:
+            if sql_token.lower() not in normalized_sql:
+                errors.append(
+                    "PostgreSQL tool call read method must query expected tool "
+                    "call tables and filters: backend/persistence/tool_calls.py:"
+                    f"PostgresToolCallReadRepository.{method_name}",
+                )
+
+    return errors
+
+
 def _find_class_method(
     tree: ast.AST,
     *,
@@ -2355,6 +2428,7 @@ def main() -> int:
         *_check_postgres_approval_request_reads_guarded(),
         *_check_postgres_membership_reads_guarded(),
         *_check_postgres_runtime_reads_guarded(),
+        *_check_postgres_tool_call_reads_guarded(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -2405,6 +2479,7 @@ def main() -> int:
     print("- PostgreSQL approval request reads guarded: yes")
     print("- PostgreSQL membership reads guarded: yes")
     print("- PostgreSQL runtime reads guarded: yes")
+    print("- PostgreSQL tool call reads guarded: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:
