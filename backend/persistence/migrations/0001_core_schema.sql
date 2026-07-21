@@ -288,7 +288,7 @@ CREATE INDEX idx_agents_tenant_status ON agents(tenant_id, status);
 CREATE INDEX idx_agent_runs_tenant_created ON agent_runs(tenant_id, created_at);
 CREATE INDEX idx_runtime_invocations_tenant_provider ON runtime_invocations(tenant_id, provider_id, created_at);
 CREATE INDEX idx_runtime_invocations_tenant_run ON runtime_invocations(tenant_id, agent_run_id, created_at);
-CREATE INDEX idx_tool_calls_tenant_run ON tool_calls(tenant_id, agent_run_id);
+CREATE INDEX idx_tool_calls_tenant_run_created ON tool_calls(tenant_id, agent_run_id, created_at, id);
 CREATE INDEX idx_approvals_tenant_status_created ON approvals(tenant_id, status, created_at, id);
 CREATE INDEX idx_approvals_tenant_target_created ON approvals(tenant_id, target_type, target_id, created_at, id);
 CREATE INDEX idx_knowledge_bases_tenant_status ON knowledge_bases(tenant_id, status, name, id);
