@@ -1,16 +1,18 @@
-"""Small migration runner for the local SQLite persistence baseline.
+"""Small migration runner for the AgentFoundry persistence baseline.
 
-This module intentionally does not replace the development JSON repositories.
-It provides a repeatable schema bootstrap point for the production data layer
-work in phase 2.
+PostgreSQL is the production target. SQLite remains supported as a local
+development compatibility path while the phase 2 repository work moves toward
+the production data layer.
 """
 
 from __future__ import annotations
 
 import argparse
+import os
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
+from types import ModuleType
 from urllib.parse import unquote, urlparse
 
 
@@ -47,7 +49,19 @@ def sqlite_path_from_database_url(database_url: str) -> Path:
     return Path(unquote(parsed.path))
 
 
-def apply_migrations(database_url: str) -> list[Migration]:
+def _import_psycopg() -> ModuleType:
+    try:
+        import psycopg
+    except ImportError as exc:
+        raise RuntimeError(
+            "PostgreSQL migrations require the optional psycopg package. "
+            "Install psycopg before running migrations against postgresql:// "
+            "or postgres:// URLs."
+        ) from exc
+    return psycopg
+
+
+def _apply_sqlite_migrations(database_url: str) -> list[Migration]:
     database_path = sqlite_path_from_database_url(database_url)
     if str(database_path) != ":memory:":
         database_path.parent.mkdir(parents=True, exist_ok=True)
@@ -84,12 +98,63 @@ def apply_migrations(database_url: str) -> list[Migration]:
     return applied
 
 
+def _apply_postgres_migrations(database_url: str) -> list[Migration]:
+    psycopg = _import_psycopg()
+
+    applied: list[Migration] = []
+    with psycopg.connect(database_url) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS schema_migrations (
+                  version TEXT PRIMARY KEY,
+                  name TEXT NOT NULL,
+                  applied_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            cursor.execute("SELECT version FROM schema_migrations")
+            completed = {row[0] for row in cursor.fetchall()}
+            for migration in migration_registry():
+                if migration.version in completed:
+                    continue
+                with migration.path.open("r", encoding="utf-8") as migration_file:
+                    cursor.execute(migration_file.read())
+                cursor.execute(
+                    """
+                    INSERT INTO schema_migrations (version, name)
+                    VALUES (%s, %s)
+                    """,
+                    (migration.version, migration.name),
+                )
+                applied.append(migration)
+    return applied
+
+
+def apply_migrations(database_url: str) -> list[Migration]:
+    parsed = urlparse(database_url)
+    if parsed.scheme == "sqlite":
+        return _apply_sqlite_migrations(database_url)
+    if parsed.scheme in {"postgresql", "postgres"}:
+        return _apply_postgres_migrations(database_url)
+    raise ValueError(
+        "Unsupported database URL scheme. Use postgresql:// for production "
+        "or sqlite:// for local development."
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Apply AgentFoundry migrations.")
     parser.add_argument(
         "--database-url",
-        default="sqlite:///backend/data/agentfoundry.db",
-        help="SQLite URL for the local persistence baseline.",
+        default=os.getenv(
+            "AGENTFOUNDRY_DATABASE_URL",
+            "postgresql://agentfoundry:agentfoundry@localhost:5432/agentfoundry",
+        ),
+        help=(
+            "Database URL. Use postgresql:// for production; sqlite:// is "
+            "available for local development compatibility."
+        ),
     )
     args = parser.parse_args()
     applied = apply_migrations(args.database_url)
@@ -102,4 +167,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
