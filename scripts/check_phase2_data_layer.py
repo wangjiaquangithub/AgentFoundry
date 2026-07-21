@@ -2163,7 +2163,12 @@ def _check_postgres_membership_reads_guarded() -> list[str]:
         "list_users": ["FROM users", "INNER JOIN memberships", "WHERE memberships.tenant_id = %s"],
         "list_memberships": ["FROM memberships", "tenant_id = %s", "user_id = %s"],
     }
-    tenant_argument_methods = {"get_tenant", "list_users", "list_memberships"}
+    required_arguments = {
+        "list_tenants": {"status"},
+        "get_tenant": {"tenant_id"},
+        "list_users": {"tenant_id"},
+        "list_memberships": {"tenant_id", "user_id"},
+    }
     for method_name, sql_tokens in required_methods.items():
         method_node = _find_class_method(
             tenancy_tree,
@@ -2181,12 +2186,13 @@ def _check_postgres_membership_reads_guarded() -> list[str]:
             argument.arg
             for argument in [*method_node.args.args, *method_node.args.kwonlyargs]
         }
-        if method_name in tenant_argument_methods and "tenant_id" not in method_arguments:
-            errors.append(
-                "PostgreSQL membership read method must accept tenant_id: "
-                "backend/persistence/tenancy.py:"
-                f"PostgresTenancyReadRepository.{method_name}",
-            )
+        for required_argument in required_arguments[method_name]:
+            if required_argument not in method_arguments:
+                errors.append(
+                    "PostgreSQL membership read method must accept required scope: "
+                    "backend/persistence/tenancy.py:"
+                    f"PostgresTenancyReadRepository.{method_name}",
+                )
         if not _method_uses_database_call(method_node, "connect"):
             errors.append(
                 "PostgreSQL membership read method must read through PostgreSQL: "
