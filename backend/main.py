@@ -1585,8 +1585,14 @@ async def run_enterprise_agent(
     memory_payload = memory_context_view["memory_payload"]
     memory_enabled = memory_context_view["memory_enabled"]
     memory_hits = memory_context_view["memory_hits"]
-    knowledge_hits, knowledge_error = (
-        await knowledge_response_service.search_agent_knowledge_bases(
+    knowledge_context = (
+        await agent_run_service.prepare_knowledge_context_from_execution_context(
+            search_agent_knowledge_bases=(
+                knowledge_response_service.search_agent_knowledge_bases
+            ),
+            build_agent_run_payload=(
+                knowledge_response_service.build_agent_run_payload
+            ),
             knowledge_base_service=getattr(
                 request.app.state,
                 "knowledge_base_service",
@@ -1595,18 +1601,8 @@ async def run_enterprise_agent(
             dev_knowledge_service=dev_knowledge_service,
             dev_knowledge_provider=PLATFORM_DEV_KNOWLEDGE_PROVIDER,
             user_id=user_id,
-            question=question,
-            knowledge_base_ids=knowledge_base_ids,
+            execution_context=execution_context,
         )
-    )
-    knowledge_payload = knowledge_response_service.build_agent_run_payload(
-        knowledge_hits=knowledge_hits,
-        knowledge_error=knowledge_error,
-    )
-    knowledge_context = agent_run_service.build_knowledge_context(
-        knowledge_hits=knowledge_hits,
-        knowledge_error=knowledge_error,
-        knowledge_payload=knowledge_payload,
     )
     knowledge_context_view = agent_run_service.knowledge_context_view(
         knowledge_context,

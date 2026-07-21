@@ -522,6 +522,35 @@ class PlatformAgentRunService:
             "knowledge_payload": knowledge_payload,
         }
 
+    async def prepare_knowledge_context_from_execution_context(
+        self,
+        *,
+        search_agent_knowledge_bases: Callable[..., Any],
+        build_agent_run_payload: Callable[..., dict[str, Any]],
+        knowledge_base_service: Any,
+        dev_knowledge_service: Any,
+        dev_knowledge_provider: str,
+        user_id: str,
+        execution_context: dict[str, Any],
+    ) -> dict[str, Any]:
+        knowledge_hits, knowledge_error = await search_agent_knowledge_bases(
+            knowledge_base_service=knowledge_base_service,
+            dev_knowledge_service=dev_knowledge_service,
+            dev_knowledge_provider=dev_knowledge_provider,
+            user_id=user_id,
+            question=str(execution_context["question"]),
+            knowledge_base_ids=list(execution_context["knowledge_base_ids"]),
+        )
+        knowledge_payload = build_agent_run_payload(
+            knowledge_hits=knowledge_hits,
+            knowledge_error=knowledge_error,
+        )
+        return self.build_knowledge_context(
+            knowledge_hits=knowledge_hits,
+            knowledge_error=knowledge_error,
+            knowledge_payload=knowledge_payload,
+        )
+
     @staticmethod
     def knowledge_context_view(knowledge_context: dict[str, Any]) -> dict[str, Any]:
         return {
