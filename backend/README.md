@@ -83,6 +83,26 @@ tail -f examples/enterprise_knowledge_assistant/data/audit/tool_calls.jsonl
 
 ## 手动启动服务
 
+### 数据库迁移
+
+AgentFoundry 的生产数据层目标是 PostgreSQL。本地 JSON/JSONL 和 SQLite
+只用于开发兼容，不是生产事实来源。
+
+先设置 PostgreSQL 连接串：
+
+```bash
+export AGENTFOUNDRY_DATABASE_URL=postgresql://agentfoundry:agentfoundry@localhost:5432/agentfoundry
+```
+
+然后从 AgentFoundry 仓库根目录执行迁移：
+
+```bash
+./scripts/migrate_agentfoundry.sh
+```
+
+脚本会优先使用 `uv --with psycopg[binary]` 运行 PostgreSQL 迁移；如果不用
+`uv`，请先在当前 Python 环境安装 `psycopg`。
+
 先安装项目依赖：
 
 ```bash
