@@ -151,9 +151,8 @@ class AgentRunRepository:
 class PostgresAgentRunReadThroughRepository:
     """Use PostgreSQL as the source of truth for tenant-scoped agent runs.
 
-    Tenant-scoped records use the production PostgreSQL schema. Records without
-    tenant context stay on the legacy repository for local development
-    compatibility until those callers are removed or migrated.
+    Once configured, platform reads and writes must carry tenant context so the
+    repository never falls back to local JSONL as a production data source.
     """
 
     def __init__(
@@ -177,13 +176,7 @@ class PostgresAgentRunReadThroughRepository:
         session_id: str | None = None,
     ) -> list[dict[str, Any]]:
         if not tenant:
-            return self._fallback_repository.list(
-                limit=limit,
-                agent_id=agent_id,
-                tenant=tenant,
-                user_id=user_id,
-                session_id=session_id,
-            )
+            raise ValueError("PostgreSQL agent run reads require tenant context.")
 
         postgres_records = [
             _postgres_run_to_platform_record(record)
@@ -198,12 +191,13 @@ class PostgresAgentRunReadThroughRepository:
         return postgres_records
 
     def get(self, turn_id: str, *, tenant: str | None = None) -> dict[str, Any] | None:
-        if tenant:
-            record = self._postgres_reader.get_run(tenant_id=tenant, run_id=turn_id)
-            if record is not None:
-                return _postgres_run_to_platform_record(record)
-            return None
-        return self._fallback_repository.get(turn_id, tenant=tenant)
+        if not tenant:
+            raise ValueError("PostgreSQL agent run reads require tenant context.")
+
+        record = self._postgres_reader.get_run(tenant_id=tenant, run_id=turn_id)
+        if record is not None:
+            return _postgres_run_to_platform_record(record)
+        return None
 
     def append(self, record: dict[str, Any]) -> None:
         if not record.get("tenant"):
@@ -219,21 +213,15 @@ class PostgresAgentRunReadThroughRepository:
         user_id: str | None = None,
         session_id: str | None = None,
     ) -> int:
-        if tenant:
-            return self._postgres_writer.delete_runs(
-                tenant_id=tenant,
-                agent_id=agent_id,
-                user_id=user_id,
-                session_id=session_id,
-            )
+        if not tenant:
+            raise ValueError("PostgreSQL agent run deletes require tenant context.")
 
-        fallback_deleted = self._fallback_repository.delete(
+        return self._postgres_writer.delete_runs(
+            tenant_id=tenant,
             agent_id=agent_id,
-            tenant=tenant,
             user_id=user_id,
             session_id=session_id,
         )
-        return fallback_deleted
 
 
 def _postgres_run_to_platform_record(record: AgentRunRecord) -> dict[str, Any]:

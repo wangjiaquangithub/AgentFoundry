@@ -143,13 +143,11 @@ class ApprovalRequestRepository:
 
 
 class PostgresApprovalReadThroughRepository:
-    """Use PostgreSQL for tenant-scoped approvals with a development fallback.
+    """Use PostgreSQL as the source of truth for tenant-scoped approvals.
 
-    Tenant-scoped approval records use the production PostgreSQL schema. List
-    calls without tenant context remain on the legacy JSONL repository for
-    local development compatibility during the data-layer migration. Approval
-    id reads, writes, and decisions are authoritative in PostgreSQL once this
-    repository is configured.
+    Once configured, platform list reads and writes must carry tenant context so
+    the repository never falls back to local JSONL as a production data source.
+    Approval id reads and decisions are authoritative in PostgreSQL.
     """
 
     def __init__(
@@ -173,13 +171,7 @@ class PostgresApprovalReadThroughRepository:
         agent_id: str | None = None,
     ) -> list[dict[str, Any]]:
         if not tenant:
-            return self._fallback_repository.list(
-                limit=limit,
-                status=status,
-                tenant=tenant,
-                user_id=user_id,
-                agent_id=agent_id,
-            )
+            raise ValueError("PostgreSQL approval reads require tenant context.")
 
         postgres_limit = 100 if user_id or agent_id else limit
         postgres_records = [

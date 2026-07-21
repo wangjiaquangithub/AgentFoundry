@@ -125,8 +125,8 @@ class WorkflowRunRepositoryProtocol(Protocol):
 class PostgresWorkflowRunReadThroughRepository:
     """Use PostgreSQL as the source of truth for tenant-scoped workflow runs.
 
-    Records without tenant context remain on the legacy JSONL repository for
-    local development compatibility during the data-layer migration.
+    Once configured, platform reads and writes must carry tenant context so the
+    repository never falls back to local JSONL as a production data source.
     """
 
     def __init__(
@@ -150,13 +150,7 @@ class PostgresWorkflowRunReadThroughRepository:
         user_id: str | None = None,
     ) -> list[dict[str, Any]]:
         if not tenant:
-            return self._fallback_repository.list(
-                limit=limit,
-                workflow_type=workflow_type,
-                agent_id=agent_id,
-                tenant=tenant,
-                user_id=user_id,
-            )
+            raise ValueError("PostgreSQL workflow run reads require tenant context.")
 
         postgres_limit = 100 if agent_id else limit
         postgres_records = [
