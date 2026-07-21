@@ -1646,12 +1646,6 @@ class PlatformAgentRunService:
     def resolve_approval_id(self, approval: dict[str, Any]) -> str:
         return str(approval["approval_id"])
 
-    def executed_tool_decision_payload(
-        self,
-        tool_response: dict[str, Any],
-    ) -> dict[str, Any]:
-        return dict(tool_response["decision"])
-
     def append_executed_routed_tool_call(
         self,
         *,
@@ -1700,7 +1694,7 @@ class PlatformAgentRunService:
     ) -> None:
         execution_context_view = self.execution_context_view(execution_context)
         decision = decision_with_routing_context(
-            decision=self.executed_tool_decision_payload(tool_response),
+            decision=dict(tool_response["decision"]),
             **self.build_routed_decision_context(
                 routing_reason=route_context_view["reason"],
                 routing_source=route_context_view["source"],
