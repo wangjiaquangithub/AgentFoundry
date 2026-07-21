@@ -636,6 +636,52 @@ def _check_postgres_runtime_invocation_writes_wired() -> list[str]:
     return errors
 
 
+def _check_postgres_tool_calls_wired() -> list[str]:
+    errors: list[str] = []
+    main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    agent_run_source = (SERVICES_DIR / "agent_runs.py").read_text(encoding="utf-8")
+    main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+
+    if not _module_imports_name(main_tree, "PostgresToolCallReadRepository"):
+        errors.append(
+            "backend/main.py must import PostgresToolCallReadRepository for tool call reads",
+        )
+    if not _module_imports_name(main_tree, "PostgresToolCallWriteRepository"):
+        errors.append(
+            "backend/main.py must import PostgresToolCallWriteRepository for tool call writes",
+        )
+    if not _module_defines_function(main_tree, "_build_tool_call_read_repository"):
+        errors.append(
+            "backend/main.py must define _build_tool_call_read_repository for PostgreSQL tool call reads",
+        )
+    if not _module_defines_function(main_tree, "_build_tool_call_write_repository"):
+        errors.append(
+            "backend/main.py must define _build_tool_call_write_repository for PostgreSQL tool call writes",
+        )
+    if "tool_call_reader=_build_tool_call_read_repository()" not in main_source:
+        errors.append(
+            "backend/main.py must pass the PostgreSQL tool_call_reader into ToolAuditLogger",
+        )
+    if "tool_call_writer=_build_tool_call_write_repository()" not in main_source:
+        errors.append(
+            "backend/main.py must pass the PostgreSQL tool_call_writer into production services",
+        )
+    if "tool_call_writer" not in agent_run_source:
+        errors.append(
+            "backend/services/agent_runs.py must accept a tool_call_writer",
+        )
+    if "append_tool_call_records" not in agent_run_source:
+        errors.append(
+            "backend/services/agent_runs.py must collect routed tool calls for persistence",
+        )
+    if "append_tool_call" not in agent_run_source:
+        errors.append(
+            "backend/services/agent_runs.py must call the tool call writer",
+        )
+
+    return errors
+
+
 def _check_postgres_memory_item_writes_wired() -> list[str]:
     errors: list[str] = []
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
@@ -872,6 +918,7 @@ def main() -> int:
         *_check_postgres_read_tenant_boundary(),
         *_check_postgres_runtime_provider_reads_wired(),
         *_check_postgres_runtime_invocation_writes_wired(),
+        *_check_postgres_tool_calls_wired(),
         *_check_postgres_memory_item_writes_wired(),
         *_check_postgres_audit_events_wired(),
         *_check_postgres_retrieval_events_wired(),
@@ -899,6 +946,7 @@ def main() -> int:
     print("- PostgreSQL read tenant boundary guarded: yes")
     print("- PostgreSQL runtime provider reads wired: yes")
     print("- PostgreSQL runtime invocation writes wired: yes")
+    print("- PostgreSQL tool calls wired: yes")
     print("- PostgreSQL memory item writes wired: yes")
     print("- PostgreSQL audit events wired: yes")
     print("- PostgreSQL retrieval events wired: yes")
