@@ -87,6 +87,10 @@ POSTGRES_AUTHORITATIVE_PERSISTENCE_REPOSITORIES = {
     "document_chunks.py": {"PostgresDocumentChunkReadRepository"},
     "embedding_records.py": {"PostgresEmbeddingRecordReadRepository"},
     "knowledge_bases.py": {"PostgresKnowledgeBaseReadRepository"},
+    "memory_items.py": {
+        "PostgresMemoryItemReadRepository",
+        "PostgresMemoryItemWriteRepository",
+    },
     "memory_policies.py": {"PostgresMemoryPolicyReadRepository"},
     "model_configs.py": {"PostgresModelConfigReadRepository"},
     "retrieval_events.py": {
