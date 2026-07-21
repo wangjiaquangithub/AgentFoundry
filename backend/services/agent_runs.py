@@ -1006,6 +1006,33 @@ class PlatformAgentRunService:
             ),
         )
 
+    def resolve_routed_tool_approval_from_context(
+        self,
+        *,
+        require_platform_approval: Callable[..., str | None],
+        run_request: dict[str, Any],
+        approval_required_tools: set[str],
+        tool_name: str,
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        inputs: dict[str, Any],
+    ) -> str | None:
+        if not self.requires_tool_approval(
+            tool_name=tool_name,
+            approval_required_tools=approval_required_tools,
+        ):
+            return None
+        return self.require_tool_approval_from_context(
+            require_platform_approval=require_platform_approval,
+            approval_id=self.agent_run_approval_id(run_request),
+            tool_name=tool_name,
+            tenant=tenant,
+            user_id=user_id,
+            agent_id=agent_id,
+            inputs=inputs,
+        )
+
     def build_tool_execution_request_context(
         self,
         *,

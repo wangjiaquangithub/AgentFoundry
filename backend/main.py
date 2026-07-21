@@ -1717,48 +1717,42 @@ async def run_enterprise_agent(
             )
             continue
 
-        approved_by: str | None = None
-        if agent_run_service.requires_tool_approval(
-            tool_name=tool_name,
-            approval_required_tools=APPROVAL_REQUIRED_TOOLS,
-        ):
-            try:
-                approved_by = agent_run_service.require_tool_approval_from_context(
-                    require_platform_approval=_require_platform_approval,
-                    approval_id=agent_run_service.agent_run_approval_id(
-                        run_request,
-                    ),
-                    tool_name=tool_name,
-                    tenant=tenant,
-                    user_id=user_id,
-                    agent_id=runner_agent_id,
-                    inputs=route_inputs,
-                )
-            except HTTPException as exc:
-                agent_run_service.record_pending_tool_approval_from_exception_context(
-                    exc=exc,
-                    tool_calls=tool_calls,
-                    platform_approval_service=_platform_approval_service,
-                    raise_platform_approval_service_error=(
-                        _raise_platform_approval_service_error
-                    ),
-                    decision_with_routing_context=(
-                        enterprise_router_service.decision_with_routing_context
-                    ),
-                    tenant=tenant,
-                    user_id=user_id,
-                    agent_id=runner_agent_id,
-                    tool_name=tool_name,
-                    inputs=route_inputs,
-                    headers=request.headers,
-                    connector=connector_label,
-                    connector_source=connector_source,
-                    routing_source=route_source,
-                    routing_reason=route_reason,
-                    routing_mode=routing_mode,
-                    routing_error=routing_error,
-                )
-                continue
+        try:
+            approved_by = agent_run_service.resolve_routed_tool_approval_from_context(
+                require_platform_approval=_require_platform_approval,
+                run_request=run_request,
+                approval_required_tools=APPROVAL_REQUIRED_TOOLS,
+                tool_name=tool_name,
+                tenant=tenant,
+                user_id=user_id,
+                agent_id=runner_agent_id,
+                inputs=route_inputs,
+            )
+        except HTTPException as exc:
+            agent_run_service.record_pending_tool_approval_from_exception_context(
+                exc=exc,
+                tool_calls=tool_calls,
+                platform_approval_service=_platform_approval_service,
+                raise_platform_approval_service_error=(
+                    _raise_platform_approval_service_error
+                ),
+                decision_with_routing_context=(
+                    enterprise_router_service.decision_with_routing_context
+                ),
+                tenant=tenant,
+                user_id=user_id,
+                agent_id=runner_agent_id,
+                tool_name=tool_name,
+                inputs=route_inputs,
+                headers=request.headers,
+                connector=connector_label,
+                connector_source=connector_source,
+                routing_source=route_source,
+                routing_reason=route_reason,
+                routing_mode=routing_mode,
+                routing_error=routing_error,
+            )
+            continue
 
         agent_run_service.run_and_record_executed_routed_tool_call_from_context(
             tool_calls=tool_calls,
