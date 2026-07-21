@@ -325,8 +325,6 @@ class PlatformToolPolicyService:
             tool_names.append(name)
             tool_catalog[name] = catalog
 
-        if not tool_names:
-            return fallback
         return {"tool_names": tool_names, "tool_catalog": tool_catalog}
 
     @staticmethod
