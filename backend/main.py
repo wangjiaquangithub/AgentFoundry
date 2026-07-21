@@ -87,6 +87,7 @@ from platform_config import (
 from repositories.agents import AgentRepository
 from backend.persistence import (
     PostgresAgentRunReadRepository,
+    PostgresAgentRunWriteRepository,
     create_postgres_database,
 )
 from repositories.agent_runs import (
@@ -147,10 +148,10 @@ def _build_agent_run_repository() -> AgentRunRepositoryProtocol:
     if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
         return agent_run_fallback_repository
 
+    database = create_postgres_database(database_url)
     return PostgresAgentRunReadThroughRepository(
-        postgres_reader=PostgresAgentRunReadRepository(
-            create_postgres_database(database_url),
-        ),
+        postgres_reader=PostgresAgentRunReadRepository(database),
+        postgres_writer=PostgresAgentRunWriteRepository(database),
         fallback_repository=agent_run_fallback_repository,
     )
 

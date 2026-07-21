@@ -4,7 +4,11 @@ import json
 from pathlib import Path
 from typing import Any, Protocol
 
-from backend.persistence.runs import AgentRunRecord, PostgresAgentRunReadRepository
+from backend.persistence.runs import (
+    AgentRunRecord,
+    PostgresAgentRunReadRepository,
+    PostgresAgentRunWriteRepository,
+)
 
 
 class AgentRunRepositoryProtocol(Protocol):
@@ -145,20 +149,22 @@ class AgentRunRepository:
 
 
 class PostgresAgentRunReadThroughRepository:
-    """Read agent runs from PostgreSQL while preserving the existing write path.
+    """Use PostgreSQL for tenant-scoped agent runs with a development fallback.
 
-    This is a transition boundary for phase 2: read APIs can consume the
-    production PostgreSQL schema, while append/delete remain on the legacy
-    development repository until their own write-migration slice.
+    Tenant-scoped records use the production PostgreSQL schema. Records without
+    tenant context stay on the legacy repository for local development
+    compatibility until those callers are removed or migrated.
     """
 
     def __init__(
         self,
         *,
         postgres_reader: PostgresAgentRunReadRepository,
+        postgres_writer: PostgresAgentRunWriteRepository,
         fallback_repository: AgentRunRepository,
     ) -> None:
         self._postgres_reader = postgres_reader
+        self._postgres_writer = postgres_writer
         self._fallback_repository = fallback_repository
 
     def list(
@@ -214,7 +220,11 @@ class PostgresAgentRunReadThroughRepository:
         return self._fallback_repository.get(turn_id, tenant=tenant)
 
     def append(self, record: dict[str, Any]) -> None:
-        self._fallback_repository.append(record)
+        if not record.get("tenant"):
+            self._fallback_repository.append(record)
+            return
+
+        self._postgres_writer.append_run(_platform_record_to_postgres_run(record))
 
     def delete(
         self,
@@ -224,9 +234,18 @@ class PostgresAgentRunReadThroughRepository:
         user_id: str | None = None,
         session_id: str | None = None,
     ) -> int:
-        return self._fallback_repository.delete(
+        fallback_deleted = self._fallback_repository.delete(
             agent_id=agent_id,
             tenant=tenant,
+            user_id=user_id,
+            session_id=session_id,
+        )
+        if not tenant:
+            return fallback_deleted
+
+        return fallback_deleted + self._postgres_writer.delete_runs(
+            tenant_id=tenant,
+            agent_id=agent_id,
             user_id=user_id,
             session_id=session_id,
         )
@@ -252,6 +271,45 @@ def _postgres_run_to_platform_record(record: AgentRunRecord) -> dict[str, Any]:
         "completed_at": record.completed_at,
         "source": "postgres",
     }
+
+
+def _platform_record_to_postgres_run(record: dict[str, Any]) -> AgentRunRecord:
+    runtime_adapter = record.get("runtime_adapter")
+    if not isinstance(runtime_adapter, dict):
+        runtime_adapter = {}
+
+    runtime_provider = (
+        record.get("runtime_provider")
+        or runtime_adapter.get("provider")
+        or "unknown"
+    )
+    runtime_invocation_id = (
+        record.get("runtime_invocation_id")
+        or runtime_adapter.get("runtime_invocation_id")
+    )
+
+    return AgentRunRecord(
+        id=str(record["turn_id"]),
+        tenant_id=str(record["tenant"]),
+        agent_id=_optional_record_value(record.get("agent_id")),
+        agent_version_id=_optional_record_value(record.get("agent_version_id")),
+        user_id=str(record["user_id"]),
+        session_id=_optional_record_value(record.get("session_id")),
+        status=str(record.get("status") or "completed"),
+        question=str(record["question"]),
+        answer=_optional_record_value(record.get("answer")),
+        runtime_provider=str(runtime_provider),
+        runtime_invocation_id=_optional_record_value(runtime_invocation_id),
+        created_at=str(record["created_at"]),
+        completed_at=_optional_record_value(record.get("completed_at")),
+    )
+
+
+def _optional_record_value(value: Any) -> str | None:
+    if value is None:
+        return None
+    normalized = str(value).strip()
+    return normalized or None
 
 
 def _clamp_limit(limit: int) -> int:
