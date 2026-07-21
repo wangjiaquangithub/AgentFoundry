@@ -599,7 +599,10 @@ def _raise_platform_agent_service_error(exc: PlatformAgentServiceError) -> None:
 
 
 def _platform_agent_run_service() -> PlatformAgentRunService:
-    return PlatformAgentRunService(repository=agent_run_repository)
+    return PlatformAgentRunService(
+        repository=agent_run_repository,
+        tool_call_writer=_build_tool_call_write_repository(),
+    )
 
 
 def _raise_platform_agent_run_service_error(

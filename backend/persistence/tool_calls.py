@@ -241,6 +241,7 @@ class PostgresToolCallWriteRepository:
                       %s, %s, %s, %s, %s, %s, %s,
                       %s, %s, %s
                     )
+                    ON CONFLICT (id) DO NOTHING
                     """,
                     (
                         record.id,

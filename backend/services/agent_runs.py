@@ -1,11 +1,23 @@
 """Service-layer orchestration for enterprise agent run history."""
 
+import logging
 from datetime import datetime, timezone
-from typing import Any, Callable
+from typing import Any, Callable, Protocol
 from uuid import uuid4
 
+from backend.persistence import ToolCallRecord
 from repositories.agent_runs import AgentRunRepositoryProtocol
 from services.approvals import PlatformApprovalServiceError
+
+
+logger = logging.getLogger(__name__)
+
+
+class ToolCallWriteRepositoryProtocol(Protocol):
+    """Persistence boundary for production tool-call execution evidence."""
+
+    def append_tool_call(self, record: ToolCallRecord) -> None:
+        """Persist one tenant-scoped tool-call record."""
 
 
 class PlatformAgentRunServiceError(ValueError):
@@ -20,8 +32,14 @@ class PlatformAgentRunServiceError(ValueError):
 class PlatformAgentRunService:
     """Manage persisted enterprise agent question-answer turns."""
 
-    def __init__(self, *, repository: AgentRunRepositoryProtocol) -> None:
+    def __init__(
+        self,
+        *,
+        repository: AgentRunRepositoryProtocol,
+        tool_call_writer: ToolCallWriteRepositoryProtocol | None = None,
+    ) -> None:
         self._repository = repository
+        self._tool_call_writer = tool_call_writer
 
     def list_runs(
         self,
@@ -2165,6 +2183,68 @@ class PlatformAgentRunService:
             runtime_invocation_result=runtime_invocation_result,
         )
 
+    def append_tool_call_records(
+        self,
+        *,
+        turn_id: str,
+        tenant: str,
+        created_at: str,
+        tool_calls: list[dict[str, Any]],
+    ) -> None:
+        if self._tool_call_writer is None:
+            return
+        for index, tool_call in enumerate(tool_calls, start=1):
+            try:
+                self._tool_call_writer.append_tool_call(
+                    self.build_tool_call_record(
+                        turn_id=turn_id,
+                        tenant=tenant,
+                        created_at=created_at,
+                        sequence=index,
+                        tool_call=tool_call,
+                    ),
+                )
+            except Exception:
+                logger.warning(
+                    "Failed to persist tool call execution evidence.",
+                    extra={"agent_run_id": turn_id, "tenant_id": tenant},
+                    exc_info=True,
+                )
+                continue
+
+    @staticmethod
+    def build_tool_call_record(
+        *,
+        turn_id: str,
+        tenant: str,
+        created_at: str,
+        sequence: int,
+        tool_call: dict[str, Any],
+    ) -> ToolCallRecord:
+        completed_at = None if tool_call.get("approval_required") else created_at
+        return ToolCallRecord(
+            id=f"{turn_id}:tool:{sequence}",
+            tenant_id=tenant,
+            agent_run_id=turn_id,
+            tool_id=None,
+            inputs={
+                "tool_name": tool_call.get("tool_name"),
+                "arguments": tool_call.get("inputs", {}),
+                "connector": tool_call.get("connector"),
+                "connector_source": tool_call.get("connector_source"),
+                "routing_source": tool_call.get("routing_source"),
+                "routing_reason": tool_call.get("routing_reason"),
+                "decision": tool_call.get("decision"),
+            },
+            result=tool_call.get("result") if tool_call.get("allowed") else None,
+            allowed=bool(tool_call.get("allowed")),
+            approval_id=(
+                str(tool_call["approval_id"]) if tool_call.get("approval_id") else None
+            ),
+            created_at=created_at,
+            completed_at=completed_at,
+        )
+
     def finalize_unrouted_response(
         self,
         *,
@@ -2319,6 +2399,12 @@ class PlatformAgentRunService:
             answer=answer,
             response=response,
             runtime_invocation_result=runtime_invocation_result,
+        )
+        self.append_tool_call_records(
+            turn_id=str(response_trace["turn_id"]),
+            tenant=str(response_trace["evidence"].get("tenant", tenant)),
+            created_at=str(response_trace["created_at"]),
+            tool_calls=tool_calls,
         )
         return response
 
