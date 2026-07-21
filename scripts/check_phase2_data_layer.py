@@ -643,17 +643,37 @@ def _check_postgres_memory_item_writes_wired() -> list[str]:
     main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
     memory_tree = ast.parse(memory_source, filename=str(REPOSITORIES_DIR / "memories.py"))
 
+    if not _module_imports_name(main_tree, "PostgresMemoryItemReadRepository"):
+        errors.append(
+            "backend/main.py must import PostgresMemoryItemReadRepository for memory item reads",
+        )
     if not _module_imports_name(main_tree, "PostgresMemoryItemWriteRepository"):
         errors.append(
             "backend/main.py must import PostgresMemoryItemWriteRepository for memory item writes",
+        )
+    if not _module_defines_function(main_tree, "_build_memory_item_read_repository"):
+        errors.append(
+            "backend/main.py must define _build_memory_item_read_repository for PostgreSQL memory item reads",
         )
     if not _module_defines_function(main_tree, "_build_memory_item_write_repository"):
         errors.append(
             "backend/main.py must define _build_memory_item_write_repository for PostgreSQL memory item writes",
         )
+    if "memory_item_reader=_build_memory_item_read_repository()" not in main_source:
+        errors.append(
+            "backend/main.py must pass the PostgreSQL memory_item_reader into PlatformMemoryRepository",
+        )
     if "memory_item_writer=_build_memory_item_write_repository()" not in main_source:
         errors.append(
             "backend/main.py must pass the PostgreSQL memory_item_writer into PlatformMemoryRepository",
+        )
+    if "memory_item_reader" not in memory_source:
+        errors.append(
+            "backend/repositories/memories.py must accept a memory_item_reader",
+        )
+    if "list_memory_items" not in memory_source:
+        errors.append(
+            "backend/repositories/memories.py must call the memory item reader",
         )
     if "memory_item_writer" not in memory_source:
         errors.append(
