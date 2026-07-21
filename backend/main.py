@@ -1571,7 +1571,6 @@ async def run_enterprise_agent(
     runner_agent_id = execution_context_view["runner_agent_id"]
     runner_session_id = execution_context_view["runner_session_id"]
     response_record_context = execution_context_view["response_record_context"]
-    knowledge_base_ids = execution_context_view["knowledge_base_ids"]
     memory_context = agent_run_service.prepare_memory_context_from_execution_context(
         build_agent_run_context=platform_memory_service.build_agent_run_context,
         agent_run_state=platform_memory_service.agent_run_state,
@@ -1583,7 +1582,6 @@ async def run_enterprise_agent(
     )
     memory_context_view = agent_run_service.memory_context_view(memory_context)
     memory_payload = memory_context_view["memory_payload"]
-    memory_enabled = memory_context_view["memory_enabled"]
     memory_hits = memory_context_view["memory_hits"]
     knowledge_context = (
         await agent_run_service.prepare_knowledge_context_from_execution_context(
@@ -1608,7 +1606,6 @@ async def run_enterprise_agent(
         knowledge_context,
     )
     knowledge_hits = knowledge_context_view["knowledge_hits"]
-    knowledge_error = knowledge_context_view["knowledge_error"]
     knowledge_payload = knowledge_context_view["knowledge_payload"]
     routing_selection = (
         await agent_run_service.prepare_routing_context_from_execution_context(
