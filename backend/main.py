@@ -1735,10 +1735,11 @@ async def run_enterprise_agent(
                     inputs=route_inputs,
                 )
             except HTTPException as exc:
-                detail = agent_run_service.approval_required_exception_detail(exc)
-                if detail is None:
-                    raise
-
+                detail = (
+                    agent_run_service.require_approval_required_exception_detail(
+                        exc,
+                    )
+                )
                 approval = (
                     agent_run_service.create_pending_tool_approval_request_or_raise_from_context(
                         platform_approval_service=_platform_approval_service,

@@ -1458,6 +1458,15 @@ class PlatformAgentRunService:
             return None
         return detail
 
+    def require_approval_required_exception_detail(
+        self,
+        exc: Any,
+    ) -> dict[str, Any]:
+        detail = self.approval_required_exception_detail(exc)
+        if detail is None:
+            raise exc
+        return detail
+
     def resolve_approval_required_reason(self, *, detail: dict[str, Any]) -> str:
         return str(
             detail.get(
