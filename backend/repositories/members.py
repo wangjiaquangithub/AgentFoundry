@@ -70,29 +70,21 @@ class PostgresMemberReadThroughRepository:
         self._fallback_repository = fallback_repository
 
     def load_config(self) -> dict[str, Any]:
-        try:
-            memberships = self._postgres_reader.list_memberships()
-            if not memberships:
-                return self._fallback_repository.load_config()
-
-            users_by_id = {
-                user.id: user for user in self._postgres_reader.list_users()
-            }
-            tenants_by_id = {
-                tenant.id: tenant for tenant in self._postgres_reader.list_tenants()
-            }
-            return {
-                "members": [
-                    _postgres_membership_to_member(
-                        membership,
-                        user=users_by_id.get(membership.user_id),
-                        tenant=tenants_by_id.get(membership.tenant_id),
-                    )
-                    for membership in memberships
-                ],
-            }
-        except Exception:
-            return self._fallback_repository.load_config()
+        memberships = self._postgres_reader.list_memberships()
+        users_by_id = {user.id: user for user in self._postgres_reader.list_users()}
+        tenants_by_id = {
+            tenant.id: tenant for tenant in self._postgres_reader.list_tenants()
+        }
+        return {
+            "members": [
+                _postgres_membership_to_member(
+                    membership,
+                    user=users_by_id.get(membership.user_id),
+                    tenant=tenants_by_id.get(membership.tenant_id),
+                )
+                for membership in memberships
+            ],
+        }
 
     def save_config(self, config: dict[str, Any]) -> None:
         members = config.get("members")
