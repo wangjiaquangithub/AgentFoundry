@@ -81,6 +81,12 @@ from backend.persistence.tools import (
     ToolPolicyRecord,
     ToolRecord,
 )
+from backend.persistence.workflows import (
+    PostgresWorkflowReadRepository,
+    SQLiteWorkflowReadRepository,
+    WorkflowRunRecord,
+    WorkflowTemplateRecord,
+)
 
 __all__ = [
     "AgentRecord",
@@ -131,7 +137,11 @@ __all__ = [
     "ToolPolicyRecord",
     "ToolRecord",
     "UserRecord",
+    "WorkflowRunRecord",
+    "WorkflowTemplateRecord",
     "create_database",
     "create_postgres_database",
     "create_sqlite_database",
+    "PostgresWorkflowReadRepository",
+    "SQLiteWorkflowReadRepository",
 ]
