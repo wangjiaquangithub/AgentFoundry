@@ -6,6 +6,7 @@ import {
 	Play,
 	Workflow,
 } from 'lucide-react';
+import { useState } from 'react';
 
 import { workflowInputLabelKeys } from '../platform-defaults';
 import {
@@ -21,6 +22,14 @@ import type {
 } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
@@ -94,12 +103,25 @@ export function WorkflowRunnerPanel({
 	summarizeAuditObject,
 	t,
 }: WorkflowRunnerPanelProps) {
+	const [templatePendingDisable, setTemplatePendingDisable] =
+		useState<EnterpriseWorkflowTemplate | null>(null);
 	const selectedWorkflowTools = selectedWorkflowTemplate
 		? Array.from(
 				new Set(selectedWorkflowTemplate.steps.map((step) => step.tool_name)),
 			)
 		: [];
 	const recentWorkflowRuns = workflowRuns.slice(0, 5);
+	const pendingDisableTools = templatePendingDisable
+		? Array.from(new Set(templatePendingDisable.steps.map((step) => step.tool_name)))
+		: [];
+	const confirmDisableTemplate = () => {
+		if (!templatePendingDisable) {
+			return;
+		}
+
+		onToggleWorkflowTemplate(templatePendingDisable, false);
+		setTemplatePendingDisable(null);
+	};
 
 	return (
 		<section className="grid items-start gap-4 xl:grid-cols-[20rem_minmax(0,1fr)_24rem]">
@@ -187,9 +209,13 @@ export function WorkflowRunnerPanel({
 											size="sm"
 											checked={template.enabled}
 											disabled={isSaving}
-											onCheckedChange={(checked) =>
-												onToggleWorkflowTemplate(template, checked)
-											}
+											onCheckedChange={(checked) => {
+												if (checked) {
+													onToggleWorkflowTemplate(template, true);
+													return;
+												}
+												setTemplatePendingDisable(template);
+											}}
 										/>
 									</div>
 								</div>
@@ -527,6 +553,87 @@ export function WorkflowRunnerPanel({
 					)}
 				</section>
 			</aside>
+			<Dialog
+				open={Boolean(templatePendingDisable)}
+				onOpenChange={(open) => {
+					if (!open) {
+						setTemplatePendingDisable(null);
+					}
+				}}
+			>
+				<DialogContent className="max-h-[calc(100dvh-2rem)] overflow-auto sm:max-w-lg">
+					<DialogHeader>
+						<DialogTitle>
+							{t('platform.workflowRunner.confirmDisableTitle')}
+						</DialogTitle>
+						<DialogDescription>
+							{t('platform.workflowRunner.confirmDisableBody')}
+						</DialogDescription>
+					</DialogHeader>
+					{templatePendingDisable ? (
+						<div className="grid gap-3 rounded-lg border bg-background p-3 text-xs">
+							<div className="grid gap-1">
+								<span className="font-medium text-muted-foreground">
+									{t('platform.workflowRunner.templates')}
+								</span>
+								<span>{templatePendingDisable.name}</span>
+							</div>
+							<div className="grid gap-1">
+								<span className="font-medium text-muted-foreground">
+									{t('platform.workflowRunner.workflowType')}
+								</span>
+								<span className="break-all font-mono">
+									{templatePendingDisable.workflow_type}
+								</span>
+							</div>
+							<div className="grid gap-1">
+								<span className="font-medium text-muted-foreground">
+									{t('platform.workflowRunner.impactScope')}
+								</span>
+								<span>
+									{t('platform.workflowRunner.disableImpactScope', {
+										steps: templatePendingDisable.steps.length,
+										tools: pendingDisableTools.length,
+									})}
+								</span>
+							</div>
+							<div className="flex flex-wrap gap-2">
+								{pendingDisableTools.map((toolName) => (
+									<Badge key={toolName} variant="outline">
+										{toolName}
+									</Badge>
+								))}
+							</div>
+						</div>
+					) : null}
+					<DialogFooter className="sticky bottom-0">
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => setTemplatePendingDisable(null)}
+							disabled={
+								templatePendingDisable
+									? savingWorkflowType === templatePendingDisable.workflow_type
+									: false
+							}
+						>
+							{t('common.cancel')}
+						</Button>
+						<Button
+							type="button"
+							variant="destructive"
+							onClick={confirmDisableTemplate}
+							disabled={
+								templatePendingDisable
+									? savingWorkflowType === templatePendingDisable.workflow_type
+									: false
+							}
+						>
+							{t('platform.workflowRunner.confirmDisable')}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</section>
 	);
 }

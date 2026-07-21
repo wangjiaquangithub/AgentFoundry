@@ -7,7 +7,7 @@ import {
 	ShieldCheck,
 	XCircle,
 } from 'lucide-react';
-import type { Dispatch, SetStateAction } from 'react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 
 import { approvalStatusClassName, formatTimestamp } from '../platform-utils';
 import { PlatformNotice } from './common';
@@ -19,6 +19,14 @@ import type {
 } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
 	Select,
@@ -95,6 +103,13 @@ interface ApprovalsPanelProps {
 const ALL_AGENTS_VALUE = '__all_agents__';
 const ALL_APPROVAL_STATUSES_VALUE = '__all_approval_statuses__';
 
+type ApprovalDecisionAction = 'approve' | 'reject' | 'approveAndRun';
+
+interface PendingApprovalDecision {
+	approval: EnterpriseApprovalRequestItem;
+	action: ApprovalDecisionAction;
+}
+
 export function ApprovalsPanel({
 	approvalForm,
 	onApprovalFormChange,
@@ -125,6 +140,75 @@ export function ApprovalsPanel({
 }: ApprovalsPanelProps) {
 	const enterpriseToolInputConfig = toolInputConfig;
 	const pendingCount = approvalRequests.filter((approval) => approval.status === 'pending').length;
+	const [pendingDecision, setPendingDecision] =
+		useState<PendingApprovalDecision | null>(null);
+	const hasActiveApprovalFilters = Boolean(
+		approvalFilters.status ||
+			approvalFilters.tenant.trim() ||
+			approvalFilters.user_id.trim() ||
+			approvalFilters.agent_id,
+	);
+	const clearApprovalFilters = () => {
+		onApprovalFiltersChange((current) => ({
+			status: '',
+			tenant: '',
+			user_id: '',
+			agent_id: '',
+			limit: current.limit || '50',
+		}));
+	};
+	const getApprovalTarget = (approval: EnterpriseApprovalRequestItem) =>
+		approval.tool_name ||
+		approval.workflow_type ||
+		approval.agent_id ||
+		approval.request_type;
+	const closePendingDecision = () => setPendingDecision(null);
+	const confirmPendingDecision = async () => {
+		if (!pendingDecision) {
+			return;
+		}
+
+		const { approval, action } = pendingDecision;
+		if (action === 'approveAndRun') {
+			await onApproveAndRun(approval);
+		} else {
+			await onDecideApproval(
+				approval.approval_id,
+				action === 'approve' ? 'approved' : 'rejected',
+			);
+		}
+		closePendingDecision();
+	};
+	const pendingDecisionTarget = pendingDecision
+		? getApprovalTarget(pendingDecision.approval)
+		: '';
+	const pendingDecisionType = pendingDecision
+		? t(
+				`platform.approvals.${pendingDecision.approval.request_type === 'tool_run' ? 'toolRun' : pendingDecision.approval.request_type === 'workflow_run' ? 'workflowRun' : 'agentAction'}`,
+			)
+		: '';
+	const pendingDecisionIsBusy = pendingDecision
+		? decidingApprovalId === pendingDecision.approval.approval_id ||
+			continuingApprovalId === pendingDecision.approval.approval_id
+		: false;
+	const pendingDecisionTitleKey =
+		pendingDecision?.action === 'approveAndRun'
+			? 'platform.approvals.confirmApproveAndRunTitle'
+			: pendingDecision?.action === 'reject'
+				? 'platform.approvals.confirmRejectTitle'
+				: 'platform.approvals.confirmApproveTitle';
+	const pendingDecisionBodyKey =
+		pendingDecision?.action === 'approveAndRun'
+			? 'platform.approvals.confirmApproveAndRunBody'
+			: pendingDecision?.action === 'reject'
+				? 'platform.approvals.confirmRejectBody'
+				: 'platform.approvals.confirmApproveBody';
+	const pendingDecisionConfirmKey =
+		pendingDecision?.action === 'approveAndRun'
+			? 'platform.approvals.confirmApproveAndRun'
+			: pendingDecision?.action === 'reject'
+				? 'platform.approvals.confirmReject'
+				: 'platform.approvals.confirmApprove';
 
 	return (
 		<section className="grid gap-4 xl:grid-cols-[minmax(340px,0.62fr)_minmax(0,1.38fr)] xl:items-start">
@@ -358,7 +442,16 @@ export function ApprovalsPanel({
 								<h2 className="text-sm font-semibold">
 									{t('platform.approvals.listTitle')}
 								</h2>
-								<Badge variant="secondary">{pendingCount} pending</Badge>
+								<Badge variant="secondary">
+									{t('platform.approvals.pendingCount', {
+										count: pendingCount,
+									})}
+								</Badge>
+								<Badge variant="outline">
+									{t('platform.approvals.resultCount', {
+										count: approvalRequests.length,
+									})}
+								</Badge>
 							</div>
 							<p className="mt-1 text-xs leading-5 text-muted-foreground">
 								{t('platform.approvals.listDescription')}
@@ -378,7 +471,7 @@ export function ApprovalsPanel({
 					</Button>
 				</div>
 
-				<div className="grid gap-3 border-y bg-background/80 py-3 md:grid-cols-2 xl:grid-cols-[1.1fr_1fr_1fr_1.1fr_0.7fr_auto]">
+				<div className="grid gap-3 border-y bg-background/80 py-3 md:grid-cols-2 xl:grid-cols-[1.1fr_1fr_1fr_1.1fr_0.7fr_auto_auto]">
 					<div className="grid gap-2">
 						<label className="text-xs font-medium text-muted-foreground">
 							{t('platform.approvals.filterStatus')}
@@ -496,6 +589,16 @@ export function ApprovalsPanel({
 						<ListChecks />
 						{t('platform.approvals.applyFilters')}
 					</Button>
+					<Button
+						type="button"
+						size="sm"
+						variant="ghost"
+						className="self-end md:col-span-2 xl:col-span-1"
+						onClick={clearApprovalFilters}
+						disabled={approvalLoading || !hasActiveApprovalFilters}
+					>
+						{t('platform.approvals.clearFilters')}
+					</Button>
 				</div>
 
 				{approvalError ? <PlatformNotice>{approvalError}</PlatformNotice> : null}
@@ -507,17 +610,31 @@ export function ApprovalsPanel({
 						))}
 					</div>
 				) : approvalRequests.length === 0 ? (
-					<div className="rounded-lg border border-dashed bg-background/80 p-6 text-sm text-muted-foreground">
-						{t('platform.approvals.empty')}
+					<div className="grid gap-3 rounded-lg border border-dashed bg-background/80 p-6 text-sm text-muted-foreground">
+						<div className="font-medium text-foreground">
+							{hasActiveApprovalFilters
+								? t('platform.approvals.emptyFilteredTitle')
+								: t('platform.approvals.empty')}
+						</div>
+						{hasActiveApprovalFilters ? (
+							<>
+								<p>{t('platform.approvals.emptyFilteredDescription')}</p>
+								<Button
+									type="button"
+									size="sm"
+									variant="outline"
+									className="w-fit"
+									onClick={clearApprovalFilters}
+								>
+									{t('platform.approvals.clearFilters')}
+								</Button>
+							</>
+						) : null}
 					</div>
 				) : (
 					<div className="grid gap-3">
 						{approvalRequests.map((approval) => {
-							const target =
-								approval.tool_name ||
-								approval.workflow_type ||
-								approval.agent_id ||
-								approval.request_type;
+							const target = getApprovalTarget(approval);
 							const isDeciding = decidingApprovalId === approval.approval_id;
 							const isContinuing = continuingApprovalId === approval.approval_id;
 							const canApproveAndRun =
@@ -569,7 +686,12 @@ export function ApprovalsPanel({
 														type="button"
 														size="sm"
 														className="w-full sm:w-auto"
-														onClick={() => void onApproveAndRun(approval)}
+														onClick={() =>
+															setPendingDecision({
+																approval,
+																action: 'approveAndRun',
+															})
+														}
 														disabled={isDeciding || isContinuing}
 													>
 														<Play
@@ -590,10 +712,10 @@ export function ApprovalsPanel({
 													variant="outline"
 													className="w-full sm:w-auto"
 													onClick={() =>
-														void onDecideApproval(
-															approval.approval_id,
-															'approved',
-														)
+														setPendingDecision({
+															approval,
+															action: 'approve',
+														})
 													}
 													disabled={isDeciding || isContinuing}
 												>
@@ -607,13 +729,13 @@ export function ApprovalsPanel({
 												<Button
 													type="button"
 													size="sm"
-													variant="outline"
+													variant="destructive"
 													className="w-full sm:w-auto"
 													onClick={() =>
-														void onDecideApproval(
-															approval.approval_id,
-															'rejected',
-														)
+														setPendingDecision({
+															approval,
+															action: 'reject',
+														})
 													}
 													disabled={isDeciding || isContinuing}
 												>
@@ -695,6 +817,82 @@ export function ApprovalsPanel({
 					</div>
 				)}
 			</div>
+			<Dialog
+				open={Boolean(pendingDecision)}
+				onOpenChange={(open) => {
+					if (!open) {
+						closePendingDecision();
+					}
+				}}
+			>
+				<DialogContent className="max-h-[calc(100dvh-2rem)] overflow-auto sm:max-w-lg">
+					<DialogHeader>
+						<DialogTitle>{t(pendingDecisionTitleKey)}</DialogTitle>
+						<DialogDescription>{t(pendingDecisionBodyKey)}</DialogDescription>
+					</DialogHeader>
+					{pendingDecision ? (
+						<div className="grid gap-3 rounded-lg border bg-background p-3 text-xs">
+							<div className="grid gap-1">
+								<span className="font-medium text-muted-foreground">
+									{t('platform.approvals.target')}
+								</span>
+								<span className="break-all font-mono">{pendingDecisionTarget}</span>
+							</div>
+							<div className="grid gap-1">
+								<span className="font-medium text-muted-foreground">
+									{t('platform.approvals.requestType')}
+								</span>
+								<span>{pendingDecisionType}</span>
+							</div>
+							<div className="grid gap-1">
+								<span className="font-medium text-muted-foreground">
+									{t('platform.approvals.approvalId')}
+								</span>
+								<span className="break-all font-mono">
+									{pendingDecision.approval.approval_id}
+								</span>
+							</div>
+							<div className="grid gap-1">
+								<span className="font-medium text-muted-foreground">
+									{t('platform.approvals.requestedBy')}
+								</span>
+								<span className="break-all font-mono">
+									{pendingDecision.approval.requested_by} /{' '}
+									{pendingDecision.approval.user_id}
+								</span>
+							</div>
+							<div className="grid gap-1">
+								<span className="font-medium text-muted-foreground">
+									{t('platform.audit.inputs')}
+								</span>
+								<span className="break-words">
+									{summarizeAuditObject(pendingDecision.approval.inputs)}
+								</span>
+							</div>
+						</div>
+					) : null}
+					<DialogFooter className="sticky bottom-0">
+						<Button
+							type="button"
+							variant="outline"
+							onClick={closePendingDecision}
+							disabled={pendingDecisionIsBusy}
+						>
+							{t('common.cancel')}
+						</Button>
+						<Button
+							type="button"
+							variant={
+								pendingDecision?.action === 'reject' ? 'destructive' : 'default'
+							}
+							onClick={() => void confirmPendingDecision()}
+							disabled={pendingDecisionIsBusy}
+						>
+							{t(pendingDecisionConfirmKey)}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</section>
 	);
 }

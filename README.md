@@ -1,8 +1,28 @@
 # AgentFoundry
 
-AgentFoundry is an enterprise Agent platform for building, running, governing, and observing AI agents.
+AgentFoundry is an enterprise Agent platform for building, running, governing, and observing AI agents across teams, tenants, tools, knowledge bases, workflows, approvals, memory, and audit trails.
 
 The repository is currently a runnable product prototype moving toward a production-grade SaaS platform. It is not a production system yet.
+
+AgentFoundry is not a single chatbot and is not a frontend shell for AgentScope. It is the control plane for enterprise Agent operations: create Agents, bind tools and knowledge, run them under policy, route human approvals, capture evidence, write memory, and keep audit records.
+
+Target users:
+
+- Enterprise AI platform teams that need to standardize how internal Agents are created, operated, and governed.
+- Internal automation teams that want reusable Agents, tools, workflows, approvals, and run history instead of isolated scripts.
+- Engineering teams that need tenant isolation, model configuration, knowledge retrieval, memory operations, and auditability before using Agents in business workflows.
+
+Core product loop:
+
+```text
+Configure models and runtime providers
+  -> Create or publish an Agent
+  -> Bind tools, workflows, knowledge bases, and memory scope
+  -> Start an Agent run
+  -> Apply policy and human approval gates when needed
+  -> Return an answer with evidence
+  -> Persist run history, memory, retrieval records, and audit events
+```
 
 AgentFoundry is an independent product repository. It owns the platform console, backend APIs, tenant-aware tools, workflows, approval gates, audit views, knowledge assistant flow, memory operations, and runtime adapter boundary. AgentScope is a replaceable Agent runtime provider behind the backend adapter, not the AgentFoundry backend itself.
 
@@ -16,6 +36,15 @@ agentfoundry/
   docs/       Product, architecture, data model, and production plan
 ```
 
+## Prerequisites
+
+Local development expects:
+
+- `uv` for running the Python backend.
+- `pnpm` for running the Vite frontend.
+- Redis, or Docker so the start script can launch Redis automatically.
+- A local AgentScope checkout next to this repository, or `AGENTSCOPE_DIR` pointing to one.
+
 Expected local stack:
 
 ```text
@@ -23,6 +52,8 @@ agentfoundry-stack/
   agentscope/     AgentScope framework checkout
   agentfoundry/   This repository
 ```
+
+The local scripts currently run the backend through the AgentScope Python environment. AgentScope is still a runtime dependency behind AgentFoundry's adapter boundary; it is not the AgentFoundry backend and should not own AgentFoundry's platform data model or API contracts.
 
 ## Start Locally
 
@@ -56,6 +87,15 @@ Then open:
 http://127.0.0.1:5186/platform
 ```
 
+## Try the Platform
+
+Open `/platform`, then use these setup values in the frontend if prompted:
+
+```text
+Server URL: http://127.0.0.1:8000
+Username:   acme:alice
+```
+
 Platform routes:
 
 ```text
@@ -68,13 +108,6 @@ Platform routes:
 /platform/tenants    Tenant workspace, connectors, and members
 /platform/memory     Long-term memory operations
 /platform/settings   Runtime, audit, config, and capability views
-```
-
-Use these setup values in the frontend if prompted:
-
-```text
-Server URL: http://127.0.0.1:8000
-Username:   acme:alice
 ```
 
 Demo prompt:
@@ -94,6 +127,24 @@ Current knowledge status:
 - The enterprise knowledge assistant can use the development knowledge base `dev-enterprise-handbook`.
 - Results from this local fallback are marked as `agentfoundry-dev-local` in run evidence.
 - Production RAG still needs an embedding-capable credential and a real indexing pipeline.
+
+## Development vs Production
+
+This repository is safe to use as a local development prototype and product foundation. Do not treat the current local data path as production storage.
+
+Development behavior:
+
+- Local JSON/JSONL files are used for development storage and smoke-test data.
+- The enterprise knowledge assistant can answer from the local fallback knowledge base.
+- Runtime behavior can use local/mock provider paths while the stable AgentScope adapter is being built.
+
+Production work still needs:
+
+- Database-backed persistence, migrations, transactions, and tenant-scoped constraints.
+- Real document ingestion, chunking, embedding, retrieval, and retrieval logs.
+- Authentication, authorization, secret management, immutable audit, deployment, and observability.
+
+Do not connect real enterprise-sensitive data until the production data layer, access control, secret handling, and audit guarantees are in place.
 
 ## Verify
 
