@@ -123,7 +123,11 @@ class WorkflowRunRepositoryProtocol(Protocol):
 
 
 class PostgresWorkflowRunReadThroughRepository:
-    """Use PostgreSQL for tenant-scoped workflow runs with a dev fallback."""
+    """Use PostgreSQL as the source of truth for tenant-scoped workflow runs.
+
+    Records without tenant context remain on the legacy JSONL repository for
+    local development compatibility during the data-layer migration.
+    """
 
     def __init__(
         self,
@@ -170,22 +174,7 @@ class PostgresWorkflowRunReadThroughRepository:
                 for record in postgres_records
                 if record.get("agent_id") == agent_id
             ]
-        if len(postgres_records) >= _clamp_limit(limit):
-            return postgres_records[: _clamp_limit(limit)]
-
-        seen_run_ids = {record["run_id"] for record in postgres_records}
-        fallback_records = [
-            record
-            for record in self._fallback_repository.list(
-                limit=limit,
-                workflow_type=workflow_type,
-                agent_id=agent_id,
-                tenant=tenant,
-                user_id=user_id,
-            )
-            if record.get("run_id") not in seen_run_ids
-        ]
-        return (postgres_records + fallback_records)[: _clamp_limit(limit)]
+        return postgres_records[: _clamp_limit(limit)]
 
     def append(self, record: dict[str, Any]) -> None:
         if not record.get("tenant"):
