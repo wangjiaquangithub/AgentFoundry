@@ -473,6 +473,16 @@ def _build_knowledge_document_chunk_read_repository() -> (
     return PostgresDocumentChunkReadRepository(database)
 
 
+def _build_knowledge_document_chunk_write_repository() -> (
+    PostgresDocumentChunkWriteRepository | None
+):
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresDocumentChunkWriteRepository(database)
+
+
 def _build_knowledge_embedding_record_read_repository() -> (
     PostgresEmbeddingRecordReadRepository | None
 ):
@@ -1003,6 +1013,9 @@ app.include_router(
             document_repository=_build_knowledge_document_read_repository,
             document_write_repository=_build_knowledge_document_write_repository,
             document_chunk_repository=_build_knowledge_document_chunk_read_repository,
+            document_chunk_write_repository=(
+                _build_knowledge_document_chunk_write_repository
+            ),
             tenant_hint_from_user_id=tenant_hint_from_user_id,
             now=now_iso,
         )

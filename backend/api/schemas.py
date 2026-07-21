@@ -169,6 +169,15 @@ class EnterpriseKnowledgeDocumentUpsertRequest(BaseModel):
     document_id: str | None = None
 
 
+class EnterpriseKnowledgeDocumentChunkUpsertRequest(BaseModel):
+    document_id: str
+    chunk_index: int = Field(ge=0)
+    content: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    tenant: str | None = None
+    chunk_id: str | None = None
+
+
 class EnterpriseKnowledgeRetrievalEventsRequest(BaseModel):
     agent_run_id: str | None = None
     knowledge_base_id: str | None = None

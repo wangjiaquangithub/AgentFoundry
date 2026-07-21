@@ -11,6 +11,7 @@ from api.schemas import (
     EnterpriseKnowledgeBaseUpsertRequest,
     EnterpriseKnowledgeBasesRequest,
     EnterpriseKnowledgeDocumentDetailRequest,
+    EnterpriseKnowledgeDocumentChunkUpsertRequest,
     EnterpriseKnowledgeDocumentUpsertRequest,
     EnterpriseKnowledgeDocumentsRequest,
     EnterpriseKnowledgeEmbeddingRecordUpsertRequest,
@@ -21,6 +22,7 @@ from api.schemas import (
     EnterpriseKnowledgeRetrievalEventDetailRequest,
     EnterpriseKnowledgeRetrievalEventsRequest,
 )
+from backend.persistence.document_chunks import DocumentChunkRecord
 from backend.persistence.documents import DocumentRecord
 from backend.persistence.embedding_records import EmbeddingRecord
 from backend.persistence.knowledge_bases import KnowledgeBaseRecord
@@ -63,6 +65,7 @@ class KnowledgeDocumentsRouteDependencies:
     document_repository: Callable[[], Any | None]
     document_write_repository: Callable[[], Any | None]
     document_chunk_repository: Callable[[], Any | None]
+    document_chunk_write_repository: Callable[[], Any | None]
     tenant_hint_from_user_id: Callable[[str], str | None]
     now: Callable[[], str]
 
@@ -716,6 +719,47 @@ def create_knowledge_documents_router(
         return {
             "tenant": tenant_id,
             "document": _document_payload(persisted_document),
+        }
+
+    @router.post("/enterprise/platform/knowledge/document-chunks/upsert")
+    async def upsert_enterprise_knowledge_document_chunk(
+        payload: EnterpriseKnowledgeDocumentChunkUpsertRequest,
+        request: Request,
+    ) -> dict[str, Any]:
+        """Persist one tenant knowledge document chunk record to PostgreSQL."""
+        chunk_repository = deps.document_chunk_write_repository()
+        if chunk_repository is None:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Production knowledge document chunk writes require PostgreSQL. "
+                    "Local JSON or SQLite storage is not a production document "
+                    "chunk write target."
+                ),
+            )
+
+        tenant_id = _resolve_tenant(
+            tenant=payload.tenant,
+            request=request,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
+        chunk = DocumentChunkRecord(
+            id=payload.chunk_id or f"chunk-{uuid4()}",
+            tenant_id=tenant_id,
+            document_id=payload.document_id,
+            chunk_index=payload.chunk_index,
+            content=payload.content,
+            metadata=payload.metadata,
+            created_at=deps.now(),
+        )
+        try:
+            persisted_chunk = chunk_repository.append_document_chunk(chunk)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        return {
+            "tenant": tenant_id,
+            "chunk": _chunk_payload(persisted_chunk),
         }
 
     return router
