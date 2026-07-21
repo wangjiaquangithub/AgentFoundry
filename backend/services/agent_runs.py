@@ -122,14 +122,20 @@ class PlatformAgentRunService:
         run_request: dict[str, Any],
         load_published_agent: Callable[[str, str], tuple[dict[str, Any], Any]],
         build_run_metadata: Callable[[dict[str, Any] | None], dict[str, Any]],
+        describe_runtime_adapter: Callable[[dict[str, Any]], dict[str, Any]],
     ) -> dict[str, Any]:
         agent = self.resolve_run_agent(
             run_request=run_request,
             load_published_agent=load_published_agent,
         )
+        agent_metadata = build_run_metadata(agent)
         return {
             "agent": agent,
-            "agent_metadata": build_run_metadata(agent),
+            "agent_metadata": agent_metadata,
+            "runtime_adapter": self.runtime_adapter_payload_from_metadata(
+                describe_runtime_adapter=describe_runtime_adapter,
+                agent_metadata=agent_metadata,
+            ),
         }
 
     @staticmethod
