@@ -89,8 +89,7 @@ class PostgresMemberReadThroughRepository:
     def save_config(self, config: dict[str, Any]) -> None:
         members = config.get("members")
         if not isinstance(members, list):
-            self._fallback_repository.save_config(config)
-            return
+            raise ValueError("PostgreSQL member config must include a members array.")
 
         for raw_member in members:
             if not isinstance(raw_member, dict):
