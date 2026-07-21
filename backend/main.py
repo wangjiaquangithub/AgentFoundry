@@ -367,7 +367,10 @@ platform_memory_repository = PlatformMemoryRepository(
     memory_item_reader=_build_memory_item_read_repository(),
     memory_item_writer=_build_memory_item_write_repository(),
 )
-platform_memory_service = PlatformMemoryService(repository=platform_memory_repository)
+platform_memory_service = PlatformMemoryService(
+    repository=platform_memory_repository,
+    audit_event_writer=_build_audit_event_write_repository(),
+)
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 enterprise_connector = build_enterprise_connector()
 tool_audit_logger = ToolAuditLogger.from_env(

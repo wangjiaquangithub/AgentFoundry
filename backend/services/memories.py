@@ -3,10 +3,16 @@
 from datetime import datetime, timezone
 from pathlib import Path
 import re
-from typing import Any
+from typing import Any, Protocol
 from uuid import uuid4
 
+from backend.persistence import AuditEventRecord
 from repositories.memories import PlatformMemoryRepository
+
+
+class AuditEventWriter(Protocol):
+    def append_audit_event(self, record: AuditEventRecord) -> None:
+        ...
 
 
 def _truncate_text(value: str, limit: int = 300) -> str:
@@ -232,8 +238,14 @@ def _extract_platform_memory_facts(
 class PlatformMemoryService:
     """Manage tenant-scoped long-term memory records."""
 
-    def __init__(self, *, repository: PlatformMemoryRepository) -> None:
+    def __init__(
+        self,
+        *,
+        repository: PlatformMemoryRepository,
+        audit_event_writer: AuditEventWriter | None = None,
+    ) -> None:
         self._repository = repository
+        self._audit_event_writer = audit_event_writer
 
     def path_for(
         self,
@@ -421,7 +433,65 @@ class PlatformMemoryService:
             record=record,
             max_records=max_records,
         )
+        self._append_memory_audit_event(
+            tenant=tenant,
+            user_id=user_id,
+            agent_id=agent_id,
+            record=record,
+        )
         return record
+
+    def _append_memory_audit_event(
+        self,
+        *,
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        record: dict[str, Any],
+    ) -> None:
+        if self._audit_event_writer is None:
+            return
+
+        created_at = str(record.get("created_at") or "").strip()
+        if not created_at:
+            created_at = datetime.now(timezone.utc).isoformat()
+
+        try:
+            self._audit_event_writer.append_audit_event(
+                AuditEventRecord(
+                    id=str(uuid4()),
+                    tenant_id=tenant,
+                    actor_user_id=user_id,
+                    event_type="memory_item.created",
+                    target_type="memory_item",
+                    target_id=str(record.get("id") or ""),
+                    payload={
+                        "schema_version": 1,
+                        "tenant": tenant,
+                        "user_id": user_id,
+                        "agent_id": agent_id,
+                        "session_id": str(record.get("session_id") or ""),
+                        "fact_count": len(record.get("facts") or []),
+                        "tool_names": [
+                            str(tool_name)
+                            for tool_name in record.get("tool_names") or []
+                        ],
+                        "knowledge_base_ids": [
+                            str(knowledge_base_id)
+                            for knowledge_base_id in (
+                                record.get("knowledge_base_ids") or []
+                            )
+                        ],
+                        "keywords": [
+                            str(keyword)
+                            for keyword in record.get("keywords") or []
+                        ],
+                    },
+                    created_at=created_at,
+                ),
+            )
+        except Exception:
+            return
 
     def append_agent_turn_memory(
         self,
