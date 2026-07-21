@@ -572,6 +572,7 @@ def _platform_agent_service() -> PlatformAgentService:
             include_inactive=True,
         ),
         role_for_user=_platform_access_helpers.role_for_user,
+        audit_event_writer=_build_audit_event_write_repository(),
     )
 
 

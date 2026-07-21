@@ -1,9 +1,10 @@
 """Service-layer orchestration for enterprise platform agents."""
 
 from datetime import datetime, timezone
-from typing import Any, Callable, Iterable
+from typing import Any, Callable, Iterable, Protocol
 from uuid import uuid4
 
+from backend.persistence import AuditEventRecord
 from repositories.agents import AgentRegistryError, AgentRepositoryProtocol
 
 
@@ -14,6 +15,13 @@ class PlatformAgentServiceError(ValueError):
         super().__init__(str(detail))
         self.status_code = status_code
         self.detail = detail
+
+
+class AuditEventWriteRepository(Protocol):
+    """Write platform governance audit events."""
+
+    def append_audit_event(self, record: AuditEventRecord) -> None:
+        """Persist one audit event."""
 
 
 class PlatformAgentService:
@@ -30,6 +38,7 @@ class PlatformAgentService:
         identity_metadata: Callable[[str, str], list[dict[str, Any]]],
         member_for_user: Callable[[str], dict[str, Any] | None],
         role_for_user: Callable[[str], str],
+        audit_event_writer: AuditEventWriteRepository | None = None,
     ) -> None:
         self._repository = repository
         self._templates = templates
@@ -39,6 +48,7 @@ class PlatformAgentService:
         self._identity_metadata = identity_metadata
         self._member_for_user = member_for_user
         self._role_for_user = role_for_user
+        self._audit_event_writer = audit_event_writer
 
     def list_agents(self) -> list[dict[str, Any]]:
         try:
@@ -90,6 +100,13 @@ class PlatformAgentService:
             else _merge_by_key(self.list_agents(), imported_agents, "id")
         )
         self.save_agents(agents)
+        for agent in imported_agents:
+            self._append_platform_agent_audit_event(
+                agent=agent,
+                actor="platform-admin",
+                event_type="platform_agent.imported",
+                extra_payload={"mode": mode},
+            )
 
     def normalize_import_agents(self, value: Any) -> list[dict[str, Any]]:
         if value is None:
@@ -513,6 +530,11 @@ class PlatformAgentService:
         agents = self.list_agents()
         agents.append(agent)
         self.save_agents(agents)
+        self._append_platform_agent_audit_event(
+            agent=agent,
+            actor=user_id,
+            event_type="platform_agent.published",
+        )
         return agent, agents
 
     def publish_agent_response_payload(
@@ -544,6 +566,7 @@ class PlatformAgentService:
                 f"Unknown platform agent: {agent_id}",
             )
 
+        previous_status = str(agents[agent_index].get("status") or "").strip()
         agent = dict(agents[agent_index])
         template = self.get_template(str(agent.get("template_id", "")))
         changes = payload.model_dump(exclude_unset=True)
@@ -596,6 +619,17 @@ class PlatformAgentService:
         agent["updated_at"] = datetime.now(timezone.utc).isoformat()
         agents[agent_index] = agent
         self.save_agents(agents)
+        event_type = (
+            "platform_agent.archived"
+            if previous_status != "archived" and agent.get("status") == "archived"
+            else "platform_agent.updated"
+        )
+        self._append_platform_agent_audit_event(
+            agent=agent,
+            actor=user_id,
+            event_type=event_type,
+            extra_payload={"changed_fields": sorted(changes.keys())},
+        )
         return agent, agents
 
     def update_agent_response_payload(
@@ -638,6 +672,11 @@ class PlatformAgentService:
         agent["updated_at"] = datetime.now(timezone.utc).isoformat()
         agents[agent_index] = agent
         self.save_agents(agents)
+        self._append_platform_agent_audit_event(
+            agent=agent,
+            actor="platform-admin",
+            event_type="platform_agent.archived",
+        )
         return agent, agents
 
     def archive_agent_response_payload(
@@ -780,6 +819,60 @@ class PlatformAgentService:
             "active_member_count": active_member_count,
             "inactive_member_count": inactive_member_count,
         }
+
+    def _append_platform_agent_audit_event(
+        self,
+        *,
+        agent: dict[str, Any],
+        actor: str,
+        event_type: str,
+        extra_payload: dict[str, Any] | None = None,
+    ) -> None:
+        if self._audit_event_writer is None:
+            return
+
+        tenant = str(agent.get("tenant") or "").strip()
+        agent_id = str(agent.get("id") or "").strip()
+        access = self.agent_access(agent)
+        payload = {
+            "schema_version": 1,
+            **(extra_payload or {}),
+            "agent_id": agent_id,
+            "tenant": tenant,
+            "template_id": str(agent.get("template_id") or ""),
+            "name": str(agent.get("name") or agent_id),
+            "status": str(agent.get("status") or ""),
+            "tool_names": [str(tool) for tool in agent.get("tools") or []],
+            "knowledge_base_ids": [
+                str(knowledge_base_id)
+                for knowledge_base_id in agent.get("knowledge_base_ids") or []
+            ],
+            "memory_enabled": bool(agent.get("memory_enabled", False)),
+            "workflow_enabled": bool(agent.get("workflow_enabled", False)),
+            "model_config_id": str(agent.get("model_config_id") or ""),
+            "allowed_user_count": len(access["allowed_user_ids"]),
+            "allowed_role_count": len(access["allowed_roles"]),
+            "updated_by": str(actor or "platform-admin").strip()
+            or "platform-admin",
+        }
+        try:
+            self._audit_event_writer.append_audit_event(
+                AuditEventRecord(
+                    id=str(uuid4()),
+                    tenant_id=tenant,
+                    actor_user_id=str(actor or "platform-admin").strip()
+                    or "platform-admin",
+                    event_type=event_type,
+                    target_type="platform_agent",
+                    target_id=agent_id,
+                    payload=payload,
+                    created_at=datetime.now(timezone.utc).isoformat(),
+                ),
+            )
+        except ValueError:
+            raise
+        except Exception as exc:
+            raise PlatformAgentServiceError(500, str(exc)) from exc
 
 
 def _normalize_values(values: Iterable[Any] | None) -> list[str]:
