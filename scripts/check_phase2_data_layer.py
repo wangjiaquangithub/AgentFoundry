@@ -24,6 +24,17 @@ MAIN_MODULE = ROOT / "backend" / "main.py"
 DATABASE_MODULE = ROOT / "backend" / "persistence" / "database.py"
 PLATFORM_STATUS_SERVICE_MODULE = SERVICES_DIR / "platform_status.py"
 
+AUDIT_EVENT_WRITER_SERVICE_MODULES = {
+    "agents.py": "PlatformAgentService",
+    "approvals.py": "PlatformApprovalService",
+    "connectors.py": "PlatformConnectorConfigService",
+    "knowledge.py": "PlatformKnowledgeResponseService",
+    "members.py": "PlatformMemberService",
+    "memories.py": "PlatformMemoryService",
+    "tools.py": "PlatformToolPolicyService",
+    "workflows.py": "PlatformWorkflowTemplateService",
+}
+
 REQUIRED_TABLES = {
     "tenants",
     "users",
@@ -672,6 +683,71 @@ def _check_postgres_memory_item_writes_wired() -> list[str]:
     return errors
 
 
+def _check_postgres_audit_events_wired() -> list[str]:
+    errors: list[str] = []
+    main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    platform_status_source = PLATFORM_STATUS_SERVICE_MODULE.read_text(encoding="utf-8")
+    main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+
+    if not _module_imports_name(main_tree, "PostgresAuditEventReadRepository"):
+        errors.append(
+            "backend/main.py must import PostgresAuditEventReadRepository for audit event reads",
+        )
+    if not _module_imports_name(main_tree, "PostgresAuditEventWriteRepository"):
+        errors.append(
+            "backend/main.py must import PostgresAuditEventWriteRepository for audit event writes",
+        )
+    if not _module_defines_function(main_tree, "_build_audit_event_read_repository"):
+        errors.append(
+            "backend/main.py must define _build_audit_event_read_repository for PostgreSQL audit event reads",
+        )
+    if not _module_defines_function(main_tree, "_build_audit_event_write_repository"):
+        errors.append(
+            "backend/main.py must define _build_audit_event_write_repository for PostgreSQL audit event writes",
+        )
+    if "audit_event_reader=_build_audit_event_read_repository()" not in main_source:
+        errors.append(
+            "backend/main.py must pass the PostgreSQL audit_event_reader into PlatformStatusService",
+        )
+    if "audit_event_reader" not in platform_status_source:
+        errors.append(
+            "backend/services/platform_status.py must accept an audit_event_reader",
+        )
+    if "list_audit_events" not in platform_status_source:
+        errors.append(
+            "backend/services/platform_status.py must query audit events from the PostgreSQL reader",
+        )
+
+    for filename, service_name in sorted(AUDIT_EVENT_WRITER_SERVICE_MODULES.items()):
+        service_source = (SERVICES_DIR / filename).read_text(encoding="utf-8")
+        if "audit_event_writer" not in service_source:
+            errors.append(
+                f"backend/services/{filename} must accept an audit_event_writer",
+            )
+        if "append_audit_event" not in service_source:
+            errors.append(
+                f"backend/services/{filename} must call append_audit_event",
+            )
+        service_constructor = f"{service_name}("
+        service_position = main_source.find(service_constructor)
+        if service_position == -1:
+            errors.append(
+                f"backend/main.py must construct {service_name} with PostgreSQL audit event wiring",
+            )
+            continue
+        next_function_position = main_source.find("\ndef ", service_position + len(service_constructor))
+        if next_function_position == -1:
+            service_call_source = main_source[service_position:]
+        else:
+            service_call_source = main_source[service_position:next_function_position]
+        if "audit_event_writer=_build_audit_event_write_repository()" not in service_call_source:
+            errors.append(
+                f"backend/main.py must pass the PostgreSQL audit_event_writer into {service_name}",
+            )
+
+    return errors
+
+
 def _find_class_method(
     tree: ast.AST,
     *,
@@ -724,6 +800,7 @@ def main() -> int:
         *_check_postgres_runtime_provider_reads_wired(),
         *_check_postgres_runtime_invocation_writes_wired(),
         *_check_postgres_memory_item_writes_wired(),
+        *_check_postgres_audit_events_wired(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -749,6 +826,7 @@ def main() -> int:
     print("- PostgreSQL runtime provider reads wired: yes")
     print("- PostgreSQL runtime invocation writes wired: yes")
     print("- PostgreSQL memory item writes wired: yes")
+    print("- PostgreSQL audit events wired: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:
