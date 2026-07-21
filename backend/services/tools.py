@@ -299,8 +299,8 @@ class PlatformToolPolicyService:
                 tenant_id=tenant,
                 status="active",
             )
-        except Exception:
-            return fallback
+        except Exception as exc:
+            raise PlatformToolPolicyServiceError(500, str(exc)) from exc
 
         tool_names: list[str] = []
         tool_catalog: dict[str, dict[str, Any]] = {}

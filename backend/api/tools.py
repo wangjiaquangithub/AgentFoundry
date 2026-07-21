@@ -13,7 +13,7 @@ from services.connectors import (
     PlatformConnectorConfigService,
     PlatformConnectorConfigServiceError,
 )
-from services.tools import PlatformToolPolicyService
+from services.tools import PlatformToolPolicyService, PlatformToolPolicyServiceError
 
 
 def _raise_service_error(exc: Any) -> NoReturn:
@@ -74,11 +74,14 @@ def create_tool_audit_router(deps: ToolAuditRouteDependencies) -> APIRouter:
             except PlatformAgentServiceError as exc:
                 _raise_service_error(exc)
 
-        catalog = tool_policy_service.tenant_tool_catalog(
-            tenant=tenant,
-            fallback_tool_names=deps.tool_names,
-            fallback_tool_catalog=deps.tool_catalog,
-        )
+        try:
+            catalog = tool_policy_service.tenant_tool_catalog(
+                tenant=tenant,
+                fallback_tool_names=deps.tool_names,
+                fallback_tool_catalog=deps.tool_catalog,
+            )
+        except PlatformToolPolicyServiceError as exc:
+            _raise_service_error(exc)
         tool_names = catalog["tool_names"]
         tool_catalog = catalog["tool_catalog"]
         decisions = tool_policy_service.catalog_decisions_by_name(
