@@ -183,3 +183,48 @@ class PostgresMemoryItemReadRepository:
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
+
+
+class PostgresMemoryItemWriteRepository:
+    """Write tenant-scoped memory items to PostgreSQL."""
+
+    def __init__(self, database: PostgresDatabase) -> None:
+        self._database = database
+
+    def append_memory_item(self, record: MemoryItemRecord) -> None:
+        with self._database.transaction() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO memory_items (
+                      id, tenant_id, user_id, agent_id, session_id, content,
+                      source_run_id, metadata, expires_at, created_at
+                    )
+                    VALUES (
+                      %s, %s, %s, %s, %s, %s,
+                      %s, %s, %s, %s
+                    )
+                    ON CONFLICT (id) DO UPDATE SET
+                      tenant_id = EXCLUDED.tenant_id,
+                      user_id = EXCLUDED.user_id,
+                      agent_id = EXCLUDED.agent_id,
+                      session_id = EXCLUDED.session_id,
+                      content = EXCLUDED.content,
+                      source_run_id = EXCLUDED.source_run_id,
+                      metadata = EXCLUDED.metadata,
+                      expires_at = EXCLUDED.expires_at,
+                      created_at = EXCLUDED.created_at
+                    """,
+                    (
+                        record.id,
+                        record.tenant_id,
+                        record.user_id,
+                        record.agent_id,
+                        record.session_id,
+                        record.content,
+                        record.source_run_id,
+                        json.dumps(record.metadata, ensure_ascii=False),
+                        record.expires_at,
+                        record.created_at,
+                    ),
+                )

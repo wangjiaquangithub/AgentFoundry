@@ -13,16 +13,23 @@ def _safe_path_part(value: str) -> str:
 
 
 class PlatformMemoryRepository:
-    """Read tenant-scoped memory records with legacy JSONL write support."""
+    """Read and write tenant-scoped memory records.
+
+    PostgreSQL is used for tenant-scoped production records when configured.
+    The JSONL path remains only for local development compatibility and legacy
+    records that have not been migrated.
+    """
 
     def __init__(
         self,
         root_dir: Path,
         *,
         memory_item_reader: "MemoryItemReadRepository | None" = None,
+        memory_item_writer: "MemoryItemWriteRepository | None" = None,
     ) -> None:
         self._root_dir = root_dir
         self._memory_item_reader = memory_item_reader
+        self._memory_item_writer = memory_item_writer
 
     def path_for(
         self,
@@ -116,6 +123,17 @@ class PlatformMemoryRepository:
         record: dict[str, Any],
         max_records: int,
     ) -> None:
+        if tenant and self._memory_item_writer is not None:
+            self._memory_item_writer.append_memory_item(
+                _platform_record_to_memory_item(
+                    tenant=tenant,
+                    user_id=user_id,
+                    agent_id=agent_id,
+                    record=record,
+                ),
+            )
+            return
+
         path = self.path_for(
             tenant=tenant,
             user_id=user_id,
@@ -149,6 +167,11 @@ class MemoryItemReadRepository(Protocol):
         ...
 
 
+class MemoryItemWriteRepository(Protocol):
+    def append_memory_item(self, record: MemoryItemRecord) -> None:
+        ...
+
+
 def _list_metadata_strings(metadata: dict[str, Any], key: str) -> list[str]:
     values = metadata.get(key)
     if not isinstance(values, list):
@@ -179,3 +202,58 @@ def _platform_memory_from_memory_item(record: MemoryItemRecord) -> dict[str, Any
         ),
         "keywords": _list_metadata_strings(metadata, "keywords"),
     }
+
+
+def _platform_record_to_memory_item(
+    *,
+    tenant: str,
+    user_id: str,
+    agent_id: str,
+    record: dict[str, Any],
+) -> MemoryItemRecord:
+    facts = _list_record_strings(record, "facts")
+    content = _memory_item_content(record, facts)
+    return MemoryItemRecord(
+        id=str(record["id"]),
+        tenant_id=tenant,
+        user_id=user_id,
+        agent_id=_optional_record_string(agent_id),
+        session_id=_optional_record_string(record.get("session_id")),
+        content=content,
+        source_run_id=_optional_record_string(record.get("source_run_id")),
+        metadata={
+            "question": str(record.get("question") or "").strip(),
+            "facts": facts,
+            "tool_names": _list_record_strings(record, "tool_names"),
+            "knowledge_base_ids": _list_record_strings(
+                record,
+                "knowledge_base_ids",
+            ),
+            "keywords": _list_record_strings(record, "keywords"),
+        },
+        expires_at=_optional_record_string(record.get("expires_at")),
+        created_at=str(record["created_at"]),
+    )
+
+
+def _memory_item_content(record: dict[str, Any], facts: list[str]) -> str:
+    if facts:
+        return "\n".join(facts)
+    question = str(record.get("question") or "").strip()
+    if question:
+        return question
+    return str(record["id"])
+
+
+def _list_record_strings(record: dict[str, Any], key: str) -> list[str]:
+    values = record.get(key)
+    if not isinstance(values, list):
+        return []
+    return [str(value) for value in values if str(value).strip()]
+
+
+def _optional_record_string(value: Any) -> str | None:
+    if value is None:
+        return None
+    normalized = str(value).strip()
+    return normalized or None

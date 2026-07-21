@@ -98,6 +98,7 @@ from backend.persistence import (
     PostgresApprovalWriteRepository,
     PostgresAuditEventReadRepository,
     PostgresMemoryItemReadRepository,
+    PostgresMemoryItemWriteRepository,
     PostgresTenancyReadRepository,
     PostgresTenancyWriteRepository,
     PostgresToolCallReadRepository,
@@ -267,6 +268,16 @@ def _build_memory_item_read_repository() -> (
     return PostgresMemoryItemReadRepository(create_postgres_database(database_url))
 
 
+def _build_memory_item_write_repository() -> (
+    PostgresMemoryItemWriteRepository | None
+):
+    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
+    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+        return None
+
+    return PostgresMemoryItemWriteRepository(create_postgres_database(database_url))
+
+
 def _build_audit_event_read_repository() -> (
     PostgresAuditEventReadRepository | None
 ):
@@ -328,6 +339,7 @@ enterprise_router_service = PlatformEnterpriseRouterService(
 platform_memory_repository = PlatformMemoryRepository(
     PLATFORM_MEMORY_DIR,
     memory_item_reader=_build_memory_item_read_repository(),
+    memory_item_writer=_build_memory_item_write_repository(),
 )
 platform_memory_service = PlatformMemoryService(repository=platform_memory_repository)
 DATA_DIR.mkdir(parents=True, exist_ok=True)

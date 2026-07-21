@@ -48,6 +48,7 @@ from backend.persistence.knowledge_bases import (
 from backend.persistence.memory_items import (
     MemoryItemRecord,
     PostgresMemoryItemReadRepository,
+    PostgresMemoryItemWriteRepository,
     SQLiteMemoryItemReadRepository,
 )
 from backend.persistence.memory_policies import (
@@ -133,6 +134,7 @@ __all__ = [
     "PostgresEmbeddingRecordReadRepository",
     "PostgresKnowledgeBaseReadRepository",
     "PostgresMemoryItemReadRepository",
+    "PostgresMemoryItemWriteRepository",
     "PostgresMemoryPolicyReadRepository",
     "PostgresModelConfigReadRepository",
     "PostgresRetrievalEventReadRepository",
