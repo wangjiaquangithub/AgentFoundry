@@ -109,6 +109,10 @@ def execution_context() -> dict[str, Any]:
     return {
         "tenant": "acme",
         "question": "How do approvals work?",
+        "run_identity": {
+            "turn_id": "run_readiness_check",
+            "created_at": "2026-01-01T00:00:00+00:00",
+        },
         "knowledge_base_ids": ["kb_support"],
         "response_record_context": {"user_id": "acme:alice"},
     }

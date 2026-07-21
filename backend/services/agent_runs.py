@@ -216,8 +216,9 @@ class PlatformAgentRunService:
         knowledge_hits: list[dict[str, Any]],
         memory_hits: list[dict[str, Any]],
         memory_saved: bool,
+        run_identity: dict[str, str] | None = None,
     ) -> dict[str, Any]:
-        run_identity = self.build_run_identity()
+        run_identity = run_identity or self.build_run_identity()
         turn_id = run_identity["turn_id"]
         created_at = run_identity["created_at"]
         return {
@@ -249,6 +250,7 @@ class PlatformAgentRunService:
         knowledge_hits: list[dict[str, Any]],
         memory_hits: list[dict[str, Any]],
         memory_saved: bool,
+        run_identity: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         return self.build_response_trace(
             tenant=str(primary_call.get("tenant", tenant)),
@@ -259,6 +261,7 @@ class PlatformAgentRunService:
             knowledge_hits=knowledge_hits,
             memory_hits=memory_hits,
             memory_saved=memory_saved,
+            run_identity=run_identity,
         )
 
     def build_unrouted_response_trace(
@@ -271,6 +274,7 @@ class PlatformAgentRunService:
         knowledge_hits: list[dict[str, Any]],
         memory_hits: list[dict[str, Any]],
         memory_saved: bool,
+        run_identity: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         return self.build_response_trace(
             tenant=tenant,
@@ -281,6 +285,7 @@ class PlatformAgentRunService:
             knowledge_hits=knowledge_hits,
             memory_hits=memory_hits,
             memory_saved=memory_saved,
+            run_identity=run_identity,
         )
 
     def build_response_record_context(
@@ -325,6 +330,7 @@ class PlatformAgentRunService:
         tenant = runtime_identity["tenant"]
         question = run_request["question"]
         runtime_invocation_id = uuid4().hex
+        run_identity = self.build_run_identity()
         runner_context = self.resolve_runner_context(
             agent_metadata=agent_metadata,
             agent=agent,
@@ -372,6 +378,7 @@ class PlatformAgentRunService:
             "runner_agent_id": runner_context["runner_agent_id"],
             "runner_session_id": runner_context["runner_session_id"],
             "runtime_invocation_id": runtime_invocation_id,
+            "run_identity": run_identity,
             "runtime_invocation_request": runtime_invocation_request,
             "response_record_context": response_record_context,
             "knowledge_base_ids": knowledge_base_ids,
@@ -413,6 +420,7 @@ class PlatformAgentRunService:
             "configured_tools": execution_context["configured_tools"],
             "runner_agent_id": execution_context["runner_agent_id"],
             "runner_session_id": execution_context["runner_session_id"],
+            "run_identity": execution_context["run_identity"],
             "response_record_context": execution_context["response_record_context"],
         }
 
@@ -728,6 +736,7 @@ class PlatformAgentRunService:
             tenant=tenant,
             question=str(execution_context["question"]),
             knowledge_base_ids=knowledge_base_ids,
+            agent_run_id=str(execution_context["run_identity"]["turn_id"]),
         )
         knowledge_payload = build_agent_run_payload(
             knowledge_hits=knowledge_hits,
@@ -860,6 +869,7 @@ class PlatformAgentRunService:
             "routing_error": routing_error,
             "agent_metadata": execution_context_view["agent_metadata"],
             "runtime_adapter": execution_context_view["runtime_adapter"],
+            "run_identity": execution_context_view["run_identity"],
             "tool_calls": tool_calls,
             "knowledge_hits": knowledge_hits,
             "memory_hits": memory_hits,
@@ -1041,6 +1051,7 @@ class PlatformAgentRunService:
             "routing_error": routing_error,
             "agent_metadata": execution_context_view["agent_metadata"],
             "runtime_adapter": execution_context_view["runtime_adapter"],
+            "run_identity": execution_context_view["run_identity"],
             "knowledge_hits": knowledge_hits,
             "memory_hits": memory_hits,
             "knowledge_payload": knowledge_payload,
@@ -2368,6 +2379,7 @@ class PlatformAgentRunService:
         memory_payload: dict[str, Any],
         memory_saved: bool,
         decision: dict[str, Any],
+        run_identity: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         response_trace = self.build_unrouted_response_trace(
             tenant=tenant,
@@ -2377,6 +2389,7 @@ class PlatformAgentRunService:
             knowledge_hits=knowledge_hits,
             memory_hits=memory_hits,
             memory_saved=memory_saved,
+            run_identity=run_identity,
         )
         response = self.build_unrouted_response_from_trace(
             response_trace=response_trace,
@@ -2445,6 +2458,7 @@ class PlatformAgentRunService:
         knowledge_payload: dict[str, Any],
         memory_payload: dict[str, Any],
         memory_saved: bool,
+        run_identity: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         response_trace = self.build_routed_response_trace(
             primary_call=primary_call,
@@ -2456,6 +2470,7 @@ class PlatformAgentRunService:
             knowledge_hits=knowledge_hits,
             memory_hits=memory_hits,
             memory_saved=memory_saved,
+            run_identity=run_identity,
         )
         response = self.build_routed_response_from_trace(
             response_trace=response_trace,

@@ -378,6 +378,7 @@ class PlatformKnowledgeResponseService:
         question: str,
         knowledge_base_ids: list[str],
         top_k: int = 3,
+        agent_run_id: str | None = None,
     ) -> tuple[list[dict[str, Any]], str | None, dict[str, Any]]:
         readiness = self.build_retrieval_readiness(
             knowledge_base_ids=knowledge_base_ids,
@@ -414,6 +415,7 @@ class PlatformKnowledgeResponseService:
                     knowledge_base_id=knowledge_base_id,
                     question=question,
                     hits=formatted_results,
+                    agent_run_id=agent_run_id,
                 )
 
         if len(hits) < top_k:
@@ -511,6 +513,7 @@ class PlatformKnowledgeResponseService:
         knowledge_base_id: str,
         question: str,
         hits: list[dict[str, Any]],
+        agent_run_id: str | None = None,
     ) -> None:
         if self._retrieval_event_writer is None or self._now is None:
             return
@@ -523,7 +526,7 @@ class PlatformKnowledgeResponseService:
                 RetrievalEventRecord(
                     id=event_id,
                     tenant_id=tenant,
-                    agent_run_id=None,
+                    agent_run_id=agent_run_id,
                     knowledge_base_id=knowledge_base_id,
                     query=question,
                     hits=safe_hits,
@@ -540,6 +543,7 @@ class PlatformKnowledgeResponseService:
             question=question,
             hits=safe_hits,
             created_at=created_at,
+            agent_run_id=agent_run_id,
         )
 
     def _append_retrieval_audit_event(
@@ -552,11 +556,29 @@ class PlatformKnowledgeResponseService:
         question: str,
         hits: list[dict[str, Any]],
         created_at: str,
+        agent_run_id: str | None = None,
     ) -> None:
         if self._audit_event_writer is None:
             return
 
         try:
+            payload = {
+                "schema_version": 1,
+                "retrieval_event_id": event_id,
+                "tenant": tenant,
+                "user_id": user_id,
+                "knowledge_base_id": knowledge_base_id,
+                "query": question,
+                "hit_count": len(hits),
+                "document_ids": [
+                    str(hit.get("document_id") or "")
+                    for hit in hits
+                    if str(hit.get("document_id") or "").strip()
+                ],
+            }
+            if agent_run_id:
+                payload["agent_run_id"] = agent_run_id
+
             self._audit_event_writer.append_audit_event(
                 AuditEventRecord(
                     id=str(uuid4()),
@@ -565,20 +587,7 @@ class PlatformKnowledgeResponseService:
                     event_type="knowledge_base.retrieved",
                     target_type="knowledge_base",
                     target_id=knowledge_base_id,
-                    payload={
-                        "schema_version": 1,
-                        "retrieval_event_id": event_id,
-                        "tenant": tenant,
-                        "user_id": user_id,
-                        "knowledge_base_id": knowledge_base_id,
-                        "query": question,
-                        "hit_count": len(hits),
-                        "document_ids": [
-                            str(hit.get("document_id") or "")
-                            for hit in hits
-                            if str(hit.get("document_id") or "").strip()
-                        ],
-                    },
+                    payload=payload,
                     created_at=created_at,
                 ),
             )
