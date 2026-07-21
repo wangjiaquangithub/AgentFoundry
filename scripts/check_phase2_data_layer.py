@@ -1647,6 +1647,63 @@ def _check_postgres_document_reads_guarded() -> list[str]:
     return errors
 
 
+def _check_postgres_document_chunk_reads_guarded() -> list[str]:
+    errors: list[str] = []
+    chunk_path = PERSISTENCE_DIR / "document_chunks.py"
+    chunk_source = chunk_path.read_text(encoding="utf-8")
+    chunk_tree = ast.parse(chunk_source, filename=str(chunk_path))
+
+    if "PostgresDocumentChunkReadRepository" not in chunk_source:
+        errors.append(
+            "backend/persistence/document_chunks.py must define "
+            "PostgresDocumentChunkReadRepository",
+        )
+        return errors
+
+    required_methods = {
+        "list_document_chunks": [
+            "FROM document_chunks",
+            "WHERE tenant_id = %s AND document_id = %s",
+        ],
+        "get_document_chunk": ["FROM document_chunks", "WHERE tenant_id = %s AND id = %s"],
+    }
+    for method_name, sql_tokens in required_methods.items():
+        method_node = _find_class_method(
+            chunk_tree,
+            class_name="PostgresDocumentChunkReadRepository",
+            method_name=method_name,
+        )
+        if method_node is None:
+            errors.append(
+                "PostgreSQL document chunk read repository missing method: "
+                "backend/persistence/document_chunks.py:"
+                f"PostgresDocumentChunkReadRepository.{method_name}",
+            )
+            continue
+        if not _method_has_required_argument(method_node, "tenant_id"):
+            errors.append(
+                "PostgreSQL document chunk read method must require tenant_id: "
+                "backend/persistence/document_chunks.py:"
+                f"PostgresDocumentChunkReadRepository.{method_name}",
+            )
+        if not _method_uses_database_call(method_node, "connect"):
+            errors.append(
+                "PostgreSQL document chunk read method must read through PostgreSQL: "
+                "backend/persistence/document_chunks.py:"
+                f"PostgresDocumentChunkReadRepository.{method_name}",
+            )
+        normalized_sql = " ".join(_normalized_sql_literals(method_node))
+        for sql_token in sql_tokens:
+            if sql_token.lower() not in normalized_sql:
+                errors.append(
+                    "PostgreSQL document chunk read method must query tenant-scoped "
+                    "document chunks: backend/persistence/document_chunks.py:"
+                    f"PostgresDocumentChunkReadRepository.{method_name}",
+                )
+
+    return errors
+
+
 def _find_class_method(
     tree: ast.AST,
     *,
@@ -1713,6 +1770,7 @@ def main() -> int:
         *_check_postgres_model_config_reads_guarded(),
         *_check_postgres_knowledge_base_reads_guarded(),
         *_check_postgres_document_reads_guarded(),
+        *_check_postgres_document_chunk_reads_guarded(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -1752,6 +1810,7 @@ def main() -> int:
     print("- PostgreSQL model config reads guarded: yes")
     print("- PostgreSQL knowledge base reads guarded: yes")
     print("- PostgreSQL document reads guarded: yes")
+    print("- PostgreSQL document chunk reads guarded: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:
