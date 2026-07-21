@@ -320,7 +320,10 @@ class PlatformStatusService:
             return self._runtime_provider_health()
 
         try:
-            providers = self._runtime_provider_reader.list_providers(limit=1)
+            providers = self._runtime_provider_reader.list_providers(
+                status="active",
+                limit=1,
+            )
         except Exception:
             LOGGER.exception("Failed to load runtime provider record from PostgreSQL")
             return self._runtime_provider_health()

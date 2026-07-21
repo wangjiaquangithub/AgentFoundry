@@ -575,6 +575,10 @@ def _check_postgres_runtime_provider_reads_wired() -> list[str]:
         errors.append(
             "backend/services/platform_status.py must accept a runtime_provider_reader",
         )
+    if 'status="active"' not in platform_status_source:
+        errors.append(
+            "backend/services/platform_status.py must select an active runtime provider from PostgreSQL",
+        )
     if "postgres_runtime_provider_record" not in platform_status_source:
         errors.append(
             "backend/services/platform_status.py must expose postgres_runtime_provider_record in runtime checks",
