@@ -119,7 +119,8 @@ class PostgresModelConfigReadRepository:
     ) -> list[ModelConfigRecord]:
         query = """
             SELECT id, tenant_id, name, provider, model, purpose, status,
-              config_ref, created_at, updated_at
+              COALESCE(credential_ref, config_ref) AS config_ref,
+              created_at, updated_at
             FROM model_configs
             WHERE tenant_id = %s
         """
@@ -149,7 +150,8 @@ class PostgresModelConfigReadRepository:
                 cursor.execute(
                     """
                     SELECT id, tenant_id, name, provider, model, purpose, status,
-                      config_ref, created_at, updated_at
+                      COALESCE(credential_ref, config_ref) AS config_ref,
+                      created_at, updated_at
                     FROM model_configs
                     WHERE tenant_id = %s AND id = %s
                     """,

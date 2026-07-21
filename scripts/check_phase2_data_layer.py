@@ -63,9 +63,7 @@ REQUIRED_REPOSITORIES = {
     "audit_events.py",
 }
 
-TARGET_COLUMN_WARNINGS = {
-    "model_configs": {"base_url", "credential_ref"},
-}
+TARGET_COLUMN_WARNINGS: dict[str, set[str]] = {}
 
 
 def _read_migrations() -> str:
