@@ -1539,6 +1539,60 @@ def _check_postgres_model_config_reads_guarded() -> list[str]:
     return errors
 
 
+def _check_postgres_knowledge_base_reads_guarded() -> list[str]:
+    errors: list[str] = []
+    knowledge_base_path = PERSISTENCE_DIR / "knowledge_bases.py"
+    knowledge_base_source = knowledge_base_path.read_text(encoding="utf-8")
+    knowledge_base_tree = ast.parse(knowledge_base_source, filename=str(knowledge_base_path))
+
+    if "PostgresKnowledgeBaseReadRepository" not in knowledge_base_source:
+        errors.append(
+            "backend/persistence/knowledge_bases.py must define "
+            "PostgresKnowledgeBaseReadRepository",
+        )
+        return errors
+
+    required_methods = {
+        "list_knowledge_bases": ["FROM knowledge_bases", "WHERE tenant_id = %s"],
+        "get_knowledge_base": ["FROM knowledge_bases", "WHERE tenant_id = %s AND id = %s"],
+    }
+    for method_name, sql_tokens in required_methods.items():
+        method_node = _find_class_method(
+            knowledge_base_tree,
+            class_name="PostgresKnowledgeBaseReadRepository",
+            method_name=method_name,
+        )
+        if method_node is None:
+            errors.append(
+                "PostgreSQL knowledge base read repository missing method: "
+                "backend/persistence/knowledge_bases.py:"
+                f"PostgresKnowledgeBaseReadRepository.{method_name}",
+            )
+            continue
+        if not _method_has_required_argument(method_node, "tenant_id"):
+            errors.append(
+                "PostgreSQL knowledge base read method must require tenant_id: "
+                "backend/persistence/knowledge_bases.py:"
+                f"PostgresKnowledgeBaseReadRepository.{method_name}",
+            )
+        if not _method_uses_database_call(method_node, "connect"):
+            errors.append(
+                "PostgreSQL knowledge base read method must read through PostgreSQL: "
+                "backend/persistence/knowledge_bases.py:"
+                f"PostgresKnowledgeBaseReadRepository.{method_name}",
+            )
+        normalized_sql = " ".join(_normalized_sql_literals(method_node))
+        for sql_token in sql_tokens:
+            if sql_token.lower() not in normalized_sql:
+                errors.append(
+                    "PostgreSQL knowledge base read method must query tenant-scoped "
+                    "knowledge bases: backend/persistence/knowledge_bases.py:"
+                    f"PostgresKnowledgeBaseReadRepository.{method_name}",
+                )
+
+    return errors
+
+
 def _find_class_method(
     tree: ast.AST,
     *,
@@ -1603,6 +1657,7 @@ def main() -> int:
         *_check_postgres_members_wired(),
         *_check_postgres_memory_policy_reads_guarded(),
         *_check_postgres_model_config_reads_guarded(),
+        *_check_postgres_knowledge_base_reads_guarded(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -1640,6 +1695,7 @@ def main() -> int:
     print("- PostgreSQL members wired: yes")
     print("- PostgreSQL memory policy reads guarded: yes")
     print("- PostgreSQL model config reads guarded: yes")
+    print("- PostgreSQL knowledge base reads guarded: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:
