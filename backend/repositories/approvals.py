@@ -195,22 +195,7 @@ class PostgresApprovalReadThroughRepository:
                 agent_id=agent_id,
             )
         ]
-        if len(postgres_records) >= _clamp_limit(limit):
-            return postgres_records[: _clamp_limit(limit)]
-
-        seen_approval_ids = {record["approval_id"] for record in postgres_records}
-        fallback_records = [
-            record
-            for record in self._fallback_repository.list(
-                limit=limit,
-                status=status,
-                tenant=tenant,
-                user_id=user_id,
-                agent_id=agent_id,
-            )
-            if record.get("approval_id") not in seen_approval_ids
-        ]
-        return (postgres_records + fallback_records)[: _clamp_limit(limit)]
+        return postgres_records[: _clamp_limit(limit)]
 
     def get(self, approval_id: str) -> dict[str, Any] | None:
         if not approval_id:
