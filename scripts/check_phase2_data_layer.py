@@ -2351,6 +2351,99 @@ def _check_postgres_tool_call_reads_guarded() -> list[str]:
     return errors
 
 
+def _check_postgres_tool_governance_reads_guarded() -> list[str]:
+    errors: list[str] = []
+    tools_path = PERSISTENCE_DIR / "tools.py"
+    tools_source = tools_path.read_text(encoding="utf-8")
+    tools_tree = ast.parse(tools_source, filename=str(tools_path))
+
+    if "PostgresToolGovernanceReadRepository" not in tools_source:
+        errors.append(
+            "backend/persistence/tools.py must define "
+            "PostgresToolGovernanceReadRepository",
+        )
+        return errors
+
+    required_methods = {
+        "list_tools": [
+            "FROM tools",
+            "WHERE tenant_id = %s",
+            "status = %s",
+        ],
+        "get_tool": [
+            "FROM tools",
+            "WHERE tenant_id = %s AND id = %s",
+        ],
+        "get_tool_by_name": [
+            "FROM tools",
+            "WHERE tenant_id = %s AND name = %s",
+        ],
+        "list_policies": [
+            "FROM tool_policies",
+            "WHERE tenant_id = %s",
+        ],
+        "get_policy_for_tool": [
+            "FROM tool_policies",
+            "WHERE tenant_id = %s AND tool_id = %s",
+        ],
+        "get_policy_for_tool_name": [
+            "FROM tool_policies",
+            "INNER JOIN tools",
+            "tool_policies.tenant_id = %s",
+            "tools.tenant_id = %s",
+            "tools.name = %s",
+        ],
+    }
+    required_arguments = {
+        "list_tools": {"tenant_id"},
+        "get_tool": {"tenant_id", "tool_id"},
+        "get_tool_by_name": {"tenant_id", "name"},
+        "list_policies": {"tenant_id"},
+        "get_policy_for_tool": {"tenant_id", "tool_id"},
+        "get_policy_for_tool_name": {"tenant_id", "tool_name"},
+    }
+    for method_name, sql_tokens in required_methods.items():
+        method_node = _find_class_method(
+            tools_tree,
+            class_name="PostgresToolGovernanceReadRepository",
+            method_name=method_name,
+        )
+        if method_node is None:
+            errors.append(
+                "PostgreSQL tool governance read repository missing method: "
+                "backend/persistence/tools.py:"
+                f"PostgresToolGovernanceReadRepository.{method_name}",
+            )
+            continue
+        method_arguments = {
+            argument.arg
+            for argument in [*method_node.args.args, *method_node.args.kwonlyargs]
+        }
+        for required_argument in required_arguments[method_name]:
+            if required_argument not in method_arguments:
+                errors.append(
+                    "PostgreSQL tool governance read method must accept required scope: "
+                    "backend/persistence/tools.py:"
+                    f"PostgresToolGovernanceReadRepository.{method_name}",
+                )
+        if not _method_uses_database_call(method_node, "connect"):
+            errors.append(
+                "PostgreSQL tool governance read method must read through PostgreSQL: "
+                "backend/persistence/tools.py:"
+                f"PostgresToolGovernanceReadRepository.{method_name}",
+            )
+        normalized_sql = " ".join(_normalized_sql_literals(method_node))
+        for sql_token in sql_tokens:
+            if sql_token.lower() not in normalized_sql:
+                errors.append(
+                    "PostgreSQL tool governance read method must query expected "
+                    "tenant-scoped tool tables and filters: backend/persistence/tools.py:"
+                    f"PostgresToolGovernanceReadRepository.{method_name}",
+                )
+
+    return errors
+
+
 def _find_class_method(
     tree: ast.AST,
     *,
@@ -2429,6 +2522,7 @@ def main() -> int:
         *_check_postgres_membership_reads_guarded(),
         *_check_postgres_runtime_reads_guarded(),
         *_check_postgres_tool_call_reads_guarded(),
+        *_check_postgres_tool_governance_reads_guarded(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -2480,6 +2574,7 @@ def main() -> int:
     print("- PostgreSQL membership reads guarded: yes")
     print("- PostgreSQL runtime reads guarded: yes")
     print("- PostgreSQL tool call reads guarded: yes")
+    print("- PostgreSQL tool governance reads guarded: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:
