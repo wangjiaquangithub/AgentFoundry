@@ -24,6 +24,18 @@ class AuditEventWriteRepository(Protocol):
         """Persist one audit event."""
 
 
+class KnowledgeDocumentReadinessService(Protocol):
+    """Summarize whether bound knowledge bases can serve production retrieval."""
+
+    def build_readiness(
+        self,
+        *,
+        tenant_id: str,
+        knowledge_base_ids: list[str],
+    ) -> dict[str, Any]:
+        """Return document, chunk, and embedding readiness for knowledge bases."""
+
+
 class PlatformAgentService:
     """Manage tenant-scoped platform agent registry records."""
 
@@ -39,6 +51,9 @@ class PlatformAgentService:
         member_for_user: Callable[[str], dict[str, Any] | None],
         role_for_user: Callable[[str], str],
         audit_event_writer: AuditEventWriteRepository | None = None,
+        knowledge_document_readiness_service: (
+            KnowledgeDocumentReadinessService | None
+        ) = None,
     ) -> None:
         self._repository = repository
         self._templates = templates
@@ -49,6 +64,9 @@ class PlatformAgentService:
         self._member_for_user = member_for_user
         self._role_for_user = role_for_user
         self._audit_event_writer = audit_event_writer
+        self._knowledge_document_readiness_service = (
+            knowledge_document_readiness_service
+        )
 
     def list_agents(self) -> list[dict[str, Any]]:
         try:
@@ -273,15 +291,55 @@ class PlatformAgentService:
             and not diagnostics["unknown_roles"],
         }
 
+    def knowledge_document_readiness(self, agent: dict[str, Any]) -> dict[str, Any]:
+        tenant = str(agent.get("tenant") or "").strip()
+        knowledge_base_ids = self.normalize_resource_ids(
+            agent.get("knowledge_base_ids"),
+        )
+        if not knowledge_base_ids:
+            return {
+                "status": "not_configured",
+                "bound_knowledge_base_ids": [],
+                "knowledge_bases": [],
+                "guidance": "Bind at least one PostgreSQL-backed knowledge base to enable production retrieval.",
+            }
+        if not tenant:
+            return {
+                "status": "blocked",
+                "bound_knowledge_base_ids": knowledge_base_ids,
+                "knowledge_bases": [],
+                "guidance": "Configure the agent tenant before checking tenant-scoped knowledge documents.",
+            }
+        if self._knowledge_document_readiness_service is None:
+            return {
+                "status": "unavailable",
+                "bound_knowledge_base_ids": knowledge_base_ids,
+                "knowledge_bases": [],
+                "guidance": "Production document readiness requires AGENTFOUNDRY_DATABASE_URL to point at PostgreSQL.",
+            }
+        return self._knowledge_document_readiness_service.build_readiness(
+            tenant_id=tenant,
+            knowledge_base_ids=knowledge_base_ids,
+        )
+
     def readiness(self, agent: dict[str, Any]) -> dict[str, Any]:
         tools = list(agent.get("tools") or [])
-        knowledge_base_ids = list(agent.get("knowledge_base_ids") or [])
+        knowledge_base_ids = self.normalize_resource_ids(
+            agent.get("knowledge_base_ids"),
+        )
         tenant = str(agent.get("tenant") or "").strip()
         model_configured = bool(agent.get("model_config_id"))
         memory_enabled = bool(agent.get("memory_enabled", False))
         workflow_enabled = bool(agent.get("workflow_enabled", False))
         access = self.agent_access(agent)
         access_summary = self.access_summary(agent)
+        document_readiness = self.knowledge_document_readiness(agent)
+        document_readiness_status = str(
+            document_readiness.get("status") or "",
+        ).strip()
+        document_readiness_summary = document_readiness.get("summary")
+        if not isinstance(document_readiness_summary, dict):
+            document_readiness_summary = {}
         access_restricted = bool(access["allowed_user_ids"] or access["allowed_roles"])
         approval_required_tools = [
             tool_name
@@ -298,6 +356,7 @@ class PlatformAgentService:
             "access_restricted": access_restricted,
             "access_scope_valid": bool(access_summary["access_scope_valid"]),
             "approval_required_tools": approval_required_tools,
+            "knowledge_documents_ready": document_readiness_status == "ready",
         }
         issues = []
 
@@ -331,6 +390,20 @@ class PlatformAgentService:
                     "code": "missing_knowledge",
                     "severity": "warning",
                     "message": "未绑定知识库，回答不会引用企业资料。",
+                },
+            )
+        elif document_readiness_status != "ready":
+            issues.append(
+                {
+                    "code": "knowledge_documents_not_ready",
+                    "severity": (
+                        "blocking"
+                        if document_readiness_status == "blocked"
+                        else "warning"
+                    ),
+                    "message": "绑定知识库尚未达到生产检索条件。",
+                    "status": document_readiness_status,
+                    "guidance": document_readiness.get("guidance"),
                 },
             )
         if approval_required_tools:
@@ -367,7 +440,12 @@ class PlatformAgentService:
                 },
             )
 
-        if not tenant or not model_configured or not access_summary["access_scope_valid"]:
+        if (
+            not tenant
+            or not model_configured
+            or not access_summary["access_scope_valid"]
+            or document_readiness_status == "blocked"
+        ):
             status = "blocked"
         elif any(issue["severity"] == "warning" for issue in issues):
             status = "partial"
@@ -386,9 +464,22 @@ class PlatformAgentService:
                 "workflow_enabled": workflow_enabled,
                 "access_restricted": access_restricted,
                 "access_scope_valid": bool(access_summary["access_scope_valid"]),
+                "knowledge_document_status": document_readiness_status,
+                "knowledge_document_count": document_readiness_summary.get(
+                    "document_count",
+                    0,
+                ),
+                "knowledge_chunk_count": document_readiness_summary.get(
+                    "chunk_count",
+                    0,
+                ),
+                "knowledge_embedding_record_count": (
+                    document_readiness_summary.get("embedding_record_count", 0)
+                ),
             },
             "checks": checks,
             "issues": issues,
+            "knowledge_document_readiness": document_readiness,
         }
 
     def response(self, agent: dict[str, Any]) -> dict[str, Any]:

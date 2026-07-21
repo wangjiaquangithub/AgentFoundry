@@ -98,8 +98,13 @@ from backend.persistence import (
     PostgresApprovalWriteRepository,
     PostgresAuditEventReadRepository,
     PostgresAuditEventWriteRepository,
+    PostgresDocumentChunkReadRepository,
+    PostgresDocumentReadRepository,
+    PostgresEmbeddingRecordReadRepository,
+    PostgresKnowledgeBaseReadRepository,
     PostgresMemoryItemReadRepository,
     PostgresMemoryItemWriteRepository,
+    PostgresModelConfigReadRepository,
     PostgresRetrievalEventWriteRepository,
     PostgresTenancyReadRepository,
     PostgresTenancyWriteRepository,
@@ -155,7 +160,10 @@ from services.connectors import (
 )
 from services.dev_knowledge import PlatformDevKnowledgeService
 from services.enterprise_router import PlatformEnterpriseRouterService
-from services.knowledge import PlatformKnowledgeResponseService
+from services.knowledge import (
+    PlatformKnowledgeDocumentReadinessService,
+    PlatformKnowledgeResponseService,
+)
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
 from services.platform_status import PlatformStatusService
@@ -351,6 +359,25 @@ knowledge_response_service = PlatformKnowledgeResponseService(
     audit_event_writer=_build_audit_event_write_repository(),
     now=now_iso,
 )
+
+
+def _build_knowledge_document_readiness_service() -> (
+    PlatformKnowledgeDocumentReadinessService | None
+):
+    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
+    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+        return None
+
+    database = create_postgres_database(database_url)
+    return PlatformKnowledgeDocumentReadinessService(
+        knowledge_base_repository=PostgresKnowledgeBaseReadRepository(database),
+        document_repository=PostgresDocumentReadRepository(database),
+        document_chunk_repository=PostgresDocumentChunkReadRepository(database),
+        embedding_record_repository=PostgresEmbeddingRecordReadRepository(database),
+        model_config_repository=PostgresModelConfigReadRepository(database),
+    )
+
+
 enterprise_router_service = PlatformEnterpriseRouterService(
     tool_names=ENTERPRISE_TOOL_NAMES,
     tool_input_fields=ENTERPRISE_TOOL_INPUT_FIELDS,
@@ -586,6 +613,9 @@ def _platform_agent_service() -> PlatformAgentService:
         ),
         role_for_user=_platform_access_helpers.role_for_user,
         audit_event_writer=_build_audit_event_write_repository(),
+        knowledge_document_readiness_service=(
+            _build_knowledge_document_readiness_service()
+        ),
     )
 
 
