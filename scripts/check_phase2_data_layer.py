@@ -748,6 +748,59 @@ def _check_postgres_audit_events_wired() -> list[str]:
     return errors
 
 
+def _check_postgres_retrieval_events_wired() -> list[str]:
+    errors: list[str] = []
+    main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    platform_status_source = PLATFORM_STATUS_SERVICE_MODULE.read_text(encoding="utf-8")
+    knowledge_response_source = (SERVICES_DIR / "knowledge.py").read_text(
+        encoding="utf-8",
+    )
+    main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+
+    if not _module_imports_name(main_tree, "PostgresRetrievalEventReadRepository"):
+        errors.append(
+            "backend/main.py must import PostgresRetrievalEventReadRepository for retrieval event reads",
+        )
+    if not _module_imports_name(main_tree, "PostgresRetrievalEventWriteRepository"):
+        errors.append(
+            "backend/main.py must import PostgresRetrievalEventWriteRepository for retrieval event writes",
+        )
+    if not _module_defines_function(main_tree, "_build_retrieval_event_read_repository"):
+        errors.append(
+            "backend/main.py must define _build_retrieval_event_read_repository for PostgreSQL retrieval event reads",
+        )
+    if not _module_defines_function(main_tree, "_build_retrieval_event_write_repository"):
+        errors.append(
+            "backend/main.py must define _build_retrieval_event_write_repository for PostgreSQL retrieval event writes",
+        )
+    if "retrieval_event_reader=_build_retrieval_event_read_repository()" not in main_source:
+        errors.append(
+            "backend/main.py must pass the PostgreSQL retrieval_event_reader into PlatformStatusService",
+        )
+    if "retrieval_event_writer=_build_retrieval_event_write_repository()" not in main_source:
+        errors.append(
+            "backend/main.py must pass the PostgreSQL retrieval_event_writer into PlatformKnowledgeResponseService",
+        )
+    if "retrieval_event_reader" not in platform_status_source:
+        errors.append(
+            "backend/services/platform_status.py must accept a retrieval_event_reader",
+        )
+    if "list_retrieval_events" not in platform_status_source:
+        errors.append(
+            "backend/services/platform_status.py must query retrieval events from the PostgreSQL reader",
+        )
+    if "retrieval_event_writer" not in knowledge_response_source:
+        errors.append(
+            "backend/services/knowledge.py must accept a retrieval_event_writer",
+        )
+    if "append_retrieval_event" not in knowledge_response_source:
+        errors.append(
+            "backend/services/knowledge.py must call append_retrieval_event",
+        )
+
+    return errors
+
+
 def _find_class_method(
     tree: ast.AST,
     *,
@@ -801,6 +854,7 @@ def main() -> int:
         *_check_postgres_runtime_invocation_writes_wired(),
         *_check_postgres_memory_item_writes_wired(),
         *_check_postgres_audit_events_wired(),
+        *_check_postgres_retrieval_events_wired(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -827,6 +881,7 @@ def main() -> int:
     print("- PostgreSQL runtime invocation writes wired: yes")
     print("- PostgreSQL memory item writes wired: yes")
     print("- PostgreSQL audit events wired: yes")
+    print("- PostgreSQL retrieval events wired: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:

@@ -37,6 +37,20 @@ class RuntimeProviderReadRepository(Protocol):
         """Return runtime provider records."""
 
 
+class RetrievalEventReadRepository(Protocol):
+    """Read tenant-scoped retrieval evidence from the production data layer."""
+
+    def list_retrieval_events(
+        self,
+        *,
+        tenant_id: str,
+        agent_run_id: str | None = None,
+        knowledge_base_id: str | None = None,
+        limit: int = 50,
+    ) -> list[Any]:
+        """Return tenant-scoped retrieval event records."""
+
+
 class PlatformStatusService:
     """Compose platform console snapshots from repositories and runtime services."""
 
@@ -56,15 +70,16 @@ class PlatformStatusService:
         agent_run_repository: Any,
         audit_logger: Any,
         audit_event_reader: AuditEventReadRepository | None,
+        retrieval_event_reader: RetrievalEventReadRepository | None,
         tool_policy: Any,
         connector_health: Callable[[], dict[str, Any]],
         runtime_provider_health: Callable[[], dict[str, Any]],
-        runtime_provider_reader: RuntimeProviderReadRepository | None = None,
         agent_readiness: Callable[[dict[str, Any]], dict[str, Any]],
         enterprise_tool_names: list[str],
         enterprise_tool_catalog: dict[str, dict[str, Any]],
         approval_required_tools: set[str],
         approval_required_workflows: set[str],
+        runtime_provider_reader: RuntimeProviderReadRepository | None = None,
     ) -> None:
         self._list_approval_records = list_approval_records
         self._load_workflow_runs = load_workflow_runs
@@ -77,6 +92,7 @@ class PlatformStatusService:
         self._agent_run_repository = agent_run_repository
         self._audit_logger = audit_logger
         self._audit_event_reader = audit_event_reader
+        self._retrieval_event_reader = retrieval_event_reader
         self._tool_policy = tool_policy
         self._connector_health = connector_health
         self._runtime_provider_health = runtime_provider_health
@@ -207,6 +223,10 @@ class PlatformStatusService:
         audit_events = self._query_audit_events(
             tenant=tenant,
             user_id=user_id,
+            limit=100,
+        )
+        retrieval_events = self._query_retrieval_events(
+            tenant=tenant,
             limit=100,
         )
         risk_tools = self._risk_tools(tenant=tenant, user_id=user_id)
@@ -598,6 +618,10 @@ class PlatformStatusService:
             user_id=user_id,
             limit=100,
         )
+        retrieval_events = self._query_retrieval_events(
+            tenant=tenant,
+            limit=100,
+        )
         connector = self._connector_health()
         decisions = self._tool_policy.describe_for_user(
             tenant,
@@ -642,6 +666,7 @@ class PlatformStatusService:
                 {
                     "bound_agent_count": len(agents_with_knowledge),
                     "published_agent_count": len(active_agents),
+                    "retrieval_event_count": len(retrieval_events),
                 },
             ),
             self._readiness_item(
@@ -1148,6 +1173,27 @@ class PlatformStatusService:
                 )
 
         return self._audit_logger.recent(limit=limit)
+
+    def _query_retrieval_events(
+        self,
+        *,
+        tenant: str,
+        limit: int = 50,
+    ) -> list[Any]:
+        if self._retrieval_event_reader is None:
+            return []
+
+        try:
+            return self._retrieval_event_reader.list_retrieval_events(
+                tenant_id=tenant,
+                limit=limit,
+            )
+        except Exception as exc:
+            LOGGER.warning(
+                "Failed to read platform retrieval events from PostgreSQL: %s",
+                exc,
+            )
+            return []
 
     @staticmethod
     def _dashboard_todos(

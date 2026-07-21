@@ -104,6 +104,7 @@ from backend.persistence import (
     PostgresMemoryItemReadRepository,
     PostgresMemoryItemWriteRepository,
     PostgresModelConfigReadRepository,
+    PostgresRetrievalEventReadRepository,
     PostgresRetrievalEventWriteRepository,
     PostgresRuntimeReadRepository,
     PostgresRuntimeWriteRepository,
@@ -330,6 +331,16 @@ def _build_retrieval_event_write_repository() -> (
     return PostgresRetrievalEventWriteRepository(database)
 
 
+def _build_retrieval_event_read_repository() -> (
+    PostgresRetrievalEventReadRepository | None
+):
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresRetrievalEventReadRepository(database)
+
+
 def _build_member_repository() -> MemberRepositoryProtocol:
     database = create_configured_postgres_database()
     if database is None:
@@ -538,6 +549,7 @@ def _platform_status_service() -> PlatformStatusService:
         agent_run_repository=agent_run_repository,
         audit_logger=tool_audit_logger,
         audit_event_reader=_build_audit_event_read_repository(),
+        retrieval_event_reader=_build_retrieval_event_read_repository(),
         tool_policy=tool_authorization_policy,
         connector_health=connector_health,
         runtime_provider_health=describe_runtime_provider_health,
