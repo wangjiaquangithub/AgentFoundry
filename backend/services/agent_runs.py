@@ -1200,14 +1200,6 @@ class PlatformAgentRunService:
             "routing_error": routing_error,
         }
 
-    def is_configured_tool(
-        self,
-        *,
-        tool_name: str,
-        configured_tools: set[str],
-    ) -> bool:
-        return tool_name in configured_tools
-
     def resolve_routed_tool_approval_from_context(
         self,
         *,
@@ -1338,10 +1330,7 @@ class PlatformAgentRunService:
         routing_error: str | None,
     ) -> bool:
         execution_context_view = self.execution_context_view(execution_context)
-        if self.is_configured_tool(
-            tool_name=route_context_view["tool_name"],
-            configured_tools=execution_context_view["configured_tools"],
-        ):
+        if route_context_view["tool_name"] in execution_context_view["configured_tools"]:
             return False
         self.record_denied_routed_tool_call_from_context(
             tool_calls=tool_calls,
