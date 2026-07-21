@@ -1200,26 +1200,6 @@ class PlatformAgentRunService:
             "routing_error": routing_error,
         }
 
-    def decide_denied_route_from_context(
-        self,
-        *,
-        decision_with_routing_context: Callable[..., dict[str, Any]],
-        denial: dict[str, Any],
-        routing_reason: str,
-        routing_source: str,
-        routing_mode: str,
-        routing_error: str | None,
-    ) -> dict[str, Any]:
-        return decision_with_routing_context(
-            decision=denial,
-            **self.build_routed_decision_context(
-                routing_reason=routing_reason,
-                routing_source=routing_source,
-                routing_mode=routing_mode,
-                routing_error=routing_error,
-            ),
-        )
-
     def denied_tool_answer(self, denial: dict[str, Any]) -> str:
         return str(denial["reason"])
 
@@ -1393,13 +1373,14 @@ class PlatformAgentRunService:
             connector_source=execution_context_view["connector_source"],
             routing_source=route_context_view["source"],
             routing_reason=route_context_view["reason"],
-            decision=self.decide_denied_route_from_context(
-                decision_with_routing_context=decision_with_routing_context,
-                denial=denial,
-                routing_reason=route_context_view["reason"],
-                routing_source=route_context_view["source"],
-                routing_mode=routing_mode,
-                routing_error=routing_error,
+            decision=decision_with_routing_context(
+                decision=denial,
+                **self.build_routed_decision_context(
+                    routing_reason=route_context_view["reason"],
+                    routing_source=route_context_view["source"],
+                    routing_mode=routing_mode,
+                    routing_error=routing_error,
+                ),
             ),
             answer=self.denied_tool_answer(denial),
         )
