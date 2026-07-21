@@ -144,6 +144,7 @@ from runtime import (
     build_runtime_invocation_request_payload,
     build_runtime_invocation_result_payload,
     describe_runtime_adapter,
+    describe_runtime_provider_health,
 )
 from services.approvals import (
     PlatformApprovalService,
@@ -528,6 +529,7 @@ def _platform_status_service() -> PlatformStatusService:
         audit_event_reader=_build_audit_event_read_repository(),
         tool_policy=tool_authorization_policy,
         connector_health=connector_health,
+        runtime_provider_health=describe_runtime_provider_health,
         agent_readiness=agent_service.readiness,
         enterprise_tool_names=ENTERPRISE_TOOL_NAMES,
         enterprise_tool_catalog=ENTERPRISE_TOOL_CATALOG,

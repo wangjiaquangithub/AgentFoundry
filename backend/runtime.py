@@ -121,6 +121,32 @@ class RuntimeInvocationResult:
         return payload
 
 
+@dataclass(frozen=True)
+class RuntimeProviderHealth:
+    """Provider-neutral runtime health exposed to platform status APIs."""
+
+    provider_id: str
+    provider: str
+    mode: str
+    status: str
+    ready: bool
+    message: str
+    capabilities: tuple[str, ...]
+    checks: dict[str, bool]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "provider_id": self.provider_id,
+            "provider": self.provider,
+            "mode": self.mode,
+            "status": self.status,
+            "ready": self.ready,
+            "message": self.message,
+            "capabilities": list(self.capabilities),
+            "checks": dict(self.checks),
+        }
+
+
 class RuntimeAdapter(Protocol):
     """Runtime adapter contract implemented by concrete providers."""
 
@@ -133,6 +159,10 @@ class RuntimeAdapter(Protocol):
 
     def describe(self, agent_metadata: dict[str, Any] | None = None) -> dict[str, Any]:
         """Return provider metadata suitable for API responses."""
+        ...
+
+    def health(self, agent_metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Return provider health metadata suitable for operations snapshots."""
         ...
 
     async def invoke(
@@ -170,6 +200,27 @@ class AgentScopeRuntimeAdapter:
             "agent_id": metadata.get("agent_id"),
             "agent_name": metadata.get("agent_name"),
         }
+
+    def health(self, agent_metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Return conservative runtime provider health for platform operations."""
+        _metadata = agent_metadata or {}
+        return RuntimeProviderHealth(
+            provider_id=self.id,
+            provider=self.provider,
+            mode=self.mode,
+            status="degraded",
+            ready=False,
+            message=(
+                "Runtime adapter boundary is configured; provider invocation "
+                "extraction is pending."
+            ),
+            capabilities=tuple(capability.id for capability in self.capabilities),
+            checks={
+                "adapter_configured": True,
+                "provider_invocation_wired": False,
+                "direct_agentscope_dependency": False,
+            },
+        ).to_dict()
 
     async def invoke(
         self,
@@ -352,3 +403,11 @@ def describe_runtime_adapter(
     """Return provider metadata for the selected runtime adapter."""
     runtime_adapter = get_runtime_adapter(agent_metadata)
     return runtime_adapter.describe(agent_metadata)
+
+
+def describe_runtime_provider_health(
+    agent_metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Return runtime provider health for platform operations snapshots."""
+    runtime_adapter = get_runtime_adapter(agent_metadata)
+    return runtime_adapter.health(agent_metadata)

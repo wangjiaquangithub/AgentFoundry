@@ -45,6 +45,7 @@ class PlatformStatusService:
         audit_event_reader: AuditEventReadRepository | None,
         tool_policy: Any,
         connector_health: Callable[[], dict[str, Any]],
+        runtime_provider_health: Callable[[], dict[str, Any]],
         agent_readiness: Callable[[dict[str, Any]], dict[str, Any]],
         enterprise_tool_names: list[str],
         enterprise_tool_catalog: dict[str, dict[str, Any]],
@@ -64,6 +65,7 @@ class PlatformStatusService:
         self._audit_event_reader = audit_event_reader
         self._tool_policy = tool_policy
         self._connector_health = connector_health
+        self._runtime_provider_health = runtime_provider_health
         self._agent_readiness = agent_readiness
         self._enterprise_tool_names = enterprise_tool_names
         self._enterprise_tool_catalog = enterprise_tool_catalog
@@ -253,6 +255,7 @@ class PlatformStatusService:
                 "source": self.runtime_connector_source(runtime),
                 "saved_config_enabled": self.runtime_saved_config_enabled(runtime),
             },
+            "runtime_provider": self._runtime_provider_health(),
             "identities": identities,
             "tenant_workspaces": tenant_workspaces,
             "current_workspace": tenant_workspaces.get(tenant),
