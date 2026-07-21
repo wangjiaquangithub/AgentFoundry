@@ -126,7 +126,14 @@ async def main() -> None:
         {
             "status": "blocked",
             "bound_knowledge_base_ids": ["kb_support"],
-            "knowledge_bases": [],
+            "knowledge_bases": [
+                {
+                    "id": "kb_support",
+                    "status": "blocked",
+                    "guidance": "Document chunks do not have embedding records.",
+                    "embedding_guidance": "Run embedding indexing for the existing document chunks.",
+                },
+            ],
             "guidance": "Create chunks and embeddings before retrieval.",
             "summary": {"document_count": 1, "chunk_count": 0},
         },
@@ -145,6 +152,11 @@ async def main() -> None:
     assert dev.calls == []
     assert blocked["retrieval_readiness"]["status"] == "blocked"
     assert blocked["retrieval_readiness"]["dev_fallback_used"] is False
+    assert "kb_support: Document chunks" in blocked["knowledge_error"]
+    assert "kb_support: Run embedding indexing" in blocked["knowledge_error"]
+    assert "kb_support: Run embedding indexing" in (
+        blocked["retrieval_readiness"]["knowledge_error"]
+    )
     assert blocked["knowledge_document_readiness"]["status"] == "blocked"
     assert blocked["knowledge_payload"]["knowledge_document_readiness"]["status"] == (
         "blocked"

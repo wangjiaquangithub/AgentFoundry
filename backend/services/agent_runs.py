@@ -682,8 +682,21 @@ class PlatformAgentRunService:
         knowledge_document_readiness: dict[str, Any],
     ) -> str:
         guidance = str(knowledge_document_readiness.get("guidance") or "").strip()
-        if guidance:
-            return guidance
+        guidance_parts = [guidance] if guidance else []
+        for knowledge_base in knowledge_document_readiness.get("knowledge_bases") or []:
+            if not isinstance(knowledge_base, dict):
+                continue
+            knowledge_base_id = str(knowledge_base.get("id") or "").strip()
+            for key in ("guidance", "embedding_guidance"):
+                item_guidance = str(knowledge_base.get(key) or "").strip()
+                if not item_guidance:
+                    continue
+                if knowledge_base_id:
+                    item_guidance = f"{knowledge_base_id}: {item_guidance}"
+                if item_guidance not in guidance_parts:
+                    guidance_parts.append(item_guidance)
+        if guidance_parts:
+            return " ".join(guidance_parts)
         status = str(knowledge_document_readiness.get("status") or "blocked")
         return (
             "PostgreSQL knowledge documents are not ready for agent retrieval "
