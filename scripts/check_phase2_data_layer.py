@@ -1478,6 +1478,67 @@ def _check_postgres_memory_policy_reads_guarded() -> list[str]:
     return errors
 
 
+def _check_postgres_model_config_reads_guarded() -> list[str]:
+    errors: list[str] = []
+    model_config_path = PERSISTENCE_DIR / "model_configs.py"
+    model_config_source = model_config_path.read_text(encoding="utf-8")
+    model_config_tree = ast.parse(model_config_source, filename=str(model_config_path))
+
+    if "PostgresModelConfigReadRepository" not in model_config_source:
+        errors.append(
+            "backend/persistence/model_configs.py must define "
+            "PostgresModelConfigReadRepository",
+        )
+        return errors
+
+    required_methods = {
+        "list_model_configs": ["FROM model_configs", "WHERE tenant_id = %s"],
+        "get_model_config": ["FROM model_configs", "WHERE tenant_id = %s AND id = %s"],
+    }
+    for method_name, sql_tokens in required_methods.items():
+        method_node = _find_class_method(
+            model_config_tree,
+            class_name="PostgresModelConfigReadRepository",
+            method_name=method_name,
+        )
+        if method_node is None:
+            errors.append(
+                "PostgreSQL model config read repository missing method: "
+                "backend/persistence/model_configs.py:"
+                f"PostgresModelConfigReadRepository.{method_name}",
+            )
+            continue
+        if not _method_has_required_argument(method_node, "tenant_id"):
+            errors.append(
+                "PostgreSQL model config read method must require tenant_id: "
+                "backend/persistence/model_configs.py:"
+                f"PostgresModelConfigReadRepository.{method_name}",
+            )
+        if not _method_uses_database_call(method_node, "connect"):
+            errors.append(
+                "PostgreSQL model config read method must read through PostgreSQL: "
+                "backend/persistence/model_configs.py:"
+                f"PostgresModelConfigReadRepository.{method_name}",
+            )
+        normalized_sql = " ".join(_normalized_sql_literals(method_node))
+        for sql_token in sql_tokens:
+            if sql_token.lower() not in normalized_sql:
+                errors.append(
+                    "PostgreSQL model config read method must query tenant-scoped "
+                    "model configs: backend/persistence/model_configs.py:"
+                    f"PostgresModelConfigReadRepository.{method_name}",
+                )
+        if "coalesce(credential_ref, config_ref) as config_ref" not in normalized_sql:
+            errors.append(
+                "PostgreSQL model config read method must prefer credential_ref "
+                "while preserving config_ref compatibility: "
+                "backend/persistence/model_configs.py:"
+                f"PostgresModelConfigReadRepository.{method_name}",
+            )
+
+    return errors
+
+
 def _find_class_method(
     tree: ast.AST,
     *,
@@ -1541,6 +1602,7 @@ def main() -> int:
         *_check_postgres_knowledge_readiness_wired(),
         *_check_postgres_members_wired(),
         *_check_postgres_memory_policy_reads_guarded(),
+        *_check_postgres_model_config_reads_guarded(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -1577,6 +1639,7 @@ def main() -> int:
     print("- PostgreSQL knowledge readiness reads wired: yes")
     print("- PostgreSQL members wired: yes")
     print("- PostgreSQL memory policy reads guarded: yes")
+    print("- PostgreSQL model config reads guarded: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:
