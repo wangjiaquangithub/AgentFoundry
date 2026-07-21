@@ -387,3 +387,107 @@ class PostgresToolGovernanceReadRepository:
         if row is None:
             return None
         return _policy_from_row(dict(row))
+
+
+class PostgresToolGovernanceWriteRepository:
+    """Write tenant-scoped tool catalog and policy records to PostgreSQL."""
+
+    def __init__(self, database: PostgresDatabase) -> None:
+        self._database = database
+
+    def save_policy(
+        self,
+        policy: dict[str, Any],
+        *,
+        enterprise_tool_catalog: dict[str, dict[str, Any]],
+        approval_required_tools: set[str],
+        timestamp: str,
+    ) -> None:
+        tenants = policy.get("tenants")
+        if not isinstance(tenants, dict):
+            return
+
+        with self._database.transaction() as connection:
+            with connection.cursor() as cursor:
+                for tenant_id, tenant_policy in tenants.items():
+                    if not isinstance(tenant_policy, dict):
+                        continue
+
+                    allow = tenant_policy.get("allow")
+                    if not isinstance(allow, list):
+                        continue
+
+                    clean_tenant_id = str(tenant_id)
+                    cursor.execute(
+                        """
+                        INSERT INTO tenants (id, name, status, plan, created_at, updated_at)
+                        VALUES (%s, %s, 'active', NULL, %s, %s)
+                        ON CONFLICT (id) DO UPDATE
+                        SET updated_at = EXCLUDED.updated_at
+                        """,
+                        (
+                            clean_tenant_id,
+                            clean_tenant_id,
+                            timestamp,
+                            timestamp,
+                        ),
+                    )
+
+                    for item in allow:
+                        tool_name = str(item or "").strip()
+                        if not tool_name:
+                            continue
+                        catalog = enterprise_tool_catalog.get(tool_name, {})
+                        tool_id = f"{clean_tenant_id}:{tool_name}"
+                        tool_schema = {
+                            "input_key": catalog.get("input_key"),
+                            "default_input": catalog.get("default_input"),
+                        }
+                        cursor.execute(
+                            """
+                            INSERT INTO tools (
+                              id, tenant_id, name, description, category, schema,
+                              status, created_at, updated_at
+                            )
+                            VALUES (%s, %s, %s, %s, 'enterprise', %s, 'active', %s, %s)
+                            ON CONFLICT (tenant_id, name) DO UPDATE
+                            SET description = EXCLUDED.description,
+                              category = EXCLUDED.category,
+                              schema = EXCLUDED.schema,
+                              status = EXCLUDED.status,
+                              updated_at = EXCLUDED.updated_at
+                            """,
+                            (
+                                tool_id,
+                                clean_tenant_id,
+                                tool_name,
+                                catalog.get("description"),
+                                json.dumps(tool_schema, ensure_ascii=False),
+                                timestamp,
+                                timestamp,
+                            ),
+                        )
+                        cursor.execute(
+                            """
+                            INSERT INTO tool_policies (
+                              id, tenant_id, tool_id, allowed_roles,
+                              approval_required, rate_limit, data_access_scope,
+                              created_at, updated_at
+                            )
+                            VALUES (%s, %s, %s, %s, %s, NULL, 'tenant', %s, %s)
+                            ON CONFLICT (tenant_id, tool_id) DO UPDATE
+                            SET allowed_roles = EXCLUDED.allowed_roles,
+                              approval_required = EXCLUDED.approval_required,
+                              data_access_scope = EXCLUDED.data_access_scope,
+                              updated_at = EXCLUDED.updated_at
+                            """,
+                            (
+                                f"{tool_id}:policy",
+                                clean_tenant_id,
+                                tool_id,
+                                json.dumps(["admin", "member"]),
+                                1 if tool_name in approval_required_tools else 0,
+                                timestamp,
+                                timestamp,
+                            ),
+                        )

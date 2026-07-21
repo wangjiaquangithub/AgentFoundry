@@ -92,6 +92,7 @@ from backend.persistence.tool_calls import (
 )
 from backend.persistence.tools import (
     PostgresToolGovernanceReadRepository,
+    PostgresToolGovernanceWriteRepository,
     SQLiteToolGovernanceReadRepository,
     ToolPolicyRecord,
     ToolRecord,
@@ -138,6 +139,7 @@ __all__ = [
     "PostgresToolCallReadRepository",
     "PostgresToolCallWriteRepository",
     "PostgresToolGovernanceReadRepository",
+    "PostgresToolGovernanceWriteRepository",
     "RetrievalEventRecord",
     "RuntimeInvocationRecord",
     "RuntimeProviderRecord",

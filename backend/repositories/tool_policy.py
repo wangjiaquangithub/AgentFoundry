@@ -2,7 +2,21 @@
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, Protocol
+
+
+class ToolPolicyWriteRepository(Protocol):
+    """Write tenant tool policy records to production persistence."""
+
+    def save_policy(
+        self,
+        policy: dict[str, Any],
+        *,
+        enterprise_tool_catalog: dict[str, dict[str, Any]],
+        approval_required_tools: set[str],
+        timestamp: str,
+    ) -> None:
+        """Persist tenant-scoped tool policy records."""
 
 
 class ToolPolicyRepository:
@@ -28,3 +42,34 @@ class ToolPolicyRepository:
             json.dumps(policy, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
+
+
+class PostgresToolPolicyWriteThroughRepository:
+    """Write tool policy to PostgreSQL, then keep the JSON file as a snapshot."""
+
+    def __init__(
+        self,
+        *,
+        postgres_writer: ToolPolicyWriteRepository,
+        fallback_repository: ToolPolicyRepository,
+        enterprise_tool_catalog: dict[str, dict[str, Any]],
+        approval_required_tools: set[str],
+        now: Callable[[], str],
+    ) -> None:
+        self._postgres_writer = postgres_writer
+        self._fallback_repository = fallback_repository
+        self._enterprise_tool_catalog = enterprise_tool_catalog
+        self._approval_required_tools = approval_required_tools
+        self._now = now
+
+    def load(self) -> dict[str, Any]:
+        return self._fallback_repository.load()
+
+    def save(self, policy: dict[str, Any]) -> None:
+        self._postgres_writer.save_policy(
+            policy,
+            enterprise_tool_catalog=self._enterprise_tool_catalog,
+            approval_required_tools=self._approval_required_tools,
+            timestamp=self._now(),
+        )
+        self._fallback_repository.save(policy)

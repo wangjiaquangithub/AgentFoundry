@@ -97,6 +97,7 @@ from backend.persistence import (
     PostgresToolCallReadRepository,
     PostgresToolCallWriteRepository,
     PostgresToolGovernanceReadRepository,
+    PostgresToolGovernanceWriteRepository,
     create_postgres_database,
 )
 from repositories.agent_runs import (
@@ -222,6 +223,16 @@ def _build_tool_governance_read_repository() -> (
     return PostgresToolGovernanceReadRepository(create_postgres_database(database_url))
 
 
+def _build_tool_governance_write_repository() -> (
+    PostgresToolGovernanceWriteRepository | None
+):
+    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
+    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+        return None
+
+    return PostgresToolGovernanceWriteRepository(create_postgres_database(database_url))
+
+
 def _build_memory_item_read_repository() -> (
     PostgresMemoryItemReadRepository | None
 ):
@@ -324,6 +335,10 @@ def _platform_tool_policy_service() -> PlatformToolPolicyService:
             _platform_access_helpers.identity_metadata(user_id, tenant)
         ),
         tool_governance_reader=_build_tool_governance_read_repository(),
+        tool_governance_writer=_build_tool_governance_write_repository(),
+        enterprise_tool_catalog=ENTERPRISE_TOOL_CATALOG,
+        approval_required_tools=APPROVAL_REQUIRED_TOOLS,
+        now=now_iso,
     )
 
 

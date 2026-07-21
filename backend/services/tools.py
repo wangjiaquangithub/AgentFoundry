@@ -5,7 +5,11 @@ from pathlib import Path
 from typing import Any, Callable, Protocol
 
 from permissions import ToolAuthorizationPolicy
-from repositories.tool_policy import ToolPolicyRepository
+from repositories.tool_policy import (
+    PostgresToolPolicyWriteThroughRepository,
+    ToolPolicyRepository,
+    ToolPolicyWriteRepository,
+)
 
 
 class ToolGovernanceReadRepository(Protocol):
@@ -42,6 +46,10 @@ class PlatformToolPolicyService:
         runtime_context: Callable[[str], dict[str, Any]],
         identity_metadata: Callable[[str, str], list[dict[str, Any]]],
         tool_governance_reader: ToolGovernanceReadRepository | None = None,
+        tool_governance_writer: ToolPolicyWriteRepository | None = None,
+        enterprise_tool_catalog: dict[str, dict[str, Any]] | None = None,
+        approval_required_tools: set[str] | None = None,
+        now: Callable[[], str] | None = None,
     ) -> None:
         self._policy_path = policy_path
         self._default_policy = default_policy
@@ -50,6 +58,10 @@ class PlatformToolPolicyService:
         self._runtime_context = runtime_context
         self._identity_metadata = identity_metadata
         self._tool_governance_reader = tool_governance_reader
+        self._tool_governance_writer = tool_governance_writer
+        self._enterprise_tool_catalog = enterprise_tool_catalog or {}
+        self._approval_required_tools = approval_required_tools or set()
+        self._now = now
 
     def load_policy(self) -> dict[str, Any]:
         try:
@@ -645,10 +657,25 @@ class PlatformToolPolicyService:
             deny=payload.get("deny"),
         )
 
-    def _repository(self) -> ToolPolicyRepository:
-        return ToolPolicyRepository(
+    def _repository(self) -> ToolPolicyRepository | PostgresToolPolicyWriteThroughRepository:
+        fallback_repository = ToolPolicyRepository(
             self._policy_path(),
             json.loads(json.dumps(self._default_policy)),
+        )
+        if self._tool_governance_writer is None:
+            return fallback_repository
+
+        if self._now is None:
+            raise PlatformToolPolicyServiceError(
+                500,
+                "Tool governance PostgreSQL writer requires a clock.",
+            )
+        return PostgresToolPolicyWriteThroughRepository(
+            postgres_writer=self._tool_governance_writer,
+            fallback_repository=fallback_repository,
+            enterprise_tool_catalog=self._enterprise_tool_catalog,
+            approval_required_tools=self._approval_required_tools,
+            now=self._now,
         )
 
 
