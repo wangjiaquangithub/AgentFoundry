@@ -2004,21 +2004,20 @@ class PlatformAgentRunService:
         *,
         platform_approval_service: Callable[[], Any],
         detail: dict[str, Any],
-        tenant: str,
-        user_id: str,
-        agent_id: str,
-        tool_name: str,
-        inputs: dict[str, Any],
+        execution_context: dict[str, Any],
+        route_context_view: dict[str, Any],
         headers: Any,
     ) -> dict[str, Any]:
+        execution_context_view = self.execution_context_view(execution_context)
+        response_record_context = execution_context_view["response_record_context"]
         return self.create_pending_approval_request(
             create_request=platform_approval_service().create_request,
             detail=detail,
-            tenant=tenant,
-            user_id=user_id,
-            agent_id=agent_id,
-            tool_name=tool_name,
-            inputs=inputs,
+            tenant=execution_context_view["tenant"],
+            user_id=response_record_context["user_id"],
+            agent_id=execution_context_view["runner_agent_id"],
+            tool_name=route_context_view["tool_name"],
+            inputs=route_context_view["inputs"],
             headers=headers,
         )
 
@@ -2031,22 +2030,16 @@ class PlatformAgentRunService:
             Any,
         ],
         detail: dict[str, Any],
-        tenant: str,
-        user_id: str,
-        agent_id: str,
-        tool_name: str,
-        inputs: dict[str, Any],
+        execution_context: dict[str, Any],
+        route_context_view: dict[str, Any],
         headers: Any,
     ) -> dict[str, Any]:
         try:
             return self.create_pending_tool_approval_request_from_context(
                 platform_approval_service=platform_approval_service,
                 detail=detail,
-                tenant=tenant,
-                user_id=user_id,
-                agent_id=agent_id,
-                tool_name=tool_name,
-                inputs=inputs,
+                execution_context=execution_context,
+                route_context_view=route_context_view,
                 headers=headers,
             )
         except PlatformApprovalServiceError as exc:
@@ -2064,9 +2057,10 @@ class PlatformAgentRunService:
             Any,
         ],
         decision_with_routing_context: Callable[..., dict[str, Any]],
+        execution_context: dict[str, Any],
+        route_context_view: dict[str, Any],
         tenant: str,
         user_id: str,
-        agent_id: str,
         tool_name: str,
         inputs: dict[str, Any],
         headers: Any,
@@ -2084,11 +2078,8 @@ class PlatformAgentRunService:
                 raise_platform_approval_service_error
             ),
             detail=detail,
-            tenant=tenant,
-            user_id=user_id,
-            agent_id=agent_id,
-            tool_name=tool_name,
-            inputs=inputs,
+            execution_context=execution_context,
+            route_context_view=route_context_view,
             headers=headers,
         )
         self.record_created_pending_approval_routed_tool_call_from_context(
@@ -2135,9 +2126,10 @@ class PlatformAgentRunService:
                 raise_platform_approval_service_error
             ),
             decision_with_routing_context=decision_with_routing_context,
+            execution_context=execution_context,
+            route_context_view=route_context_view,
             tenant=execution_context_view["tenant"],
             user_id=response_record_context["user_id"],
-            agent_id=execution_context_view["runner_agent_id"],
             tool_name=route_context_view["tool_name"],
             inputs=route_context_view["inputs"],
             headers=headers,
