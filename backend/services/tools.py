@@ -2,10 +2,22 @@
 
 import json
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Protocol
 
 from permissions import ToolAuthorizationPolicy
 from repositories.tool_policy import ToolPolicyRepository
+
+
+class ToolGovernanceReadRepository(Protocol):
+    """Read tenant-scoped tool governance records from production persistence."""
+
+    def list_tools(
+        self,
+        *,
+        tenant_id: str,
+        status: str | None = None,
+    ) -> list[Any]:
+        """Return tenant-scoped tool records."""
 
 
 class PlatformToolPolicyServiceError(ValueError):
@@ -29,6 +41,7 @@ class PlatformToolPolicyService:
         enterprise_tool_names: list[str],
         runtime_context: Callable[[str], dict[str, Any]],
         identity_metadata: Callable[[str, str], list[dict[str, Any]]],
+        tool_governance_reader: ToolGovernanceReadRepository | None = None,
     ) -> None:
         self._policy_path = policy_path
         self._default_policy = default_policy
@@ -36,6 +49,7 @@ class PlatformToolPolicyService:
         self._enterprise_tool_names = enterprise_tool_names
         self._runtime_context = runtime_context
         self._identity_metadata = identity_metadata
+        self._tool_governance_reader = tool_governance_reader
 
     def load_policy(self) -> dict[str, Any]:
         try:
@@ -231,6 +245,59 @@ class PlatformToolPolicyService:
                 ),
             )
         return tools
+
+    def tenant_tool_catalog(
+        self,
+        *,
+        tenant: str,
+        fallback_tool_names: list[str],
+        fallback_tool_catalog: dict[str, dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Return tenant tool catalog metadata, preferring PostgreSQL records."""
+        fallback = {
+            "tool_names": list(fallback_tool_names),
+            "tool_catalog": {
+                name: dict(catalog)
+                for name, catalog in fallback_tool_catalog.items()
+            },
+        }
+        if self._tool_governance_reader is None:
+            return fallback
+
+        try:
+            records = self._tool_governance_reader.list_tools(
+                tenant_id=tenant,
+                status="active",
+            )
+        except Exception:
+            return fallback
+
+        tool_names: list[str] = []
+        tool_catalog: dict[str, dict[str, Any]] = {}
+        for record in records:
+            name = str(getattr(record, "name", ""))
+            if name not in fallback_tool_catalog:
+                continue
+
+            catalog = dict(fallback_tool_catalog[name])
+            description = getattr(record, "description", None)
+            if description:
+                catalog["description"] = str(description)
+
+            schema = getattr(record, "schema", None)
+            if isinstance(schema, dict):
+                input_key = schema.get("input_key")
+                if isinstance(input_key, str) and input_key:
+                    catalog["input_key"] = input_key
+                if "default_input" in schema:
+                    catalog["default_input"] = schema["default_input"]
+
+            tool_names.append(name)
+            tool_catalog[name] = catalog
+
+        if not tool_names:
+            return fallback
+        return {"tool_names": tool_names, "tool_catalog": tool_catalog}
 
     @staticmethod
     def catalog_decisions_by_name(

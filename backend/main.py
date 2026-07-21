@@ -92,6 +92,7 @@ from backend.persistence import (
     PostgresApprovalWriteRepository,
     PostgresToolCallReadRepository,
     PostgresToolCallWriteRepository,
+    PostgresToolGovernanceReadRepository,
     create_postgres_database,
 )
 from repositories.agent_runs import (
@@ -202,6 +203,16 @@ def _build_tool_call_read_repository() -> PostgresToolCallReadRepository | None:
     return PostgresToolCallReadRepository(create_postgres_database(database_url))
 
 
+def _build_tool_governance_read_repository() -> (
+    PostgresToolGovernanceReadRepository | None
+):
+    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
+    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+        return None
+
+    return PostgresToolGovernanceReadRepository(create_postgres_database(database_url))
+
+
 connector_config_repository = ConnectorConfigRepository(
     PLATFORM_CONNECTOR_CONFIGS_PATH,
 )
@@ -267,6 +278,7 @@ def _platform_tool_policy_service() -> PlatformToolPolicyService:
         identity_metadata=lambda user_id, tenant: (
             _platform_access_helpers.identity_metadata(user_id, tenant)
         ),
+        tool_governance_reader=_build_tool_governance_read_repository(),
     )
 
 

@@ -74,15 +74,22 @@ def create_tool_audit_router(deps: ToolAuditRouteDependencies) -> APIRouter:
             except PlatformAgentServiceError as exc:
                 _raise_service_error(exc)
 
+        catalog = tool_policy_service.tenant_tool_catalog(
+            tenant=tenant,
+            fallback_tool_names=deps.tool_names,
+            fallback_tool_catalog=deps.tool_catalog,
+        )
+        tool_names = catalog["tool_names"]
+        tool_catalog = catalog["tool_catalog"]
         decisions = tool_policy_service.catalog_decisions_by_name(
             authorization_policy=deps.get_tool_authorization_policy(),
             tenant=tenant,
             user_id=resolved_user_id,
-            tool_names=deps.tool_names,
+            tool_names=tool_names,
         )
         tools = tool_policy_service.catalog_tools_payloads(
-            tool_names=deps.tool_names,
-            tool_catalog=deps.tool_catalog,
+            tool_names=tool_names,
+            tool_catalog=tool_catalog,
             decisions=decisions,
             audit_events_for_tool=lambda tool_name: deps.audit_logger.query(
                 tenant=tenant,
