@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import ast
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -210,6 +211,15 @@ def main() -> int:
         for error in errors:
             print(f"- {error}")
         return 1
+
+    sys.stdout.flush()
+    postgres_gate = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "check_phase2_postgres_migrations.py")],
+        cwd=ROOT,
+        check=False,
+    )
+    if postgres_gate.returncode != 0:
+        return postgres_gate.returncode
 
     print("\nOK: Phase 2 core tables and repository modules are covered.")
     return 0
