@@ -106,6 +106,7 @@ from backend.persistence import (
     PostgresModelConfigReadRepository,
     PostgresRetrievalEventWriteRepository,
     PostgresRuntimeReadRepository,
+    PostgresRuntimeWriteRepository,
     PostgresTenancyReadRepository,
     PostgresTenancyWriteRepository,
     PostgresToolCallReadRepository,
@@ -289,6 +290,14 @@ def _build_runtime_read_repository() -> PostgresRuntimeReadRepository | None:
         return None
 
     return PostgresRuntimeReadRepository(database)
+
+
+def _build_runtime_write_repository() -> PostgresRuntimeWriteRepository | None:
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresRuntimeWriteRepository(database)
 
 
 def _build_audit_event_read_repository() -> (
@@ -632,6 +641,7 @@ def _platform_agent_run_service() -> PlatformAgentRunService:
     return PlatformAgentRunService(
         repository=agent_run_repository,
         tool_call_writer=_build_tool_call_write_repository(),
+        runtime_invocation_writer=_build_runtime_write_repository(),
     )
 
 

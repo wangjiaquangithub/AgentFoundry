@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Protocol
 from uuid import uuid4
 
-from backend.persistence import ToolCallRecord
+from backend.persistence import RuntimeInvocationRecord, ToolCallRecord
 from repositories.agent_runs import AgentRunRepositoryProtocol
 from services.approvals import PlatformApprovalServiceError
 
@@ -18,6 +18,13 @@ class ToolCallWriteRepositoryProtocol(Protocol):
 
     def append_tool_call(self, record: ToolCallRecord) -> None:
         """Persist one tenant-scoped tool-call record."""
+
+
+class RuntimeInvocationWriteRepositoryProtocol(Protocol):
+    """Persistence boundary for production runtime invocation evidence."""
+
+    def append_invocation(self, record: RuntimeInvocationRecord) -> None:
+        """Persist one tenant-scoped runtime invocation record."""
 
 
 class PlatformAgentRunServiceError(ValueError):
@@ -37,9 +44,13 @@ class PlatformAgentRunService:
         *,
         repository: AgentRunRepositoryProtocol,
         tool_call_writer: ToolCallWriteRepositoryProtocol | None = None,
+        runtime_invocation_writer: (
+            RuntimeInvocationWriteRepositoryProtocol | None
+        ) = None,
     ) -> None:
         self._repository = repository
         self._tool_call_writer = tool_call_writer
+        self._runtime_invocation_writer = runtime_invocation_writer
 
     def list_runs(
         self,
@@ -299,6 +310,7 @@ class PlatformAgentRunService:
         user_id: str,
         question: str,
         runtime_adapter: dict[str, Any],
+        runtime_invocation_request: dict[str, Any] | None = None,
         runtime_invocation_id: str | None = None,
     ) -> dict[str, Any]:
         context = {
@@ -310,6 +322,8 @@ class PlatformAgentRunService:
             "question": question,
             "runtime_adapter": runtime_adapter,
         }
+        if runtime_invocation_request is not None:
+            context["runtime_invocation_request"] = runtime_invocation_request
         if runtime_invocation_id is not None:
             context["runtime_invocation_id"] = runtime_invocation_id
         return context
@@ -364,6 +378,7 @@ class PlatformAgentRunService:
             user_id=run_request["user_id"],
             question=question,
             runtime_adapter=runtime_adapter,
+            runtime_invocation_request=runtime_invocation_request,
             runtime_invocation_id=runtime_invocation_id,
         )
         return {
@@ -2278,7 +2293,7 @@ class PlatformAgentRunService:
         response: dict[str, Any],
         runtime_invocation_result: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        return self.append_response_record_from_trace(
+        record = self.append_response_record_from_trace(
             response_trace=response_trace,
             session_id=str(context["session_id"]),
             agent_id=str(context["agent_id"]),
@@ -2292,6 +2307,79 @@ class PlatformAgentRunService:
             runtime_invocation_id=context.get("runtime_invocation_id"),
             runtime_invocation_result=runtime_invocation_result,
         )
+        self.append_runtime_invocation_record_from_context(
+            response_trace=response_trace,
+            context=context,
+            runtime_invocation_result=runtime_invocation_result,
+        )
+        return record
+
+    def append_runtime_invocation_record_from_context(
+        self,
+        *,
+        response_trace: dict[str, Any],
+        context: dict[str, Any],
+        runtime_invocation_result: dict[str, Any] | None,
+    ) -> None:
+        if self._runtime_invocation_writer is None:
+            return
+        if runtime_invocation_result is None:
+            return
+
+        runtime_invocation_id = runtime_invocation_result.get(
+            "runtime_invocation_id",
+        ) or context.get("runtime_invocation_id")
+        if not runtime_invocation_id:
+            return
+
+        tenant = str(context["tenant"])
+        turn_id = str(response_trace["turn_id"])
+        created_at = str(response_trace["created_at"])
+        completed_at = runtime_invocation_result.get("completed_at") or created_at
+        request_summary = context.get("runtime_invocation_request")
+        if not isinstance(request_summary, dict):
+            request_summary = {
+                "context": {
+                    "tenant": tenant,
+                    "user_id": context.get("user_id"),
+                    "session_id": context.get("session_id"),
+                    "agent_id": context.get("agent_id"),
+                    "agent_name": context.get("agent_name"),
+                },
+                "question": context.get("question"),
+            }
+
+        try:
+            self._runtime_invocation_writer.append_invocation(
+                RuntimeInvocationRecord(
+                    id=str(runtime_invocation_id),
+                    tenant_id=tenant,
+                    provider_id=_optional_string(
+                        runtime_invocation_result.get("provider_id"),
+                    ),
+                    agent_run_id=turn_id,
+                    request_summary=request_summary,
+                    response_summary=runtime_invocation_result,
+                    provider_run_id=_optional_string(
+                        runtime_invocation_result.get("provider_run_id"),
+                    ),
+                    latency_ms=_optional_int(
+                        runtime_invocation_result.get("latency_ms"),
+                    ),
+                    token_usage=_optional_dict(
+                        runtime_invocation_result.get("token_usage"),
+                    ),
+                    error=_optional_string(runtime_invocation_result.get("error")),
+                    created_at=created_at,
+                    completed_at=str(completed_at) if completed_at is not None else None,
+                ),
+            )
+        except Exception:
+            logger.warning(
+                "Failed to persist runtime invocation evidence.",
+                extra={"agent_run_id": turn_id, "tenant_id": tenant},
+                exc_info=True,
+            )
 
     def append_tool_call_records(
         self,
@@ -2575,3 +2663,25 @@ class PlatformAgentRunService:
 def _optional_filter(value: str | None) -> str | None:
     normalized = (value or "").strip()
     return normalized or None
+
+
+def _optional_string(value: Any) -> str | None:
+    if value is None:
+        return None
+    normalized = str(value).strip()
+    return normalized or None
+
+
+def _optional_int(value: Any) -> int | None:
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _optional_dict(value: Any) -> dict[str, Any] | None:
+    if isinstance(value, dict):
+        return value
+    return None
