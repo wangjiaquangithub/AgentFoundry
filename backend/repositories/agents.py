@@ -68,7 +68,7 @@ class AgentRepository:
 
 
 class PostgresAgentCatalogWriteThroughRepository:
-    """Read agent catalog from PostgreSQL, then keep JSON as a dev snapshot."""
+    """Use PostgreSQL as the source of truth for the agent catalog."""
 
     def __init__(
         self,
@@ -95,7 +95,6 @@ class PostgresAgentCatalogWriteThroughRepository:
 
     def save_all(self, agents: list[dict[str, Any]]) -> None:
         self._postgres_writer.save_agents(agents)
-        self._fallback_repository.save_all(agents)
 
     def _agent_catalog_item(self, record: AgentRecord) -> dict[str, Any]:
         version = self._postgres_reader.get_current_version(
