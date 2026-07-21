@@ -1652,9 +1652,6 @@ class PlatformAgentRunService:
     ) -> dict[str, Any]:
         return dict(tool_response["decision"])
 
-    def executed_tool_allowed(self, tool_response: dict[str, Any]) -> bool:
-        return bool(tool_response.get("allowed"))
-
     def executed_tool_connector(
         self,
         tool_response: dict[str, Any],
@@ -1690,7 +1687,7 @@ class PlatformAgentRunService:
             self.build_executed_routed_tool_call(
                 tool_name=tool_name,
                 inputs=inputs,
-                allowed=self.executed_tool_allowed(tool_response),
+                allowed=bool(tool_response.get("allowed")),
                 tenant=str(tool_response["tenant"]),
                 user_id=str(tool_response["user_id"]),
                 connector=self.executed_tool_connector(
