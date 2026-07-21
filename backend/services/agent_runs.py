@@ -451,15 +451,15 @@ class PlatformAgentRunService:
         build_agent_run_context: Callable[..., dict[str, Any]],
         agent_run_state: Callable[[dict[str, Any]], dict[str, Any]],
         execution_context: dict[str, Any],
-        user_id: str,
         max_records: int,
         limit: int,
     ) -> dict[str, Any]:
         agent_metadata = execution_context["agent_metadata"]
+        response_record_context = execution_context["response_record_context"]
         memory_payload = build_agent_run_context(
             enabled=bool(agent_metadata.get("memory_enabled", False)),
             tenant=str(execution_context["tenant"]),
-            user_id=user_id,
+            user_id=str(response_record_context["user_id"]),
             agent_id=str(execution_context["runner_agent_id"]),
             question=str(execution_context["question"]),
             max_records=max_records,
