@@ -362,6 +362,31 @@ class PlatformAgentRunService:
             "memory_hits": list(memory_state["memory_hits"]),
         }
 
+    def prepare_memory_context_from_execution_context(
+        self,
+        *,
+        build_agent_run_context: Callable[..., dict[str, Any]],
+        agent_run_state: Callable[[dict[str, Any]], dict[str, Any]],
+        execution_context: dict[str, Any],
+        agent_metadata: dict[str, Any],
+        user_id: str,
+        max_records: int,
+        limit: int,
+    ) -> dict[str, Any]:
+        memory_payload = build_agent_run_context(
+            enabled=bool(agent_metadata.get("memory_enabled", False)),
+            tenant=str(execution_context["tenant"]),
+            user_id=user_id,
+            agent_id=str(execution_context["runner_agent_id"]),
+            question=str(execution_context["question"]),
+            max_records=max_records,
+            limit=limit,
+        )
+        return self.build_memory_context(
+            memory_payload=memory_payload,
+            memory_state=agent_run_state(memory_payload),
+        )
+
     @staticmethod
     def memory_context_view(memory_context: dict[str, Any]) -> dict[str, Any]:
         return {

@@ -1572,18 +1572,14 @@ async def run_enterprise_agent(
     runner_session_id = execution_context_view["runner_session_id"]
     response_record_context = execution_context_view["response_record_context"]
     knowledge_base_ids = execution_context_view["knowledge_base_ids"]
-    memory_payload = platform_memory_service.build_agent_run_context(
-        enabled=bool(agent_metadata.get("memory_enabled", False)),
-        tenant=tenant,
+    memory_context = agent_run_service.prepare_memory_context_from_execution_context(
+        build_agent_run_context=platform_memory_service.build_agent_run_context,
+        agent_run_state=platform_memory_service.agent_run_state,
+        execution_context=execution_context,
+        agent_metadata=agent_metadata,
         user_id=user_id,
-        agent_id=runner_agent_id,
-        question=question,
         max_records=PLATFORM_MEMORY_MAX_RECORDS,
         limit=PLATFORM_MEMORY_SEARCH_LIMIT,
-    )
-    memory_context = agent_run_service.build_memory_context(
-        memory_payload=memory_payload,
-        memory_state=platform_memory_service.agent_run_state(memory_payload),
     )
     memory_context_view = agent_run_service.memory_context_view(memory_context)
     memory_payload = memory_context_view["memory_payload"]
