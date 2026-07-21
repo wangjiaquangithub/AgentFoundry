@@ -25,7 +25,7 @@ class ToolPolicyReadRepository(Protocol):
     def load_policy_snapshot(
         self,
         *,
-        fallback_policy: dict[str, Any],
+        default_policy: dict[str, Any],
     ) -> dict[str, Any]:
         """Return an authorization policy snapshot from production persistence."""
 
@@ -62,26 +62,22 @@ class PostgresToolPolicyWriteThroughRepository:
         self,
         *,
         postgres_writer: ToolPolicyWriteRepository,
-        postgres_reader: ToolPolicyReadRepository | None = None,
-        fallback_repository: ToolPolicyRepository,
+        postgres_reader: ToolPolicyReadRepository,
+        default_policy: dict[str, Any],
         enterprise_tool_catalog: dict[str, dict[str, Any]],
         approval_required_tools: set[str],
         now: Callable[[], str],
     ) -> None:
         self._postgres_reader = postgres_reader
         self._postgres_writer = postgres_writer
-        self._fallback_repository = fallback_repository
+        self._default_policy = default_policy
         self._enterprise_tool_catalog = enterprise_tool_catalog
         self._approval_required_tools = approval_required_tools
         self._now = now
 
     def load(self) -> dict[str, Any]:
-        if self._postgres_reader is None:
-            return self._fallback_repository.load()
-
-        fallback_policy = self._fallback_repository.load()
         snapshot = self._postgres_reader.load_policy_snapshot(
-            fallback_policy=fallback_policy,
+            default_policy=json.loads(json.dumps(self._default_policy)),
         )
         return snapshot
 

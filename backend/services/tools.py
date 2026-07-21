@@ -20,7 +20,7 @@ class ToolGovernanceReadRepository(Protocol):
     def load_policy_snapshot(
         self,
         *,
-        fallback_policy: dict[str, Any],
+        default_policy: dict[str, Any],
     ) -> dict[str, Any]:
         """Return a production-authoritative policy snapshot."""
 
@@ -768,6 +768,11 @@ class PlatformToolPolicyService:
         if self._tool_governance_writer is None:
             return fallback_repository
 
+        if self._tool_governance_reader is None:
+            raise PlatformToolPolicyServiceError(
+                500,
+                "Tool governance PostgreSQL writer requires a reader.",
+            )
         if self._now is None:
             raise PlatformToolPolicyServiceError(
                 500,
@@ -776,7 +781,7 @@ class PlatformToolPolicyService:
         return PostgresToolPolicyWriteThroughRepository(
             postgres_reader=self._tool_governance_reader,
             postgres_writer=self._tool_governance_writer,
-            fallback_repository=fallback_repository,
+            default_policy=json.loads(json.dumps(self._default_policy)),
             enterprise_tool_catalog=self._enterprise_tool_catalog,
             approval_required_tools=self._approval_required_tools,
             now=self._now,

@@ -72,6 +72,7 @@ POSTGRES_AUTHORITATIVE_REPOSITORIES = {
     "agent_runs.py": {"PostgresAgentRunReadThroughRepository"},
     "approvals.py": {"PostgresApprovalReadThroughRepository"},
     "members.py": {"PostgresMemberReadThroughRepository"},
+    "tool_policy.py": {"PostgresToolPolicyWriteThroughRepository"},
     "workflows.py": {"PostgresWorkflowRunReadThroughRepository"},
 }
 

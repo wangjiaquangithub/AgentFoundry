@@ -300,7 +300,7 @@ class PostgresToolGovernanceReadRepository:
     def load_policy_snapshot(
         self,
         *,
-        fallback_policy: dict[str, Any],
+        default_policy: dict[str, Any],
     ) -> dict[str, Any]:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
@@ -325,7 +325,7 @@ class PostgresToolGovernanceReadRepository:
                 )
                 user_policy_rows = cursor.fetchall()
 
-        defaults = fallback_policy.get("defaults", {})
+        defaults = default_policy.get("defaults", {})
         if defaults is None:
             defaults = {}
         if not isinstance(defaults, dict):
