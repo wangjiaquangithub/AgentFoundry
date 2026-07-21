@@ -38,16 +38,21 @@ from agentscope.app.storage import RedisStorage
 from agentscope.app.workspace_manager import LocalWorkspaceManager
 from agentscope.middleware import AgenticMemoryMiddleware
 from agentscope.permission import (
-    PermissionBehavior,
     PermissionContext,
-    PermissionDecision,
     PermissionMode,
 )
 from agentscope.rag import QdrantStore
-from agentscope.tool import FunctionTool, ToolBase
 
 from audit import ToolAuditLogger
 from connectors import EnterpriseConnector, build_enterprise_connector
+from enterprise_tools import (
+    APPROVAL_REQUIRED_TOOLS,
+    APPROVAL_REQUIRED_WORKFLOWS,
+    ENTERPRISE_TOOL_CATALOG,
+    ENTERPRISE_TOOL_INPUT_FIELDS,
+    EnterpriseToolRuntimeError,
+    EnterpriseToolRuntimeFactory,
+)
 from permissions import (
     DEFAULT_TOOL_POLICY,
     ENTERPRISE_TOOL_NAMES,
@@ -116,32 +121,6 @@ ROUTING_SOURCE_MODEL = "model"
 ROUTING_SOURCE_RULES = "rules"
 PLATFORM_MEMORY_MAX_RECORDS = 200
 PLATFORM_MEMORY_SEARCH_LIMIT = 4
-APPROVAL_REQUIRED_TOOLS = {"enterprise_summarize_department_metrics"}
-APPROVAL_REQUIRED_WORKFLOWS = {"policy_review"}
-ENTERPRISE_TOOL_INPUT_FIELDS = {
-    "enterprise_lookup_policy": "keyword",
-    "enterprise_get_ticket_status": "ticket_id",
-    "enterprise_summarize_department_metrics": "department",
-}
-ENTERPRISE_TOOL_CATALOG = {
-    "enterprise_lookup_policy": {
-        "description": "Read a tenant-scoped enterprise policy snippet by keyword.",
-        "input_key": "keyword",
-        "default_input": "remote",
-    },
-    "enterprise_get_ticket_status": {
-        "description": "Read a tenant-scoped IT, finance, or support ticket.",
-        "input_key": "ticket_id",
-        "default_input": "INC-1001",
-    },
-    "enterprise_summarize_department_metrics": {
-        "description": "Read a tenant-scoped department operations metrics summary.",
-        "input_key": "department",
-        "default_input": "engineering",
-    },
-}
-
-
 agent_repository = AgentRepository(PLATFORM_AGENTS_PATH)
 agent_run_repository = AgentRunRepository(PLATFORM_AGENT_RUNS_PATH)
 connector_config_repository = ConnectorConfigRepository(
@@ -255,6 +234,22 @@ def _set_tool_authorization_policy(policy: ToolAuthorizationPolicy) -> None:
     tool_authorization_policy = policy
 
 
+def _enterprise_runtime_context(user_id: str) -> dict[str, Any]:
+    try:
+        return _platform_connector_config_service().enterprise_runtime_context(user_id)
+    except PlatformConnectorConfigServiceError as exc:
+        _raise_platform_connector_config_service_error(exc)
+
+
+enterprise_tool_runtime = EnterpriseToolRuntimeFactory(
+    runtime_context=_enterprise_runtime_context,
+    tool_policy_service=_platform_tool_policy_service,
+    audit_logger=tool_audit_logger,
+    authorization_policy=_get_tool_authorization_policy,
+    tool_names=ENTERPRISE_TOOL_NAMES,
+)
+
+
 def _safe_path_part(value: str) -> str:
     """Turn an external id into a filesystem-safe path segment."""
     return re.sub(r"[^a-zA-Z0-9._-]+", "_", value).strip("_") or "unknown"
@@ -319,168 +314,6 @@ def _platform_status_service() -> PlatformStatusService:
         approval_required_tools=APPROVAL_REQUIRED_TOOLS,
         approval_required_workflows=APPROVAL_REQUIRED_WORKFLOWS,
     )
-
-
-class ReadOnlyEnterpriseTool(FunctionTool):
-    """Read-only function tool gated by enterprise authorization policy."""
-
-    def __init__(
-        self,
-        *args: Any,
-        tenant: str,
-        user_id: str,
-        authorization_policy: ToolAuthorizationPolicy,
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(*args, **kwargs)
-        self._tenant = tenant
-        self._user_id = user_id
-        self._authorization_policy = authorization_policy
-
-    async def check_read_only(
-        self,
-        _tool_input: dict[str, Any],
-    ) -> bool:
-        return self.is_read_only and self._authorization_policy.is_allowed(
-            self._tenant,
-            self._user_id,
-            self.name,
-        )
-
-    async def check_permissions(
-        self,
-        _tool_input: dict[str, Any],
-        _context: PermissionContext,
-    ) -> PermissionDecision:
-        decision = self._authorization_policy.authorize(
-            self._tenant,
-            self._user_id,
-            self.name,
-        )
-        if not decision.allowed:
-            return PermissionDecision(
-                behavior=PermissionBehavior.DENY,
-                message=(
-                    f"Enterprise tool {self.name} is not allowed for "
-                    f"user {self._user_id} in tenant {self._tenant}."
-                ),
-                decision_reason=decision.reason,
-            )
-
-        return PermissionDecision(
-            behavior=PermissionBehavior.ALLOW,
-            message=(
-                f"Enterprise tool {self.name} is allowed for "
-                f"user {self._user_id} in tenant {self._tenant}."
-            ),
-            decision_reason=decision.reason,
-        )
-
-
-async def build_enterprise_tools(
-    user_id: str,
-    agent_id: str,
-    session_id: str,
-) -> list[ToolBase]:
-    """Create tenant-aware business tools for one agent invocation."""
-    try:
-        runtime = _platform_connector_config_service().enterprise_runtime_context(user_id)
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
-    tool_policy_service = _platform_tool_policy_service()
-    runtime_selection = tool_policy_service.runtime_selection(runtime)
-    tenant = runtime_selection["tenant"]
-    runtime_connector = runtime_selection["connector"]
-    connector_label = runtime_selection["connector_label"]
-
-    def audit_tool_call(
-        tool_name: str,
-        inputs: dict[str, Any],
-        call: Any,
-    ) -> dict[str, Any]:
-        return tool_audit_logger.capture(
-            user_id=user_id,
-            tenant=tenant,
-            agent_id=agent_id,
-            session_id=session_id,
-            tool_name=tool_name,
-            connector=connector_label,
-            inputs=inputs,
-            call=call,
-        )
-
-    def lookup_policy(keyword: str) -> dict[str, Any]:
-        """Look up tenant policy snippets by keyword.
-
-        Args:
-            keyword: Policy keyword, for example remote, expense, or security.
-        """
-        return audit_tool_call(
-            "enterprise_lookup_policy",
-            {"keyword": keyword},
-            lambda: runtime_connector.lookup_policy(tenant, keyword),
-        )
-
-    def get_ticket_status(ticket_id: str) -> dict[str, Any]:
-        """Return the status of a tenant-scoped ticket.
-
-        Args:
-            ticket_id: Ticket id visible inside the caller's tenant.
-        """
-        return audit_tool_call(
-            "enterprise_get_ticket_status",
-            {"ticket_id": ticket_id},
-            lambda: runtime_connector.get_ticket_status(tenant, ticket_id),
-        )
-
-    def summarize_department_metrics(department: str) -> dict[str, Any]:
-        """Return a compact operational summary for one department.
-
-        Args:
-            department: Department name, such as engineering or support.
-        """
-        return audit_tool_call(
-            "enterprise_summarize_department_metrics",
-            {"department": department},
-            lambda: runtime_connector.summarize_department_metrics(
-                tenant,
-                department,
-            ),
-        )
-
-    return [
-        ReadOnlyEnterpriseTool(
-            lookup_policy,
-            name="enterprise_lookup_policy",
-            description=(
-                "Read a tenant-scoped enterprise policy snippet by keyword."
-            ),
-            is_read_only=True,
-            tenant=tenant,
-            user_id=user_id,
-            authorization_policy=tool_authorization_policy,
-        ),
-        ReadOnlyEnterpriseTool(
-            get_ticket_status,
-            name="enterprise_get_ticket_status",
-            description="Read a tenant-scoped IT, finance, or support ticket.",
-            is_read_only=True,
-            tenant=tenant,
-            user_id=user_id,
-            authorization_policy=tool_authorization_policy,
-        ),
-        ReadOnlyEnterpriseTool(
-            summarize_department_metrics,
-            name="enterprise_summarize_department_metrics",
-            description=(
-                "Read a tenant-scoped department operations metrics summary."
-            ),
-            is_read_only=True,
-            tenant=tenant,
-            user_id=user_id,
-            authorization_policy=tool_authorization_policy,
-        ),
-    ]
 
 
 async def build_enterprise_middlewares(
@@ -859,72 +692,16 @@ def _run_authorized_enterprise_tool(
     fail_on_denied: bool = True,
 ) -> dict[str, Any]:
     try:
-        runtime = _platform_connector_config_service().enterprise_runtime_context(user_id)
-    except PlatformConnectorConfigServiceError as exc:
-        _raise_platform_connector_config_service_error(exc)
-    tool_policy_service = _platform_tool_policy_service()
-    runtime_selection = tool_policy_service.runtime_selection(runtime)
-    tenant = runtime_selection["tenant"]
-    runtime_connector = runtime_selection["connector"]
-    connector_label = runtime_selection["connector_label"]
-    connector_source = runtime_selection["connector_source"]
-
-    if tool_name not in ENTERPRISE_TOOL_NAMES:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unknown enterprise tool: {tool_name}",
+        return enterprise_tool_runtime.run_authorized_tool(
+            user_id=user_id,
+            tool_name=tool_name,
+            inputs=inputs,
+            agent_id=agent_id,
+            session_id=session_id,
+            fail_on_denied=fail_on_denied,
         )
-
-    decision = tool_authorization_policy.authorize(tenant, user_id, tool_name)
-    decision_payload = tool_policy_service.decision_payload(
-        tool_name,
-        decision,
-    )
-    if not decision.allowed:
-        if fail_on_denied:
-            raise HTTPException(
-                status_code=403,
-                detail={"decision": decision_payload},
-            )
-
-        return {
-            "tool_name": tool_name,
-            "allowed": False,
-            "tenant": tenant,
-            "user_id": user_id,
-            "connector": connector_label,
-            "connector_source": connector_source,
-            "decision": decision_payload,
-        }
-
-    clean_inputs, call = tool_policy_service.build_connector_call(
-        tenant=tenant,
-        tool_name=tool_name,
-        inputs=inputs,
-        runtime_connector=runtime_connector,
-    )
-
-    result = tool_audit_logger.capture(
-        user_id=user_id,
-        tenant=tenant,
-        agent_id=agent_id,
-        session_id=session_id,
-        tool_name=tool_name,
-        connector=connector_label,
-        inputs=clean_inputs,
-        call=call,
-    )
-
-    return {
-        "tool_name": tool_name,
-        "allowed": True,
-        "tenant": tenant,
-        "user_id": user_id,
-        "connector": connector_label,
-        "connector_source": connector_source,
-        "decision": decision_payload,
-        "result": result,
-    }
+    except EnterpriseToolRuntimeError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
 app = create_app(
@@ -939,7 +716,7 @@ app = create_app(
     ),
     blob_store=LocalBlobStore(root_dir=DATA_DIR / "blobs"),
     enable_index_worker=os.getenv("AGENTSCOPE_ENABLE_INDEX_WORKER", "1") != "0",
-    extra_agent_tools=build_enterprise_tools,
+    extra_agent_tools=enterprise_tool_runtime.build_tools,
     extra_agent_middlewares=build_enterprise_middlewares,
     custom_subagent_templates=ENTERPRISE_SUBAGENT_TEMPLATES,
     extra_middlewares=[
