@@ -17,6 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATIONS_DIR = ROOT / "backend" / "persistence" / "migrations"
 PERSISTENCE_DIR = ROOT / "backend" / "persistence"
+PERSISTENCE_INIT_MODULE = PERSISTENCE_DIR / "__init__.py"
 REPOSITORIES_DIR = ROOT / "backend" / "repositories"
 MAIN_MODULE = ROOT / "backend" / "main.py"
 DATABASE_MODULE = ROOT / "backend" / "persistence" / "database.py"
@@ -335,6 +336,46 @@ def _check_postgres_persistence_repository_inventory() -> list[str]:
     return errors
 
 
+def _check_postgres_persistence_exports() -> list[str]:
+    errors: list[str] = []
+    tree = ast.parse(PERSISTENCE_INIT_MODULE.read_text(encoding="utf-8"), filename=str(PERSISTENCE_INIT_MODULE))
+    imported_names: set[str] = set()
+    all_names: set[str] = set()
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            imported_names.update(alias.asname or alias.name for alias in node.names)
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if not isinstance(target, ast.Name) or target.id != "__all__":
+                    continue
+                if isinstance(node.value, (ast.List, ast.Tuple, ast.Set)):
+                    all_names.update(
+                        element.value
+                        for element in node.value.elts
+                        if isinstance(element, ast.Constant) and isinstance(element.value, str)
+                    )
+
+    guarded_classes = {
+        class_name
+        for class_names in POSTGRES_AUTHORITATIVE_PERSISTENCE_REPOSITORIES.values()
+        for class_name in class_names
+    }
+    for class_name in sorted(guarded_classes):
+        if class_name not in imported_names:
+            errors.append(
+                "authoritative PostgreSQL persistence repository is not imported by "
+                f"backend/persistence/__init__.py:{class_name}",
+            )
+        if class_name not in all_names:
+            errors.append(
+                "authoritative PostgreSQL persistence repository is not exported by "
+                f"backend/persistence/__init__.py:{class_name}",
+            )
+
+    return errors
+
+
 def _module_defines_function(tree: ast.AST, function_name: str) -> bool:
     return any(
         isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == function_name
@@ -521,6 +562,7 @@ def main() -> int:
         *_check_authoritative_postgres_repositories(),
         *_check_authoritative_postgres_persistence_repositories(),
         *_check_postgres_persistence_repository_inventory(),
+        *_check_postgres_persistence_exports(),
         *_check_postgres_url_detection_boundary(),
         *_check_postgres_write_transaction_boundary(),
         *_check_postgres_read_tenant_boundary(),
