@@ -1141,15 +1141,19 @@ class PlatformAgentRunService:
                 continue
 
             try:
-                approval_context = self.build_routed_tool_approval_context(
-                    route_context_view=route_context_view,
-                    execution_context=execution_context,
-                )
+                execution_context_view = self.execution_context_view(execution_context)
+                response_record_context = execution_context_view[
+                    "response_record_context"
+                ]
                 approved_by = self.resolve_routed_tool_approval_from_context(
                     require_platform_approval=require_platform_approval,
                     run_request=run_request,
                     approval_required_tools=approval_required_tools,
-                    **approval_context,
+                    tool_name=route_context_view["tool_name"],
+                    tenant=execution_context_view["tenant"],
+                    user_id=response_record_context["user_id"],
+                    agent_id=execution_context_view["runner_agent_id"],
+                    inputs=route_context_view["inputs"],
                 )
             except approval_exception_type as exc:
                 self.record_pending_tool_approval_from_exception_context(
@@ -1287,22 +1291,6 @@ class PlatformAgentRunService:
             agent_id=agent_id,
             inputs=inputs,
         )
-
-    def build_routed_tool_approval_context(
-        self,
-        *,
-        route_context_view: dict[str, Any],
-        execution_context: dict[str, Any],
-    ) -> dict[str, Any]:
-        execution_context_view = self.execution_context_view(execution_context)
-        response_record_context = execution_context_view["response_record_context"]
-        return {
-            "tool_name": route_context_view["tool_name"],
-            "tenant": execution_context_view["tenant"],
-            "user_id": response_record_context["user_id"],
-            "agent_id": execution_context_view["runner_agent_id"],
-            "inputs": route_context_view["inputs"],
-        }
 
     def run_tool_from_execution_context(
         self,
