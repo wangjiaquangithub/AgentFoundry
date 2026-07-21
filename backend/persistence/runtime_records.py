@@ -1,4 +1,4 @@
-"""Runtime provider and invocation read repositories.
+"""Runtime provider and invocation persistence repositories.
 
 Runtime providers are global platform configuration. Runtime invocations are
 tenant-scoped execution evidence and must always be read through an explicit
@@ -316,3 +316,63 @@ class PostgresRuntimeReadRepository:
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
+
+
+class PostgresRuntimeWriteRepository:
+    """Write tenant-scoped runtime invocation evidence to PostgreSQL."""
+
+    def __init__(self, database: PostgresDatabase) -> None:
+        self._database = database
+
+    def append_invocation(self, record: RuntimeInvocationRecord) -> None:
+        with self._database.transaction() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO runtime_invocations (
+                      id, tenant_id, provider_id, agent_run_id, request_summary,
+                      response_summary, provider_run_id, latency_ms, token_usage,
+                      error, created_at, completed_at
+                    )
+                    VALUES (
+                      %s, %s, %s, %s, %s,
+                      %s, %s, %s, %s,
+                      %s, %s, %s
+                    )
+                    ON CONFLICT (id) DO NOTHING
+                    """,
+                    (
+                        record.id,
+                        record.tenant_id,
+                        record.provider_id,
+                        record.agent_run_id,
+                        json.dumps(
+                            record.request_summary,
+                            ensure_ascii=False,
+                            default=str,
+                        ),
+                        (
+                            None
+                            if record.response_summary is None
+                            else json.dumps(
+                                record.response_summary,
+                                ensure_ascii=False,
+                                default=str,
+                            )
+                        ),
+                        record.provider_run_id,
+                        record.latency_ms,
+                        (
+                            None
+                            if record.token_usage is None
+                            else json.dumps(
+                                record.token_usage,
+                                ensure_ascii=False,
+                                default=str,
+                            )
+                        ),
+                        record.error,
+                        record.created_at,
+                        record.completed_at,
+                    ),
+                )

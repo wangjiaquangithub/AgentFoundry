@@ -78,6 +78,7 @@ from backend.persistence.runs import (
 )
 from backend.persistence.runtime_records import (
     PostgresRuntimeReadRepository,
+    PostgresRuntimeWriteRepository,
     RuntimeInvocationRecord,
     RuntimeProviderRecord,
     SQLiteRuntimeReadRepository,
@@ -145,6 +146,7 @@ __all__ = [
     "PostgresRetrievalEventReadRepository",
     "PostgresRetrievalEventWriteRepository",
     "PostgresRuntimeReadRepository",
+    "PostgresRuntimeWriteRepository",
     "PostgresTenancyReadRepository",
     "PostgresTenancyWriteRepository",
     "PostgresToolCallReadRepository",
