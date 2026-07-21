@@ -158,6 +158,17 @@ class EnterpriseKnowledgeDocumentDetailRequest(BaseModel):
     chunk_limit: int = Field(default=100, ge=1, le=200)
 
 
+class EnterpriseKnowledgeDocumentUpsertRequest(BaseModel):
+    knowledge_base_id: str
+    title: str
+    source_type: str = "text"
+    source_uri: str | None = None
+    object_ref: str | None = None
+    status: str = "pending"
+    tenant: str | None = None
+    document_id: str | None = None
+
+
 class EnterpriseKnowledgeRetrievalEventsRequest(BaseModel):
     agent_run_id: str | None = None
     knowledge_base_id: str | None = None

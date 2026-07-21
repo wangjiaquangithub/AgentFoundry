@@ -167,7 +167,7 @@ class PostgresDocumentWriteRepository:
     def __init__(self, database: PostgresDatabase) -> None:
         self._database = database
 
-    def upsert_document(self, record: DocumentRecord) -> None:
+    def upsert_document(self, record: DocumentRecord) -> DocumentRecord:
         with self._database.transaction() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
@@ -181,15 +181,16 @@ class PostgresDocumentWriteRepository:
                       %s, %s, %s, %s, %s
                     )
                     ON CONFLICT (id) DO UPDATE SET
-                      tenant_id = EXCLUDED.tenant_id,
                       knowledge_base_id = EXCLUDED.knowledge_base_id,
                       title = EXCLUDED.title,
                       source_type = EXCLUDED.source_type,
                       source_uri = EXCLUDED.source_uri,
                       object_ref = EXCLUDED.object_ref,
                       status = EXCLUDED.status,
-                      created_at = EXCLUDED.created_at,
                       updated_at = EXCLUDED.updated_at
+                    WHERE documents.tenant_id = EXCLUDED.tenant_id
+                    RETURNING id, tenant_id, knowledge_base_id, title, source_type,
+                      source_uri, object_ref, status, created_at, updated_at
                     """,
                     (
                         record.id,
@@ -204,3 +205,7 @@ class PostgresDocumentWriteRepository:
                         record.updated_at,
                     ),
                 )
+                row = cursor.fetchone()
+        if row is None:
+            raise ValueError("Document id already exists for another tenant.")
+        return _document_from_row(dict(row))

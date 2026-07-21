@@ -11,6 +11,7 @@ from api.schemas import (
     EnterpriseKnowledgeBaseUpsertRequest,
     EnterpriseKnowledgeBasesRequest,
     EnterpriseKnowledgeDocumentDetailRequest,
+    EnterpriseKnowledgeDocumentUpsertRequest,
     EnterpriseKnowledgeDocumentsRequest,
     EnterpriseKnowledgeEmbeddingRecordUpsertRequest,
     EnterpriseKnowledgeEmbeddingRecordsRequest,
@@ -20,6 +21,7 @@ from api.schemas import (
     EnterpriseKnowledgeRetrievalEventDetailRequest,
     EnterpriseKnowledgeRetrievalEventsRequest,
 )
+from backend.persistence.documents import DocumentRecord
 from backend.persistence.embedding_records import EmbeddingRecord
 from backend.persistence.knowledge_bases import KnowledgeBaseRecord
 from services.knowledge import (
@@ -59,8 +61,10 @@ class KnowledgeBasesRouteDependencies:
 @dataclass(frozen=True)
 class KnowledgeDocumentsRouteDependencies:
     document_repository: Callable[[], Any | None]
+    document_write_repository: Callable[[], Any | None]
     document_chunk_repository: Callable[[], Any | None]
     tenant_hint_from_user_id: Callable[[str], str | None]
+    now: Callable[[], str]
 
 
 @dataclass(frozen=True)
@@ -667,6 +671,51 @@ def create_knowledge_documents_router(
             "tenant": tenant_id,
             "document": _document_payload(document),
             "chunks": chunks,
+        }
+
+    @router.post("/enterprise/platform/knowledge/documents/upsert")
+    async def upsert_enterprise_knowledge_document(
+        payload: EnterpriseKnowledgeDocumentUpsertRequest,
+        request: Request,
+    ) -> dict[str, Any]:
+        """Persist one tenant knowledge document metadata record to PostgreSQL."""
+        document_repository = deps.document_write_repository()
+        if document_repository is None:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Production knowledge document writes require PostgreSQL. "
+                    "Local JSON or SQLite storage is not a production document "
+                    "write target."
+                ),
+            )
+
+        tenant_id = _resolve_tenant(
+            tenant=payload.tenant,
+            request=request,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
+        now = deps.now()
+        document = DocumentRecord(
+            id=payload.document_id or f"doc-{uuid4()}",
+            tenant_id=tenant_id,
+            knowledge_base_id=payload.knowledge_base_id,
+            title=payload.title,
+            source_type=payload.source_type,
+            source_uri=payload.source_uri,
+            object_ref=payload.object_ref,
+            status=payload.status,
+            created_at=now,
+            updated_at=now,
+        )
+        try:
+            persisted_document = document_repository.upsert_document(document)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        return {
+            "tenant": tenant_id,
+            "document": _document_payload(persisted_document),
         }
 
     return router

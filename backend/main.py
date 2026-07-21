@@ -453,6 +453,16 @@ def _build_knowledge_document_read_repository() -> (
     return PostgresDocumentReadRepository(database)
 
 
+def _build_knowledge_document_write_repository() -> (
+    PostgresDocumentWriteRepository | None
+):
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresDocumentWriteRepository(database)
+
+
 def _build_knowledge_document_chunk_read_repository() -> (
     PostgresDocumentChunkReadRepository | None
 ):
@@ -991,8 +1001,10 @@ app.include_router(
     create_knowledge_documents_router(
         KnowledgeDocumentsRouteDependencies(
             document_repository=_build_knowledge_document_read_repository,
+            document_write_repository=_build_knowledge_document_write_repository,
             document_chunk_repository=_build_knowledge_document_chunk_read_repository,
             tenant_hint_from_user_id=tenant_hint_from_user_id,
+            now=now_iso,
         )
     )
 )
