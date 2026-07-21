@@ -1975,6 +1975,62 @@ def _check_postgres_workflow_template_reads_guarded() -> list[str]:
     return errors
 
 
+def _check_postgres_agent_catalog_reads_guarded() -> list[str]:
+    errors: list[str] = []
+    agent_path = PERSISTENCE_DIR / "agents.py"
+    agent_source = agent_path.read_text(encoding="utf-8")
+    agent_tree = ast.parse(agent_source, filename=str(agent_path))
+
+    if "PostgresAgentCatalogReadRepository" not in agent_source:
+        errors.append(
+            "backend/persistence/agents.py must define "
+            "PostgresAgentCatalogReadRepository",
+        )
+        return errors
+
+    required_methods = {
+        "list_agents": ["FROM agents", "WHERE tenant_id = %s"],
+        "get_agent": ["FROM agents", "WHERE tenant_id = %s AND id = %s"],
+        "list_versions": ["FROM agent_versions", "WHERE tenant_id = %s AND agent_id = %s"],
+        "get_current_version": ["FROM agents", "WHERE agents.tenant_id = %s AND agents.id = %s"],
+    }
+    for method_name, sql_tokens in required_methods.items():
+        method_node = _find_class_method(
+            agent_tree,
+            class_name="PostgresAgentCatalogReadRepository",
+            method_name=method_name,
+        )
+        if method_node is None:
+            errors.append(
+                "PostgreSQL agent catalog read repository missing method: "
+                "backend/persistence/agents.py:"
+                f"PostgresAgentCatalogReadRepository.{method_name}",
+            )
+            continue
+        if not _method_has_required_argument(method_node, "tenant_id"):
+            errors.append(
+                "PostgreSQL agent catalog read method must require tenant_id: "
+                "backend/persistence/agents.py:"
+                f"PostgresAgentCatalogReadRepository.{method_name}",
+            )
+        if not _method_uses_database_call(method_node, "connect"):
+            errors.append(
+                "PostgreSQL agent catalog read method must read through PostgreSQL: "
+                "backend/persistence/agents.py:"
+                f"PostgresAgentCatalogReadRepository.{method_name}",
+            )
+        normalized_sql = " ".join(_normalized_sql_literals(method_node))
+        for sql_token in sql_tokens:
+            if sql_token.lower() not in normalized_sql:
+                errors.append(
+                    "PostgreSQL agent catalog read method must query tenant-scoped "
+                    "agent catalog records: backend/persistence/agents.py:"
+                    f"PostgresAgentCatalogReadRepository.{method_name}",
+                )
+
+    return errors
+
+
 def _find_class_method(
     tree: ast.AST,
     *,
@@ -2047,6 +2103,7 @@ def main() -> int:
         *_check_postgres_retrieval_event_reads_guarded(),
         *_check_postgres_workflow_run_reads_guarded(),
         *_check_postgres_workflow_template_reads_guarded(),
+        *_check_postgres_agent_catalog_reads_guarded(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -2092,6 +2149,7 @@ def main() -> int:
     print("- PostgreSQL retrieval event reads guarded: yes")
     print("- PostgreSQL workflow run reads guarded: yes")
     print("- PostgreSQL workflow template reads guarded: yes")
+    print("- PostgreSQL agent catalog reads guarded: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:
