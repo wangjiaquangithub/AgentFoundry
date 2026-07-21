@@ -10,6 +10,8 @@ from api.schemas import (
     EnterpriseKnowledgeDocumentsRequest,
     EnterpriseKnowledgeIngestRequest,
     EnterpriseKnowledgeReadinessRequest,
+    EnterpriseKnowledgeRetrievalEventDetailRequest,
+    EnterpriseKnowledgeRetrievalEventsRequest,
 )
 from services.knowledge import PlatformKnowledgeDocumentReadinessService
 from services.knowledge_ingestion import (
@@ -38,6 +40,12 @@ class KnowledgeReadinessRouteDependencies:
 class KnowledgeDocumentsRouteDependencies:
     document_repository: Callable[[], Any | None]
     document_chunk_repository: Callable[[], Any | None]
+    tenant_hint_from_user_id: Callable[[str], str | None]
+
+
+@dataclass(frozen=True)
+class KnowledgeRetrievalEventsRouteDependencies:
+    retrieval_event_repository: Callable[[], Any | None]
     tenant_hint_from_user_id: Callable[[str], str | None]
 
 
@@ -82,6 +90,18 @@ def _chunk_payload(chunk: Any) -> dict[str, Any]:
         "content": chunk.content,
         "metadata": chunk.metadata,
         "created_at": chunk.created_at,
+    }
+
+
+def _retrieval_event_payload(retrieval_event: Any) -> dict[str, Any]:
+    return {
+        "id": retrieval_event.id,
+        "tenant": retrieval_event.tenant_id,
+        "agent_run_id": retrieval_event.agent_run_id,
+        "knowledge_base_id": retrieval_event.knowledge_base_id,
+        "query": retrieval_event.query,
+        "hits": retrieval_event.hits,
+        "created_at": retrieval_event.created_at,
     }
 
 
@@ -136,6 +156,87 @@ def create_knowledge_ingestion_router(
             "embedding_required": result.embedding_required,
             "embedding_model_config_id": result.embedding_model_config_id,
             "guidance": result.guidance,
+        }
+
+    return router
+
+
+def create_knowledge_retrieval_events_router(
+    deps: KnowledgeRetrievalEventsRouteDependencies,
+) -> APIRouter:
+    router = APIRouter()
+
+    @router.post("/enterprise/platform/knowledge/retrieval-events")
+    async def list_enterprise_knowledge_retrieval_events(
+        payload: EnterpriseKnowledgeRetrievalEventsRequest,
+        request: Request,
+    ) -> dict[str, Any]:
+        """List tenant knowledge retrieval events from PostgreSQL."""
+        retrieval_event_repository = deps.retrieval_event_repository()
+        if retrieval_event_repository is None:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Production knowledge retrieval event reads require PostgreSQL. "
+                    "Local JSON or SQLite storage is not a production retrieval "
+                    "event read target."
+                ),
+            )
+
+        tenant_id = _resolve_tenant(
+            tenant=payload.tenant,
+            request=request,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
+        retrieval_events = retrieval_event_repository.list_retrieval_events(
+            tenant_id=tenant_id,
+            agent_run_id=payload.agent_run_id,
+            knowledge_base_id=payload.knowledge_base_id,
+            limit=payload.limit,
+        )
+        return {
+            "tenant": tenant_id,
+            "retrieval_events": [
+                _retrieval_event_payload(retrieval_event)
+                for retrieval_event in retrieval_events
+            ],
+        }
+
+    @router.post("/enterprise/platform/knowledge/retrieval-events/detail")
+    async def read_enterprise_knowledge_retrieval_event_detail(
+        payload: EnterpriseKnowledgeRetrievalEventDetailRequest,
+        request: Request,
+    ) -> dict[str, Any]:
+        """Read one tenant knowledge retrieval event from PostgreSQL."""
+        retrieval_event_repository = deps.retrieval_event_repository()
+        if retrieval_event_repository is None:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Production knowledge retrieval event reads require PostgreSQL. "
+                    "Local JSON or SQLite storage is not a production retrieval "
+                    "event read target."
+                ),
+            )
+
+        tenant_id = _resolve_tenant(
+            tenant=payload.tenant,
+            request=request,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
+        retrieval_event = retrieval_event_repository.get_retrieval_event(
+            tenant_id=tenant_id,
+            retrieval_event_id=payload.retrieval_event_id,
+        )
+        if retrieval_event is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Knowledge retrieval event not found.",
+            )
+
+        return {
+            "tenant": tenant_id,
+            "retrieval_event": _retrieval_event_payload(retrieval_event),
         }
 
     return router

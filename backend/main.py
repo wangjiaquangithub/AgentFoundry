@@ -30,9 +30,11 @@ from api.knowledge import (
     KnowledgeDocumentsRouteDependencies,
     KnowledgeIngestionRouteDependencies,
     KnowledgeReadinessRouteDependencies,
+    KnowledgeRetrievalEventsRouteDependencies,
     create_knowledge_documents_router,
     create_knowledge_ingestion_router,
     create_knowledge_readiness_router,
+    create_knowledge_retrieval_events_router,
 )
 from api.platform_admin import (
     PlatformAdminRouteDependencies,
@@ -914,6 +916,15 @@ app.include_router(
         KnowledgeDocumentsRouteDependencies(
             document_repository=_build_knowledge_document_read_repository,
             document_chunk_repository=_build_knowledge_document_chunk_read_repository,
+            tenant_hint_from_user_id=tenant_hint_from_user_id,
+        )
+    )
+)
+
+app.include_router(
+    create_knowledge_retrieval_events_router(
+        KnowledgeRetrievalEventsRouteDependencies(
+            retrieval_event_repository=_build_retrieval_event_read_repository,
             tenant_hint_from_user_id=tenant_hint_from_user_id,
         )
     )

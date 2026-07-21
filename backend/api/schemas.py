@@ -131,6 +131,18 @@ class EnterpriseKnowledgeDocumentDetailRequest(BaseModel):
     chunk_limit: int = Field(default=100, ge=1, le=200)
 
 
+class EnterpriseKnowledgeRetrievalEventsRequest(BaseModel):
+    agent_run_id: str | None = None
+    knowledge_base_id: str | None = None
+    tenant: str | None = None
+    limit: int = Field(default=50, ge=1, le=100)
+
+
+class EnterpriseKnowledgeRetrievalEventDetailRequest(BaseModel):
+    retrieval_event_id: str
+    tenant: str | None = None
+
+
 class EnterpriseWorkflowTemplateUpdateRequest(BaseModel):
     name: str | None = None
     description: str | None = None
