@@ -27,8 +27,10 @@ from api.agent_runtime import (
 )
 from api.agents import AgentCatalogRouteDependencies, create_agent_catalog_router
 from api.knowledge import (
+    KnowledgeDocumentsRouteDependencies,
     KnowledgeIngestionRouteDependencies,
     KnowledgeReadinessRouteDependencies,
+    create_knowledge_documents_router,
     create_knowledge_ingestion_router,
     create_knowledge_readiness_router,
 )
@@ -409,6 +411,26 @@ def _build_knowledge_document_readiness_service() -> (
         embedding_record_repository=PostgresEmbeddingRecordReadRepository(database),
         model_config_repository=PostgresModelConfigReadRepository(database),
     )
+
+
+def _build_knowledge_document_read_repository() -> (
+    PostgresDocumentReadRepository | None
+):
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresDocumentReadRepository(database)
+
+
+def _build_knowledge_document_chunk_read_repository() -> (
+    PostgresDocumentChunkReadRepository | None
+):
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresDocumentChunkReadRepository(database)
 
 
 def _build_knowledge_ingestion_service() -> (
@@ -882,6 +904,16 @@ app.include_router(
     create_knowledge_readiness_router(
         KnowledgeReadinessRouteDependencies(
             readiness_service=_build_knowledge_document_readiness_service,
+            tenant_hint_from_user_id=tenant_hint_from_user_id,
+        )
+    )
+)
+
+app.include_router(
+    create_knowledge_documents_router(
+        KnowledgeDocumentsRouteDependencies(
+            document_repository=_build_knowledge_document_read_repository,
+            document_chunk_repository=_build_knowledge_document_chunk_read_repository,
             tenant_hint_from_user_id=tenant_hint_from_user_id,
         )
     )

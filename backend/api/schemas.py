@@ -117,6 +117,20 @@ class EnterpriseKnowledgeReadinessRequest(BaseModel):
     tenant: str | None = None
 
 
+class EnterpriseKnowledgeDocumentsRequest(BaseModel):
+    knowledge_base_id: str | None = None
+    status: str | None = None
+    tenant: str | None = None
+    limit: int = Field(default=50, ge=1, le=100)
+
+
+class EnterpriseKnowledgeDocumentDetailRequest(BaseModel):
+    document_id: str
+    tenant: str | None = None
+    include_chunks: bool = True
+    chunk_limit: int = Field(default=100, ge=1, le=200)
+
+
 class EnterpriseWorkflowTemplateUpdateRequest(BaseModel):
     name: str | None = None
     description: str | None = None
