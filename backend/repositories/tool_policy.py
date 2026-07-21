@@ -56,7 +56,7 @@ class ToolPolicyRepository:
 
 
 class PostgresToolPolicyWriteThroughRepository:
-    """Write tool policy to PostgreSQL, then keep the JSON file as a snapshot."""
+    """Write tool policy to PostgreSQL while using JSON only for read defaults."""
 
     def __init__(
         self,
@@ -95,4 +95,3 @@ class PostgresToolPolicyWriteThroughRepository:
             approval_required_tools=self._approval_required_tools,
             timestamp=self._now(),
         )
-        self._fallback_repository.save(policy)
