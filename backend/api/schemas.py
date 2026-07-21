@@ -112,6 +112,26 @@ class EnterpriseKnowledgeIngestRequest(BaseModel):
     document_id: str | None = None
 
 
+class EnterpriseKnowledgeBasesRequest(BaseModel):
+    status: str | None = None
+    tenant: str | None = None
+    limit: int = Field(default=50, ge=1, le=100)
+
+
+class EnterpriseKnowledgeBaseDetailRequest(BaseModel):
+    knowledge_base_id: str
+    tenant: str | None = None
+
+
+class EnterpriseKnowledgeBaseUpsertRequest(BaseModel):
+    name: str
+    description: str | None = None
+    status: str = "active"
+    embedding_model_config_id: str | None = None
+    tenant: str | None = None
+    knowledge_base_id: str | None = None
+
+
 class EnterpriseKnowledgeReadinessRequest(BaseModel):
     knowledge_base_ids: list[str]
     tenant: str | None = None

@@ -49,6 +49,7 @@ from backend.persistence.embedding_records import (
 from backend.persistence.knowledge_bases import (
     KnowledgeBaseRecord,
     PostgresKnowledgeBaseReadRepository,
+    PostgresKnowledgeBaseWriteRepository,
     SQLiteKnowledgeBaseReadRepository,
 )
 from backend.persistence.memory_items import (
@@ -145,6 +146,7 @@ __all__ = [
     "PostgresEmbeddingRecordReadRepository",
     "PostgresEmbeddingRecordWriteRepository",
     "PostgresKnowledgeBaseReadRepository",
+    "PostgresKnowledgeBaseWriteRepository",
     "PostgresMemoryItemReadRepository",
     "PostgresMemoryItemWriteRepository",
     "PostgresMemoryPolicyReadRepository",

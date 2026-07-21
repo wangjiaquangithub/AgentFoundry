@@ -7,6 +7,9 @@ from uuid import uuid4
 from fastapi import APIRouter, HTTPException, Request
 
 from api.schemas import (
+    EnterpriseKnowledgeBaseDetailRequest,
+    EnterpriseKnowledgeBaseUpsertRequest,
+    EnterpriseKnowledgeBasesRequest,
     EnterpriseKnowledgeDocumentDetailRequest,
     EnterpriseKnowledgeDocumentsRequest,
     EnterpriseKnowledgeEmbeddingRecordUpsertRequest,
@@ -18,6 +21,7 @@ from api.schemas import (
     EnterpriseKnowledgeRetrievalEventsRequest,
 )
 from backend.persistence.embedding_records import EmbeddingRecord
+from backend.persistence.knowledge_bases import KnowledgeBaseRecord
 from services.knowledge import (
     PlatformKnowledgeDocumentReadinessService,
     PlatformKnowledgeRetrievalService,
@@ -42,6 +46,14 @@ class KnowledgeIngestionRouteDependencies:
 class KnowledgeReadinessRouteDependencies:
     readiness_service: Callable[[], PlatformKnowledgeDocumentReadinessService | None]
     tenant_hint_from_user_id: Callable[[str], str | None]
+
+
+@dataclass(frozen=True)
+class KnowledgeBasesRouteDependencies:
+    knowledge_base_read_repository: Callable[[], Any | None]
+    knowledge_base_write_repository: Callable[[], Any | None]
+    tenant_hint_from_user_id: Callable[[str], str | None]
+    now: Callable[[], str]
 
 
 @dataclass(frozen=True)
@@ -100,6 +112,19 @@ def _document_payload(document: Any) -> dict[str, Any]:
         "status": document.status,
         "created_at": document.created_at,
         "updated_at": document.updated_at,
+    }
+
+
+def _knowledge_base_payload(knowledge_base: Any) -> dict[str, Any]:
+    return {
+        "id": knowledge_base.id,
+        "tenant": knowledge_base.tenant_id,
+        "name": knowledge_base.name,
+        "description": knowledge_base.description,
+        "status": knowledge_base.status,
+        "embedding_model_config_id": knowledge_base.embedding_model_config_id,
+        "created_at": knowledge_base.created_at,
+        "updated_at": knowledge_base.updated_at,
     }
 
 
@@ -189,6 +214,126 @@ def create_knowledge_ingestion_router(
             "embedding_required": result.embedding_required,
             "embedding_model_config_id": result.embedding_model_config_id,
             "guidance": result.guidance,
+        }
+
+    return router
+
+
+def create_knowledge_bases_router(
+    deps: KnowledgeBasesRouteDependencies,
+) -> APIRouter:
+    router = APIRouter()
+
+    @router.post("/enterprise/platform/knowledge/bases")
+    async def list_enterprise_knowledge_bases(
+        payload: EnterpriseKnowledgeBasesRequest,
+        request: Request,
+    ) -> dict[str, Any]:
+        """List tenant knowledge base records from PostgreSQL."""
+        repository = deps.knowledge_base_read_repository()
+        if repository is None:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Production knowledge base reads require PostgreSQL. "
+                    "Local JSON or SQLite storage is not a production knowledge "
+                    "base target."
+                ),
+            )
+
+        tenant_id = _resolve_tenant(
+            tenant=payload.tenant,
+            request=request,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
+        knowledge_bases = repository.list_knowledge_bases(
+            tenant_id=tenant_id,
+            status=payload.status,
+            limit=payload.limit,
+        )
+        return {
+            "tenant": tenant_id,
+            "knowledge_bases": [
+                _knowledge_base_payload(knowledge_base)
+                for knowledge_base in knowledge_bases
+            ],
+        }
+
+    @router.post("/enterprise/platform/knowledge/bases/detail")
+    async def read_enterprise_knowledge_base_detail(
+        payload: EnterpriseKnowledgeBaseDetailRequest,
+        request: Request,
+    ) -> dict[str, Any]:
+        """Read one tenant knowledge base record from PostgreSQL."""
+        repository = deps.knowledge_base_read_repository()
+        if repository is None:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Production knowledge base reads require PostgreSQL. "
+                    "Local JSON or SQLite storage is not a production knowledge "
+                    "base target."
+                ),
+            )
+
+        tenant_id = _resolve_tenant(
+            tenant=payload.tenant,
+            request=request,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
+        knowledge_base = repository.get_knowledge_base(
+            tenant_id=tenant_id,
+            knowledge_base_id=payload.knowledge_base_id,
+        )
+        if knowledge_base is None:
+            raise HTTPException(status_code=404, detail="Knowledge base not found.")
+
+        return {
+            "tenant": tenant_id,
+            "knowledge_base": _knowledge_base_payload(knowledge_base),
+        }
+
+    @router.post("/enterprise/platform/knowledge/bases/upsert")
+    async def upsert_enterprise_knowledge_base(
+        payload: EnterpriseKnowledgeBaseUpsertRequest,
+        request: Request,
+    ) -> dict[str, Any]:
+        """Persist one tenant knowledge base record to PostgreSQL."""
+        repository = deps.knowledge_base_write_repository()
+        if repository is None:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Production knowledge base writes require PostgreSQL. "
+                    "Local JSON or SQLite storage is not a production knowledge "
+                    "base target."
+                ),
+            )
+
+        tenant_id = _resolve_tenant(
+            tenant=payload.tenant,
+            request=request,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
+        now = deps.now()
+        knowledge_base = KnowledgeBaseRecord(
+            id=payload.knowledge_base_id or f"kb-{uuid4()}",
+            tenant_id=tenant_id,
+            name=payload.name,
+            description=payload.description,
+            status=payload.status,
+            embedding_model_config_id=payload.embedding_model_config_id,
+            created_at=now,
+            updated_at=now,
+        )
+        try:
+            persisted_knowledge_base = repository.upsert_knowledge_base(knowledge_base)
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+        return {
+            "tenant": tenant_id,
+            "knowledge_base": _knowledge_base_payload(persisted_knowledge_base),
         }
 
     return router

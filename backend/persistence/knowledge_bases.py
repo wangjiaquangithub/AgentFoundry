@@ -1,4 +1,4 @@
-"""Knowledge base read repositories.
+"""Knowledge base repositories.
 
 Knowledge base metadata is tenant-scoped platform data. PostgreSQL is the
 production path; SQLite remains an explicit local development compatibility
@@ -147,3 +147,49 @@ class PostgresKnowledgeBaseReadRepository:
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
+
+
+class PostgresKnowledgeBaseWriteRepository:
+    """Write tenant-scoped knowledge base records to PostgreSQL."""
+
+    def __init__(self, database: PostgresDatabase) -> None:
+        self._database = database
+
+    def upsert_knowledge_base(self, record: KnowledgeBaseRecord) -> KnowledgeBaseRecord:
+        with self._database.transaction() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO knowledge_bases (
+                      id, tenant_id, name, description, status,
+                      embedding_model_config_id, created_at, updated_at
+                    )
+                    VALUES (
+                      %s, %s, %s, %s, %s,
+                      %s, %s, %s
+                    )
+                    ON CONFLICT (id) DO UPDATE SET
+                      name = EXCLUDED.name,
+                      description = EXCLUDED.description,
+                      status = EXCLUDED.status,
+                      embedding_model_config_id = EXCLUDED.embedding_model_config_id,
+                      updated_at = EXCLUDED.updated_at
+                    WHERE knowledge_bases.tenant_id = EXCLUDED.tenant_id
+                    RETURNING id, tenant_id, name, description, status,
+                      embedding_model_config_id, created_at, updated_at
+                    """,
+                    (
+                        record.id,
+                        record.tenant_id,
+                        record.name,
+                        record.description,
+                        record.status,
+                        record.embedding_model_config_id,
+                        record.created_at,
+                        record.updated_at,
+                    ),
+                )
+                row = cursor.fetchone()
+        if row is None:
+            raise ValueError("Knowledge base id already exists for another tenant.")
+        return _knowledge_base_from_row(dict(row))

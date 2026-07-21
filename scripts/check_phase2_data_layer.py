@@ -117,7 +117,10 @@ POSTGRES_AUTHORITATIVE_PERSISTENCE_REPOSITORIES = {
         "PostgresEmbeddingRecordReadRepository",
         "PostgresEmbeddingRecordWriteRepository",
     },
-    "knowledge_bases.py": {"PostgresKnowledgeBaseReadRepository"},
+    "knowledge_bases.py": {
+        "PostgresKnowledgeBaseReadRepository",
+        "PostgresKnowledgeBaseWriteRepository",
+    },
     "memory_items.py": {
         "PostgresMemoryItemReadRepository",
         "PostgresMemoryItemWriteRepository",

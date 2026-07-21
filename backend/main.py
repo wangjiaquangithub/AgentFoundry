@@ -27,12 +27,14 @@ from api.agent_runtime import (
 )
 from api.agents import AgentCatalogRouteDependencies, create_agent_catalog_router
 from api.knowledge import (
+    KnowledgeBasesRouteDependencies,
     KnowledgeDocumentsRouteDependencies,
     KnowledgeEmbeddingRecordsRouteDependencies,
     KnowledgeIngestionRouteDependencies,
     KnowledgeReadinessRouteDependencies,
     KnowledgeRetrievalRouteDependencies,
     KnowledgeRetrievalEventsRouteDependencies,
+    create_knowledge_bases_router,
     create_knowledge_embedding_records_router,
     create_knowledge_documents_router,
     create_knowledge_ingestion_router,
@@ -118,6 +120,7 @@ from backend.persistence import (
     PostgresEmbeddingRecordReadRepository,
     PostgresEmbeddingRecordWriteRepository,
     PostgresKnowledgeBaseReadRepository,
+    PostgresKnowledgeBaseWriteRepository,
     PostgresMemoryItemReadRepository,
     PostgresMemoryItemWriteRepository,
     PostgresModelConfigReadRepository,
@@ -418,6 +421,26 @@ def _build_knowledge_document_readiness_service() -> (
         embedding_record_repository=PostgresEmbeddingRecordReadRepository(database),
         model_config_repository=PostgresModelConfigReadRepository(database),
     )
+
+
+def _build_knowledge_base_read_repository() -> (
+    PostgresKnowledgeBaseReadRepository | None
+):
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresKnowledgeBaseReadRepository(database)
+
+
+def _build_knowledge_base_write_repository() -> (
+    PostgresKnowledgeBaseWriteRepository | None
+):
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresKnowledgeBaseWriteRepository(database)
 
 
 def _build_knowledge_document_read_repository() -> (
@@ -949,6 +972,17 @@ app.include_router(
         KnowledgeReadinessRouteDependencies(
             readiness_service=_build_knowledge_document_readiness_service,
             tenant_hint_from_user_id=tenant_hint_from_user_id,
+        )
+    )
+)
+
+app.include_router(
+    create_knowledge_bases_router(
+        KnowledgeBasesRouteDependencies(
+            knowledge_base_read_repository=_build_knowledge_base_read_repository,
+            knowledge_base_write_repository=_build_knowledge_base_write_repository,
+            tenant_hint_from_user_id=tenant_hint_from_user_id,
+            now=now_iso,
         )
     )
 )
