@@ -1506,18 +1506,19 @@ class PlatformAgentRunService:
             connector_source=connector_source,
             routing_source=routing_source,
             routing_reason=routing_reason,
-            decision=self.decide_pending_approval_route_from_context(
-                decision_with_routing_context=decision_with_routing_context,
-                pending_approval_context=(
+            decision=decision_with_routing_context(
+                decision=self.pending_approval_decision_payload(
                     self.build_created_pending_approval_response_context(
                         detail=detail,
                         approval=approval,
-                    )
+                    ),
                 ),
-                routing_reason=routing_reason,
-                routing_source=routing_source,
-                routing_mode=routing_mode,
-                routing_error=routing_error,
+                **self.build_routed_decision_context(
+                    routing_reason=routing_reason,
+                    routing_source=routing_source,
+                    routing_mode=routing_mode,
+                    routing_error=routing_error,
+                ),
             ),
             answer=self.pending_approval_message(
                 self.build_created_pending_approval_response_context(
@@ -1564,28 +1565,6 @@ class PlatformAgentRunService:
         context: dict[str, Any],
     ) -> dict[str, Any]:
         return dict(context["decision_payload"])
-
-    def decide_pending_approval_route_from_context(
-        self,
-        *,
-        decision_with_routing_context: Callable[..., dict[str, Any]],
-        pending_approval_context: dict[str, Any],
-        routing_reason: str,
-        routing_source: str,
-        routing_mode: str,
-        routing_error: str | None,
-    ) -> dict[str, Any]:
-        return decision_with_routing_context(
-            decision=self.pending_approval_decision_payload(
-                pending_approval_context,
-            ),
-            **self.build_routed_decision_context(
-                routing_reason=routing_reason,
-                routing_source=routing_source,
-                routing_mode=routing_mode,
-                routing_error=routing_error,
-            ),
-        )
 
     def pending_approval_message(
         self,
