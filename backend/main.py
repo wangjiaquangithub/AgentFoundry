@@ -682,6 +682,7 @@ app = create_app(
 def _platform_workflow_template_service() -> PlatformWorkflowTemplateService:
     return PlatformWorkflowTemplateService(
         repository=workflow_template_repository,
+        audit_event_writer=_build_audit_event_write_repository(),
         now=now_iso,
     )
 

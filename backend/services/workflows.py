@@ -1,8 +1,10 @@
 """Service-layer orchestration for enterprise workflow templates."""
 
 from datetime import datetime, timezone
-from typing import Any, Callable
+from typing import Any, Callable, Protocol
+from uuid import uuid4
 
+from backend.persistence import AuditEventRecord
 from repositories.workflows import (
     WorkflowTemplateRegistryError,
     WorkflowRunRepository,
@@ -28,6 +30,13 @@ class PlatformWorkflowRunServiceError(ValueError):
         self.detail = detail
 
 
+class AuditEventWriteRepository(Protocol):
+    """Write platform governance audit events."""
+
+    def append_audit_event(self, record: AuditEventRecord) -> None:
+        """Persist one audit event."""
+
+
 class PlatformWorkflowTemplateService:
     """Manage platform workflow template registry records."""
 
@@ -35,9 +44,11 @@ class PlatformWorkflowTemplateService:
         self,
         *,
         repository: WorkflowTemplateRepository,
+        audit_event_writer: AuditEventWriteRepository | None = None,
         now: Callable[[], str] | None = None,
     ) -> None:
         self._repository = repository
+        self._audit_event_writer = audit_event_writer
         self._now = now or _utc_now_iso
 
     def default_templates(self) -> list[dict[str, Any]]:
@@ -165,6 +176,13 @@ class PlatformWorkflowTemplateService:
                 imported_workflows,
             )
         self.save_templates(workflows)
+        for workflow in imported_workflows:
+            self._append_workflow_template_audit_event(
+                workflow=workflow,
+                actor=str(workflow.get("updated_by") or "platform-admin"),
+                event_type="workflow_template.imported",
+                extra_payload={"mode": mode},
+            )
 
     def list_templates(self) -> list[dict[str, Any]]:
         if not self._repository.exists():
@@ -260,6 +278,11 @@ class PlatformWorkflowTemplateService:
         workflow["updated_by"] = actor
         workflows[workflow_index] = workflow
         self.save_templates(workflows)
+        self._append_workflow_template_audit_event(
+            workflow=workflow,
+            actor=actor,
+            event_type="workflow_template.updated",
+        )
         return workflow, workflows
 
     def enable_disabled_templates(
@@ -283,8 +306,65 @@ class PlatformWorkflowTemplateService:
 
         if changed:
             self.save_templates(workflows)
+            for workflow in enabled_workflows:
+                self._append_workflow_template_audit_event(
+                    workflow=workflow,
+                    actor=actor,
+                    event_type="workflow_template.enabled",
+                )
 
         return enabled_workflows, workflows
+
+    def _append_workflow_template_audit_event(
+        self,
+        *,
+        workflow: dict[str, Any],
+        actor: str,
+        event_type: str,
+        extra_payload: dict[str, Any] | None = None,
+    ) -> None:
+        if self._audit_event_writer is None:
+            return
+
+        workflow_type = str(workflow.get("workflow_type") or "").strip()
+        steps = workflow.get("steps") or []
+        default_inputs = workflow.get("default_inputs") or {}
+        payload = {
+            "schema_version": 1,
+            **(extra_payload or {}),
+            "workflow_type": workflow_type,
+            "name": str(workflow.get("name") or workflow_type),
+            "description": str(workflow.get("description") or ""),
+            "enabled": bool(workflow.get("enabled", True)),
+            "default_input_keys": sorted(default_inputs.keys())
+            if isinstance(default_inputs, dict)
+            else [],
+            "step_count": len(steps) if isinstance(steps, list) else 0,
+            "tool_names": [
+                str(step.get("tool_name"))
+                for step in steps
+                if isinstance(step, dict) and step.get("tool_name")
+            ],
+            "updated_by": str(workflow.get("updated_by") or actor),
+        }
+        try:
+            self._audit_event_writer.append_audit_event(
+                AuditEventRecord(
+                    id=str(uuid4()),
+                    tenant_id="platform",
+                    actor_user_id=str(actor or "platform-admin").strip()
+                    or "platform-admin",
+                    event_type=event_type,
+                    target_type="workflow_template",
+                    target_id=workflow_type,
+                    payload=payload,
+                    created_at=self._now(),
+                ),
+            )
+        except ValueError:
+            raise
+        except Exception as exc:
+            raise PlatformWorkflowTemplateServiceError(500, str(exc)) from exc
 
 
 class PlatformWorkflowRunService:
