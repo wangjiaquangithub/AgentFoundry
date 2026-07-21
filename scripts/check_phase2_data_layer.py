@@ -109,6 +109,10 @@ POSTGRES_AUTHORITATIVE_PERSISTENCE_REPOSITORIES = {
         "PostgresAgentRunReadRepository",
         "PostgresAgentRunWriteRepository",
     },
+    "tool_calls.py": {
+        "PostgresToolCallReadRepository",
+        "PostgresToolCallWriteRepository",
+    },
 }
 
 POSTGRES_SCHEME_LITERALS = {"postgres", "postgresql"}
