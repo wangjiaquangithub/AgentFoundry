@@ -958,6 +958,88 @@ def _check_postgres_retrieval_events_wired() -> list[str]:
     return errors
 
 
+def _check_postgres_workflow_runs_wired() -> list[str]:
+    errors: list[str] = []
+    main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    workflow_repository_source = (REPOSITORIES_DIR / "workflows.py").read_text(
+        encoding="utf-8",
+    )
+    workflow_persistence_source = (PERSISTENCE_DIR / "workflows.py").read_text(
+        encoding="utf-8",
+    )
+    main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+
+    required_main_imports = [
+        "PostgresWorkflowReadRepository",
+        "PostgresWorkflowWriteRepository",
+        "PostgresWorkflowRunReadThroughRepository",
+    ]
+    for imported_name in required_main_imports:
+        if not _module_imports_name(main_tree, imported_name):
+            errors.append(
+                f"backend/main.py must import {imported_name} for workflow run PostgreSQL wiring",
+            )
+
+    if not _module_defines_function(main_tree, "_build_workflow_run_repository"):
+        errors.append(
+            "backend/main.py must define _build_workflow_run_repository for PostgreSQL workflow runs",
+        )
+    if "workflow_run_repository = _build_workflow_run_repository()" not in main_source:
+        errors.append(
+            "backend/main.py must build workflow_run_repository through the PostgreSQL selector",
+        )
+    if "PostgresWorkflowRunReadThroughRepository(" not in main_source:
+        errors.append(
+            "backend/main.py must wrap PostgreSQL workflow repositories with PostgresWorkflowRunReadThroughRepository",
+        )
+    if "postgres_reader=PostgresWorkflowReadRepository(database)" not in main_source:
+        errors.append(
+            "backend/main.py must pass the PostgreSQL workflow reader into the read-through repository",
+        )
+    if "postgres_writer=PostgresWorkflowWriteRepository(database)" not in main_source:
+        errors.append(
+            "backend/main.py must pass the PostgreSQL workflow writer into the read-through repository",
+        )
+    if "repository=workflow_run_repository" not in main_source:
+        errors.append(
+            "backend/main.py must pass workflow_run_repository into PlatformWorkflowRunService",
+        )
+
+    required_read_through_tokens = [
+        "class PostgresWorkflowRunReadThroughRepository",
+        "PostgreSQL workflow run reads require tenant context.",
+        "PostgreSQL workflow run writes require tenant context.",
+        "list_runs",
+        "append_run",
+        "_postgres_run_to_platform_record",
+        "_platform_record_to_postgres_run",
+    ]
+    for token in required_read_through_tokens:
+        if token not in workflow_repository_source:
+            errors.append(
+                "backend/repositories/workflows.py must provide the PostgreSQL workflow run read-through adapter: "
+                f"{token}",
+            )
+
+    required_persistence_tokens = [
+        "class PostgresWorkflowReadRepository",
+        "class PostgresWorkflowWriteRepository",
+        "def list_runs",
+        "def get_run",
+        "def append_run",
+        "FROM workflow_runs",
+        "INSERT INTO workflow_runs",
+    ]
+    for token in required_persistence_tokens:
+        if token not in workflow_persistence_source:
+            errors.append(
+                "backend/persistence/workflows.py must persist workflow run records in PostgreSQL: "
+                f"{token}",
+            )
+
+    return errors
+
+
 def _check_postgres_approval_requests_wired() -> list[str]:
     errors: list[str] = []
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
@@ -1146,6 +1228,7 @@ def main() -> int:
         *_check_postgres_memory_item_writes_wired(),
         *_check_postgres_audit_events_wired(),
         *_check_postgres_retrieval_events_wired(),
+        *_check_postgres_workflow_runs_wired(),
         *_check_postgres_approval_requests_wired(),
         *_check_postgres_knowledge_readiness_wired(),
     ]
@@ -1177,6 +1260,7 @@ def main() -> int:
     print("- PostgreSQL memory item writes wired: yes")
     print("- PostgreSQL audit events wired: yes")
     print("- PostgreSQL retrieval events wired: yes")
+    print("- PostgreSQL workflow runs wired: yes")
     print("- PostgreSQL approval requests wired: yes")
     print("- PostgreSQL knowledge readiness reads wired: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
