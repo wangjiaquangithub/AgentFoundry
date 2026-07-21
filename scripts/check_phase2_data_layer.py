@@ -80,6 +80,31 @@ POSTGRES_AUTHORITATIVE_REPOSITORIES = {
 }
 
 POSTGRES_SCHEME_LITERALS = {"postgres", "postgresql"}
+POSTGRES_TENANT_SCOPED_READ_CLASS_EXEMPTIONS = {
+    "tenancy.py": {"PostgresTenancyReadRepository"},
+}
+POSTGRES_TENANT_SCOPED_READ_METHOD_EXEMPTIONS = {
+    "runtime_records.py": {
+        "PostgresRuntimeReadRepository": {"get_provider", "list_providers"},
+    },
+    "tools.py": {
+        "PostgresToolGovernanceReadRepository": {"load_policy_snapshot"},
+    },
+}
+POSTGRES_TENANT_SCOPED_READ_KNOWN_GAPS = {
+    "agents.py": {
+        "PostgresAgentCatalogReadRepository": {"get_agent_by_id", "list_all_agents"},
+    },
+    "approvals.py": {
+        "PostgresApprovalReadRepository": {"get_approval_by_id"},
+    },
+}
+
+POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT = sum(
+    len(methods)
+    for class_methods in POSTGRES_TENANT_SCOPED_READ_KNOWN_GAPS.values()
+    for methods in class_methods.values()
+)
 
 
 def _method_uses_database_call(node: ast.AST, call_name: str) -> bool:
@@ -95,6 +120,22 @@ def _method_uses_database_call(node: ast.AST, call_name: str) -> bool:
         owner = receiver.value
         if isinstance(owner, ast.Name) and owner.id == "self":
             return True
+    return False
+
+
+def _method_has_required_argument(node: ast.FunctionDef | ast.AsyncFunctionDef, argument_name: str) -> bool:
+    positional_arguments = node.args.args
+    positional_defaults = [None] * (len(positional_arguments) - len(node.args.defaults)) + list(
+        node.args.defaults,
+    )
+    for argument, default in zip(positional_arguments, positional_defaults):
+        if argument.arg == argument_name:
+            return default is None
+
+    for argument, default in zip(node.args.kwonlyargs, node.args.kw_defaults):
+        if argument.arg == argument_name:
+            return default is None
+
     return False
 
 
@@ -236,6 +277,24 @@ def _string_literals(tree: ast.AST) -> list[str]:
     ]
 
 
+def _normalized_sql_literals(tree: ast.AST) -> list[str]:
+    return [" ".join(literal.split()).lower() for literal in _string_literals(tree)]
+
+
+def _is_exempt_postgres_read_method(filename: str, class_name: str, method_name: str) -> bool:
+    class_exemptions = POSTGRES_TENANT_SCOPED_READ_CLASS_EXEMPTIONS.get(filename, set())
+    if class_name in class_exemptions:
+        return True
+
+    method_exemptions = POSTGRES_TENANT_SCOPED_READ_METHOD_EXEMPTIONS.get(filename, {})
+    return method_name in method_exemptions.get(class_name, set())
+
+
+def _is_known_postgres_read_gap(filename: str, class_name: str, method_name: str) -> bool:
+    known_gaps = POSTGRES_TENANT_SCOPED_READ_KNOWN_GAPS.get(filename, {})
+    return method_name in known_gaps.get(class_name, set())
+
+
 def _check_postgres_url_detection_boundary() -> list[str]:
     errors: list[str] = []
 
@@ -323,6 +382,45 @@ def _check_postgres_write_transaction_boundary() -> list[str]:
     return errors
 
 
+def _check_postgres_read_tenant_boundary() -> list[str]:
+    errors: list[str] = []
+
+    for path in sorted(PERSISTENCE_DIR.glob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for class_node in ast.walk(tree):
+            if not isinstance(class_node, ast.ClassDef):
+                continue
+            if not class_node.name.startswith("Postgres") or "Read" not in class_node.name:
+                continue
+
+            for method_node in class_node.body:
+                if not isinstance(method_node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    continue
+                if method_node.name.startswith("_"):
+                    continue
+                if not _method_uses_database_call(method_node, "connect"):
+                    continue
+                if _is_exempt_postgres_read_method(path.name, class_node.name, method_node.name):
+                    continue
+                if _is_known_postgres_read_gap(path.name, class_node.name, method_node.name):
+                    continue
+
+                if not _method_has_required_argument(method_node, "tenant_id"):
+                    errors.append(
+                        "PostgreSQL read repository method must require tenant_id: "
+                        f"backend/persistence/{path.name}:{class_node.name}.{method_node.name}",
+                    )
+
+                sql_literals = _normalized_sql_literals(method_node)
+                if not any("tenant_id = %s" in literal for literal in sql_literals):
+                    errors.append(
+                        "PostgreSQL read repository query must filter by tenant_id: "
+                        f"backend/persistence/{path.name}:{class_node.name}.{method_node.name}",
+                    )
+
+    return errors
+
+
 def main() -> int:
     sql = _read_migrations()
     schema = _extract_schema(sql)
@@ -333,6 +431,7 @@ def main() -> int:
         *_check_authoritative_postgres_repositories(),
         *_check_postgres_url_detection_boundary(),
         *_check_postgres_write_transaction_boundary(),
+        *_check_postgres_read_tenant_boundary(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -343,6 +442,8 @@ def main() -> int:
     print(f"- authoritative PostgreSQL adapters guarded: {sum(len(classes) for classes in POSTGRES_AUTHORITATIVE_REPOSITORIES.values())}")
     print("- PostgreSQL URL detection centralized: yes")
     print("- PostgreSQL write transaction boundary guarded: yes")
+    print("- PostgreSQL read tenant boundary guarded: yes")
+    print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:
         print("\nWarnings:")
