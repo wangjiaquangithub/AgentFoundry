@@ -761,19 +761,11 @@ class PlatformAgentRunService:
         *,
         build_runtime_invocation_result_payload: Callable[..., dict[str, Any]],
         routed_summary_context: dict[str, Any],
-        response_record_context: dict[str, Any],
+        execution_context: dict[str, Any],
         answer: str,
-        session_id: str,
-        tenant: str,
-        user_id: str,
-        agent_id: str,
-        connector: str,
-        connector_source: str,
         routing_mode: str,
         routing_source: str,
         routing_error: str | None,
-        agent_metadata: dict[str, Any],
-        runtime_adapter: dict[str, Any],
         tool_calls: list[dict[str, Any]],
         knowledge_hits: list[dict[str, Any]],
         memory_hits: list[dict[str, Any]],
@@ -781,6 +773,8 @@ class PlatformAgentRunService:
         memory_payload: dict[str, Any],
         memory_saved: bool,
     ) -> dict[str, Any]:
+        execution_context_view = self.execution_context_view(execution_context)
+        response_record_context = execution_context_view["response_record_context"]
         return self.finalize_routed_response(
             build_runtime_invocation_result_payload=(
                 build_runtime_invocation_result_payload
@@ -789,17 +783,17 @@ class PlatformAgentRunService:
                 routed_summary_context=routed_summary_context,
                 response_record_context=response_record_context,
                 answer=answer,
-                session_id=session_id,
-                tenant=tenant,
-                user_id=user_id,
-                agent_id=agent_id,
-                connector=connector,
-                connector_source=connector_source,
+                session_id=str(execution_context_view["runner_session_id"]),
+                tenant=str(execution_context_view["tenant"]),
+                user_id=str(response_record_context["user_id"]),
+                agent_id=str(execution_context_view["runner_agent_id"]),
+                connector=str(execution_context_view["connector_label"]),
+                connector_source=str(execution_context_view["connector_source"]),
                 routing_mode=routing_mode,
                 routing_source=routing_source,
                 routing_error=routing_error,
-                agent_metadata=agent_metadata,
-                runtime_adapter=runtime_adapter,
+                agent_metadata=execution_context_view["agent_metadata"],
+                runtime_adapter=execution_context_view["runtime_adapter"],
                 tool_calls=tool_calls,
                 knowledge_hits=knowledge_hits,
                 memory_hits=memory_hits,
@@ -828,16 +822,6 @@ class PlatformAgentRunService:
         memory_payload: dict[str, Any],
         max_records: int,
     ) -> dict[str, Any]:
-        execution_context_view = self.execution_context_view(execution_context)
-        response_record_context = execution_context_view["response_record_context"]
-        session_id = execution_context_view["runner_session_id"]
-        tenant = execution_context_view["tenant"]
-        user_id = response_record_context["user_id"]
-        agent_id = execution_context_view["runner_agent_id"]
-        connector = execution_context_view["connector_label"]
-        connector_source = execution_context_view["connector_source"]
-        agent_metadata = execution_context_view["agent_metadata"]
-        runtime_adapter = execution_context_view["runtime_adapter"]
         routed_summary_context = self.build_routed_summary_context(
             tool_calls=tool_calls,
         )
@@ -861,19 +845,11 @@ class PlatformAgentRunService:
                 build_runtime_invocation_result_payload
             ),
             routed_summary_context=routed_summary_context,
-            response_record_context=response_record_context,
+            execution_context=execution_context,
             answer=answer,
-            session_id=session_id,
-            tenant=tenant,
-            user_id=user_id,
-            agent_id=agent_id,
-            connector=connector,
-            connector_source=connector_source,
             routing_mode=routing_mode,
             routing_source=routing_source,
             routing_error=routing_error,
-            agent_metadata=agent_metadata,
-            runtime_adapter=runtime_adapter,
             tool_calls=tool_calls,
             knowledge_hits=knowledge_hits,
             memory_hits=memory_hits,
