@@ -105,6 +105,7 @@ POSTGRES_AUTHORITATIVE_PERSISTENCE_REPOSITORIES = {
         "PostgresRetrievalEventReadRepository",
         "PostgresRetrievalEventWriteRepository",
     },
+    "runtime_records.py": {"PostgresRuntimeReadRepository"},
     "runs.py": {
         "PostgresAgentRunReadRepository",
         "PostgresAgentRunWriteRepository",
@@ -310,6 +311,30 @@ def _check_authoritative_postgres_persistence_repositories() -> list[str]:
     return errors
 
 
+def _check_postgres_persistence_repository_inventory() -> list[str]:
+    errors: list[str] = []
+    guarded_classes = {
+        (filename, class_name)
+        for filename, class_names in POSTGRES_AUTHORITATIVE_PERSISTENCE_REPOSITORIES.items()
+        for class_name in class_names
+    }
+
+    for path in sorted(PERSISTENCE_DIR.glob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ClassDef):
+                continue
+            if not node.name.startswith("Postgres") or not node.name.endswith("Repository"):
+                continue
+            if (path.name, node.name) not in guarded_classes:
+                errors.append(
+                    "PostgreSQL persistence repository missing authoritative guard: "
+                    f"backend/persistence/{path.name}:{node.name}",
+                )
+
+    return errors
+
+
 def _module_defines_function(tree: ast.AST, function_name: str) -> bool:
     return any(
         isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == function_name
@@ -495,6 +520,7 @@ def main() -> int:
         *_check_required_repositories(),
         *_check_authoritative_postgres_repositories(),
         *_check_authoritative_postgres_persistence_repositories(),
+        *_check_postgres_persistence_repository_inventory(),
         *_check_postgres_url_detection_boundary(),
         *_check_postgres_write_transaction_boundary(),
         *_check_postgres_read_tenant_boundary(),
