@@ -70,6 +70,13 @@ def _run_from_row(row: dict[str, Any]) -> WorkflowRunRecord:
     )
 
 
+def _postgres_run_projection() -> str:
+    return """
+        id, tenant_id, workflow_template_id, triggered_by AS user_id, status,
+        inputs AS input, outputs AS output, error, created_at, completed_at
+    """
+
+
 def _object_from_json(
     value: dict[str, Any] | str,
     record_id: str,
@@ -260,8 +267,10 @@ class PostgresWorkflowReadRepository:
         limit: int = 50,
     ) -> list[WorkflowRunRecord]:
         query = """
-            SELECT id, tenant_id, workflow_template_id, user_id, status, input,
-              output, error, created_at, completed_at
+            SELECT
+              id, tenant_id, workflow_template_id, triggered_by AS user_id,
+              status, inputs AS input, outputs AS output, error, created_at,
+              completed_at
             FROM workflow_runs
             WHERE tenant_id = %s
         """
@@ -270,7 +279,7 @@ class PostgresWorkflowReadRepository:
             query += " AND workflow_template_id = %s"
             parameters.append(workflow_template_id)
         if user_id is not None:
-            query += " AND user_id = %s"
+            query += " AND triggered_by = %s"
             parameters.append(user_id)
         if status is not None:
             query += " AND status = %s"
@@ -292,9 +301,8 @@ class PostgresWorkflowReadRepository:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
-                    """
-                    SELECT id, tenant_id, workflow_template_id, user_id,
-                      status, input, output, error, created_at, completed_at
+                    f"""
+                    SELECT {_postgres_run_projection()}
                     FROM workflow_runs
                     WHERE tenant_id = %s AND id = %s
                     """,
@@ -321,12 +329,14 @@ class PostgresWorkflowWriteRepository:
                 cursor.execute(
                     """
                     INSERT INTO workflow_runs (
-                      id, tenant_id, workflow_template_id, user_id, status,
-                      input, output, error, created_at, completed_at
+                      id, tenant_id, workflow_template_id, user_id,
+                      triggered_by, status, input, inputs, output, outputs,
+                      error, created_at, completed_at
                     )
                     VALUES (
                       %s, %s, %s, %s, %s,
-                      %s, %s, %s, %s, %s
+                      %s, %s, %s, %s, %s,
+                      %s, %s, %s
                     )
                     """,
                     (
@@ -334,8 +344,19 @@ class PostgresWorkflowWriteRepository:
                         record.tenant_id,
                         record.workflow_template_id,
                         record.user_id,
+                        record.user_id,
                         record.status,
                         json.dumps(record.input, ensure_ascii=False, default=str),
+                        json.dumps(record.input, ensure_ascii=False, default=str),
+                        (
+                            None
+                            if record.output is None
+                            else json.dumps(
+                                record.output,
+                                ensure_ascii=False,
+                                default=str,
+                            )
+                        ),
                         (
                             None
                             if record.output is None
