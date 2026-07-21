@@ -53,7 +53,7 @@
 	"platform": {
 		"eyebrow": "Enterprise workspace",
 		"title": "Enterprise Agent Platform",
-		"subtitle": "Manage agents, models, knowledge bases, tools, and automation from one entry point. This page first aggregates existing capabilities; the enterprise example backend now includes tool-call audit and tool authorization policy, with real business integrations next.",
+		"subtitle": "Manage agents, models/runtimes, knowledge, tools, workflows, approvals, audit, and run records from one enterprise control console.",
 		"connection": {
 			"server": "Server URL",
 			"user": "Current user",
@@ -63,9 +63,40 @@
 			"notConfigured": "Not configured",
 			"anonymous": "Anonymous"
 		},
+		"statuses": {
+			"pending": "Pending",
+			"approved": "Approved",
+			"rejected": "Rejected",
+			"running": "Running",
+			"success": "Success",
+			"failed": "Failed",
+			"cancelled": "Cancelled"
+		},
+		"ux": {
+			"filters": {
+				"results": "{{count}} results",
+				"clear": "Clear filters"
+			},
+			"empty": {
+				"noDataTitle": "No data",
+				"noDataDescription": "There are no records to show yet.",
+				"filteredTitle": "No matching results",
+				"filteredDescription": "Adjust the filters or clear them to view more records.",
+				"errorTitle": "Unable to load",
+				"errorDescription": "The data could not be loaded. Try again.",
+				"noAccessTitle": "No access",
+				"noAccessDescription": "The current identity does not have permission to view this data."
+			},
+			"confirm": {
+				"target": "Target",
+				"impactScope": "Impact scope",
+				"consequence": "Consequence",
+				"details": "Details"
+			}
+		},
 		"stats": {
 			"agents": "Agents",
-			"agentsHelper": "Business assistants for chat and orchestration",
+			"agentsHelper": "Business agents for conversation and orchestration",
 			"credentials": "Model credentials",
 			"credentialsHelper": "Connected model provider accounts",
 			"knowledgeBases": "Knowledge bases",
@@ -235,7 +266,7 @@
 		"operations": {
 			"eyebrow": "Agent operations center",
 			"title": "Business agent fleet",
-			"headlineEmpty": "No active business agents yet. Publish the default knowledge assistant first, then connect department tools, approvals, and workflows.",
+			"headlineEmpty": "No active business agents yet. Publish an agent from a business template, then connect department tools, approvals, and workflows.",
 			"headlineNeedsWork": "{{count}} agent(s) still need configuration. Complete models, knowledge, or tools before production runs.",
 			"headlineApprovals": "Agents are runnable, but {{count}} risky action(s) still need human approval.",
 			"headlineReady": "All active agents are ready. Continue by running business questions or connecting real enterprise systems.",
@@ -260,7 +291,7 @@
 		},
 		"console": {
 			"title": "Platform console",
-			"description": "The enterprise knowledge assistant is only the first agent. This console combines models, knowledge, tools, workflows, and audit into runnable business agents.",
+			"description": "The AgentFoundry console combines models and runtimes, knowledge, tools, workflows, and audit into a governed, runnable enterprise agent platform.",
 			"agents": "Manage agents",
 			"agentsDescription": "Publish HR, support, ops, analytics, and other business agents.",
 			"agentsAction": "Manage agents",
@@ -374,7 +405,7 @@
 			},
 			"firstAgentGuide": {
 				"title": "First enterprise agent launch guide",
-				"description": "Move through the first demo-ready loop from real state: model, publish, run, and governance. The primary button jumps to the current next step.",
+				"description": "Move through the first production-readiness loop from real state: model, publish, run, and governance. The primary button jumps to the current next step.",
 				"steps": {
 					"model": {
 						"title": "Prepare model",
@@ -399,7 +430,7 @@
 					"governance": {
 						"title": "Close governance loop",
 						"ready": "{{count}} audit event(s) are available for governance tracing.",
-						"pending": "{{count}} approval(s) are waiting, useful for permission-block demos.",
+						"pending": "{{count}} approval(s) are waiting, useful for permission-block validation.",
 						"empty": "After a run, review approvals, audit, and access records.",
 						"action": "View governance"
 					}
@@ -421,7 +452,7 @@
 					},
 					"agent": {
 						"title": "Publish agent",
-						"description": "Publish an enterprise assistant from a business template with model, knowledge, tools, and permissions.",
+						"description": "Publish an enterprise agent instance from a business template with model, knowledge, tools, and permissions.",
 						"action": "Publish"
 					},
 					"run": {
@@ -436,7 +467,7 @@
 					},
 					"config": {
 						"title": "Import/export",
-						"description": "Export members, agents, workflows, and policies for demo migration and team reproduction.",
+						"description": "Export members, agents, workflows, and policies for configuration migration and team reproduction.",
 						"action": "Open config"
 					}
 				}
@@ -462,7 +493,7 @@
 				"run": {
 					"title": "Run a real business question",
 					"descriptionReady": "Current run uses {{agent}} to verify model, knowledge, tools, and audit.",
-					"descriptionEmpty": "No runnable agent yet. Publish a default business assistant first.",
+					"descriptionEmpty": "No runnable agent yet. Publish a business agent first.",
 					"action": "Open runner",
 					"publishAction": "Publish"
 				},
@@ -509,7 +540,7 @@
 			},
 			"agent": {
 				"title": "4. Publish business agent",
-				"description": "Generate a runnable enterprise assistant from a template and bind model, knowledge, tools, memory, and access scope.",
+				"description": "Generate a runnable enterprise agent instance from a template and bind model, knowledge, tools, memory, and access scope.",
 				"action": "Publish agent"
 			},
 			"run": {
@@ -534,7 +565,7 @@
 			"step": "Step {{index}}",
 			"template": {
 				"title": "Choose business template",
-				"description": "Decide which business scenario this agent serves, such as knowledge assistant, ticket handling, or data analysis.",
+				"description": "Decide which business scenario this agent serves, such as knowledge retrieval, ticket handling, or data analysis.",
 				"empty": "No template selected",
 				"action": "Choose template"
 			},
@@ -606,12 +637,38 @@
 			"emptyAudit": "No audit records yet.",
 			"auditEvent": "Audit event",
 			"success": "Success",
-			"failure": "Failure"
+			"failure": "Failure",
+			"runCenter": "Run center",
+			"runCenterDescription": "Review agent runs, workflow execution, approval gates, and governance audit in one place to confirm the platform loop is stable.",
+			"runQueue": "Run queue",
+			"runQueueDescription": "Filter recent agent and workflow runs by type, status, and keyword.",
+			"runDetail": "Run detail",
+			"runDetailDescription": "Inspect the selected run object, status, time, and next governance action.",
+			"noRunsTitle": "No run records",
+			"noRunsDescription": "There are no agent or workflow run records yet. Run an agent or workflow first.",
+			"noRunDetail": "No run selected",
+			"type": "Type",
+			"agent": "Agent",
+			"time": "Time",
+			"stepsStatus": "Step status",
+			"viewResponse": "View response",
+			"continueWorkflow": "Continue workflow",
+			"governanceAudit": "Governance audit",
+			"auditSearch": "Audit search",
+			"auditSearchDescription": "Trace platform operations by tenant, user, tool, and result.",
+			"filterType": "Type",
+			"filterStatus": "Status",
+			"filterKeyword": "Keyword",
+			"allTypes": "All types",
+			"allStatuses": "All statuses",
+			"keywordPlaceholder": "Search agent, workflow, input, or output",
+			"agentRunType": "Agent run",
+			"workflowRunType": "Workflow run"
 		},
 		"tenantGovernance": {
 			"title": "Tenant Governance",
 			"description": "Pick an enterprise identity first, then run agents, tools, and workflows as that identity.",
-			"currentIdentity": "Current simulated identity",
+			"currentIdentity": "Current run identity",
 			"noIdentity": "No identities available",
 			"selectIdentity": "Select identity",
 			"useIdentity": "Run as this identity",
@@ -665,7 +722,7 @@
 			"runSample": "Run sample",
 			"viewAudit": "View audit",
 			"workspace": "Department resources",
-			"localSource": "Local demo data",
+			"localSource": "Local connector data",
 			"tenant": "Tenant",
 			"identities": "Identities",
 			"agents": "Agents",
@@ -703,11 +760,38 @@
 			"latestAnswer": "Latest answer",
 			"noQuestion": "No question yet",
 			"noAnswer": "No answer yet",
-			"noSources": "No sources",
-			"moreSources": "+{{count}} sources",
-			"openRun": "Open run",
-			"viewAudit": "View audit"
-		},
+				"noSources": "No sources",
+				"moreSources": "+{{count}} sources",
+				"openRun": "Open run",
+				"viewAudit": "View audit",
+				"scopeTitle": "Memory scopes",
+				"scopeDescription": "Review long-term memory hits, writes, and source coverage by tenant, user, and agent.",
+				"searchPlaceholder": "Search agent, tenant, user, or source",
+				"emptyTitle": "No memory operations data",
+				"emptyFilteredDescription": "Clear filters or broaden the criteria to view memory scopes.",
+				"selectedScopeTitle": "Selected scope",
+				"selectedScopeDescription": "Review recent Q&A, hits, writes, and source evidence.",
+				"selectScopeTitle": "No memory scope selected",
+				"selectScopeDescription": "Select a memory scope to inspect its evidence.",
+				"memorySources": "Memory sources",
+				"sourceCoverageTitle": "Source coverage",
+				"sourceCoverageDescription": "Use this to see whether long-term memory relies on too few sources.",
+				"noSourcesDescription": "This memory scope does not have source evidence yet.",
+				"sourceCount": "{{count}} sources",
+				"scopeCount": "{{count}} scopes",
+				"hitStatus": "Hit",
+				"pendingHitStatus": "Pending hit",
+				"statLoadedRunsHelper": "Run history is connected to long-term memory statistics",
+				"statMemoryHitsHelper": "Historical context retrieved in answers",
+				"statMemoryWritesHelper": "Records saved into memory after runs",
+				"statActiveScopesHelper": "{{count}} sources contribute memory evidence",
+				"filters": {
+					"all": "All",
+					"hits": "Has hits",
+					"writes": "Has writes",
+					"cold": "Not active"
+				}
+			},
 		"accessControl": {
 			"eyebrow": "Roles and access",
 			"title": "Enterprise access center",
@@ -801,7 +885,7 @@
 		},
 		"connectors": {
 			"title": "Data source connectors",
-			"description": "See whether enterprise tools read local demo data or a real business API, and check connector readiness.",
+			"description": "See whether enterprise tools read local connector data or a real business API, and check connector readiness.",
 			"current": "Current connector",
 			"runtime": "Runtime connector",
 			"runtimeDescription": "The connector configuration used by tools, agents, and workflows for the current tenant.",
@@ -816,7 +900,7 @@
 			"environment": "Environment variables",
 			"httpPaths": "HTTP path templates",
 			"tenantPreview": "Tenant data preview",
-			"identities": "Demo identities",
+			"identities": "Platform identities",
 			"configured": "Configured",
 			"missing": "Missing",
 			"required": "Required",
@@ -928,8 +1012,8 @@
 		},
 		"agents": {
 			"title": "Published agents",
-			"description": "Agents available to the current user. The enterprise knowledge assistant is shown first when present.",
-			"empty": "No agents yet. Create or start the enterprise knowledge assistant and platform capabilities will appear here.",
+			"description": "Agents the current user can run or govern in the enterprise platform.",
+			"empty": "No agent instances yet. Publish one from a business template, then bind models, tools, knowledge, and governance policies.",
 			"noPrompt": "No system prompt configured.",
 			"editable": "Editable",
 			"invitable": "Invitable"
@@ -969,6 +1053,46 @@
 				"ready": "Runnable",
 				"partial": "Needs setup",
 				"blocked": "Blocked"
+			},
+			"lifecycle": {
+				"title": "Agent lifecycle workspace",
+				"description": "Select a published agent first, then handle run, workflow, editing, and governance actions.",
+				"onlineAgents": "{{count}} online agent(s)",
+				"inventory": "Agent inventory",
+				"emptyTitle": "No runnable agents",
+				"emptyDescription": "No runnable agent has been published yet. Configure and publish one from the templates below.",
+				"selectTitle": "Select an agent",
+				"selectDescription": "The list shows published agents in the enterprise. Select one to inspect capabilities, tools, knowledge bases, access scope, and governance actions.",
+				"toolsCount": "{{count}} tools",
+				"knowledgeCount": "{{count}} knowledge",
+				"workflowMode": "Workflow",
+				"directMode": "Direct",
+				"toolBindings": "Tool bindings",
+				"accessScope": "Access scope",
+				"toolsAndPermissions": "Tools and permissions",
+				"knowledgeAndCapabilities": "Knowledge and capabilities",
+				"noTools": "No tools bound",
+				"noKnowledgeOrCapabilities": "No knowledge bases or capability tags bound",
+				"memoryState": "Memory {{state}}",
+				"workflowState": "Workflow {{state}}",
+				"governance": "Governance",
+				"readiness": {
+					"ready": "Ready",
+					"partial": "Needs setup",
+					"blocked": "Blocked",
+					"todo": "Not configured"
+				}
+			},
+			"opsCenter": {
+				"title": "Agent operations center",
+				"description": "Check instances, models, knowledge bases, tools, and permissions before runtime debugging and audit review.",
+				"openRunner": "Open runner"
+			},
+			"configurationCollapsedHint": "Expand templates, rollout pipeline, and publish checks",
+			"collapse": "Collapse",
+			"runnerSection": {
+				"title": "Runtime debugging",
+				"description": "Select a published agent to send an enterprise request and inspect routing, tool calls, knowledge sources, and audit results."
 			},
 			"readinessModel": "Model",
 			"readinessKnowledge": "Knowledge {{count}}",
@@ -1112,7 +1236,7 @@
 		},
 		"runtime": {
 			"title": "Platform runtime",
-			"description": "Read the current user, tenant, connector, audit, and storage paths from the enterprise example backend.",
+			"description": "Read the current user, tenant, connector, audit, and storage paths from the platform API.",
 			"platform": "Platform version",
 			"userTenant": "User / tenant",
 			"connector": "Business connector",
@@ -1122,7 +1246,7 @@
 			"enabled": "Enabled",
 			"disabled": "Disabled",
 			"unavailable": "Unavailable",
-			"error": "Unable to read platform runtime status. Make sure the enterprise example backend is running."
+			"error": "Unable to read platform runtime status. Make sure the platform API is running."
 		},
 		"policy": {
 			"title": "Tool authorization policy",
@@ -1130,7 +1254,7 @@
 			"mode": "Policy mode",
 			"allowed": "Allowed",
 			"denied": "Denied",
-			"empty": "No tool authorization results yet. Start the enterprise example backend to see whether each tool may be called.",
+			"empty": "No tool authorization results yet. Start the platform API to see whether each tool may be called.",
 			"error": "Unable to read the tool authorization policy."
 		},
 		"subagents": {
@@ -1374,7 +1498,17 @@
 			"lastCalled": "Last called",
 			"neverCalled": "Never called",
 			"loadError": "Unable to read tool center data.",
-			"empty": "No enterprise tools yet."
+			"empty": "No enterprise tools yet.",
+			"resultCount": "{{count}} tool(s)",
+			"clearFilters": "Clear filters",
+			"filterKeyword": "Keyword",
+			"filterStatus": "Authorization",
+			"searchPlaceholder": "Search tool name, description, or input key",
+			"allStatuses": "All statuses",
+			"emptyTitle": "No enterprise tools yet",
+			"emptyDescription": "After tool providers or tool policies are connected, governable enterprise tools will appear here.",
+			"emptyFilteredTitle": "No matching tools",
+			"emptyFilteredDescription": "Clear filters or adjust the keyword to review more tools."
 		},
 		"audit": {
 			"title": "Recent tool audit",
@@ -1405,12 +1539,12 @@
 			"duration": "Duration",
 			"inputs": "Inputs",
 			"result": "Result",
-			"empty": "No tool calls yet. Chat with the enterprise knowledge assistant and trigger a tool to see audit events here.",
+			"empty": "No tool calls yet. Run an agent and trigger a tool to see audit events here.",
 			"error": "Unable to read tool audit events."
 		},
 		"configManagement": {
 			"title": "Configuration management",
-			"description": "Export and import portable platform configuration for demo migration, backups, and team reproduction.",
+			"description": "Export and import portable platform configuration for configuration migration, backups, and team reproduction.",
 			"refresh": "Refresh config",
 			"copyExport": "Copy export JSON",
 			"exportJson": "Export JSON / import JSON",
@@ -1434,15 +1568,47 @@
 			"lastExported": "Exported at",
 			"schemaVersion": "Schema"
 		},
+		"settings": {
+			"title": "Platform settings",
+			"description": "Review runtime connectivity, export or import platform configuration, and keep model, tenant policy, and runtime parameters governed from one place.",
+			"runtimeItems": "Runtime items",
+			"policyItems": "Policies",
+			"governanceTitle": "Platform runtime and configuration governance",
+			"governanceDescription": "Review runtime connections, export governed platform data, and complete configuration migration tasks.",
+			"needsReview": "Needs review",
+			"runtimeConnectionTitle": "Runtime connection",
+			"runtimeConnectionDescription": "Confirm which platform service the console is connected to and whether the current account has completed baseline setup.",
+			"configScopeTitle": "Configuration scope",
+			"configScopeDescription": "Exported configuration covers platform governance objects and does not include plaintext secrets.",
+			"dataObjects": "Data objects",
+			"runtimeStatusTitle": "Runtime status",
+			"runtimeStatusDescription": "Quickly verify whether model, tool, RAG, workflow, and other dependencies are connected.",
+			"runtimeCoverage": "Runtime coverage",
+			"connectionHealth": "Connection health",
+			"stats": {
+				"membersHelper": "Organization members and tenant identities",
+				"agentsHelper": "Agents governed by the platform",
+				"workflowsHelper": "Reusable automation templates",
+				"connectorsHelper": "External system connector configuration"
+			},
+			"migration": {
+				"title": "Migration checks",
+				"description": "Confirm object counts, import mode, and secret handling before import to avoid overwriting production configuration.",
+				"notice": "Configuration migration only handles platform governance data; external credentials are still managed by connectors or runtime environments.",
+				"secretHandling": "Secret handling",
+				"redactedSecrets": "Secrets redacted",
+				"configObjects": "Config objects"
+			}
+		},
 		"status": {
 			"ready": "Ready",
-			"demoReady": "Demo ready",
+			"platformReady": "Platform ready",
 			"toConfigure": "To configure",
 			"next": "Next phase"
 		},
 		"capabilities": {
 			"title": "Platform rollout control",
-			"description": "Check which enterprise agent platform capabilities are wired up, then jump directly into the next setup or demo step.",
+			"description": "Check which enterprise agent platform capabilities are wired up, then jump directly into the next setup or validation step.",
 			"model": {
 				"title": "Model management",
 				"description": "Centrally manage model credentials, default models, and multi-model switching.",
@@ -1933,9 +2099,9 @@
 		"username": "Username",
 		"usernamePlaceholder": "Your username",
 		"submit": "Get Started",
-		"demoTitle": "Enterprise platform demo",
-		"demoDescription": "Use the local enterprise assistant backend and demo user.",
-		"useDemo": "Open enterprise platform demo",
+		"localTitle": "AgentFoundry console",
+		"localDescription": "Use the local platform API and test user.",
+		"useLocalDefaults": "Open AgentFoundry console",
 		"hint": "This is a frontend-only application, and all data are served from the Server URL above. The username is used solely for server-side authentication."
 	},
 	"tour": {

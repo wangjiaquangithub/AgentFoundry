@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card.tsx';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field.tsx';
 import { Input } from '@/components/ui/input.tsx';
-import { DEMO_SERVER_URL, DEMO_USERNAME } from '@/config/demoDefaults';
+import { LOCAL_SERVER_URL, LOCAL_USERNAME } from '@/config/localDefaults';
 import { useTranslation } from '@/i18n/useI18n.ts';
 import { cn } from '@/lib/utils.ts';
 
@@ -21,9 +21,9 @@ interface Props {
 
 export const SetupPage = ({ onComplete, className }: Props) => {
 	const { t } = useTranslation();
-	const [url, setUrl] = useState(() => localStorage.getItem('server_url') ?? DEMO_SERVER_URL);
+	const [url, setUrl] = useState(() => localStorage.getItem('server_url') ?? LOCAL_SERVER_URL);
 	const [username, setUsername] = useState(
-		() => localStorage.getItem('username') ?? DEMO_USERNAME,
+		() => localStorage.getItem('username') ?? LOCAL_USERNAME,
 	);
 
 	const completeSetup = (nextUrl: string, nextUsername: string) => {
@@ -37,10 +37,10 @@ export const SetupPage = ({ onComplete, className }: Props) => {
 		completeSetup(url, username);
 	};
 
-	const handleUseDemo = () => {
-		setUrl(DEMO_SERVER_URL);
-		setUsername(DEMO_USERNAME);
-		completeSetup(DEMO_SERVER_URL, DEMO_USERNAME);
+	const handleUseLocalDefaults = () => {
+		setUrl(LOCAL_SERVER_URL);
+		setUsername(LOCAL_USERNAME);
+		completeSetup(LOCAL_SERVER_URL, LOCAL_USERNAME);
 	};
 
 	return (
@@ -87,11 +87,16 @@ export const SetupPage = ({ onComplete, className }: Props) => {
 								</Field>
 								<Field className="gap-2 rounded-lg border bg-muted/30 p-3">
 									<div>
-										<FieldLabel>{t('setup.demoTitle')}</FieldLabel>
-										<FieldDescription>{t('setup.demoDescription')}</FieldDescription>
+										<FieldLabel>{t('setup.localTitle')}</FieldLabel>
+										<FieldDescription>{t('setup.localDescription')}</FieldDescription>
 									</div>
-									<Button type="button" variant="outline" onClick={handleUseDemo} className="w-full">
-										{t('setup.useDemo')}
+									<Button
+										type="button"
+										variant="outline"
+										onClick={handleUseLocalDefaults}
+										className="w-full"
+									>
+										{t('setup.useLocalDefaults')}
 									</Button>
 								</Field>
 							</FieldGroup>

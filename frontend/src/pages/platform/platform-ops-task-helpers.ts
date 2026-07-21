@@ -8,6 +8,7 @@ import {
 	runPlatformOperationAction,
 	type PlatformOperationActionHandlers,
 } from './platform-operation-actions';
+import { normalizePlatformErrorMessage } from './platform-error-state';
 
 export type OpsTaskActionTarget =
 	| {
@@ -102,9 +103,7 @@ export async function runOpsTaskLoadAction(
 		handlers.setOpsTasks(response.tasks);
 		handlers.setOpsTasksSummary(response.summary);
 	} catch (error) {
-		handlers.setError(
-			error instanceof Error ? error.message : loadErrorMessage,
-		);
+		handlers.setError(normalizePlatformErrorMessage(error, loadErrorMessage));
 	} finally {
 		handlers.setLoading(false);
 	}
@@ -144,7 +143,7 @@ export function createPlatformOpsTaskHandlers(
 			refreshDependentViews: actions.refreshDependentViews,
 			handleError: (error) =>
 				actions.setOpsTasksError(
-					error instanceof Error ? error.message : values.text.resolveError,
+					normalizePlatformErrorMessage(error, values.text.resolveError),
 				),
 		});
 	}

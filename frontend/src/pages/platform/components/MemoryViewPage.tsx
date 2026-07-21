@@ -14,6 +14,8 @@ import { useMemo, useState } from 'react';
 import { formatTimestamp } from '../platform-utils';
 import { PlatformPageHeader, PlatformPageShell, StatCard } from './common';
 import type { MemoryOperationsItem } from './MemoryOperationsPanel';
+import { PlatformEmptyState } from './PlatformEmptyState';
+import { PlatformFilterBar } from './PlatformFilterBar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -80,6 +82,7 @@ export function MemoryViewPage({
 	const selectedItem =
 		filteredItems.find((item) => item.key === selectedScopeKey) ?? filteredItems[0] ?? null;
 	const sourceCount = new Set(memoryOperationsItems.flatMap((item) => item.sources)).size;
+	const hasActiveFilters = memoryFilter !== 'all' || memorySearch.trim().length > 0;
 	const sourceRows = useMemo(() => {
 		const counts = new Map<string, number>();
 		memoryOperationsItems.forEach((item) => {
@@ -94,11 +97,15 @@ export function MemoryViewPage({
 			.slice(0, 8);
 	}, [memoryOperationsItems]);
 	const memoryFilters: Array<{ label: string; value: MemoryFilter }> = [
-		{ label: '全部', value: 'all' },
-		{ label: '有命中', value: 'hits' },
-		{ label: '有写入', value: 'writes' },
-		{ label: '待激活', value: 'cold' },
+		{ label: t('platform.memoryOps.filters.all'), value: 'all' },
+		{ label: t('platform.memoryOps.filters.hits'), value: 'hits' },
+		{ label: t('platform.memoryOps.filters.writes'), value: 'writes' },
+		{ label: t('platform.memoryOps.filters.cold'), value: 'cold' },
 	];
+	const clearFilters = () => {
+		setMemorySearch('');
+		setMemoryFilter('all');
+	};
 
 	return (
 		<PlatformPageShell>
@@ -133,30 +140,32 @@ export function MemoryViewPage({
 
 			<section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 				{[
-					{
-						label: t('platform.memoryOps.loadedRuns'),
-						value: memoryOperationsRunCount,
-						helper: '运行历史已接入长期记忆统计',
-						icon: FileClock,
-					},
-					{
-						label: t('platform.memoryOps.memoryHits'),
-						value: memoryOperationsHitCount,
-						helper: '回答中检索到的历史上下文',
-						icon: Brain,
-					},
-					{
-						label: t('platform.memoryOps.memoryWrites'),
-						value: memoryOperationsSavedCount,
-						helper: '运行后沉淀到记忆层的记录',
-						icon: Database,
-					},
-					{
-						label: t('platform.memoryOps.activeScopes'),
-						value: memoryOperationsItems.length,
-						helper: `${sourceCount} 个来源参与记忆证据`,
-						icon: ShieldCheck,
-					},
+						{
+							label: t('platform.memoryOps.loadedRuns'),
+							value: memoryOperationsRunCount,
+							helper: t('platform.memoryOps.statLoadedRunsHelper'),
+							icon: FileClock,
+						},
+						{
+							label: t('platform.memoryOps.memoryHits'),
+							value: memoryOperationsHitCount,
+							helper: t('platform.memoryOps.statMemoryHitsHelper'),
+							icon: Brain,
+						},
+						{
+							label: t('platform.memoryOps.memoryWrites'),
+							value: memoryOperationsSavedCount,
+							helper: t('platform.memoryOps.statMemoryWritesHelper'),
+							icon: Database,
+						},
+						{
+							label: t('platform.memoryOps.activeScopes'),
+							value: memoryOperationsItems.length,
+							helper: t('platform.memoryOps.statActiveScopesHelper', {
+								count: sourceCount,
+							}),
+							icon: ShieldCheck,
+						},
 				].map((item) => {
 					const Icon = item.icon;
 					return (
@@ -172,30 +181,55 @@ export function MemoryViewPage({
 			</section>
 
 			<div className="grid gap-5">
-				<section className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,0.58fr)_minmax(360px,0.42fr)] xl:items-start">
-					<div className="grid min-w-0 gap-4 rounded-lg border bg-background/80 p-4">
-							<div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-								<div>
-									<div className="flex flex-wrap items-center gap-2">
-										<h2 className="text-sm font-semibold">记忆作用域</h2>
-										<Badge variant="secondary">{filteredItems.length} 个作用域</Badge>
-										<Badge variant="outline">{sourceCount} 个来源</Badge>
-									</div>
-									<p className="mt-1 text-xs leading-5 text-muted-foreground">
-										按租户、用户和 Agent 检查长期记忆的命中、写入与来源覆盖。
-									</p>
+					<section className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,0.58fr)_minmax(360px,0.42fr)] xl:items-start">
+						<div className="grid min-w-0 gap-4 rounded-lg border bg-background/80 p-4">
+							<div>
+								<div className="flex flex-wrap items-center gap-2">
+									<h2 className="text-sm font-semibold">
+										{t('platform.memoryOps.scopeTitle')}
+									</h2>
+									<Badge variant="secondary">
+										{t('platform.memoryOps.scopeCount', {
+											count: filteredItems.length,
+										})}
+									</Badge>
+									<Badge variant="outline">
+										{t('platform.memoryOps.sourceCount', {
+											count: sourceCount,
+										})}
+									</Badge>
 								</div>
-								<div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
-									<div className="relative min-w-0 sm:w-72">
+								<p className="mt-1 text-xs leading-5 text-muted-foreground">
+									{t('platform.memoryOps.scopeDescription')}
+								</p>
+							</div>
+							<PlatformFilterBar
+								resultLabel={t('platform.ux.filters.results', {
+									count: filteredItems.length,
+								})}
+								clearLabel={t('platform.ux.filters.clear')}
+								onClear={clearFilters}
+								clearDisabled={!hasActiveFilters}
+							>
+								<label className="grid gap-1.5 md:col-span-1 xl:col-span-3">
+									<span className="text-xs font-medium text-muted-foreground">
+										{t('platform.monitoring.filterKeyword')}
+									</span>
+									<div className="relative min-w-0">
 										<Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 										<Input
 											value={memorySearch}
 											onChange={(event) => setMemorySearch(event.target.value)}
-											placeholder="搜索 Agent、租户、用户或来源"
+											placeholder={t('platform.memoryOps.searchPlaceholder')}
 											className="pl-9"
 										/>
 									</div>
-									<div className="grid grid-cols-4 gap-1 rounded-md border bg-background p-1 sm:w-[19rem]">
+								</label>
+								<div className="grid gap-1.5 md:col-span-1 xl:col-span-3">
+									<span className="text-xs font-medium text-muted-foreground">
+										{t('platform.monitoring.filterType')}
+									</span>
+									<div className="grid grid-cols-4 gap-1 rounded-md border bg-background p-1">
 										{memoryFilters.map((filter) => (
 											<Button
 												key={filter.value}
@@ -210,15 +244,21 @@ export function MemoryViewPage({
 										))}
 									</div>
 								</div>
-							</div>
+							</PlatformFilterBar>
 							{memoryOperationsItems.length === 0 ? (
-								<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-									{t('platform.memoryOps.empty')}
-								</div>
+								<PlatformEmptyState
+									variant="noData"
+									title={t('platform.memoryOps.emptyTitle')}
+									description={t('platform.memoryOps.empty')}
+								/>
 							) : filteredItems.length === 0 ? (
-								<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-									没有匹配当前筛选条件的记忆作用域。
-								</div>
+								<PlatformEmptyState
+									variant="filtered"
+									title={t('platform.ux.empty.filteredTitle')}
+									description={t('platform.memoryOps.emptyFilteredDescription')}
+									actionLabel={t('platform.ux.filters.clear')}
+									onAction={clearFilters}
+								/>
 							) : (
 								<div className="grid gap-2">
 									{filteredItems.map((item) => {
@@ -240,11 +280,13 @@ export function MemoryViewPage({
 															<h3 className="min-w-0 truncate text-sm font-semibold">
 																{item.agentName}
 															</h3>
-															<Badge
-																variant={item.memoryHitCount > 0 ? 'default' : 'outline'}
-															>
-																{item.memoryHitCount > 0 ? '已命中' : '待命中'}
-															</Badge>
+																<Badge
+																	variant={item.memoryHitCount > 0 ? 'default' : 'outline'}
+																>
+																	{item.memoryHitCount > 0
+																		? t('platform.memoryOps.hitStatus')
+																		: t('platform.memoryOps.pendingHitStatus')}
+																</Badge>
 														</div>
 														<div className="mt-2 flex flex-wrap gap-1">
 															<Badge variant="secondary">{item.tenant}</Badge>
@@ -301,19 +343,23 @@ export function MemoryViewPage({
 							)}
 						</div>
 
-					<aside className="grid gap-4 rounded-lg border bg-background/80 p-4 xl:sticky xl:top-20">
-							<div className="flex items-start justify-between gap-3">
-								<div>
-									<h2 className="text-sm font-semibold">选中作用域</h2>
-									<p className="mt-1 text-xs leading-5 text-muted-foreground">
-										查看最近问答、命中写入和来源证据。
-									</p>
-								</div>
-								{selectedItem ? (
-									<Badge variant={selectedItem.memoryHitCount > 0 ? 'default' : 'outline'}>
-										{selectedItem.memoryHitCount > 0 ? '已命中' : '待命中'}
-									</Badge>
-								) : null}
+						<aside className="grid gap-4 rounded-lg border bg-background/80 p-4 xl:sticky xl:top-20">
+								<div className="flex items-start justify-between gap-3">
+									<div>
+										<h2 className="text-sm font-semibold">
+											{t('platform.memoryOps.selectedScopeTitle')}
+										</h2>
+										<p className="mt-1 text-xs leading-5 text-muted-foreground">
+											{t('platform.memoryOps.selectedScopeDescription')}
+										</p>
+									</div>
+									{selectedItem ? (
+										<Badge variant={selectedItem.memoryHitCount > 0 ? 'default' : 'outline'}>
+											{selectedItem.memoryHitCount > 0
+												? t('platform.memoryOps.hitStatus')
+												: t('platform.memoryOps.pendingHitStatus')}
+										</Badge>
+									) : null}
 							</div>
 
 							{selectedItem ? (
@@ -381,8 +427,10 @@ export function MemoryViewPage({
 										</div>
 									</div>
 
-									<div>
-										<div className="mb-2 text-xs text-muted-foreground">记忆来源</div>
+										<div>
+											<div className="mb-2 text-xs text-muted-foreground">
+												{t('platform.memoryOps.memorySources')}
+											</div>
 										<div className="flex flex-wrap gap-1">
 											{selectedItem.sources.length ? (
 												selectedItem.sources.map((source) => (
@@ -412,41 +460,55 @@ export function MemoryViewPage({
 											{t('platform.memoryOps.runAgent')}
 										</Button>
 									</div>
-								</>
-							) : (
-								<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-									选择一个记忆作用域查看证据。
-								</div>
-							)}
-					</aside>
-				</section>
+									</>
+								) : (
+									<PlatformEmptyState
+										variant="noData"
+										title={t('platform.memoryOps.selectScopeTitle')}
+										description={t('platform.memoryOps.selectScopeDescription')}
+									/>
+								)}
+						</aside>
+					</section>
 
-				<section className="rounded-lg border bg-background/80 p-4">
-						<div className="flex items-start justify-between gap-3">
-							<div>
-								<h2 className="text-sm font-semibold">来源覆盖</h2>
-								<p className="mt-1 text-xs leading-5 text-muted-foreground">
-									用于判断长期记忆是否集中依赖少数来源。
-								</p>
+					<section className="rounded-lg border bg-background/80 p-4">
+							<div className="flex items-start justify-between gap-3">
+								<div>
+									<h2 className="text-sm font-semibold">
+										{t('platform.memoryOps.sourceCoverageTitle')}
+									</h2>
+									<p className="mt-1 text-xs leading-5 text-muted-foreground">
+										{t('platform.memoryOps.sourceCoverageDescription')}
+									</p>
+								</div>
+								<Badge variant="outline">
+									{t('platform.memoryOps.sourceCount', {
+										count: sourceCount,
+									})}
+								</Badge>
 							</div>
-							<Badge variant="outline">{sourceCount} 个来源</Badge>
-						</div>
-						<div className="mt-4 grid gap-2">
+							<div className="mt-4 grid gap-2">
 							{sourceRows.length ? (
 								sourceRows.map((row) => (
 									<div
 										key={row.source}
 										className="grid gap-2 rounded-lg border bg-background p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
-									>
-										<div className="min-w-0 truncate text-sm font-medium">{row.source}</div>
-										<Badge variant="secondary">{row.count} 个作用域</Badge>
-									</div>
-								))
-							) : (
-								<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-									{t('platform.memoryOps.noSources')}
-								</div>
-							)}
+										>
+											<div className="min-w-0 truncate text-sm font-medium">{row.source}</div>
+											<Badge variant="secondary">
+												{t('platform.memoryOps.scopeCount', {
+													count: row.count,
+												})}
+											</Badge>
+										</div>
+									))
+								) : (
+									<PlatformEmptyState
+										variant="noData"
+										title={t('platform.memoryOps.memorySources')}
+										description={t('platform.memoryOps.noSourcesDescription')}
+									/>
+								)}
 						</div>
 				</section>
 			</div>

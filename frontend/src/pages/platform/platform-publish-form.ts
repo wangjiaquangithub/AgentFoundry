@@ -10,6 +10,7 @@ import type {
 	KnowledgeBaseView,
 } from '@/api';
 import type { PublishFormState } from './platform-defaults';
+import { normalizePlatformErrorMessage } from './platform-error-state';
 import { activePlatformMembersForTenant } from './platform-utils';
 
 export type PublishListFormKey =
@@ -905,11 +906,12 @@ export function createPlatformAgentPublishingHandlers(values: {
 					refreshDependentViews: values.refreshDependentViews,
 					handleError: (error, publishTarget) => {
 						values.setPlatformAgentsError(
-							error instanceof Error
-								? error.message
-								: publishTarget.type === 'update'
+							normalizePlatformErrorMessage(
+								error,
+								publishTarget.type === 'update'
 									? values.requestText.updateError
 									: values.requestText.publishError,
+							),
 						);
 					},
 				},
@@ -939,9 +941,10 @@ export function createPlatformAgentPublishingHandlers(values: {
 					refreshDependentViews: values.refreshDependentViews,
 					handleError: (error) => {
 						values.setPlatformAgentsError(
-							error instanceof Error
-								? error.message
-								: values.requestText.publishError,
+							normalizePlatformErrorMessage(
+								error,
+								values.requestText.publishError,
+							),
 						);
 					},
 					focusAgentManagement: values.focusAgentManagement,
@@ -965,9 +968,10 @@ export function createPlatformAgentPublishingHandlers(values: {
 					refreshDependentViews: values.refreshDependentViews,
 					handleError: (error) => {
 						values.setPlatformAgentsError(
-							error instanceof Error
-								? error.message
-								: values.requestText.archiveError,
+							normalizePlatformErrorMessage(
+								error,
+								values.requestText.archiveError,
+							),
 						);
 					},
 				},

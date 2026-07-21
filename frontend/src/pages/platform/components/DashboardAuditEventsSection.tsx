@@ -1,9 +1,27 @@
-// @ts-nocheck
+import type { ComponentProps } from 'react';
 
 import { AuditEventsPanel } from './AuditEventsPanel';
+import type { EnterprisePlatformStatusResponse } from '@/api';
 
-interface DashboardAuditEventsSectionProps {
-	[key: string]: any;
+type AuditEventsPanelProps = ComponentProps<typeof AuditEventsPanel>;
+
+interface DashboardAuditEventsSectionProps
+	extends Pick<
+		AuditEventsPanelProps,
+		| 'auditFilters'
+		| 'activePlatformAgents'
+		| 'availableToolItems'
+		| 'username'
+		| 'auditLoading'
+		| 'auditError'
+		| 'auditEvents'
+		| 'auditStats'
+		| 'summarizeAuditObject'
+		| 't'
+	> {
+	platformStatus?: EnterprisePlatformStatusResponse | null;
+	setAuditFilters: AuditEventsPanelProps['onAuditFiltersChange'];
+	refetchAuditEvents: AuditEventsPanelProps['onRefetchAuditEvents'];
 }
 
 export function DashboardAuditEventsSection({

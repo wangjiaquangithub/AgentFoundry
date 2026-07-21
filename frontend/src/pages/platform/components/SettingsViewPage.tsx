@@ -83,25 +83,25 @@ export function SettingsViewPage({
 		{
 			label: t('platform.configManagement.members'),
 			value: configCounts?.members ?? 0,
-			helper: '组织成员与租户身份',
+			helper: t('platform.settings.stats.membersHelper'),
 			icon: UsersRound,
 		},
 		{
 			label: t('platform.configManagement.agents'),
 			value: configCounts?.agents ?? 0,
-			helper: '已纳入平台治理的 Agent',
+			helper: t('platform.settings.stats.agentsHelper'),
 			icon: Bot,
 		},
 		{
 			label: t('platform.configManagement.workflows'),
 			value: configCounts?.workflow_templates ?? 0,
-			helper: '可复用自动化模板',
+			helper: t('platform.settings.stats.workflowsHelper'),
 			icon: GitBranch,
 		},
 		{
 			label: t('platform.configManagement.connectors'),
 			value: configCounts?.connector_configs ?? 0,
-			helper: '外部系统连接配置',
+			helper: t('platform.settings.stats.connectorsHelper'),
 			icon: Wrench,
 		},
 	];
@@ -116,17 +116,20 @@ export function SettingsViewPage({
 	).length;
 	const migrationChecks = [
 		{
-			label: '敏感信息处理',
-			value: '密钥脱敏',
+			label: t('platform.settings.migration.secretHandling'),
+			value: t('platform.settings.migration.redactedSecrets'),
 			icon: LockKeyhole,
 		},
 		{
-			label: '导入模式',
-			value: platformConfigImportMode === 'replace' ? '替换' : '合并',
+			label: t('platform.configManagement.importMode'),
+			value:
+				platformConfigImportMode === 'replace'
+					? t('platform.configManagement.replace')
+					: t('platform.configManagement.merge'),
 			icon: ClipboardCheck,
 		},
 		{
-			label: '配置对象',
+			label: t('platform.settings.migration.configObjects'),
 			value: totalConfigObjects,
 			icon: Database,
 		},
@@ -137,8 +140,8 @@ export function SettingsViewPage({
 			<PlatformPageHeader
 				icon={Server}
 				eyebrow={t('platform.configManagement.title')}
-				title="平台设置"
-				description="查看运行时连接状态，导出或导入平台配置，后续模型、租户策略和运行参数都收敛到这里。"
+				title={t('platform.settings.title')}
+				description={t('platform.settings.description')}
 				actions={
 					<>
 						<Button
@@ -183,7 +186,7 @@ export function SettingsViewPage({
 					<div className="rounded-lg border bg-background/80 p-4 shadow-none">
 						<div className="flex items-center gap-2 text-xs text-muted-foreground">
 							<Activity className="size-4" />
-							运行项
+							{t('platform.settings.runtimeItems')}
 						</div>
 						<div className="mt-2 text-xl font-semibold tabular-nums">
 							{runtimeReadyCount}/{runtimeItems.length}
@@ -192,21 +195,27 @@ export function SettingsViewPage({
 					<div className="rounded-lg border bg-background/80 p-4 shadow-none">
 						<div className="flex items-center gap-2 text-xs text-muted-foreground">
 							<KeyRound className="size-4" />
-							策略
+							{t('platform.settings.policyItems')}
 						</div>
 						<div className="mt-2 text-xl font-semibold tabular-nums">{policyCount}</div>
 					</div>
 					<div className="rounded-lg border bg-background/80 p-4 shadow-none sm:col-span-2">
 						<div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
 							<div>
-								<h2 className="text-sm font-semibold">平台运行与配置治理</h2>
+								<h2 className="text-sm font-semibold">
+									{t('platform.settings.governanceTitle')}
+								</h2>
 								<p className="mt-1 text-xs leading-5 text-muted-foreground">
-									集中核对运行连接、导出平台治理数据，并完成配置迁移操作。
+									{t('platform.settings.governanceDescription')}
 								</p>
 							</div>
 							<StateBadge
 								state={hasErrors ? 'partial' : 'ready'}
-								label={hasErrors ? '待检查' : '可用'}
+								label={
+									hasErrors
+										? t('platform.settings.needsReview')
+										: t('platform.status.ready')
+								}
 							/>
 						</div>
 					</div>
@@ -218,9 +227,11 @@ export function SettingsViewPage({
 							<div className="rounded-lg border bg-background/80 p-4 shadow-none">
 								<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 									<div>
-										<h2 className="text-sm font-semibold">运行连接</h2>
+										<h2 className="text-sm font-semibold">
+											{t('platform.settings.runtimeConnectionTitle')}
+										</h2>
 										<p className="mt-1 text-xs leading-5 text-muted-foreground">
-											用于确认前端连接到哪一个平台服务，以及当前账号是否已经完成基础配置。
+											{t('platform.settings.runtimeConnectionDescription')}
 										</p>
 									</div>
 									<StateBadge
@@ -251,9 +262,11 @@ export function SettingsViewPage({
 							<div className="rounded-lg border bg-background/80 p-4 shadow-none">
 								<div className="mb-3 flex items-start justify-between gap-3">
 									<div>
-										<h2 className="text-sm font-semibold">配置范围</h2>
+										<h2 className="text-sm font-semibold">
+											{t('platform.settings.configScopeTitle')}
+										</h2>
 										<p className="mt-1 text-xs leading-5 text-muted-foreground">
-											导出的配置覆盖平台治理对象，不包含明文密钥。
+											{t('platform.settings.configScopeDescription')}
 										</p>
 									</div>
 									<FileJson className="size-4 text-muted-foreground" />
@@ -262,7 +275,7 @@ export function SettingsViewPage({
 									<div className="flex items-center justify-between gap-3 rounded-md border bg-background p-3">
 										<span className="flex min-w-0 items-center gap-2 text-muted-foreground">
 											<Database className="size-4" />
-											数据对象
+											{t('platform.settings.dataObjects')}
 										</span>
 										<span className="font-medium tabular-nums">
 											{totalConfigObjects}
@@ -271,7 +284,7 @@ export function SettingsViewPage({
 									<div className="flex items-center justify-between gap-3 rounded-md border bg-background p-3">
 										<span className="flex min-w-0 items-center gap-2 text-muted-foreground">
 											<KeyRound className="size-4" />
-											工具策略
+											{t('platform.configManagement.toolPolicy')}
 										</span>
 										<span className="font-medium tabular-nums">{policyCount}</span>
 									</div>
@@ -290,16 +303,18 @@ export function SettingsViewPage({
 
 						<div className="rounded-lg border bg-background/80 p-4 shadow-none">
 							<div className="mb-3">
-								<h2 className="text-sm font-semibold">运行时状态</h2>
+								<h2 className="text-sm font-semibold">
+									{t('platform.settings.runtimeStatusTitle')}
+								</h2>
 								<p className="mt-1 text-xs leading-5 text-muted-foreground">
-									快速核对模型、工具、RAG、工作流等依赖是否已经接入。
+									{t('platform.settings.runtimeStatusDescription')}
 								</p>
 							</div>
 							<div className="mb-3 grid gap-2 sm:grid-cols-3">
 								<div className="rounded-md border bg-background p-3">
 									<div className="flex items-center gap-2 text-xs text-muted-foreground">
 										<Activity className="size-4" />
-										运行覆盖
+										{t('platform.settings.runtimeCoverage')}
 									</div>
 									<div className="mt-2 text-xl font-semibold tabular-nums">
 										{runtimeReadyCount}
@@ -308,10 +323,12 @@ export function SettingsViewPage({
 								<div className="rounded-md border bg-background p-3">
 									<div className="flex items-center gap-2 text-xs text-muted-foreground">
 										<CheckCircle2 className="size-4" />
-										连接健康
+										{t('platform.settings.connectionHealth')}
 									</div>
 									<div className="mt-2 text-sm font-medium">
-										{hasErrors ? '待检查' : '已连接'}
+										{hasErrors
+											? t('platform.settings.needsReview')
+											: t('platform.connection.connected')}
 									</div>
 								</div>
 								<div className="rounded-md border bg-background p-3">
@@ -373,9 +390,11 @@ export function SettingsViewPage({
 						</div>
 						<aside className="grid content-start gap-3 xl:sticky xl:top-20">
 							<div className="rounded-lg border bg-background/80 p-4 shadow-none">
-								<h2 className="text-sm font-semibold">迁移检查</h2>
+								<h2 className="text-sm font-semibold">
+									{t('platform.settings.migration.title')}
+								</h2>
 								<p className="mt-1 text-xs leading-5 text-muted-foreground">
-									导入前先确认对象数量、模式和密钥处理，避免覆盖生产配置。
+									{t('platform.settings.migration.description')}
 								</p>
 								<div className="mt-4 grid gap-2">
 									{migrationChecks.map((item) => {
@@ -399,7 +418,7 @@ export function SettingsViewPage({
 								</div>
 							</div>
 							<div className="rounded-lg border bg-background/80 p-4 text-xs leading-5 text-muted-foreground shadow-none">
-								配置迁移只处理平台治理数据；外部系统凭证仍由连接器或运行环境单独管理。
+								{t('platform.settings.migration.notice')}
 							</div>
 						</aside>
 					</section>

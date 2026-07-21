@@ -8,6 +8,7 @@ import type {
 	EnterprisePublishedAgent,
 } from '@/api';
 import type { ApprovalFiltersState, ApprovalFormState } from './platform-defaults';
+import { normalizePlatformErrorMessage } from './platform-error-state';
 import { normalizeWorkflowInputs } from './platform-utils';
 
 export type PlatformApprovalRunType = Extract<
@@ -391,7 +392,7 @@ export async function runApprovalLoadAction(
 		handlers.setApprovalRequests(response.approvals);
 	} catch (error) {
 		handlers.setError(
-			error instanceof Error ? error.message : values.loadErrorMessage,
+			normalizePlatformErrorMessage(error, values.loadErrorMessage),
 		);
 	} finally {
 		handlers.setLoading(false);
@@ -1042,7 +1043,7 @@ export function createPlatformApprovalHandlers(
 				resetApprovalReason: actions.setApprovalForm,
 				handleError: (error) =>
 					actions.setApprovalError(
-						error instanceof Error ? error.message : values.text.createError,
+						normalizePlatformErrorMessage(error, values.text.createError),
 					),
 			},
 		);
@@ -1068,7 +1069,7 @@ export function createPlatformApprovalHandlers(
 				refreshDependentViews: actions.refreshDependentViews,
 				handleError: (error) =>
 					actions.setApprovalError(
-						error instanceof Error ? error.message : values.text.decisionError,
+						normalizePlatformErrorMessage(error, values.text.decisionError),
 					),
 			},
 		);
@@ -1161,8 +1162,10 @@ export function createPlatformApprovalHandlers(
 				refreshDependentViews: actions.refreshDependentViews,
 				scrollToGovernance: () => window.setTimeout(actions.scrollToGovernance, 0),
 				handleError: (type, error) => {
-					const message =
-						error instanceof Error ? error.message : values.text.createError;
+					const message = normalizePlatformErrorMessage(
+						error,
+						values.text.createError,
+					);
 					if (type === 'tool_run') {
 						actions.setToolRunError(message);
 					} else {
@@ -1210,9 +1213,10 @@ export function createPlatformApprovalHandlers(
 				runWorkflow: actions.runWorkflow,
 				handleError: (error) =>
 					actions.setApprovalError(
-						error instanceof Error
-							? error.message
-							: values.text.approveAndRunError,
+						normalizePlatformErrorMessage(
+							error,
+							values.text.approveAndRunError,
+						),
 					),
 			},
 		);

@@ -12,6 +12,7 @@ import {
 	type PublishFormPatch,
 } from './platform-publish-form';
 import type { PublishFormState } from './platform-defaults';
+import { normalizePlatformErrorMessage } from './platform-error-state';
 
 export type AgentQuickConfigurationPatch = PublishFormPatch &
 	EnterpriseAgentUpdateRequest;
@@ -483,9 +484,10 @@ export function createPlatformAgentQuickConfigurationHandlers(values: {
 					setBindingAgent: values.setBindingAgentModel,
 					handleError: (error) =>
 						values.setPlatformAgentsError(
-							error instanceof Error
-								? error.message
-								: values.requestText.bindModelError,
+							normalizePlatformErrorMessage(
+								error,
+								values.requestText.bindModelError,
+							),
 						),
 				},
 			);
@@ -499,9 +501,10 @@ export function createPlatformAgentQuickConfigurationHandlers(values: {
 					setBindingAgent: values.setBindingAgentKnowledge,
 					handleError: (error) =>
 						values.setPlatformAgentsError(
-							error instanceof Error
-								? error.message
-								: values.requestText.bindKnowledgeError,
+							normalizePlatformErrorMessage(
+								error,
+								values.requestText.bindKnowledgeError,
+							),
 						),
 				},
 			);
@@ -519,9 +522,10 @@ export function createPlatformAgentQuickConfigurationHandlers(values: {
 						values.setPlatformAgentsError(values.requestText.bindToolsError),
 					handleError: (error) =>
 						values.setPlatformAgentsError(
-							error instanceof Error
-								? error.message
-								: values.requestText.bindToolsError,
+							normalizePlatformErrorMessage(
+								error,
+								values.requestText.bindToolsError,
+							),
 						),
 				},
 			);
@@ -537,9 +541,10 @@ export function createPlatformAgentQuickConfigurationHandlers(values: {
 					setEnablingAgent: values.setEnablingAgentMemory,
 					handleError: (error) =>
 						values.setPlatformAgentsError(
-							error instanceof Error
-								? error.message
-								: values.requestText.enableMemoryError,
+							normalizePlatformErrorMessage(
+								error,
+								values.requestText.enableMemoryError,
+							),
 						),
 				},
 			);
@@ -555,9 +560,10 @@ export function createPlatformAgentQuickConfigurationHandlers(values: {
 					setEnablingAgent: values.setEnablingAgentWorkflow,
 					handleError: (error) =>
 						values.setPlatformAgentsError(
-							error instanceof Error
-								? error.message
-								: values.requestText.enableWorkflowError,
+							normalizePlatformErrorMessage(
+								error,
+								values.requestText.enableWorkflowError,
+							),
 						),
 				},
 			);

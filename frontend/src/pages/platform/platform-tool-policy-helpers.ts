@@ -5,6 +5,7 @@ import type {
 	EnterpriseToolPolicyUpdateRequest,
 } from '@/api';
 import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
+import { normalizePlatformErrorMessage } from './platform-error-state';
 
 export type ToolPolicySaveActionHandlers = {
 	setSavingToolPolicy: (saving: boolean) => void;
@@ -136,9 +137,10 @@ export function createPlatformToolPolicyHandlers(
 				refreshDependentViews: actions.refreshDependentViews,
 				handleError: (error) =>
 					actions.setToolPolicySaveError(
-						error instanceof Error
-							? error.message
-							: values.text.policySaveError,
+						normalizePlatformErrorMessage(
+							error,
+							values.text.policySaveError,
+						),
 					),
 			},
 		);

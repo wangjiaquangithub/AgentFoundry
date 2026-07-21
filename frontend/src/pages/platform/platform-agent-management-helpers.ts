@@ -1,4 +1,5 @@
 import type { EnterprisePlatformAgentsResponse } from '@/api';
+import { normalizePlatformErrorMessage } from './platform-error-state';
 
 export type PlatformAgentLoadActionHandlers = {
 	setLoading: (loading: boolean) => void;
@@ -20,7 +21,7 @@ export async function runPlatformAgentLoadAction(
 		const response = await handlers.loadPlatformAgents();
 		handlers.setPlatformAgents(response);
 	} catch (error) {
-		handlers.setError(error instanceof Error ? error.message : loadErrorMessage);
+		handlers.setError(normalizePlatformErrorMessage(error, loadErrorMessage));
 	} finally {
 		handlers.setLoading(false);
 	}

@@ -2,6 +2,7 @@ import type {
 	EnterpriseWorkflowTemplate,
 	EnterpriseWorkflowTemplatesResponse,
 } from '@/api';
+import { normalizePlatformErrorMessage } from './platform-error-state';
 
 export type WorkflowTemplateToggleActionHandlers = {
 	setSavingWorkflowType: (workflowType: string | null) => void;
@@ -56,9 +57,7 @@ export async function runWorkflowTemplateLoadAction(
 		const response = await handlers.loadWorkflowTemplates();
 		handlers.setWorkflowTemplates(response.workflows);
 	} catch (error) {
-		handlers.setError(
-			error instanceof Error ? error.message : loadErrorMessage,
-		);
+		handlers.setError(normalizePlatformErrorMessage(error, loadErrorMessage));
 	} finally {
 		handlers.setLoading(false);
 	}
@@ -92,9 +91,10 @@ export function createPlatformWorkflowTemplateHandlers(
 				refreshDependentViews: actions.refreshDependentViews,
 				handleError: (error) =>
 					actions.setWorkflowTemplatesError(
-						error instanceof Error
-							? error.message
-							: values.text.templatesLoadError,
+						normalizePlatformErrorMessage(
+							error,
+							values.text.templatesLoadError,
+						),
 					),
 			},
 		);

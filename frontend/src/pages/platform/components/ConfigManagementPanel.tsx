@@ -1,6 +1,8 @@
 import { Copy, RefreshCcw, Upload } from 'lucide-react';
 import type { Dispatch, SetStateAction } from 'react';
 
+import { formatTimestamp } from '../platform-utils';
+import { PlatformNotice } from './common';
 import type { EnterprisePlatformConfigExportResponse } from '@/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,8 +15,6 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
-import { formatTimestamp } from '../platform-utils';
-import { PlatformNotice } from './common';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 

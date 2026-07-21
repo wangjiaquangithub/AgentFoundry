@@ -1,3 +1,35 @@
+import type { ComponentType, RefObject } from 'react';
+
+import type { AccessControlStat } from './components/AccessControlPanel';
+import type { CapabilityItem } from './components/CapabilitiesPanel';
+import type { HealthState, StatCardProps } from './components/common';
+import type { FirstAgentGuideStep } from './components/FirstAgentGuide';
+import type { GovernanceHealthItem } from './components/GovernanceHealthPanel';
+import type { LaunchpadStep } from './components/LaunchpadPanel';
+import type { PlatformMemberTenantSummary } from './components/MembersPanel';
+import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
+import type { MonitoringAgentTurn, MonitoringStat } from './components/MonitoringSnapshotPanel';
+import type { OrchestrationWorkbenchStep } from './components/OrchestrationWorkbenchPanel';
+import type { PlatformConsoleItem } from './components/PlatformConsolePanel';
+import type { RolloutPathStep } from './components/RolloutPath';
+import type { RuntimeStatusItem } from './components/RuntimeStatusPanel';
+import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
+import type { TenantOverviewItem } from './components/TenantWorkspacePanel';
+import type { TriggerOpsStat } from './components/TriggerOpsPanel';
+import type {
+	WorkbenchReadinessItem,
+	WorkbenchQuickAction,
+	WorkbenchRiskItem,
+} from './components/WorkbenchReadinessPanel';
+import type {
+	WorkbenchActionCard,
+	WorkbenchIndicator,
+} from './components/WorkbenchStatusPanel';
+import type { WorkflowOpsStat } from './components/WorkflowOpsPanel';
+import {
+	defaultEnterpriseWorkflowInputs,
+	enterpriseWorkflowFallbackOptions,
+} from './platform-defaults';
 import type {
 	AgentView,
 	CredentialView,
@@ -28,37 +60,6 @@ import type {
 	ScheduleRecord,
 } from '@/api';
 import { ApiError } from '@/api/client';
-import type { ComponentType, RefObject } from 'react';
-import type { AccessControlStat } from './components/AccessControlPanel';
-import type { FirstAgentGuideStep } from './components/FirstAgentGuide';
-import type { GovernanceHealthItem } from './components/GovernanceHealthPanel';
-import type { LaunchpadStep } from './components/LaunchpadPanel';
-import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
-import type { MonitoringAgentTurn, MonitoringStat } from './components/MonitoringSnapshotPanel';
-import type { PlatformMemberTenantSummary } from './components/MembersPanel';
-import type { OrchestrationWorkbenchStep } from './components/OrchestrationWorkbenchPanel';
-import type { PlatformConsoleItem } from './components/PlatformConsolePanel';
-import type { RolloutPathStep } from './components/RolloutPath';
-import type { RuntimeStatusItem } from './components/RuntimeStatusPanel';
-import type { ToolPolicyDraftValue } from './components/TenantGovernancePanel';
-import type { TenantOverviewItem } from './components/TenantWorkspacePanel';
-import type { TriggerOpsStat } from './components/TriggerOpsPanel';
-import type {
-	WorkbenchReadinessItem,
-	WorkbenchQuickAction,
-	WorkbenchRiskItem,
-} from './components/WorkbenchReadinessPanel';
-import type {
-	WorkbenchActionCard,
-	WorkbenchIndicator,
-} from './components/WorkbenchStatusPanel';
-import type { WorkflowOpsStat } from './components/WorkflowOpsPanel';
-import type { CapabilityItem } from './components/CapabilitiesPanel';
-import type { HealthState, StatCardProps } from './components/common';
-import {
-	defaultEnterpriseWorkflowInputs,
-	enterpriseWorkflowFallbackOptions,
-} from './platform-defaults';
 
 export type AgentSetupStepKey = 'template' | 'model' | 'knowledge' | 'tools' | 'runtime';
 
@@ -75,7 +76,7 @@ export type EnterpriseToolInputConfigMap = Record<
 	{ inputKey: string; labelKey: string; defaultValue: string }
 >;
 
-export interface EnterpriseAgentConversationTurn extends MonitoringAgentTurn {}
+export type EnterpriseAgentConversationTurn = MonitoringAgentTurn;
 
 export function approvalRequiredDetail(
 	error: unknown,
@@ -262,7 +263,7 @@ export function capabilityItemsForStatus(options: {
 			metric: t('platform.capabilities.tools.metric', { count: counts.availableTools }),
 			actionLabel: t('platform.capabilities.tools.action'),
 			status: capabilityStatusForCount(counts.availableTools, {
-				ready: t('platform.status.demoReady'),
+				ready: t('platform.status.platformReady'),
 				empty: t('platform.status.toConfigure'),
 			}),
 			state: capabilityStateForCount(counts.availableTools),
@@ -4080,11 +4081,11 @@ export function platformAgentInventoryStateForStatus(values: {
 	selectedTemplateId: string | null;
 }) {
 	const featuredAgents = [...values.agents]
-		.sort(
-			(a, b) =>
-				Number(b.data.name.includes('企业知识助手')) -
-				Number(a.data.name.includes('企业知识助手')),
-		)
+		.sort((a, b) => {
+			const updatedDiff =
+				new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+			return updatedDiff || a.data.name.localeCompare(b.data.name);
+		})
 		.slice(0, 5);
 	const activePlatformAgents = activePlatformAgentsForAgents(values.publishedPlatformAgents);
 	const archivedPlatformAgents = archivedPlatformAgentsForAgents(

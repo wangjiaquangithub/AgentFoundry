@@ -53,7 +53,7 @@
 	"platform": {
 		"eyebrow": "企业工作台",
 		"title": "企业 Agent 平台",
-		"subtitle": "把 Agent、模型、知识库、工具和自动化任务放在同一个入口里管理。当前页面先聚合已有能力，企业示例后端已经有工具审计和工具权限策略，后续可以继续接入真实业务系统。",
+		"subtitle": "统一管理 Agent、模型/运行时、知识、工具、工作流、审批、审计和运行记录，支撑企业级 Agent 治理与运营。",
 		"connection": {
 			"server": "服务地址",
 			"user": "当前用户",
@@ -63,9 +63,40 @@
 			"notConfigured": "未配置",
 			"anonymous": "匿名"
 		},
+		"statuses": {
+			"pending": "待处理",
+			"approved": "已批准",
+			"rejected": "已拒绝",
+			"running": "运行中",
+			"success": "成功",
+			"failed": "失败",
+			"cancelled": "已取消"
+		},
+		"ux": {
+			"filters": {
+				"results": "{{count}} 条结果",
+				"clear": "清空筛选"
+			},
+			"empty": {
+				"noDataTitle": "暂无数据",
+				"noDataDescription": "当前还没有可展示的记录。",
+				"filteredTitle": "没有匹配结果",
+				"filteredDescription": "调整筛选条件或清空筛选后再查看。",
+				"errorTitle": "加载失败",
+				"errorDescription": "暂时无法读取数据，请重试。",
+				"noAccessTitle": "无访问权限",
+				"noAccessDescription": "当前身份没有查看这些数据的权限。"
+			},
+			"confirm": {
+				"target": "操作对象",
+				"impactScope": "影响范围",
+				"consequence": "后果说明",
+				"details": "补充信息"
+			}
+		},
 		"stats": {
 			"agents": "Agent",
-			"agentsHelper": "可对话、可编排的业务助手",
+			"agentsHelper": "可对话、可编排的业务 Agent",
 			"credentials": "模型凭证",
 			"credentialsHelper": "已接入的模型服务账号",
 			"knowledgeBases": "知识库",
@@ -195,7 +226,7 @@
 			"emptyRiskActions": "暂未读取到高风险工具。",
 			"openApprovals": "去审批",
 			"openWorkflows": "运行工作流",
-			"openTools": "试跑工具",
+			"openTools": "运行工具",
 			"openAudit": "看审计",
 			"runAgent": "运行 Agent",
 			"workflowHealth": "工作流健康",
@@ -228,17 +259,17 @@
 			"todoAgentReadiness": "补齐 Agent 就绪项",
 			"todoApproval": "处理 {{count}} 条待审批",
 			"todoErrors": "检查接口异常",
-			"todoReady": "模型、Agent、审批和审计链路已经具备，可以继续接真实业务系统。",
+			"todoReady": "模型、Agent、审批和审计链路已就绪，可以继续接入生产业务系统。",
 			"policyReviewWorkflow": "policy_review 工作流",
 			"approvalGate": "审批门禁"
 		},
 		"operations": {
 			"eyebrow": "Agent 运营中心",
 			"title": "业务 Agent 队列",
-			"headlineEmpty": "还没有发布中的业务 Agent。先发布一个默认知识助手，再逐步接入部门工具、审批和工作流。",
+			"headlineEmpty": "还没有发布中的业务 Agent。先从业务模板发布一个 Agent，再逐步接入部门工具、审批和工作流。",
 			"headlineNeedsWork": "有 {{count}} 个 Agent 还缺配置。先补齐模型、知识库或工具，补完后就能进入真实运行。",
 			"headlineApprovals": "Agent 已经可运行，但还有 {{count}} 条高风险动作等待人工审批。",
-			"headlineReady": "所有发布中的 Agent 都已就绪，可以继续试跑业务问题或接入真实企业系统。",
+			"headlineReady": "所有发布中的 Agent 都已就绪，可以继续验证业务问题或接入真实企业系统。",
 			"manageAgents": "管理 Agent",
 			"runReadyAgent": "运行就绪 Agent",
 			"publishAgent": "发布 Agent",
@@ -254,13 +285,13 @@
 			"configure": "补配置",
 			"emptyAgents": "还没有发布中的 Agent。",
 			"emptyApprovals": "当前没有待处理审批。",
-			"readyIssue": "模型、知识库、工具和运行能力已经满足，可以直接试跑业务问题。",
+			"readyIssue": "模型、知识库、工具和运行能力已经满足，可以直接验证业务问题。",
 			"missingIssue": "缺少必要配置，请进入 Agent 管理补齐模型、知识库或工具。",
 			"archivedIssue": "这个 Agent 已归档，不会出现在运行入口。"
 		},
 		"console": {
 			"title": "平台操作台",
-			"description": "企业知识助手只是第一个 Agent。这里负责把模型、知识库、工具、工作流和审计组合成可运行的业务 Agent。",
+			"description": "AgentFoundry 控制台负责把模型/运行时、知识、工具、工作流和审计组合成可治理、可运行的企业 Agent 平台。",
 			"agents": "管 Agent",
 			"agentsDescription": "发布 HR、客服、运维、数据分析等业务 Agent。",
 			"agentsAction": "去管理 Agent",
@@ -374,7 +405,7 @@
 			},
 			"firstAgentGuide": {
 				"title": "首个企业 Agent 启动向导",
-				"description": "按真实状态推进首个可演示闭环：模型、发布、运行、治理。主按钮会跳到当前最该做的一步。",
+				"description": "按真实状态推进首个上线前验证闭环：模型、发布、运行、治理。主按钮会跳到当前最该做的一步。",
 				"steps": {
 					"model": {
 						"title": "准备模型",
@@ -398,8 +429,8 @@
 					},
 					"governance": {
 						"title": "治理闭环",
-						"ready": "已有 {{count}} 条审计记录，可用于演示治理追踪。",
-						"pending": "{{count}} 条审批等待处理，适合演示权限拦截。",
+						"ready": "已有 {{count}} 条审计记录，可用于治理追踪。",
+						"pending": "{{count}} 条审批等待处理，适合验证权限拦截。",
 						"empty": "运行后查看审批、审计和权限记录。",
 						"action": "看治理"
 					}
@@ -421,7 +452,7 @@
 					},
 					"agent": {
 						"title": "发 Agent",
-						"description": "从业务模板发布企业助手，并绑定模型、知识库、工具和权限。",
+						"description": "从业务模板发布企业 Agent 实例，并绑定模型、知识库、工具和权限。",
 						"action": "去发布"
 					},
 					"run": {
@@ -436,7 +467,7 @@
 					},
 					"config": {
 						"title": "导入导出",
-						"description": "把成员、Agent、工作流和策略导出，方便演示迁移和团队复现。",
+						"description": "把成员、Agent、工作流和策略导出，方便配置迁移和团队复现。",
 						"action": "去配置管理"
 					}
 				}
@@ -462,7 +493,7 @@
 				"run": {
 					"title": "跑一次真实业务问题",
 					"descriptionReady": "当前将使用 {{agent}}，验证模型、知识库、工具和审计链路。",
-					"descriptionEmpty": "还没有可运行 Agent，先发布一个默认业务助手。",
+					"descriptionEmpty": "还没有可运行 Agent，先发布一个业务 Agent。",
 					"action": "进入运行",
 					"publishAction": "去发布"
 				},
@@ -509,7 +540,7 @@
 			},
 			"agent": {
 				"title": "4. 发布业务 Agent",
-				"description": "从模板生成可运行的企业助手，绑定模型、知识库、工具、长期记忆和访问范围。",
+				"description": "从模板生成可运行的企业 Agent 实例，绑定模型、知识库、工具、长期记忆和访问范围。",
 				"action": "去发布 Agent"
 			},
 			"run": {
@@ -534,7 +565,7 @@
 			"step": "步骤 {{index}}",
 			"template": {
 				"title": "选择业务模板",
-				"description": "先决定这个 Agent 服务哪个业务场景，例如知识助手、工单处理或数据分析。",
+				"description": "先决定这个 Agent 服务哪个业务场景，例如知识检索、工单处理或数据分析。",
 				"empty": "还没有选择模板",
 				"action": "选模板"
 			},
@@ -581,7 +612,7 @@
 		},
 		"monitoring": {
 			"eyebrow": "运行监控",
-			"title": "看 Agent 是否真的跑起来了",
+			"title": "运行监控",
 			"description": "把 Agent 对话、自动化工作流、审批和审计放到同一个运行台。发布之后先看这里，确认模型、工具、权限和治理链路是否闭环。",
 			"refresh": "刷新运行态",
 			"runAgent": "运行 Agent",
@@ -606,7 +637,33 @@
 			"emptyAudit": "还没有审计记录。",
 			"auditEvent": "审计事件",
 			"success": "成功",
-			"failure": "失败"
+			"failure": "失败",
+			"runCenter": "运行中心",
+			"runCenterDescription": "统一查看 Agent 运行、工作流执行、审批门禁和治理审计，确认平台链路是否稳定。",
+			"runQueue": "运行队列",
+			"runQueueDescription": "按类型、状态和关键词筛选最近的 Agent 与工作流运行。",
+			"runDetail": "运行详情",
+			"runDetailDescription": "查看选中运行的对象、状态、时间和下一步治理动作。",
+			"noRunsTitle": "暂无运行记录",
+			"noRunsDescription": "还没有 Agent 或工作流运行记录。先运行一个 Agent 或工作流后再查看。",
+			"noRunDetail": "未选择运行记录",
+			"type": "类型",
+			"agent": "Agent",
+			"time": "时间",
+			"stepsStatus": "步骤状态",
+			"viewResponse": "查看回复",
+			"continueWorkflow": "继续工作流",
+			"governanceAudit": "治理审计",
+			"auditSearch": "审计检索",
+			"auditSearchDescription": "按租户、用户、工具和结果追踪平台操作记录。",
+			"filterType": "类型",
+			"filterStatus": "状态",
+			"filterKeyword": "关键词",
+			"allTypes": "全部类型",
+			"allStatuses": "全部状态",
+			"keywordPlaceholder": "搜索 Agent、工作流、输入或输出",
+			"agentRunType": "Agent 运行",
+			"workflowRunType": "工作流运行"
 		},
 		"tenantGovernance": {
 			"title": "租户与权限",
@@ -665,7 +722,7 @@
 			"runSample": "运行示例",
 			"viewAudit": "查看审计",
 			"workspace": "部门资源",
-			"localSource": "本地模拟数据",
+			"localSource": "本地连接器数据",
 			"tenant": "租户",
 			"identities": "身份",
 			"agents": "Agent",
@@ -703,11 +760,38 @@
 			"latestAnswer": "最近回答",
 			"noQuestion": "暂无问题",
 			"noAnswer": "暂无回答",
-			"noSources": "暂无来源",
-			"moreSources": "+{{count}} 个来源",
-			"openRun": "打开运行",
-			"viewAudit": "查看审计"
-		},
+				"noSources": "暂无来源",
+				"moreSources": "+{{count}} 个来源",
+				"openRun": "打开运行",
+				"viewAudit": "查看审计",
+				"scopeTitle": "记忆作用域",
+				"scopeDescription": "按租户、用户和 Agent 检查长期记忆的命中、写入与来源覆盖。",
+				"searchPlaceholder": "搜索 Agent、租户、用户或来源",
+				"emptyTitle": "暂无记忆运营数据",
+				"emptyFilteredDescription": "清空筛选或放宽条件后再查看记忆作用域。",
+				"selectedScopeTitle": "选中作用域",
+				"selectedScopeDescription": "查看最近问答、命中写入和来源证据。",
+				"selectScopeTitle": "未选择记忆作用域",
+				"selectScopeDescription": "选择一个记忆作用域查看证据。",
+				"memorySources": "记忆来源",
+				"sourceCoverageTitle": "来源覆盖",
+				"sourceCoverageDescription": "用于判断长期记忆是否集中依赖少数来源。",
+				"noSourcesDescription": "当前记忆作用域还没有来源证据。",
+				"sourceCount": "{{count}} 个来源",
+				"scopeCount": "{{count}} 个作用域",
+				"hitStatus": "已命中",
+				"pendingHitStatus": "待命中",
+				"statLoadedRunsHelper": "运行历史已接入长期记忆统计",
+				"statMemoryHitsHelper": "回答中检索到的历史上下文",
+				"statMemoryWritesHelper": "运行后沉淀到记忆层的记录",
+				"statActiveScopesHelper": "{{count}} 个来源参与记忆证据",
+				"filters": {
+					"all": "全部",
+					"hits": "有命中",
+					"writes": "有写入",
+					"cold": "待激活"
+				}
+			},
 		"accessControl": {
 			"eyebrow": "角色与权限",
 			"title": "企业权限中心",
@@ -760,9 +844,9 @@
 			"enabled": "已启用",
 			"runs": "运行次数",
 			"approvals": "待审流程",
-			"fallbackDescription": "当前流程来自默认配置，可进入试跑区调整输入并执行。",
+			"fallbackDescription": "当前流程来自默认配置，可进入运行区调整输入并执行。",
 			"stepPreview": "步骤预览",
-			"noSteps": "暂无步骤定义。进入工作流试跑区查看或启用模板。",
+			"noSteps": "暂无步骤定义。进入工作流运行区查看或启用模板。",
 			"editInputs": "调整输入",
 			"viewAudit": "查看审计",
 			"latestRun": "最近运行",
@@ -788,7 +872,7 @@
 			"summaryActive": "当前有 {{count}} 个启用的触发任务，会按配置驱动 Agent 自动执行。",
 			"unknownAgent": "未指定 Agent",
 			"triggerPlan": "触发方案",
-			"manualTrigger": "手动运行当前流程，用于试跑和异常补跑。",
+			"manualTrigger": "手动运行当前流程，用于手动验证和异常补跑。",
 			"approvalGate": "高风险流程可进入人工审批，再写入审计记录。",
 			"configureWorkflow": "配置流程",
 			"viewGovernance": "查看治理",
@@ -801,7 +885,7 @@
 		},
 		"connectors": {
 			"title": "数据源接入中心",
-			"description": "查看企业工具当前读取的是本地模拟数据还是真实业务接口，并检查接入配置。",
+			"description": "查看企业工具当前使用的连接器数据源和业务接口，并检查接入配置。",
 			"current": "当前连接器",
 			"runtime": "运行时接入",
 			"runtimeDescription": "当前租户运行工具、Agent 和工作流时实际使用的接入配置。",
@@ -816,7 +900,7 @@
 			"environment": "环境变量",
 			"httpPaths": "HTTP 路径模板",
 			"tenantPreview": "租户数据预览",
-			"identities": "演示身份",
+			"identities": "平台身份",
 			"configured": "已配置",
 			"missing": "未配置",
 			"required": "必填",
@@ -928,8 +1012,8 @@
 		},
 		"agents": {
 			"title": "已发布 Agent",
-			"description": "这里展示当前用户可用的 Agent，企业知识助手会优先显示。",
-			"empty": "还没有 Agent。先创建或启动企业知识助手后，这里会显示平台可用能力。",
+			"description": "展示当前用户可运行或可治理的企业 Agent 实例。",
+			"empty": "还没有 Agent 实例。先从业务模板发布实例，再绑定模型、工具、知识和治理策略。",
 			"noPrompt": "未配置系统提示词。",
 			"editable": "可编辑",
 			"invitable": "可被协作调用"
@@ -969,6 +1053,46 @@
 				"ready": "可运行",
 				"partial": "需补齐",
 				"blocked": "阻塞"
+			},
+			"lifecycle": {
+				"title": "Agent 生命周期工作台",
+				"description": "先选择已发布 Agent，再处理运行、工作流、编辑和治理动作。",
+				"onlineAgents": "{{count}} 个在线 Agent",
+				"inventory": "Agent 清单",
+				"emptyTitle": "暂无可运行 Agent",
+				"emptyDescription": "还没有发布可运行的 Agent。先从下方模板配置并发布一个实例。",
+				"selectTitle": "选择一个 Agent",
+				"selectDescription": "左侧清单会显示企业内已发布的 Agent。选择后可以查看能力、工具、知识库、访问范围和治理动作。",
+				"toolsCount": "{{count}} 工具",
+				"knowledgeCount": "{{count}} 知识",
+				"workflowMode": "工作流",
+				"directMode": "直连",
+				"toolBindings": "工具绑定",
+				"accessScope": "访问范围",
+				"toolsAndPermissions": "工具与权限",
+				"knowledgeAndCapabilities": "知识与能力",
+				"noTools": "未绑定工具",
+				"noKnowledgeOrCapabilities": "未绑定知识库或能力标签",
+				"memoryState": "记忆 {{state}}",
+				"workflowState": "工作流 {{state}}",
+				"governance": "治理",
+				"readiness": {
+					"ready": "就绪",
+					"partial": "待完善",
+					"blocked": "阻塞",
+					"todo": "待配置"
+				}
+			},
+			"opsCenter": {
+				"title": "Agent 运营中心",
+				"description": "先完成实例、模型、知识库、工具和权限检查，再进入运行调试与审计闭环。",
+				"openRunner": "进入运行调试"
+			},
+			"configurationCollapsedHint": "展开模板、上线流水线和发布检查",
+			"collapse": "收起",
+			"runnerSection": {
+				"title": "运行调试",
+				"description": "选择已发布 Agent 发起企业请求，并查看路由、工具调用、知识来源和审计结果。"
 			},
 			"readinessModel": "模型",
 			"readinessKnowledge": "知识库 {{count}}",
@@ -1112,7 +1236,7 @@
 		},
 		"runtime": {
 			"title": "平台运行状态",
-			"description": "从企业示例后端读取当前用户、租户、连接器、审计和存储路径。",
+			"description": "从平台 API读取当前用户、租户、连接器、审计和存储路径。",
 			"platform": "平台版本",
 			"userTenant": "用户 / 租户",
 			"connector": "业务连接器",
@@ -1122,7 +1246,7 @@
 			"enabled": "已启用",
 			"disabled": "已关闭",
 			"unavailable": "不可用",
-			"error": "暂时无法读取平台运行状态，请确认企业示例后端正在运行。"
+			"error": "暂时无法读取平台运行状态，请确认平台 API正在运行。"
 		},
 		"policy": {
 			"title": "工具权限策略",
@@ -1130,7 +1254,7 @@
 			"mode": "策略模式",
 			"allowed": "允许",
 			"denied": "拒绝",
-			"empty": "暂无工具权限结果。启动企业示例后端后这里会显示每个工具是否允许调用。",
+			"empty": "暂无工具权限结果。启动平台 API后这里会显示每个工具是否允许调用。",
 			"error": "暂时无法读取工具权限策略。"
 		},
 		"subagents": {
@@ -1221,7 +1345,7 @@
 			"error": "Agent 运行失败。"
 		},
 		"toolRunner": {
-			"title": "企业工具试跑",
+			"title": "企业工具运行",
 			"description": "直接调用企业工具，验证权限、连接器和审计链路是否可用。",
 			"selectTool": "选择工具",
 			"input": "输入参数",
@@ -1242,7 +1366,7 @@
 			"notConfiguredForAgent": "当前选择的 Agent 没有启用这个工具"
 		},
 		"workflowRunner": {
-			"title": "自动化工作流试跑",
+			"title": "工作流运行",
 			"description": "选择一个企业业务流程，由 Agent 按步骤调用工具，并把每一步写入审计。",
 			"selectWorkflow": "选择工作流",
 			"dailyOpsBrief": "每日运营简报",
@@ -1297,7 +1421,7 @@
 			"title": "审批中心",
 			"description": "把高风险工具、工作流和 Agent 动作先登记为审批请求，再由负责人批准或拒绝。",
 			"createTitle": "创建审批请求",
-			"createDescription": "模拟企业平台里的人工审批入口，后续可接到真实工具和工作流执行前。",
+			"createDescription": "为高风险工具、工作流和 Agent 动作创建人工审批请求，批准后再进入执行链路。",
 			"requestType": "请求类型",
 			"toolRun": "工具调用",
 			"workflowRun": "工作流运行",
@@ -1374,7 +1498,17 @@
 			"lastCalled": "最近调用",
 			"neverCalled": "暂无调用",
 			"loadError": "暂时无法读取工具中心数据。",
-			"empty": "暂无企业工具。"
+			"empty": "暂无企业工具。",
+			"resultCount": "当前 {{count}} 个工具",
+			"clearFilters": "清空筛选",
+			"filterKeyword": "关键词",
+			"filterStatus": "权限状态",
+			"searchPlaceholder": "搜索工具名称、说明或参数键",
+			"allStatuses": "全部状态",
+			"emptyTitle": "暂无企业工具",
+			"emptyDescription": "接入工具 provider 或配置工具策略后，这里会展示可治理的企业工具。",
+			"emptyFilteredTitle": "没有匹配的工具",
+			"emptyFilteredDescription": "清空筛选或调整关键词后再查看工具中心。"
 		},
 		"audit": {
 			"title": "最近工具审计",
@@ -1405,12 +1539,13 @@
 			"duration": "耗时",
 			"inputs": "输入",
 			"result": "结果",
-			"empty": "暂无工具调用记录。和企业知识助手对话并触发工具后，这里会出现审计记录。",
+			"eventErrorFallback": "调用失败，详情已写入审计记录。",
+			"empty": "暂无工具调用记录。运行 Agent 并触发工具后，这里会出现审计记录。",
 			"error": "暂时无法读取工具审计记录。"
 		},
 		"configManagement": {
 			"title": "配置管理",
-			"description": "导出和导入平台级可迁移配置，用于演示环境迁移、备份和团队复现。",
+			"description": "导出和导入平台级可迁移配置，用于环境迁移、备份和团队复现。",
 			"refresh": "刷新配置",
 			"copyExport": "复制导出 JSON",
 			"exportJson": "导出 JSON / 导入 JSON",
@@ -1434,15 +1569,47 @@
 			"lastExported": "导出时间",
 			"schemaVersion": "Schema"
 		},
+		"settings": {
+			"title": "平台设置",
+			"description": "查看运行时连接状态，导出或导入平台配置，后续模型、租户策略和运行参数都收敛到这里。",
+			"runtimeItems": "运行项",
+			"policyItems": "策略",
+			"governanceTitle": "平台运行与配置治理",
+			"governanceDescription": "集中核对运行连接、导出平台治理数据，并完成配置迁移操作。",
+			"needsReview": "待检查",
+			"runtimeConnectionTitle": "运行连接",
+			"runtimeConnectionDescription": "用于确认前端连接到哪一个平台服务，以及当前账号是否已经完成基础配置。",
+			"configScopeTitle": "配置范围",
+			"configScopeDescription": "导出的配置覆盖平台治理对象，不包含明文密钥。",
+			"dataObjects": "数据对象",
+			"runtimeStatusTitle": "运行时状态",
+			"runtimeStatusDescription": "快速核对模型、工具、RAG、工作流等依赖是否已经接入。",
+			"runtimeCoverage": "运行覆盖",
+			"connectionHealth": "连接健康",
+			"stats": {
+				"membersHelper": "组织成员与租户身份",
+				"agentsHelper": "已纳入平台治理的 Agent",
+				"workflowsHelper": "可复用自动化模板",
+				"connectorsHelper": "外部系统连接配置"
+			},
+			"migration": {
+				"title": "迁移检查",
+				"description": "导入前先确认对象数量、模式和密钥处理，避免覆盖生产配置。",
+				"notice": "配置迁移只处理平台治理数据；外部系统凭证仍由连接器或运行环境单独管理。",
+				"secretHandling": "敏感信息处理",
+				"redactedSecrets": "密钥脱敏",
+				"configObjects": "配置对象"
+			}
+		},
 		"status": {
 			"ready": "可用",
-			"demoReady": "演示可用",
+			"platformReady": "平台可用",
 			"toConfigure": "待配置",
 			"next": "下一阶段"
 		},
 		"capabilities": {
 			"title": "平台落地总控",
-			"description": "从这里检查企业 Agent 平台的关键能力是否已经接上，并直接进入下一步配置或演示。",
+			"description": "从这里检查企业 Agent 平台的关键能力是否已经接上，并直接进入下一步配置或验证。",
 			"model": {
 				"title": "模型管理",
 				"description": "集中管理模型凭证、默认模型和多模型切换。",
@@ -1933,9 +2100,9 @@
 		"username": "用户名",
 		"usernamePlaceholder": "请输入用户名",
 		"submit": "开始使用",
-		"demoTitle": "企业平台演示",
-		"demoDescription": "使用本地企业知识助手后端和演示用户进入平台。",
-		"useDemo": "进入企业平台演示",
+		"localTitle": "AgentFoundry 控制台",
+		"localDescription": "使用本地平台 API 和测试用户进入控制台。",
+		"useLocalDefaults": "进入 AgentFoundry 控制台",
 		"hint": "此应用仅提供前端服务，所有数据均来自填写的服务器地址，用户名仅用于服务端鉴权。"
 	},
 	"tour": {

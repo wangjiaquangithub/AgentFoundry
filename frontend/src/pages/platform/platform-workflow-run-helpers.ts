@@ -2,6 +2,7 @@ import type {
 	EnterpriseWorkflowRunHistoryItem,
 	EnterpriseWorkflowRunsResponse,
 } from '@/api';
+import { normalizePlatformErrorMessage } from './platform-error-state';
 
 export type WorkflowRunLoadActionHandlers = {
 	setLoading: (loading: boolean) => void;
@@ -27,7 +28,7 @@ export async function runWorkflowRunLoadAction(
 		handlers.setWorkflowRuns(response.runs);
 	} catch (error) {
 		handlers.setError(
-			error instanceof Error ? error.message : values.loadErrorMessage,
+			normalizePlatformErrorMessage(error, values.loadErrorMessage),
 		);
 	} finally {
 		handlers.setLoading(false);

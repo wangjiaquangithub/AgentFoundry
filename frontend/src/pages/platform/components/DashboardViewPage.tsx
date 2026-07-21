@@ -2,18 +2,13 @@ import {
 	BotMessageSquare,
 	CheckCircle2,
 	Clock3,
-	Database,
-	GitBranch,
 	KeyRound,
 	ListChecks,
 	Play,
 	PlugZap,
 	ShieldCheck,
-	SlidersHorizontal,
-	Users,
-	Wrench,
 } from 'lucide-react';
-import type { ComponentType, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {
@@ -71,55 +66,6 @@ interface DashboardViewPageProps {
 
 type NextStepMode = 'model' | 'publish' | 'configure' | 'governance' | 'run';
 
-interface ModuleShortcut {
-	title: string;
-	description: string;
-	href: string;
-	icon: ComponentType<{ className?: string }>;
-	state: HealthState;
-	stateLabel: string;
-	metric: ReactNode;
-}
-
-function DashboardModuleCard({
-	title,
-	description,
-	href,
-	icon: Icon,
-	state,
-	stateLabel,
-	metric,
-}: ModuleShortcut) {
-	const navigate = useNavigate();
-
-	return (
-		<button
-			type="button"
-			className="group grid min-h-28 w-full gap-3 rounded-lg border bg-background px-4 py-3 text-left transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-			onClick={() => navigate(href)}
-		>
-			<div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
-				<span className="grid size-9 place-items-center rounded-md border bg-background">
-					<Icon className="size-4 text-muted-foreground" />
-				</span>
-				<div className="min-w-0">
-					<div className="flex flex-wrap items-center gap-2">
-						<h3 className="truncate text-sm font-semibold">{title}</h3>
-						<StateBadge state={state} label={stateLabel} />
-					</div>
-					<p className="mt-2 line-clamp-2 text-sm leading-5 text-muted-foreground">
-						{description}
-					</p>
-				</div>
-				<div className="flex flex-col items-end gap-2">
-					<div className="text-xl font-semibold tabular-nums">{metric}</div>
-					<Play className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-				</div>
-			</div>
-		</button>
-	);
-}
-
 function ActivityList({
 	title,
 	items,
@@ -136,22 +82,22 @@ function ActivityList({
 	getKey?: (item: unknown, index: number) => string | number;
 }) {
 	return (
-		<Card size="sm" className="rounded-lg shadow-none">
-			<CardHeader className="grid-cols-[1fr_auto] items-center gap-3">
-				<CardTitle className="text-base">{title}</CardTitle>
+		<Card size="sm" className="rounded-md shadow-none">
+			<CardHeader className="grid-cols-[1fr_auto] items-center gap-3 border-b">
+				<CardTitle className="text-sm">{title}</CardTitle>
 				{action}
 			</CardHeader>
-			<CardContent>
+			<CardContent className="p-0">
 				{items.length > 0 ? (
-					<div className="divide-y rounded-md border bg-background">
+					<div className="divide-y">
 						{items.slice(0, 4).map((item, index) => (
-							<div key={getKey?.(item, index) ?? index} className="p-3">
+							<div key={getKey?.(item, index) ?? index} className="px-4 py-3">
 								{renderItem(item, index)}
 							</div>
 						))}
 					</div>
 				) : (
-					<div className="rounded-md border border-dashed bg-background/80 p-4 text-sm text-muted-foreground">
+					<div className="p-4 text-sm text-muted-foreground">
 						{emptyText}
 					</div>
 				)}
@@ -160,10 +106,33 @@ function ActivityList({
 	);
 }
 
+function HealthRow({
+	label,
+	description,
+	state,
+	stateLabel,
+	action,
+}: {
+	label: string;
+	description: string;
+	state: HealthState;
+	stateLabel: string;
+	action?: ReactNode;
+}) {
+	return (
+		<div className="grid gap-3 border-b px-4 py-3 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
+			<div className="min-w-0">
+				<div className="text-sm font-medium">{label}</div>
+				<p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
+			</div>
+			<StateBadge state={state} label={stateLabel} />
+			{action ? <div className="flex justify-start sm:justify-end">{action}</div> : null}
+		</div>
+	);
+}
+
 export function DashboardViewPage({
 	activeMemberCount,
-	activePlatformAgents,
-	approvedApprovalCount,
 	completedWorkflowRunCount,
 	connectors,
 	connectorsLoading,
@@ -200,7 +169,6 @@ export function DashboardViewPage({
 					: nextStepMode === 'governance'
 						? ShieldCheck
 						: Play;
-	const workflowIssueCount = failedWorkflowRunCount + pendingApprovals.length;
 	const platformReady = !hasErrors && !governanceError;
 	const topOpsTasks = Array.isArray(opsTasks) ? opsTasks.slice(0, 4) : [];
 	const connectorConfigCount = connectors?.saved_configs.length ?? 0;
@@ -211,87 +179,6 @@ export function DashboardViewPage({
 			: connectors
 				? 'partial'
 				: 'todo';
-	const moduleShortcuts: ModuleShortcut[] = [
-		{
-			title: 'Agent 管理',
-			description:
-				'发布、配置和运行企业助手，查看模型、知识库、工具和准入状态。',
-			href: '/platform/agents',
-			icon: BotMessageSquare,
-			state: readyPlatformAgents.length > 0 ? 'ready' : 'todo',
-			stateLabel: readyPlatformAgents.length > 0 ? '可运行' : '待发布',
-			metric: activePlatformAgents.length,
-		},
-		{
-			title: '工具与策略',
-			description: '维护企业工具目录，按租户和身份控制工具权限，执行工具调试。',
-			href: '/platform/tools',
-			icon: Wrench,
-			state: platformReady ? 'ready' : 'partial',
-			stateLabel: platformReady ? '策略正常' : '需检查',
-			metric: pendingApprovals.length,
-		},
-		{
-			title: '连接器',
-			description: '配置企业系统连接、租户映射、运行时来源和连接测试。',
-			href: '/platform/connectors',
-			icon: PlugZap,
-			state: connectorState,
-			stateLabel: connectorsLoading
-				? '加载中'
-				: connectors?.runtime.saved_config_enabled
-					? '已启用'
-					: connectors
-						? '待配置'
-						: '未加载',
-			metric: connectorConfigCount,
-		},
-		{
-			title: '工作流编排',
-			description: '管理自动化模板、触发运行、审批续跑和近期执行结果。',
-			href: '/platform/workflows',
-			icon: GitBranch,
-			state: workflowIssueCount > 0 ? 'partial' : 'ready',
-			stateLabel: workflowIssueCount > 0 ? '有待处理' : '运行稳定',
-			metric: workflowRunCount,
-		},
-		{
-			title: '审批治理',
-			description: '集中处理高风险动作、租户访问、审计事件和治理健康度。',
-			href: '/platform/approvals',
-			icon: ShieldCheck,
-			state: pendingApprovals.length > 0 ? 'partial' : 'ready',
-			stateLabel: pendingApprovals.length > 0 ? '待审批' : '无阻塞',
-			metric: approvedApprovalCount,
-		},
-		{
-			title: '租户与成员',
-			description: '管理多租户空间、成员身份、角色授权和访问边界。',
-			href: '/platform/tenants',
-			icon: Users,
-			state: activeMemberCount > 0 ? 'ready' : 'todo',
-			stateLabel: activeMemberCount > 0 ? '已配置' : '待配置',
-			metric: activeMemberCount,
-		},
-		{
-			title: '知识库与记忆',
-			description: '查看长期记忆、知识命中、记忆写入和助手上下文能力。',
-			href: '/platform/memory',
-			icon: Database,
-			state: credentials.length > 0 ? 'ready' : 'todo',
-			stateLabel: credentials.length > 0 ? '可用' : '需模型',
-			metric: credentials.length,
-		},
-		{
-			title: '系统设置',
-			description: '维护模型、运行时、导入导出、环境变量和平台级配置。',
-			href: '/platform/settings',
-			icon: SlidersHorizontal,
-			state: platformReady ? 'ready' : 'partial',
-			stateLabel: platformReady ? '已连接' : '需检查',
-			metric: credentials.length,
-		},
-	];
 
 	return (
 		<PlatformPageShell className="gap-5">
@@ -442,29 +329,154 @@ export function DashboardViewPage({
 			<section className="grid gap-4 border-y py-5">
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
 					<div className="min-w-0">
-						<h2 className="text-base font-semibold">模块入口</h2>
+						<h2 className="text-base font-semibold">运营与治理队列</h2>
 						<p className="mt-1 text-sm leading-6 text-muted-foreground">
-							首页只保留总控入口和状态摘要，具体作业进入对应模块处理。
+							首页优先呈现需要处理的审批、失败运行和配置缺口，模块入口收敛到左侧导航。
 						</p>
 					</div>
 					<Button
 						type="button"
 						size="sm"
 						variant="outline"
-						onClick={() => navigate('/platform/agents')}
+						onClick={() => navigate('/platform/runs')}
 					>
-						进入 Agent 管理
+						查看运行监控
 						<Play className="size-4" />
 					</Button>
 				</div>
-				<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-					{moduleShortcuts.map((shortcut) => (
-						<DashboardModuleCard key={shortcut.href} {...shortcut} />
-					))}
+				<div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.8fr)]">
+					<div className="rounded-md border bg-background">
+						<HealthRow
+							label="待审批请求"
+							description={
+								pendingApprovals.length > 0
+									? '存在需要业务或治理负责人确认的高风险操作。'
+									: '当前没有阻塞执行链路的审批请求。'
+							}
+							state={pendingApprovals.length > 0 ? 'partial' : 'ready'}
+							stateLabel={
+								pendingApprovals.length > 0
+									? `${pendingApprovals.length} 个待处理`
+									: '无阻塞'
+							}
+							action={
+								<Button
+									type="button"
+									size="sm"
+									variant="outline"
+									onClick={() => navigate('/platform/approvals')}
+								>
+									审批队列
+								</Button>
+							}
+						/>
+						<HealthRow
+							label="失败运行"
+							description={
+								failedWorkflowRunCount > 0
+									? '有工作流运行失败，需要查看失败原因、日志或触发重试。'
+									: '最近工作流运行未发现失败记录。'
+							}
+							state={failedWorkflowRunCount > 0 ? 'blocked' : 'ready'}
+							stateLabel={
+								failedWorkflowRunCount > 0
+									? `${failedWorkflowRunCount} 个失败`
+									: '运行稳定'
+							}
+							action={
+								<Button
+									type="button"
+									size="sm"
+									variant="outline"
+									onClick={() => navigate('/platform/runs')}
+								>
+									运行监控
+								</Button>
+							}
+						/>
+						<HealthRow
+							label="Runtime provider"
+							description="运行时 provider 与平台业务状态分层展示，AgentScope 仅作为可替换 provider 之一。"
+							state={connectorState}
+							stateLabel={
+								connectorsLoading
+									? '加载中'
+									: connectors?.runtime.saved_config_enabled
+										? '已启用'
+										: '待配置'
+							}
+							action={
+								<Button
+									type="button"
+									size="sm"
+									variant="outline"
+									onClick={() => navigate('/platform/connectors')}
+								>
+									Provider 配置
+								</Button>
+							}
+						/>
+						<HealthRow
+							label="Agent 资产"
+							description={
+								readyPlatformAgents.length > 0
+									? '已有可运行 Agent，可继续维护版本、工具、知识和治理策略。'
+									: '尚未形成可运行 Agent 资产，需要先发布或完成配置。'
+							}
+							state={readyPlatformAgents.length > 0 ? 'ready' : 'todo'}
+							stateLabel={
+								readyPlatformAgents.length > 0
+									? `${readyPlatformAgents.length} 个可运行`
+									: '待发布'
+							}
+							action={
+								<Button
+									type="button"
+									size="sm"
+									variant="outline"
+									onClick={() => navigate('/platform/agents')}
+								>
+									Agent 清单
+								</Button>
+							}
+						/>
+					</div>
+					<div className="rounded-md border bg-background p-4">
+						<div className="flex items-center justify-between gap-3">
+							<div>
+								<h3 className="text-sm font-semibold">配置健康度</h3>
+								<p className="mt-1 text-xs leading-5 text-muted-foreground">
+									用于判断平台是否具备稳定运行、治理和扩展条件。
+								</p>
+							</div>
+							<StateBadge
+								state={platformReady ? 'ready' : 'partial'}
+								label={platformReady ? '可用' : '需检查'}
+							/>
+						</div>
+						<div className="mt-4 grid gap-3 text-sm">
+							<div className="flex items-center justify-between gap-3">
+								<span className="text-muted-foreground">模型与凭据</span>
+								<span className="font-medium tabular-nums">{credentials.length} 项</span>
+							</div>
+							<div className="flex items-center justify-between gap-3">
+								<span className="text-muted-foreground">Runtime provider 配置</span>
+								<span className="font-medium tabular-nums">{connectorConfigCount} 项</span>
+							</div>
+							<div className="flex items-center justify-between gap-3">
+								<span className="text-muted-foreground">成员与租户</span>
+								<span className="font-medium tabular-nums">{activeMemberCount} 个成员</span>
+							</div>
+							<div className="flex items-center justify-between gap-3">
+								<span className="text-muted-foreground">工作流运行</span>
+								<span className="font-medium tabular-nums">{workflowRunCount} 次</span>
+							</div>
+						</div>
+					</div>
 				</div>
 			</section>
 
-			<section className="grid gap-4 rounded-lg border bg-background p-4">
+			<section className="grid gap-4">
 				<div className="flex flex-col gap-1">
 					<h2 className="text-base font-semibold">近期动态</h2>
 					<p className="text-sm leading-6 text-muted-foreground">
@@ -559,9 +571,9 @@ export function DashboardViewPage({
 								type="button"
 								size="sm"
 								variant="outline"
-								onClick={() => navigate('/platform/approvals')}
+								onClick={() => navigate('/platform/tenants')}
 							>
-								查看治理
+								成员治理
 							</Button>
 						}
 						renderItem={(item) => (

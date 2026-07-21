@@ -7,6 +7,7 @@ import type {
 	EnterprisePlatformConnectorsResponse,
 } from '@/api';
 import type { ConnectorTestFormState } from './platform-defaults';
+import { normalizePlatformErrorMessage } from './platform-error-state';
 
 const defaultConnectorPolicyPath = '/tenants/{tenant}/policies/search';
 const defaultConnectorTicketPath = '/tenants/{tenant}/tickets/{ticket_id}';
@@ -256,9 +257,7 @@ export async function runConnectorLoadAction(
 		const response = await handlers.loadConnectors();
 		handlers.setConnectors(response);
 	} catch (error) {
-		handlers.setError(
-			error instanceof Error ? error.message : loadErrorMessage,
-		);
+		handlers.setError(normalizePlatformErrorMessage(error, loadErrorMessage));
 	} finally {
 		handlers.setLoading(false);
 	}
@@ -441,7 +440,7 @@ export function createPlatformConnectorHandlers(
 				refreshDependentViews: actions.refreshDependentViews,
 				handleError: (error) =>
 					actions.setConnectorSaveError(
-						error instanceof Error ? error.message : values.text.saveError,
+						normalizePlatformErrorMessage(error, values.text.saveError),
 					),
 			},
 		);
@@ -462,7 +461,7 @@ export function createPlatformConnectorHandlers(
 				setConnectorTestResult: actions.setConnectorTestResult,
 				handleError: (error) =>
 					actions.setConnectorTestError(
-						error instanceof Error ? error.message : values.text.testError,
+						normalizePlatformErrorMessage(error, values.text.testError),
 					),
 			},
 		);

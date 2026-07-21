@@ -1,6 +1,7 @@
 import type { EnterpriseIdentity, EnterprisePlatformGovernanceResponse } from '@/api';
 import type { MemoryOperationsItem } from './components/MemoryOperationsPanel';
 import type { ApprovalFiltersState, AuditFiltersState } from './platform-defaults';
+import { normalizePlatformErrorMessage } from './platform-error-state';
 import {
 	runInspectAgentRunEvidenceAuditAction,
 	runInspectIdentityApprovalsAction,
@@ -31,9 +32,7 @@ export async function runGovernanceLoadAction(
 		const response = await handlers.loadGovernance();
 		handlers.setGovernance(response);
 	} catch (error) {
-		handlers.setError(
-			error instanceof Error ? error.message : loadErrorMessage,
-		);
+		handlers.setError(normalizePlatformErrorMessage(error, loadErrorMessage));
 	} finally {
 		handlers.setLoading(false);
 	}

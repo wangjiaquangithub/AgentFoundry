@@ -48,10 +48,10 @@ export interface PlatformPageShellProps {
 
 export function PlatformPageShell({ children, className }: PlatformPageShellProps) {
 	return (
-		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-muted/20">
+		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-muted/25">
 			<div
 				className={cn(
-					'mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-5 sm:px-5 lg:px-8',
+					'mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8',
 					className,
 				)}
 			>
@@ -111,10 +111,10 @@ export function PlatformPageHeader({
 	aside,
 }: PlatformPageHeaderProps) {
 	return (
-		<section className="flex flex-col gap-4 border-b bg-background/60 pb-5 lg:flex-row lg:items-start lg:justify-between">
+		<section className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
 			<div className="min-w-0">
 				<div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
-					<span className="grid size-7 place-items-center rounded-md border bg-background">
+					<span className="grid size-7 place-items-center rounded-md border bg-background text-foreground">
 						<Icon className="size-4" />
 					</span>
 					<span className="min-w-0 truncate">{eyebrow}</span>

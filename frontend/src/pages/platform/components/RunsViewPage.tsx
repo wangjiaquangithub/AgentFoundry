@@ -2,7 +2,6 @@ import {
 	Activity,
 	BotMessageSquare,
 	CheckCircle2,
-	Clock3,
 	FileSearch,
 	RefreshCcw,
 	ShieldCheck,
@@ -10,11 +9,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 
-import {
-	formatTimestamp,
-	workflowStatusClassName,
-	workflowStatusLabelKey,
-} from '../platform-utils';
+import { formatTimestamp } from '../platform-utils';
 import { AuditEventsPanel } from './AuditEventsPanel';
 import {
 	PlatformPageHeader,
@@ -26,6 +21,13 @@ import type {
 	MonitoringAgentTurn,
 	MonitoringStat,
 } from './MonitoringSnapshotPanel';
+import {
+	normalizePlatformStatus,
+	type PlatformOperationalStatus,
+} from './platform-status';
+import { PlatformEmptyState } from './PlatformEmptyState';
+import { PlatformFilterBar } from './PlatformFilterBar';
+import { PlatformStatusBadge } from './PlatformStatusBadge';
 import type {
 	EnterpriseAuditEvent,
 	EnterprisePublishedAgent,
@@ -34,6 +36,14 @@ import type {
 } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -84,6 +94,19 @@ type SelectedRun =
 	| { type: 'agent'; id: string }
 	| { type: 'workflow'; id: string };
 
+type RunTypeFilter = 'all' | 'agent' | 'workflow';
+type RunStatusFilter = 'all' | PlatformOperationalStatus;
+
+const runStatuses: PlatformOperationalStatus[] = [
+	'pending',
+	'approved',
+	'rejected',
+	'running',
+	'success',
+	'failed',
+	'cancelled',
+];
+
 export function RunsViewPage({
 	monitoringHealthState,
 	monitoringLoading,
@@ -111,6 +134,11 @@ export function RunsViewPage({
 	summarizeAuditObject,
 	t,
 }: RunsViewPageProps) {
+	const [selectedRun, setSelectedRun] = useState<SelectedRun | null>(null);
+	const [runTypeFilter, setRunTypeFilter] = useState<RunTypeFilter>('all');
+	const [runStatusFilter, setRunStatusFilter] =
+		useState<RunStatusFilter>('all');
+	const [runKeywordFilter, setRunKeywordFilter] = useState('');
 	const runItems = useMemo(
 		() => [
 			...recentAgentTurns.map((turn) => ({
@@ -119,8 +147,7 @@ export function RunsViewPage({
 				title: turn.question,
 				description: turn.answer,
 				timestamp: turn.createdAt,
-				statusLabel: 'Agent',
-				statusClassName: 'border-sky-500/30 bg-sky-500/10 text-sky-700',
+				status: 'success' as PlatformOperationalStatus,
 				agentId: turn.agentId,
 				raw: turn,
 			})),
@@ -130,10 +157,7 @@ export function RunsViewPage({
 				title: run.workflow_name,
 				description: run.summary || formatTimestamp(run.finished_at || run.started_at),
 				timestamp: run.finished_at || run.started_at,
-				statusLabel: t(
-					`platform.workflowRunner.${workflowStatusLabelKey(run.status)}`,
-				),
-				statusClassName: workflowStatusClassName(run.status),
+				status: normalizePlatformStatus(run.status),
 				agentId: run.agent_id,
 				raw: run,
 			})),
@@ -141,14 +165,33 @@ export function RunsViewPage({
 			(a, b) =>
 				new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
 		),
-		[recentAgentTurns, recentWorkflowRuns, t],
+		[recentAgentTurns, recentWorkflowRuns],
 	);
-	const [selectedRun, setSelectedRun] = useState<SelectedRun | null>(null);
+	const filteredRunItems = useMemo(() => {
+		const keyword = runKeywordFilter.trim().toLowerCase();
+
+		return runItems.filter((item) => {
+			const matchesType = runTypeFilter === 'all' || item.type === runTypeFilter;
+			const matchesStatus =
+				runStatusFilter === 'all' || item.status === runStatusFilter;
+			const matchesKeyword =
+				keyword.length === 0 ||
+				[item.title, item.description, item.agentId, item.id]
+					.filter(Boolean)
+					.some((value) => String(value).toLowerCase().includes(keyword));
+
+			return matchesType && matchesStatus && matchesKeyword;
+		});
+	}, [runItems, runKeywordFilter, runStatusFilter, runTypeFilter]);
+	const hasRunFilters =
+		runTypeFilter !== 'all' ||
+		runStatusFilter !== 'all' ||
+		runKeywordFilter.trim().length > 0;
 	const activeRun =
-		runItems.find(
+		filteredRunItems.find(
 			(item) =>
 				item.type === selectedRun?.type && item.id === selectedRun?.id,
-		) ?? runItems[0];
+		) ?? filteredRunItems[0];
 	const activeAgentTurn =
 		activeRun?.type === 'agent'
 			? (activeRun.raw as MonitoringAgentTurn)
@@ -226,10 +269,12 @@ export function RunsViewPage({
 								<div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-background">
 									<Activity className="size-4 text-muted-foreground" />
 								</div>
-								<h2 className="text-base font-semibold">运行中心</h2>
+								<h2 className="text-base font-semibold">
+									{t('platform.monitoring.runCenter')}
+								</h2>
 							</div>
 							<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-								统一查看 Agent 对话、工作流执行和审计记录，支持从同一入口启动调试与治理检查。
+								{t('platform.monitoring.runCenterDescription')}
 							</p>
 						</div>
 
@@ -272,29 +317,116 @@ export function RunsViewPage({
 						<div className="grid min-h-[30rem] content-start gap-3 rounded-lg border bg-background/80 p-4 shadow-none">
 							<div className="flex items-start justify-between gap-3">
 								<div className="min-w-0">
-									<h2 className="text-sm font-semibold">运行队列</h2>
+									<h2 className="text-sm font-semibold">
+										{t('platform.monitoring.runQueue')}
+									</h2>
 									<p className="mt-1 text-xs leading-5 text-muted-foreground">
-										Agent 对话和工作流执行按时间合并展示，点击后在右侧查看细节。
+										{t('platform.monitoring.runQueueDescription')}
 									</p>
 								</div>
 								<Badge variant="secondary" className="shrink-0">
-									{runItems.length}
+									{filteredRunItems.length}
 								</Badge>
 							</div>
 
-							{runItems.length === 0 ? (
-								<div className="grid min-h-72 place-items-center rounded-md border border-dashed bg-background/80 p-6 text-center">
-									<div className="max-w-72">
-										<Clock3 className="mx-auto size-7 text-muted-foreground" />
-										<p className="mt-3 text-sm font-medium">暂无运行记录</p>
-										<p className="mt-1 text-xs leading-5 text-muted-foreground">
-											启动 Agent 或工作流后，最近执行会出现在这里。
-										</p>
-									</div>
+							<PlatformFilterBar
+								resultLabel={t('platform.ux.filters.results', {
+									count: filteredRunItems.length,
+								})}
+								clearLabel={t('platform.ux.filters.clear')}
+								clearDisabled={!hasRunFilters}
+								onClear={() => {
+									setRunTypeFilter('all');
+									setRunStatusFilter('all');
+									setRunKeywordFilter('');
+								}}
+							>
+								<div className="grid gap-1.5 xl:col-span-2">
+									<label className="text-xs font-medium text-muted-foreground">
+										{t('platform.monitoring.filterType')}
+									</label>
+									<Select
+										value={runTypeFilter}
+										onValueChange={(value) =>
+											setRunTypeFilter(value as RunTypeFilter)
+										}
+									>
+										<SelectTrigger className="w-full">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="all">
+												{t('platform.monitoring.allTypes')}
+											</SelectItem>
+											<SelectItem value="agent">
+												{t('platform.monitoring.agentRunType')}
+											</SelectItem>
+											<SelectItem value="workflow">
+												{t('platform.monitoring.workflowRunType')}
+											</SelectItem>
+										</SelectContent>
+									</Select>
 								</div>
+								<div className="grid gap-1.5 xl:col-span-2">
+									<label className="text-xs font-medium text-muted-foreground">
+										{t('platform.monitoring.filterStatus')}
+									</label>
+									<Select
+										value={runStatusFilter}
+										onValueChange={(value) =>
+											setRunStatusFilter(value as RunStatusFilter)
+										}
+									>
+										<SelectTrigger className="w-full">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="all">
+												{t('platform.monitoring.allStatuses')}
+											</SelectItem>
+											{runStatuses.map((status) => (
+												<SelectItem key={status} value={status}>
+													{t(`platform.statuses.${status}`)}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+								<div className="grid gap-1.5 xl:col-span-2">
+									<label className="text-xs font-medium text-muted-foreground">
+										{t('platform.monitoring.filterKeyword')}
+									</label>
+									<Input
+										value={runKeywordFilter}
+										onChange={(event) => setRunKeywordFilter(event.target.value)}
+										placeholder={t('platform.monitoring.keywordPlaceholder')}
+									/>
+								</div>
+							</PlatformFilterBar>
+
+							{runItems.length === 0 ? (
+								<PlatformEmptyState
+									variant="noData"
+									title={t('platform.monitoring.noRunsTitle')}
+									description={t('platform.monitoring.noRunsDescription')}
+									className="min-h-72 rounded-md border border-dashed bg-background/80 p-6"
+								/>
+							) : filteredRunItems.length === 0 ? (
+								<PlatformEmptyState
+									variant="filtered"
+									title={t('platform.ux.empty.filteredTitle')}
+									description={t('platform.ux.empty.filteredDescription')}
+									actionLabel={t('platform.ux.filters.clear')}
+									onAction={() => {
+										setRunTypeFilter('all');
+										setRunStatusFilter('all');
+										setRunKeywordFilter('');
+									}}
+									className="min-h-72 rounded-md border border-dashed bg-background/80 p-6"
+								/>
 							) : (
 								<div className="grid max-h-[28rem] gap-2 overflow-y-auto pr-1">
-									{runItems.map((item) => {
+									{filteredRunItems.map((item) => {
 										const ItemIcon =
 											item.type === 'agent' ? BotMessageSquare : Workflow;
 										const isActive =
@@ -371,18 +503,19 @@ export function RunsViewPage({
 							<section className="grid min-h-[20rem] content-start gap-4 rounded-lg border bg-background/80 p-4 shadow-none">
 								<div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
 									<div className="min-w-0">
-										<h2 className="text-sm font-semibold">运行详情</h2>
+										<h2 className="text-sm font-semibold">
+											{t('platform.monitoring.runDetail')}
+										</h2>
 										<p className="mt-1 text-xs leading-5 text-muted-foreground">
-											查看当前执行对象、状态、所属租户和后续操作。
+											{t('platform.monitoring.runDetailDescription')}
 										</p>
 									</div>
 									{activeRun ? (
-										<Badge
-											variant="outline"
-											className={cn('shrink-0', activeRun.statusClassName)}
-										>
-											{activeRun.statusLabel}
-										</Badge>
+										<PlatformStatusBadge
+											status={activeRun.status}
+											t={t}
+											className="shrink-0"
+										/>
 									) : null}
 								</div>
 
@@ -410,19 +543,27 @@ export function RunsViewPage({
 
 										<div className="grid gap-3 md:grid-cols-3">
 											<div className="rounded-md border p-3">
-												<div className="text-xs text-muted-foreground">类型</div>
+												<div className="text-xs text-muted-foreground">
+													{t('platform.monitoring.type')}
+												</div>
 												<div className="mt-1 text-sm font-medium">
-													{activeRun.type === 'agent' ? 'Agent Run' : 'Workflow Run'}
+													{activeRun.type === 'agent'
+														? t('platform.monitoring.agentRunType')
+														: t('platform.monitoring.workflowRunType')}
 												</div>
 											</div>
 											<div className="rounded-md border p-3">
-												<div className="text-xs text-muted-foreground">Agent</div>
+												<div className="text-xs text-muted-foreground">
+													{t('platform.monitoring.agent')}
+												</div>
 												<div className="mt-1 truncate text-sm font-medium">
 													{activeRun.agentId || '-'}
 												</div>
 											</div>
 											<div className="rounded-md border p-3">
-												<div className="text-xs text-muted-foreground">时间</div>
+												<div className="text-xs text-muted-foreground">
+													{t('platform.monitoring.time')}
+												</div>
 												<div className="mt-1 text-sm font-medium">
 													{formatTimestamp(activeRun.timestamp)}
 												</div>
@@ -433,7 +574,7 @@ export function RunsViewPage({
 											<div className="rounded-md border p-3">
 												<div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
 													<CheckCircle2 className="size-4" />
-													步骤状态
+													{t('platform.monitoring.stepsStatus')}
 												</div>
 												<div className="flex flex-wrap gap-2">
 													{Object.entries(activeWorkflowRun.status_counts || {}).map(
@@ -455,12 +596,12 @@ export function RunsViewPage({
 													onClick={() => onSelectAgentTurn(activeAgentTurn)}
 												>
 													<BotMessageSquare className="size-4" />
-													查看回复
+													{t('platform.monitoring.viewResponse')}
 												</Button>
 											) : (
 												<Button type="button" size="sm" onClick={onRunWorkflow}>
 													<Workflow className="size-4" />
-													继续工作流
+													{t('platform.monitoring.continueWorkflow')}
 												</Button>
 											)}
 											<Button
@@ -470,14 +611,21 @@ export function RunsViewPage({
 												onClick={onOpenGovernance}
 											>
 												<ShieldCheck className="size-4" />
-												治理审计
+												{t('platform.monitoring.governanceAudit')}
 											</Button>
 										</div>
 									</>
 								) : (
-									<div className="grid min-h-64 place-items-center rounded-md border border-dashed bg-background/80 p-6 text-center text-sm text-muted-foreground">
-										暂无可查看的运行详情。
-									</div>
+									<PlatformEmptyState
+										variant={hasRunFilters ? 'filtered' : 'noData'}
+										title={t('platform.monitoring.noRunDetail')}
+										description={
+											hasRunFilters
+												? t('platform.ux.empty.filteredDescription')
+												: t('platform.monitoring.noRunsDescription')
+										}
+										className="min-h-64 rounded-md border border-dashed bg-background/80 p-6"
+									/>
 								)}
 							</section>
 
@@ -544,9 +692,11 @@ export function RunsViewPage({
 							<FileSearch className="size-4 text-muted-foreground" />
 						</div>
 						<div>
-							<h2 className="text-sm font-semibold">审计检索</h2>
+							<h2 className="text-sm font-semibold">
+								{t('platform.monitoring.auditSearch')}
+							</h2>
 							<p className="text-xs text-muted-foreground">
-								按租户、用户、Agent 和工具调用结果过滤平台审计事件。
+								{t('platform.monitoring.auditSearchDescription')}
 							</p>
 						</div>
 					</div>

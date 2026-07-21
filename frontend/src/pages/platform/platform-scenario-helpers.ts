@@ -2,6 +2,7 @@ import type {
 	EnterprisePlatformScenario,
 	EnterprisePlatformScenariosResponse,
 } from '@/api';
+import { normalizePlatformErrorMessage } from './platform-error-state';
 
 export type ScenarioLoadActionHandlers = {
 	setLoading: (loading: boolean) => void;
@@ -23,9 +24,7 @@ export async function runScenarioLoadAction(
 		const response = await handlers.loadScenarios();
 		handlers.setScenarios(response.scenarios);
 	} catch (error) {
-		handlers.setError(
-			error instanceof Error ? error.message : loadErrorMessage,
-		);
+		handlers.setError(normalizePlatformErrorMessage(error, loadErrorMessage));
 	} finally {
 		handlers.setLoading(false);
 	}

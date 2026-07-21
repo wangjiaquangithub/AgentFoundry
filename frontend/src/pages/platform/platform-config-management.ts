@@ -3,6 +3,7 @@ import type {
 	EnterprisePlatformConfigImportRequest,
 	EnterprisePlatformConfigImportResponse,
 } from '@/api';
+import { normalizePlatformErrorMessage } from './platform-error-state';
 
 export type PlatformConfigManagementRequestText = {
 	loadError: string;
@@ -104,7 +105,7 @@ export function platformConfigLoadErrorMessage(
 	error: unknown,
 	text: PlatformConfigManagementRequestText,
 ): string {
-	return error instanceof Error ? error.message : text.loadError;
+	return normalizePlatformErrorMessage(error, text.loadError);
 }
 
 export function platformConfigImportErrorMessage(
@@ -115,7 +116,7 @@ export function platformConfigImportErrorMessage(
 		return text.parseError;
 	}
 
-	return error instanceof Error ? error.message : text.importError;
+	return normalizePlatformErrorMessage(error, text.importError);
 }
 
 export async function runPlatformConfigLoadAction(

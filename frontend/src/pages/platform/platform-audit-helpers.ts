@@ -1,5 +1,6 @@
 import type { EnterpriseAuditEvent, EnterpriseAuditQueryResponse } from '@/api';
 import type { AuditFiltersState } from './platform-defaults';
+import { normalizePlatformErrorMessage } from './platform-error-state';
 import { auditQueryFromFilters } from './platform-filter-builders';
 
 export type AuditEventLoadActionHandlers = {
@@ -59,7 +60,7 @@ export async function runAuditEventLoadAction(
 		handlers.setAuditSummary(response.summary);
 	} catch (error) {
 		handlers.setError(
-			error instanceof Error ? error.message : values.loadErrorMessage,
+			normalizePlatformErrorMessage(error, values.loadErrorMessage),
 		);
 	} finally {
 		handlers.setLoading(false);

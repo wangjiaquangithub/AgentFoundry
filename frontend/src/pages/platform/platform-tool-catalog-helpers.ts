@@ -1,4 +1,5 @@
 import type { EnterpriseToolCatalogResponse } from '@/api';
+import { normalizePlatformErrorMessage } from './platform-error-state';
 
 export type ToolCatalogLoadActionParams = {
 	agentId: string | null;
@@ -33,7 +34,7 @@ export async function runToolCatalogLoadAction(
 		handlers.setToolCatalog(response);
 	} catch (error) {
 		handlers.setError(
-			error instanceof Error ? error.message : values.loadErrorMessage,
+			normalizePlatformErrorMessage(error, values.loadErrorMessage),
 		);
 	} finally {
 		handlers.setLoading(false);

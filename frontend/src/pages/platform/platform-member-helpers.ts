@@ -4,6 +4,7 @@ import type {
 	EnterprisePlatformMemberUpsertRequest,
 } from '@/api';
 import type { MemberFormState } from './platform-defaults';
+import { normalizePlatformErrorMessage } from './platform-error-state';
 
 export type MemberStatusToggleAction =
 	| {
@@ -134,9 +135,7 @@ export async function runMemberLoadAction(
 		const response = await handlers.loadMembers();
 		handlers.setMembers(response);
 	} catch (error) {
-		handlers.setError(
-			error instanceof Error ? error.message : loadErrorMessage,
-		);
+		handlers.setError(normalizePlatformErrorMessage(error, loadErrorMessage));
 	} finally {
 		handlers.setLoading(false);
 	}
@@ -233,7 +232,7 @@ export function createPlatformMemberHandlers(
 			refreshDependentViews: actions.refreshDependentViews,
 			handleError: (error) =>
 				actions.setError(
-					error instanceof Error ? error.message : values.text.saveError,
+					normalizePlatformErrorMessage(error, values.text.saveError),
 				),
 		});
 	}
@@ -253,7 +252,7 @@ export function createPlatformMemberHandlers(
 			refreshDependentViews: actions.refreshDependentViews,
 			handleError: (error) =>
 				actions.setError(
-					error instanceof Error ? error.message : values.text.saveError,
+					normalizePlatformErrorMessage(error, values.text.saveError),
 				),
 		});
 	}

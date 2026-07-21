@@ -2,13 +2,14 @@ import { CheckCircle2, ListChecks, RefreshCcw, XCircle } from 'lucide-react';
 import type { Dispatch, SetStateAction } from 'react';
 
 import { formatTimestamp } from '../platform-utils';
-import { PlatformNotice } from './common';
+import { PlatformEmptyState } from './PlatformEmptyState';
+import { PlatformFilterBar } from './PlatformFilterBar';
+import { PlatformStatusBadge } from './PlatformStatusBadge';
 import type {
 	EnterpriseAuditEvent,
 	EnterprisePublishedAgent,
 	EnterpriseToolCatalogItem,
 } from '@/api';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -75,6 +76,25 @@ export function AuditEventsPanel({
 	summarizeAuditObject,
 	t,
 }: AuditEventsPanelProps) {
+	const hasActiveAuditFilters = Boolean(
+		auditFilters.tenant ||
+			auditFilters.user_id ||
+			auditFilters.agent_id ||
+			auditFilters.tool_name ||
+			auditFilters.success,
+	);
+	const clearAuditFilters = () => {
+		onAuditFiltersChange((current) => ({
+			...current,
+			tenant: '',
+			user_id: '',
+			agent_id: '',
+			tool_name: '',
+			success: '',
+			limit: current.limit || '50',
+		}));
+	};
+
 	return (
 		<section className="flex flex-col gap-4 rounded-lg border bg-background p-4 shadow-none">
 			<div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -96,7 +116,14 @@ export function AuditEventsPanel({
 				</Button>
 			</div>
 
-			<div className="grid gap-3 border-y bg-background/80 py-3 md:grid-cols-2 xl:grid-cols-[repeat(6,minmax(0,1fr))_auto]">
+			<PlatformFilterBar
+				resultLabel={t('platform.ux.filters.results', {
+					count: auditEvents.length,
+				})}
+				clearLabel={t('platform.ux.filters.clear')}
+				onClear={clearAuditFilters}
+				clearDisabled={!hasActiveAuditFilters || auditLoading}
+			>
 				<div className="grid gap-2">
 					<label className="text-xs font-medium text-muted-foreground">
 						{t('platform.audit.filterTenant')}
@@ -228,14 +255,14 @@ export function AuditEventsPanel({
 				<Button
 					type="button"
 					size="sm"
-					className="self-end"
+					className="self-end xl:col-start-6"
 					onClick={() => void onRefetchAuditEvents()}
 					disabled={auditLoading}
 				>
 					<ListChecks />
 					{t('platform.audit.applyFilters')}
 				</Button>
-			</div>
+			</PlatformFilterBar>
 
 			{auditLoading ? (
 				<div className="grid gap-3 lg:grid-cols-2">
@@ -243,11 +270,37 @@ export function AuditEventsPanel({
 					<Skeleton className="h-28 w-full" />
 				</div>
 			) : auditError ? (
-				<PlatformNotice>{auditError}</PlatformNotice>
+				<PlatformEmptyState
+					variant="error"
+					title={t('platform.ux.empty.errorTitle')}
+					description={auditError || t('platform.ux.empty.errorDescription')}
+					actionLabel={t('error.retry')}
+					onAction={() => void onRefetchAuditEvents()}
+				/>
 			) : auditEvents.length === 0 ? (
-				<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-					{t('platform.audit.empty')}
-				</div>
+				<PlatformEmptyState
+					variant={hasActiveAuditFilters ? 'filtered' : 'noData'}
+					title={t(
+						hasActiveAuditFilters
+							? 'platform.ux.empty.filteredTitle'
+							: 'platform.ux.empty.noDataTitle',
+					)}
+					description={t(
+						hasActiveAuditFilters
+							? 'platform.ux.empty.filteredDescription'
+							: 'platform.ux.empty.noDataDescription',
+					)}
+					actionLabel={
+						hasActiveAuditFilters
+							? t('platform.ux.filters.clear')
+							: t('platform.audit.refresh')
+					}
+					onAction={
+						hasActiveAuditFilters
+							? clearAuditFilters
+							: () => void onRefetchAuditEvents()
+					}
+				/>
 			) : (
 				<>
 					<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -270,6 +323,11 @@ export function AuditEventsPanel({
 									: event.success === false
 										? t('platform.audit.failure')
 										: t('platform.audit.unknown');
+							const status = event.success === true
+								? 'success'
+								: event.success === false
+									? 'failed'
+									: 'pending';
 
 							return (
 								<Card
@@ -301,17 +359,7 @@ export function AuditEventsPanel({
 												{formatTimestamp(event.timestamp)}
 											</p>
 										</div>
-										<Badge
-											variant={
-												event.success === false ? 'destructive' : 'outline'
-											}
-											className={cn(
-												event.success !== false &&
-													'border-emerald-500/30 bg-emerald-500/10 text-emerald-700',
-											)}
-										>
-											{statusLabel}
-										</Badge>
+										<PlatformStatusBadge status={status} label={statusLabel} />
 									</CardHeader>
 									<CardContent className="grid gap-2 text-xs">
 										<div className="grid grid-cols-[7rem_1fr] gap-2">
@@ -358,11 +406,12 @@ export function AuditEventsPanel({
 												</span>
 											</div>
 										) : null}
-										{event.error?.message ? (
+										{event.error ? (
 											<div className="grid grid-cols-[7rem_1fr] gap-2 text-destructive">
 												<span>{t('common.error')}</span>
 												<span className="min-w-0 break-words">
-													{event.error.message}
+													{event.error['message'] ||
+														t('platform.audit.eventErrorFallback')}
 												</span>
 											</div>
 										) : null}

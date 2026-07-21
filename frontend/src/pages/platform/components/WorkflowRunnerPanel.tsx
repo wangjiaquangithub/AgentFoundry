@@ -12,9 +12,10 @@ import { workflowInputLabelKeys } from '../platform-defaults';
 import {
 	formatTimestamp,
 	workflowInputLabel,
-	workflowStatusClassName,
-	workflowStatusLabelKey,
 } from '../platform-utils';
+import { PlatformConfirmAction } from './PlatformConfirmAction';
+import { PlatformEmptyState } from './PlatformEmptyState';
+import { PlatformStatusBadge } from './PlatformStatusBadge';
 import type {
 	EnterpriseWorkflowRunHistoryItem,
 	EnterpriseWorkflowRunResponse,
@@ -22,14 +23,6 @@ import type {
 } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
@@ -146,9 +139,12 @@ export function WorkflowRunnerPanel({
 							{workflowTemplatesError}
 						</div>
 					) : workflowTemplates.length === 0 ? (
-						<div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-							{t('platform.workflowRunner.noTemplates')}
-						</div>
+						<PlatformEmptyState
+							variant="noData"
+							title={t('platform.workflowRunner.noTemplates')}
+							description={t('platform.ux.empty.noDataDescription')}
+							className="rounded-lg border border-dashed p-3"
+						/>
 					) : (
 						workflowTemplates.map((template) => {
 							const isSelected =
@@ -175,18 +171,14 @@ export function WorkflowRunnerPanel({
 											<span className="min-w-0 text-sm font-medium">
 												{template.name}
 											</span>
-											<Badge
-												variant="outline"
-												className={cn(
+											<PlatformStatusBadge
+												status={template.enabled ? 'enabled' : 'disabled'}
+												label={
 													template.enabled
-														? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700'
-														: 'border-slate-500/30 bg-slate-500/10 text-slate-700',
-												)}
-											>
-												{template.enabled
-													? t('platform.workflowRunner.enabled')
-													: t('platform.workflowRunner.disabled')}
-											</Badge>
+														? t('platform.workflowRunner.enabled')
+														: t('platform.workflowRunner.disabled')
+												}
+											/>
 										</div>
 										<p className="line-clamp-2 text-xs leading-5 text-muted-foreground">
 											{template.description}
@@ -239,18 +231,14 @@ export function WorkflowRunnerPanel({
 							</p>
 						</div>
 						{selectedWorkflowTemplate ? (
-							<Badge
-								variant="outline"
-								className={cn(
+							<PlatformStatusBadge
+								status={selectedWorkflowTemplate.enabled ? 'enabled' : 'disabled'}
+								label={
 									selectedWorkflowTemplate.enabled
-										? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700'
-										: 'border-slate-500/30 bg-slate-500/10 text-slate-700',
-								)}
-							>
-								{selectedWorkflowTemplate.enabled
-									? t('platform.workflowRunner.enabled')
-									: t('platform.workflowRunner.disabled')}
-							</Badge>
+										? t('platform.workflowRunner.enabled')
+										: t('platform.workflowRunner.disabled')
+								}
+							/>
 						) : null}
 					</div>
 
@@ -510,16 +498,7 @@ export function WorkflowRunnerPanel({
 										className="rounded-lg border bg-background p-3 transition-colors hover:border-primary/30 hover:bg-primary/5"
 									>
 										<div className="flex flex-wrap items-center gap-2">
-											<Badge
-												variant={
-													run.status === 'failed' ? 'destructive' : 'outline'
-												}
-												className={cn(workflowStatusClassName(run.status))}
-											>
-												{t(
-													`platform.workflowRunner.${workflowStatusLabelKey(run.status)}`,
-												)}
-											</Badge>
+											<PlatformStatusBadge status={run.status} t={t} />
 											<span className="min-w-0 truncate text-sm font-medium">
 												{run.workflow_name}
 											</span>
@@ -553,87 +532,63 @@ export function WorkflowRunnerPanel({
 					)}
 				</section>
 			</aside>
-			<Dialog
+			<PlatformConfirmAction
 				open={Boolean(templatePendingDisable)}
 				onOpenChange={(open) => {
 					if (!open) {
 						setTemplatePendingDisable(null);
 					}
 				}}
-			>
-				<DialogContent className="max-h-[calc(100dvh-2rem)] overflow-auto sm:max-w-lg">
-					<DialogHeader>
-						<DialogTitle>
-							{t('platform.workflowRunner.confirmDisableTitle')}
-						</DialogTitle>
-						<DialogDescription>
-							{t('platform.workflowRunner.confirmDisableBody')}
-						</DialogDescription>
-					</DialogHeader>
-					{templatePendingDisable ? (
-						<div className="grid gap-3 rounded-lg border bg-background p-3 text-xs">
-							<div className="grid gap-1">
-								<span className="font-medium text-muted-foreground">
-									{t('platform.workflowRunner.templates')}
+				title={t('platform.workflowRunner.confirmDisableTitle')}
+				description={t('platform.workflowRunner.confirmDisableBody')}
+				actionLabel={t('platform.workflowRunner.confirmDisable')}
+				cancelLabel={t('common.cancel')}
+				targetLabel={t('platform.ux.confirm.target')}
+				targetValue={templatePendingDisable?.name ?? '-'}
+				impactScopeLabel={t('platform.ux.confirm.impactScope')}
+				impactScope={
+					templatePendingDisable
+						? t('platform.workflowRunner.disableImpactScope', {
+								steps: templatePendingDisable.steps.length,
+								tools: pendingDisableTools.length,
+							})
+						: '-'
+				}
+				consequenceLabel={t('platform.ux.confirm.consequence')}
+				consequence={t('platform.workflowRunner.confirmDisableBody')}
+				details={[
+					{
+						label: t('platform.workflowRunner.workflowType'),
+						value: (
+							<span className="break-all font-mono">
+								{templatePendingDisable?.workflow_type ?? '-'}
+							</span>
+						),
+					},
+					{
+						label: t('platform.ux.confirm.details'),
+						value:
+							pendingDisableTools.length > 0 ? (
+								<span className="flex flex-wrap gap-2">
+									{pendingDisableTools.map((toolName) => (
+										<Badge key={toolName} variant="outline">
+											{toolName}
+										</Badge>
+									))}
 								</span>
-								<span>{templatePendingDisable.name}</span>
-							</div>
-							<div className="grid gap-1">
-								<span className="font-medium text-muted-foreground">
-									{t('platform.workflowRunner.workflowType')}
-								</span>
-								<span className="break-all font-mono">
-									{templatePendingDisable.workflow_type}
-								</span>
-							</div>
-							<div className="grid gap-1">
-								<span className="font-medium text-muted-foreground">
-									{t('platform.workflowRunner.impactScope')}
-								</span>
-								<span>
-									{t('platform.workflowRunner.disableImpactScope', {
-										steps: templatePendingDisable.steps.length,
-										tools: pendingDisableTools.length,
-									})}
-								</span>
-							</div>
-							<div className="flex flex-wrap gap-2">
-								{pendingDisableTools.map((toolName) => (
-									<Badge key={toolName} variant="outline">
-										{toolName}
-									</Badge>
-								))}
-							</div>
-						</div>
-					) : null}
-					<DialogFooter className="sticky bottom-0">
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => setTemplatePendingDisable(null)}
-							disabled={
-								templatePendingDisable
-									? savingWorkflowType === templatePendingDisable.workflow_type
-									: false
-							}
-						>
-							{t('common.cancel')}
-						</Button>
-						<Button
-							type="button"
-							variant="destructive"
-							onClick={confirmDisableTemplate}
-							disabled={
-								templatePendingDisable
-									? savingWorkflowType === templatePendingDisable.workflow_type
-									: false
-							}
-						>
-							{t('platform.workflowRunner.confirmDisable')}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+							) : (
+								'-'
+							),
+					},
+				]}
+				variant="destructive"
+				loading={
+					templatePendingDisable
+						? savingWorkflowType === templatePendingDisable.workflow_type
+						: false
+				}
+				onConfirm={confirmDisableTemplate}
+			/>
 		</section>
 	);
 }

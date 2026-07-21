@@ -29,6 +29,7 @@ import {
 	StateBadge,
 	type HealthState,
 } from './common';
+import { PlatformEmptyState } from './PlatformEmptyState';
 import type {
 	EnterpriseAgentRunResponse,
 	EnterpriseAgentTemplate,
@@ -74,12 +75,14 @@ function readinessStateForAgent(agent: EnterprisePublishedAgent): HealthState {
 	return 'todo';
 }
 
-function readinessLabelForAgent(agent: EnterprisePublishedAgent) {
+function readinessLabelForAgent(agent: EnterprisePublishedAgent, t: Translate) {
 	const state = readinessStateForAgent(agent);
-	if (state === 'ready') return '就绪';
-	if (state === 'partial') return '待完善';
-	if (state === 'blocked') return '阻塞';
-	return '待配置';
+	if (state === 'ready') return t('platform.agentManagement.lifecycle.readiness.ready');
+	if (state === 'partial')
+		return t('platform.agentManagement.lifecycle.readiness.partial');
+	if (state === 'blocked')
+		return t('platform.agentManagement.lifecycle.readiness.blocked');
+	return t('platform.agentManagement.lifecycle.readiness.todo');
 }
 
 interface AgentsViewPageProps {
@@ -142,6 +145,7 @@ interface AgentsViewPageProps {
 }
 
 interface AgentLifecycleWorkspaceProps {
+	t: Translate;
 	agents: EnterprisePublishedAgent[];
 	selectedAgent: EnterprisePublishedAgent | null;
 	selectedAgentReadinessState: HealthState;
@@ -160,6 +164,7 @@ interface AgentLifecycleWorkspaceProps {
 }
 
 function AgentLifecycleWorkspace({
+	t,
 	agents,
 	selectedAgent,
 	selectedAgentReadinessState,
@@ -183,23 +188,34 @@ function AgentLifecycleWorkspace({
 		<section className="grid gap-4 border-y bg-background/70 py-4">
 			<div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
 				<div className="min-w-0">
-					<h2 className="text-base font-semibold">Agent 生命周期工作台</h2>
+					<h2 className="text-base font-semibold">
+						{t('platform.agentManagement.lifecycle.title')}
+					</h2>
 					<p className="mt-1 text-sm leading-6 text-muted-foreground">
-						先选择已发布 Agent，再处理运行、工作流、编辑和治理动作。
+						{t('platform.agentManagement.lifecycle.description')}
 					</p>
 				</div>
 				<Badge variant="outline" className="w-fit">
-					{agents.length} 个在线 Agent
+					{t('platform.agentManagement.lifecycle.onlineAgents', {
+						count: agents.length,
+					})}
 				</Badge>
 			</div>
 
 			<div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(18rem,0.42fr)_minmax(0,1fr)]">
 				<div className="grid gap-2">
-					<div className="text-xs font-medium text-muted-foreground">Agent 清单</div>
+					<div className="text-xs font-medium text-muted-foreground">
+						{t('platform.agentManagement.lifecycle.inventory')}
+					</div>
 					{agents.length === 0 ? (
-						<div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-							还没有发布可运行的 Agent。先从下方模板配置并发布一个实例。
-						</div>
+						<PlatformEmptyState
+							variant="noData"
+							title={t('platform.agentManagement.lifecycle.emptyTitle')}
+							description={t(
+								'platform.agentManagement.lifecycle.emptyDescription',
+							)}
+							className="rounded-lg border border-dashed p-6"
+						/>
 					) : (
 					<div className="grid max-h-[30rem] gap-2 overflow-y-auto pr-1">
 							{agents.map((agent) => {
@@ -229,18 +245,24 @@ function AgentLifecycleWorkspace({
 											</div>
 											<StateBadge
 												state={readinessState}
-												label={readinessLabelForAgent(agent)}
+												label={readinessLabelForAgent(agent, t)}
 											/>
 									</div>
 									<div className="grid grid-cols-3 gap-2 text-xs">
 										<span className="rounded-md border bg-background px-2 py-1 text-center tabular-nums">
-											{agent.tools.length} 工具
+											{t('platform.agentManagement.lifecycle.toolsCount', {
+												count: agent.tools.length,
+											})}
 										</span>
 										<span className="rounded-md border bg-background px-2 py-1 text-center tabular-nums">
-											{agent.knowledge_base_ids.length} 知识
+											{t('platform.agentManagement.lifecycle.knowledgeCount', {
+												count: agent.knowledge_base_ids.length,
+											})}
 										</span>
 										<span className="rounded-md border bg-background px-2 py-1 text-center">
-											{agent.workflow_enabled ? '工作流' : '直连'}
+											{agent.workflow_enabled
+												? t('platform.agentManagement.lifecycle.workflowMode')
+												: t('platform.agentManagement.lifecycle.directMode')}
 										</span>
 									</div>
 								</button>
@@ -271,7 +293,7 @@ function AgentLifecycleWorkspace({
 								<div className="flex flex-wrap gap-2">
 									<Button type="button" size="sm" onClick={onRunAgent}>
 										<Play />
-										运行
+										{t('platform.agentManagement.runAgent')}
 									</Button>
 									<Button
 										type="button"
@@ -280,7 +302,7 @@ function AgentLifecycleWorkspace({
 										onClick={() => onEditAgent(selectedAgent)}
 									>
 										<Pencil />
-										编辑
+										{t('platform.agentManagement.edit')}
 									</Button>
 									<Button
 										type="button"
@@ -290,7 +312,7 @@ function AgentLifecycleWorkspace({
 										disabled={!selectedAgent.workflow_enabled}
 									>
 										<Workflow />
-										工作流
+										{t('platform.agentManagement.workflow')}
 									</Button>
 									<Button
 										type="button"
@@ -299,32 +321,40 @@ function AgentLifecycleWorkspace({
 										onClick={onOpenGovernance}
 									>
 										<ShieldCheck />
-										治理
+										{t('platform.agentManagement.lifecycle.governance')}
 									</Button>
 								</div>
 							</div>
 
 							<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 								<div className="rounded-lg border bg-background p-3">
-									<div className="text-xs text-muted-foreground">模型凭证</div>
+									<div className="text-xs text-muted-foreground">
+										{t('platform.agentManagement.modelCredential')}
+									</div>
 									<div className="mt-1 truncate font-mono text-sm">
 										{selectedAgentModelLabel}
 									</div>
 								</div>
 								<div className="rounded-lg border bg-background p-3">
-									<div className="text-xs text-muted-foreground">工具绑定</div>
+									<div className="text-xs text-muted-foreground">
+										{t('platform.agentManagement.lifecycle.toolBindings')}
+									</div>
 									<div className="mt-1 text-sm font-semibold tabular-nums">
 										{selectedAgentToolCount}
 									</div>
 								</div>
 								<div className="rounded-lg border bg-background p-3">
-									<div className="text-xs text-muted-foreground">知识库</div>
+									<div className="text-xs text-muted-foreground">
+										{t('platform.agentManagement.knowledgeBases')}
+									</div>
 									<div className="mt-1 text-sm font-semibold tabular-nums">
 										{selectedAgentKnowledgeCount}
 									</div>
 								</div>
 								<div className="rounded-lg border bg-background p-3">
-									<div className="text-xs text-muted-foreground">访问范围</div>
+									<div className="text-xs text-muted-foreground">
+										{t('platform.agentManagement.lifecycle.accessScope')}
+									</div>
 									<div
 										className={cn(
 											'mt-1 truncate text-sm font-medium',
@@ -340,7 +370,7 @@ function AgentLifecycleWorkspace({
 								<div className="grid gap-2 rounded-lg border bg-background p-3">
 									<div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
 										<Wrench className="size-4" />
-										工具与权限
+										{t('platform.agentManagement.lifecycle.toolsAndPermissions')}
 									</div>
 									<div className="flex flex-wrap gap-2">
 										{selectedAgentTools.length > 0 ? (
@@ -356,7 +386,7 @@ function AgentLifecycleWorkspace({
 											))
 										) : (
 											<span className="text-xs text-muted-foreground">
-												未绑定工具
+												{t('platform.agentManagement.lifecycle.noTools')}
 											</span>
 										)}
 									</div>
@@ -364,7 +394,7 @@ function AgentLifecycleWorkspace({
 								<div className="grid gap-2 rounded-lg border bg-background p-3">
 									<div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
 										<Database className="size-4" />
-										知识与能力
+										{t('platform.agentManagement.lifecycle.knowledgeAndCapabilities')}
 									</div>
 									<div className="flex flex-wrap gap-2">
 										{selectedAgentKnowledgeLabels.map((knowledge) => (
@@ -390,7 +420,9 @@ function AgentLifecycleWorkspace({
 										{selectedAgentKnowledgeLabels.length === 0 &&
 										selectedAgentCapabilities.length === 0 ? (
 											<span className="text-xs text-muted-foreground">
-												未绑定知识库或能力标签
+												{t(
+													'platform.agentManagement.lifecycle.noKnowledgeOrCapabilities',
+												)}
 											</span>
 										) : null}
 									</div>
@@ -400,11 +432,19 @@ function AgentLifecycleWorkspace({
 							<div className="flex flex-wrap gap-2 border-t pt-3">
 								<Badge variant="outline">
 									<Brain className="mr-1 size-3.5" />
-									记忆 {selectedAgent.memory_enabled ? '已启用' : '未启用'}
+									{t('platform.agentManagement.lifecycle.memoryState', {
+										state: selectedAgent.memory_enabled
+											? t('platform.agentManagement.enabled')
+											: t('platform.agentManagement.disabled'),
+									})}
 								</Badge>
 								<Badge variant="outline">
 									<Workflow className="mr-1 size-3.5" />
-									工作流 {selectedAgent.workflow_enabled ? '已启用' : '未启用'}
+									{t('platform.agentManagement.lifecycle.workflowState', {
+										state: selectedAgent.workflow_enabled
+											? t('platform.agentManagement.enabled')
+											: t('platform.agentManagement.disabled'),
+									})}
 								</Badge>
 								<Badge variant="outline" className="font-mono">
 									{selectedAgent.id}
@@ -412,15 +452,14 @@ function AgentLifecycleWorkspace({
 							</div>
 						</>
 					) : (
-						<div className="grid place-items-center rounded-lg border border-dashed bg-background p-10 text-center">
-							<div>
-								<BotMessageSquare className="mx-auto size-8 text-muted-foreground" />
-								<div className="mt-3 text-sm font-medium">选择一个 Agent</div>
-								<p className="mt-1 max-w-md text-sm leading-6 text-muted-foreground">
-									左侧清单会显示企业内已发布的 Agent。选择后可以查看能力、工具、知识库、访问范围和治理动作。
-								</p>
-							</div>
-						</div>
+						<PlatformEmptyState
+							variant="noData"
+							title={t('platform.agentManagement.lifecycle.selectTitle')}
+							description={t(
+								'platform.agentManagement.lifecycle.selectDescription',
+							)}
+							className="rounded-lg border border-dashed bg-background p-10"
+						/>
 					)}
 				</div>
 			</div>
@@ -575,9 +614,11 @@ export function AgentsViewPage({
 			<div className="grid min-w-0 gap-4">
 				<section className="flex flex-col gap-3 border-b bg-background/70 pb-4 sm:flex-row sm:items-center sm:justify-between">
 					<div>
-						<h2 className="text-base font-semibold">Agent 运营中心</h2>
+						<h2 className="text-base font-semibold">
+							{t('platform.agentManagement.opsCenter.title')}
+						</h2>
 						<p className="mt-1 text-sm leading-6 text-muted-foreground">
-							先完成实例、模型、知识库、工具和权限检查，再进入运行调试与审计闭环。
+							{t('platform.agentManagement.opsCenter.description')}
 						</p>
 					</div>
 					<Button
@@ -587,12 +628,13 @@ export function AgentsViewPage({
 						disabled={!selectedRunAgent}
 					>
 						<Play />
-						进入运行调试
+						{t('platform.agentManagement.opsCenter.openRunner')}
 					</Button>
 				</section>
 
 				<section ref={agentManagementRef} className="grid gap-4">
 					<AgentLifecycleWorkspace
+						t={t}
 						agents={activePlatformAgents}
 						selectedAgent={selectedRunAgent}
 						selectedAgentReadinessState={selectedRunAgentReadinessState}
@@ -613,12 +655,12 @@ export function AgentsViewPage({
 
 				<details className="group rounded-lg border bg-background/80">
 					<summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
-						<span>发布配置</span>
+						<span>{t('platform.agentManagement.configuration')}</span>
 						<span className="text-xs text-muted-foreground group-open:hidden">
-							展开模板、上线流水线和发布检查
+							{t('platform.agentManagement.configurationCollapsedHint')}
 						</span>
 						<span className="hidden text-xs text-muted-foreground group-open:inline">
-							收起
+							{t('platform.agentManagement.collapse')}
 						</span>
 					</summary>
 					<div className="grid gap-4 border-t bg-background/80 p-4">
@@ -683,9 +725,11 @@ export function AgentsViewPage({
 
 				<section className="grid gap-3">
 					<div className="flex flex-col gap-1">
-						<h2 className="text-base font-semibold">运行调试</h2>
+						<h2 className="text-base font-semibold">
+							{t('platform.agentManagement.runnerSection.title')}
+						</h2>
 						<p className="text-sm leading-6 text-muted-foreground">
-							选择已发布 Agent 发起企业请求，并查看路由、工具调用、知识来源和审计结果。
+							{t('platform.agentManagement.runnerSection.description')}
 						</p>
 					</div>
 					<div className="grid items-start gap-4 xl:grid-cols-[minmax(0,0.92fr)_minmax(24rem,0.72fr)]">

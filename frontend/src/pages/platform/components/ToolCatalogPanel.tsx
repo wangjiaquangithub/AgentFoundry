@@ -3,7 +3,8 @@ import { useMemo, useState } from 'react';
 import type { RefObject } from 'react';
 
 import { formatTimestamp } from '../platform-utils';
-import { PlatformNotice } from './common';
+import { PlatformEmptyState } from './PlatformEmptyState';
+import { PlatformFilterBar } from './PlatformFilterBar';
 import type { EnterprisePublishedAgent, EnterpriseToolCatalogItem } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,7 @@ export function ToolCatalogPanel({
 	const [statusFilter, setStatusFilter] = useState<'all' | 'allowed' | 'denied'>(
 		'all',
 	);
+	const hasActiveFilters = query.trim().length > 0 || statusFilter !== 'all';
 
 	const filteredTools = useMemo(() => {
 		const normalizedQuery = query.trim().toLowerCase();
@@ -79,35 +81,55 @@ export function ToolCatalogPanel({
 					</Button>
 				</div>
 
-				<div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
-					<div className="relative">
-						<Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-						<Input
-							value={query}
-							onChange={(event) => setQuery(event.target.value)}
-							placeholder={t('platform.toolRunner.selectTool')}
-							className="pl-9"
-						/>
+				<PlatformFilterBar
+					resultLabel={t('platform.toolCatalog.resultCount', {
+						count: filteredTools.length,
+					})}
+					clearLabel={t('platform.toolCatalog.clearFilters')}
+					clearDisabled={!hasActiveFilters}
+					onClear={() => {
+						setQuery('');
+						setStatusFilter('all');
+					}}
+				>
+					<label className="grid gap-1.5 xl:col-span-3">
+						<span className="text-xs font-medium text-muted-foreground">
+							{t('platform.toolCatalog.filterKeyword')}
+						</span>
+						<div className="relative">
+							<Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+							<Input
+								value={query}
+								onChange={(event) => setQuery(event.target.value)}
+								placeholder={t('platform.toolCatalog.searchPlaceholder')}
+								className="pl-9"
+							/>
+						</div>
+					</label>
+					<div className="grid gap-1.5 xl:col-span-3">
+						<span className="text-xs font-medium text-muted-foreground">
+							{t('platform.toolCatalog.filterStatus')}
+						</span>
+						<div className="grid grid-cols-3 rounded-md border bg-background p-1">
+							{(['all', 'allowed', 'denied'] as const).map((filter) => (
+								<Button
+									key={filter}
+									type="button"
+									size="sm"
+									variant={statusFilter === filter ? 'secondary' : 'ghost'}
+									className="h-8 px-3 text-xs"
+									onClick={() => setStatusFilter(filter)}
+								>
+									{filter === 'all'
+										? t('platform.toolCatalog.allStatuses')
+										: filter === 'allowed'
+											? t('platform.policy.allowed')
+											: t('platform.policy.denied')}
+								</Button>
+							))}
+						</div>
 					</div>
-					<div className="grid grid-cols-3 rounded-md border bg-background p-1">
-						{(['all', 'allowed', 'denied'] as const).map((filter) => (
-							<Button
-								key={filter}
-								type="button"
-								size="sm"
-								variant={statusFilter === filter ? 'secondary' : 'ghost'}
-								className="h-8 px-3 text-xs"
-								onClick={() => setStatusFilter(filter)}
-							>
-								{filter === 'all'
-									? t('platform.toolCatalog.title')
-									: filter === 'allowed'
-										? t('platform.policy.allowed')
-										: t('platform.policy.denied')}
-							</Button>
-						))}
-					</div>
-				</div>
+				</PlatformFilterBar>
 			</div>
 
 			{toolCatalogLoading ? (
@@ -117,17 +139,33 @@ export function ToolCatalogPanel({
 					<Skeleton className="h-24 w-full" />
 				</div>
 			) : toolCatalogError ? (
-				<div className="p-4">
-					<PlatformNotice>{toolCatalogError}</PlatformNotice>
-				</div>
+				<PlatformEmptyState
+					variant="error"
+					className="m-4"
+					title={t('platform.toolCatalog.loadError')}
+					description={toolCatalogError}
+					actionLabel={t('platform.audit.refresh')}
+					onAction={() => void onRefetchToolCatalog()}
+				/>
 			) : availableToolItems.length === 0 ? (
-				<div className="m-4 rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-					{t('platform.toolCatalog.empty')}
-				</div>
+				<PlatformEmptyState
+					variant="noData"
+					className="m-4"
+					title={t('platform.toolCatalog.emptyTitle')}
+					description={t('platform.toolCatalog.emptyDescription')}
+				/>
 			) : filteredTools.length === 0 ? (
-				<div className="m-4 rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-					{t('platform.toolCatalog.empty')}
-				</div>
+				<PlatformEmptyState
+					variant="filtered"
+					className="m-4"
+					title={t('platform.toolCatalog.emptyFilteredTitle')}
+					description={t('platform.toolCatalog.emptyFilteredDescription')}
+					actionLabel={t('platform.toolCatalog.clearFilters')}
+					onAction={() => {
+						setQuery('');
+						setStatusFilter('all');
+					}}
+				/>
 			) : (
 				<div className="divide-y">
 					{filteredTools.map((tool) => {

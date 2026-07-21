@@ -22,6 +22,7 @@ import {
 	normalizeWorkflowInputs,
 	type EnterpriseAgentConversationTurn,
 } from './platform-utils';
+import { normalizePlatformErrorMessage } from './platform-error-state';
 
 export type { EnterpriseAgentConversationTurn };
 
@@ -559,7 +560,7 @@ export async function runAgentRunHistoryDetailLoadAction(
 		});
 	} catch (error) {
 		handlers.setRunsError(
-			error instanceof Error ? error.message : values.loadErrorMessage,
+			normalizePlatformErrorMessage(error, values.loadErrorMessage),
 		);
 		handlers.setResult(values.turn.response);
 	} finally {
@@ -704,7 +705,7 @@ export async function runAgentRunHistoryLoadAction(
 		);
 	} catch (error) {
 		handlers.setRunsError(
-			error instanceof Error ? error.message : values.loadErrorMessage,
+			normalizePlatformErrorMessage(error, values.loadErrorMessage),
 		);
 	} finally {
 		handlers.setRunsLoading(false);
@@ -928,7 +929,7 @@ export async function runEnterpriseAgentAction(
 		await handlers.refreshAgentRuns(target.agentId, target.userId);
 		await handlers.refreshDependentViews();
 	} catch (error) {
-		handlers.setError(error instanceof Error ? error.message : String(error));
+		handlers.setError(normalizePlatformErrorMessage(error));
 	} finally {
 		handlers.setRunning(false);
 	}
@@ -1021,7 +1022,7 @@ export async function runClearAgentConversationRequestAction(
 		runClearAgentConversationSuccessAction(target, handlers);
 	} catch (error) {
 		handlers.setRunsError(
-			error instanceof Error ? error.message : handlers.historyClearErrorMessage,
+			normalizePlatformErrorMessage(error, handlers.historyClearErrorMessage),
 		);
 	} finally {
 		handlers.setRunsLoading(false);
@@ -1167,7 +1168,7 @@ export async function runEnterpriseToolAction(
 			}
 			return;
 		}
-		handlers.setError(error instanceof Error ? error.message : String(error));
+		handlers.setError(normalizePlatformErrorMessage(error));
 	} finally {
 		handlers.setRunning(false);
 	}
@@ -1286,7 +1287,7 @@ export async function runEnterpriseWorkflowAction(
 			}
 			return;
 		}
-		handlers.setError(error instanceof Error ? error.message : String(error));
+		handlers.setError(normalizePlatformErrorMessage(error));
 	} finally {
 		handlers.setRunning(false);
 	}
