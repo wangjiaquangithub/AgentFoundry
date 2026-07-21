@@ -1,6 +1,7 @@
 """Formatting helpers for platform knowledge search responses."""
 
 import json
+import re
 from typing import Any, Callable, Protocol
 from uuid import uuid4
 
@@ -99,6 +100,247 @@ def _record_status(record: Any) -> str:
 
 def _is_ready_status(status: str) -> bool:
     return status in {"active", "ready", "indexed", "completed"}
+
+
+def _normalize_terms(value: str) -> list[str]:
+    return [
+        term
+        for term in re.findall(r"[\w\u4e00-\u9fff]+", value.lower())
+        if term
+    ]
+
+
+class PlatformKnowledgeRetrievalService:
+    """Retrieve tenant knowledge chunks from PostgreSQL-backed repositories."""
+
+    def __init__(
+        self,
+        *,
+        knowledge_base_repository: KnowledgeBaseReadRepository,
+        document_repository: DocumentReadRepository,
+        document_chunk_repository: DocumentChunkReadRepository,
+        document_limit: int = 100,
+        chunk_limit: int = 200,
+    ) -> None:
+        self._knowledge_base_repository = knowledge_base_repository
+        self._document_repository = document_repository
+        self._document_chunk_repository = document_chunk_repository
+        self._document_limit = document_limit
+        self._chunk_limit = chunk_limit
+
+    def retrieve(
+        self,
+        *,
+        tenant_id: str,
+        knowledge_base_ids: list[str],
+        query: str,
+        limit: int = 5,
+    ) -> dict[str, Any]:
+        normalized_query = query.strip()
+        bound_knowledge_base_ids = [
+            str(knowledge_base_id).strip()
+            for knowledge_base_id in knowledge_base_ids
+            if str(knowledge_base_id).strip()
+        ]
+        if not bound_knowledge_base_ids:
+            return self._empty_payload(
+                status="not_configured",
+                bound_knowledge_base_ids=[],
+                guidance="Bind at least one knowledge base to enable production retrieval.",
+            )
+        if not normalized_query:
+            return self._empty_payload(
+                status="blocked",
+                bound_knowledge_base_ids=bound_knowledge_base_ids,
+                guidance="query is required for production retrieval.",
+            )
+
+        query_terms = _normalize_terms(normalized_query)
+        if not query_terms:
+            return self._empty_payload(
+                status="blocked",
+                bound_knowledge_base_ids=bound_knowledge_base_ids,
+                guidance="query must contain searchable text.",
+            )
+
+        hits: list[dict[str, Any]] = []
+        blocked_knowledge_base_ids: list[str] = []
+        ready_knowledge_base_ids: list[str] = []
+        ready_document_count = 0
+        scanned_chunk_count = 0
+
+        for knowledge_base_id in bound_knowledge_base_ids:
+            knowledge_base = self._knowledge_base_repository.get_knowledge_base(
+                tenant_id=tenant_id,
+                knowledge_base_id=knowledge_base_id,
+            )
+            if knowledge_base is None or not _is_ready_status(_record_status(knowledge_base)):
+                blocked_knowledge_base_ids.append(knowledge_base_id)
+                continue
+
+            ready_knowledge_base_ids.append(knowledge_base_id)
+            documents = self._document_repository.list_documents(
+                tenant_id=tenant_id,
+                knowledge_base_id=knowledge_base_id,
+                limit=self._document_limit,
+            )
+            for document in documents:
+                if not _is_ready_status(_record_status(document)):
+                    continue
+                ready_document_count += 1
+                chunks = self._document_chunk_repository.list_document_chunks(
+                    tenant_id=tenant_id,
+                    document_id=_record_id(document),
+                    limit=self._chunk_limit,
+                )
+                scanned_chunk_count += len(chunks)
+                for chunk in chunks:
+                    score = self._score_chunk(
+                        query_terms=query_terms,
+                        document=document,
+                        chunk=chunk,
+                    )
+                    if score <= 0:
+                        continue
+                    hits.append(
+                        self._hit_payload(
+                            score=score,
+                            knowledge_base_id=knowledge_base_id,
+                            document=document,
+                            chunk=chunk,
+                        )
+                    )
+
+        hits.sort(
+            key=lambda item: (
+                -float(item["score"]),
+                str(item["knowledge_base_id"]),
+                str(item["document_id"]),
+                int(item["chunk_index"]),
+                str(item["chunk_id"]),
+            )
+        )
+        trimmed_hits = hits[: min(max(limit, 1), 20)]
+        status, guidance = self._classify_result(
+            ready_knowledge_base_ids=ready_knowledge_base_ids,
+            blocked_knowledge_base_ids=blocked_knowledge_base_ids,
+            ready_document_count=ready_document_count,
+            scanned_chunk_count=scanned_chunk_count,
+            hit_count=len(trimmed_hits),
+        )
+        payload: dict[str, Any] = {
+            "status": status,
+            "retrieval_mode": "deterministic_lexical",
+            "bound_knowledge_base_ids": bound_knowledge_base_ids,
+            "ready_knowledge_base_ids": ready_knowledge_base_ids,
+            "blocked_knowledge_base_ids": blocked_knowledge_base_ids,
+            "query": normalized_query,
+            "hits": trimmed_hits,
+            "summary": {
+                "ready_knowledge_base_count": len(ready_knowledge_base_ids),
+                "ready_document_count": ready_document_count,
+                "scanned_chunk_count": scanned_chunk_count,
+                "hit_count": len(trimmed_hits),
+            },
+        }
+        if guidance:
+            payload["guidance"] = guidance
+        return payload
+
+    def _score_chunk(
+        self,
+        *,
+        query_terms: list[str],
+        document: Any,
+        chunk: Any,
+    ) -> float:
+        content = str(getattr(chunk, "content", "") or "").lower()
+        title = str(getattr(document, "title", "") or "").lower()
+        if not content and not title:
+            return 0.0
+
+        content_terms = set(_normalize_terms(content))
+        title_terms = set(_normalize_terms(title))
+        matched_terms = {
+            term
+            for term in query_terms
+            if term in content_terms or term in title_terms or term in content
+        }
+        if not matched_terms:
+            return 0.0
+
+        content_frequency = sum(content.count(term) for term in matched_terms)
+        title_boost = sum(1 for term in matched_terms if term in title_terms)
+        coverage = len(matched_terms) / len(set(query_terms))
+        return round(coverage + (content_frequency * 0.1) + (title_boost * 0.2), 6)
+
+    def _hit_payload(
+        self,
+        *,
+        score: float,
+        knowledge_base_id: str,
+        document: Any,
+        chunk: Any,
+    ) -> dict[str, Any]:
+        content = str(getattr(chunk, "content", "") or "")
+        snippet = content.strip()
+        if len(snippet) > 500:
+            snippet = f"{snippet[:497]}..."
+        return {
+            "knowledge_base_id": knowledge_base_id,
+            "document_id": _record_id(document),
+            "document_title": str(getattr(document, "title", "") or ""),
+            "source_uri": getattr(document, "source_uri", None),
+            "chunk_id": _record_id(chunk),
+            "chunk_index": int(getattr(chunk, "chunk_index", 0) or 0),
+            "score": score,
+            "snippet": snippet,
+            "metadata": _json_safe(getattr(chunk, "metadata", {}) or {}),
+        }
+
+    def _classify_result(
+        self,
+        *,
+        ready_knowledge_base_ids: list[str],
+        blocked_knowledge_base_ids: list[str],
+        ready_document_count: int,
+        scanned_chunk_count: int,
+        hit_count: int,
+    ) -> tuple[str, str | None]:
+        if not ready_knowledge_base_ids:
+            return "blocked", "No requested knowledge base is ready for retrieval."
+        if ready_document_count == 0:
+            return "not_configured", "Ready knowledge bases do not contain ready documents."
+        if scanned_chunk_count == 0:
+            return "blocked", "Ready documents do not have indexed chunks."
+        if hit_count == 0:
+            return "ready", "No matching chunks were found for this query."
+        if blocked_knowledge_base_ids:
+            return "degraded", "Some requested knowledge bases are not ready."
+        return "ready", None
+
+    def _empty_payload(
+        self,
+        *,
+        status: str,
+        bound_knowledge_base_ids: list[str],
+        guidance: str,
+    ) -> dict[str, Any]:
+        return {
+            "status": status,
+            "retrieval_mode": "deterministic_lexical",
+            "bound_knowledge_base_ids": bound_knowledge_base_ids,
+            "ready_knowledge_base_ids": [],
+            "blocked_knowledge_base_ids": [],
+            "hits": [],
+            "summary": {
+                "ready_knowledge_base_count": 0,
+                "ready_document_count": 0,
+                "scanned_chunk_count": 0,
+                "hit_count": 0,
+            },
+            "guidance": guidance,
+        }
 
 
 class PlatformKnowledgeDocumentReadinessService:

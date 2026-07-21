@@ -10,10 +10,14 @@ from api.schemas import (
     EnterpriseKnowledgeDocumentsRequest,
     EnterpriseKnowledgeIngestRequest,
     EnterpriseKnowledgeReadinessRequest,
+    EnterpriseKnowledgeRetrieveRequest,
     EnterpriseKnowledgeRetrievalEventDetailRequest,
     EnterpriseKnowledgeRetrievalEventsRequest,
 )
-from services.knowledge import PlatformKnowledgeDocumentReadinessService
+from services.knowledge import (
+    PlatformKnowledgeDocumentReadinessService,
+    PlatformKnowledgeRetrievalService,
+)
 from services.knowledge_ingestion import (
     KnowledgeIngestionRequest,
     PlatformKnowledgeIngestionService,
@@ -40,6 +44,12 @@ class KnowledgeReadinessRouteDependencies:
 class KnowledgeDocumentsRouteDependencies:
     document_repository: Callable[[], Any | None]
     document_chunk_repository: Callable[[], Any | None]
+    tenant_hint_from_user_id: Callable[[str], str | None]
+
+
+@dataclass(frozen=True)
+class KnowledgeRetrievalRouteDependencies:
+    retrieval_service: Callable[[], PlatformKnowledgeRetrievalService | None]
     tenant_hint_from_user_id: Callable[[str], str | None]
 
 
@@ -237,6 +247,45 @@ def create_knowledge_retrieval_events_router(
         return {
             "tenant": tenant_id,
             "retrieval_event": _retrieval_event_payload(retrieval_event),
+        }
+
+    return router
+
+
+def create_knowledge_retrieval_router(
+    deps: KnowledgeRetrievalRouteDependencies,
+) -> APIRouter:
+    router = APIRouter()
+
+    @router.post("/enterprise/platform/knowledge/retrieve")
+    async def retrieve_enterprise_knowledge(
+        payload: EnterpriseKnowledgeRetrieveRequest,
+        request: Request,
+    ) -> dict[str, Any]:
+        """Retrieve tenant knowledge chunks from PostgreSQL."""
+        service = deps.retrieval_service()
+        if service is None:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Production knowledge retrieval requires PostgreSQL. "
+                    "Local JSON or SQLite storage is not a production retrieval target."
+                ),
+            )
+
+        tenant_id = _resolve_tenant(
+            tenant=payload.tenant,
+            request=request,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
+        return {
+            "tenant": tenant_id,
+            "knowledge_retrieval": service.retrieve(
+                tenant_id=tenant_id,
+                knowledge_base_ids=payload.knowledge_base_ids,
+                query=payload.query,
+                limit=payload.limit,
+            ),
         }
 
     return router

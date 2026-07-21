@@ -117,6 +117,13 @@ class EnterpriseKnowledgeReadinessRequest(BaseModel):
     tenant: str | None = None
 
 
+class EnterpriseKnowledgeRetrieveRequest(BaseModel):
+    knowledge_base_ids: list[str]
+    query: str
+    tenant: str | None = None
+    limit: int = Field(default=5, ge=1, le=20)
+
+
 class EnterpriseKnowledgeDocumentsRequest(BaseModel):
     knowledge_base_id: str | None = None
     status: str | None = None

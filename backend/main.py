@@ -30,10 +30,12 @@ from api.knowledge import (
     KnowledgeDocumentsRouteDependencies,
     KnowledgeIngestionRouteDependencies,
     KnowledgeReadinessRouteDependencies,
+    KnowledgeRetrievalRouteDependencies,
     KnowledgeRetrievalEventsRouteDependencies,
     create_knowledge_documents_router,
     create_knowledge_ingestion_router,
     create_knowledge_readiness_router,
+    create_knowledge_retrieval_router,
     create_knowledge_retrieval_events_router,
 )
 from api.platform_admin import (
@@ -179,6 +181,7 @@ from services.enterprise_router import PlatformEnterpriseRouterService
 from services.knowledge import (
     PlatformKnowledgeDocumentReadinessService,
     PlatformKnowledgeResponseService,
+    PlatformKnowledgeRetrievalService,
 )
 from services.knowledge_ingestion import PlatformKnowledgeIngestionService
 from services.members import PlatformMemberService, PlatformMemberServiceError
@@ -433,6 +436,20 @@ def _build_knowledge_document_chunk_read_repository() -> (
         return None
 
     return PostgresDocumentChunkReadRepository(database)
+
+
+def _build_knowledge_retrieval_service() -> (
+    PlatformKnowledgeRetrievalService | None
+):
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PlatformKnowledgeRetrievalService(
+        knowledge_base_repository=PostgresKnowledgeBaseReadRepository(database),
+        document_repository=PostgresDocumentReadRepository(database),
+        document_chunk_repository=PostgresDocumentChunkReadRepository(database),
+    )
 
 
 def _build_knowledge_ingestion_service() -> (
@@ -916,6 +933,15 @@ app.include_router(
         KnowledgeDocumentsRouteDependencies(
             document_repository=_build_knowledge_document_read_repository,
             document_chunk_repository=_build_knowledge_document_chunk_read_repository,
+            tenant_hint_from_user_id=tenant_hint_from_user_id,
+        )
+    )
+)
+
+app.include_router(
+    create_knowledge_retrieval_router(
+        KnowledgeRetrievalRouteDependencies(
+            retrieval_service=_build_knowledge_retrieval_service,
             tenant_hint_from_user_id=tenant_hint_from_user_id,
         )
     )
