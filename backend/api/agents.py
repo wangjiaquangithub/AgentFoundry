@@ -36,9 +36,11 @@ def create_agent_catalog_router(
         )
 
     @router.get("/enterprise/platform/agents")
-    async def enterprise_platform_agents() -> dict[str, Any]:
+    async def enterprise_platform_agents(request: Request) -> dict[str, Any]:
         """Return platform agent templates and published tenant instances."""
-        return deps.agent_service().registry_response()
+        return deps.agent_service().registry_response_for_user(
+            request.headers.get("X-User-ID"),
+        )
 
     @router.post("/enterprise/platform/agents/publish")
     async def publish_enterprise_platform_agent(
@@ -96,11 +98,15 @@ def create_agent_catalog_router(
     @router.delete("/enterprise/platform/agents/{agent_id}")
     async def archive_enterprise_platform_agent(
         agent_id: str,
+        request: Request,
     ) -> dict[str, Any]:
         """Archive a platform agent while keeping its registry record."""
         agent_service = deps.agent_service()
         try:
-            return agent_service.archive_agent_response_payload(agent_id)
+            return agent_service.archive_agent_response_payload(
+                agent_id,
+                user_id=request.headers.get("X-User-ID"),
+            )
         except PlatformAgentServiceError as exc:
             _raise_service_error(exc)
 

@@ -62,14 +62,17 @@ def create_tool_audit_router(deps: ToolAuditRouteDependencies) -> APIRouter:
         runtime_selection = tool_policy_service.runtime_selection(runtime)
         tenant = runtime_selection["tenant"]
         try:
-            published_agents = deps.agent_service().list_published_agents()
+            published_agents = deps.agent_service().list_published_agents(
+                tenant=tenant,
+            )
         except PlatformAgentServiceError as exc:
             _raise_service_error(exc)
         configured_agent = None
         if requested_agent_id:
             try:
                 configured_agent = deps.agent_service().get_published_agent(
-                    requested_agent_id
+                    requested_agent_id,
+                    tenant=tenant,
                 )
             except PlatformAgentServiceError as exc:
                 _raise_service_error(exc)

@@ -15,13 +15,18 @@ from backend.persistence.agents import (
 class AgentRepositoryProtocol(Protocol):
     """Repository contract used by the platform agent service."""
 
-    def list(self) -> list[dict[str, Any]]:
+    supports_unscoped_reads: bool
+
+    def list(self, *, tenant: str | None = None) -> list[dict[str, Any]]:
         ...
 
     def get(self, agent_id: str, *, tenant: str | None = None) -> dict[str, Any] | None:
         ...
 
     def save_all(self, agents: list[dict[str, Any]]) -> None:
+        ...
+
+    def save_tenant_agents(self, *, tenant: str, agents: list[dict[str, Any]]) -> None:
         ...
 
 
@@ -32,10 +37,12 @@ class AgentRegistryError(ValueError):
 class AgentRepository:
     """Store and retrieve enterprise agent definitions."""
 
+    supports_unscoped_reads = True
+
     def __init__(self, path: Path) -> None:
         self._path = path
 
-    def list(self) -> list[dict[str, Any]]:
+    def list(self, *, tenant: str | None = None) -> list[dict[str, Any]]:
         if not self._path.exists():
             return []
 
@@ -51,7 +58,14 @@ class AgentRepository:
                 "Platform agent registry must be a JSON array.",
             )
 
-        return agents
+        if tenant is None:
+            return agents
+
+        return [
+            agent
+            for agent in agents
+            if str(agent.get("tenant") or "").strip() == tenant
+        ]
 
     def get(self, agent_id: str, *, tenant: str | None = None) -> dict[str, Any] | None:
         for agent in self.list():
@@ -69,9 +83,19 @@ class AgentRepository:
             encoding="utf-8",
         )
 
+    def save_tenant_agents(self, *, tenant: str, agents: list[dict[str, Any]]) -> None:
+        retained_agents = [
+            agent
+            for agent in self.list()
+            if str(agent.get("tenant") or "").strip() != tenant
+        ]
+        self.save_all([*retained_agents, *agents])
+
 
 class PostgresAgentCatalogWriteThroughRepository:
     """Use PostgreSQL as the source of truth for the agent catalog."""
+
+    supports_unscoped_reads = False
 
     def __init__(
         self,
@@ -82,10 +106,14 @@ class PostgresAgentCatalogWriteThroughRepository:
         self._postgres_reader = postgres_reader
         self._postgres_writer = postgres_writer
 
-    def list(self) -> list[dict[str, Any]]:
+    def list(self, *, tenant: str | None = None) -> list[dict[str, Any]]:
+        if not tenant:
+            raise AgentRegistryError(
+                "PostgreSQL agent catalog list reads require tenant scope.",
+            )
         return [
             self._agent_catalog_item(record)
-            for record in self._postgres_reader.list_all_agents()
+            for record in self._postgres_reader.list_agents(tenant_id=tenant)
         ]
 
     def get(self, agent_id: str, *, tenant: str | None = None) -> dict[str, Any] | None:
@@ -103,6 +131,15 @@ class PostgresAgentCatalogWriteThroughRepository:
 
     def save_all(self, agents: list[dict[str, Any]]) -> None:
         self._postgres_writer.save_agents(agents)
+
+    def save_tenant_agents(self, *, tenant: str, agents: list[dict[str, Any]]) -> None:
+        self._postgres_writer.save_agents(
+            [
+                agent
+                for agent in agents
+                if str(agent.get("tenant") or "").strip() == tenant
+            ],
+        )
 
     def _agent_catalog_item(self, record: AgentRecord) -> dict[str, Any]:
         version = self._postgres_reader.get_current_version(

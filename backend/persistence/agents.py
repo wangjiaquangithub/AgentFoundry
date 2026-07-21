@@ -272,20 +272,6 @@ class PostgresAgentCatalogReadRepository:
                 cursor.execute(query, tuple(parameters))
                 return [_agent_from_row(dict(row)) for row in cursor.fetchall()]
 
-    def list_all_agents(self) -> list[AgentRecord]:
-        with self._database.connect() as connection:
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT id, tenant_id, template_id, name, description, status,
-                      owner_user_id, current_version_id, memory_enabled, workflow_enabled,
-                      allowed_user_ids, allowed_roles, capabilities, created_at, updated_at
-                    FROM agents
-                    ORDER BY updated_at DESC, id
-                    """,
-                )
-                return [_agent_from_row(dict(row)) for row in cursor.fetchall()]
-
     def get_agent(self, *, tenant_id: str, agent_id: str) -> AgentRecord | None:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:

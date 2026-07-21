@@ -91,11 +91,7 @@ POSTGRES_TENANT_SCOPED_READ_METHOD_EXEMPTIONS = {
         "PostgresToolGovernanceReadRepository": {"load_policy_snapshot"},
     },
 }
-POSTGRES_TENANT_SCOPED_READ_KNOWN_GAPS = {
-    "agents.py": {
-        "PostgresAgentCatalogReadRepository": {"list_all_agents"},
-    },
-}
+POSTGRES_TENANT_SCOPED_READ_KNOWN_GAPS: dict[str, dict[str, set[str]]] = {}
 
 POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT = sum(
     len(methods)

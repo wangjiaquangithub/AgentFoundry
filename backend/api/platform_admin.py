@@ -62,14 +62,14 @@ def create_platform_admin_router(
 ) -> APIRouter:
     router = APIRouter()
 
-    def export_platform_config() -> dict[str, Any]:
+    def export_platform_config(*, actor_user_id: str | None = None) -> dict[str, Any]:
         try:
             connector_config_service = deps.connector_config_service()
             connector_configs = connector_config_service.export_configs_payload()
         except PlatformConnectorConfigServiceError as exc:
             _raise_service_error(exc)
         try:
-            agents = deps.agent_service().list_agents()
+            agents = deps.agent_service().list_agents_for_user(actor_user_id)
         except PlatformAgentServiceError as exc:
             _raise_service_error(exc)
         try:
@@ -289,9 +289,11 @@ def create_platform_admin_router(
             _raise_service_error(exc)
 
     @router.get("/enterprise/platform/config/export")
-    async def export_enterprise_platform_config() -> dict[str, Any]:
+    async def export_enterprise_platform_config(request: Request) -> dict[str, Any]:
         """Export portable platform configuration without runtime data or secrets."""
-        return export_platform_config()
+        return export_platform_config(
+            actor_user_id=request.headers.get("X-User-ID"),
+        )
 
     @router.post("/enterprise/platform/config/import")
     async def import_enterprise_platform_config(
@@ -334,6 +336,7 @@ def create_platform_admin_router(
             try:
                 deps.agent_service().import_agents_payload(
                     incoming.get("agents"),
+                    actor=actor,
                     mode=mode,
                 )
             except PlatformAgentServiceError as exc:
@@ -360,7 +363,7 @@ def create_platform_admin_router(
                 deps.build_tool_authorization_policy(),
             )
 
-        exported = export_platform_config()
+        exported = export_platform_config(actor_user_id=actor)
         return deps.connector_config_service().import_config_response(
             mode=mode,
             exported_config=exported,

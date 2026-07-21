@@ -68,18 +68,30 @@ class PlatformAgentService:
             knowledge_document_readiness_service
         )
 
-    def list_agents(self) -> list[dict[str, Any]]:
+    def list_agents(self, *, tenant: str | None = None) -> list[dict[str, Any]]:
         try:
-            return self._repository.list()
+            return self._repository.list(tenant=tenant)
         except AgentRegistryError as exc:
             raise PlatformAgentServiceError(500, str(exc)) from exc
 
     def save_agents(self, agents: list[dict[str, Any]]) -> None:
         self._repository.save_all(agents)
 
+    def save_tenant_agents(self, *, tenant: str, agents: list[dict[str, Any]]) -> None:
+        try:
+            self._repository.save_tenant_agents(tenant=tenant, agents=agents)
+        except AgentRegistryError as exc:
+            raise PlatformAgentServiceError(500, str(exc)) from exc
+
     @staticmethod
     def resolve_request_user_id(user_id: str | None) -> str:
         return user_id or "acme:alice"
+
+    def request_tenant(self, user_id: str | None) -> str:
+        return self._tenant_for_user(self.resolve_request_user_id(user_id))
+
+    def list_agents_for_user(self, user_id: str | None) -> list[dict[str, Any]]:
+        return self.list_agents(tenant=self.request_tenant(user_id))
 
     def publish_request_payload(
         self,
@@ -111,23 +123,36 @@ class PlatformAgentService:
             ),
         }
 
-    def import_agents_payload(self, value: Any, *, mode: str) -> None:
-        imported_agents = self.normalize_import_agents(value)
+    def import_agents_payload(
+        self,
+        value: Any,
+        *,
+        mode: str,
+        actor: str | None = None,
+    ) -> None:
+        user_id = self.resolve_request_user_id(actor)
+        tenant = self._tenant_for_user(user_id)
+        imported_agents = self.normalize_import_agents(value, tenant=tenant)
         agents = (
             imported_agents
             if mode == "replace"
-            else _merge_by_key(self.list_agents(), imported_agents, "id")
+            else _merge_by_key(self.list_agents(tenant=tenant), imported_agents, "id")
         )
-        self.save_agents(agents)
+        self.save_tenant_agents(tenant=tenant, agents=agents)
         for agent in imported_agents:
             self._append_platform_agent_audit_event(
                 agent=agent,
-                actor="platform-admin",
+                actor=user_id,
                 event_type="platform_agent.imported",
                 extra_payload={"mode": mode},
             )
 
-    def normalize_import_agents(self, value: Any) -> list[dict[str, Any]]:
+    def normalize_import_agents(
+        self,
+        value: Any,
+        *,
+        tenant: str | None = None,
+    ) -> list[dict[str, Any]]:
         if value is None:
             return []
         if not isinstance(value, list):
@@ -135,11 +160,21 @@ class PlatformAgentService:
                 400,
                 "agents must be a JSON array.",
             )
-        return [
-            dict(item)
-            for item in value
-            if isinstance(item, dict) and item.get("id")
-        ]
+        agents = []
+        for item in value:
+            if not isinstance(item, dict) or not item.get("id"):
+                continue
+            agent = dict(item)
+            if tenant is not None:
+                item_tenant = str(agent.get("tenant") or "").strip()
+                if item_tenant and item_tenant != tenant:
+                    raise PlatformAgentServiceError(
+                        403,
+                        "Imported agents must belong to the request tenant.",
+                    )
+                agent["tenant"] = tenant
+            agents.append(agent)
+        return agents
 
     def get_agent(
         self,
@@ -174,18 +209,27 @@ class PlatformAgentService:
             )
         return agent, set(agent.get("tools") or [])
 
-    def list_published_agents(self) -> list[dict[str, Any]]:
+    def list_published_agents(
+        self,
+        *,
+        tenant: str | None = None,
+    ) -> list[dict[str, Any]]:
         return [
             agent
-            for agent in self.list_agents()
+            for agent in self.list_agents(tenant=tenant)
             if agent.get("status") == "published"
         ]
 
-    def get_published_agent(self, agent_id: str) -> dict[str, Any]:
+    def get_published_agent(
+        self,
+        agent_id: str,
+        *,
+        tenant: str | None = None,
+    ) -> dict[str, Any]:
         agent = next(
             (
                 item
-                for item in self.list_published_agents()
+                for item in self.list_published_agents(tenant=tenant)
                 if str(item.get("id")) == agent_id
             ),
             None,
@@ -213,6 +257,8 @@ class PlatformAgentService:
             )
         except PlatformAgentServiceError as exc:
             if tenant is None or exc.status_code != 404:
+                raise
+            if not self._repository.supports_unscoped_reads:
                 raise
             agent = self.get_published_agent(agent_id)
             configured_tools = set(agent.get("tools") or [])
@@ -513,12 +559,19 @@ class PlatformAgentService:
     def registry_response(
         self,
         agents: Iterable[dict[str, Any]] | None = None,
+        *,
+        tenant: str | None = None,
     ) -> dict[str, Any]:
-        listed_agents = self.list_agents() if agents is None else list(agents)
+        listed_agents = (
+            self.list_agents(tenant=tenant) if agents is None else list(agents)
+        )
         return {
             "templates": self.template_metadata(),
             "agents": [self.response(agent) for agent in listed_agents],
         }
+
+    def registry_response_for_user(self, user_id: str | None) -> dict[str, Any]:
+        return self.registry_response(tenant=self.request_tenant(user_id))
 
     def mutation_response(
         self,
@@ -607,6 +660,12 @@ class PlatformAgentService:
 
         now = datetime.now(timezone.utc).isoformat()
         tenant = self.normalize_tenant(payload.tenant, user_id)
+        user_tenant = self._tenant_for_user(user_id)
+        if tenant != user_tenant:
+            raise PlatformAgentServiceError(
+                403,
+                "Agent tenant must match the request user tenant.",
+            )
         name = (payload.name or "").strip() or str(template["name"])
         description = (payload.description or "").strip() or str(
             template["description"],
@@ -640,9 +699,9 @@ class PlatformAgentService:
             "updated_at": now,
         }
 
-        agents = self.list_agents()
+        agents = self.list_agents(tenant=tenant)
         agents.append(agent)
-        self.save_agents(agents)
+        self.save_tenant_agents(tenant=tenant, agents=agents)
         self._append_platform_agent_audit_event(
             agent=agent,
             actor=user_id,
@@ -664,7 +723,8 @@ class PlatformAgentService:
         payload: Any,
         user_id: str,
     ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-        agents = self.list_agents()
+        tenant = self._tenant_for_user(user_id)
+        agents = self.list_agents(tenant=tenant)
         agent_index = next(
             (
                 index
@@ -691,7 +751,13 @@ class PlatformAgentService:
                 template["description"],
             )
         if "tenant" in changes:
-            agent["tenant"] = self.normalize_tenant(payload.tenant, user_id)
+            updated_tenant = self.normalize_tenant(payload.tenant, user_id)
+            if updated_tenant != tenant:
+                raise PlatformAgentServiceError(
+                    403,
+                    "Agent tenant must match the request user tenant.",
+                )
+            agent["tenant"] = updated_tenant
         if "tools" in changes:
             selected_tools = payload.tools if payload.tools is not None else []
             self.validate_tools(template, selected_tools)
@@ -731,7 +797,7 @@ class PlatformAgentService:
         agent["capabilities"] = list(template["capabilities"])
         agent["updated_at"] = datetime.now(timezone.utc).isoformat()
         agents[agent_index] = agent
-        self.save_agents(agents)
+        self.save_tenant_agents(tenant=tenant, agents=agents)
         event_type = (
             "platform_agent.archived"
             if previous_status != "archived" and agent.get("status") == "archived"
@@ -757,8 +823,12 @@ class PlatformAgentService:
     def archive_agent(
         self,
         agent_id: str,
+        *,
+        user_id: str | None = None,
     ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-        agents = self.list_agents()
+        actor = self.resolve_request_user_id(user_id)
+        tenant = self._tenant_for_user(actor)
+        agents = self.list_agents(tenant=tenant)
         agent_index = next(
             (
                 index
@@ -784,10 +854,10 @@ class PlatformAgentService:
         agent["capabilities"] = list(template["capabilities"])
         agent["updated_at"] = datetime.now(timezone.utc).isoformat()
         agents[agent_index] = agent
-        self.save_agents(agents)
+        self.save_tenant_agents(tenant=tenant, agents=agents)
         self._append_platform_agent_audit_event(
             agent=agent,
-            actor="platform-admin",
+            actor=actor,
             event_type="platform_agent.archived",
         )
         return agent, agents
@@ -795,8 +865,10 @@ class PlatformAgentService:
     def archive_agent_response_payload(
         self,
         agent_id: str,
+        *,
+        user_id: str | None = None,
     ) -> dict[str, Any]:
-        agent, agents = self.archive_agent(agent_id)
+        agent, agents = self.archive_agent(agent_id, user_id=user_id)
         return self.mutation_response(agent, agents)
 
     def get_template(self, template_id: str) -> dict[str, Any]:
