@@ -593,6 +593,7 @@ def _platform_member_service() -> PlatformMemberService:
     return PlatformMemberService(
         repository=member_repository,
         tenant_hint_from_user_id=tenant_hint_from_user_id,
+        audit_event_writer=_build_audit_event_write_repository(),
         now=now_iso,
     )
 

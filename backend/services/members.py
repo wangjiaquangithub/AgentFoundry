@@ -1,8 +1,10 @@
 """Service-layer orchestration for enterprise platform members."""
 
 from datetime import datetime, timezone
-from typing import Any, Callable
+from typing import Any, Callable, Protocol
+from uuid import uuid4
 
+from backend.persistence import AuditEventRecord
 from repositories.members import MemberRepositoryProtocol
 
 
@@ -15,6 +17,13 @@ class PlatformMemberServiceError(ValueError):
         self.detail = detail
 
 
+class AuditEventWriteRepository(Protocol):
+    """Write tenant-scoped governance audit events."""
+
+    def append_audit_event(self, record: AuditEventRecord) -> None:
+        """Persist one audit event."""
+
+
 class PlatformMemberService:
     """Manage enterprise platform member registry records."""
 
@@ -23,10 +32,12 @@ class PlatformMemberService:
         *,
         repository: MemberRepositoryProtocol,
         tenant_hint_from_user_id: Callable[[str], str | None],
+        audit_event_writer: AuditEventWriteRepository | None = None,
         now: Callable[[], str] | None = None,
     ) -> None:
         self._repository = repository
         self._tenant_hint_from_user_id = tenant_hint_from_user_id
+        self._audit_event_writer = audit_event_writer
         self._now = now or _utc_now_iso
 
     def load_config(self) -> dict[str, Any]:
@@ -118,6 +129,13 @@ class PlatformMemberService:
             )
         )
         self.save_config({"members": members})
+        for member in imported_members:
+            self._append_member_audit_event(
+                member=member,
+                actor=actor,
+                event_type="platform_member.imported",
+                extra_payload={"mode": mode},
+            )
 
     def list_members(self, *, include_inactive: bool = True) -> list[dict[str, Any]]:
         members = self._normalized_members()
@@ -357,6 +375,11 @@ class PlatformMemberService:
             members.append(member)
 
         self.save_config({"members": members})
+        self._append_member_audit_event(
+            member=member,
+            actor=actor,
+            event_type="platform_member.upserted",
+        )
         return member, self.list_members(include_inactive=True)
 
     def patch_member(
@@ -390,6 +413,11 @@ class PlatformMemberService:
             members.append(member)
 
         self.save_config({"members": members})
+        self._append_member_audit_event(
+            member=member,
+            actor=actor,
+            event_type="platform_member.updated",
+        )
         return member, self.list_members(include_inactive=True)
 
     def deactivate_member(
@@ -416,6 +444,11 @@ class PlatformMemberService:
         existing["updated_at"] = self._now()
         existing["updated_by"] = actor
         self.save_config({"members": members})
+        self._append_member_audit_event(
+            member=existing,
+            actor=actor,
+            event_type="platform_member.deactivated",
+        )
         return existing, self.list_members(include_inactive=True)
 
     def _normalized_members(self) -> list[dict[str, Any]]:
@@ -425,6 +458,49 @@ class PlatformMemberService:
                 continue
             members.append(self.normalize_member(raw))
         return members
+
+    def _append_member_audit_event(
+        self,
+        *,
+        member: dict[str, Any],
+        actor: str,
+        event_type: str,
+        extra_payload: dict[str, Any] | None = None,
+    ) -> None:
+        if self._audit_event_writer is None:
+            return
+
+        tenant = str(member.get("tenant") or "").strip()
+        user_id = str(member.get("user_id") or "").strip()
+        payload = {
+            "schema_version": 1,
+            **(extra_payload or {}),
+            "tenant": tenant,
+            "user_id": user_id,
+            "display_name": str(member.get("display_name") or user_id),
+            "role": str(member.get("role") or "Enterprise user"),
+            "status": str(member.get("status") or "active"),
+            "source": str(member.get("source") or "member_registry"),
+            "updated_by": str(member.get("updated_by") or actor),
+        }
+        try:
+            self._audit_event_writer.append_audit_event(
+                AuditEventRecord(
+                    id=str(uuid4()),
+                    tenant_id=tenant,
+                    actor_user_id=str(actor or "platform-admin").strip()
+                    or "platform-admin",
+                    event_type=event_type,
+                    target_type="platform_member",
+                    target_id=user_id,
+                    payload=payload,
+                    created_at=self._now(),
+                ),
+            )
+        except ValueError:
+            raise
+        except Exception as exc:
+            raise PlatformMemberServiceError(500, str(exc)) from exc
 
 
 def _utc_now_iso() -> str:
