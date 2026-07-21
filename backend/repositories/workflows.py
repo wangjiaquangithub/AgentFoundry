@@ -178,8 +178,7 @@ class PostgresWorkflowRunReadThroughRepository:
 
     def append(self, record: dict[str, Any]) -> None:
         if not record.get("tenant"):
-            self._fallback_repository.append(record)
-            return
+            raise ValueError("PostgreSQL workflow run writes require tenant context.")
 
         self._postgres_writer.append_run(_platform_record_to_postgres_run(record))
 
