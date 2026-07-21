@@ -1140,7 +1140,7 @@ class PlatformAgentRunService:
         )
         tool_calls: list[dict[str, Any]] = []
         for route_context_view in route_context_views:
-            if self.record_unconfigured_routed_tool_denial_from_route_view_context(
+            if self.record_unconfigured_routed_tool_denial_from_context(
                 tool_calls=tool_calls,
                 tool_denial_payload=tool_denial_payload,
                 decision_with_routing_context=decision_with_routing_context,
@@ -1547,27 +1547,6 @@ class PlatformAgentRunService:
             routing_error=routing_error,
         )
         return True
-
-    def record_unconfigured_routed_tool_denial_from_route_view_context(
-        self,
-        *,
-        tool_calls: list[dict[str, Any]],
-        tool_denial_payload: Callable[..., dict[str, Any]],
-        decision_with_routing_context: Callable[..., dict[str, Any]],
-        execution_context: dict[str, Any],
-        route_context_view: dict[str, Any],
-        routing_mode: str,
-        routing_error: str | None,
-    ) -> bool:
-        return self.record_unconfigured_routed_tool_denial_from_context(
-            tool_calls=tool_calls,
-            tool_denial_payload=tool_denial_payload,
-            decision_with_routing_context=decision_with_routing_context,
-            execution_context=execution_context,
-            route_context_view=route_context_view,
-            routing_mode=routing_mode,
-            routing_error=routing_error,
-        )
 
     def build_pending_approval_routed_tool_call(
         self,
