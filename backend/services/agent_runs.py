@@ -2017,18 +2017,6 @@ class PlatformAgentRunService:
     ) -> str:
         return str(tool_response.get("connector_source", connector_source))
 
-    def build_executed_tool_answer_context(
-        self,
-        *,
-        tool_name: str,
-        tool_response: dict[str, Any],
-    ) -> dict[str, Any]:
-        return {
-            "tool_name": tool_name,
-            "result": self.executed_tool_result(tool_response),
-            "tenant": self.executed_tool_tenant(tool_response),
-        }
-
     def format_executed_tool_answer_from_context(
         self,
         *,
@@ -2037,10 +2025,9 @@ class PlatformAgentRunService:
         tool_response: dict[str, Any],
     ) -> str:
         return format_tool_result_answer(
-            **self.build_executed_tool_answer_context(
-                tool_name=tool_name,
-                tool_response=tool_response,
-            ),
+            tool_name=tool_name,
+            result=self.executed_tool_result(tool_response),
+            tenant=self.executed_tool_tenant(tool_response),
         )
 
     def append_executed_routed_tool_call(
