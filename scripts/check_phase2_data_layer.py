@@ -21,6 +21,7 @@ PERSISTENCE_INIT_MODULE = PERSISTENCE_DIR / "__init__.py"
 REPOSITORIES_DIR = ROOT / "backend" / "repositories"
 MAIN_MODULE = ROOT / "backend" / "main.py"
 DATABASE_MODULE = ROOT / "backend" / "persistence" / "database.py"
+PLATFORM_STATUS_SERVICE_MODULE = ROOT / "backend" / "services" / "platform_status.py"
 
 REQUIRED_TABLES = {
     "tenants",
@@ -552,6 +553,36 @@ def _check_postgres_read_tenant_boundary() -> list[str]:
     return errors
 
 
+def _check_postgres_runtime_provider_reads_wired() -> list[str]:
+    errors: list[str] = []
+    main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    platform_status_source = PLATFORM_STATUS_SERVICE_MODULE.read_text(encoding="utf-8")
+    main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+
+    if not _module_imports_name(main_tree, "PostgresRuntimeReadRepository"):
+        errors.append(
+            "backend/main.py must import PostgresRuntimeReadRepository for runtime provider reads",
+        )
+    if not _module_defines_function(main_tree, "_build_runtime_read_repository"):
+        errors.append(
+            "backend/main.py must define _build_runtime_read_repository for PostgreSQL runtime provider reads",
+        )
+    if "runtime_provider_reader=" not in main_source:
+        errors.append(
+            "backend/main.py must pass runtime_provider_reader into PlatformStatusService",
+        )
+    if "runtime_provider_reader" not in platform_status_source:
+        errors.append(
+            "backend/services/platform_status.py must accept a runtime_provider_reader",
+        )
+    if "postgres_runtime_provider_record" not in platform_status_source:
+        errors.append(
+            "backend/services/platform_status.py must expose postgres_runtime_provider_record in runtime checks",
+        )
+
+    return errors
+
+
 def main() -> int:
     sql = _read_migrations()
     schema = _extract_schema(sql)
@@ -566,6 +597,7 @@ def main() -> int:
         *_check_postgres_url_detection_boundary(),
         *_check_postgres_write_transaction_boundary(),
         *_check_postgres_read_tenant_boundary(),
+        *_check_postgres_runtime_provider_reads_wired(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -588,6 +620,7 @@ def main() -> int:
     print("- PostgreSQL URL detection centralized: yes")
     print("- PostgreSQL write transaction boundary guarded: yes")
     print("- PostgreSQL read tenant boundary guarded: yes")
+    print("- PostgreSQL runtime provider reads wired: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:

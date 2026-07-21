@@ -24,6 +24,19 @@ class AuditEventReadRepository(Protocol):
         """Return tenant-scoped platform audit event records."""
 
 
+class RuntimeProviderReadRepository(Protocol):
+    """Read runtime provider records from the production data layer."""
+
+    def list_providers(
+        self,
+        *,
+        status: str | None = None,
+        provider_type: str | None = None,
+        limit: int = 50,
+    ) -> list[Any]:
+        """Return runtime provider records."""
+
+
 class PlatformStatusService:
     """Compose platform console snapshots from repositories and runtime services."""
 
@@ -46,6 +59,7 @@ class PlatformStatusService:
         tool_policy: Any,
         connector_health: Callable[[], dict[str, Any]],
         runtime_provider_health: Callable[[], dict[str, Any]],
+        runtime_provider_reader: RuntimeProviderReadRepository | None = None,
         agent_readiness: Callable[[dict[str, Any]], dict[str, Any]],
         enterprise_tool_names: list[str],
         enterprise_tool_catalog: dict[str, dict[str, Any]],
@@ -66,6 +80,7 @@ class PlatformStatusService:
         self._tool_policy = tool_policy
         self._connector_health = connector_health
         self._runtime_provider_health = runtime_provider_health
+        self._runtime_provider_reader = runtime_provider_reader
         self._agent_readiness = agent_readiness
         self._enterprise_tool_names = enterprise_tool_names
         self._enterprise_tool_catalog = enterprise_tool_catalog
@@ -255,7 +270,7 @@ class PlatformStatusService:
                 "source": self.runtime_connector_source(runtime),
                 "saved_config_enabled": self.runtime_saved_config_enabled(runtime),
             },
-            "runtime_provider": self._runtime_provider_health(),
+            "runtime_provider": self._runtime_provider_snapshot(),
             "identities": identities,
             "tenant_workspaces": tenant_workspaces,
             "current_workspace": tenant_workspaces.get(tenant),
@@ -298,6 +313,47 @@ class PlatformStatusService:
                 for template in subagent_templates
             ],
         }
+
+    def _runtime_provider_snapshot(self) -> dict[str, Any]:
+        """Return runtime provider health from PostgreSQL when available."""
+        if self._runtime_provider_reader is None:
+            return self._runtime_provider_health()
+
+        try:
+            providers = self._runtime_provider_reader.list_providers(limit=1)
+        except Exception:
+            LOGGER.exception("Failed to load runtime provider record from PostgreSQL")
+            return self._runtime_provider_health()
+
+        if not providers:
+            return self._runtime_provider_health()
+
+        provider = providers[0]
+        status = str(getattr(provider, "status", "") or "unknown")
+        return {
+            "provider_id": str(getattr(provider, "id", "")),
+            "provider": str(getattr(provider, "provider_type", "")),
+            "mode": str(getattr(provider, "mode", "")),
+            "status": status,
+            "ready": status == "active",
+            "message": "Runtime provider loaded from PostgreSQL production data layer.",
+            "capabilities": self._runtime_provider_capabilities(provider),
+            "checks": {
+                "adapter_configured": True,
+                "provider_invocation_wired": False,
+                "direct_agentscope_dependency": False,
+                "postgres_runtime_provider_record": True,
+            },
+        }
+
+    @staticmethod
+    def _runtime_provider_capabilities(provider: Any) -> list[str]:
+        capabilities = getattr(provider, "capabilities", None)
+        if isinstance(capabilities, dict):
+            return sorted(str(key) for key, enabled in capabilities.items() if enabled)
+        if isinstance(capabilities, (list, tuple, set)):
+            return sorted(str(value) for value in capabilities)
+        return []
 
     def governance_request_payload(self, *, user_id: str | None) -> dict[str, Any]:
         """Build the governance response for one platform request user."""
