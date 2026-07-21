@@ -17,6 +17,10 @@ import uvicorn
 from fastapi import HTTPException, Request
 from fastapi.middleware import Middleware
 from fastapi.middleware.cors import CORSMiddleware
+from api.agent_runtime import (
+    AgentRuntimeRouteDependencies,
+    create_agent_runtime_router,
+)
 from api.agents import AgentCatalogRouteDependencies, create_agent_catalog_router
 from api.platform_admin import (
     PlatformAdminRouteDependencies,
@@ -24,7 +28,6 @@ from api.platform_admin import (
 )
 from api.tools import ToolAuditRouteDependencies, create_tool_audit_router
 from api.schemas import (
-    EnterpriseAgentRunRequest,
     EnterpriseApprovalCreateRequest,
     EnterpriseApprovalDecisionRequest,
     EnterpriseWorkflowRunRequest,
@@ -956,230 +959,6 @@ app = create_app(
 )
 
 
-@app.post("/enterprise/platform/agent/run")
-async def run_enterprise_agent(
-    payload: EnterpriseAgentRunRequest,
-    request: Request,
-) -> dict[str, Any]:
-    """Route a business question through a published enterprise agent."""
-
-    agent_run_service = _platform_agent_run_service()
-    run_request = agent_run_service.run_request_payload(
-        question=payload.question,
-        payload_user_id=payload.user_id,
-        header_user_id=request.headers.get("X-User-ID"),
-        agent_id=payload.agent_id,
-        session_id=payload.session_id,
-        approval_id=payload.approval_id,
-    )
-    user_id = run_request["user_id"]
-    runtime = agent_run_service.resolve_runtime_context(
-        user_id=user_id,
-        load_runtime_context=(
-            _platform_connector_config_service().enterprise_runtime_context
-        ),
-        runtime_context_error_type=PlatformConnectorConfigServiceError,
-        raise_runtime_context_error=_raise_platform_connector_config_service_error,
-    )
-    agent_context = agent_run_service.resolve_run_agent_context(
-        run_request=run_request,
-        load_published_agent=_published_platform_agent_tool_scope_for_user,
-        build_run_metadata=_platform_agent_service().run_metadata,
-        describe_runtime_adapter=describe_runtime_adapter,
-    )
-    execution_context = agent_run_service.build_execution_context_from_agent_context(
-        run_request=run_request,
-        agent_context=agent_context,
-        runtime=runtime,
-        build_runtime_invocation_request_payload=(
-            build_runtime_invocation_request_payload
-        ),
-        default_tool_names=set(ENTERPRISE_TOOL_NAMES),
-        safe_path_part=_safe_path_part,
-    )
-    execution_context_view = agent_run_service.execution_context_view(
-        execution_context
-    )
-    question = execution_context_view["question"]
-    memory_context = agent_run_service.prepare_memory_context_from_execution_context(
-        build_agent_run_context=platform_memory_service.build_agent_run_context,
-        agent_run_state=platform_memory_service.agent_run_state,
-        execution_context=execution_context,
-        max_records=PLATFORM_MEMORY_MAX_RECORDS,
-        limit=PLATFORM_MEMORY_SEARCH_LIMIT,
-    )
-    memory_context_view = agent_run_service.memory_context_view(memory_context)
-    memory_payload = memory_context_view["memory_payload"]
-    memory_hits = memory_context_view["memory_hits"]
-    knowledge_context = (
-        await agent_run_service.prepare_knowledge_context_from_execution_context(
-            search_agent_knowledge_bases=(
-                knowledge_response_service.search_agent_knowledge_bases
-            ),
-            build_agent_run_payload=(
-                knowledge_response_service.build_agent_run_payload
-            ),
-            knowledge_base_service=getattr(
-                request.app.state,
-                "knowledge_base_service",
-                None,
-            ),
-            dev_knowledge_service=dev_knowledge_service,
-            dev_knowledge_provider=PLATFORM_DEV_KNOWLEDGE_PROVIDER,
-            execution_context=execution_context,
-        )
-    )
-    knowledge_context_view = agent_run_service.knowledge_context_view(
-        knowledge_context,
-    )
-    knowledge_hits = knowledge_context_view["knowledge_hits"]
-    knowledge_payload = knowledge_context_view["knowledge_payload"]
-    routing_selection = (
-        await agent_run_service.prepare_routing_context_from_execution_context(
-            select_routes_for_question=(
-                enterprise_router_service.select_routes_for_question
-            ),
-            routing_state_for=enterprise_router_service.routing_state_for,
-            execution_context=execution_context,
-            env=os.environ,
-        )
-    )
-    routes = routing_selection["routes"]
-    routing_context_view = agent_run_service.routing_context_view(
-        routing_selection["routing_context"],
-    )
-    routing_mode = routing_context_view["routing_mode"]
-    routing_source = routing_context_view["routing_source"]
-    routing_error = routing_context_view["routing_error"]
-
-    if not routes:
-        decision = enterprise_router_service.unrouted_decision_for_question(
-            question,
-            routing_source=routing_source,
-            routing_mode=routing_mode,
-            routing_error=routing_error,
-        )
-        response = agent_run_service.finalize_unrouted_run_from_context(
-            build_runtime_invocation_result_payload=(
-                build_runtime_invocation_result_payload
-            ),
-            append_agent_turn_if_enabled=(
-                platform_memory_service.append_agent_turn_if_enabled
-            ),
-            execution_context=execution_context,
-            memory_context=memory_context,
-            routing_mode=routing_mode,
-            routing_source=routing_source,
-            routing_error=routing_error,
-            knowledge_hits=knowledge_hits,
-            memory_hits=memory_hits,
-            format_knowledge_answer=knowledge_response_service.format_answer,
-            format_memory_answer=platform_memory_service.format_answer,
-            knowledge_payload=knowledge_payload,
-            memory_payload=memory_payload,
-            max_records=PLATFORM_MEMORY_MAX_RECORDS,
-            decision=decision,
-        )
-        return response
-
-    tool_calls = agent_run_service.process_routed_routes(
-        routes=routes,
-        default_source=ROUTING_SOURCE_RULES,
-        tool_denial_payload=_platform_agent_service().tool_denial_payload,
-        decision_with_routing_context=(
-            enterprise_router_service.decision_with_routing_context
-        ),
-        execution_context=execution_context,
-        require_platform_approval=_require_platform_approval,
-        approval_exception_type=HTTPException,
-        run_request=run_request,
-        approval_required_tools=APPROVAL_REQUIRED_TOOLS,
-        platform_approval_service=_platform_approval_service,
-        raise_platform_approval_service_error=(
-            _raise_platform_approval_service_error
-        ),
-        run_authorized_enterprise_tool=_run_authorized_enterprise_tool,
-        format_tool_result_answer=(
-            _platform_tool_policy_service().format_tool_result_answer
-        ),
-        headers=request.headers,
-        routing_mode=routing_mode,
-        routing_error=routing_error,
-    )
-    response = agent_run_service.finalize_routed_run_from_context(
-        build_runtime_invocation_result_payload=(
-            build_runtime_invocation_result_payload
-        ),
-        append_agent_turn_if_enabled=(
-            platform_memory_service.append_agent_turn_if_enabled
-        ),
-        execution_context=execution_context,
-        memory_context=memory_context,
-        routing_mode=routing_mode,
-        routing_source=routing_source,
-        routing_error=routing_error,
-        tool_calls=tool_calls,
-        knowledge_hits=knowledge_hits,
-        memory_hits=memory_hits,
-        format_knowledge_answer=knowledge_response_service.format_answer,
-        format_memory_answer=platform_memory_service.format_answer,
-        knowledge_payload=knowledge_payload,
-        memory_payload=memory_payload,
-        max_records=PLATFORM_MEMORY_MAX_RECORDS,
-    )
-    return response
-
-
-@app.get("/enterprise/platform/agent/runs")
-async def list_enterprise_agent_runs(
-    agent_id: str | None = None,
-    tenant: str | None = None,
-    user_id: str | None = None,
-    session_id: str | None = None,
-    limit: int = 20,
-) -> dict[str, Any]:
-    """List recent enterprise agent question-answer turns."""
-    agent_run_service = _platform_agent_run_service()
-    list_context = agent_run_service.list_runs_request_payload(
-        limit=limit,
-        agent_id=agent_id,
-        tenant=tenant,
-        user_id=user_id,
-        session_id=session_id,
-    )
-    return agent_run_service.list_runs(**list_context)
-
-
-@app.get("/enterprise/platform/agent/runs/{turn_id}")
-async def get_enterprise_agent_run(turn_id: str) -> dict[str, Any]:
-    """Get a single enterprise agent question-answer turn by run ID."""
-    try:
-        return _platform_agent_run_service().get_run(turn_id)
-    except PlatformAgentRunServiceError as exc:
-        _raise_platform_agent_run_service_error(exc)
-
-
-@app.delete("/enterprise/platform/agent/runs")
-async def clear_enterprise_agent_runs(
-    agent_id: str | None = None,
-    tenant: str | None = None,
-    user_id: str | None = None,
-    session_id: str | None = None,
-) -> dict[str, Any]:
-    """Clear matching enterprise agent question-answer turns."""
-    agent_run_service = _platform_agent_run_service()
-    clear_context = agent_run_service.clear_runs_request_payload(
-        agent_id=agent_id,
-        tenant=tenant,
-        user_id=user_id,
-        session_id=session_id,
-    )
-    try:
-        return agent_run_service.clear_runs(**clear_context)
-    except PlatformAgentRunServiceError as exc:
-        _raise_platform_agent_run_service_error(exc)
-
-
 def _platform_workflow_template_service() -> PlatformWorkflowTemplateService:
     return PlatformWorkflowTemplateService(
         repository=workflow_template_repository,
@@ -1733,6 +1512,42 @@ app.include_router(
             ),
             require_platform_approval=_require_platform_approval,
             run_authorized_enterprise_tool=_run_authorized_enterprise_tool,
+        )
+    )
+)
+
+app.include_router(
+    create_agent_runtime_router(
+        AgentRuntimeRouteDependencies(
+            tool_names=ENTERPRISE_TOOL_NAMES,
+            approval_required_tools=APPROVAL_REQUIRED_TOOLS,
+            memory_max_records=PLATFORM_MEMORY_MAX_RECORDS,
+            memory_search_limit=PLATFORM_MEMORY_SEARCH_LIMIT,
+            routing_source_rules=ROUTING_SOURCE_RULES,
+            dev_knowledge_provider=PLATFORM_DEV_KNOWLEDGE_PROVIDER,
+            env=os.environ,
+            agent_run_service=_platform_agent_run_service,
+            connector_config_service=_platform_connector_config_service,
+            agent_service=_platform_agent_service,
+            approval_service=_platform_approval_service,
+            tool_policy_service=_platform_tool_policy_service,
+            memory_service=platform_memory_service,
+            knowledge_response_service=knowledge_response_service,
+            dev_knowledge_service=dev_knowledge_service,
+            enterprise_router_service=enterprise_router_service,
+            published_agent_tool_scope_for_user=(
+                _published_platform_agent_tool_scope_for_user
+            ),
+            require_platform_approval=_require_platform_approval,
+            run_authorized_enterprise_tool=_run_authorized_enterprise_tool,
+            safe_path_part=_safe_path_part,
+            describe_runtime_adapter=describe_runtime_adapter,
+            build_runtime_invocation_request_payload=(
+                build_runtime_invocation_request_payload
+            ),
+            build_runtime_invocation_result_payload=(
+                build_runtime_invocation_result_payload
+            ),
         )
     )
 )
