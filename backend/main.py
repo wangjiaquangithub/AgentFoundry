@@ -1610,15 +1610,20 @@ async def run_enterprise_agent(
     knowledge_hits = knowledge_context_view["knowledge_hits"]
     knowledge_error = knowledge_context_view["knowledge_error"]
     knowledge_payload = knowledge_context_view["knowledge_payload"]
-    routes, routing_error = await enterprise_router_service.select_routes_for_question(
-        question,
-        env=os.environ,
+    routing_selection = (
+        await agent_run_service.prepare_routing_context_from_execution_context(
+            select_routes_for_question=(
+                enterprise_router_service.select_routes_for_question
+            ),
+            routing_state_for=enterprise_router_service.routing_state_for,
+            execution_context=execution_context,
+            env=os.environ,
+        )
     )
-    routing_context = agent_run_service.build_routing_context(
-        routing_state=enterprise_router_service.routing_state_for(routes),
-        routing_error=routing_error,
+    routes = routing_selection["routes"]
+    routing_context_view = agent_run_service.routing_context_view(
+        routing_selection["routing_context"],
     )
-    routing_context_view = agent_run_service.routing_context_view(routing_context)
     routing_mode = routing_context_view["routing_mode"]
     routing_source = routing_context_view["routing_source"]
     routing_error = routing_context_view["routing_error"]

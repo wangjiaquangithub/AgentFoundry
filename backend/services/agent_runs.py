@@ -571,6 +571,27 @@ class PlatformAgentRunService:
             "routing_error": routing_error,
         }
 
+    async def prepare_routing_context_from_execution_context(
+        self,
+        *,
+        select_routes_for_question: Callable[..., Any],
+        routing_state_for: Callable[..., dict[str, Any]],
+        execution_context: dict[str, Any],
+        env: Any,
+    ) -> dict[str, Any]:
+        routes, routing_error = await select_routes_for_question(
+            str(execution_context["question"]),
+            env=env,
+        )
+        routing_context = self.build_routing_context(
+            routing_state=routing_state_for(routes),
+            routing_error=routing_error,
+        )
+        return {
+            "routes": routes,
+            "routing_context": routing_context,
+        }
+
     @staticmethod
     def routing_context_view(routing_context: dict[str, Any]) -> dict[str, Any]:
         return {
