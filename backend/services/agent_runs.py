@@ -1707,30 +1707,6 @@ class PlatformAgentRunService:
             "requested_by": requested_by,
         }
 
-    def build_pending_approval_request_payload(
-        self,
-        *,
-        detail: dict[str, Any],
-        tenant: str,
-        user_id: str,
-        agent_id: str,
-        tool_name: str,
-        inputs: dict[str, Any],
-        headers: Any,
-    ) -> dict[str, Any]:
-        return self.build_approval_request_payload(
-            detail=detail,
-            tenant=tenant,
-            user_id=user_id,
-            agent_id=agent_id,
-            tool_name=tool_name,
-            inputs=inputs,
-            requested_by=self.resolve_requested_by(
-                headers=headers,
-                user_id=user_id,
-            ),
-        )
-
     def create_pending_approval_request(
         self,
         *,
@@ -1744,14 +1720,17 @@ class PlatformAgentRunService:
         headers: Any,
     ) -> dict[str, Any]:
         return create_request(
-            **self.build_pending_approval_request_payload(
+            **self.build_approval_request_payload(
                 detail=detail,
                 tenant=tenant,
                 user_id=user_id,
                 agent_id=agent_id,
                 tool_name=tool_name,
                 inputs=inputs,
-                headers=headers,
+                requested_by=self.resolve_requested_by(
+                    headers=headers,
+                    user_id=user_id,
+                ),
             ),
         )
 
