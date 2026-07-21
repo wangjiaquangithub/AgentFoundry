@@ -1687,26 +1687,19 @@ async def run_enterprise_agent(
             route,
             default_source=ROUTING_SOURCE_RULES,
         )
-        tool_name = route_context_view["tool_name"]
-        route_inputs = route_context_view["inputs"]
-        route_reason = route_context_view["reason"]
-        route_source = route_context_view["source"]
 
-        if agent_run_service.record_unconfigured_routed_tool_denial_from_context(
+        if agent_run_service.record_unconfigured_routed_tool_denial_from_route_view_context(
             tool_calls=tool_calls,
             tool_denial_payload=_platform_agent_service().tool_denial_payload,
             decision_with_routing_context=(
                 enterprise_router_service.decision_with_routing_context
             ),
             configured_tools=configured_tools,
-            tool_name=tool_name,
-            inputs=route_inputs,
+            route_context_view=route_context_view,
             tenant=tenant,
             user_id=user_id,
             connector=connector_label,
             connector_source=connector_source,
-            routing_source=route_source,
-            routing_reason=route_reason,
             routing_mode=routing_mode,
             routing_error=routing_error,
         ):
