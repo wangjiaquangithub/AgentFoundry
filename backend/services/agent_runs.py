@@ -1525,10 +1525,14 @@ class PlatformAgentRunService:
             connector_source=connector_source,
             routing_source=routing_source,
             routing_reason=routing_reason,
-            decision=self.decide_created_pending_approval_route_from_context(
+            decision=self.decide_pending_approval_route_from_context(
                 decision_with_routing_context=decision_with_routing_context,
-                detail=detail,
-                approval=approval,
+                pending_approval_context=(
+                    self.build_created_pending_approval_response_context(
+                        detail=detail,
+                        approval=approval,
+                    )
+                ),
                 routing_reason=routing_reason,
                 routing_source=routing_source,
                 routing_mode=routing_mode,
@@ -1598,31 +1602,6 @@ class PlatformAgentRunService:
                 routing_mode=routing_mode,
                 routing_error=routing_error,
             ),
-        )
-
-    def decide_created_pending_approval_route_from_context(
-        self,
-        *,
-        decision_with_routing_context: Callable[..., dict[str, Any]],
-        detail: dict[str, Any],
-        approval: dict[str, Any],
-        routing_reason: str,
-        routing_source: str,
-        routing_mode: str,
-        routing_error: str | None,
-    ) -> dict[str, Any]:
-        return self.decide_pending_approval_route_from_context(
-            decision_with_routing_context=decision_with_routing_context,
-            pending_approval_context=(
-                self.build_created_pending_approval_response_context(
-                    detail=detail,
-                    approval=approval,
-                )
-            ),
-            routing_reason=routing_reason,
-            routing_source=routing_source,
-            routing_mode=routing_mode,
-            routing_error=routing_error,
         )
 
     def pending_approval_message(
