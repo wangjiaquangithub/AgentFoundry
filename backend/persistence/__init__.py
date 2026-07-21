@@ -63,6 +63,12 @@ from backend.persistence.runs import (
     PostgresAgentRunReadRepository,
     SQLiteAgentRunReadRepository,
 )
+from backend.persistence.runtime_records import (
+    PostgresRuntimeReadRepository,
+    RuntimeInvocationRecord,
+    RuntimeProviderRecord,
+    SQLiteRuntimeReadRepository,
+)
 from backend.persistence.tenancy import (
     MembershipRecord,
     PostgresTenancyReadRepository,
@@ -113,10 +119,13 @@ __all__ = [
     "PostgresMemoryItemReadRepository",
     "PostgresModelConfigReadRepository",
     "PostgresRetrievalEventReadRepository",
+    "PostgresRuntimeReadRepository",
     "PostgresTenancyReadRepository",
     "PostgresToolCallReadRepository",
     "PostgresToolGovernanceReadRepository",
     "RetrievalEventRecord",
+    "RuntimeInvocationRecord",
+    "RuntimeProviderRecord",
     "SQLiteAgentCatalogReadRepository",
     "SQLiteAuditEventReadRepository",
     "SQLiteApprovalReadRepository",
@@ -129,6 +138,7 @@ __all__ = [
     "SQLiteMemoryItemReadRepository",
     "SQLiteModelConfigReadRepository",
     "SQLiteRetrievalEventReadRepository",
+    "SQLiteRuntimeReadRepository",
     "SQLiteTenancyReadRepository",
     "SQLiteToolCallReadRepository",
     "SQLiteToolGovernanceReadRepository",
