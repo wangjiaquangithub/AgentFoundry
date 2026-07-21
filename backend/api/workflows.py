@@ -81,6 +81,17 @@ def _enterprise_platform_scenarios(
     )
 
 
+def _runtime_tenant_for_user(
+    deps: WorkflowGovernanceRouteDependencies,
+    user_id: str,
+) -> str:
+    try:
+        runtime = deps.connector_config_service().enterprise_runtime_context(user_id)
+    except PlatformConnectorConfigServiceError as exc:
+        _raise_service_error(exc)
+    return deps.status_service().runtime_selection(runtime)["tenant"]
+
+
 def _workflow_step(
     deps: WorkflowGovernanceRouteDependencies,
     *,
@@ -332,9 +343,11 @@ def create_workflow_governance_router(
             payload=payload,
             actor=request.headers.get("X-User-ID"),
         )
+        tenant = _runtime_tenant_for_user(deps, decision_payload["decided_by"])
         try:
             approval = approval_service.update_status(
                 approval_id=approval_id,
+                tenant=tenant,
                 status="approved",
                 **decision_payload,
             )
@@ -354,9 +367,11 @@ def create_workflow_governance_router(
             payload=payload,
             actor=request.headers.get("X-User-ID"),
         )
+        tenant = _runtime_tenant_for_user(deps, decision_payload["decided_by"])
         try:
             approval = approval_service.update_status(
                 approval_id=approval_id,
+                tenant=tenant,
                 status="rejected",
                 **decision_payload,
             )

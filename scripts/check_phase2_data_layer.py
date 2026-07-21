@@ -95,9 +95,6 @@ POSTGRES_TENANT_SCOPED_READ_KNOWN_GAPS = {
     "agents.py": {
         "PostgresAgentCatalogReadRepository": {"get_agent_by_id", "list_all_agents"},
     },
-    "approvals.py": {
-        "PostgresApprovalReadRepository": {"get_approval_by_id"},
-    },
 }
 
 POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT = sum(

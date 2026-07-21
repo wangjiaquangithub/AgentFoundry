@@ -212,24 +212,6 @@ class PostgresApprovalReadRepository:
             return None
         return _approval_from_row(dict(row))
 
-    def get_approval_by_id(self, *, approval_id: str) -> ApprovalRecord | None:
-        with self._database.connect() as connection:
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT id, tenant_id, request_type, target_type, target_id,
-                      status, requested_by, approved_by, reason, payload, created_at,
-                      resolved_at
-                    FROM approvals
-                    WHERE id = %s
-                    """,
-                    (approval_id,),
-                )
-                row = cursor.fetchone()
-        if row is None:
-            return None
-        return _approval_from_row(dict(row))
-
     def list_for_target(
         self,
         *,

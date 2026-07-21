@@ -25,7 +25,12 @@ class ApprovalRequestRepositoryProtocol(Protocol):
     ) -> list[dict[str, Any]]:
         ...
 
-    def get(self, approval_id: str) -> dict[str, Any] | None:
+    def get(
+        self,
+        *,
+        approval_id: str,
+        tenant: str | None = None,
+    ) -> dict[str, Any] | None:
         ...
 
     def append(self, record: dict[str, Any]) -> None:
@@ -35,6 +40,7 @@ class ApprovalRequestRepositoryProtocol(Protocol):
         self,
         *,
         approval_id: str,
+        tenant: str | None = None,
         status: str,
         decided_by: str,
         decided_at: str,
@@ -96,12 +102,19 @@ class ApprovalRequestRepository:
             file.write(json.dumps(record, ensure_ascii=False, default=str))
             file.write("\n")
 
-    def get(self, approval_id: str) -> dict[str, Any] | None:
+    def get(
+        self,
+        *,
+        approval_id: str,
+        tenant: str | None = None,
+    ) -> dict[str, Any] | None:
         if not approval_id:
             return None
 
         for record in reversed(self.read_all()):
             if record.get("approval_id") == approval_id:
+                if tenant and record.get("tenant") != tenant:
+                    return None
                 return record
         return None
 
@@ -109,6 +122,7 @@ class ApprovalRequestRepository:
         self,
         *,
         approval_id: str,
+        tenant: str | None = None,
         status: str,
         decided_by: str,
         decided_at: str,
@@ -118,6 +132,8 @@ class ApprovalRequestRepository:
         for index, record in enumerate(records):
             if record.get("approval_id") != approval_id:
                 continue
+            if tenant and record.get("tenant") != tenant:
+                return None
             updated = {
                 **record,
                 "status": status,
@@ -189,11 +205,19 @@ class PostgresApprovalReadThroughRepository:
         ]
         return postgres_records[: _clamp_limit(limit)]
 
-    def get(self, approval_id: str) -> dict[str, Any] | None:
+    def get(
+        self,
+        *,
+        approval_id: str,
+        tenant: str | None = None,
+    ) -> dict[str, Any] | None:
         if not approval_id:
             return None
+        if not tenant:
+            raise ValueError("PostgreSQL approval id reads require tenant context.")
 
-        postgres_record = self._postgres_reader.get_approval_by_id(
+        postgres_record = self._postgres_reader.get_approval(
+            tenant_id=tenant,
             approval_id=approval_id,
         )
         if postgres_record is not None:
@@ -212,12 +236,17 @@ class PostgresApprovalReadThroughRepository:
         self,
         *,
         approval_id: str,
+        tenant: str | None = None,
         status: str,
         decided_by: str,
         decided_at: str,
         decision_note: str | None,
     ) -> dict[str, Any] | None:
-        postgres_record = self._postgres_reader.get_approval_by_id(
+        if not tenant:
+            raise ValueError("PostgreSQL approval decisions require tenant context.")
+
+        postgres_record = self._postgres_reader.get_approval(
+            tenant_id=tenant,
             approval_id=approval_id,
         )
         if postgres_record is not None:

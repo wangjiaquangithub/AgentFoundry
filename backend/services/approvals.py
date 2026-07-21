@@ -246,7 +246,10 @@ class PlatformApprovalService:
                 ),
             )
 
-        approval = self._get_request(normalized_approval_id)
+        approval = self._get_request(
+            approval_id=normalized_approval_id,
+            tenant=tenant,
+        )
         approval_agent_id = str(approval.get("agent_id") or "").strip()
         approved_inputs = approval.get("inputs")
         if not isinstance(approved_inputs, dict):
@@ -292,6 +295,7 @@ class PlatformApprovalService:
         self,
         *,
         approval_id: str,
+        tenant: str,
         status: str,
         decided_by: str,
         decision_note: str | None,
@@ -304,7 +308,17 @@ class PlatformApprovalService:
                 f"Unknown approval decision: {normalized_status}",
             )
 
-        record = self._repository.get(normalized_id)
+        normalized_tenant = tenant.strip()
+        if not normalized_tenant:
+            raise PlatformApprovalServiceError(
+                400,
+                "tenant is required for approval decisions.",
+            )
+
+        record = self._repository.get(
+            approval_id=normalized_id,
+            tenant=normalized_tenant,
+        )
         if record is None:
             raise PlatformApprovalServiceError(
                 404,
@@ -318,6 +332,7 @@ class PlatformApprovalService:
 
         updated = self._repository.update_status(
             approval_id=normalized_id,
+            tenant=normalized_tenant,
             status=normalized_status,
             decided_by=decided_by,
             decided_at=self._now(),
@@ -335,9 +350,24 @@ class PlatformApprovalService:
         )
         return updated
 
-    def _get_request(self, approval_id: str) -> dict[str, Any]:
+    def _get_request(
+        self,
+        *,
+        approval_id: str,
+        tenant: str,
+    ) -> dict[str, Any]:
         normalized_id = approval_id.strip()
-        record = self._repository.get(normalized_id)
+        normalized_tenant = tenant.strip()
+        if not normalized_tenant:
+            raise PlatformApprovalServiceError(
+                400,
+                "tenant is required for approval reads.",
+            )
+
+        record = self._repository.get(
+            approval_id=normalized_id,
+            tenant=normalized_tenant,
+        )
         if record is not None:
             return record
         raise PlatformApprovalServiceError(
