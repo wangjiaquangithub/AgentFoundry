@@ -1204,7 +1204,7 @@ class PlatformAgentRunService:
         default_source: str,
         tool_denial_payload: Callable[..., dict[str, Any]],
         decision_with_routing_context: Callable[..., dict[str, Any]],
-        configured_tools: set[str],
+        execution_context: dict[str, Any],
         require_platform_approval: Callable[..., str | None],
         approval_exception_type: type[Exception],
         run_request: dict[str, Any],
@@ -1216,16 +1216,19 @@ class PlatformAgentRunService:
         ],
         run_authorized_enterprise_tool: Callable[..., dict[str, Any]],
         format_tool_result_answer: Callable[..., str],
-        tenant: str,
-        user_id: str,
-        agent_id: str,
-        session_id: str,
         headers: Any,
-        connector: str,
-        connector_source: str,
         routing_mode: str,
         routing_error: str | None,
     ) -> list[dict[str, Any]]:
+        execution_context_view = self.execution_context_view(execution_context)
+        response_record_context = execution_context_view["response_record_context"]
+        configured_tools = execution_context_view["configured_tools"]
+        tenant = execution_context_view["tenant"]
+        user_id = response_record_context["user_id"]
+        agent_id = execution_context_view["runner_agent_id"]
+        session_id = execution_context_view["runner_session_id"]
+        connector = execution_context_view["connector_label"]
+        connector_source = execution_context_view["connector_source"]
         route_context_views = self.routed_route_context_views_from_routes(
             routes,
             default_source=default_source,

@@ -1559,16 +1559,7 @@ async def run_enterprise_agent(
     execution_context_view = agent_run_service.execution_context_view(
         execution_context
     )
-    agent_metadata = execution_context_view["agent_metadata"]
-    runtime_adapter_payload = execution_context_view["runtime_adapter"]
-    tenant = execution_context_view["tenant"]
-    connector_label = execution_context_view["connector_label"]
-    connector_source = execution_context_view["connector_source"]
     question = execution_context_view["question"]
-    configured_tools = execution_context_view["configured_tools"]
-    runner_agent_id = execution_context_view["runner_agent_id"]
-    runner_session_id = execution_context_view["runner_session_id"]
-    response_record_context = execution_context_view["response_record_context"]
     memory_context = agent_run_service.prepare_memory_context_from_execution_context(
         build_agent_run_context=platform_memory_service.build_agent_run_context,
         agent_run_state=platform_memory_service.agent_run_state,
@@ -1659,7 +1650,7 @@ async def run_enterprise_agent(
         decision_with_routing_context=(
             enterprise_router_service.decision_with_routing_context
         ),
-        configured_tools=configured_tools,
+        execution_context=execution_context,
         require_platform_approval=_require_platform_approval,
         approval_exception_type=HTTPException,
         run_request=run_request,
@@ -1672,13 +1663,7 @@ async def run_enterprise_agent(
         format_tool_result_answer=(
             _platform_tool_policy_service().format_tool_result_answer
         ),
-        tenant=tenant,
-        user_id=user_id,
-        agent_id=runner_agent_id,
-        session_id=runner_session_id,
         headers=request.headers,
-        connector=connector_label,
-        connector_source=connector_source,
         routing_mode=routing_mode,
         routing_error=routing_error,
     )
