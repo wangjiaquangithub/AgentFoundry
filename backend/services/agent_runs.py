@@ -1166,11 +1166,6 @@ class PlatformAgentRunService:
         routing_mode: str,
         routing_error: str | None,
     ) -> list[dict[str, Any]]:
-        execution_context_view = self.execution_context_view(execution_context)
-        response_record_context = execution_context_view["response_record_context"]
-        tenant = execution_context_view["tenant"]
-        user_id = response_record_context["user_id"]
-        agent_id = execution_context_view["runner_agent_id"]
         route_context_views = self.routed_route_context_views_from_routes(
             routes,
             default_source=default_source,
@@ -1194,9 +1189,7 @@ class PlatformAgentRunService:
                     run_request=run_request,
                     approval_required_tools=approval_required_tools,
                     route_context_view=route_context_view,
-                    tenant=tenant,
-                    user_id=user_id,
-                    agent_id=agent_id,
+                    execution_context=execution_context,
                 )
             except approval_exception_type as exc:
                 self.record_pending_tool_approval_from_route_view_exception_context(
@@ -1382,18 +1375,18 @@ class PlatformAgentRunService:
         run_request: dict[str, Any],
         approval_required_tools: set[str],
         route_context_view: dict[str, Any],
-        tenant: str,
-        user_id: str,
-        agent_id: str,
+        execution_context: dict[str, Any],
     ) -> str | None:
+        execution_context_view = self.execution_context_view(execution_context)
+        response_record_context = execution_context_view["response_record_context"]
         return self.resolve_routed_tool_approval_from_context(
             require_platform_approval=require_platform_approval,
             run_request=run_request,
             approval_required_tools=approval_required_tools,
             tool_name=route_context_view["tool_name"],
-            tenant=tenant,
-            user_id=user_id,
-            agent_id=agent_id,
+            tenant=execution_context_view["tenant"],
+            user_id=response_record_context["user_id"],
+            agent_id=execution_context_view["runner_agent_id"],
             inputs=route_context_view["inputs"],
         )
 
