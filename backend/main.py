@@ -28,10 +28,12 @@ from api.agent_runtime import (
 from api.agents import AgentCatalogRouteDependencies, create_agent_catalog_router
 from api.knowledge import (
     KnowledgeDocumentsRouteDependencies,
+    KnowledgeEmbeddingRecordsRouteDependencies,
     KnowledgeIngestionRouteDependencies,
     KnowledgeReadinessRouteDependencies,
     KnowledgeRetrievalRouteDependencies,
     KnowledgeRetrievalEventsRouteDependencies,
+    create_knowledge_embedding_records_router,
     create_knowledge_documents_router,
     create_knowledge_ingestion_router,
     create_knowledge_readiness_router,
@@ -436,6 +438,26 @@ def _build_knowledge_document_chunk_read_repository() -> (
         return None
 
     return PostgresDocumentChunkReadRepository(database)
+
+
+def _build_knowledge_embedding_record_read_repository() -> (
+    PostgresEmbeddingRecordReadRepository | None
+):
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresEmbeddingRecordReadRepository(database)
+
+
+def _build_knowledge_embedding_record_write_repository() -> (
+    PostgresEmbeddingRecordWriteRepository | None
+):
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresEmbeddingRecordWriteRepository(database)
 
 
 def _build_knowledge_retrieval_service() -> (
@@ -937,6 +959,21 @@ app.include_router(
             document_repository=_build_knowledge_document_read_repository,
             document_chunk_repository=_build_knowledge_document_chunk_read_repository,
             tenant_hint_from_user_id=tenant_hint_from_user_id,
+        )
+    )
+)
+
+app.include_router(
+    create_knowledge_embedding_records_router(
+        KnowledgeEmbeddingRecordsRouteDependencies(
+            embedding_record_read_repository=(
+                _build_knowledge_embedding_record_read_repository
+            ),
+            embedding_record_write_repository=(
+                _build_knowledge_embedding_record_write_repository
+            ),
+            tenant_hint_from_user_id=tenant_hint_from_user_id,
+            now=now_iso,
         )
     )
 )

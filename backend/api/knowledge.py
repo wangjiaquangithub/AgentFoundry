@@ -2,18 +2,22 @@
 
 from dataclasses import dataclass
 from typing import Any, Callable, NoReturn
+from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Request
 
 from api.schemas import (
     EnterpriseKnowledgeDocumentDetailRequest,
     EnterpriseKnowledgeDocumentsRequest,
+    EnterpriseKnowledgeEmbeddingRecordUpsertRequest,
+    EnterpriseKnowledgeEmbeddingRecordsRequest,
     EnterpriseKnowledgeIngestRequest,
     EnterpriseKnowledgeReadinessRequest,
     EnterpriseKnowledgeRetrieveRequest,
     EnterpriseKnowledgeRetrievalEventDetailRequest,
     EnterpriseKnowledgeRetrievalEventsRequest,
 )
+from backend.persistence.embedding_records import EmbeddingRecord
 from services.knowledge import (
     PlatformKnowledgeDocumentReadinessService,
     PlatformKnowledgeRetrievalService,
@@ -57,6 +61,14 @@ class KnowledgeRetrievalRouteDependencies:
 class KnowledgeRetrievalEventsRouteDependencies:
     retrieval_event_repository: Callable[[], Any | None]
     tenant_hint_from_user_id: Callable[[str], str | None]
+
+
+@dataclass(frozen=True)
+class KnowledgeEmbeddingRecordsRouteDependencies:
+    embedding_record_read_repository: Callable[[], Any | None]
+    embedding_record_write_repository: Callable[[], Any | None]
+    tenant_hint_from_user_id: Callable[[str], str | None]
+    now: Callable[[], str]
 
 
 def _resolve_tenant(
@@ -115,6 +127,17 @@ def _retrieval_event_payload(retrieval_event: Any) -> dict[str, Any]:
     }
 
 
+def _embedding_record_payload(record: Any) -> dict[str, Any]:
+    return {
+        "id": record.id,
+        "tenant": record.tenant_id,
+        "chunk_id": record.chunk_id,
+        "model_config_id": record.model_config_id,
+        "vector_ref": record.vector_ref,
+        "created_at": record.created_at,
+    }
+
+
 def create_knowledge_ingestion_router(
     deps: KnowledgeIngestionRouteDependencies,
 ) -> APIRouter:
@@ -166,6 +189,85 @@ def create_knowledge_ingestion_router(
             "embedding_required": result.embedding_required,
             "embedding_model_config_id": result.embedding_model_config_id,
             "guidance": result.guidance,
+        }
+
+    return router
+
+
+def create_knowledge_embedding_records_router(
+    deps: KnowledgeEmbeddingRecordsRouteDependencies,
+) -> APIRouter:
+    router = APIRouter()
+
+    @router.post("/enterprise/platform/knowledge/embedding-records")
+    async def list_enterprise_knowledge_embedding_records(
+        payload: EnterpriseKnowledgeEmbeddingRecordsRequest,
+        request: Request,
+    ) -> dict[str, Any]:
+        """List tenant embedding records from PostgreSQL."""
+        repository = deps.embedding_record_read_repository()
+        if repository is None:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Production knowledge embedding record reads require PostgreSQL. "
+                    "Local JSON or SQLite storage is not a production embedding "
+                    "record target."
+                ),
+            )
+
+        tenant_id = _resolve_tenant(
+            tenant=payload.tenant,
+            request=request,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
+        records = repository.list_embedding_records(
+            tenant_id=tenant_id,
+            chunk_id=payload.chunk_id,
+            model_config_id=payload.model_config_id,
+            limit=payload.limit,
+        )
+        return {
+            "tenant": tenant_id,
+            "embedding_records": [
+                _embedding_record_payload(record) for record in records
+            ],
+        }
+
+    @router.post("/enterprise/platform/knowledge/embedding-records/upsert")
+    async def upsert_enterprise_knowledge_embedding_record(
+        payload: EnterpriseKnowledgeEmbeddingRecordUpsertRequest,
+        request: Request,
+    ) -> dict[str, Any]:
+        """Persist one tenant embedding record to PostgreSQL."""
+        repository = deps.embedding_record_write_repository()
+        if repository is None:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Production knowledge embedding record writes require PostgreSQL. "
+                    "Local JSON or SQLite storage is not a production embedding "
+                    "record target."
+                ),
+            )
+
+        tenant_id = _resolve_tenant(
+            tenant=payload.tenant,
+            request=request,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
+        record = EmbeddingRecord(
+            id=payload.embedding_record_id or f"emb-{uuid4()}",
+            tenant_id=tenant_id,
+            chunk_id=payload.chunk_id,
+            model_config_id=payload.model_config_id,
+            vector_ref=payload.vector_ref,
+            created_at=deps.now(),
+        )
+        repository.append_embedding_record(record)
+        return {
+            "tenant": tenant_id,
+            "embedding_record": _embedding_record_payload(record),
         }
 
     return router

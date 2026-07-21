@@ -150,6 +150,21 @@ class EnterpriseKnowledgeRetrievalEventDetailRequest(BaseModel):
     tenant: str | None = None
 
 
+class EnterpriseKnowledgeEmbeddingRecordsRequest(BaseModel):
+    chunk_id: str | None = None
+    model_config_id: str | None = None
+    tenant: str | None = None
+    limit: int = Field(default=50, ge=1, le=100)
+
+
+class EnterpriseKnowledgeEmbeddingRecordUpsertRequest(BaseModel):
+    chunk_id: str
+    model_config_id: str
+    vector_ref: str
+    tenant: str | None = None
+    embedding_record_id: str | None = None
+
+
 class EnterpriseWorkflowTemplateUpdateRequest(BaseModel):
     name: str | None = None
     description: str | None = None
