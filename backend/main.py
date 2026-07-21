@@ -90,6 +90,7 @@ from backend.persistence import (
     PostgresAgentRunWriteRepository,
     PostgresApprovalReadRepository,
     PostgresApprovalWriteRepository,
+    PostgresAuditEventReadRepository,
     PostgresMemoryItemReadRepository,
     PostgresToolCallReadRepository,
     PostgresToolCallWriteRepository,
@@ -222,6 +223,16 @@ def _build_memory_item_read_repository() -> (
         return None
 
     return PostgresMemoryItemReadRepository(create_postgres_database(database_url))
+
+
+def _build_audit_event_read_repository() -> (
+    PostgresAuditEventReadRepository | None
+):
+    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
+    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+        return None
+
+    return PostgresAuditEventReadRepository(create_postgres_database(database_url))
 
 
 connector_config_repository = ConnectorConfigRepository(
@@ -375,6 +386,7 @@ def _platform_status_service() -> PlatformStatusService:
         ),
         agent_run_repository=agent_run_repository,
         audit_logger=tool_audit_logger,
+        audit_event_reader=_build_audit_event_read_repository(),
         tool_policy=tool_authorization_policy,
         connector_health=connector_health,
         agent_readiness=agent_service.readiness,

@@ -1,7 +1,27 @@
 """Enterprise platform status, readiness, and operator task composition."""
 
+import logging
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Protocol
+
+
+LOGGER = logging.getLogger(__name__)
+
+
+class AuditEventReadRepository(Protocol):
+    """Read tenant-scoped platform governance audit events."""
+
+    def list_audit_events(
+        self,
+        *,
+        tenant_id: str,
+        event_type: str | None = None,
+        actor_user_id: str | None = None,
+        target_type: str | None = None,
+        target_id: str | None = None,
+        limit: int = 50,
+    ) -> list[Any]:
+        """Return tenant-scoped platform audit event records."""
 
 
 class PlatformStatusService:
@@ -22,6 +42,7 @@ class PlatformStatusService:
         tenant_workspaces: Callable[..., dict[str, Any]],
         agent_run_repository: Any,
         audit_logger: Any,
+        audit_event_reader: AuditEventReadRepository | None,
         tool_policy: Any,
         connector_health: Callable[[], dict[str, Any]],
         agent_readiness: Callable[[dict[str, Any]], dict[str, Any]],
@@ -40,6 +61,7 @@ class PlatformStatusService:
         self._tenant_workspaces = tenant_workspaces
         self._agent_run_repository = agent_run_repository
         self._audit_logger = audit_logger
+        self._audit_event_reader = audit_event_reader
         self._tool_policy = tool_policy
         self._connector_health = connector_health
         self._agent_readiness = agent_readiness
@@ -160,12 +182,12 @@ class PlatformStatusService:
             workflow_templates,
             workflow_pending_approvals,
         )
-        recent_audit_events = self._audit_logger.query(
+        recent_audit_events = self._query_audit_events(
             tenant=tenant,
             user_id=user_id,
             limit=4,
         )
-        audit_events = self._audit_logger.query(
+        audit_events = self._query_audit_events(
             tenant=tenant,
             user_id=user_id,
             limit=100,
@@ -293,7 +315,10 @@ class PlatformStatusService:
             status="pending",
             limit=100,
         )
-        recent_audit_events = self._audit_logger.recent(limit=100)
+        recent_audit_events = self._recent_audit_events(
+            tenants=list(tenant_workspaces),
+            limit=100,
+        )
 
         pending_by_user: dict[str, int] = {}
         pending_by_tenant: dict[str, int] = {}
@@ -506,7 +531,7 @@ class PlatformStatusService:
             tenant=tenant,
             user_id=user_id,
         )
-        audit_events = self._audit_logger.query(
+        audit_events = self._query_audit_events(
             tenant=tenant,
             user_id=user_id,
             limit=100,
@@ -1006,6 +1031,62 @@ class PlatformStatusService:
             )
         return risk_tools
 
+    def _query_audit_events(
+        self,
+        *,
+        tenant: str | None = None,
+        user_id: str | None = None,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        if tenant and self._audit_event_reader is not None:
+            try:
+                records = self._audit_event_reader.list_audit_events(
+                    tenant_id=tenant,
+                    actor_user_id=user_id,
+                    limit=limit,
+                )
+                return [_audit_event_record_to_event(record) for record in records]
+            except Exception as exc:
+                LOGGER.warning(
+                    "Failed to read platform audit events from PostgreSQL: %s",
+                    exc,
+                )
+
+        return self._audit_logger.query(tenant=tenant, user_id=user_id, limit=limit)
+
+    def _recent_audit_events(
+        self,
+        *,
+        tenants: list[str],
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        if tenants and self._audit_event_reader is not None:
+            try:
+                events: list[dict[str, Any]] = []
+                for tenant in tenants:
+                    records = self._audit_event_reader.list_audit_events(
+                        tenant_id=tenant,
+                        limit=limit,
+                    )
+                    events.extend(
+                        _audit_event_record_to_event(record) for record in records
+                    )
+                return sorted(
+                    events,
+                    key=lambda event: (
+                        str(event.get("timestamp") or ""),
+                        str(event.get("event_id") or ""),
+                    ),
+                    reverse=True,
+                )[:limit]
+            except Exception as exc:
+                LOGGER.warning(
+                    "Failed to read recent platform audit events from PostgreSQL: %s",
+                    exc,
+                )
+
+        return self._audit_logger.recent(limit=limit)
+
     @staticmethod
     def _dashboard_todos(
         pending_approvals: list[dict[str, Any]],
@@ -1109,3 +1190,32 @@ class PlatformStatusService:
             "target": target,
             "evidence": evidence,
         }
+
+
+def _audit_event_record_to_event(record: Any) -> dict[str, Any]:
+    payload = record.payload if isinstance(record.payload, dict) else {}
+    event: dict[str, Any] = {
+        "schema_version": payload.get("schema_version", 1),
+        "event_id": record.id,
+        "event_type": record.event_type,
+        "timestamp": record.created_at,
+        "user_id": record.actor_user_id,
+        "tenant": record.tenant_id,
+        "target_type": record.target_type,
+        "target_id": record.target_id,
+        "payload": payload,
+    }
+    for key in (
+        "agent_id",
+        "session_id",
+        "tool_name",
+        "connector",
+        "inputs",
+        "duration_ms",
+        "success",
+        "result",
+        "error",
+    ):
+        if key in payload:
+            event[key] = payload[key]
+    return event
