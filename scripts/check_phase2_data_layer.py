@@ -1340,6 +1340,91 @@ def _check_postgres_knowledge_readiness_wired() -> list[str]:
     return errors
 
 
+def _check_postgres_members_wired() -> list[str]:
+    errors: list[str] = []
+    main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    member_repository_source = (REPOSITORIES_DIR / "members.py").read_text(
+        encoding="utf-8",
+    )
+    tenancy_persistence_source = (PERSISTENCE_DIR / "tenancy.py").read_text(
+        encoding="utf-8",
+    )
+    main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+
+    required_main_imports = [
+        "PostgresMemberReadThroughRepository",
+        "PostgresTenancyReadRepository",
+        "PostgresTenancyWriteRepository",
+    ]
+    for imported_name in required_main_imports:
+        if not _module_imports_name(main_tree, imported_name):
+            errors.append(
+                f"backend/main.py must import {imported_name} for member PostgreSQL wiring",
+            )
+
+    if not _module_defines_function(main_tree, "_build_member_repository"):
+        errors.append(
+            "backend/main.py must define _build_member_repository for PostgreSQL members",
+        )
+    if "member_repository = _build_member_repository()" not in main_source:
+        errors.append(
+            "backend/main.py must build member_repository through the PostgreSQL selector",
+        )
+    if "PostgresMemberReadThroughRepository(" not in main_source:
+        errors.append(
+            "backend/main.py must wrap PostgreSQL tenancy repositories with "
+            "PostgresMemberReadThroughRepository",
+        )
+    if "postgres_reader=PostgresTenancyReadRepository(database)" not in main_source:
+        errors.append(
+            "backend/main.py must pass the PostgreSQL tenancy reader into the member read-through repository",
+        )
+    if "postgres_writer=PostgresTenancyWriteRepository(database)" not in main_source:
+        errors.append(
+            "backend/main.py must pass the PostgreSQL tenancy writer into the member read-through repository",
+        )
+    if "repository=member_repository" not in main_source:
+        errors.append(
+            "backend/main.py must pass member_repository into PlatformMemberService",
+        )
+
+    required_read_through_tokens = [
+        "class PostgresMemberReadThroughRepository",
+        "list_memberships",
+        "list_users",
+        "list_tenants",
+        "upsert_member",
+        "Member tenant is required for PostgreSQL writes.",
+        "Member user_id is required for PostgreSQL writes.",
+    ]
+    for token in required_read_through_tokens:
+        if token not in member_repository_source:
+            errors.append(
+                "backend/repositories/members.py must provide the PostgreSQL member read-through adapter: "
+                f"{token}",
+            )
+
+    required_persistence_tokens = [
+        "class PostgresTenancyReadRepository",
+        "class PostgresTenancyWriteRepository",
+        "def list_tenants",
+        "def list_users",
+        "def list_memberships",
+        "def upsert_member",
+        "FROM memberships",
+        "INSERT INTO users",
+        "INSERT INTO memberships",
+    ]
+    for token in required_persistence_tokens:
+        if token not in tenancy_persistence_source:
+            errors.append(
+                "backend/persistence/tenancy.py must persist member records in PostgreSQL: "
+                f"{token}",
+            )
+
+    return errors
+
+
 def _find_class_method(
     tree: ast.AST,
     *,
@@ -1401,6 +1486,7 @@ def main() -> int:
         *_check_postgres_agent_runs_wired(),
         *_check_postgres_approval_requests_wired(),
         *_check_postgres_knowledge_readiness_wired(),
+        *_check_postgres_members_wired(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -1435,6 +1521,7 @@ def main() -> int:
     print("- PostgreSQL agent runs wired: yes")
     print("- PostgreSQL approval requests wired: yes")
     print("- PostgreSQL knowledge readiness reads wired: yes")
+    print("- PostgreSQL members wired: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:
