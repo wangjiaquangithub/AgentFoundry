@@ -611,11 +611,13 @@ class PlatformAgentRunService:
         knowledge_hits: list[dict[str, Any]],
         knowledge_error: str | None,
         knowledge_payload: dict[str, Any],
+        retrieval_readiness: dict[str, Any],
     ) -> dict[str, Any]:
         return {
             "knowledge_hits": list(knowledge_hits),
             "knowledge_error": knowledge_error,
             "knowledge_payload": knowledge_payload,
+            "retrieval_readiness": retrieval_readiness,
         }
 
     async def prepare_knowledge_context_from_execution_context(
@@ -629,7 +631,7 @@ class PlatformAgentRunService:
         execution_context: dict[str, Any],
     ) -> dict[str, Any]:
         response_record_context = execution_context["response_record_context"]
-        knowledge_hits, knowledge_error = await search_agent_knowledge_bases(
+        knowledge_hits, knowledge_error, retrieval_readiness = await search_agent_knowledge_bases(
             knowledge_base_service=knowledge_base_service,
             dev_knowledge_service=dev_knowledge_service,
             dev_knowledge_provider=dev_knowledge_provider,
@@ -641,11 +643,13 @@ class PlatformAgentRunService:
         knowledge_payload = build_agent_run_payload(
             knowledge_hits=knowledge_hits,
             knowledge_error=knowledge_error,
+            retrieval_readiness=retrieval_readiness,
         )
         return self.build_knowledge_context(
             knowledge_hits=knowledge_hits,
             knowledge_error=knowledge_error,
             knowledge_payload=knowledge_payload,
+            retrieval_readiness=retrieval_readiness,
         )
 
     @staticmethod
@@ -653,6 +657,7 @@ class PlatformAgentRunService:
         return {
             "knowledge_hits": knowledge_context["knowledge_hits"],
             "knowledge_payload": knowledge_context["knowledge_payload"],
+            "retrieval_readiness": knowledge_context["retrieval_readiness"],
         }
 
     def build_routing_context(

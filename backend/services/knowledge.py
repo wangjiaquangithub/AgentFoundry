@@ -81,12 +81,17 @@ class PlatformKnowledgeResponseService:
         question: str,
         knowledge_base_ids: list[str],
         top_k: int = 3,
-    ) -> tuple[list[dict[str, Any]], str | None]:
+    ) -> tuple[list[dict[str, Any]], str | None, dict[str, Any]]:
+        readiness = self.build_retrieval_readiness(
+            knowledge_base_ids=knowledge_base_ids,
+            production_retriever_available=knowledge_base_service is not None,
+        )
         if not knowledge_base_ids:
-            return [], None
+            return [], None, readiness
 
         hits: list[dict[str, Any]] = []
         errors: list[str] = []
+        production_hit_count = 0
         if knowledge_base_service is not None:
             for knowledge_base_id in knowledge_base_ids:
                 try:
@@ -105,6 +110,7 @@ class PlatformKnowledgeResponseService:
                     for hit in results
                 ]
                 hits.extend(formatted_results)
+                production_hit_count += len(formatted_results)
                 self._append_retrieval_event(
                     tenant=tenant,
                     user_id=user_id,
@@ -137,7 +143,68 @@ class PlatformKnowledgeResponseService:
                 hits.append(hit)
 
         hits.sort(key=lambda item: item["score"], reverse=True)
-        return hits[:top_k], "; ".join(errors) if errors and not hits else None
+        trimmed_hits = hits[:top_k]
+        dev_fallback_hit_count = sum(
+            1
+            for hit in trimmed_hits
+            if bool((hit.get("metadata") or {}).get("dev_fallback"))
+        )
+        knowledge_error = (
+            "; ".join(errors) if errors and not production_hit_count else None
+        )
+        readiness = self.build_retrieval_readiness(
+            knowledge_base_ids=knowledge_base_ids,
+            production_retriever_available=knowledge_base_service is not None,
+            production_hit_count=production_hit_count,
+            dev_fallback_hit_count=dev_fallback_hit_count,
+            knowledge_error=knowledge_error,
+        )
+        return trimmed_hits, knowledge_error, readiness
+
+    def build_retrieval_readiness(
+        self,
+        *,
+        knowledge_base_ids: list[str],
+        production_retriever_available: bool,
+        production_hit_count: int = 0,
+        dev_fallback_hit_count: int = 0,
+        knowledge_error: str | None = None,
+    ) -> dict[str, Any]:
+        bound_knowledge_base_ids = [
+            str(knowledge_base_id).strip()
+            for knowledge_base_id in knowledge_base_ids
+            if str(knowledge_base_id).strip()
+        ]
+        dev_fallback_used = dev_fallback_hit_count > 0
+        if not bound_knowledge_base_ids:
+            status = "not_configured"
+            guidance = "Bind at least one knowledge base to enable retrieval."
+        elif knowledge_error and not production_hit_count and not dev_fallback_used:
+            status = "blocked"
+            guidance = "Production retrieval failed. Check knowledge service and embedding configuration."
+        elif not production_retriever_available:
+            status = "degraded" if dev_fallback_used else "not_configured"
+            guidance = "Configure the production knowledge retriever and embedding provider."
+        elif knowledge_error or dev_fallback_used:
+            status = "degraded"
+            guidance = "Production retrieval is partial; inspect retrieval errors and fallback usage."
+        else:
+            status = "ready"
+            guidance = None
+
+        payload: dict[str, Any] = {
+            "status": status,
+            "bound_knowledge_base_ids": bound_knowledge_base_ids,
+            "production_retriever_available": production_retriever_available,
+            "production_hit_count": production_hit_count,
+            "dev_fallback_hit_count": dev_fallback_hit_count,
+            "dev_fallback_used": dev_fallback_used,
+        }
+        if knowledge_error:
+            payload["knowledge_error"] = knowledge_error
+        if guidance:
+            payload["guidance"] = guidance
+        return payload
 
     def _append_retrieval_event(
         self,
@@ -226,8 +293,11 @@ class PlatformKnowledgeResponseService:
         *,
         knowledge_hits: list[dict[str, Any]],
         knowledge_error: str | None,
+        retrieval_readiness: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {"knowledge_hits": knowledge_hits}
+        if retrieval_readiness is not None:
+            payload["retrieval_readiness"] = retrieval_readiness
         if knowledge_error:
             payload["knowledge_error"] = knowledge_error
         return payload
