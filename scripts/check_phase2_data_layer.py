@@ -1040,6 +1040,89 @@ def _check_postgres_workflow_runs_wired() -> list[str]:
     return errors
 
 
+def _check_postgres_agent_runs_wired() -> list[str]:
+    errors: list[str] = []
+    main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    agent_run_repository_source = (REPOSITORIES_DIR / "agent_runs.py").read_text(
+        encoding="utf-8",
+    )
+    agent_run_persistence_source = (PERSISTENCE_DIR / "runs.py").read_text(
+        encoding="utf-8",
+    )
+    main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+
+    required_main_imports = [
+        "PostgresAgentRunReadRepository",
+        "PostgresAgentRunWriteRepository",
+        "PostgresAgentRunReadThroughRepository",
+    ]
+    for imported_name in required_main_imports:
+        if not _module_imports_name(main_tree, imported_name):
+            errors.append(
+                f"backend/main.py must import {imported_name} for agent run PostgreSQL wiring",
+            )
+
+    if not _module_defines_function(main_tree, "_build_agent_run_repository"):
+        errors.append(
+            "backend/main.py must define _build_agent_run_repository for PostgreSQL agent runs",
+        )
+    if "agent_run_repository = _build_agent_run_repository()" not in main_source:
+        errors.append(
+            "backend/main.py must build agent_run_repository through the PostgreSQL selector",
+        )
+    if "PostgresAgentRunReadThroughRepository(" not in main_source:
+        errors.append(
+            "backend/main.py must wrap PostgreSQL agent run repositories with PostgresAgentRunReadThroughRepository",
+        )
+    if "postgres_reader=PostgresAgentRunReadRepository(database)" not in main_source:
+        errors.append(
+            "backend/main.py must pass the PostgreSQL agent run reader into the read-through repository",
+        )
+    if "postgres_writer=PostgresAgentRunWriteRepository(database)" not in main_source:
+        errors.append(
+            "backend/main.py must pass the PostgreSQL agent run writer into the read-through repository",
+        )
+    if "repository=agent_run_repository" not in main_source:
+        errors.append(
+            "backend/main.py must pass agent_run_repository into PlatformAgentRunService",
+        )
+
+    required_read_through_tokens = [
+        "class PostgresAgentRunReadThroughRepository",
+        "PostgreSQL agent run reads require tenant context.",
+        "PostgreSQL agent run writes require tenant context.",
+        "list_runs",
+        "get_run",
+        "append_run",
+        "_postgres_run_to_platform_record",
+        "_platform_record_to_postgres_run",
+    ]
+    for token in required_read_through_tokens:
+        if token not in agent_run_repository_source:
+            errors.append(
+                "backend/repositories/agent_runs.py must provide the PostgreSQL agent run read-through adapter: "
+                f"{token}",
+            )
+
+    required_persistence_tokens = [
+        "class PostgresAgentRunReadRepository",
+        "class PostgresAgentRunWriteRepository",
+        "def list_runs",
+        "def get_run",
+        "def append_run",
+        "FROM agent_runs",
+        "INSERT INTO agent_runs",
+    ]
+    for token in required_persistence_tokens:
+        if token not in agent_run_persistence_source:
+            errors.append(
+                "backend/persistence/runs.py must persist agent run records in PostgreSQL: "
+                f"{token}",
+            )
+
+    return errors
+
+
 def _check_postgres_approval_requests_wired() -> list[str]:
     errors: list[str] = []
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
@@ -1229,6 +1312,7 @@ def main() -> int:
         *_check_postgres_audit_events_wired(),
         *_check_postgres_retrieval_events_wired(),
         *_check_postgres_workflow_runs_wired(),
+        *_check_postgres_agent_runs_wired(),
         *_check_postgres_approval_requests_wired(),
         *_check_postgres_knowledge_readiness_wired(),
     ]
@@ -1261,6 +1345,7 @@ def main() -> int:
     print("- PostgreSQL audit events wired: yes")
     print("- PostgreSQL retrieval events wired: yes")
     print("- PostgreSQL workflow runs wired: yes")
+    print("- PostgreSQL agent runs wired: yes")
     print("- PostgreSQL approval requests wired: yes")
     print("- PostgreSQL knowledge readiness reads wired: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
