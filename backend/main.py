@@ -17,14 +17,13 @@ import uvicorn
 from fastapi import HTTPException, Request
 from fastapi.middleware import Middleware
 from fastapi.middleware.cors import CORSMiddleware
+from api.agents import AgentCatalogRouteDependencies, create_agent_catalog_router
 from api.platform_admin import (
     PlatformAdminRouteDependencies,
     create_platform_admin_router,
 )
 from api.schemas import (
-    EnterpriseAgentPublishRequest,
     EnterpriseAgentRunRequest,
-    EnterpriseAgentUpdateRequest,
     EnterpriseApprovalCreateRequest,
     EnterpriseApprovalDecisionRequest,
     EnterpriseToolRunRequest,
@@ -957,79 +956,6 @@ app = create_app(
 )
 
 
-@app.get("/enterprise/platform/agents")
-async def enterprise_platform_agents() -> dict[str, Any]:
-    """Return platform agent templates and published tenant instances."""
-    return _platform_agent_service().registry_response()
-
-
-@app.post("/enterprise/platform/agents/publish")
-async def publish_enterprise_platform_agent(
-    payload: EnterpriseAgentPublishRequest,
-    request: Request,
-) -> dict[str, Any]:
-    """Publish one business template as a tenant-scoped platform agent."""
-    agent_service = _platform_agent_service()
-    publish_request = agent_service.publish_request_payload(
-        payload,
-        header_user_id=request.headers.get("X-User-ID"),
-    )
-    user_id = publish_request["user_id"]
-    await _validate_platform_agent_resources(
-        request,
-        user_id,
-        **publish_request["resource_inputs"],
-    )
-    try:
-        return agent_service.publish_agent_response_payload(payload, user_id)
-    except PlatformAgentServiceError as exc:
-        _raise_platform_agent_service_error(exc)
-
-
-@app.patch("/enterprise/platform/agents/{agent_id}")
-async def update_enterprise_platform_agent(
-    agent_id: str,
-    payload: EnterpriseAgentUpdateRequest,
-    request: Request,
-) -> dict[str, Any]:
-    """Update a tenant-scoped platform agent instance."""
-    agent_service = _platform_agent_service()
-    try:
-        update_request = agent_service.update_request_payload(
-            agent_id,
-            payload,
-            header_user_id=request.headers.get("X-User-ID"),
-        )
-    except PlatformAgentServiceError as exc:
-        _raise_platform_agent_service_error(exc)
-    user_id = update_request["user_id"]
-    await _validate_platform_agent_resources(
-        request,
-        user_id,
-        **update_request["resource_inputs"],
-    )
-    try:
-        return agent_service.update_agent_response_payload(
-            agent_id,
-            payload,
-            user_id,
-        )
-    except PlatformAgentServiceError as exc:
-        _raise_platform_agent_service_error(exc)
-
-
-@app.delete("/enterprise/platform/agents/{agent_id}")
-async def archive_enterprise_platform_agent(
-    agent_id: str,
-) -> dict[str, Any]:
-    """Archive a platform agent while keeping its registry record."""
-    agent_service = _platform_agent_service()
-    try:
-        return agent_service.archive_agent_response_payload(agent_id)
-    except PlatformAgentServiceError as exc:
-        _raise_platform_agent_service_error(exc)
-
-
 @app.get("/enterprise/platform/tools")
 async def enterprise_platform_tools(
     request: Request,
@@ -1952,6 +1878,15 @@ app.include_router(
             get_tool_authorization_policy=_get_tool_authorization_policy,
             set_tool_authorization_policy=_set_tool_authorization_policy,
             build_tool_authorization_policy=_build_tool_authorization_policy,
+        )
+    )
+)
+
+app.include_router(
+    create_agent_catalog_router(
+        AgentCatalogRouteDependencies(
+            agent_service=_platform_agent_service,
+            validate_agent_resources=_validate_platform_agent_resources,
         )
     )
 )
