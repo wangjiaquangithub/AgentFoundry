@@ -166,7 +166,7 @@ class MemoryItemReadRepository(Protocol):
 
 
 class MemoryItemWriteRepository(Protocol):
-    def append_memory_item(self, record: MemoryItemRecord) -> None:
+    def append_memory_item(self, record: MemoryItemRecord) -> MemoryItemRecord:
         ...
 
 

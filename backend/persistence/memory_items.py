@@ -191,7 +191,7 @@ class PostgresMemoryItemWriteRepository:
     def __init__(self, database: PostgresDatabase) -> None:
         self._database = database
 
-    def append_memory_item(self, record: MemoryItemRecord) -> None:
+    def append_memory_item(self, record: MemoryItemRecord) -> MemoryItemRecord:
         with self._database.transaction() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
@@ -214,6 +214,8 @@ class PostgresMemoryItemWriteRepository:
                       metadata = EXCLUDED.metadata,
                       expires_at = EXCLUDED.expires_at,
                       created_at = EXCLUDED.created_at
+                    RETURNING id, tenant_id, user_id, agent_id, session_id,
+                      content, source_run_id, metadata, expires_at, created_at
                     """,
                     (
                         record.id,
@@ -228,3 +230,7 @@ class PostgresMemoryItemWriteRepository:
                         record.created_at,
                     ),
                 )
+                row = cursor.fetchone()
+        if row is None:
+            raise ValueError("Memory item upsert did not return a row.")
+        return _memory_item_from_row(dict(row))

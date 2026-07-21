@@ -789,6 +789,9 @@ def _check_postgres_memory_item_writes_wired() -> list[str]:
     errors: list[str] = []
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
     memory_source = (REPOSITORIES_DIR / "memories.py").read_text(encoding="utf-8")
+    memory_persistence_source = (PERSISTENCE_DIR / "memory_items.py").read_text(
+        encoding="utf-8",
+    )
     main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
     memory_tree = ast.parse(memory_source, filename=str(REPOSITORIES_DIR / "memories.py"))
 
@@ -832,6 +835,19 @@ def _check_postgres_memory_item_writes_wired() -> list[str]:
         errors.append(
             "backend/repositories/memories.py must call the memory item writer",
         )
+    for token in (
+        "def append_memory_item(",
+        ") -> MemoryItemRecord:",
+        "RETURNING id, tenant_id, user_id, agent_id, session_id",
+        "row = cursor.fetchone()",
+        "Memory item upsert did not return a row.",
+        "return _memory_item_from_row(dict(row))",
+    ):
+        if token not in memory_persistence_source:
+            errors.append(
+                "backend/persistence/memory_items.py must return persisted "
+                f"PostgreSQL memory item write records: {token}",
+            )
 
     append_capped = _find_class_method(
         memory_tree,
