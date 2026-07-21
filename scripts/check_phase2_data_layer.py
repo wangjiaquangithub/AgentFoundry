@@ -682,6 +682,97 @@ def _check_postgres_tool_calls_wired() -> list[str]:
     return errors
 
 
+def _check_postgres_tool_policy_wired() -> list[str]:
+    errors: list[str] = []
+    main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    tool_service_source = (SERVICES_DIR / "tools.py").read_text(encoding="utf-8")
+    tool_policy_source = (REPOSITORIES_DIR / "tool_policy.py").read_text(
+        encoding="utf-8",
+    )
+    tool_persistence_source = (PERSISTENCE_DIR / "tools.py").read_text(
+        encoding="utf-8",
+    )
+    main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+
+    if not _module_imports_name(main_tree, "PostgresToolGovernanceReadRepository"):
+        errors.append(
+            "backend/main.py must import PostgresToolGovernanceReadRepository for tool policy reads",
+        )
+    if not _module_imports_name(main_tree, "PostgresToolGovernanceWriteRepository"):
+        errors.append(
+            "backend/main.py must import PostgresToolGovernanceWriteRepository for tool policy writes",
+        )
+    if not _module_defines_function(main_tree, "_build_tool_governance_read_repository"):
+        errors.append(
+            "backend/main.py must define _build_tool_governance_read_repository for PostgreSQL tool policy reads",
+        )
+    if not _module_defines_function(main_tree, "_build_tool_governance_write_repository"):
+        errors.append(
+            "backend/main.py must define _build_tool_governance_write_repository for PostgreSQL tool policy writes",
+        )
+    if "tool_governance_reader=_build_tool_governance_read_repository()" not in main_source:
+        errors.append(
+            "backend/main.py must pass the PostgreSQL tool_governance_reader into PlatformToolPolicyService",
+        )
+    if "tool_governance_writer=_build_tool_governance_write_repository()" not in main_source:
+        errors.append(
+            "backend/main.py must pass the PostgreSQL tool_governance_writer into PlatformToolPolicyService",
+        )
+    if "now=now_iso" not in main_source:
+        errors.append(
+            "backend/main.py must pass a clock into PlatformToolPolicyService for PostgreSQL tool policy writes",
+        )
+
+    required_service_tokens = [
+        "PostgresToolPolicyWriteThroughRepository",
+        "_tool_governance_reader",
+        "_tool_governance_writer",
+        "Tool governance PostgreSQL writer requires a reader.",
+        "Tool governance PostgreSQL writer requires a clock.",
+        "postgres_reader=self._tool_governance_reader",
+        "postgres_writer=self._tool_governance_writer",
+        "approval_required_tools=self._approval_required_tools",
+    ]
+    for token in required_service_tokens:
+        if token not in tool_service_source:
+            errors.append(
+                "backend/services/tools.py must route tool policy persistence through PostgreSQL: "
+                f"{token}",
+            )
+
+    required_write_through_tokens = [
+        "class PostgresToolPolicyWriteThroughRepository",
+        "load_policy_snapshot",
+        "save_policy",
+        "enterprise_tool_catalog",
+        "approval_required_tools",
+    ]
+    for token in required_write_through_tokens:
+        if token not in tool_policy_source:
+            errors.append(
+                "backend/repositories/tool_policy.py must provide the PostgreSQL write-through adapter: "
+                f"{token}",
+            )
+
+    required_persistence_tokens = [
+        "class PostgresToolGovernanceReadRepository",
+        "class PostgresToolGovernanceWriteRepository",
+        "def load_policy_snapshot",
+        "def save_policy",
+        "INSERT INTO tools",
+        "INSERT INTO tool_policies",
+        "INSERT INTO tool_user_policies",
+    ]
+    for token in required_persistence_tokens:
+        if token not in tool_persistence_source:
+            errors.append(
+                "backend/persistence/tools.py must persist tool policy records in PostgreSQL: "
+                f"{token}",
+            )
+
+    return errors
+
+
 def _check_postgres_memory_item_writes_wired() -> list[str]:
     errors: list[str] = []
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
@@ -1051,6 +1142,7 @@ def main() -> int:
         *_check_postgres_runtime_provider_reads_wired(),
         *_check_postgres_runtime_invocation_writes_wired(),
         *_check_postgres_tool_calls_wired(),
+        *_check_postgres_tool_policy_wired(),
         *_check_postgres_memory_item_writes_wired(),
         *_check_postgres_audit_events_wired(),
         *_check_postgres_retrieval_events_wired(),
@@ -1081,6 +1173,7 @@ def main() -> int:
     print("- PostgreSQL runtime provider reads wired: yes")
     print("- PostgreSQL runtime invocation writes wired: yes")
     print("- PostgreSQL tool calls wired: yes")
+    print("- PostgreSQL tool policy write-through wired: yes")
     print("- PostgreSQL memory item writes wired: yes")
     print("- PostgreSQL audit events wired: yes")
     print("- PostgreSQL retrieval events wired: yes")
