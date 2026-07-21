@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 API_MODULE = ROOT / "backend" / "api" / "knowledge.py"
 SERVICE_MODULE = ROOT / "backend" / "services" / "knowledge.py"
 RETRIEVAL_EVENTS_MODULE = ROOT / "backend" / "persistence" / "retrieval_events.py"
+AUDIT_EVENTS_MODULE = ROOT / "backend" / "persistence" / "audit_events.py"
 MAIN_MODULE = ROOT / "backend" / "main.py"
 
 
@@ -32,6 +33,7 @@ def main() -> int:
     api_source = _read(API_MODULE)
     service_source = _read(SERVICE_MODULE)
     retrieval_events_source = _read(RETRIEVAL_EVENTS_MODULE)
+    audit_events_source = _read(AUDIT_EVENTS_MODULE)
     main_source = _read(MAIN_MODULE)
 
     for needle in (
@@ -68,6 +70,23 @@ def main() -> int:
             retrieval_events_source,
             needle,
             "PostgreSQL retrieval event write repository",
+        )
+
+    for needle in (
+        "def append_audit_event(",
+        ") -> AuditEventRecord:",
+        "RETURNING id, tenant_id, actor_user_id, event_type",
+        "resource_type AS target_type",
+        "resource_id AS target_id",
+        "metadata AS payload",
+        "row = cursor.fetchone()",
+        "Audit event upsert did not return a row.",
+        "return _audit_event_from_row(dict(row))",
+    ):
+        _assert_contains(
+            audit_events_source,
+            needle,
+            "PostgreSQL audit event write repository",
         )
 
     _assert_contains(

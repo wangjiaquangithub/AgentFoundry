@@ -223,7 +223,7 @@ class PostgresAuditEventWriteRepository:
     def __init__(self, database: PostgresDatabase) -> None:
         self._database = database
 
-    def append_audit_event(self, record: AuditEventRecord) -> None:
+    def append_audit_event(self, record: AuditEventRecord) -> AuditEventRecord:
         with self._database.transaction() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
@@ -249,6 +249,11 @@ class PostgresAuditEventWriteRepository:
                       resource_id = EXCLUDED.resource_id,
                       metadata = EXCLUDED.metadata,
                       created_at = EXCLUDED.created_at
+                    RETURNING id, tenant_id, actor_user_id, event_type,
+                      resource_type AS target_type,
+                      resource_id AS target_id,
+                      metadata AS payload,
+                      created_at
                     """,
                     (
                         record.id,
@@ -264,3 +269,7 @@ class PostgresAuditEventWriteRepository:
                         record.created_at,
                     ),
                 )
+                row = cursor.fetchone()
+        if row is None:
+            raise ValueError("Audit event upsert did not return a row.")
+        return _audit_event_from_row(dict(row))
