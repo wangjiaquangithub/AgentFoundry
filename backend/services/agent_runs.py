@@ -390,7 +390,6 @@ class PlatformAgentRunService:
     def memory_context_view(memory_context: dict[str, Any]) -> dict[str, Any]:
         return {
             "memory_payload": memory_context["memory_payload"],
-            "memory_enabled": memory_context["memory_enabled"],
             "memory_hits": memory_context["memory_hits"],
         }
 
