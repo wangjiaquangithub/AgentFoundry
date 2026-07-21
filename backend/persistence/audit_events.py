@@ -144,8 +144,11 @@ class PostgresAuditEventReadRepository:
         limit: int = 50,
     ) -> list[AuditEventRecord]:
         query = """
-            SELECT id, tenant_id, actor_user_id, event_type, target_type,
-              target_id, payload, created_at
+            SELECT id, tenant_id, actor_user_id, event_type,
+              resource_type AS target_type,
+              resource_id AS target_id,
+              metadata AS payload,
+              created_at
             FROM audit_events
             WHERE tenant_id = %s
         """
@@ -157,10 +160,10 @@ class PostgresAuditEventReadRepository:
             query += " AND actor_user_id = %s"
             parameters.append(actor_user_id)
         if target_type is not None:
-            query += " AND target_type = %s"
+            query += " AND resource_type = %s"
             parameters.append(target_type)
         if target_id is not None:
-            query += " AND target_id = %s"
+            query += " AND resource_id = %s"
             parameters.append(target_id)
         query += " ORDER BY created_at DESC, id DESC LIMIT %s"
         parameters.append(self._clamp_limit(limit))
@@ -181,7 +184,10 @@ class PostgresAuditEventReadRepository:
                 cursor.execute(
                     """
                     SELECT id, tenant_id, actor_user_id, event_type,
-                      target_type, target_id, payload, created_at
+                      resource_type AS target_type,
+                      resource_id AS target_id,
+                      metadata AS payload,
+                      created_at
                     FROM audit_events
                     WHERE tenant_id = %s AND id = %s
                     """,
@@ -224,11 +230,13 @@ class PostgresAuditEventWriteRepository:
                     """
                     INSERT INTO audit_events (
                       id, tenant_id, actor_user_id, event_type, target_type,
-                      target_id, payload, created_at
+                      target_id, payload, resource_type, resource_id, metadata,
+                      created_at
                     )
                     VALUES (
                       %s, %s, %s, %s, %s,
-                      %s, %s, %s
+                      %s, %s, %s, %s, %s,
+                      %s
                     )
                     ON CONFLICT (id) DO UPDATE SET
                       tenant_id = EXCLUDED.tenant_id,
@@ -237,6 +245,9 @@ class PostgresAuditEventWriteRepository:
                       target_type = EXCLUDED.target_type,
                       target_id = EXCLUDED.target_id,
                       payload = EXCLUDED.payload,
+                      resource_type = EXCLUDED.resource_type,
+                      resource_id = EXCLUDED.resource_id,
+                      metadata = EXCLUDED.metadata,
                       created_at = EXCLUDED.created_at
                     """,
                     (
@@ -244,6 +255,9 @@ class PostgresAuditEventWriteRepository:
                         record.tenant_id,
                         record.actor_user_id,
                         record.event_type,
+                        record.target_type,
+                        record.target_id,
+                        json.dumps(record.payload, ensure_ascii=False),
                         record.target_type,
                         record.target_id,
                         json.dumps(record.payload, ensure_ascii=False),

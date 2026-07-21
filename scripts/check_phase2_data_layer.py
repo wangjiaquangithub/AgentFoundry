@@ -64,7 +64,6 @@ REQUIRED_REPOSITORIES = {
 }
 
 TARGET_COLUMN_WARNINGS = {
-    "audit_events": {"resource_type", "resource_id", "metadata"},
     "model_configs": {"base_url", "credential_ref"},
 }
 
