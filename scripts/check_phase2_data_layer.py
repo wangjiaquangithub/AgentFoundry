@@ -2085,6 +2085,65 @@ def _check_postgres_agent_run_reads_guarded() -> list[str]:
     return errors
 
 
+def _check_postgres_approval_request_reads_guarded() -> list[str]:
+    errors: list[str] = []
+    approval_path = PERSISTENCE_DIR / "approvals.py"
+    approval_source = approval_path.read_text(encoding="utf-8")
+    approval_tree = ast.parse(approval_source, filename=str(approval_path))
+
+    if "PostgresApprovalReadRepository" not in approval_source:
+        errors.append(
+            "backend/persistence/approvals.py must define "
+            "PostgresApprovalReadRepository",
+        )
+        return errors
+
+    required_methods = {
+        "list_approvals": ["FROM approvals", "WHERE tenant_id = %s"],
+        "get_approval": ["FROM approvals", "WHERE tenant_id = %s AND id = %s"],
+        "list_for_target": [
+            "FROM approvals",
+            "WHERE tenant_id = %s AND target_type = %s AND target_id = %s",
+        ],
+    }
+    for method_name, sql_tokens in required_methods.items():
+        method_node = _find_class_method(
+            approval_tree,
+            class_name="PostgresApprovalReadRepository",
+            method_name=method_name,
+        )
+        if method_node is None:
+            errors.append(
+                "PostgreSQL approval request read repository missing method: "
+                "backend/persistence/approvals.py:"
+                f"PostgresApprovalReadRepository.{method_name}",
+            )
+            continue
+        if not _method_has_required_argument(method_node, "tenant_id"):
+            errors.append(
+                "PostgreSQL approval request read method must require tenant_id: "
+                "backend/persistence/approvals.py:"
+                f"PostgresApprovalReadRepository.{method_name}",
+            )
+        if not _method_uses_database_call(method_node, "connect"):
+            errors.append(
+                "PostgreSQL approval request read method must read through PostgreSQL: "
+                "backend/persistence/approvals.py:"
+                f"PostgresApprovalReadRepository.{method_name}",
+            )
+        normalized_sql = " ".join(_normalized_sql_literals(method_node))
+        for sql_token in sql_tokens:
+            if sql_token.lower() not in normalized_sql:
+                errors.append(
+                    "PostgreSQL approval request read method must query "
+                    "tenant-scoped approval requests: "
+                    "backend/persistence/approvals.py:"
+                    f"PostgresApprovalReadRepository.{method_name}",
+                )
+
+    return errors
+
+
 def _find_class_method(
     tree: ast.AST,
     *,
@@ -2159,6 +2218,7 @@ def main() -> int:
         *_check_postgres_workflow_template_reads_guarded(),
         *_check_postgres_agent_catalog_reads_guarded(),
         *_check_postgres_agent_run_reads_guarded(),
+        *_check_postgres_approval_request_reads_guarded(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -2206,6 +2266,7 @@ def main() -> int:
     print("- PostgreSQL workflow template reads guarded: yes")
     print("- PostgreSQL agent catalog reads guarded: yes")
     print("- PostgreSQL agent run reads guarded: yes")
+    print("- PostgreSQL approval request reads guarded: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:
