@@ -6,6 +6,11 @@ from backend.persistence.agents import (
     PostgresAgentCatalogReadRepository,
     SQLiteAgentCatalogReadRepository,
 )
+from backend.persistence.audit_events import (
+    AuditEventRecord,
+    PostgresAuditEventReadRepository,
+    SQLiteAuditEventReadRepository,
+)
 from backend.persistence.approvals import (
     ApprovalRecord,
     PostgresApprovalReadRepository,
@@ -82,6 +87,7 @@ __all__ = [
     "AgentRunRecord",
     "AgentVersionRecord",
     "ApprovalRecord",
+    "AuditEventRecord",
     "DocumentChunkRecord",
     "DocumentRecord",
     "EmbeddingRecord",
@@ -89,6 +95,7 @@ __all__ = [
     "MembershipRecord",
     "MemoryItemRecord",
     "ModelConfigRecord",
+    "PostgresAuditEventReadRepository",
     "PostgresApprovalReadRepository",
     "PostgresAgentCatalogReadRepository",
     "PostgresAgentRunReadRepository",
@@ -105,6 +112,7 @@ __all__ = [
     "PostgresToolGovernanceReadRepository",
     "RetrievalEventRecord",
     "SQLiteAgentCatalogReadRepository",
+    "SQLiteAuditEventReadRepository",
     "SQLiteApprovalReadRepository",
     "SQLiteAgentRunReadRepository",
     "SQLiteDatabase",
