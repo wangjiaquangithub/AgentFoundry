@@ -2414,7 +2414,13 @@ class PlatformAgentRunService:
             answer=answer,
             status="completed",
             evidence=dict(response_trace["evidence"]),
+            runtime_adapter=runtime_adapter,
+            runtime_invocation_id=response_record_context.get(
+                "runtime_invocation_id",
+            ),
+            agent_run_id=str(response_trace["turn_id"]),
             provider_run_id=str(response_trace["turn_id"]),
+            completed_at=str(response_trace["created_at"]),
             raw={
                 "routed": False,
                 "routing_mode": routing_mode,
@@ -2497,7 +2503,13 @@ class PlatformAgentRunService:
             answer=answer,
             status="completed",
             evidence=dict(response_trace["evidence"]),
+            runtime_adapter=runtime_adapter,
+            runtime_invocation_id=response_record_context.get(
+                "runtime_invocation_id",
+            ),
+            agent_run_id=str(response_trace["turn_id"]),
             provider_run_id=str(response_trace["turn_id"]),
+            completed_at=str(response_trace["created_at"]),
             raw={
                 "routed": routed,
                 "routing_mode": routing_mode,

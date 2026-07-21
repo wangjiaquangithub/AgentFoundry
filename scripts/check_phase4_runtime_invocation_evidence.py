@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+"""Validate phase 4.1 runtime invocation evidence contract."""
+
+from __future__ import annotations
+
+import ast
+import sys
+from pathlib import Path
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+
+from backend.runtime import (  # noqa: E402
+    describe_runtime_adapter,
+    build_runtime_invocation_request_payload,
+    build_runtime_invocation_result_payload,
+)
+
+
+def assert_runtime_request_contract() -> None:
+    payload = build_runtime_invocation_request_payload(
+        tenant="acme",
+        user_id="acme:alice",
+        session_id="session-1",
+        agent_id="agent-1",
+        agent_name="Support Agent",
+        question="Summarize the contract.",
+        tools=("knowledge_search",),
+        knowledge_base_ids=("kb-1",),
+        memory_enabled=True,
+        metadata={
+            "source": "enterprise_agent_run",
+            "runtime_invocation_id": "runtime-invocation-1",
+        },
+    )
+
+    assert payload["context"]["tenant"] == "acme"
+    assert payload["context"]["user_id"] == "acme:alice"
+    assert payload["context"]["session_id"] == "session-1"
+    assert payload["context"]["agent_id"] == "agent-1"
+    assert payload["metadata"]["runtime_invocation_id"] == "runtime-invocation-1"
+    assert payload["tools"] == ["knowledge_search"]
+    assert payload["knowledge_base_ids"] == ["kb-1"]
+    assert payload["memory_enabled"] is True
+
+
+def assert_runtime_result_contract() -> None:
+    runtime_adapter = describe_runtime_adapter(
+        {"agent_id": "agent-1", "agent_name": "Support Agent"},
+    )
+    payload = build_runtime_invocation_result_payload(
+        answer="Done.",
+        status="completed",
+        evidence={
+            "tenant": "acme",
+            "user_id": "acme:alice",
+            "agent_id": "agent-1",
+            "session_id": "session-1",
+        },
+        runtime_adapter=runtime_adapter,
+        runtime_invocation_id="runtime-invocation-1",
+        agent_run_id="agent-run-1",
+        provider_run_id="provider-run-1",
+        completed_at="2026-07-21T00:00:00+00:00",
+        token_usage={"input_tokens": 12, "output_tokens": 4},
+        raw={"routed": True, "tool_call_count": 1},
+    )
+
+    assert payload["provider_id"] == runtime_adapter["id"]
+    assert payload["provider"] == "agentscope"
+    assert payload["mode"] == "local-service"
+    assert payload["runtime_invocation_id"] == "runtime-invocation-1"
+    assert payload["agent_run_id"] == "agent-run-1"
+    assert payload["provider_run_id"] == "provider-run-1"
+    assert payload["completed_at"] == "2026-07-21T00:00:00+00:00"
+    assert payload["status"] == "completed"
+    assert payload["token_usage"]["input_tokens"] == 12
+    assert payload["raw"]["tool_call_count"] == 1
+
+
+def assert_no_direct_agentscope_dependency() -> None:
+    checked_files = (
+        REPO_ROOT / "backend" / "runtime.py",
+        REPO_ROOT / "backend" / "services" / "agent_runs.py",
+    )
+    for path in checked_files:
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imported = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom):
+                imported = [node.module or ""]
+            else:
+                continue
+            assert not any(
+                name == "agentscope" or name.startswith("agentscope.")
+                for name in imported
+            ), f"{path} imports AgentScope directly: {imported}"
+
+
+def main() -> None:
+    assert_runtime_request_contract()
+    assert_runtime_result_contract()
+    assert_no_direct_agentscope_dependency()
+    print("phase 4.1 runtime invocation evidence contract ok")
+
+
+if __name__ == "__main__":
+    main()

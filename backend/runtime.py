@@ -80,17 +80,45 @@ class RuntimeInvocationResult:
     answer: str
     status: str
     evidence: dict[str, Any]
+    provider_id: str | None = None
+    provider: str | None = None
+    mode: str | None = None
+    runtime_invocation_id: str | None = None
+    agent_run_id: str | None = None
     provider_run_id: str | None = None
+    completed_at: str | None = None
+    latency_ms: int | None = None
+    token_usage: dict[str, Any] | None = None
+    error: str | None = None
     raw: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        payload = {
             "answer": self.answer,
             "status": self.status,
             "evidence": self.evidence,
-            "provider_run_id": self.provider_run_id,
             "raw": self.raw or {},
         }
+        optional_fields = {
+            "provider_id": self.provider_id,
+            "provider": self.provider,
+            "mode": self.mode,
+            "runtime_invocation_id": self.runtime_invocation_id,
+            "agent_run_id": self.agent_run_id,
+            "provider_run_id": self.provider_run_id,
+            "completed_at": self.completed_at,
+            "latency_ms": self.latency_ms,
+            "token_usage": self.token_usage,
+            "error": self.error,
+        }
+        payload.update(
+            {
+                key: value
+                for key, value in optional_fields.items()
+                if value is not None
+            },
+        )
+        return payload
 
 
 class RuntimeAdapter(Protocol):
@@ -283,15 +311,32 @@ def build_runtime_invocation_result_payload(
     answer: str,
     status: str,
     evidence: dict[str, Any],
+    runtime_adapter: dict[str, Any] | None = None,
+    runtime_invocation_id: str | None = None,
+    agent_run_id: str | None = None,
     provider_run_id: str | None = None,
+    completed_at: str | None = None,
+    latency_ms: int | None = None,
+    token_usage: dict[str, Any] | None = None,
+    error: str | None = None,
     raw: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a serialized provider-neutral runtime invocation result."""
+    adapter = runtime_adapter or {}
     return RuntimeInvocationResult(
         answer=answer,
         status=status,
         evidence=evidence,
+        provider_id=adapter.get("id"),
+        provider=adapter.get("provider"),
+        mode=adapter.get("mode"),
+        runtime_invocation_id=runtime_invocation_id,
+        agent_run_id=agent_run_id,
         provider_run_id=provider_run_id,
+        completed_at=completed_at,
+        latency_ms=latency_ms,
+        token_usage=token_usage,
+        error=error,
         raw=raw,
     ).to_dict()
 
