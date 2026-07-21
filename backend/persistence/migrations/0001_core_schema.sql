@@ -302,6 +302,7 @@ CREATE INDEX idx_memory_items_tenant_session_created ON memory_items(tenant_id, 
 CREATE INDEX idx_memory_items_tenant_source_run_created ON memory_items(tenant_id, source_run_id, created_at, id);
 CREATE INDEX idx_workflow_templates_tenant_status_updated ON workflow_templates(tenant_id, status, updated_at, id);
 CREATE INDEX idx_workflow_runs_tenant_template ON workflow_runs(tenant_id, workflow_template_id);
+CREATE INDEX idx_workflow_runs_tenant_template_created ON workflow_runs(tenant_id, workflow_template_id, created_at, id);
 CREATE INDEX idx_workflow_runs_tenant_status_created ON workflow_runs(tenant_id, status, created_at, id);
 CREATE INDEX idx_workflow_runs_tenant_user_created ON workflow_runs(tenant_id, user_id, created_at, id);
 CREATE INDEX idx_audit_events_tenant_created ON audit_events(tenant_id, created_at);
