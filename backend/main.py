@@ -449,6 +449,9 @@ def _build_knowledge_retrieval_service() -> (
         knowledge_base_repository=PostgresKnowledgeBaseReadRepository(database),
         document_repository=PostgresDocumentReadRepository(database),
         document_chunk_repository=PostgresDocumentChunkReadRepository(database),
+        retrieval_event_writer=PostgresRetrievalEventWriteRepository(database),
+        audit_event_writer=PostgresAuditEventWriteRepository(database),
+        now=now_iso,
     )
 
 

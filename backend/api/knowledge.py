@@ -284,6 +284,7 @@ def create_knowledge_retrieval_router(
                 tenant_id=tenant_id,
                 knowledge_base_ids=payload.knowledge_base_ids,
                 query=payload.query,
+                user_id=request.headers.get("X-User-ID") or None,
                 limit=payload.limit,
             ),
         }

@@ -119,12 +119,18 @@ class PlatformKnowledgeRetrievalService:
         knowledge_base_repository: KnowledgeBaseReadRepository,
         document_repository: DocumentReadRepository,
         document_chunk_repository: DocumentChunkReadRepository,
+        retrieval_event_writer: RetrievalEventWriter | None = None,
+        audit_event_writer: AuditEventWriter | None = None,
+        now: Callable[[], str] | None = None,
         document_limit: int = 100,
         chunk_limit: int = 200,
     ) -> None:
         self._knowledge_base_repository = knowledge_base_repository
         self._document_repository = document_repository
         self._document_chunk_repository = document_chunk_repository
+        self._retrieval_event_writer = retrieval_event_writer
+        self._audit_event_writer = audit_event_writer
+        self._now = now
         self._document_limit = document_limit
         self._chunk_limit = chunk_limit
 
@@ -134,6 +140,8 @@ class PlatformKnowledgeRetrievalService:
         tenant_id: str,
         knowledge_base_ids: list[str],
         query: str,
+        user_id: str | None = None,
+        agent_run_id: str | None = None,
         limit: int = 5,
     ) -> dict[str, Any]:
         normalized_query = query.strip()
@@ -143,25 +151,49 @@ class PlatformKnowledgeRetrievalService:
             if str(knowledge_base_id).strip()
         ]
         if not bound_knowledge_base_ids:
-            return self._empty_payload(
+            payload = self._empty_payload(
                 status="not_configured",
                 bound_knowledge_base_ids=[],
+                query=normalized_query,
                 guidance="Bind at least one knowledge base to enable production retrieval.",
             )
+            self._append_retrieval_event(
+                tenant_id=tenant_id,
+                user_id=user_id,
+                agent_run_id=agent_run_id,
+                payload=payload,
+            )
+            return payload
         if not normalized_query:
-            return self._empty_payload(
+            payload = self._empty_payload(
                 status="blocked",
                 bound_knowledge_base_ids=bound_knowledge_base_ids,
+                query=normalized_query,
                 guidance="query is required for production retrieval.",
             )
+            self._append_retrieval_event(
+                tenant_id=tenant_id,
+                user_id=user_id,
+                agent_run_id=agent_run_id,
+                payload=payload,
+            )
+            return payload
 
         query_terms = _normalize_terms(normalized_query)
         if not query_terms:
-            return self._empty_payload(
+            payload = self._empty_payload(
                 status="blocked",
                 bound_knowledge_base_ids=bound_knowledge_base_ids,
+                query=normalized_query,
                 guidance="query must contain searchable text.",
             )
+            self._append_retrieval_event(
+                tenant_id=tenant_id,
+                user_id=user_id,
+                agent_run_id=agent_run_id,
+                payload=payload,
+            )
+            return payload
 
         hits: list[dict[str, Any]] = []
         blocked_knowledge_base_ids: list[str] = []
@@ -245,6 +277,12 @@ class PlatformKnowledgeRetrievalService:
         }
         if guidance:
             payload["guidance"] = guidance
+        self._append_retrieval_event(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            agent_run_id=agent_run_id,
+            payload=payload,
+        )
         return payload
 
     def _score_chunk(
@@ -324,6 +362,7 @@ class PlatformKnowledgeRetrievalService:
         *,
         status: str,
         bound_knowledge_base_ids: list[str],
+        query: str,
         guidance: str,
     ) -> dict[str, Any]:
         return {
@@ -332,6 +371,7 @@ class PlatformKnowledgeRetrievalService:
             "bound_knowledge_base_ids": bound_knowledge_base_ids,
             "ready_knowledge_base_ids": [],
             "blocked_knowledge_base_ids": [],
+            "query": query,
             "hits": [],
             "summary": {
                 "ready_knowledge_base_count": 0,
@@ -341,6 +381,115 @@ class PlatformKnowledgeRetrievalService:
             },
             "guidance": guidance,
         }
+
+    def _append_retrieval_event(
+        self,
+        *,
+        tenant_id: str,
+        user_id: str | None,
+        agent_run_id: str | None,
+        payload: dict[str, Any],
+    ) -> None:
+        if self._retrieval_event_writer is None or self._now is None:
+            return
+
+        event_id = uuid4().hex
+        created_at = self._now()
+        safe_hits = _json_safe(payload.get("hits") or [])
+        knowledge_base_id = self._primary_knowledge_base_id(payload)
+        try:
+            self._retrieval_event_writer.append_retrieval_event(
+                RetrievalEventRecord(
+                    id=event_id,
+                    tenant_id=tenant_id,
+                    agent_run_id=agent_run_id,
+                    knowledge_base_id=knowledge_base_id,
+                    query=str(payload.get("query") or ""),
+                    hits=safe_hits,
+                    created_at=created_at,
+                ),
+            )
+        except Exception:
+            return
+
+        self._append_retrieval_audit_event(
+            event_id=event_id,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            agent_run_id=agent_run_id,
+            knowledge_base_id=knowledge_base_id,
+            payload=payload,
+            hits=safe_hits,
+            created_at=created_at,
+        )
+
+    def _append_retrieval_audit_event(
+        self,
+        *,
+        event_id: str,
+        tenant_id: str,
+        user_id: str | None,
+        agent_run_id: str | None,
+        knowledge_base_id: str | None,
+        payload: dict[str, Any],
+        hits: list[dict[str, Any]],
+        created_at: str,
+    ) -> None:
+        if self._audit_event_writer is None:
+            return
+
+        try:
+            audit_payload: dict[str, Any] = {
+                "schema_version": 1,
+                "retrieval_event_id": event_id,
+                "tenant": tenant_id,
+                "user_id": user_id,
+                "agent_run_id": agent_run_id,
+                "knowledge_base_id": knowledge_base_id,
+                "bound_knowledge_base_ids": _json_safe(
+                    payload.get("bound_knowledge_base_ids") or []
+                ),
+                "ready_knowledge_base_ids": _json_safe(
+                    payload.get("ready_knowledge_base_ids") or []
+                ),
+                "blocked_knowledge_base_ids": _json_safe(
+                    payload.get("blocked_knowledge_base_ids") or []
+                ),
+                "query": str(payload.get("query") or ""),
+                "status": str(payload.get("status") or ""),
+                "hit_count": len(hits),
+                "document_ids": [
+                    str(hit.get("document_id") or "")
+                    for hit in hits
+                    if str(hit.get("document_id") or "").strip()
+                ],
+                "retrieval_mode": str(payload.get("retrieval_mode") or ""),
+            }
+            self._audit_event_writer.append_audit_event(
+                AuditEventRecord(
+                    id=str(uuid4()),
+                    tenant_id=tenant_id,
+                    actor_user_id=user_id,
+                    event_type="knowledge_base.retrieved",
+                    target_type="knowledge_base",
+                    target_id=knowledge_base_id,
+                    payload=_json_safe(audit_payload),
+                    created_at=created_at,
+                ),
+            )
+        except Exception:
+            return
+
+    def _primary_knowledge_base_id(self, payload: dict[str, Any]) -> str | None:
+        for key in ("ready_knowledge_base_ids", "bound_knowledge_base_ids"):
+            values = payload.get(key) or []
+            if not isinstance(values, list):
+                continue
+            for value in values:
+                knowledge_base_id = str(value or "").strip()
+                if knowledge_base_id:
+                    return knowledge_base_id
+        return None
 
 
 class PlatformKnowledgeDocumentReadinessService:
