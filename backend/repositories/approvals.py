@@ -146,10 +146,10 @@ class PostgresApprovalReadThroughRepository:
     """Use PostgreSQL for tenant-scoped approvals with a development fallback.
 
     Tenant-scoped approval records use the production PostgreSQL schema. List
-    and append calls without tenant context remain on the legacy JSONL
-    repository for local development compatibility during the data-layer
-    migration. Approval id reads and decisions are authoritative in PostgreSQL
-    once this repository is configured.
+    calls without tenant context remain on the legacy JSONL repository for
+    local development compatibility during the data-layer migration. Approval
+    id reads, writes, and decisions are authoritative in PostgreSQL once this
+    repository is configured.
     """
 
     def __init__(
@@ -212,8 +212,7 @@ class PostgresApprovalReadThroughRepository:
 
     def append(self, record: dict[str, Any]) -> None:
         if not record.get("tenant"):
-            self._fallback_repository.append(record)
-            return
+            raise ValueError("PostgreSQL approval writes require tenant context.")
 
         self._postgres_writer.append_approval(
             _platform_record_to_postgres_approval(record),
