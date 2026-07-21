@@ -27,6 +27,7 @@ from backend.persistence.tool_calls import (
     ToolCallRecord,
 )
 from backend.persistence.tools import (
+    PostgresToolGovernanceReadRepository,
     SQLiteToolGovernanceReadRepository,
     ToolPolicyRecord,
     ToolRecord,
@@ -41,6 +42,7 @@ __all__ = [
     "PostgresAgentCatalogReadRepository",
     "PostgresDatabase",
     "PostgresTenancyReadRepository",
+    "PostgresToolGovernanceReadRepository",
     "SQLiteAgentCatalogReadRepository",
     "SQLiteApprovalReadRepository",
     "SQLiteAgentRunReadRepository",
