@@ -19,9 +19,10 @@ MIGRATIONS_DIR = ROOT / "backend" / "persistence" / "migrations"
 PERSISTENCE_DIR = ROOT / "backend" / "persistence"
 PERSISTENCE_INIT_MODULE = PERSISTENCE_DIR / "__init__.py"
 REPOSITORIES_DIR = ROOT / "backend" / "repositories"
+SERVICES_DIR = ROOT / "backend" / "services"
 MAIN_MODULE = ROOT / "backend" / "main.py"
 DATABASE_MODULE = ROOT / "backend" / "persistence" / "database.py"
-PLATFORM_STATUS_SERVICE_MODULE = ROOT / "backend" / "services" / "platform_status.py"
+PLATFORM_STATUS_SERVICE_MODULE = SERVICES_DIR / "platform_status.py"
 
 REQUIRED_TABLES = {
     "tenants",
@@ -590,6 +591,40 @@ def _check_postgres_runtime_provider_reads_wired() -> list[str]:
     return errors
 
 
+def _check_postgres_runtime_invocation_writes_wired() -> list[str]:
+    errors: list[str] = []
+    main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    agent_run_source = (SERVICES_DIR / "agent_runs.py").read_text(encoding="utf-8")
+    main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+
+    if not _module_imports_name(main_tree, "PostgresRuntimeWriteRepository"):
+        errors.append(
+            "backend/main.py must import PostgresRuntimeWriteRepository for runtime invocation writes",
+        )
+    if not _module_defines_function(main_tree, "_build_runtime_write_repository"):
+        errors.append(
+            "backend/main.py must define _build_runtime_write_repository for PostgreSQL runtime invocation writes",
+        )
+    if "runtime_invocation_writer=" not in main_source:
+        errors.append(
+            "backend/main.py must pass runtime_invocation_writer into PlatformAgentRunService",
+        )
+    if "runtime_invocation_writer" not in agent_run_source:
+        errors.append(
+            "backend/services/agent_runs.py must accept a runtime_invocation_writer",
+        )
+    if "append_runtime_invocation_record_from_context" not in agent_run_source:
+        errors.append(
+            "backend/services/agent_runs.py must append runtime invocation records from agent run context",
+        )
+    if "append_invocation" not in agent_run_source:
+        errors.append(
+            "backend/services/agent_runs.py must call the runtime invocation writer",
+        )
+
+    return errors
+
+
 def main() -> int:
     sql = _read_migrations()
     schema = _extract_schema(sql)
@@ -605,6 +640,7 @@ def main() -> int:
         *_check_postgres_write_transaction_boundary(),
         *_check_postgres_read_tenant_boundary(),
         *_check_postgres_runtime_provider_reads_wired(),
+        *_check_postgres_runtime_invocation_writes_wired(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -628,6 +664,7 @@ def main() -> int:
     print("- PostgreSQL write transaction boundary guarded: yes")
     print("- PostgreSQL read tenant boundary guarded: yes")
     print("- PostgreSQL runtime provider reads wired: yes")
+    print("- PostgreSQL runtime invocation writes wired: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:
