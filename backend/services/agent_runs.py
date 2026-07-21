@@ -1111,10 +1111,11 @@ class PlatformAgentRunService:
             for route in routes
         ]
 
-    def process_routed_route_views(
+    def process_routed_routes(
         self,
         *,
-        route_context_views: list[dict[str, Any]],
+        routes: list[dict[str, Any]],
+        default_source: str,
         tool_denial_payload: Callable[..., dict[str, Any]],
         decision_with_routing_context: Callable[..., dict[str, Any]],
         configured_tools: set[str],
@@ -1139,6 +1140,10 @@ class PlatformAgentRunService:
         routing_mode: str,
         routing_error: str | None,
     ) -> list[dict[str, Any]]:
+        route_context_views = self.routed_route_context_views_from_routes(
+            routes,
+            default_source=default_source,
+        )
         tool_calls: list[dict[str, Any]] = []
         for route_context_view in route_context_views:
             if self.record_unconfigured_routed_tool_denial_from_route_view_context(

@@ -1664,12 +1664,9 @@ async def run_enterprise_agent(
         )
         return response
 
-    route_context_views = agent_run_service.routed_route_context_views_from_routes(
-        routes,
+    tool_calls = agent_run_service.process_routed_routes(
+        routes=routes,
         default_source=ROUTING_SOURCE_RULES,
-    )
-    tool_calls = agent_run_service.process_routed_route_views(
-        route_context_views=route_context_views,
         tool_denial_payload=_platform_agent_service().tool_denial_payload,
         decision_with_routing_context=(
             enterprise_router_service.decision_with_routing_context
