@@ -48,6 +48,11 @@ from backend.persistence.memory_items import (
     PostgresMemoryItemReadRepository,
     SQLiteMemoryItemReadRepository,
 )
+from backend.persistence.memory_policies import (
+    MemoryPolicyRecord,
+    PostgresMemoryPolicyReadRepository,
+    SQLiteMemoryPolicyReadRepository,
+)
 from backend.persistence.model_configs import (
     ModelConfigRecord,
     PostgresModelConfigReadRepository,
@@ -106,6 +111,7 @@ __all__ = [
     "KnowledgeBaseRecord",
     "MembershipRecord",
     "MemoryItemRecord",
+    "MemoryPolicyRecord",
     "ModelConfigRecord",
     "PostgresAuditEventReadRepository",
     "PostgresApprovalReadRepository",
@@ -117,6 +123,7 @@ __all__ = [
     "PostgresEmbeddingRecordReadRepository",
     "PostgresKnowledgeBaseReadRepository",
     "PostgresMemoryItemReadRepository",
+    "PostgresMemoryPolicyReadRepository",
     "PostgresModelConfigReadRepository",
     "PostgresRetrievalEventReadRepository",
     "PostgresRuntimeReadRepository",
@@ -136,6 +143,7 @@ __all__ = [
     "SQLiteEmbeddingRecordReadRepository",
     "SQLiteKnowledgeBaseReadRepository",
     "SQLiteMemoryItemReadRepository",
+    "SQLiteMemoryPolicyReadRepository",
     "SQLiteModelConfigReadRepository",
     "SQLiteRetrievalEventReadRepository",
     "SQLiteRuntimeReadRepository",
