@@ -2205,6 +2205,79 @@ def _check_postgres_membership_reads_guarded() -> list[str]:
     return errors
 
 
+def _check_postgres_runtime_reads_guarded() -> list[str]:
+    errors: list[str] = []
+    runtime_path = PERSISTENCE_DIR / "runtime_records.py"
+    runtime_source = runtime_path.read_text(encoding="utf-8")
+    runtime_tree = ast.parse(runtime_source, filename=str(runtime_path))
+
+    if "PostgresRuntimeReadRepository" not in runtime_source:
+        errors.append(
+            "backend/persistence/runtime_records.py must define "
+            "PostgresRuntimeReadRepository",
+        )
+        return errors
+
+    required_methods = {
+        "list_providers": [
+            "FROM runtime_providers",
+            "status = %s",
+            "provider_type = %s",
+        ],
+        "get_provider": ["FROM runtime_providers", "WHERE id = %s"],
+        "list_invocations": ["FROM runtime_invocations", "WHERE tenant_id = %s"],
+        "get_invocation": [
+            "FROM runtime_invocations",
+            "WHERE tenant_id = %s AND id = %s",
+        ],
+    }
+    required_arguments = {
+        "get_provider": {"provider_id"},
+        "list_invocations": {"tenant_id"},
+        "get_invocation": {"tenant_id", "runtime_invocation_id"},
+    }
+    for method_name, sql_tokens in required_methods.items():
+        method_node = _find_class_method(
+            runtime_tree,
+            class_name="PostgresRuntimeReadRepository",
+            method_name=method_name,
+        )
+        if method_node is None:
+            errors.append(
+                "PostgreSQL runtime read repository missing method: "
+                "backend/persistence/runtime_records.py:"
+                f"PostgresRuntimeReadRepository.{method_name}",
+            )
+            continue
+        method_arguments = {
+            argument.arg
+            for argument in [*method_node.args.args, *method_node.args.kwonlyargs]
+        }
+        for required_argument in required_arguments.get(method_name, set()):
+            if required_argument not in method_arguments:
+                errors.append(
+                    "PostgreSQL runtime read method must accept required scope: "
+                    "backend/persistence/runtime_records.py:"
+                    f"PostgresRuntimeReadRepository.{method_name}",
+                )
+        if not _method_uses_database_call(method_node, "connect"):
+            errors.append(
+                "PostgreSQL runtime read method must read through PostgreSQL: "
+                "backend/persistence/runtime_records.py:"
+                f"PostgresRuntimeReadRepository.{method_name}",
+            )
+        normalized_sql = " ".join(_normalized_sql_literals(method_node))
+        for sql_token in sql_tokens:
+            if sql_token.lower() not in normalized_sql:
+                errors.append(
+                    "PostgreSQL runtime read method must query expected runtime "
+                    "tables and filters: backend/persistence/runtime_records.py:"
+                    f"PostgresRuntimeReadRepository.{method_name}",
+                )
+
+    return errors
+
+
 def _find_class_method(
     tree: ast.AST,
     *,
@@ -2281,6 +2354,7 @@ def main() -> int:
         *_check_postgres_agent_run_reads_guarded(),
         *_check_postgres_approval_request_reads_guarded(),
         *_check_postgres_membership_reads_guarded(),
+        *_check_postgres_runtime_reads_guarded(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -2330,6 +2404,7 @@ def main() -> int:
     print("- PostgreSQL agent run reads guarded: yes")
     print("- PostgreSQL approval request reads guarded: yes")
     print("- PostgreSQL membership reads guarded: yes")
+    print("- PostgreSQL runtime reads guarded: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:
