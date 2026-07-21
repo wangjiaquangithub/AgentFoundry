@@ -232,18 +232,32 @@ def _check_postgres_url_detection_boundary() -> list[str]:
             "backend/persistence/database.py:is_postgres_database_url",
         )
 
+    if not _module_defines_function(database_tree, "create_configured_postgres_database"):
+        errors.append(
+            "missing configured PostgreSQL database helper: "
+            "backend/persistence/database.py:create_configured_postgres_database",
+        )
+
     if _module_imports_name(main_tree, "urlparse"):
         errors.append("backend/main.py must not parse database URL schemes directly; use is_postgres_database_url")
 
-    if not _module_uses_name(main_tree, "is_postgres_database_url"):
-        errors.append("backend/main.py must use backend.persistence.is_postgres_database_url for PostgreSQL detection")
+    if _module_uses_name(main_tree, "is_postgres_database_url"):
+        errors.append(
+            "backend/main.py must not detect PostgreSQL URLs directly; use create_configured_postgres_database",
+        )
+
+    if not _module_uses_name(main_tree, "create_configured_postgres_database"):
+        errors.append(
+            "backend/main.py must use backend.persistence.create_configured_postgres_database "
+            "for PostgreSQL database selection",
+        )
 
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
     database_url_occurrences = main_source.count("AGENTFOUNDRY_DATABASE_URL")
-    if database_url_occurrences > 1:
+    if database_url_occurrences:
         errors.append(
-            "backend/main.py repeats AGENTFOUNDRY_DATABASE_URL checks; route database selection through "
-            "_configured_postgres_database",
+            "backend/main.py must not read AGENTFOUNDRY_DATABASE_URL directly; route database selection through "
+            "create_configured_postgres_database",
         )
 
     scheme_literals = sorted(POSTGRES_SCHEME_LITERALS & set(_string_literals(main_tree)))

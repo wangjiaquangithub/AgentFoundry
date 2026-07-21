@@ -22,6 +22,7 @@ from backend.persistence.approvals import (
 from backend.persistence.database import (
     PostgresDatabase,
     SQLiteDatabase,
+    create_configured_postgres_database,
     create_database,
     create_postgres_database,
     create_sqlite_database,
@@ -178,6 +179,7 @@ __all__ = [
     "UserRecord",
     "WorkflowRunRecord",
     "WorkflowTemplateRecord",
+    "create_configured_postgres_database",
     "create_database",
     "create_postgres_database",
     "create_sqlite_database",

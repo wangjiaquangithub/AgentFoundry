@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import os
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -85,6 +86,16 @@ def create_postgres_database(database_url: str) -> PostgresDatabase:
     if not is_postgres_database_url(database_url):
         raise ValueError("PostgreSQL database URLs must use postgresql:// or postgres://.")
     return PostgresDatabase(database_url=database_url)
+
+
+def create_configured_postgres_database(
+    environ: Mapping[str, str] | None = None,
+) -> PostgresDatabase | None:
+    source = os.environ if environ is None else environ
+    database_url = source.get("AGENTFOUNDRY_DATABASE_URL", "").strip()
+    if not is_postgres_database_url(database_url):
+        return None
+    return create_postgres_database(database_url)
 
 
 def create_database(database_url: str) -> SQLiteDatabase | PostgresDatabase:

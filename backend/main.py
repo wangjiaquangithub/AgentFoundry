@@ -89,7 +89,6 @@ from repositories.agents import (
     PostgresAgentCatalogWriteThroughRepository,
 )
 from backend.persistence import (
-    PostgresDatabase,
     PostgresAgentCatalogReadRepository,
     PostgresAgentCatalogWriteRepository,
     PostgresAgentRunReadRepository,
@@ -114,8 +113,7 @@ from backend.persistence import (
     PostgresToolGovernanceWriteRepository,
     PostgresWorkflowReadRepository,
     PostgresWorkflowWriteRepository,
-    create_postgres_database,
-    is_postgres_database_url,
+    create_configured_postgres_database,
 )
 from repositories.agent_runs import (
     AgentRunRepository,
@@ -188,15 +186,8 @@ approval_request_fallback_repository = ApprovalRequestRepository(
 member_fallback_repository = MemberRepository(PLATFORM_MEMBERS_PATH)
 
 
-def _configured_postgres_database() -> PostgresDatabase | None:
-    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
-    if not is_postgres_database_url(database_url):
-        return None
-    return create_postgres_database(database_url)
-
-
 def _build_agent_repository() -> AgentRepositoryProtocol:
-    database = _configured_postgres_database()
+    database = create_configured_postgres_database()
     if database is None:
         return agent_fallback_repository
 
@@ -207,7 +198,7 @@ def _build_agent_repository() -> AgentRepositoryProtocol:
 
 
 def _build_agent_run_repository() -> AgentRunRepositoryProtocol:
-    database = _configured_postgres_database()
+    database = create_configured_postgres_database()
     if database is None:
         return agent_run_fallback_repository
 
@@ -222,7 +213,7 @@ agent_run_repository = _build_agent_run_repository()
 
 
 def _build_approval_request_repository() -> ApprovalRequestRepositoryProtocol:
-    database = _configured_postgres_database()
+    database = create_configured_postgres_database()
     if database is None:
         return approval_request_fallback_repository
 
@@ -236,7 +227,7 @@ approval_request_repository = _build_approval_request_repository()
 
 
 def _build_tool_call_write_repository() -> PostgresToolCallWriteRepository | None:
-    database = _configured_postgres_database()
+    database = create_configured_postgres_database()
     if database is None:
         return None
 
@@ -244,7 +235,7 @@ def _build_tool_call_write_repository() -> PostgresToolCallWriteRepository | Non
 
 
 def _build_tool_call_read_repository() -> PostgresToolCallReadRepository | None:
-    database = _configured_postgres_database()
+    database = create_configured_postgres_database()
     if database is None:
         return None
 
@@ -254,7 +245,7 @@ def _build_tool_call_read_repository() -> PostgresToolCallReadRepository | None:
 def _build_tool_governance_read_repository() -> (
     PostgresToolGovernanceReadRepository | None
 ):
-    database = _configured_postgres_database()
+    database = create_configured_postgres_database()
     if database is None:
         return None
 
@@ -264,7 +255,7 @@ def _build_tool_governance_read_repository() -> (
 def _build_tool_governance_write_repository() -> (
     PostgresToolGovernanceWriteRepository | None
 ):
-    database = _configured_postgres_database()
+    database = create_configured_postgres_database()
     if database is None:
         return None
 
@@ -274,7 +265,7 @@ def _build_tool_governance_write_repository() -> (
 def _build_memory_item_read_repository() -> (
     PostgresMemoryItemReadRepository | None
 ):
-    database = _configured_postgres_database()
+    database = create_configured_postgres_database()
     if database is None:
         return None
 
@@ -284,7 +275,7 @@ def _build_memory_item_read_repository() -> (
 def _build_memory_item_write_repository() -> (
     PostgresMemoryItemWriteRepository | None
 ):
-    database = _configured_postgres_database()
+    database = create_configured_postgres_database()
     if database is None:
         return None
 
@@ -294,7 +285,7 @@ def _build_memory_item_write_repository() -> (
 def _build_audit_event_read_repository() -> (
     PostgresAuditEventReadRepository | None
 ):
-    database = _configured_postgres_database()
+    database = create_configured_postgres_database()
     if database is None:
         return None
 
@@ -304,7 +295,7 @@ def _build_audit_event_read_repository() -> (
 def _build_audit_event_write_repository() -> (
     PostgresAuditEventWriteRepository | None
 ):
-    database = _configured_postgres_database()
+    database = create_configured_postgres_database()
     if database is None:
         return None
 
@@ -314,7 +305,7 @@ def _build_audit_event_write_repository() -> (
 def _build_retrieval_event_write_repository() -> (
     PostgresRetrievalEventWriteRepository | None
 ):
-    database = _configured_postgres_database()
+    database = create_configured_postgres_database()
     if database is None:
         return None
 
@@ -322,7 +313,7 @@ def _build_retrieval_event_write_repository() -> (
 
 
 def _build_member_repository() -> MemberRepositoryProtocol:
-    database = _configured_postgres_database()
+    database = create_configured_postgres_database()
     if database is None:
         return member_fallback_repository
 
@@ -343,7 +334,7 @@ member_repository = _build_member_repository()
 
 
 def _build_workflow_run_repository() -> WorkflowRunRepositoryProtocol:
-    database = _configured_postgres_database()
+    database = create_configured_postgres_database()
     if database is None:
         return workflow_run_fallback_repository
 
@@ -368,7 +359,7 @@ knowledge_response_service = PlatformKnowledgeResponseService(
 def _build_knowledge_document_readiness_service() -> (
     PlatformKnowledgeDocumentReadinessService | None
 ):
-    database = _configured_postgres_database()
+    database = create_configured_postgres_database()
     if database is None:
         return None
 
