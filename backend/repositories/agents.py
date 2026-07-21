@@ -2,7 +2,22 @@
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
+
+from backend.persistence.agents import PostgresAgentCatalogWriteRepository
+
+
+class AgentRepositoryProtocol(Protocol):
+    """Repository contract used by the platform agent service."""
+
+    def list(self) -> list[dict[str, Any]]:
+        ...
+
+    def get(self, agent_id: str) -> dict[str, Any] | None:
+        ...
+
+    def save_all(self, agents: list[dict[str, Any]]) -> None:
+        ...
 
 
 class AgentRegistryError(ValueError):
@@ -45,3 +60,26 @@ class AgentRepository:
             json.dumps(agents, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
+
+
+class PostgresAgentCatalogWriteThroughRepository:
+    """Write agent catalog changes to PostgreSQL, then keep JSON as a snapshot."""
+
+    def __init__(
+        self,
+        *,
+        postgres_writer: PostgresAgentCatalogWriteRepository,
+        fallback_repository: AgentRepository,
+    ) -> None:
+        self._postgres_writer = postgres_writer
+        self._fallback_repository = fallback_repository
+
+    def list(self) -> list[dict[str, Any]]:
+        return self._fallback_repository.list()
+
+    def get(self, agent_id: str) -> dict[str, Any] | None:
+        return self._fallback_repository.get(agent_id)
+
+    def save_all(self, agents: list[dict[str, Any]]) -> None:
+        self._postgres_writer.save_agents(agents)
+        self._fallback_repository.save_all(agents)

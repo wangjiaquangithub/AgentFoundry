@@ -84,8 +84,13 @@ from platform_config import (
     now_iso,
     safe_path_part,
 )
-from repositories.agents import AgentRepository
+from repositories.agents import (
+    AgentRepository,
+    AgentRepositoryProtocol,
+    PostgresAgentCatalogWriteThroughRepository,
+)
 from backend.persistence import (
+    PostgresAgentCatalogWriteRepository,
     PostgresAgentRunReadRepository,
     PostgresAgentRunWriteRepository,
     PostgresApprovalReadRepository,
@@ -157,12 +162,24 @@ from services.workflows import (
 
 load_local_env()
 
-agent_repository = AgentRepository(PLATFORM_AGENTS_PATH)
+agent_fallback_repository = AgentRepository(PLATFORM_AGENTS_PATH)
 agent_run_fallback_repository = AgentRunRepository(PLATFORM_AGENT_RUNS_PATH)
 approval_request_fallback_repository = ApprovalRequestRepository(
     PLATFORM_APPROVAL_REQUESTS_PATH,
 )
 member_fallback_repository = MemberRepository(PLATFORM_MEMBERS_PATH)
+
+
+def _build_agent_repository() -> AgentRepositoryProtocol:
+    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
+    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+        return agent_fallback_repository
+
+    database = create_postgres_database(database_url)
+    return PostgresAgentCatalogWriteThroughRepository(
+        postgres_writer=PostgresAgentCatalogWriteRepository(database),
+        fallback_repository=agent_fallback_repository,
+    )
 
 
 def _build_agent_run_repository() -> AgentRunRepositoryProtocol:
@@ -178,6 +195,7 @@ def _build_agent_run_repository() -> AgentRunRepositoryProtocol:
     )
 
 
+agent_repository = _build_agent_repository()
 agent_run_repository = _build_agent_run_repository()
 
 

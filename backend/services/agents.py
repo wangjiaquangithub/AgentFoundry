@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Iterable
 from uuid import uuid4
 
-from repositories.agents import AgentRegistryError, AgentRepository
+from repositories.agents import AgentRegistryError, AgentRepositoryProtocol
 
 
 class PlatformAgentServiceError(ValueError):
@@ -22,7 +22,7 @@ class PlatformAgentService:
     def __init__(
         self,
         *,
-        repository: AgentRepository,
+        repository: AgentRepositoryProtocol,
         templates: list[dict[str, Any]],
         approval_required_tools: set[str],
         tenant_for_user: Callable[[str], str],

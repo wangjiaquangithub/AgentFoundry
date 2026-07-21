@@ -1,13 +1,10 @@
-"""Agent catalog read repositories.
-
-These repositories are intentionally read-only while AgentFoundry migrates core
-records from development JSON files into the production data layer.
-"""
+"""Agent catalog persistence repositories."""
 
 from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any
 
 from backend.persistence.database import PostgresDatabase, SQLiteDatabase
@@ -74,6 +71,28 @@ def _string_list_from_json(
             f"Agent version {record_id} has invalid {field_name} JSON.",
         )
     return parsed
+
+
+def _clean_string(value: Any) -> str:
+    return str(value or "").strip()
+
+
+def _optional_clean_string(value: Any) -> str | None:
+    clean_value = _clean_string(value)
+    return clean_value or None
+
+
+def _json_string_list(value: Any) -> str:
+    if not isinstance(value, list):
+        return "[]"
+    return json.dumps(
+        [str(item) for item in value if str(item or "").strip()],
+        ensure_ascii=False,
+    )
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 class SQLiteAgentCatalogReadRepository:
@@ -268,3 +287,101 @@ class PostgresAgentCatalogReadRepository:
         if row is None:
             return None
         return _agent_version_from_row(dict(row))
+
+
+class PostgresAgentCatalogWriteRepository:
+    """Write tenant-scoped agent catalog records to PostgreSQL."""
+
+    def __init__(self, database: PostgresDatabase) -> None:
+        self._database = database
+
+    def save_agents(self, agents: list[dict[str, Any]]) -> None:
+        with self._database.transaction() as connection:
+            with connection.cursor() as cursor:
+                for agent in agents:
+                    if not isinstance(agent, dict):
+                        continue
+                    self._save_agent(cursor, agent)
+
+    def _save_agent(self, cursor: Any, agent: dict[str, Any]) -> None:
+        agent_id = _clean_string(agent.get("id"))
+        tenant_id = _clean_string(agent.get("tenant"))
+        owner_user_id = _clean_string(agent.get("created_by"))
+        if not agent_id or not tenant_id or not owner_user_id:
+            return
+
+        created_at = _clean_string(agent.get("created_at")) or _clean_string(
+            agent.get("updated_at"),
+        ) or _now_iso()
+        updated_at = _clean_string(agent.get("updated_at")) or created_at
+        version_id = f"{agent_id}:v1"
+        instructions = (
+            _clean_string(agent.get("description"))
+            or _clean_string(agent.get("name"))
+            or agent_id
+        )
+
+        cursor.execute(
+            """
+            INSERT INTO agents (
+              id, tenant_id, name, description, status, owner_user_id,
+              current_version_id, created_at, updated_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, NULL, %s, %s)
+            ON CONFLICT (id) DO UPDATE
+            SET tenant_id = EXCLUDED.tenant_id,
+              name = EXCLUDED.name,
+              description = EXCLUDED.description,
+              status = EXCLUDED.status,
+              owner_user_id = EXCLUDED.owner_user_id,
+              updated_at = EXCLUDED.updated_at
+            """,
+            (
+                agent_id,
+                tenant_id,
+                _clean_string(agent.get("name")) or agent_id,
+                _optional_clean_string(agent.get("description")),
+                _clean_string(agent.get("status")) or "draft",
+                owner_user_id,
+                created_at or updated_at,
+                updated_at or created_at,
+            ),
+        )
+        cursor.execute(
+            """
+            INSERT INTO agent_versions (
+              id, tenant_id, agent_id, version, instructions, model_config_id,
+              runtime_provider, tool_ids, knowledge_base_ids, memory_policy_id,
+              created_by, created_at
+            )
+            VALUES (%s, %s, %s, 1, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (tenant_id, agent_id, version) DO UPDATE
+            SET instructions = EXCLUDED.instructions,
+              model_config_id = EXCLUDED.model_config_id,
+              runtime_provider = EXCLUDED.runtime_provider,
+              tool_ids = EXCLUDED.tool_ids,
+              knowledge_base_ids = EXCLUDED.knowledge_base_ids,
+              memory_policy_id = EXCLUDED.memory_policy_id
+            """,
+            (
+                version_id,
+                tenant_id,
+                agent_id,
+                instructions,
+                _optional_clean_string(agent.get("model_config_id")),
+                _clean_string(agent.get("runtime_provider")) or "local-dev-runtime",
+                _json_string_list(agent.get("tools")),
+                _json_string_list(agent.get("knowledge_base_ids")),
+                _optional_clean_string(agent.get("memory_policy_id")),
+                owner_user_id,
+                created_at or updated_at,
+            ),
+        )
+        cursor.execute(
+            """
+            UPDATE agents
+            SET current_version_id = %s
+            WHERE id = %s
+            """,
+            (version_id, agent_id),
+        )
