@@ -1176,7 +1176,7 @@ class PlatformAgentRunService:
                 )
                 continue
 
-            self.run_and_record_executed_routed_tool_call_from_route_view_context(
+            self.run_and_record_executed_routed_tool_call_from_context(
                 tool_calls=tool_calls,
                 run_authorized_enterprise_tool=run_authorized_enterprise_tool,
                 decision_with_routing_context=decision_with_routing_context,
@@ -2289,31 +2289,6 @@ class PlatformAgentRunService:
             execution_context=execution_context,
             route_context_view=route_context_view,
             tool_response=tool_response,
-            routing_mode=routing_mode,
-            routing_error=routing_error,
-            approval_id=approval_id,
-        )
-
-    def run_and_record_executed_routed_tool_call_from_route_view_context(
-        self,
-        *,
-        tool_calls: list[dict[str, Any]],
-        run_authorized_enterprise_tool: Callable[..., dict[str, Any]],
-        decision_with_routing_context: Callable[..., dict[str, Any]],
-        format_tool_result_answer: Callable[..., str],
-        execution_context: dict[str, Any],
-        route_context_view: dict[str, Any],
-        routing_mode: str,
-        routing_error: str | None,
-        approval_id: str | None,
-    ) -> None:
-        self.run_and_record_executed_routed_tool_call_from_context(
-            tool_calls=tool_calls,
-            run_authorized_enterprise_tool=run_authorized_enterprise_tool,
-            decision_with_routing_context=decision_with_routing_context,
-            format_tool_result_answer=format_tool_result_answer,
-            execution_context=execution_context,
-            route_context_view=route_context_view,
             routing_mode=routing_mode,
             routing_error=routing_error,
             approval_id=approval_id,
