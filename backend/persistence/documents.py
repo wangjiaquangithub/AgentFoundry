@@ -159,3 +159,48 @@ class PostgresDocumentReadRepository:
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
+
+
+class PostgresDocumentWriteRepository:
+    """Write tenant-scoped document records to PostgreSQL."""
+
+    def __init__(self, database: PostgresDatabase) -> None:
+        self._database = database
+
+    def upsert_document(self, record: DocumentRecord) -> None:
+        with self._database.transaction() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO documents (
+                      id, tenant_id, knowledge_base_id, title, source_type,
+                      source_uri, object_ref, status, created_at, updated_at
+                    )
+                    VALUES (
+                      %s, %s, %s, %s, %s,
+                      %s, %s, %s, %s, %s
+                    )
+                    ON CONFLICT (id) DO UPDATE SET
+                      tenant_id = EXCLUDED.tenant_id,
+                      knowledge_base_id = EXCLUDED.knowledge_base_id,
+                      title = EXCLUDED.title,
+                      source_type = EXCLUDED.source_type,
+                      source_uri = EXCLUDED.source_uri,
+                      object_ref = EXCLUDED.object_ref,
+                      status = EXCLUDED.status,
+                      created_at = EXCLUDED.created_at,
+                      updated_at = EXCLUDED.updated_at
+                    """,
+                    (
+                        record.id,
+                        record.tenant_id,
+                        record.knowledge_base_id,
+                        record.title,
+                        record.source_type,
+                        record.source_uri,
+                        record.object_ref,
+                        record.status,
+                        record.created_at,
+                        record.updated_at,
+                    ),
+                )

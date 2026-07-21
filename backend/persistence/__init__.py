@@ -31,16 +31,19 @@ from backend.persistence.database import (
 from backend.persistence.document_chunks import (
     DocumentChunkRecord,
     PostgresDocumentChunkReadRepository,
+    PostgresDocumentChunkWriteRepository,
     SQLiteDocumentChunkReadRepository,
 )
 from backend.persistence.documents import (
     DocumentRecord,
     PostgresDocumentReadRepository,
+    PostgresDocumentWriteRepository,
     SQLiteDocumentReadRepository,
 )
 from backend.persistence.embedding_records import (
     EmbeddingRecord,
     PostgresEmbeddingRecordReadRepository,
+    PostgresEmbeddingRecordWriteRepository,
     SQLiteEmbeddingRecordReadRepository,
 )
 from backend.persistence.knowledge_bases import (
@@ -136,8 +139,11 @@ __all__ = [
     "PostgresAgentRunWriteRepository",
     "PostgresDatabase",
     "PostgresDocumentChunkReadRepository",
+    "PostgresDocumentChunkWriteRepository",
     "PostgresDocumentReadRepository",
+    "PostgresDocumentWriteRepository",
     "PostgresEmbeddingRecordReadRepository",
+    "PostgresEmbeddingRecordWriteRepository",
     "PostgresKnowledgeBaseReadRepository",
     "PostgresMemoryItemReadRepository",
     "PostgresMemoryItemWriteRepository",

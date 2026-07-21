@@ -151,3 +151,59 @@ class PostgresEmbeddingRecordReadRepository:
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 200)
+
+
+class PostgresEmbeddingRecordWriteRepository:
+    """Write tenant-scoped embedding records to PostgreSQL."""
+
+    def __init__(self, database: PostgresDatabase) -> None:
+        self._database = database
+
+    def append_embedding_record(self, record: EmbeddingRecord) -> None:
+        with self._database.transaction() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO embedding_records (
+                      id, tenant_id, chunk_id, model_config_id, vector_ref,
+                      created_at
+                    )
+                    VALUES (
+                      %s, %s, %s, %s, %s,
+                      %s
+                    )
+                    ON CONFLICT (tenant_id, chunk_id, model_config_id) DO UPDATE SET
+                      id = EXCLUDED.id,
+                      vector_ref = EXCLUDED.vector_ref,
+                      created_at = EXCLUDED.created_at
+                    """,
+                    (
+                        record.id,
+                        record.tenant_id,
+                        record.chunk_id,
+                        record.model_config_id,
+                        record.vector_ref,
+                        record.created_at,
+                    ),
+                )
+
+    def delete_embedding_records(
+        self,
+        *,
+        tenant_id: str,
+        chunk_id: str | None = None,
+        model_config_id: str | None = None,
+    ) -> int:
+        query = "DELETE FROM embedding_records WHERE tenant_id = %s"
+        parameters: list[Any] = [tenant_id]
+        if chunk_id is not None:
+            query += " AND chunk_id = %s"
+            parameters.append(chunk_id)
+        if model_config_id is not None:
+            query += " AND model_config_id = %s"
+            parameters.append(model_config_id)
+
+        with self._database.transaction() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(query, tuple(parameters))
+                return int(cursor.rowcount)

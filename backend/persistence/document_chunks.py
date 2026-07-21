@@ -147,3 +147,52 @@ class PostgresDocumentChunkReadRepository:
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 200)
+
+
+class PostgresDocumentChunkWriteRepository:
+    """Write tenant-scoped document chunks to PostgreSQL."""
+
+    def __init__(self, database: PostgresDatabase) -> None:
+        self._database = database
+
+    def append_document_chunk(self, record: DocumentChunkRecord) -> None:
+        with self._database.transaction() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO document_chunks (
+                      id, tenant_id, document_id, chunk_index, content, metadata,
+                      created_at
+                    )
+                    VALUES (
+                      %s, %s, %s, %s, %s, %s,
+                      %s
+                    )
+                    ON CONFLICT (tenant_id, document_id, chunk_index) DO UPDATE SET
+                      id = EXCLUDED.id,
+                      content = EXCLUDED.content,
+                      metadata = EXCLUDED.metadata,
+                      created_at = EXCLUDED.created_at
+                    """,
+                    (
+                        record.id,
+                        record.tenant_id,
+                        record.document_id,
+                        record.chunk_index,
+                        record.content,
+                        json.dumps(record.metadata, ensure_ascii=False),
+                        record.created_at,
+                    ),
+                )
+
+    def delete_document_chunks(self, *, tenant_id: str, document_id: str) -> int:
+        with self._database.transaction() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    DELETE FROM document_chunks
+                    WHERE tenant_id = %s AND document_id = %s
+                    """,
+                    (tenant_id, document_id),
+                )
+                return int(cursor.rowcount)
