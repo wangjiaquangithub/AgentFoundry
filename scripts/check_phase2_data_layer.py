@@ -83,6 +83,7 @@ POSTGRES_AUTHORITATIVE_PERSISTENCE_REPOSITORIES = {
         "PostgresAuditEventReadRepository",
         "PostgresAuditEventWriteRepository",
     },
+    "model_configs.py": {"PostgresModelConfigReadRepository"},
 }
 
 POSTGRES_SCHEME_LITERALS = {"postgres", "postgresql"}
