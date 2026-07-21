@@ -1681,12 +1681,12 @@ async def run_enterprise_agent(
         )
         return response
 
+    route_context_views = agent_run_service.routed_route_context_views_from_routes(
+        routes,
+        default_source=ROUTING_SOURCE_RULES,
+    )
     tool_calls: list[dict[str, Any]] = []
-    for route in routes:
-        route_context_view = agent_run_service.routed_route_context_view_from_route(
-            route,
-            default_source=ROUTING_SOURCE_RULES,
-        )
+    for route_context_view in route_context_views:
 
         if agent_run_service.record_unconfigured_routed_tool_denial_from_route_view_context(
             tool_calls=tool_calls,
