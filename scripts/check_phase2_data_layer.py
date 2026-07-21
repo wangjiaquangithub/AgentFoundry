@@ -82,6 +82,22 @@ POSTGRES_AUTHORITATIVE_REPOSITORIES = {
 POSTGRES_SCHEME_LITERALS = {"postgres", "postgresql"}
 
 
+def _method_uses_database_call(node: ast.AST, call_name: str) -> bool:
+    for child in ast.walk(node):
+        if not isinstance(child, ast.Call):
+            continue
+        function = child.func
+        if not isinstance(function, ast.Attribute) or function.attr != call_name:
+            continue
+        receiver = function.value
+        if not isinstance(receiver, ast.Attribute) or receiver.attr != "_database":
+            continue
+        owner = receiver.value
+        if isinstance(owner, ast.Name) and owner.id == "self":
+            return True
+    return False
+
+
 def _read_migrations() -> str:
     sql_parts: list[str] = []
     for path in sorted(MIGRATIONS_DIR.glob("*.sql")):
@@ -270,6 +286,43 @@ def _check_postgres_url_detection_boundary() -> list[str]:
     return errors
 
 
+def _check_postgres_write_transaction_boundary() -> list[str]:
+    errors: list[str] = []
+
+    for path in sorted(PERSISTENCE_DIR.glob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for class_node in ast.walk(tree):
+            if not isinstance(class_node, ast.ClassDef):
+                continue
+            if not class_node.name.startswith("Postgres") or "Write" not in class_node.name:
+                continue
+
+            for method_node in class_node.body:
+                if not isinstance(method_node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    continue
+                if method_node.name.startswith("_"):
+                    continue
+
+                if _method_uses_database_call(method_node, "connect"):
+                    errors.append(
+                        "PostgreSQL write repository must not use connect() for writes; "
+                        f"use transaction(): backend/persistence/{path.name}:"
+                        f"{class_node.name}.{method_node.name}",
+                    )
+                    continue
+
+                if _module_uses_name(method_node, "_database") and not _method_uses_database_call(
+                    method_node,
+                    "transaction",
+                ):
+                    errors.append(
+                        "PostgreSQL write repository touches the database without a transaction boundary: "
+                        f"backend/persistence/{path.name}:{class_node.name}.{method_node.name}",
+                    )
+
+    return errors
+
+
 def main() -> int:
     sql = _read_migrations()
     schema = _extract_schema(sql)
@@ -279,6 +332,7 @@ def main() -> int:
         *_check_required_repositories(),
         *_check_authoritative_postgres_repositories(),
         *_check_postgres_url_detection_boundary(),
+        *_check_postgres_write_transaction_boundary(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -288,6 +342,7 @@ def main() -> int:
     print(f"- required repositories covered: {len(REQUIRED_REPOSITORIES) - len([e for e in errors if e.startswith('missing persistence repository')])}/{len(REQUIRED_REPOSITORIES)}")
     print(f"- authoritative PostgreSQL adapters guarded: {sum(len(classes) for classes in POSTGRES_AUTHORITATIVE_REPOSITORIES.values())}")
     print("- PostgreSQL URL detection centralized: yes")
+    print("- PostgreSQL write transaction boundary guarded: yes")
 
     if warnings:
         print("\nWarnings:")
