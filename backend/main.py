@@ -605,6 +605,7 @@ def _platform_connector_config_service() -> PlatformConnectorConfigService:
     return PlatformConnectorConfigService(
         repository=connector_config_repository,
         global_connector=enterprise_connector,
+        audit_event_writer=_build_audit_event_write_repository(),
         now=now_iso,
     )
 

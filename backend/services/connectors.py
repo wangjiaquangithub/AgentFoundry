@@ -4,8 +4,10 @@ import json
 from collections.abc import Mapping
 from datetime import datetime, timezone
 from time import perf_counter
-from typing import Any, Callable
+from typing import Any, Callable, Protocol
+from uuid import uuid4
 
+from backend.persistence import AuditEventRecord
 from connectors import EnterpriseConnector, HttpEnterpriseConnector
 from repositories.connectors import (
     ConnectorConfigRegistryError,
@@ -22,6 +24,13 @@ class PlatformConnectorConfigServiceError(ValueError):
         self.detail = detail
 
 
+class AuditEventWriteRepository(Protocol):
+    """Write tenant-scoped governance audit events."""
+
+    def append_audit_event(self, record: AuditEventRecord) -> None:
+        """Persist one audit event."""
+
+
 class PlatformConnectorConfigService:
     """Manage tenant-scoped enterprise connector configuration records."""
 
@@ -31,11 +40,13 @@ class PlatformConnectorConfigService:
         repository: ConnectorConfigRepository,
         global_connector: EnterpriseConnector,
         preview_result: Callable[[Any], str] | None = None,
+        audit_event_writer: AuditEventWriteRepository | None = None,
         now: Callable[[], str] | None = None,
     ) -> None:
         self._repository = repository
         self._global_connector = global_connector
         self._preview_result = preview_result or _preview_connector_result
+        self._audit_event_writer = audit_event_writer
         self._now = now or _utc_now_iso
 
     def supported_connectors(self) -> list[dict[str, Any]]:
@@ -569,6 +580,11 @@ class PlatformConnectorConfigService:
         )
         configs[config["tenant"]] = config
         self.save_configs(configs)
+        self._append_connector_config_audit_event(
+            config=config,
+            actor=resolved_user_id,
+            event_type="connector_config.saved",
+        )
         return {
             "config": self.redact_config(config),
             "saved_configs": self.redacted_configs(),
@@ -644,6 +660,13 @@ class PlatformConnectorConfigService:
                 **{config["tenant"]: config for config in imported_configs},
             }
         self.save_configs(configs)
+        for config in imported_configs:
+            self._append_connector_config_audit_event(
+                config=config,
+                actor=actor,
+                event_type="connector_config.imported",
+                extra_payload={"mode": mode},
+            )
 
     def test_connector(self, payload: Any) -> dict[str, Any]:
         base_url = payload.base_url.strip().rstrip("/")
@@ -729,6 +752,55 @@ class PlatformConnectorConfigService:
             "status": status,
             "checks": checks,
         }
+
+    def _append_connector_config_audit_event(
+        self,
+        *,
+        config: dict[str, Any],
+        actor: str,
+        event_type: str,
+        extra_payload: dict[str, Any] | None = None,
+    ) -> None:
+        if self._audit_event_writer is None:
+            return
+
+        tenant = str(config.get("tenant") or "").strip()
+        payload = {
+            "schema_version": 1,
+            **(extra_payload or {}),
+            "tenant": tenant,
+            "base_url": str(config.get("base_url") or ""),
+            "policy_path": str(
+                config.get("policy_path") or HttpEnterpriseConnector.policy_path,
+            ),
+            "ticket_path": str(
+                config.get("ticket_path") or HttpEnterpriseConnector.ticket_path,
+            ),
+            "metrics_path": str(
+                config.get("metrics_path") or HttpEnterpriseConnector.metrics_path,
+            ),
+            "timeout_seconds": float(config.get("timeout_seconds") or 5.0),
+            "enabled": bool(config.get("enabled", True)),
+            "token_configured": bool(str(config.get("token") or "").strip()),
+        }
+        try:
+            self._audit_event_writer.append_audit_event(
+                AuditEventRecord(
+                    id=str(uuid4()),
+                    tenant_id=tenant,
+                    actor_user_id=str(actor or "platform-admin").strip()
+                    or "platform-admin",
+                    event_type=event_type,
+                    target_type="connector_config",
+                    target_id=tenant,
+                    payload=payload,
+                    created_at=self._now(),
+                ),
+            )
+        except ValueError:
+            raise
+        except Exception as exc:
+            raise PlatformConnectorConfigServiceError(500, str(exc)) from exc
 
 
 def _utc_now_iso() -> str:
