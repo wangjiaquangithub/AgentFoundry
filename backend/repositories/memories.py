@@ -15,9 +15,8 @@ def _safe_path_part(value: str) -> str:
 class PlatformMemoryRepository:
     """Read and write tenant-scoped memory records.
 
-    PostgreSQL is used for tenant-scoped production records when configured.
-    The JSONL path remains only for local development compatibility and legacy
-    records that have not been migrated.
+    PostgreSQL is authoritative for tenant-scoped production records when
+    configured. The JSONL path remains only for local development compatibility.
     """
 
     def __init__(
@@ -61,11 +60,10 @@ class PlatformMemoryRepository:
                 agent_id=agent_id,
                 limit=limit,
             )
-            if records:
-                return [
-                    _platform_memory_from_memory_item(record)
-                    for record in reversed(records)
-                ]
+            return [
+                _platform_memory_from_memory_item(record)
+                for record in reversed(records)
+            ]
 
         return self._list_jsonl(
             tenant=tenant,
