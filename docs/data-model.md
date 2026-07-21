@@ -148,6 +148,16 @@ This document defines the production data model target for AgentFoundry. The cur
 - `created_at`
 - `updated_at`
 
+`tool_user_policies`
+
+- `id`
+- `tenant_id`
+- `user_id`
+- `allow_tools`
+- `deny_tools`
+- `created_at`
+- `updated_at`
+
 `tool_calls`
 
 - `id`

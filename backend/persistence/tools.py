@@ -39,6 +39,17 @@ class ToolPolicyRecord:
     updated_at: str
 
 
+@dataclass(frozen=True)
+class ToolUserPolicyRecord:
+    id: str
+    tenant_id: str
+    user_id: str
+    allow_tools: list[str]
+    deny_tools: list[str]
+    created_at: str
+    updated_at: str
+
+
 def _tool_from_row(row: dict[str, Any]) -> ToolRecord:
     schema = _object_from_json(row["schema"], row["id"], "schema")
     return ToolRecord(
@@ -67,6 +78,26 @@ def _policy_from_row(row: dict[str, Any]) -> ToolPolicyRecord:
         approval_required=bool(row["approval_required"]),
         rate_limit=_rate_limit_from_json(row["rate_limit"], row["id"]),
         data_access_scope=row["data_access_scope"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+    )
+
+
+def _user_policy_from_row(row: dict[str, Any]) -> ToolUserPolicyRecord:
+    return ToolUserPolicyRecord(
+        id=row["id"],
+        tenant_id=row["tenant_id"],
+        user_id=row["user_id"],
+        allow_tools=_string_list_from_json(
+            row["allow_tools"],
+            row["id"],
+            "allow_tools",
+        ),
+        deny_tools=_string_list_from_json(
+            row["deny_tools"],
+            row["id"],
+            "deny_tools",
+        ),
         created_at=row["created_at"],
         updated_at=row["updated_at"],
     )
@@ -284,6 +315,15 @@ class PostgresToolGovernanceReadRepository:
                     """,
                 )
                 rows = cursor.fetchall()
+                cursor.execute(
+                    """
+                    SELECT id, tenant_id, user_id, allow_tools, deny_tools,
+                      created_at, updated_at
+                    FROM tool_user_policies
+                    ORDER BY tenant_id, user_id
+                    """,
+                )
+                user_policy_rows = cursor.fetchall()
 
         defaults = fallback_policy.get("defaults", {})
         if defaults is None:
@@ -310,6 +350,21 @@ class PostgresToolGovernanceReadRepository:
                 tenant_policy = {}
                 tenants[tenant_id] = tenant_policy
             tenant_policy["allow"] = allow
+
+        for row in user_policy_rows:
+            user_policy = _user_policy_from_row(dict(row))
+            tenant_policy = tenants.setdefault(user_policy.tenant_id, {})
+            if not isinstance(tenant_policy, dict):
+                tenant_policy = {}
+                tenants[user_policy.tenant_id] = tenant_policy
+            users = tenant_policy.setdefault("users", {})
+            if not isinstance(users, dict):
+                users = {}
+                tenant_policy["users"] = users
+            users[user_policy.user_id] = {
+                "allow": user_policy.allow_tools,
+                "deny": user_policy.deny_tools,
+            }
 
         return snapshot
 
@@ -460,10 +515,6 @@ class PostgresToolGovernanceWriteRepository:
                     if not isinstance(tenant_policy, dict):
                         continue
 
-                    allow = tenant_policy.get("allow")
-                    if not isinstance(allow, list):
-                        continue
-
                     clean_tenant_id = str(tenant_id)
                     cursor.execute(
                         """
@@ -479,6 +530,10 @@ class PostgresToolGovernanceWriteRepository:
                             timestamp,
                         ),
                     )
+
+                    allow = tenant_policy.get("allow")
+                    if not isinstance(allow, list):
+                        allow = []
 
                     for item in allow:
                         tool_name = str(item or "").strip()
@@ -534,6 +589,71 @@ class PostgresToolGovernanceWriteRepository:
                                 tool_id,
                                 json.dumps(["admin", "member"]),
                                 1 if tool_name in approval_required_tools else 0,
+                                timestamp,
+                                timestamp,
+                            ),
+                        )
+
+                    users = tenant_policy.get("users")
+                    if not isinstance(users, dict):
+                        continue
+
+                    for user_id, user_policy in users.items():
+                        if not isinstance(user_policy, dict):
+                            continue
+                        clean_user_id = str(user_id).strip()
+                        if not clean_user_id:
+                            continue
+                        raw_allow_tools = user_policy.get("allow")
+                        if not isinstance(raw_allow_tools, list):
+                            raw_allow_tools = []
+                        raw_deny_tools = user_policy.get("deny")
+                        if not isinstance(raw_deny_tools, list):
+                            raw_deny_tools = []
+                        allow_tools = [
+                            str(item).strip()
+                            for item in raw_allow_tools
+                            if str(item).strip()
+                        ]
+                        deny_tools = [
+                            str(item).strip()
+                            for item in raw_deny_tools
+                            if str(item).strip()
+                        ]
+                        cursor.execute(
+                            """
+                            INSERT INTO users (
+                              id, display_name, email, status, created_at, updated_at
+                            )
+                            VALUES (%s, %s, NULL, 'active', %s, %s)
+                            ON CONFLICT (id) DO UPDATE
+                            SET updated_at = EXCLUDED.updated_at
+                            """,
+                            (
+                                clean_user_id,
+                                clean_user_id,
+                                timestamp,
+                                timestamp,
+                            ),
+                        )
+                        cursor.execute(
+                            """
+                            INSERT INTO tool_user_policies (
+                              id, tenant_id, user_id, allow_tools, deny_tools,
+                              created_at, updated_at
+                            )
+                            VALUES (%s, %s, %s, %s, %s, %s, %s)
+                            ON CONFLICT (tenant_id, user_id) DO UPDATE
+                            SET allow_tools = EXCLUDED.allow_tools,
+                              deny_tools = EXCLUDED.deny_tools,
+                              updated_at = EXCLUDED.updated_at
+                            """,
+                            (
+                                f"{clean_tenant_id}:{clean_user_id}:tool-policy",
+                                clean_tenant_id,
+                                clean_user_id,
+                                json.dumps(allow_tools, ensure_ascii=False),
+                                json.dumps(deny_tools, ensure_ascii=False),
                                 timestamp,
                                 timestamp,
                             ),
