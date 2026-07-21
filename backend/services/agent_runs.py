@@ -1652,14 +1652,6 @@ class PlatformAgentRunService:
     ) -> dict[str, Any]:
         return dict(tool_response["decision"])
 
-    def executed_tool_connector_source(
-        self,
-        tool_response: dict[str, Any],
-        *,
-        connector_source: str,
-    ) -> str:
-        return str(tool_response.get("connector_source", connector_source))
-
     def append_executed_routed_tool_call(
         self,
         *,
@@ -1683,10 +1675,7 @@ class PlatformAgentRunService:
                 tenant=str(tool_response["tenant"]),
                 user_id=str(tool_response["user_id"]),
                 connector=str(tool_response.get("connector", connector)),
-                connector_source=self.executed_tool_connector_source(
-                    tool_response,
-                    connector_source=connector_source,
-                ),
+                connector_source=str(tool_response.get("connector_source", connector_source)),
                 routing_source=routing_source,
                 routing_reason=routing_reason,
                 approval_id=approval_id,
