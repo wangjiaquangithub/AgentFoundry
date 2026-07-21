@@ -612,13 +612,60 @@ class PlatformAgentRunService:
         knowledge_error: str | None,
         knowledge_payload: dict[str, Any],
         retrieval_readiness: dict[str, Any],
+        knowledge_document_readiness: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        return {
+        context = {
             "knowledge_hits": list(knowledge_hits),
             "knowledge_error": knowledge_error,
             "knowledge_payload": knowledge_payload,
             "retrieval_readiness": retrieval_readiness,
         }
+        if knowledge_document_readiness is not None:
+            context["knowledge_document_readiness"] = knowledge_document_readiness
+        return context
+
+    @staticmethod
+    def build_knowledge_document_readiness(
+        *,
+        knowledge_document_readiness_service: Any | None,
+        tenant: str,
+        knowledge_base_ids: list[str],
+    ) -> dict[str, Any] | None:
+        bound_ids = [
+            str(knowledge_base_id).strip()
+            for knowledge_base_id in knowledge_base_ids
+            if str(knowledge_base_id).strip()
+        ]
+        if not bound_ids or knowledge_document_readiness_service is None:
+            return None
+        return knowledge_document_readiness_service.build_readiness(
+            tenant_id=tenant,
+            knowledge_base_ids=bound_ids,
+        )
+
+    @staticmethod
+    def knowledge_document_readiness_blocks_retrieval(
+        knowledge_document_readiness: dict[str, Any] | None,
+    ) -> bool:
+        if knowledge_document_readiness is None:
+            return False
+        return str(knowledge_document_readiness.get("status") or "") in {
+            "blocked",
+            "not_configured",
+        }
+
+    @staticmethod
+    def knowledge_document_readiness_error(
+        knowledge_document_readiness: dict[str, Any],
+    ) -> str:
+        guidance = str(knowledge_document_readiness.get("guidance") or "").strip()
+        if guidance:
+            return guidance
+        status = str(knowledge_document_readiness.get("status") or "blocked")
+        return (
+            "PostgreSQL knowledge documents are not ready for agent retrieval "
+            f"(status: {status})."
+        )
 
     async def prepare_knowledge_context_from_execution_context(
         self,
@@ -628,28 +675,72 @@ class PlatformAgentRunService:
         knowledge_base_service: Any,
         dev_knowledge_service: Any,
         dev_knowledge_provider: str,
+        knowledge_document_readiness_service: Any | None = None,
         execution_context: dict[str, Any],
     ) -> dict[str, Any]:
         response_record_context = execution_context["response_record_context"]
+        tenant = str(execution_context["tenant"])
+        knowledge_base_ids = list(execution_context["knowledge_base_ids"])
+        knowledge_document_readiness = self.build_knowledge_document_readiness(
+            knowledge_document_readiness_service=knowledge_document_readiness_service,
+            tenant=tenant,
+            knowledge_base_ids=knowledge_base_ids,
+        )
+        if self.knowledge_document_readiness_blocks_retrieval(
+            knowledge_document_readiness,
+        ):
+            knowledge_error = self.knowledge_document_readiness_error(
+                knowledge_document_readiness or {},
+            )
+            retrieval_readiness = {
+                "status": "blocked",
+                "bound_knowledge_base_ids": [
+                    str(knowledge_base_id).strip()
+                    for knowledge_base_id in knowledge_base_ids
+                    if str(knowledge_base_id).strip()
+                ],
+                "production_retriever_available": knowledge_base_service is not None,
+                "production_hit_count": 0,
+                "dev_fallback_hit_count": 0,
+                "dev_fallback_used": False,
+                "knowledge_error": knowledge_error,
+                "guidance": "Resolve PostgreSQL document readiness before agent retrieval.",
+            }
+            knowledge_payload = build_agent_run_payload(
+                knowledge_hits=[],
+                knowledge_error=knowledge_error,
+                retrieval_readiness=retrieval_readiness,
+                knowledge_document_readiness=knowledge_document_readiness,
+            )
+            return self.build_knowledge_context(
+                knowledge_hits=[],
+                knowledge_error=knowledge_error,
+                knowledge_payload=knowledge_payload,
+                retrieval_readiness=retrieval_readiness,
+                knowledge_document_readiness=knowledge_document_readiness,
+            )
+
         knowledge_hits, knowledge_error, retrieval_readiness = await search_agent_knowledge_bases(
             knowledge_base_service=knowledge_base_service,
             dev_knowledge_service=dev_knowledge_service,
             dev_knowledge_provider=dev_knowledge_provider,
             user_id=str(response_record_context["user_id"]),
-            tenant=str(execution_context["tenant"]),
+            tenant=tenant,
             question=str(execution_context["question"]),
-            knowledge_base_ids=list(execution_context["knowledge_base_ids"]),
+            knowledge_base_ids=knowledge_base_ids,
         )
         knowledge_payload = build_agent_run_payload(
             knowledge_hits=knowledge_hits,
             knowledge_error=knowledge_error,
             retrieval_readiness=retrieval_readiness,
+            knowledge_document_readiness=knowledge_document_readiness,
         )
         return self.build_knowledge_context(
             knowledge_hits=knowledge_hits,
             knowledge_error=knowledge_error,
             knowledge_payload=knowledge_payload,
             retrieval_readiness=retrieval_readiness,
+            knowledge_document_readiness=knowledge_document_readiness,
         )
 
     @staticmethod
@@ -658,6 +749,9 @@ class PlatformAgentRunService:
             "knowledge_hits": knowledge_context["knowledge_hits"],
             "knowledge_payload": knowledge_context["knowledge_payload"],
             "retrieval_readiness": knowledge_context["retrieval_readiness"],
+            "knowledge_document_readiness": knowledge_context.get(
+                "knowledge_document_readiness",
+            ),
         }
 
     def build_routing_context(

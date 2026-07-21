@@ -591,10 +591,13 @@ class PlatformKnowledgeResponseService:
         knowledge_hits: list[dict[str, Any]],
         knowledge_error: str | None,
         retrieval_readiness: dict[str, Any] | None = None,
+        knowledge_document_readiness: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {"knowledge_hits": knowledge_hits}
         if retrieval_readiness is not None:
             payload["retrieval_readiness"] = retrieval_readiness
+        if knowledge_document_readiness is not None:
+            payload["knowledge_document_readiness"] = knowledge_document_readiness
         if knowledge_error:
             payload["knowledge_error"] = knowledge_error
         return payload

@@ -21,7 +21,10 @@ from services.connectors import (
 )
 from services.dev_knowledge import PlatformDevKnowledgeService
 from services.enterprise_router import PlatformEnterpriseRouterService
-from services.knowledge import PlatformKnowledgeResponseService
+from services.knowledge import (
+    PlatformKnowledgeDocumentReadinessService,
+    PlatformKnowledgeResponseService,
+)
 from services.memories import PlatformMemoryService
 from services.tools import PlatformToolPolicyService
 
@@ -46,6 +49,9 @@ class AgentRuntimeRouteDependencies:
     tool_policy_service: Callable[[], PlatformToolPolicyService]
     memory_service: PlatformMemoryService
     knowledge_response_service: PlatformKnowledgeResponseService
+    knowledge_document_readiness_service: (
+        PlatformKnowledgeDocumentReadinessService | None
+    )
     dev_knowledge_service: PlatformDevKnowledgeService
     enterprise_router_service: PlatformEnterpriseRouterService
     published_agent_tool_scope_for_user: Callable[[str, str], tuple[Any, set[str]]]
@@ -136,6 +142,9 @@ def create_agent_runtime_router(
                 ),
                 dev_knowledge_service=deps.dev_knowledge_service,
                 dev_knowledge_provider=deps.dev_knowledge_provider,
+                knowledge_document_readiness_service=(
+                    deps.knowledge_document_readiness_service
+                ),
                 execution_context=execution_context,
             )
         )

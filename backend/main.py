@@ -852,6 +852,9 @@ app.include_router(
             tool_policy_service=_platform_tool_policy_service,
             memory_service=platform_memory_service,
             knowledge_response_service=knowledge_response_service,
+            knowledge_document_readiness_service=(
+                _build_knowledge_document_readiness_service()
+            ),
             dev_knowledge_service=dev_knowledge_service,
             enterprise_router_service=enterprise_router_service,
             published_agent_tool_scope_for_user=(
