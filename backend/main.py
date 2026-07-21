@@ -53,6 +53,7 @@ from permissions import (
     ENTERPRISE_TOOL_NAMES,
     ToolAuthorizationPolicy,
 )
+from platform_access import PlatformAccessHelpers, tenant_hint_from_user_id
 from platform_config import (
     DATA_DIR,
     PLATFORM_AGENT_RUNS_PATH,
@@ -186,9 +187,8 @@ def _platform_tool_policy_service() -> PlatformToolPolicyService:
         ).strip().lower(),
         enterprise_tool_names=ENTERPRISE_TOOL_NAMES,
         runtime_context=runtime_context,
-        identity_metadata=lambda user_id, tenant: _platform_identity_metadata(
-            user_id,
-            tenant,
+        identity_metadata=lambda user_id, tenant: (
+            _platform_access_helpers.identity_metadata(user_id, tenant)
         ),
     )
 
@@ -260,7 +260,7 @@ def _platform_status_service() -> PlatformStatusService:
         runtime_context=lambda user_id: (
             _platform_connector_config_service().enterprise_runtime_context(user_id)
         ),
-        identity_metadata=_platform_identity_metadata,
+        identity_metadata=_platform_access_helpers.identity_metadata,
         tenant_workspaces=lambda **kwargs: (
             _platform_connector_config_service().tenant_workspaces(
                 runtime_connector_for_tenant=(
@@ -351,13 +351,13 @@ def _platform_agent_service() -> PlatformAgentService:
         templates=ENTERPRISE_AGENT_TEMPLATES,
         approval_required_tools=APPROVAL_REQUIRED_TOOLS,
         tenant_for_user=tenant_for_user,
-        tenant_hint_from_user_id=_tenant_hint_from_user_id,
-        identity_metadata=_platform_identity_metadata,
+        tenant_hint_from_user_id=tenant_hint_from_user_id,
+        identity_metadata=_platform_access_helpers.identity_metadata,
         member_for_user=lambda user_id: _platform_member_service().get_member_by_user(
             user_id,
             include_inactive=True,
         ),
-        role_for_user=_identity_role_for_user,
+        role_for_user=_platform_access_helpers.role_for_user,
     )
 
 
@@ -375,138 +375,16 @@ def _raise_platform_agent_run_service_error(
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
-def _published_platform_agent_tool_scope_for_user(
-    agent_id: str,
-    user_id: str,
-) -> tuple[dict[str, Any], set[str]]:
-    try:
-        return _platform_agent_service().published_tool_scope_access_context(
-            agent_id,
-            user_id=user_id,
-        )
-    except PlatformMemberServiceError as exc:
-        _raise_platform_member_service_error(exc)
-    except PlatformAgentServiceError as exc:
-        _raise_platform_agent_service_error(exc)
-
-
 def _platform_member_service() -> PlatformMemberService:
     return PlatformMemberService(
         repository=member_repository,
-        tenant_hint_from_user_id=_tenant_hint_from_user_id,
+        tenant_hint_from_user_id=tenant_hint_from_user_id,
         now=now_iso,
     )
 
 
 def _raise_platform_member_service_error(exc: PlatformMemberServiceError) -> NoReturn:
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
-
-
-def _identity_role_for_user(user_id: str) -> str:
-    tenant_hint = _tenant_hint_from_user_id(user_id)
-    if tenant_hint:
-        current_tenant = tenant_hint
-    else:
-        try:
-            current_tenant = (
-                _platform_connector_config_service().runtime_tenant_for_user(user_id)
-            )
-        except PlatformConnectorConfigServiceError as exc:
-            _raise_platform_connector_config_service_error(exc)
-    if not current_tenant:
-        try:
-            current_tenant = (
-                _platform_connector_config_service().configured_tenant_for_user(user_id)
-            )
-        except PlatformConnectorConfigServiceError as exc:
-            _raise_platform_connector_config_service_error(exc)
-    for identity in _platform_identity_metadata(user_id, current_tenant):
-        if identity.get("user_id") == user_id:
-            return str(identity.get("role") or "").strip()
-    return ""
-
-
-def _resource_record_id(record: Any) -> str | None:
-    if isinstance(record, dict):
-        value = record.get("id")
-    else:
-        value = getattr(record, "id", None)
-    if value is None:
-        return None
-    item = str(value).strip()
-    return item or None
-
-
-async def _validate_platform_agent_resources(
-    request: Request,
-    user_id: str,
-    *,
-    model_config_id: str | None,
-    knowledge_base_ids: list[str],
-) -> None:
-    if model_config_id:
-        access_service = getattr(request.app.state, "resource_access_service", None)
-        storage = getattr(request.app.state, "storage", None)
-        credential = None
-
-        if access_service is not None:
-            try:
-                credential = await access_service.resolve_credential(
-                    user_id,
-                    model_config_id,
-                )
-            except HTTPException as exc:
-                if exc.status_code != 404:
-                    raise
-        elif storage is not None:
-            try:
-                credential = await storage.get_credential(user_id, model_config_id)
-            except AttributeError:
-                credential = None
-
-        if credential is None:
-            raise HTTPException(
-                status_code=400,
-                detail={
-                    "message": (
-                        "Unknown model credential configured for platform agent."
-                    ),
-                    "unknown_model_config_id": model_config_id,
-                },
-            )
-
-    if not knowledge_base_ids:
-        return
-
-    knowledge_base_service = getattr(request.app.state, "knowledge_base_service", None)
-    storage = getattr(request.app.state, "storage", None)
-    knowledge_bases = []
-    if knowledge_base_service is not None:
-        knowledge_bases = await knowledge_base_service.list_knowledge_bases(user_id)
-    elif storage is not None:
-        try:
-            knowledge_bases = await storage.list_knowledge_bases(user_id)
-        except AttributeError:
-            knowledge_bases = []
-
-    visible_ids = {
-        record_id
-        for record_id in (_resource_record_id(record) for record in knowledge_bases)
-        if record_id
-    }
-    missing_ids = [
-        knowledge_base_id
-        for knowledge_base_id in knowledge_base_ids
-        if knowledge_base_id not in visible_ids
-    ]
-    if missing_ids:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "message": "Unknown knowledge bases configured for platform agent.",
-                "unknown_knowledge_base_ids": missing_ids,
-            },
-        )
 
 
 def _platform_connector_config_service() -> PlatformConnectorConfigService:
@@ -523,45 +401,17 @@ def _raise_platform_connector_config_service_error(
     raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
-def _tenant_hint_from_user_id(user_id: str) -> str | None:
-    if ":" not in user_id:
-        return None
-    tenant, _user = user_id.split(":", 1)
-    tenant = tenant.strip()
-    return tenant or None
-
-
-def _platform_identity_metadata(
-    current_user_id: str,
-    current_tenant: str,
-) -> list[dict[str, Any]]:
-    def current_tenant_sample_questions() -> list[Any]:
-        try:
-            runtime_connector, _source = (
-                _platform_connector_config_service()
-                .runtime_enterprise_connector_for_tenant(current_tenant)
-            )
-        except PlatformConnectorConfigServiceError as exc:
-            _raise_platform_connector_config_service_error(exc)
-        return list(
-            runtime_connector.describe_tenant_workspace(current_tenant).get(
-                "sample_questions",
-                [],
-            ),
-        )
-
-    try:
-        return _platform_member_service().identity_metadata_payload(
-            current_user_id=current_user_id,
-            current_tenant=current_tenant,
-            connector_identities=enterprise_connector.list_demo_identities(),
-            tenant_for_user=enterprise_connector.tenant_for_user,
-            current_tenant_sample_questions=current_tenant_sample_questions,
-            authorization_policy=tool_authorization_policy,
-            tool_names=ENTERPRISE_TOOL_NAMES,
-        )
-    except PlatformMemberServiceError as exc:
-        _raise_platform_member_service_error(exc)
+_platform_access_helpers = PlatformAccessHelpers(
+    agent_service=_platform_agent_service,
+    connector_config_service=_platform_connector_config_service,
+    member_service=_platform_member_service,
+    enterprise_connector=enterprise_connector,
+    authorization_policy=_get_tool_authorization_policy,
+    tool_names=ENTERPRISE_TOOL_NAMES,
+    raise_agent_error=_raise_platform_agent_service_error,
+    raise_connector_config_error=_raise_platform_connector_config_service_error,
+    raise_member_error=_raise_platform_member_service_error,
+)
 
 
 def _run_authorized_enterprise_tool(
@@ -681,7 +531,7 @@ app.include_router(
             tool_policy_service=_platform_tool_policy_service,
             agent_service=_platform_agent_service,
             workflow_template_service=_platform_workflow_template_service,
-            identity_metadata=_platform_identity_metadata,
+            identity_metadata=_platform_access_helpers.identity_metadata,
             tool_policy_path=_platform_tool_policy_path,
             now=now_iso,
             get_tool_authorization_policy=_get_tool_authorization_policy,
@@ -695,7 +545,7 @@ app.include_router(
     create_agent_catalog_router(
         AgentCatalogRouteDependencies(
             agent_service=_platform_agent_service,
-            validate_agent_resources=_validate_platform_agent_resources,
+            validate_agent_resources=_platform_access_helpers.validate_agent_resources,
         )
     )
 )
@@ -712,7 +562,7 @@ app.include_router(
             agent_service=_platform_agent_service,
             get_tool_authorization_policy=_get_tool_authorization_policy,
             published_agent_tool_scope_for_user=(
-                _published_platform_agent_tool_scope_for_user
+                _platform_access_helpers.published_agent_tool_scope_for_user
             ),
             require_platform_approval=_require_platform_approval,
             run_authorized_enterprise_tool=_run_authorized_enterprise_tool,
@@ -740,7 +590,7 @@ app.include_router(
             dev_knowledge_service=dev_knowledge_service,
             enterprise_router_service=enterprise_router_service,
             published_agent_tool_scope_for_user=(
-                _published_platform_agent_tool_scope_for_user
+                _platform_access_helpers.published_agent_tool_scope_for_user
             ),
             require_platform_approval=_require_platform_approval,
             run_authorized_enterprise_tool=_run_authorized_enterprise_tool,
@@ -770,9 +620,9 @@ app.include_router(
             status_service=_platform_status_service,
             agent_service=_platform_agent_service,
             tool_policy_service=_platform_tool_policy_service,
-            identity_metadata=_platform_identity_metadata,
+            identity_metadata=_platform_access_helpers.identity_metadata,
             published_agent_tool_scope_for_user=(
-                _published_platform_agent_tool_scope_for_user
+                _platform_access_helpers.published_agent_tool_scope_for_user
             ),
             require_platform_approval=_require_platform_approval,
             run_authorized_enterprise_tool=_run_authorized_enterprise_tool,
