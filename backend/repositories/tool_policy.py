@@ -19,6 +19,17 @@ class ToolPolicyWriteRepository(Protocol):
         """Persist tenant-scoped tool policy records."""
 
 
+class ToolPolicyReadRepository(Protocol):
+    """Read tenant tool policy records from production persistence."""
+
+    def load_policy_snapshot(
+        self,
+        *,
+        fallback_policy: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        """Return an authorization policy snapshot, or None when no rows exist."""
+
+
 class ToolPolicyRepository:
     """Load and save enterprise tool authorization policy configuration."""
 
@@ -51,11 +62,13 @@ class PostgresToolPolicyWriteThroughRepository:
         self,
         *,
         postgres_writer: ToolPolicyWriteRepository,
+        postgres_reader: ToolPolicyReadRepository | None = None,
         fallback_repository: ToolPolicyRepository,
         enterprise_tool_catalog: dict[str, dict[str, Any]],
         approval_required_tools: set[str],
         now: Callable[[], str],
     ) -> None:
+        self._postgres_reader = postgres_reader
         self._postgres_writer = postgres_writer
         self._fallback_repository = fallback_repository
         self._enterprise_tool_catalog = enterprise_tool_catalog
@@ -63,7 +76,17 @@ class PostgresToolPolicyWriteThroughRepository:
         self._now = now
 
     def load(self) -> dict[str, Any]:
-        return self._fallback_repository.load()
+        fallback_policy = self._fallback_repository.load()
+        if self._postgres_reader is None:
+            return fallback_policy
+
+        try:
+            snapshot = self._postgres_reader.load_policy_snapshot(
+                fallback_policy=fallback_policy,
+            )
+        except Exception:
+            return fallback_policy
+        return snapshot or fallback_policy
 
     def save(self, policy: dict[str, Any]) -> None:
         self._postgres_writer.save_policy(

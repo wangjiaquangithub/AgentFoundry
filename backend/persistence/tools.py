@@ -266,6 +266,50 @@ class PostgresToolGovernanceReadRepository:
     def __init__(self, database: PostgresDatabase) -> None:
         self._database = database
 
+    def load_policy_snapshot(
+        self,
+        *,
+        fallback_policy: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        with self._database.connect() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT tools.tenant_id, tools.name
+                    FROM tool_policies
+                    INNER JOIN tools ON tools.id = tool_policies.tool_id
+                    WHERE tool_policies.tenant_id = tools.tenant_id
+                      AND tools.status = 'active'
+                    ORDER BY tools.tenant_id, tools.name
+                    """,
+                )
+                rows = cursor.fetchall()
+
+        if not rows:
+            return None
+
+        snapshot = json.loads(json.dumps(fallback_policy))
+        tenants = snapshot.setdefault("tenants", {})
+        if not isinstance(tenants, dict):
+            tenants = {}
+            snapshot["tenants"] = tenants
+
+        allowed_by_tenant: dict[str, list[str]] = {}
+        for row in rows:
+            value = dict(row)
+            tenant_id = str(value["tenant_id"])
+            tool_name = str(value["name"])
+            allowed_by_tenant.setdefault(tenant_id, []).append(tool_name)
+
+        for tenant_id, allow in allowed_by_tenant.items():
+            tenant_policy = tenants.setdefault(tenant_id, {})
+            if not isinstance(tenant_policy, dict):
+                tenant_policy = {}
+                tenants[tenant_id] = tenant_policy
+            tenant_policy["allow"] = allow
+
+        return snapshot
+
     def list_tools(
         self,
         *,

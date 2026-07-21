@@ -15,6 +15,13 @@ from repositories.tool_policy import (
 class ToolGovernanceReadRepository(Protocol):
     """Read tenant-scoped tool governance records from production persistence."""
 
+    def load_policy_snapshot(
+        self,
+        *,
+        fallback_policy: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        """Return a production policy snapshot when persisted rows exist."""
+
     def list_tools(
         self,
         *,
@@ -671,6 +678,7 @@ class PlatformToolPolicyService:
                 "Tool governance PostgreSQL writer requires a clock.",
             )
         return PostgresToolPolicyWriteThroughRepository(
+            postgres_reader=self._tool_governance_reader,
             postgres_writer=self._tool_governance_writer,
             fallback_repository=fallback_repository,
             enterprise_tool_catalog=self._enterprise_tool_catalog,
