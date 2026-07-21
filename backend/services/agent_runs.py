@@ -1168,7 +1168,6 @@ class PlatformAgentRunService:
     ) -> list[dict[str, Any]]:
         execution_context_view = self.execution_context_view(execution_context)
         response_record_context = execution_context_view["response_record_context"]
-        configured_tools = execution_context_view["configured_tools"]
         tenant = execution_context_view["tenant"]
         user_id = response_record_context["user_id"]
         agent_id = execution_context_view["runner_agent_id"]
@@ -1185,12 +1184,8 @@ class PlatformAgentRunService:
                 tool_calls=tool_calls,
                 tool_denial_payload=tool_denial_payload,
                 decision_with_routing_context=decision_with_routing_context,
-                configured_tools=configured_tools,
+                execution_context=execution_context,
                 route_context_view=route_context_view,
-                tenant=tenant,
-                user_id=user_id,
-                connector=connector,
-                connector_source=connector_source,
                 routing_mode=routing_mode,
                 routing_error=routing_error,
             ):
@@ -1625,26 +1620,24 @@ class PlatformAgentRunService:
         tool_calls: list[dict[str, Any]],
         tool_denial_payload: Callable[..., dict[str, Any]],
         decision_with_routing_context: Callable[..., dict[str, Any]],
-        configured_tools: set[str],
+        execution_context: dict[str, Any],
         route_context_view: dict[str, Any],
-        tenant: str,
-        user_id: str,
-        connector: str,
-        connector_source: str,
         routing_mode: str,
         routing_error: str | None,
     ) -> bool:
+        execution_context_view = self.execution_context_view(execution_context)
+        response_record_context = execution_context_view["response_record_context"]
         return self.record_unconfigured_routed_tool_denial_from_context(
             tool_calls=tool_calls,
             tool_denial_payload=tool_denial_payload,
             decision_with_routing_context=decision_with_routing_context,
-            configured_tools=configured_tools,
+            configured_tools=execution_context_view["configured_tools"],
             tool_name=route_context_view["tool_name"],
             inputs=route_context_view["inputs"],
-            tenant=tenant,
-            user_id=user_id,
-            connector=connector,
-            connector_source=connector_source,
+            tenant=execution_context_view["tenant"],
+            user_id=response_record_context["user_id"],
+            connector=execution_context_view["connector_label"],
+            connector_source=execution_context_view["connector_source"],
             routing_source=route_context_view["source"],
             routing_reason=route_context_view["reason"],
             routing_mode=routing_mode,
