@@ -695,6 +695,7 @@ def _platform_workflow_run_service() -> PlatformWorkflowRunService:
 def _platform_approval_service() -> PlatformApprovalService:
     return PlatformApprovalService(
         repository=approval_request_repository,
+        audit_event_writer=_build_audit_event_write_repository(),
         now=now_iso,
     )
 

@@ -1,8 +1,9 @@
 """Service-layer orchestration for enterprise approval requests."""
 
-from typing import Any, Callable
+from typing import Any, Callable, Protocol
 from uuid import uuid4
 
+from backend.persistence import AuditEventRecord
 from repositories.approvals import ApprovalRequestRepositoryProtocol
 
 
@@ -13,6 +14,13 @@ class PlatformApprovalServiceError(ValueError):
         super().__init__(str(detail))
         self.status_code = status_code
         self.detail = detail
+
+
+class AuditEventWriteRepository(Protocol):
+    """Write tenant-scoped approval audit events."""
+
+    def append_audit_event(self, record: AuditEventRecord) -> None:
+        """Persist one audit event."""
 
 
 class PlatformApprovalService:
@@ -27,9 +35,11 @@ class PlatformApprovalService:
         *,
         repository: ApprovalRequestRepositoryProtocol,
         now: Callable[[], str],
+        audit_event_writer: AuditEventWriteRepository | None = None,
     ) -> None:
         self._repository = repository
         self._now = now
+        self._audit_event_writer = audit_event_writer
 
     def list_requests(
         self,
@@ -200,6 +210,11 @@ class PlatformApprovalService:
             "decision_note": None,
         }
         self._repository.append(record)
+        self._append_approval_audit_event(
+            approval=record,
+            actor=requested_by,
+            event_type="approval.requested",
+        )
         return record
 
     def require_approval(
@@ -313,6 +328,11 @@ class PlatformApprovalService:
                 404,
                 f"Unknown approval request: {normalized_id}",
             )
+        self._append_approval_audit_event(
+            approval=updated,
+            actor=decided_by,
+            event_type=f"approval.{normalized_status}",
+        )
         return updated
 
     def _get_request(self, approval_id: str) -> dict[str, Any]:
@@ -324,6 +344,63 @@ class PlatformApprovalService:
             404,
             f"Unknown approval request: {normalized_id}",
         )
+
+    def _append_approval_audit_event(
+        self,
+        *,
+        approval: dict[str, Any],
+        actor: str,
+        event_type: str,
+    ) -> None:
+        if self._audit_event_writer is None:
+            return
+
+        tenant = str(approval.get("tenant") or "").strip()
+        approval_id = str(approval.get("approval_id") or "").strip()
+        request_type = str(approval.get("request_type") or "").strip()
+        payload = {
+            "schema_version": 1,
+            "approval_id": approval_id,
+            "tenant": tenant,
+            "request_type": request_type,
+            "status": str(approval.get("status") or "").strip(),
+            "requested_by": str(approval.get("requested_by") or "").strip(),
+            "decided_by": _optional_filter(str(approval.get("decided_by") or "")),
+            "agent_id": _optional_filter(str(approval.get("agent_id") or "")),
+            "tool_name": _optional_filter(str(approval.get("tool_name") or "")),
+            "workflow_type": _optional_filter(
+                str(approval.get("workflow_type") or "")
+            ),
+            "reason": _optional_filter(str(approval.get("reason") or "")),
+            "decision_note": _optional_filter(
+                str(approval.get("decision_note") or "")
+            ),
+            "input_keys": sorted(
+                str(key)
+                for key in (approval.get("inputs") or {})
+                if str(key).strip()
+            )
+            if isinstance(approval.get("inputs"), dict)
+            else [],
+        }
+        try:
+            self._audit_event_writer.append_audit_event(
+                AuditEventRecord(
+                    id=str(uuid4()),
+                    tenant_id=tenant,
+                    actor_user_id=str(actor or "platform-admin").strip()
+                    or "platform-admin",
+                    event_type=event_type,
+                    target_type="approval_request",
+                    target_id=approval_id,
+                    payload=payload,
+                    created_at=self._now(),
+                ),
+            )
+        except ValueError:
+            raise
+        except Exception as exc:
+            raise PlatformApprovalServiceError(500, str(exc)) from exc
 
 
 def _optional_filter(value: str | None) -> str | None:
