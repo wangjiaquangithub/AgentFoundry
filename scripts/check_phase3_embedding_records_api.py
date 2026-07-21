@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 API_MODULE = ROOT / "backend" / "api" / "knowledge.py"
 SCHEMA_MODULE = ROOT / "backend" / "api" / "schemas.py"
 MAIN_MODULE = ROOT / "backend" / "main.py"
+EMBEDDING_RECORDS_MODULE = ROOT / "backend" / "persistence" / "embedding_records.py"
 
 
 def _read(path: Path) -> str:
@@ -35,6 +36,7 @@ def main() -> int:
     api_source = _read(API_MODULE)
     schema_source = _read(SCHEMA_MODULE)
     main_source = _read(MAIN_MODULE)
+    embedding_records_source = _read(EMBEDDING_RECORDS_MODULE)
 
     for schema_name in (
         "class EnterpriseKnowledgeEmbeddingRecordsRequest",
@@ -58,8 +60,21 @@ def main() -> int:
         "list_embedding_records",
         "append_embedding_record",
         "EmbeddingRecord(",
+        "persisted_record = repository.append_embedding_record(record)",
+        "_embedding_record_payload(persisted_record)",
     ):
         _assert_contains(api_source, call, "embedding record repository call")
+
+    for phrase in (
+        "def append_embedding_record(self, record: EmbeddingRecord) -> EmbeddingRecord",
+        "RETURNING id, tenant_id, chunk_id, model_config_id, vector_ref",
+        "return _embedding_record_from_row(dict(row))",
+    ):
+        _assert_contains(
+            embedding_records_source,
+            phrase,
+            "PostgreSQL embedding record upsert return",
+        )
 
     for wiring in (
         "create_knowledge_embedding_records_router",

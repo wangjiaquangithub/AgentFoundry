@@ -416,10 +416,13 @@ def create_knowledge_embedding_records_router(
             vector_ref=payload.vector_ref,
             created_at=deps.now(),
         )
-        repository.append_embedding_record(record)
+        try:
+            persisted_record = repository.append_embedding_record(record)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         return {
             "tenant": tenant_id,
-            "embedding_record": _embedding_record_payload(record),
+            "embedding_record": _embedding_record_payload(persisted_record),
         }
 
     return router

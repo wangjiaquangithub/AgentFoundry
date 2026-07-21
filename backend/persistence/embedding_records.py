@@ -159,7 +159,7 @@ class PostgresEmbeddingRecordWriteRepository:
     def __init__(self, database: PostgresDatabase) -> None:
         self._database = database
 
-    def append_embedding_record(self, record: EmbeddingRecord) -> None:
+    def append_embedding_record(self, record: EmbeddingRecord) -> EmbeddingRecord:
         with self._database.transaction() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
@@ -176,6 +176,8 @@ class PostgresEmbeddingRecordWriteRepository:
                       id = EXCLUDED.id,
                       vector_ref = EXCLUDED.vector_ref,
                       created_at = EXCLUDED.created_at
+                    RETURNING id, tenant_id, chunk_id, model_config_id, vector_ref,
+                      created_at
                     """,
                     (
                         record.id,
@@ -186,6 +188,10 @@ class PostgresEmbeddingRecordWriteRepository:
                         record.created_at,
                     ),
                 )
+                row = cursor.fetchone()
+        if row is None:
+            raise ValueError("Embedding record upsert did not return a row.")
+        return _embedding_record_from_row(dict(row))
 
     def delete_embedding_records(
         self,
