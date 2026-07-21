@@ -294,6 +294,7 @@ CREATE INDEX idx_knowledge_bases_tenant_status ON knowledge_bases(tenant_id, sta
 CREATE INDEX idx_documents_tenant_kb ON documents(tenant_id, knowledge_base_id);
 CREATE INDEX idx_documents_tenant_kb_status_created ON documents(tenant_id, knowledge_base_id, status, created_at, id);
 CREATE INDEX idx_chunks_tenant_document ON document_chunks(tenant_id, document_id);
+CREATE INDEX idx_embedding_records_tenant_created ON embedding_records(tenant_id, created_at, id);
 CREATE INDEX idx_retrieval_events_tenant_run ON retrieval_events(tenant_id, agent_run_id);
 CREATE INDEX idx_memory_items_tenant_scope ON memory_items(tenant_id, user_id, agent_id);
 CREATE INDEX idx_workflow_runs_tenant_template ON workflow_runs(tenant_id, workflow_template_id);
