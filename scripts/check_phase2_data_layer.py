@@ -1425,6 +1425,59 @@ def _check_postgres_members_wired() -> list[str]:
     return errors
 
 
+def _check_postgres_memory_policy_reads_guarded() -> list[str]:
+    errors: list[str] = []
+    memory_policy_path = PERSISTENCE_DIR / "memory_policies.py"
+    memory_policy_source = memory_policy_path.read_text(encoding="utf-8")
+    memory_policy_tree = ast.parse(memory_policy_source, filename=str(memory_policy_path))
+
+    if "PostgresMemoryPolicyReadRepository" not in memory_policy_source:
+        errors.append(
+            "backend/persistence/memory_policies.py must define "
+            "PostgresMemoryPolicyReadRepository",
+        )
+        return errors
+
+    required_methods = {
+        "list_memory_policies": "FROM memory_policies",
+        "get_memory_policy": "WHERE tenant_id = %s AND id = %s",
+    }
+    for method_name, sql_token in required_methods.items():
+        method_node = _find_class_method(
+            memory_policy_tree,
+            class_name="PostgresMemoryPolicyReadRepository",
+            method_name=method_name,
+        )
+        if method_node is None:
+            errors.append(
+                "PostgreSQL memory policy read repository missing method: "
+                "backend/persistence/memory_policies.py:"
+                f"PostgresMemoryPolicyReadRepository.{method_name}",
+            )
+            continue
+        if not _method_has_required_argument(method_node, "tenant_id"):
+            errors.append(
+                "PostgreSQL memory policy read method must require tenant_id: "
+                "backend/persistence/memory_policies.py:"
+                f"PostgresMemoryPolicyReadRepository.{method_name}",
+            )
+        if not _method_uses_database_call(method_node, "connect"):
+            errors.append(
+                "PostgreSQL memory policy read method must read through PostgreSQL: "
+                "backend/persistence/memory_policies.py:"
+                f"PostgresMemoryPolicyReadRepository.{method_name}",
+            )
+        normalized_sql = " ".join(_normalized_sql_literals(method_node))
+        if sql_token.lower() not in normalized_sql:
+            errors.append(
+                "PostgreSQL memory policy read method must query tenant-scoped "
+                "memory policies: backend/persistence/memory_policies.py:"
+                f"PostgresMemoryPolicyReadRepository.{method_name}",
+            )
+
+    return errors
+
+
 def _find_class_method(
     tree: ast.AST,
     *,
@@ -1487,6 +1540,7 @@ def main() -> int:
         *_check_postgres_approval_requests_wired(),
         *_check_postgres_knowledge_readiness_wired(),
         *_check_postgres_members_wired(),
+        *_check_postgres_memory_policy_reads_guarded(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -1522,6 +1576,7 @@ def main() -> int:
     print("- PostgreSQL approval requests wired: yes")
     print("- PostgreSQL knowledge readiness reads wired: yes")
     print("- PostgreSQL members wired: yes")
+    print("- PostgreSQL memory policy reads guarded: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:
