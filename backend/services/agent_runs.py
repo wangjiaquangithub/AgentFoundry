@@ -1652,9 +1652,6 @@ class PlatformAgentRunService:
     ) -> dict[str, Any]:
         return dict(tool_response["decision"])
 
-    def executed_tool_tenant(self, tool_response: dict[str, Any]) -> str:
-        return str(tool_response["tenant"])
-
     def executed_tool_user_id(self, tool_response: dict[str, Any]) -> str:
         return str(tool_response["user_id"])
 
@@ -1697,7 +1694,7 @@ class PlatformAgentRunService:
                 tool_name=tool_name,
                 inputs=inputs,
                 allowed=self.executed_tool_allowed(tool_response),
-                tenant=self.executed_tool_tenant(tool_response),
+                tenant=str(tool_response["tenant"]),
                 user_id=self.executed_tool_user_id(tool_response),
                 connector=self.executed_tool_connector(
                     tool_response,
@@ -1742,7 +1739,7 @@ class PlatformAgentRunService:
         answer = format_tool_result_answer(
             tool_name=route_context_view["tool_name"],
             result=tool_response.get("result"),
-            tenant=self.executed_tool_tenant(tool_response),
+            tenant=str(tool_response["tenant"]),
         )
         self.append_executed_routed_tool_call(
             tool_calls=tool_calls,
