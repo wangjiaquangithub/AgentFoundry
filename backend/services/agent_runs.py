@@ -357,6 +357,30 @@ class PlatformAgentRunService:
             "knowledge_base_ids": knowledge_base_ids,
         }
 
+    def build_execution_context_from_agent_context(
+        self,
+        *,
+        run_request: dict[str, Any],
+        agent_context: dict[str, Any],
+        runtime: dict[str, Any],
+        build_runtime_invocation_request_payload: Callable[..., dict[str, Any]],
+        default_tool_names: set[str],
+        safe_path_part: Callable[[str], str],
+    ) -> dict[str, Any]:
+        agent_context_view = self.agent_context_view(agent_context)
+        return self.build_execution_context(
+            run_request=run_request,
+            agent=agent_context_view["agent"],
+            agent_metadata=agent_context_view["agent_metadata"],
+            runtime=runtime,
+            runtime_adapter=agent_context_view["runtime_adapter"],
+            build_runtime_invocation_request_payload=(
+                build_runtime_invocation_request_payload
+            ),
+            default_tool_names=default_tool_names,
+            safe_path_part=safe_path_part,
+        )
+
     @staticmethod
     def execution_context_view(execution_context: dict[str, Any]) -> dict[str, Any]:
         return {

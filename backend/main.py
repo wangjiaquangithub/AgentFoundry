@@ -1547,15 +1547,12 @@ async def run_enterprise_agent(
         describe_runtime_adapter=describe_runtime_adapter,
     )
     agent_context_view = agent_run_service.agent_context_view(agent_context)
-    agent = agent_context_view["agent"]
     agent_metadata = agent_context_view["agent_metadata"]
     runtime_adapter_payload = agent_context_view["runtime_adapter"]
-    execution_context = agent_run_service.build_execution_context(
+    execution_context = agent_run_service.build_execution_context_from_agent_context(
         run_request=run_request,
-        agent=agent,
-        agent_metadata=agent_metadata,
+        agent_context=agent_context,
         runtime=runtime,
-        runtime_adapter=runtime_adapter_payload,
         build_runtime_invocation_request_payload=(
             build_runtime_invocation_request_payload
         ),
