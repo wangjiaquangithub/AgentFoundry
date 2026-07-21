@@ -14,6 +14,10 @@ from backend.persistence.tenancy import (
     TenantRecord,
     UserRecord,
 )
+from backend.persistence.tool_calls import (
+    SQLiteToolCallReadRepository,
+    ToolCallRecord,
+)
 from backend.persistence.tools import (
     SQLiteToolGovernanceReadRepository,
     ToolPolicyRecord,
@@ -31,8 +35,10 @@ __all__ = [
     "SQLiteAgentRunReadRepository",
     "SQLiteDatabase",
     "SQLiteTenancyReadRepository",
+    "SQLiteToolCallReadRepository",
     "SQLiteToolGovernanceReadRepository",
     "TenantRecord",
+    "ToolCallRecord",
     "ToolPolicyRecord",
     "ToolRecord",
     "UserRecord",
