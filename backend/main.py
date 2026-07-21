@@ -1713,15 +1713,14 @@ async def run_enterprise_agent(
             continue
 
         try:
-            approved_by = agent_run_service.resolve_routed_tool_approval_from_context(
+            approved_by = agent_run_service.resolve_routed_tool_approval_from_route_view(
                 require_platform_approval=_require_platform_approval,
                 run_request=run_request,
                 approval_required_tools=APPROVAL_REQUIRED_TOOLS,
-                tool_name=tool_name,
+                route_context_view=route_context_view,
                 tenant=tenant,
                 user_id=user_id,
                 agent_id=runner_agent_id,
-                inputs=route_inputs,
             )
         except HTTPException as exc:
             agent_run_service.record_pending_tool_approval_from_exception_context(

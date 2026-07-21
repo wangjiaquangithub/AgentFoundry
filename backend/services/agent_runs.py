@@ -1043,6 +1043,28 @@ class PlatformAgentRunService:
             inputs=inputs,
         )
 
+    def resolve_routed_tool_approval_from_route_view(
+        self,
+        *,
+        require_platform_approval: Callable[..., str | None],
+        run_request: dict[str, Any],
+        approval_required_tools: set[str],
+        route_context_view: dict[str, Any],
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+    ) -> str | None:
+        return self.resolve_routed_tool_approval_from_context(
+            require_platform_approval=require_platform_approval,
+            run_request=run_request,
+            approval_required_tools=approval_required_tools,
+            tool_name=route_context_view["tool_name"],
+            tenant=tenant,
+            user_id=user_id,
+            agent_id=agent_id,
+            inputs=route_context_view["inputs"],
+        )
+
     def build_tool_execution_request_context(
         self,
         *,
