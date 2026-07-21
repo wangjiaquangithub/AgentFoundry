@@ -306,5 +306,6 @@ CREATE INDEX idx_workflow_runs_tenant_template_created ON workflow_runs(tenant_i
 CREATE INDEX idx_workflow_runs_tenant_status_created ON workflow_runs(tenant_id, status, created_at, id);
 CREATE INDEX idx_workflow_runs_tenant_user_created ON workflow_runs(tenant_id, user_id, created_at, id);
 CREATE INDEX idx_audit_events_tenant_created ON audit_events(tenant_id, created_at);
+CREATE INDEX idx_audit_events_tenant_actor_created ON audit_events(tenant_id, actor_user_id, created_at, id);
 CREATE INDEX idx_audit_events_tenant_event_type_created ON audit_events(tenant_id, event_type, created_at, id);
 CREATE INDEX idx_audit_events_tenant_target_created ON audit_events(tenant_id, target_type, target_id, created_at, id);
