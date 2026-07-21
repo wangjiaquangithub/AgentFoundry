@@ -284,7 +284,7 @@ CREATE TABLE audit_events (
 CREATE INDEX idx_memberships_tenant_user ON memberships(tenant_id, user_id);
 CREATE INDEX idx_model_configs_tenant_purpose_status ON model_configs(tenant_id, purpose, status, name, id);
 CREATE INDEX idx_memory_policies_tenant_scope ON memory_policies(tenant_id, scope, write_mode);
-CREATE INDEX idx_agents_tenant_status ON agents(tenant_id, status);
+CREATE INDEX idx_agents_tenant_status_updated ON agents(tenant_id, status, updated_at, id);
 CREATE INDEX idx_agent_runs_tenant_created ON agent_runs(tenant_id, created_at);
 CREATE INDEX idx_runtime_invocations_tenant_provider ON runtime_invocations(tenant_id, provider_id, created_at);
 CREATE INDEX idx_runtime_invocations_tenant_run ON runtime_invocations(tenant_id, agent_run_id, created_at);
