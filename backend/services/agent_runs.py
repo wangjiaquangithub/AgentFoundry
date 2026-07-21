@@ -1652,14 +1652,6 @@ class PlatformAgentRunService:
     ) -> dict[str, Any]:
         return dict(tool_response["decision"])
 
-    def executed_tool_connector(
-        self,
-        tool_response: dict[str, Any],
-        *,
-        connector: str,
-    ) -> str:
-        return str(tool_response.get("connector", connector))
-
     def executed_tool_connector_source(
         self,
         tool_response: dict[str, Any],
@@ -1690,10 +1682,7 @@ class PlatformAgentRunService:
                 allowed=bool(tool_response.get("allowed")),
                 tenant=str(tool_response["tenant"]),
                 user_id=str(tool_response["user_id"]),
-                connector=self.executed_tool_connector(
-                    tool_response,
-                    connector=connector,
-                ),
+                connector=str(tool_response.get("connector", connector)),
                 connector_source=self.executed_tool_connector_source(
                     tool_response,
                     connector_source=connector_source,
