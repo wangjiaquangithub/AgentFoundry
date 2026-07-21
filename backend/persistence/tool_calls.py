@@ -220,3 +220,46 @@ class PostgresToolCallReadRepository:
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
+
+
+class PostgresToolCallWriteRepository:
+    """Write tenant-scoped tool call records to PostgreSQL."""
+
+    def __init__(self, database: PostgresDatabase) -> None:
+        self._database = database
+
+    def append_tool_call(self, record: ToolCallRecord) -> None:
+        with self._database.transaction() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO tool_calls (
+                      id, tenant_id, agent_run_id, tool_id, inputs, result, allowed,
+                      approval_id, created_at, completed_at
+                    )
+                    VALUES (
+                      %s, %s, %s, %s, %s, %s, %s,
+                      %s, %s, %s
+                    )
+                    """,
+                    (
+                        record.id,
+                        record.tenant_id,
+                        record.agent_run_id,
+                        record.tool_id,
+                        json.dumps(record.inputs, ensure_ascii=False, default=str),
+                        (
+                            None
+                            if record.result is None
+                            else json.dumps(
+                                record.result,
+                                ensure_ascii=False,
+                                default=str,
+                            )
+                        ),
+                        1 if record.allowed else 0,
+                        record.approval_id,
+                        record.created_at,
+                        record.completed_at,
+                    ),
+                )
