@@ -1638,29 +1638,16 @@ async def run_enterprise_agent(
             routing_mode=routing_mode,
             routing_error=routing_error,
         )
-        answer = agent_run_service.compose_unrouted_answer_from_context(
-            knowledge_hits=knowledge_hits,
-            memory_hits=memory_hits,
-            format_knowledge_answer=knowledge_response_service.format_answer,
-            format_memory_answer=platform_memory_service.format_answer,
-        )
-        memory_saved = agent_run_service.append_unrouted_memory_from_context(
-            append_agent_turn_if_enabled=(
-                platform_memory_service.append_agent_turn_if_enabled
-            ),
-            execution_context=execution_context,
-            memory_context=memory_context,
-            user_id=user_id,
-            answer=answer,
-            max_records=PLATFORM_MEMORY_MAX_RECORDS,
-        )
-
-        response = agent_run_service.finalize_unrouted_response_from_context(
+        response = agent_run_service.finalize_unrouted_run_from_context(
             build_runtime_invocation_result_payload=(
                 build_runtime_invocation_result_payload
             ),
+            append_agent_turn_if_enabled=(
+                platform_memory_service.append_agent_turn_if_enabled
+            ),
             response_record_context=response_record_context,
-            answer=answer,
+            execution_context=execution_context,
+            memory_context=memory_context,
             session_id=runner_session_id,
             tenant=tenant,
             user_id=user_id,
@@ -1674,9 +1661,11 @@ async def run_enterprise_agent(
             runtime_adapter=runtime_adapter_payload,
             knowledge_hits=knowledge_hits,
             memory_hits=memory_hits,
+            format_knowledge_answer=knowledge_response_service.format_answer,
+            format_memory_answer=platform_memory_service.format_answer,
             knowledge_payload=knowledge_payload,
             memory_payload=memory_payload,
-            memory_saved=memory_saved,
+            max_records=PLATFORM_MEMORY_MAX_RECORDS,
             decision=decision,
         )
         return response

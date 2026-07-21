@@ -730,6 +730,73 @@ class PlatformAgentRunService:
             memory_saved=memory_saved,
         )
 
+    def finalize_unrouted_run_from_context(
+        self,
+        *,
+        build_runtime_invocation_result_payload: Callable[..., dict[str, Any]],
+        append_agent_turn_if_enabled: Callable[..., bool],
+        response_record_context: dict[str, Any],
+        execution_context: dict[str, Any],
+        memory_context: dict[str, Any],
+        knowledge_hits: list[dict[str, Any]],
+        memory_hits: list[dict[str, Any]],
+        format_knowledge_answer: Callable[[list[dict[str, Any]]], str],
+        format_memory_answer: Callable[[list[dict[str, Any]]], str],
+        session_id: str,
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        connector: str,
+        connector_source: str,
+        routing_mode: str,
+        routing_source: str,
+        routing_error: str | None,
+        agent_metadata: dict[str, Any],
+        runtime_adapter: dict[str, Any],
+        knowledge_payload: dict[str, Any],
+        memory_payload: dict[str, Any],
+        max_records: int,
+        decision: dict[str, Any],
+    ) -> dict[str, Any]:
+        answer = self.compose_unrouted_answer_from_context(
+            knowledge_hits=knowledge_hits,
+            memory_hits=memory_hits,
+            format_knowledge_answer=format_knowledge_answer,
+            format_memory_answer=format_memory_answer,
+        )
+        memory_saved = self.append_unrouted_memory_from_context(
+            append_agent_turn_if_enabled=append_agent_turn_if_enabled,
+            execution_context=execution_context,
+            memory_context=memory_context,
+            user_id=user_id,
+            answer=answer,
+            max_records=max_records,
+        )
+        return self.finalize_unrouted_response_from_context(
+            build_runtime_invocation_result_payload=(
+                build_runtime_invocation_result_payload
+            ),
+            response_record_context=response_record_context,
+            answer=answer,
+            session_id=session_id,
+            tenant=tenant,
+            user_id=user_id,
+            agent_id=agent_id,
+            connector=connector,
+            connector_source=connector_source,
+            routing_mode=routing_mode,
+            routing_source=routing_source,
+            routing_error=routing_error,
+            agent_metadata=agent_metadata,
+            runtime_adapter=runtime_adapter,
+            knowledge_hits=knowledge_hits,
+            memory_hits=memory_hits,
+            knowledge_payload=knowledge_payload,
+            memory_payload=memory_payload,
+            memory_saved=memory_saved,
+            decision=decision,
+        )
+
     def build_unrouted_finalize_context(
         self,
         *,
