@@ -612,14 +612,14 @@ class PlatformAgentRunService:
         knowledge_base_service: Any,
         dev_knowledge_service: Any,
         dev_knowledge_provider: str,
-        user_id: str,
         execution_context: dict[str, Any],
     ) -> dict[str, Any]:
+        response_record_context = execution_context["response_record_context"]
         knowledge_hits, knowledge_error = await search_agent_knowledge_bases(
             knowledge_base_service=knowledge_base_service,
             dev_knowledge_service=dev_knowledge_service,
             dev_knowledge_provider=dev_knowledge_provider,
-            user_id=user_id,
+            user_id=str(response_record_context["user_id"]),
             question=str(execution_context["question"]),
             knowledge_base_ids=list(execution_context["knowledge_base_ids"]),
         )

@@ -1585,7 +1585,6 @@ async def run_enterprise_agent(
             ),
             dev_knowledge_service=dev_knowledge_service,
             dev_knowledge_provider=PLATFORM_DEV_KNOWLEDGE_PROVIDER,
-            user_id=user_id,
             execution_context=execution_context,
         )
     )
