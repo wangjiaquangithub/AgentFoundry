@@ -2043,42 +2043,6 @@ class PlatformAgentRunService:
             ),
         )
 
-    def build_executed_routed_tool_call_context(
-        self,
-        *,
-        tool_name: str,
-        inputs: dict[str, Any],
-        tool_response: dict[str, Any],
-        connector: str,
-        connector_source: str,
-        routing_source: str,
-        routing_reason: str,
-        approval_id: str | None,
-        decision: dict[str, Any],
-        answer: str,
-    ) -> dict[str, Any]:
-        return {
-            "tool_name": tool_name,
-            "inputs": inputs,
-            "allowed": self.executed_tool_allowed(tool_response),
-            "tenant": self.executed_tool_tenant(tool_response),
-            "user_id": self.executed_tool_user_id(tool_response),
-            "connector": self.executed_tool_connector(
-                tool_response,
-                connector=connector,
-            ),
-            "connector_source": self.executed_tool_connector_source(
-                tool_response,
-                connector_source=connector_source,
-            ),
-            "routing_source": routing_source,
-            "routing_reason": routing_reason,
-            "approval_id": approval_id,
-            "decision": decision,
-            "result": self.executed_tool_result(tool_response),
-            "answer": answer,
-        }
-
     def append_executed_routed_tool_call(
         self,
         *,
@@ -2096,18 +2060,25 @@ class PlatformAgentRunService:
     ) -> None:
         tool_calls.append(
             self.build_executed_routed_tool_call(
-                **self.build_executed_routed_tool_call_context(
-                    tool_name=tool_name,
-                    inputs=inputs,
-                    tool_response=tool_response,
+                tool_name=tool_name,
+                inputs=inputs,
+                allowed=self.executed_tool_allowed(tool_response),
+                tenant=self.executed_tool_tenant(tool_response),
+                user_id=self.executed_tool_user_id(tool_response),
+                connector=self.executed_tool_connector(
+                    tool_response,
                     connector=connector,
-                    connector_source=connector_source,
-                    routing_source=routing_source,
-                    routing_reason=routing_reason,
-                    approval_id=approval_id,
-                    decision=decision,
-                    answer=answer,
                 ),
+                connector_source=self.executed_tool_connector_source(
+                    tool_response,
+                    connector_source=connector_source,
+                ),
+                routing_source=routing_source,
+                routing_reason=routing_reason,
+                approval_id=approval_id,
+                decision=decision,
+                result=self.executed_tool_result(tool_response),
+                answer=answer,
             ),
         )
 
