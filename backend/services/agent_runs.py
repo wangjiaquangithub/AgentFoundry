@@ -117,6 +117,20 @@ class PlatformAgentRunService:
         return agent
 
     @staticmethod
+    def resolve_runtime_context(
+        *,
+        user_id: str,
+        load_runtime_context: Callable[[str], dict[str, Any]],
+        runtime_context_error_type: type[Exception],
+        raise_runtime_context_error: Callable[[Exception], None],
+    ) -> dict[str, Any]:
+        try:
+            return load_runtime_context(user_id)
+        except runtime_context_error_type as exc:
+            raise_runtime_context_error(exc)
+            raise
+
+    @staticmethod
     def runtime_adapter_payload_from_metadata(
         *,
         describe_runtime_adapter: Callable[[dict[str, Any]], dict[str, Any]],
