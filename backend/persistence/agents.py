@@ -448,7 +448,7 @@ class PostgresAgentCatalogWriteRepository:
             """
             UPDATE agents
             SET current_version_id = %s
-            WHERE id = %s
+            WHERE tenant_id = %s AND id = %s
             """,
-            (version_id, agent_id),
+            (version_id, tenant_id, agent_id),
         )

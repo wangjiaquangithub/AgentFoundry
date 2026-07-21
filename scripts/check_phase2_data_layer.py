@@ -79,6 +79,10 @@ POSTGRES_AUTHORITATIVE_REPOSITORIES = {
     "workflows.py": {"PostgresWorkflowRunReadThroughRepository"},
 }
 POSTGRES_AUTHORITATIVE_PERSISTENCE_REPOSITORIES = {
+    "agents.py": {
+        "PostgresAgentCatalogReadRepository",
+        "PostgresAgentCatalogWriteRepository",
+    },
     "audit_events.py": {
         "PostgresAuditEventReadRepository",
         "PostgresAuditEventWriteRepository",
