@@ -343,6 +343,8 @@ class PlatformAgentRunService:
             runtime_invocation_id=runtime_invocation_id,
         )
         return {
+            "agent_metadata": agent_metadata,
+            "runtime_adapter": runtime_adapter,
             "runtime_identity": runtime_identity,
             "tenant": tenant,
             "connector_label": runtime_identity["connector"],
@@ -384,6 +386,8 @@ class PlatformAgentRunService:
     @staticmethod
     def execution_context_view(execution_context: dict[str, Any]) -> dict[str, Any]:
         return {
+            "agent_metadata": execution_context["agent_metadata"],
+            "runtime_adapter": execution_context["runtime_adapter"],
             "tenant": execution_context["tenant"],
             "connector_label": execution_context["connector_label"],
             "connector_source": execution_context["connector_source"],

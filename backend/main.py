@@ -1546,9 +1546,6 @@ async def run_enterprise_agent(
         build_run_metadata=_platform_agent_service().run_metadata,
         describe_runtime_adapter=describe_runtime_adapter,
     )
-    agent_context_view = agent_run_service.agent_context_view(agent_context)
-    agent_metadata = agent_context_view["agent_metadata"]
-    runtime_adapter_payload = agent_context_view["runtime_adapter"]
     execution_context = agent_run_service.build_execution_context_from_agent_context(
         run_request=run_request,
         agent_context=agent_context,
@@ -1562,6 +1559,8 @@ async def run_enterprise_agent(
     execution_context_view = agent_run_service.execution_context_view(
         execution_context
     )
+    agent_metadata = execution_context_view["agent_metadata"]
+    runtime_adapter_payload = execution_context_view["runtime_adapter"]
     tenant = execution_context_view["tenant"]
     connector_label = execution_context_view["connector_label"]
     connector_source = execution_context_view["connector_source"]
