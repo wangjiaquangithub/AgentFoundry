@@ -1216,10 +1216,6 @@ class PlatformAgentRunService:
     ) -> bool:
         return tool_name in approval_required_tools
 
-    @staticmethod
-    def agent_run_approval_id(run_request: dict[str, Any]) -> str | None:
-        return run_request["approval_id"]
-
     def resolve_routed_tool_approval_from_context(
         self,
         *,
@@ -1238,7 +1234,7 @@ class PlatformAgentRunService:
         ):
             return None
         return require_platform_approval(
-            approval_id=self.agent_run_approval_id(run_request),
+            approval_id=run_request["approval_id"],
             request_type="tool_run",
             target_key="tool_name",
             target_value=tool_name,
