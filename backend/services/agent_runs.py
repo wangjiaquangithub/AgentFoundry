@@ -1838,19 +1838,6 @@ class PlatformAgentRunService:
     ) -> str:
         return str(tool_response.get("connector_source", connector_source))
 
-    def format_executed_tool_answer_from_context(
-        self,
-        *,
-        format_tool_result_answer: Callable[..., str],
-        tool_name: str,
-        tool_response: dict[str, Any],
-    ) -> str:
-        return format_tool_result_answer(
-            tool_name=tool_name,
-            result=self.executed_tool_result(tool_response),
-            tenant=self.executed_tool_tenant(tool_response),
-        )
-
     def append_executed_routed_tool_call(
         self,
         *,
@@ -1912,10 +1899,10 @@ class PlatformAgentRunService:
             routing_mode=routing_mode,
             routing_error=routing_error,
         )
-        answer = self.format_executed_tool_answer_from_context(
-            format_tool_result_answer=format_tool_result_answer,
+        answer = format_tool_result_answer(
             tool_name=route_context_view["tool_name"],
-            tool_response=tool_response,
+            result=self.executed_tool_result(tool_response),
+            tenant=self.executed_tool_tenant(tool_response),
         )
         self.append_executed_routed_tool_call(
             tool_calls=tool_calls,
