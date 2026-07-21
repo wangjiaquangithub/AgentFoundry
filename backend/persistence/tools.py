@@ -270,7 +270,7 @@ class PostgresToolGovernanceReadRepository:
         self,
         *,
         fallback_policy: dict[str, Any],
-    ) -> dict[str, Any] | None:
+    ) -> dict[str, Any]:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
@@ -285,14 +285,17 @@ class PostgresToolGovernanceReadRepository:
                 )
                 rows = cursor.fetchall()
 
-        if not rows:
-            return None
+        defaults = fallback_policy.get("defaults", {})
+        if defaults is None:
+            defaults = {}
+        if not isinstance(defaults, dict):
+            raise ValueError("Enterprise tool policy section defaults must be an object.")
 
-        snapshot = json.loads(json.dumps(fallback_policy))
-        tenants = snapshot.setdefault("tenants", {})
-        if not isinstance(tenants, dict):
-            tenants = {}
-            snapshot["tenants"] = tenants
+        snapshot: dict[str, Any] = {
+            "defaults": json.loads(json.dumps(defaults)),
+            "tenants": {},
+        }
+        tenants: dict[str, Any] = snapshot["tenants"]
 
         allowed_by_tenant: dict[str, list[str]] = {}
         for row in rows:

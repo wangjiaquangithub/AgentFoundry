@@ -21,8 +21,8 @@ class ToolGovernanceReadRepository(Protocol):
         self,
         *,
         fallback_policy: dict[str, Any],
-    ) -> dict[str, Any] | None:
-        """Return a production policy snapshot when persisted rows exist."""
+    ) -> dict[str, Any]:
+        """Return a production-authoritative policy snapshot."""
 
     def list_tools(
         self,

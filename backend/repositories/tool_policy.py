@@ -26,8 +26,8 @@ class ToolPolicyReadRepository(Protocol):
         self,
         *,
         fallback_policy: dict[str, Any],
-    ) -> dict[str, Any] | None:
-        """Return an authorization policy snapshot, or None when no rows exist."""
+    ) -> dict[str, Any]:
+        """Return an authorization policy snapshot from production persistence."""
 
 
 class ToolPolicyRepository:
@@ -76,14 +76,14 @@ class PostgresToolPolicyWriteThroughRepository:
         self._now = now
 
     def load(self) -> dict[str, Any]:
-        fallback_policy = self._fallback_repository.load()
         if self._postgres_reader is None:
-            return fallback_policy
+            return self._fallback_repository.load()
 
+        fallback_policy = self._fallback_repository.load()
         snapshot = self._postgres_reader.load_policy_snapshot(
             fallback_policy=fallback_policy,
         )
-        return snapshot or fallback_policy
+        return snapshot
 
     def save(self, policy: dict[str, Any]) -> None:
         self._postgres_writer.save_policy(
