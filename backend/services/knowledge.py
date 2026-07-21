@@ -563,6 +563,12 @@ class PlatformKnowledgeDocumentReadinessService:
                 "ready_knowledge_base_count": sum(
                     1 for item in knowledge_bases if item["status"] == "ready"
                 ),
+                "embedding_configured_knowledge_base_count": sum(
+                    1 for item in knowledge_bases if item["embedding_configured"]
+                ),
+                "embedding_ready_knowledge_base_count": sum(
+                    1 for item in knowledge_bases if item["embedding_ready"]
+                ),
                 "document_count": sum(item["document_count"] for item in knowledge_bases),
                 "ready_document_count": sum(
                     item["ready_document_count"] for item in knowledge_bases
@@ -597,6 +603,9 @@ class PlatformKnowledgeDocumentReadinessService:
                 "knowledge_base_status": None,
                 "embedding_model_config_id": None,
                 "embedding_model_config_status": None,
+                "embedding_configured": False,
+                "embedding_ready": False,
+                "embedding_guidance": "Create the knowledge base before assigning an embedding model config.",
                 "document_count": 0,
                 "ready_document_count": 0,
                 "chunk_count": 0,
@@ -667,12 +676,27 @@ class PlatformKnowledgeDocumentReadinessService:
             documents_with_chunks=documents_with_chunks,
             documents_with_embeddings=documents_with_embeddings,
         )
+        embedding_configured = bool(embedding_model_config_id)
+        embedding_ready = bool(
+            embedding_configured
+            and model_config_status is not None
+            and _is_ready_status(model_config_status)
+        )
+        embedding_guidance = self._embedding_guidance(
+            embedding_model_config_id=embedding_model_config_id,
+            embedding_model_config_status=model_config_status,
+            chunk_count=chunk_count,
+            embedded_chunk_count=len(embedded_chunk_ids),
+        )
         return {
             "id": knowledge_base_id,
             "status": status,
             "knowledge_base_status": knowledge_base_status,
             "embedding_model_config_id": embedding_model_config_id or None,
             "embedding_model_config_status": model_config_status,
+            "embedding_configured": embedding_configured,
+            "embedding_ready": embedding_ready,
+            "embedding_guidance": embedding_guidance,
             "document_count": len(documents),
             "ready_document_count": len(ready_documents),
             "document_with_chunk_count": documents_with_chunks,
@@ -720,6 +744,26 @@ class PlatformKnowledgeDocumentReadinessService:
         ):
             return "degraded", "Knowledge base is partially indexed."
         return "ready", None
+
+    def _embedding_guidance(
+        self,
+        *,
+        embedding_model_config_id: str,
+        embedding_model_config_status: str | None,
+        chunk_count: int,
+        embedded_chunk_count: int,
+    ) -> str | None:
+        if not embedding_model_config_id:
+            return "Assign an active embedding model config to this knowledge base."
+        if not embedding_model_config_status:
+            return "Create or restore the referenced embedding model config."
+        if not _is_ready_status(embedding_model_config_status):
+            return "Enable the embedding model config before indexing documents."
+        if chunk_count > 0 and embedded_chunk_count == 0:
+            return "Run embedding indexing for the existing document chunks."
+        if embedded_chunk_count < chunk_count:
+            return "Run embedding indexing for the remaining document chunks."
+        return None
 
 
 class PlatformKnowledgeResponseService:

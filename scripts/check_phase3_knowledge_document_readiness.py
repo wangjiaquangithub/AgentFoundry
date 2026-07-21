@@ -132,6 +132,9 @@ def main() -> None:
     )
     assert readiness["status"] == "not_configured"
     assert readiness["knowledge_bases"][0]["guidance"]
+    assert readiness["knowledge_bases"][0]["embedding_configured"] is False
+    assert readiness["knowledge_bases"][0]["embedding_ready"] is False
+    assert readiness["knowledge_bases"][0]["embedding_guidance"]
 
     service = build_service(knowledge_bases={"kb_support": active_kb()})
     readiness = service.build_readiness(
@@ -140,6 +143,21 @@ def main() -> None:
     )
     assert readiness["status"] == "blocked"
     assert readiness["knowledge_bases"][0]["guidance"] == "Embedding model config record was not found."
+    assert readiness["knowledge_bases"][0]["embedding_configured"] is True
+    assert readiness["knowledge_bases"][0]["embedding_ready"] is False
+    assert readiness["knowledge_bases"][0]["embedding_guidance"] == "Create or restore the referenced embedding model config."
+    assert readiness["summary"]["embedding_configured_knowledge_base_count"] == 1
+    assert readiness["summary"]["embedding_ready_knowledge_base_count"] == 0
+
+    service = build_service(knowledge_bases={"kb_support": Record(id="kb_support", status="active")})
+    readiness = service.build_readiness(
+        tenant_id="acme",
+        knowledge_base_ids=["kb_support"],
+    )
+    assert readiness["status"] == "not_configured"
+    assert readiness["knowledge_bases"][0]["embedding_configured"] is False
+    assert readiness["knowledge_bases"][0]["embedding_ready"] is False
+    assert readiness["knowledge_bases"][0]["embedding_guidance"] == "Assign an active embedding model config to this knowledge base."
 
     service = build_service(
         knowledge_bases={"kb_support": active_kb()},
@@ -178,6 +196,8 @@ def main() -> None:
     )
     assert readiness["status"] == "blocked"
     assert readiness["knowledge_bases"][0]["embedded_chunk_count"] == 0
+    assert readiness["knowledge_bases"][0]["embedding_ready"] is True
+    assert readiness["knowledge_bases"][0]["embedding_guidance"] == "Run embedding indexing for the existing document chunks."
 
     embeddings = {"chunk_1": [Record(id="embedding_1", model_config_id="embed_openai")]}
     service = build_service(
@@ -207,7 +227,11 @@ def main() -> None:
     )
     assert readiness["status"] == "ready"
     assert readiness["summary"]["ready_knowledge_base_count"] == 1
+    assert readiness["summary"]["embedding_configured_knowledge_base_count"] == 1
+    assert readiness["summary"]["embedding_ready_knowledge_base_count"] == 1
     assert readiness["summary"]["embedding_record_count"] == 1
+    assert readiness["knowledge_bases"][0]["embedding_ready"] is True
+    assert readiness["knowledge_bases"][0]["embedding_guidance"] is None
 
     partial_docs = [
         Record(id="doc_1", status="ready", knowledge_base_id="kb_support"),
@@ -227,6 +251,7 @@ def main() -> None:
     assert readiness["status"] == "degraded"
     assert readiness["summary"]["chunk_count"] == 2
     assert readiness["summary"]["embedded_chunk_count"] == 1
+    assert readiness["knowledge_bases"][0]["embedding_guidance"] == "Run embedding indexing for the remaining document chunks."
 
 
 if __name__ == "__main__":
