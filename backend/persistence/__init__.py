@@ -64,6 +64,7 @@ from backend.persistence.model_configs import (
 )
 from backend.persistence.retrieval_events import (
     PostgresRetrievalEventReadRepository,
+    PostgresRetrievalEventWriteRepository,
     RetrievalEventRecord,
     SQLiteRetrievalEventReadRepository,
 )
@@ -140,6 +141,7 @@ __all__ = [
     "PostgresMemoryPolicyReadRepository",
     "PostgresModelConfigReadRepository",
     "PostgresRetrievalEventReadRepository",
+    "PostgresRetrievalEventWriteRepository",
     "PostgresRuntimeReadRepository",
     "PostgresTenancyReadRepository",
     "PostgresTenancyWriteRepository",

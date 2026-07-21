@@ -616,6 +616,7 @@ class PlatformAgentRunService:
             dev_knowledge_service=dev_knowledge_service,
             dev_knowledge_provider=dev_knowledge_provider,
             user_id=str(response_record_context["user_id"]),
+            tenant=str(execution_context["tenant"]),
             question=str(execution_context["question"]),
             knowledge_base_ids=list(execution_context["knowledge_base_ids"]),
         )

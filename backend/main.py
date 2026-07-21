@@ -100,6 +100,7 @@ from backend.persistence import (
     PostgresAuditEventWriteRepository,
     PostgresMemoryItemReadRepository,
     PostgresMemoryItemWriteRepository,
+    PostgresRetrievalEventWriteRepository,
     PostgresTenancyReadRepository,
     PostgresTenancyWriteRepository,
     PostgresToolCallReadRepository,
@@ -299,6 +300,16 @@ def _build_audit_event_write_repository() -> (
     return PostgresAuditEventWriteRepository(create_postgres_database(database_url))
 
 
+def _build_retrieval_event_write_repository() -> (
+    PostgresRetrievalEventWriteRepository | None
+):
+    database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
+    if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
+        return None
+
+    return PostgresRetrievalEventWriteRepository(create_postgres_database(database_url))
+
+
 def _build_member_repository() -> MemberRepositoryProtocol:
     database_url = os.getenv("AGENTFOUNDRY_DATABASE_URL", "").strip()
     if urlparse(database_url).scheme not in {"postgresql", "postgres"}:
@@ -340,7 +351,10 @@ dev_knowledge_repository = DevKnowledgeRepository(PLATFORM_DEV_KNOWLEDGE_PATH)
 dev_knowledge_service = PlatformDevKnowledgeService(
     repository=dev_knowledge_repository,
 )
-knowledge_response_service = PlatformKnowledgeResponseService()
+knowledge_response_service = PlatformKnowledgeResponseService(
+    retrieval_event_writer=_build_retrieval_event_write_repository(),
+    now=now_iso,
+)
 enterprise_router_service = PlatformEnterpriseRouterService(
     tool_names=ENTERPRISE_TOOL_NAMES,
     tool_input_fields=ENTERPRISE_TOOL_INPUT_FIELDS,

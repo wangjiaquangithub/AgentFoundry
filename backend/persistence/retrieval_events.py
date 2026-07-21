@@ -1,4 +1,4 @@
-"""Retrieval event read repositories.
+"""Retrieval event repositories.
 
 Retrieval events are tenant-scoped evidence records for knowledge access.
 PostgreSQL is the production path; SQLite remains an explicit local
@@ -161,3 +161,35 @@ class PostgresRetrievalEventReadRepository:
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
+
+
+class PostgresRetrievalEventWriteRepository:
+    """Write tenant-scoped retrieval events to PostgreSQL."""
+
+    def __init__(self, database: PostgresDatabase) -> None:
+        self._database = database
+
+    def append_retrieval_event(self, record: RetrievalEventRecord) -> None:
+        with self._database.transaction() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO retrieval_events (
+                      id, tenant_id, agent_run_id, knowledge_base_id, query,
+                      hits, created_at
+                    )
+                    VALUES (
+                      %s, %s, %s, %s, %s,
+                      %s, %s
+                    )
+                    """,
+                    (
+                        record.id,
+                        record.tenant_id,
+                        record.agent_run_id,
+                        record.knowledge_base_id,
+                        record.query,
+                        json.dumps(record.hits, ensure_ascii=False),
+                        record.created_at,
+                    ),
+                )

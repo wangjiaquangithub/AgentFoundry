@@ -1,7 +1,15 @@
 """Formatting helpers for platform knowledge search responses."""
 
 import json
-from typing import Any
+from typing import Any, Callable, Protocol
+from uuid import uuid4
+
+from backend.persistence import RetrievalEventRecord
+
+
+class RetrievalEventWriter(Protocol):
+    def append_retrieval_event(self, record: RetrievalEventRecord) -> None:
+        ...
 
 
 def _json_safe(value: Any) -> Any:
@@ -23,6 +31,15 @@ def _chunk_text(chunk: Any) -> str:
 
 class PlatformKnowledgeResponseService:
     """Build API response payloads from platform knowledge search hits."""
+
+    def __init__(
+        self,
+        *,
+        retrieval_event_writer: RetrievalEventWriter | None = None,
+        now: Callable[[], str] | None = None,
+    ) -> None:
+        self._retrieval_event_writer = retrieval_event_writer
+        self._now = now
 
     def format_hit(
         self,
@@ -53,6 +70,7 @@ class PlatformKnowledgeResponseService:
         dev_knowledge_service: Any,
         dev_knowledge_provider: str,
         user_id: str,
+        tenant: str,
         question: str,
         knowledge_base_ids: list[str],
         top_k: int = 3,
@@ -75,9 +93,16 @@ class PlatformKnowledgeResponseService:
                     errors.append(f"{knowledge_base_id}: {exc}")
                     continue
 
-                hits.extend(
+                formatted_results = [
                     self.format_hit(knowledge_base_id, hit)
                     for hit in results
+                ]
+                hits.extend(formatted_results)
+                self._append_retrieval_event(
+                    tenant=tenant,
+                    knowledge_base_id=knowledge_base_id,
+                    question=question,
+                    hits=formatted_results,
                 )
 
         if len(hits) < top_k:
@@ -105,6 +130,32 @@ class PlatformKnowledgeResponseService:
 
         hits.sort(key=lambda item: item["score"], reverse=True)
         return hits[:top_k], "; ".join(errors) if errors and not hits else None
+
+    def _append_retrieval_event(
+        self,
+        *,
+        tenant: str,
+        knowledge_base_id: str,
+        question: str,
+        hits: list[dict[str, Any]],
+    ) -> None:
+        if self._retrieval_event_writer is None or self._now is None:
+            return
+
+        try:
+            self._retrieval_event_writer.append_retrieval_event(
+                RetrievalEventRecord(
+                    id=uuid4().hex,
+                    tenant_id=tenant,
+                    agent_run_id=None,
+                    knowledge_base_id=knowledge_base_id,
+                    query=question,
+                    hits=_json_safe(hits),
+                    created_at=self._now(),
+                ),
+            )
+        except Exception:
+            return
 
     def build_agent_run_payload(
         self,
