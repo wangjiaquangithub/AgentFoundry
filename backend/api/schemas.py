@@ -101,6 +101,17 @@ class EnterpriseAgentRunRequest(BaseModel):
     approval_id: str | None = None
 
 
+class EnterpriseKnowledgeIngestRequest(BaseModel):
+    knowledge_base_id: str
+    title: str
+    text: str
+    tenant: str | None = None
+    source_type: str = "text"
+    source_uri: str | None = None
+    object_ref: str | None = None
+    document_id: str | None = None
+
+
 class EnterpriseWorkflowTemplateUpdateRequest(BaseModel):
     name: str | None = None
     description: str | None = None

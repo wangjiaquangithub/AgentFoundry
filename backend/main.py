@@ -26,6 +26,10 @@ from api.agent_runtime import (
     create_agent_runtime_router,
 )
 from api.agents import AgentCatalogRouteDependencies, create_agent_catalog_router
+from api.knowledge import (
+    KnowledgeIngestionRouteDependencies,
+    create_knowledge_ingestion_router,
+)
 from api.platform_admin import (
     PlatformAdminRouteDependencies,
     create_platform_admin_router,
@@ -98,8 +102,11 @@ from backend.persistence import (
     PostgresAuditEventReadRepository,
     PostgresAuditEventWriteRepository,
     PostgresDocumentChunkReadRepository,
+    PostgresDocumentChunkWriteRepository,
     PostgresDocumentReadRepository,
+    PostgresDocumentWriteRepository,
     PostgresEmbeddingRecordReadRepository,
+    PostgresEmbeddingRecordWriteRepository,
     PostgresKnowledgeBaseReadRepository,
     PostgresMemoryItemReadRepository,
     PostgresMemoryItemWriteRepository,
@@ -167,6 +174,7 @@ from services.knowledge import (
     PlatformKnowledgeDocumentReadinessService,
     PlatformKnowledgeResponseService,
 )
+from services.knowledge_ingestion import PlatformKnowledgeIngestionService
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
 from services.platform_status import PlatformStatusService
@@ -398,6 +406,23 @@ def _build_knowledge_document_readiness_service() -> (
         document_chunk_repository=PostgresDocumentChunkReadRepository(database),
         embedding_record_repository=PostgresEmbeddingRecordReadRepository(database),
         model_config_repository=PostgresModelConfigReadRepository(database),
+    )
+
+
+def _build_knowledge_ingestion_service() -> (
+    PlatformKnowledgeIngestionService | None
+):
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PlatformKnowledgeIngestionService(
+        knowledge_base_repository=PostgresKnowledgeBaseReadRepository(database),
+        document_repository=PostgresDocumentWriteRepository(database),
+        document_chunk_repository=PostgresDocumentChunkWriteRepository(database),
+        document_chunk_read_repository=PostgresDocumentChunkReadRepository(database),
+        embedding_record_repository=PostgresEmbeddingRecordWriteRepository(database),
+        now=now_iso,
     )
 
 
@@ -838,6 +863,15 @@ app.include_router(
         AgentCatalogRouteDependencies(
             agent_service=_platform_agent_service,
             validate_agent_resources=_platform_access_helpers.validate_agent_resources,
+        )
+    )
+)
+
+app.include_router(
+    create_knowledge_ingestion_router(
+        KnowledgeIngestionRouteDependencies(
+            ingestion_service=_build_knowledge_ingestion_service,
+            tenant_hint_from_user_id=tenant_hint_from_user_id,
         )
     )
 )
