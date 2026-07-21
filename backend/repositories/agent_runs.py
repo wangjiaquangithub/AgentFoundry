@@ -149,7 +149,7 @@ class AgentRunRepository:
 
 
 class PostgresAgentRunReadThroughRepository:
-    """Use PostgreSQL for tenant-scoped agent runs with a development fallback.
+    """Use PostgreSQL as the source of truth for tenant-scoped agent runs.
 
     Tenant-scoped records use the production PostgreSQL schema. Records without
     tenant context stay on the legacy repository for local development
@@ -195,28 +195,14 @@ class PostgresAgentRunReadThroughRepository:
                 limit=limit,
             )
         ]
-        if len(postgres_records) >= _clamp_limit(limit):
-            return postgres_records
-
-        seen_turn_ids = {record["turn_id"] for record in postgres_records}
-        fallback_records = [
-            record
-            for record in self._fallback_repository.list(
-                limit=limit,
-                agent_id=agent_id,
-                tenant=tenant,
-                user_id=user_id,
-                session_id=session_id,
-            )
-            if record.get("turn_id") not in seen_turn_ids
-        ]
-        return (postgres_records + fallback_records)[: _clamp_limit(limit)]
+        return postgres_records
 
     def get(self, turn_id: str, *, tenant: str | None = None) -> dict[str, Any] | None:
         if tenant:
             record = self._postgres_reader.get_run(tenant_id=tenant, run_id=turn_id)
             if record is not None:
                 return _postgres_run_to_platform_record(record)
+            return None
         return self._fallback_repository.get(turn_id, tenant=tenant)
 
     def append(self, record: dict[str, Any]) -> None:
