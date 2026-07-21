@@ -14,7 +14,10 @@ class AuditEventWriter(Protocol):
 
 
 class RetrievalEventWriter(Protocol):
-    def append_retrieval_event(self, record: RetrievalEventRecord) -> None:
+    def append_retrieval_event(
+        self,
+        record: RetrievalEventRecord,
+    ) -> RetrievalEventRecord:
         ...
 
 
@@ -398,7 +401,7 @@ class PlatformKnowledgeRetrievalService:
         safe_hits = _json_safe(payload.get("hits") or [])
         knowledge_base_id = self._primary_knowledge_base_id(payload)
         try:
-            self._retrieval_event_writer.append_retrieval_event(
+            persisted_event = self._retrieval_event_writer.append_retrieval_event(
                 RetrievalEventRecord(
                     id=event_id,
                     tenant_id=tenant_id,
@@ -413,14 +416,14 @@ class PlatformKnowledgeRetrievalService:
             return
 
         self._append_retrieval_audit_event(
-            event_id=event_id,
+            event_id=persisted_event.id,
             tenant_id=tenant_id,
             user_id=user_id,
             agent_run_id=agent_run_id,
             knowledge_base_id=knowledge_base_id,
             payload=payload,
             hits=safe_hits,
-            created_at=created_at,
+            created_at=persisted_event.created_at,
         )
 
     def _append_retrieval_audit_event(
@@ -957,7 +960,7 @@ class PlatformKnowledgeResponseService:
         created_at = self._now()
         safe_hits = _json_safe(hits)
         try:
-            self._retrieval_event_writer.append_retrieval_event(
+            persisted_event = self._retrieval_event_writer.append_retrieval_event(
                 RetrievalEventRecord(
                     id=event_id,
                     tenant_id=tenant,
@@ -971,13 +974,13 @@ class PlatformKnowledgeResponseService:
         except Exception:
             return
         self._append_retrieval_audit_event(
-            event_id=event_id,
+            event_id=persisted_event.id,
             tenant=tenant,
             user_id=user_id,
             knowledge_base_id=knowledge_base_id,
             question=question,
             hits=safe_hits,
-            created_at=created_at,
+            created_at=persisted_event.created_at,
             agent_run_id=agent_run_id,
         )
 

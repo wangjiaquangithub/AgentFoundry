@@ -169,7 +169,10 @@ class PostgresRetrievalEventWriteRepository:
     def __init__(self, database: PostgresDatabase) -> None:
         self._database = database
 
-    def append_retrieval_event(self, record: RetrievalEventRecord) -> None:
+    def append_retrieval_event(
+        self,
+        record: RetrievalEventRecord,
+    ) -> RetrievalEventRecord:
         with self._database.transaction() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
@@ -182,6 +185,8 @@ class PostgresRetrievalEventWriteRepository:
                       %s, %s, %s, %s, %s,
                       %s, %s
                     )
+                    RETURNING id, tenant_id, agent_run_id, knowledge_base_id,
+                      query, hits, created_at
                     """,
                     (
                         record.id,
@@ -193,3 +198,7 @@ class PostgresRetrievalEventWriteRepository:
                         record.created_at,
                     ),
                 )
+                row = cursor.fetchone()
+        if row is None:
+            raise ValueError("Retrieval event insert did not return a row.")
+        return _retrieval_event_from_row(dict(row))

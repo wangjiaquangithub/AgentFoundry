@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 API_MODULE = ROOT / "backend" / "api" / "knowledge.py"
 SERVICE_MODULE = ROOT / "backend" / "services" / "knowledge.py"
+RETRIEVAL_EVENTS_MODULE = ROOT / "backend" / "persistence" / "retrieval_events.py"
 MAIN_MODULE = ROOT / "backend" / "main.py"
 
 
@@ -30,6 +31,7 @@ def _assert_contains(source: str, needle: str, label: str) -> None:
 def main() -> int:
     api_source = _read(API_MODULE)
     service_source = _read(SERVICE_MODULE)
+    retrieval_events_source = _read(RETRIEVAL_EVENTS_MODULE)
     main_source = _read(MAIN_MODULE)
 
     for needle in (
@@ -38,6 +40,9 @@ def main() -> int:
         "RetrievalEventRecord(",
         "AuditEventRecord(",
         "append_retrieval_event",
+        "persisted_event = self._retrieval_event_writer.append_retrieval_event",
+        "event_id=persisted_event.id",
+        "created_at=persisted_event.created_at",
         "append_audit_event",
         '"knowledge_base.retrieved"',
         '"retrieval_mode"',
@@ -49,6 +54,20 @@ def main() -> int:
             service_source,
             needle,
             "knowledge retrieval persistence service",
+        )
+
+    for needle in (
+        "def append_retrieval_event(",
+        ") -> RetrievalEventRecord:",
+        "RETURNING id, tenant_id, agent_run_id, knowledge_base_id",
+        "row = cursor.fetchone()",
+        "Retrieval event insert did not return a row.",
+        "return _retrieval_event_from_row(dict(row))",
+    ):
+        _assert_contains(
+            retrieval_events_source,
+            needle,
+            "PostgreSQL retrieval event write repository",
         )
 
     _assert_contains(
