@@ -867,6 +867,61 @@ def _check_postgres_retrieval_events_wired() -> list[str]:
     return errors
 
 
+def _check_postgres_approval_requests_wired() -> list[str]:
+    errors: list[str] = []
+    main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    approval_repository_source = (REPOSITORIES_DIR / "approvals.py").read_text(encoding="utf-8")
+    approval_service_source = (SERVICES_DIR / "approvals.py").read_text(encoding="utf-8")
+    main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+
+    if not _module_imports_name(main_tree, "PostgresApprovalReadRepository"):
+        errors.append(
+            "backend/main.py must import PostgresApprovalReadRepository for approval request reads",
+        )
+    if not _module_imports_name(main_tree, "PostgresApprovalWriteRepository"):
+        errors.append(
+            "backend/main.py must import PostgresApprovalWriteRepository for approval request writes",
+        )
+    if not _module_imports_name(main_tree, "PostgresApprovalReadThroughRepository"):
+        errors.append(
+            "backend/main.py must import PostgresApprovalReadThroughRepository for approval request wiring",
+        )
+    if not _module_defines_function(main_tree, "_build_approval_request_repository"):
+        errors.append(
+            "backend/main.py must define _build_approval_request_repository for PostgreSQL approval requests",
+        )
+    if "approval_request_repository = _build_approval_request_repository()" not in main_source:
+        errors.append(
+            "backend/main.py must build the approval_request_repository through the PostgreSQL selector",
+        )
+    if "PostgresApprovalReadThroughRepository(" not in main_source:
+        errors.append(
+            "backend/main.py must wrap PostgreSQL approval repositories with PostgresApprovalReadThroughRepository",
+        )
+    if "repository=approval_request_repository" not in main_source:
+        errors.append(
+            "backend/main.py must pass approval_request_repository into PlatformApprovalService",
+        )
+    if "PostgresApprovalReadThroughRepository" not in approval_repository_source:
+        errors.append(
+            "backend/repositories/approvals.py must define PostgresApprovalReadThroughRepository",
+        )
+    if "append_approval" not in approval_repository_source:
+        errors.append(
+            "backend/repositories/approvals.py must write approval requests through PostgreSQL",
+        )
+    if "update_approval_status" not in approval_repository_source:
+        errors.append(
+            "backend/repositories/approvals.py must update approval status through PostgreSQL",
+        )
+    if "ApprovalRequestRepositoryProtocol" not in approval_service_source:
+        errors.append(
+            "backend/services/approvals.py must depend on ApprovalRequestRepositoryProtocol",
+        )
+
+    return errors
+
+
 def _find_class_method(
     tree: ast.AST,
     *,
@@ -922,6 +977,7 @@ def main() -> int:
         *_check_postgres_memory_item_writes_wired(),
         *_check_postgres_audit_events_wired(),
         *_check_postgres_retrieval_events_wired(),
+        *_check_postgres_approval_requests_wired(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -950,6 +1006,7 @@ def main() -> int:
     print("- PostgreSQL memory item writes wired: yes")
     print("- PostgreSQL audit events wired: yes")
     print("- PostgreSQL retrieval events wired: yes")
+    print("- PostgreSQL approval requests wired: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:
