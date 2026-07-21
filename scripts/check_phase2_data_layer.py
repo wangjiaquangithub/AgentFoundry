@@ -1758,6 +1758,60 @@ def _check_postgres_embedding_record_reads_guarded() -> list[str]:
     return errors
 
 
+def _check_postgres_memory_item_reads_guarded() -> list[str]:
+    errors: list[str] = []
+    memory_item_path = PERSISTENCE_DIR / "memory_items.py"
+    memory_item_source = memory_item_path.read_text(encoding="utf-8")
+    memory_item_tree = ast.parse(memory_item_source, filename=str(memory_item_path))
+
+    if "PostgresMemoryItemReadRepository" not in memory_item_source:
+        errors.append(
+            "backend/persistence/memory_items.py must define "
+            "PostgresMemoryItemReadRepository",
+        )
+        return errors
+
+    required_methods = {
+        "list_memory_items": ["FROM memory_items", "WHERE tenant_id = %s"],
+        "get_memory_item": ["FROM memory_items", "WHERE tenant_id = %s AND id = %s"],
+    }
+    for method_name, sql_tokens in required_methods.items():
+        method_node = _find_class_method(
+            memory_item_tree,
+            class_name="PostgresMemoryItemReadRepository",
+            method_name=method_name,
+        )
+        if method_node is None:
+            errors.append(
+                "PostgreSQL memory item read repository missing method: "
+                "backend/persistence/memory_items.py:"
+                f"PostgresMemoryItemReadRepository.{method_name}",
+            )
+            continue
+        if not _method_has_required_argument(method_node, "tenant_id"):
+            errors.append(
+                "PostgreSQL memory item read method must require tenant_id: "
+                "backend/persistence/memory_items.py:"
+                f"PostgresMemoryItemReadRepository.{method_name}",
+            )
+        if not _method_uses_database_call(method_node, "connect"):
+            errors.append(
+                "PostgreSQL memory item read method must read through PostgreSQL: "
+                "backend/persistence/memory_items.py:"
+                f"PostgresMemoryItemReadRepository.{method_name}",
+            )
+        normalized_sql = " ".join(_normalized_sql_literals(method_node))
+        for sql_token in sql_tokens:
+            if sql_token.lower() not in normalized_sql:
+                errors.append(
+                    "PostgreSQL memory item read method must query tenant-scoped "
+                    "memory items: backend/persistence/memory_items.py:"
+                    f"PostgresMemoryItemReadRepository.{method_name}",
+                )
+
+    return errors
+
+
 def _find_class_method(
     tree: ast.AST,
     *,
@@ -1826,6 +1880,7 @@ def main() -> int:
         *_check_postgres_document_reads_guarded(),
         *_check_postgres_document_chunk_reads_guarded(),
         *_check_postgres_embedding_record_reads_guarded(),
+        *_check_postgres_memory_item_reads_guarded(),
     ]
     warnings = _collect_warnings(schema)
 
@@ -1867,6 +1922,7 @@ def main() -> int:
     print("- PostgreSQL document reads guarded: yes")
     print("- PostgreSQL document chunk reads guarded: yes")
     print("- PostgreSQL embedding record reads guarded: yes")
+    print("- PostgreSQL memory item reads guarded: yes")
     print(f"- known PostgreSQL tenant read gaps tracked: {POSTGRES_TENANT_SCOPED_READ_KNOWN_GAP_COUNT}")
 
     if warnings:
