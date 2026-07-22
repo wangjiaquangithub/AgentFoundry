@@ -22,9 +22,12 @@ from backend.persistence import (
     PostgresRetrievalEventWriteRepository,
     PostgresTenancyReadRepository,
     PostgresTenancyWriteRepository,
+    PostgresWorkflowReadRepository,
+    PostgresWorkflowWriteRepository,
     create_configured_postgres_database,
 )
 from backend.repositories.members import PostgresMemberReadThroughRepository
+from backend.repositories.workflows import PostgresWorkflowRunReadThroughRepository
 from backend.services.knowledge import (
     PlatformKnowledgeDocumentReadinessService,
     PlatformKnowledgeResponseService,
@@ -118,6 +121,21 @@ def build_configured_postgres_member_repository() -> (
     return PostgresMemberReadThroughRepository(
         postgres_reader=PostgresTenancyReadRepository(database),
         postgres_writer=PostgresTenancyWriteRepository(database),
+    )
+
+
+def build_configured_postgres_workflow_run_repository() -> (
+    PostgresWorkflowRunReadThroughRepository | None
+):
+    """Build the workflow run repository adapter when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresWorkflowRunReadThroughRepository(
+        postgres_reader=PostgresWorkflowReadRepository(database),
+        postgres_writer=PostgresWorkflowWriteRepository(database),
     )
 
 

@@ -124,8 +124,6 @@ from backend.persistence import (
     PostgresToolCallWriteRepository,
     PostgresToolGovernanceReadRepository,
     PostgresToolGovernanceWriteRepository,
-    PostgresWorkflowReadRepository,
-    PostgresWorkflowWriteRepository,
     create_configured_postgres_database,
     inspect_configured_database_status,
 )
@@ -147,7 +145,6 @@ from repositories.members import (
     MemberRepositoryProtocol,
 )
 from repositories.workflows import (
-    PostgresWorkflowRunReadThroughRepository,
     WorkflowRunRepositoryProtocol,
     WorkflowRunRepository,
     WorkflowTemplateRepository,
@@ -201,6 +198,7 @@ from services.composition import (
     build_configured_postgres_model_config_service,
     build_configured_postgres_retrieval_event_read_repository,
     build_configured_postgres_retrieval_event_write_repository,
+    build_configured_postgres_workflow_run_repository,
 )
 from services.platform_status import PlatformStatusService
 from services.tools import (
@@ -365,13 +363,9 @@ member_repository = _build_member_repository()
 
 
 def _build_workflow_run_repository() -> WorkflowRunRepositoryProtocol:
-    database = create_configured_postgres_database()
-    if database is None:
-        return workflow_run_fallback_repository
-
-    return PostgresWorkflowRunReadThroughRepository(
-        postgres_reader=PostgresWorkflowReadRepository(database),
-        postgres_writer=PostgresWorkflowWriteRepository(database),
+    return (
+        build_configured_postgres_workflow_run_repository()
+        or workflow_run_fallback_repository
     )
 
 
