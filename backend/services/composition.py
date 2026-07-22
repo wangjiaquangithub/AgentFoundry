@@ -9,6 +9,8 @@ from backend.persistence import (
     PostgresAgentCatalogWriteRepository,
     PostgresAgentRunReadRepository,
     PostgresAgentRunWriteRepository,
+    PostgresApprovalReadRepository,
+    PostgresApprovalWriteRepository,
     PostgresAuditEventReadRepository,
     PostgresAuditEventWriteRepository,
     PostgresDatabase,
@@ -32,6 +34,7 @@ from backend.persistence import (
 )
 from backend.repositories.agents import PostgresAgentCatalogWriteThroughRepository
 from backend.repositories.agent_runs import PostgresAgentRunReadThroughRepository
+from backend.repositories.approvals import PostgresApprovalReadThroughRepository
 from backend.repositories.members import PostgresMemberReadThroughRepository
 from backend.repositories.workflows import PostgresWorkflowRunReadThroughRepository
 from backend.services.knowledge import (
@@ -157,6 +160,21 @@ def build_configured_postgres_agent_run_repository() -> (
     return PostgresAgentRunReadThroughRepository(
         postgres_reader=PostgresAgentRunReadRepository(database),
         postgres_writer=PostgresAgentRunWriteRepository(database),
+    )
+
+
+def build_configured_postgres_approval_request_repository() -> (
+    PostgresApprovalReadThroughRepository | None
+):
+    """Build the approval request repository adapter when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresApprovalReadThroughRepository(
+        postgres_reader=PostgresApprovalReadRepository(database),
+        postgres_writer=PostgresApprovalWriteRepository(database),
     )
 
 

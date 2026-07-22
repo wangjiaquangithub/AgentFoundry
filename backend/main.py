@@ -108,8 +108,6 @@ from repositories.agents import (
     AgentRepositoryProtocol,
 )
 from backend.persistence import (
-    PostgresApprovalReadRepository,
-    PostgresApprovalWriteRepository,
     PostgresMemoryItemReadRepository,
     PostgresMemoryItemWriteRepository,
     PostgresModelConfigReadRepository,
@@ -129,7 +127,6 @@ from repositories.agent_runs import (
 from repositories.approvals import (
     ApprovalRequestRepository,
     ApprovalRequestRepositoryProtocol,
-    PostgresApprovalReadThroughRepository,
 )
 from repositories.connectors import ConnectorConfigRepository
 from repositories.dev_knowledge import DevKnowledgeRepository
@@ -176,6 +173,7 @@ from services.memories import PlatformMemoryService
 from services.composition import (
     build_configured_postgres_agent_repository,
     build_configured_postgres_agent_run_repository,
+    build_configured_postgres_approval_request_repository,
     build_configured_postgres_audit_event_read_repository,
     build_configured_postgres_audit_event_write_repository,
     build_configured_postgres_knowledge_base_read_repository,
@@ -229,13 +227,9 @@ agent_run_repository = _build_agent_run_repository()
 
 
 def _build_approval_request_repository() -> ApprovalRequestRepositoryProtocol:
-    database = create_configured_postgres_database()
-    if database is None:
-        return approval_request_fallback_repository
-
-    return PostgresApprovalReadThroughRepository(
-        postgres_reader=PostgresApprovalReadRepository(database),
-        postgres_writer=PostgresApprovalWriteRepository(database),
+    return (
+        build_configured_postgres_approval_request_repository()
+        or approval_request_fallback_repository
     )
 
 

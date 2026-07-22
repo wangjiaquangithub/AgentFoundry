@@ -1937,22 +1937,26 @@ def _check_postgres_agent_runs_wired() -> list[str]:
 def _check_postgres_approval_requests_wired() -> list[str]:
     errors: list[str] = []
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    composition_source = (SERVICES_DIR / "composition.py").read_text(encoding="utf-8")
     approval_repository_source = (REPOSITORIES_DIR / "approvals.py").read_text(encoding="utf-8")
     approval_service_source = (SERVICES_DIR / "approvals.py").read_text(encoding="utf-8")
     main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+    composition_tree = ast.parse(
+        composition_source,
+        filename=str(SERVICES_DIR / "composition.py"),
+    )
 
-    if not _module_imports_name(main_tree, "PostgresApprovalReadRepository"):
-        errors.append(
-            "backend/main.py must import PostgresApprovalReadRepository for approval request reads",
-        )
-    if not _module_imports_name(main_tree, "PostgresApprovalWriteRepository"):
-        errors.append(
-            "backend/main.py must import PostgresApprovalWriteRepository for approval request writes",
-        )
-    if not _module_imports_name(main_tree, "PostgresApprovalReadThroughRepository"):
-        errors.append(
-            "backend/main.py must import PostgresApprovalReadThroughRepository for approval request wiring",
-        )
+    required_composition_imports = [
+        "PostgresApprovalReadRepository",
+        "PostgresApprovalWriteRepository",
+        "PostgresApprovalReadThroughRepository",
+    ]
+    for imported_name in required_composition_imports:
+        if not _module_imports_name(composition_tree, imported_name):
+            errors.append(
+                "backend/services/composition.py must import "
+                f"{imported_name} for approval request PostgreSQL wiring",
+            )
     if not _module_defines_function(main_tree, "_build_approval_request_repository"):
         errors.append(
             "backend/main.py must define _build_approval_request_repository for PostgreSQL approval requests",
@@ -1961,9 +1965,20 @@ def _check_postgres_approval_requests_wired() -> list[str]:
         errors.append(
             "backend/main.py must build the approval_request_repository through the PostgreSQL selector",
         )
-    if "PostgresApprovalReadThroughRepository(" not in main_source:
+    if "build_configured_postgres_approval_request_repository()" not in main_source:
         errors.append(
-            "backend/main.py must wrap PostgreSQL approval repositories with PostgresApprovalReadThroughRepository",
+            "backend/main.py must delegate approval request PostgreSQL wiring to services.composition",
+        )
+    if not _module_defines_function(
+        composition_tree,
+        "build_configured_postgres_approval_request_repository",
+    ):
+        errors.append(
+            "backend/services/composition.py must define build_configured_postgres_approval_request_repository",
+        )
+    if "PostgresApprovalReadThroughRepository(" not in composition_source:
+        errors.append(
+            "backend/services/composition.py must wrap PostgreSQL approval repositories with PostgresApprovalReadThroughRepository",
         )
     if "repository=approval_request_repository" not in main_source:
         errors.append(
