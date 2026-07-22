@@ -887,8 +887,27 @@ def _normalize_agentscope_provider_client_response(
     )
 
 
-def get_runtime_adapter(_agent_metadata: dict[str, Any] | None = None) -> RuntimeAdapter:
+def build_runtime_provider_invocation_client(
+    agent_metadata: dict[str, Any] | None = None,
+) -> RuntimeProviderInvocationClient | None:
+    """Build the provider-native invocation client when runtime config is ready."""
+    config_gate = describe_provider_native_invocation_config_gate(agent_metadata)
+    if not config_gate["ready"]:
+        return None
+
+    try:
+        from .runtime_provider_clients import AgentScopeProviderHttpInvocationClient
+    except ImportError:
+        from runtime_provider_clients import AgentScopeProviderHttpInvocationClient
+
+    return AgentScopeProviderHttpInvocationClient()
+
+
+def get_runtime_adapter(agent_metadata: dict[str, Any] | None = None) -> RuntimeAdapter:
     """Return the runtime adapter for platform agent runs."""
+    provider_client = build_runtime_provider_invocation_client(agent_metadata)
+    if provider_client is not None:
+        return replace(AGENTSCOPE_PLATFORM_ADAPTER, provider_client=provider_client)
     return AGENTSCOPE_PLATFORM_ADAPTER
 
 
@@ -920,8 +939,8 @@ def describe_provider_native_invocation_config_gate(
     ready = not missing_keys
     if ready:
         message = (
-            "Provider-native invocation configuration is present; adapter "
-            "implementation must still wire provider invocation before enabling it."
+            "Provider-native invocation configuration is present for adapter "
+            "selection and provider-owned execution."
         )
     else:
         message = (

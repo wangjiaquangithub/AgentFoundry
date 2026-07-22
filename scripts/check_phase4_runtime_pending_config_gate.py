@@ -64,7 +64,6 @@ async def assert_direct_adapter_pending_result_uses_request_config_gate() -> Non
 
 
 async def assert_runtime_helper_passes_agent_metadata_to_pending_result() -> None:
-    secret_ref = "secret://agentscope/runtime-token"
     runtime_url = "https://agentscope-runtime.internal"
     request = RuntimeInvocationRequest(
         context=RuntimeContext(
@@ -85,21 +84,18 @@ async def assert_runtime_helper_passes_agent_metadata_to_pending_result() -> Non
             "agent_name": "Knowledge Agent",
             "runtime_provider_config": {
                 "agentscope_runtime_url": runtime_url,
-                "agentscope_runtime_auth_ref": secret_ref,
+                "agentscope_runtime_auth_ref": "",
             },
         },
     )
 
     gate = payload["raw"]["runtime_bridge"]["provider_native_invocation"]
-    assert gate["ready"] is True
-    assert gate["configured_keys"] == [
-        "agentscope_runtime_url",
-        "agentscope_runtime_auth_ref",
-    ]
+    assert gate["ready"] is False
+    assert gate["configured_keys"] == ["agentscope_runtime_url"]
+    assert gate["missing_keys"] == ["agentscope_runtime_auth_ref"]
     assert payload["provider_id"] == "agentscope-platform-adapter"
     assert payload["raw"]["runtime_bridge"]["provider_invocation_wired"] is False
     assert runtime_url not in repr(payload)
-    assert secret_ref not in repr(payload)
 
 
 async def main_async() -> None:

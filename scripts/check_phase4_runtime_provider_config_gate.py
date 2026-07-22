@@ -122,9 +122,9 @@ def main() -> None:
         raise AssertionError(
             "configured runtime health should expose ready config references",
         )
-    if configured_checks.get("provider_invocation_wired") is not False:
+    if configured_checks.get("provider_invocation_wired") is not True:
         raise AssertionError(
-            "configured runtime health must still keep provider invocation pending",
+            "configured runtime health should wire provider invocation when config is ready",
         )
 
     print("Phase 4 runtime provider config gate passed.")

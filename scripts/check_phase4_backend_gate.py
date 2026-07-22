@@ -58,6 +58,13 @@ CHECKS = (
         ),
     ),
     (
+        "config-driven provider HTTP wiring",
+        (
+            sys.executable,
+            "scripts/check_phase4_config_driven_provider_http_wiring.py",
+        ),
+    ),
+    (
         "adapter invocation pending result",
         (
             sys.executable,
