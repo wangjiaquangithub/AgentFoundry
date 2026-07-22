@@ -30,6 +30,7 @@ class DatabaseConfigurationStatus:
     configured: bool
     scheme: str | None
     backend: str
+    required_backend: str
     production_ready: bool
     driver_package: str | None
     driver_available: bool
@@ -52,6 +53,7 @@ def inspect_configured_database_status(
             configured=False,
             scheme=None,
             backend="unconfigured",
+            required_backend="postgresql",
             production_ready=False,
             driver_package=None,
             driver_available=False,
@@ -70,6 +72,7 @@ def inspect_configured_database_status(
             configured=True,
             scheme=scheme,
             backend="postgresql",
+            required_backend="postgresql",
             production_ready=True,
             driver_package="psycopg",
             driver_available=driver_available,
@@ -87,6 +90,7 @@ def inspect_configured_database_status(
             configured=True,
             scheme=scheme,
             backend="sqlite",
+            required_backend="postgresql",
             production_ready=False,
             driver_package=None,
             driver_available=False,
@@ -99,6 +103,7 @@ def inspect_configured_database_status(
         configured=True,
         scheme=scheme,
         backend="unsupported",
+        required_backend="postgresql",
         production_ready=False,
         driver_package=None,
         driver_available=False,

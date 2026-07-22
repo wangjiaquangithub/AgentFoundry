@@ -33,6 +33,8 @@ def _check_status_contract() -> list[str]:
         errors.append("empty environment must not be production ready")
     if empty.backend != "unconfigured":
         errors.append("empty environment must use the unconfigured backend label")
+    if empty.required_backend != "postgresql":
+        errors.append("empty environment must expose PostgreSQL as the required backend")
     if "postgresql://" not in empty.message:
         errors.append("unconfigured status must direct operators to postgresql://")
 
@@ -47,6 +49,8 @@ def _check_status_contract() -> list[str]:
         errors.append("postgresql:// status must be configured and production ready")
     if postgres.scheme != "postgresql" or postgres.backend != "postgresql":
         errors.append("postgresql:// status must expose the PostgreSQL backend")
+    if postgres.required_backend != "postgresql":
+        errors.append("postgresql:// status must expose PostgreSQL as the required backend")
     if "secret" in postgres.message:
         errors.append("database status message must not expose URL credentials")
 
@@ -65,6 +69,8 @@ def _check_status_contract() -> list[str]:
         errors.append("sqlite:// status must not be production ready")
     if sqlite.backend != "sqlite":
         errors.append("sqlite:// status must expose the local compatibility backend")
+    if sqlite.required_backend != "postgresql":
+        errors.append("sqlite:// status must still expose PostgreSQL as the required backend")
     if "explicit local development compatibility" not in sqlite.message:
         errors.append("sqlite:// status must be limited to explicit local development compatibility")
 
@@ -75,6 +81,8 @@ def _check_status_contract() -> list[str]:
         errors.append("unsupported URL schemes must not be production ready")
     if unsupported.backend != "unsupported" or unsupported.scheme != "mysql":
         errors.append("unsupported status must preserve the scheme without accepting it")
+    if unsupported.required_backend != "postgresql":
+        errors.append("unsupported status must expose PostgreSQL as the required backend")
     if "postgresql:// for production" not in unsupported.message:
         errors.append("unsupported status must direct production users to PostgreSQL")
     if "secret" in unsupported.message:
