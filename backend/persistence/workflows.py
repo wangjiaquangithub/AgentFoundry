@@ -110,6 +110,49 @@ def _validate_write_result(
         )
 
 
+def _validate_workflow_template_read_result(
+    record: WorkflowTemplateRecord,
+    *,
+    tenant_id: str,
+    workflow_template_id: str | None = None,
+    status: str | None = None,
+) -> None:
+    if record.tenant_id != tenant_id:
+        raise ValueError("PostgreSQL workflow template read returned another tenant.")
+    if workflow_template_id is not None and record.id != workflow_template_id:
+        raise ValueError(
+            "PostgreSQL workflow template read returned another template.",
+        )
+    if status is not None and record.status != status:
+        raise ValueError("PostgreSQL workflow template read returned another status.")
+
+
+def _validate_workflow_run_read_result(
+    record: WorkflowRunRecord,
+    *,
+    tenant_id: str,
+    workflow_run_id: str | None = None,
+    workflow_template_id: str | None = None,
+    user_id: str | None = None,
+    status: str | None = None,
+) -> None:
+    if record.tenant_id != tenant_id:
+        raise ValueError("PostgreSQL workflow run read returned another tenant.")
+    if workflow_run_id is not None and record.id != workflow_run_id:
+        raise ValueError("PostgreSQL workflow run read returned another run.")
+    if (
+        workflow_template_id is not None
+        and record.workflow_template_id != workflow_template_id
+    ):
+        raise ValueError(
+            "PostgreSQL workflow run read returned another workflow template.",
+        )
+    if user_id is not None and record.user_id != user_id:
+        raise ValueError("PostgreSQL workflow run read returned another user.")
+    if status is not None and record.status != status:
+        raise ValueError("PostgreSQL workflow run read returned another status.")
+
+
 def _postgres_run_projection() -> str:
     return """
         id, tenant_id, workflow_template_id, triggered_by AS user_id, status,
@@ -273,7 +316,14 @@ class PostgresWorkflowReadRepository:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, tuple(parameters))
-                return [_template_from_row(dict(row)) for row in cursor.fetchall()]
+                records = [_template_from_row(dict(row)) for row in cursor.fetchall()]
+        for record in records:
+            _validate_workflow_template_read_result(
+                record,
+                tenant_id=tenant_id,
+                status=status,
+            )
+        return records
 
     def get_template(
         self,
@@ -295,7 +345,13 @@ class PostgresWorkflowReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return _template_from_row(dict(row))
+        record = _template_from_row(dict(row))
+        _validate_workflow_template_read_result(
+            record,
+            tenant_id=tenant_id,
+            workflow_template_id=workflow_template_id,
+        )
+        return record
 
     def list_runs(
         self,
@@ -330,7 +386,16 @@ class PostgresWorkflowReadRepository:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, tuple(parameters))
-                return [_run_from_row(dict(row)) for row in cursor.fetchall()]
+                records = [_run_from_row(dict(row)) for row in cursor.fetchall()]
+        for record in records:
+            _validate_workflow_run_read_result(
+                record,
+                tenant_id=tenant_id,
+                workflow_template_id=workflow_template_id,
+                user_id=user_id,
+                status=status,
+            )
+        return records
 
     def get_run(
         self,
@@ -351,7 +416,13 @@ class PostgresWorkflowReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return _run_from_row(dict(row))
+        record = _run_from_row(dict(row))
+        _validate_workflow_run_read_result(
+            record,
+            tenant_id=tenant_id,
+            workflow_run_id=workflow_run_id,
+        )
+        return record
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
