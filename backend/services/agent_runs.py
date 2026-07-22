@@ -2607,8 +2607,15 @@ class PlatformAgentRunService:
                 "runtime_invocation_id",
             ),
             agent_run_id=str(response_trace["turn_id"]),
-            provider_run_id=str(response_trace["turn_id"]),
-            completed_at=str(response_trace["created_at"]),
+            provider_run_id=_runtime_boundary_provider_run_id(
+                runtime_boundary_result,
+                fallback=str(response_trace["turn_id"]),
+            ),
+            completed_at=_runtime_boundary_completed_at(
+                runtime_boundary_result,
+                fallback=str(response_trace["created_at"]),
+            ),
+            **_runtime_boundary_result_metadata(runtime_boundary_result),
             raw={
                 "routed": False,
                 "routing_mode": routing_mode,
@@ -2698,8 +2705,15 @@ class PlatformAgentRunService:
                 "runtime_invocation_id",
             ),
             agent_run_id=str(response_trace["turn_id"]),
-            provider_run_id=str(response_trace["turn_id"]),
-            completed_at=str(response_trace["created_at"]),
+            provider_run_id=_runtime_boundary_provider_run_id(
+                runtime_boundary_result,
+                fallback=str(response_trace["turn_id"]),
+            ),
+            completed_at=_runtime_boundary_completed_at(
+                runtime_boundary_result,
+                fallback=str(response_trace["created_at"]),
+            ),
+            **_runtime_boundary_result_metadata(runtime_boundary_result),
             raw={
                 "routed": routed,
                 "routing_mode": routing_mode,
@@ -2788,6 +2802,42 @@ def _optional_dict(value: Any) -> dict[str, Any] | None:
     if isinstance(value, dict):
         return value
     return None
+
+
+def _runtime_boundary_provider_run_id(
+    runtime_boundary_result: dict[str, Any] | None,
+    *,
+    fallback: str,
+) -> str:
+    if not isinstance(runtime_boundary_result, dict):
+        return fallback
+    provider_run_id = _optional_string(runtime_boundary_result.get("provider_run_id"))
+    return provider_run_id or fallback
+
+
+def _runtime_boundary_completed_at(
+    runtime_boundary_result: dict[str, Any] | None,
+    *,
+    fallback: str,
+) -> str:
+    if not isinstance(runtime_boundary_result, dict):
+        return fallback
+    completed_at = _optional_string(runtime_boundary_result.get("completed_at"))
+    return completed_at or fallback
+
+
+def _runtime_boundary_result_metadata(
+    runtime_boundary_result: dict[str, Any] | None,
+) -> dict[str, Any]:
+    if not isinstance(runtime_boundary_result, dict):
+        return {}
+
+    metadata: dict[str, Any] = {}
+    for key in ("latency_ms", "token_usage", "error"):
+        value = runtime_boundary_result.get(key)
+        if value is not None:
+            metadata[key] = value
+    return metadata
 
 
 def _redact_runtime_invocation_summary(value: Any) -> Any:
