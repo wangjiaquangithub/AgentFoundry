@@ -18,6 +18,15 @@ import {
 } from 'lucide-react';
 import type { ComponentType, RefObject } from 'react';
 
+import {
+	agentAccessRestricted,
+	credentialLabel,
+	formatTimestamp,
+	knowledgeBaseLabel,
+	publishedAgentReadinessState,
+	shortResourceId,
+} from '../platform-utils';
+import { PlatformNotice, StateBadge } from './common';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,15 +42,6 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import {
-	agentAccessRestricted,
-	credentialLabel,
-	formatTimestamp,
-	knowledgeBaseLabel,
-	publishedAgentReadinessState,
-	shortResourceId,
-} from '../platform-utils';
-import { PlatformNotice, StateBadge } from './common';
 
 type AgentManagementPanelProps = {
 	agentManagementRef: RefObject<HTMLElement | null>;
@@ -150,9 +150,9 @@ export function AgentManagementPanel(props: AgentManagementPanelProps) {
 	return (
 				<section
 					ref={agentManagementRef}
-					className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,1fr)]"
+					className="grid gap-6"
 				>
-					<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between xl:col-span-2">
+					<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
 						<div>
 							<h2 className="text-base font-semibold">
 								{t('platform.agentManagement.title')}
@@ -172,11 +172,11 @@ export function AgentManagementPanel(props: AgentManagementPanelProps) {
 						</Button>
 					</div>
 					{platformAgentsError ? (
-						<PlatformNotice className="xl:col-span-2">
+						<PlatformNotice>
 							{t('platform.agentManagement.loadError')}
 						</PlatformNotice>
 					) : null}
-					<div className="grid gap-3 xl:col-span-2">
+					<div className="grid gap-3">
 						<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 							{agentOpsSummary.map((item) => (
 								<div
@@ -195,7 +195,7 @@ export function AgentManagementPanel(props: AgentManagementPanelProps) {
 								</div>
 							))}
 						</div>
-						<div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.45fr)]">
+						<div className="grid gap-3">
 							<Card size="sm" className="rounded-lg shadow-none">
 								<CardHeader className="grid-cols-[1fr_auto] gap-3">
 									<div className="min-w-0">

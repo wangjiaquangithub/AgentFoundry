@@ -10,7 +10,10 @@ import {
 	ShieldCheck,
 	UserRound,
 } from 'lucide-react';
+import { useState } from 'react';
 
+import { countArrayField } from '../platform-utils';
+import { PlatformDetailDrawer } from './common';
 import type {
 	EnterpriseIdentity,
 	EnterpriseTenantWorkspace,
@@ -19,7 +22,6 @@ import type {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { countArrayField } from '../platform-utils';
 
 export interface TenantOverviewItem {
 	tenant: string;
@@ -106,6 +108,8 @@ export function TenantWorkspacePanel({
 	onOpenGovernance,
 	labels,
 }: TenantWorkspacePanelProps) {
+	const [identityDetailOpen, setIdentityDetailOpen] = useState(false);
+
 	return (
 		<section className="grid gap-4 rounded-lg border bg-background p-4">
 			<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -243,35 +247,28 @@ export function TenantWorkspacePanel({
 			)}
 
 			{selectedIdentity ? (
-				<div className="grid gap-3 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)_minmax(18rem,0.7fr)]">
-					<div className="grid gap-3 rounded-lg border bg-background p-3">
-						<div className="flex items-start justify-between gap-3">
-							<div className="min-w-0">
-								<div className="flex items-center gap-2 text-xs text-muted-foreground">
-									<UserRound className="size-4" />
-									<span>{labels.activeIdentity}</span>
-								</div>
-								<div className="mt-2 truncate text-sm font-semibold">
-									{selectedIdentity.display_name}
-								</div>
-								<div className="font-mono text-xs text-muted-foreground">
-									{selectedIdentity.user_id}
-								</div>
+				<div className="rounded-lg border bg-background p-3">
+					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+						<div className="min-w-0">
+							<div className="flex items-center gap-2 text-xs text-muted-foreground">
+								<UserRound className="size-4" />
+								<span>{labels.activeIdentity}</span>
 							</div>
-							<div className="flex flex-wrap justify-end gap-1">
+							<div className="mt-2 truncate text-sm font-semibold">
+								{selectedIdentity.display_name}
+							</div>
+							<div className="font-mono text-xs text-muted-foreground">
+								{selectedIdentity.user_id}
+							</div>
+							<div className="mt-2 flex flex-wrap gap-1">
 								<Badge variant="secondary">{selectedIdentity.tenant}</Badge>
 								<Badge variant="outline">{selectedIdentity.role}</Badge>
+								<Badge variant="outline">
+									{selectedIdentityWorkspace?.source ?? labels.localSource}
+								</Badge>
 							</div>
 						</div>
-						<div className="rounded-md border bg-background p-3">
-							<div className="text-xs text-muted-foreground">
-								{labels.sampleQuestion}
-							</div>
-							<div className="mt-1 text-sm leading-6">
-								{selectedIdentity.sample_questions[0] ?? labels.noSample}
-							</div>
-						</div>
-						<div className="flex flex-wrap gap-2">
+						<div className="flex flex-wrap gap-2 lg:justify-end">
 							<Button type="button" size="sm" onClick={() => onUseIdentity(selectedIdentity)}>
 								<Play className="size-4" />
 								{labels.runSample}
@@ -280,6 +277,15 @@ export function TenantWorkspacePanel({
 								type="button"
 								size="sm"
 								variant="outline"
+								onClick={() => setIdentityDetailOpen(true)}
+							>
+								<Boxes className="size-4" />
+								{labels.workspace}
+							</Button>
+							<Button
+								type="button"
+								size="sm"
+								variant="ghost"
 								onClick={() => onInspectIdentityAudit(selectedIdentity)}
 							>
 								<FileClock className="size-4" />
@@ -287,105 +293,123 @@ export function TenantWorkspacePanel({
 							</Button>
 						</div>
 					</div>
-
-					<div className="grid gap-3 rounded-lg border bg-background p-3">
-						<div className="flex items-center justify-between gap-3">
-							<div className="flex items-center gap-2">
-								<Boxes className="size-4 text-muted-foreground" />
-								<h3 className="text-sm font-medium">{labels.workspace}</h3>
-							</div>
-							<Badge variant="outline">
-								{selectedIdentityWorkspace?.source ?? labels.localSource}
-							</Badge>
+					<div className="mt-3 rounded-md border bg-muted/20 p-3">
+						<div className="text-xs text-muted-foreground">{labels.sampleQuestion}</div>
+						<div className="mt-1 line-clamp-2 text-sm leading-6">
+							{selectedIdentity.sample_questions[0] ?? labels.noSample}
 						</div>
-						<div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-							{[
-								{
-									label: labels.policies,
-									value: selectedIdentityWorkspace
-										? countArrayField(selectedIdentityWorkspace, 'policies')
-										: 0,
-								},
-								{
-									label: labels.tickets,
-									value: selectedIdentityWorkspace
-										? countArrayField(selectedIdentityWorkspace, 'tickets')
-										: 0,
-								},
-								{
-									label: labels.departments,
-									value: selectedIdentityWorkspace
-										? countArrayField(selectedIdentityWorkspace, 'departments')
-										: 0,
-								},
-								{
-									label: labels.knowledgeBases,
-									value: selectedIdentityWorkspace
-										? countArrayField(selectedIdentityWorkspace, 'knowledge_bases')
-										: 0,
-								},
-								{
-									label: labels.tools,
-									value: selectedIdentityWorkspace
-										? countArrayField(selectedIdentityWorkspace, 'tools')
-										: 0,
-								},
-								{ label: labels.identities, value: enterpriseIdentityCount },
-							].map((item) => (
-								<div key={item.label} className="rounded-md border bg-background px-3 py-2">
-									<div className="text-xs text-muted-foreground">{item.label}</div>
-									<div className="mt-1 text-lg font-semibold tabular-nums">
-										{item.value}
+					</div>
+					<PlatformDetailDrawer
+						open={identityDetailOpen}
+						onOpenChange={setIdentityDetailOpen}
+						title={labels.workspace}
+						description={selectedIdentity.display_name}
+					>
+						<div className="grid gap-4">
+							<div className="grid gap-3 rounded-lg border bg-background p-3">
+								<div className="flex items-center justify-between gap-3">
+									<div className="flex items-center gap-2">
+										<Boxes className="size-4 text-muted-foreground" />
+										<h3 className="text-sm font-medium">{labels.workspace}</h3>
+									</div>
+									<Badge variant="outline">
+										{selectedIdentityWorkspace?.source ?? labels.localSource}
+									</Badge>
+								</div>
+								<div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+									{[
+										{
+											label: labels.policies,
+											value: selectedIdentityWorkspace
+												? countArrayField(selectedIdentityWorkspace, 'policies')
+												: 0,
+										},
+										{
+											label: labels.tickets,
+											value: selectedIdentityWorkspace
+												? countArrayField(selectedIdentityWorkspace, 'tickets')
+												: 0,
+										},
+										{
+											label: labels.departments,
+											value: selectedIdentityWorkspace
+												? countArrayField(selectedIdentityWorkspace, 'departments')
+												: 0,
+										},
+										{
+											label: labels.knowledgeBases,
+											value: selectedIdentityWorkspace
+												? countArrayField(selectedIdentityWorkspace, 'knowledge_bases')
+												: 0,
+										},
+										{
+											label: labels.tools,
+											value: selectedIdentityWorkspace
+												? countArrayField(selectedIdentityWorkspace, 'tools')
+												: 0,
+										},
+										{ label: labels.identities, value: enterpriseIdentityCount },
+									].map((item) => (
+										<div
+											key={item.label}
+											className="rounded-md border bg-background px-3 py-2"
+										>
+											<div className="text-xs text-muted-foreground">{item.label}</div>
+											<div className="mt-1 text-lg font-semibold tabular-nums">
+												{item.value}
+											</div>
+										</div>
+									))}
+								</div>
+							</div>
+							<div className="grid content-start gap-3 rounded-lg border bg-background p-3">
+								<div className="flex items-center justify-between gap-3">
+									<div className="flex items-center gap-2">
+										<ShieldCheck className="size-4 text-muted-foreground" />
+										<h3 className="text-sm font-medium">{labels.policy}</h3>
+									</div>
+									<Button type="button" size="sm" variant="outline" onClick={onOpenGovernance}>
+										<ArrowRight className="size-4" />
+										{labels.openGovernance}
+									</Button>
+								</div>
+								<div className="grid gap-3">
+									<div>
+										<div className="text-xs text-muted-foreground">
+											{labels.allowedTools}
+										</div>
+										<div className="mt-1 flex flex-wrap gap-1">
+											{selectedIdentityAllowedTools.length === 0 ? (
+												<Badge variant="outline">{labels.none}</Badge>
+											) : (
+												selectedIdentityAllowedTools.map((decision) => (
+													<Badge key={decision.name} variant="secondary">
+														{decision.name}
+													</Badge>
+												))
+											)}
+										</div>
+									</div>
+									<div>
+										<div className="text-xs text-muted-foreground">
+											{labels.deniedTools}
+										</div>
+										<div className="mt-1 flex flex-wrap gap-1">
+											{selectedIdentityDeniedTools.length === 0 ? (
+												<Badge variant="outline">{labels.none}</Badge>
+											) : (
+												selectedIdentityDeniedTools.map((decision) => (
+													<Badge key={decision.name} variant="outline">
+														{decision.name}
+													</Badge>
+												))
+											)}
+										</div>
 									</div>
 								</div>
-							))}
-						</div>
-					</div>
-
-					<div className="grid content-start gap-3 rounded-lg border bg-background p-3">
-						<div className="flex items-center gap-2">
-							<ShieldCheck className="size-4 text-muted-foreground" />
-							<h3 className="text-sm font-medium">{labels.policy}</h3>
-						</div>
-						<div className="grid gap-2">
-							<div>
-								<div className="text-xs text-muted-foreground">
-									{labels.allowedTools}
-								</div>
-								<div className="mt-1 flex flex-wrap gap-1">
-									{selectedIdentityAllowedTools.length === 0 ? (
-										<Badge variant="outline">{labels.none}</Badge>
-									) : (
-										selectedIdentityAllowedTools.slice(0, 4).map((decision) => (
-											<Badge key={decision.name} variant="secondary">
-												{decision.name}
-											</Badge>
-										))
-									)}
-								</div>
-							</div>
-							<div>
-								<div className="text-xs text-muted-foreground">
-									{labels.deniedTools}
-								</div>
-								<div className="mt-1 flex flex-wrap gap-1">
-									{selectedIdentityDeniedTools.length === 0 ? (
-										<Badge variant="outline">{labels.none}</Badge>
-									) : (
-										selectedIdentityDeniedTools.slice(0, 4).map((decision) => (
-											<Badge key={decision.name} variant="outline">
-												{decision.name}
-											</Badge>
-										))
-									)}
-								</div>
 							</div>
 						</div>
-						<Button type="button" size="sm" variant="outline" onClick={onOpenGovernance}>
-							<ArrowRight className="size-4" />
-							{labels.openGovernance}
-						</Button>
-					</div>
+					</PlatformDetailDrawer>
 				</div>
 			) : (
 				<div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
