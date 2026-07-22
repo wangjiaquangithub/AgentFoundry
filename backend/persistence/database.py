@@ -24,6 +24,13 @@ def is_postgres_database_url(database_url: str) -> bool:
     return urlparse(database_url.strip()).scheme in POSTGRES_DATABASE_SCHEMES
 
 
+def has_postgres_database_name(database_url: str) -> bool:
+    parsed = urlparse(database_url.strip())
+    if parsed.scheme not in POSTGRES_DATABASE_SCHEMES:
+        return False
+    return bool(parsed.path.strip("/"))
+
+
 def is_production_environment(environ: Mapping[str, str] | None = None) -> bool:
     source = os.environ if environ is None else environ
     return source.get(DEPLOYMENT_ENV_VAR, "").strip().lower() in PRODUCTION_ENV_VALUES
@@ -81,6 +88,7 @@ def inspect_configured_database_status(
     scheme = urlparse(database_url).scheme or None
     if is_postgres_database_url(database_url):
         driver_available = is_postgres_driver_available()
+        has_database_name = has_postgres_database_name(database_url)
         return DatabaseConfigurationStatus(
             env_var=DATABASE_URL_ENV_VAR,
             deployment_env_var=DEPLOYMENT_ENV_VAR,
@@ -89,15 +97,20 @@ def inspect_configured_database_status(
             scheme=scheme,
             backend="postgresql",
             required_backend="postgresql",
-            production_ready=True,
+            production_ready=has_database_name,
             driver_package="psycopg",
             driver_available=driver_available,
-            runtime_ready=driver_available,
-            operator_ready=driver_available,
+            runtime_ready=has_database_name and driver_available,
+            operator_ready=has_database_name and driver_available,
             message=(
                 "Configured for PostgreSQL production persistence."
-                if driver_available
-                else "Configured for PostgreSQL, but the psycopg driver is not available."
+                if has_database_name and driver_available
+                else (
+                    "Configured for PostgreSQL, but AGENTFOUNDRY_DATABASE_URL "
+                    "must include an explicit database name."
+                    if not has_database_name
+                    else "Configured for PostgreSQL, but the psycopg driver is not available."
+                )
             ),
         )
 
@@ -203,6 +216,8 @@ class PostgresDatabase:
 def create_postgres_database(database_url: str) -> PostgresDatabase:
     if not is_postgres_database_url(database_url):
         raise ValueError("PostgreSQL database URLs must use postgresql:// or postgres://.")
+    if not has_postgres_database_name(database_url):
+        raise ValueError("PostgreSQL database URLs must include an explicit database name.")
     return PostgresDatabase(database_url=database_url)
 
 
@@ -233,6 +248,11 @@ def require_postgres_database_for_production(
         raise RuntimeError(
             "AGENTFOUNDRY_ENV=production cannot use sqlite://. Configure "
             "AGENTFOUNDRY_DATABASE_URL with postgresql:// or postgres://."
+        )
+    if status.backend == "postgresql" and not status.production_ready:
+        raise RuntimeError(
+            "AGENTFOUNDRY_ENV=production requires a PostgreSQL URL with an "
+            "explicit database name."
         )
     if status.production_ready and not status.operator_ready:
         raise RuntimeError(

@@ -42,6 +42,7 @@ def _check_runtime_contract() -> list[str]:
     for database_url in (
         "postgresql://agentfoundry:agentfoundry@localhost:5432/agentfoundry",
         "postgres://agentfoundry:agentfoundry@localhost:5432/agentfoundry",
+        "postgresql:///agentfoundry",
     ):
         if not is_postgres_database_url(database_url):
             errors.append(f"PostgreSQL URL was not accepted: {database_url}")
@@ -69,6 +70,23 @@ def _check_runtime_contract() -> list[str]:
             errors.append("PostgreSQL factory error should name accepted PostgreSQL schemes")
     else:
         errors.append("PostgreSQL factory accepted sqlite://")
+
+    for database_url in (
+        "postgresql://agentfoundry:agentfoundry@localhost",
+        "postgres://agentfoundry:agentfoundry@localhost/",
+        "postgresql://",
+    ):
+        if not is_postgres_database_url(database_url):
+            errors.append(f"PostgreSQL URL scheme should still be recognized: {database_url}")
+        try:
+            create_postgres_database(database_url)
+        except ValueError as exc:
+            if "explicit database name" not in str(exc):
+                errors.append(
+                    "PostgreSQL factory error should require an explicit database name"
+                )
+        else:
+            errors.append(f"PostgreSQL factory accepted a URL without database name: {database_url}")
 
     try:
         create_database("mysql://agentfoundry:agentfoundry@localhost/agentfoundry")

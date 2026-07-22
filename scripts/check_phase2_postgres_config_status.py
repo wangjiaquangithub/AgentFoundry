@@ -72,6 +72,20 @@ def _check_status_contract() -> list[str]:
     if not postgres_alias.production_ready or postgres_alias.scheme != "postgres":
         errors.append("postgres:// alias must remain accepted as PostgreSQL")
 
+    postgres_without_database = inspect_configured_database_status(
+        {"AGENTFOUNDRY_DATABASE_URL": "postgresql://agentfoundry:agentfoundry@localhost"}
+    )
+    if postgres_without_database.production_ready:
+        errors.append("postgresql:// without a database name must not be production ready")
+    if postgres_without_database.runtime_ready:
+        errors.append("postgresql:// without a database name must not be runtime ready")
+    if postgres_without_database.operator_ready:
+        errors.append("postgresql:// without a database name must not be operator ready")
+    if "explicit database name" not in postgres_without_database.message:
+        errors.append("postgresql:// without a database name must tell operators what is missing")
+    if "agentfoundry:agentfoundry" in postgres_without_database.message:
+        errors.append("postgresql:// missing database message must not expose credentials")
+
     sqlite = inspect_configured_database_status(
         {"AGENTFOUNDRY_DATABASE_URL": "sqlite:////tmp/agentfoundry-local-dev.db"}
     )
