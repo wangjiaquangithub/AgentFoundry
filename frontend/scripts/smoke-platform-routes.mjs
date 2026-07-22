@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+
 const defaultBaseUrl = 'http://127.0.0.1:5173';
 const baseUrl = (process.env.PLATFORM_UI_BASE_URL || defaultBaseUrl).replace(/\/$/, '');
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const appSourcePath = path.resolve(scriptDir, '../src/App.tsx');
 
 const routes = [
 	'/platform',
@@ -17,6 +23,27 @@ const routes = [
 ];
 
 const assetPattern = /<(?:script|link)\b[^>]+(?:src|href)="([^"]+)"/g;
+const platformRoutePattern = /path:\s*['"](?<route>\/platform(?:\/[a-z0-9-]+)?)['"]/g;
+
+async function readPlatformRoutesFromApp() {
+	const source = await readFile(appSourcePath, 'utf8');
+	return [...source.matchAll(platformRoutePattern)].map((match) => match.groups.route);
+}
+
+function assertRouteCoverage(appRoutes) {
+	const smokeRouteSet = new Set(routes);
+	const appRouteSet = new Set(appRoutes);
+	const missing = appRoutes.filter((route) => !smokeRouteSet.has(route));
+	const stale = routes.filter((route) => !appRouteSet.has(route));
+
+	if (missing.length > 0 || stale.length > 0) {
+		const details = [
+			missing.length > 0 ? `missing from smoke routes: ${missing.join(', ')}` : null,
+			stale.length > 0 ? `not configured in App.tsx: ${stale.join(', ')}` : null,
+		].filter(Boolean).join('; ');
+		throw new Error(`Platform route coverage is out of sync with App.tsx: ${details}`);
+	}
+}
 
 async function fetchText(pathname) {
 	const response = await fetch(`${baseUrl}${pathname}`, {
@@ -46,6 +73,9 @@ async function assertAsset(assetPath) {
 }
 
 async function main() {
+	const appRoutes = await readPlatformRoutesFromApp();
+	assertRouteCoverage(appRoutes);
+
 	const firstRoute = await fetchText(routes[0]);
 	assertHtmlRoute(routes[0], firstRoute.response, firstRoute.text);
 
