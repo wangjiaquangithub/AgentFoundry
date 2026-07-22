@@ -155,6 +155,17 @@ def _chunk_payload(chunk: Any) -> dict[str, Any]:
 
 
 def _retrieval_event_payload(retrieval_event: Any) -> dict[str, Any]:
+    hits = retrieval_event.hits
+    document_ids = _unique_nonempty_hit_values(hits, "document_id")
+    knowledge_base_ids = _unique_nonempty_hit_values(hits, "knowledge_base_id")
+    if not knowledge_base_ids and retrieval_event.knowledge_base_id:
+        knowledge_base_ids = [retrieval_event.knowledge_base_id]
+    dev_fallback_hit_count = sum(
+        1
+        for hit in hits
+        if isinstance(hit, dict)
+        and bool((hit.get("metadata") or {}).get("dev_fallback"))
+    )
     return {
         "id": retrieval_event.id,
         "tenant": retrieval_event.tenant_id,
@@ -162,8 +173,50 @@ def _retrieval_event_payload(retrieval_event: Any) -> dict[str, Any]:
         "knowledge_base_id": retrieval_event.knowledge_base_id,
         "query": retrieval_event.query,
         "hits": retrieval_event.hits,
+        "hit_count": len(hits),
+        "production_knowledge_hit_count": len(hits) - dev_fallback_hit_count,
+        "dev_fallback_knowledge_hit_count": dev_fallback_hit_count,
+        "dev_fallback_knowledge_used": dev_fallback_hit_count > 0,
+        "knowledge_base_ids": knowledge_base_ids,
+        "document_ids": document_ids,
+        "hit_provenance": _hit_provenance_payload(hits),
+        "retrieval_event_store": "postgresql",
         "created_at": retrieval_event.created_at,
     }
+
+
+def _unique_nonempty_hit_values(hits: list[Any], key: str) -> list[str]:
+    values: list[str] = []
+    seen: set[str] = set()
+    for hit in hits:
+        if not isinstance(hit, dict):
+            continue
+        value = str(hit.get(key) or "").strip()
+        if not value or value in seen:
+            continue
+        values.append(value)
+        seen.add(value)
+    return values
+
+
+def _hit_provenance_payload(hits: list[Any]) -> list[dict[str, Any]]:
+    provenance: list[dict[str, Any]] = []
+    for hit in hits:
+        if not isinstance(hit, dict):
+            continue
+        metadata = hit.get("metadata") if isinstance(hit.get("metadata"), dict) else {}
+        provenance.append(
+            {
+                "knowledge_base_id": str(hit.get("knowledge_base_id") or ""),
+                "document_id": str(hit.get("document_id") or ""),
+                "chunk_id": str(hit.get("chunk_id") or ""),
+                "chunk_index": hit.get("chunk_index"),
+                "source": str(hit.get("source") or hit.get("source_uri") or ""),
+                "source_type": str(metadata.get("source_type") or ""),
+                "dev_fallback": bool(metadata.get("dev_fallback")),
+            }
+        )
+    return provenance
 
 
 def _embedding_record_payload(record: Any) -> dict[str, Any]:
