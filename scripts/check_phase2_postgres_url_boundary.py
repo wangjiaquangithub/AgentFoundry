@@ -18,6 +18,7 @@ sys.path.insert(0, str(ROOT))
 POSTGRES_DEFAULT = "postgresql://agentfoundry:agentfoundry@localhost:5432/agentfoundry"
 
 DATABASE_MODULE = ROOT / "backend" / "persistence" / "database.py"
+DATABASE_URLS_MODULE = ROOT / "backend" / "persistence" / "database_urls.py"
 MIGRATION_RUNNER = ROOT / "backend" / "persistence" / "migrations.py"
 MIGRATION_SHELL = ROOT / "scripts" / "migrate_agentfoundry.sh"
 SEED_SHELL = ROOT / "scripts" / "seed_agentfoundry.sh"
@@ -34,8 +35,8 @@ def _check_runtime_contract() -> list[str]:
         create_configured_postgres_database,
         create_database,
         create_postgres_database,
-        is_postgres_database_url,
     )
+    from backend.persistence.database_urls import is_postgres_database_url
 
     errors: list[str] = []
 
@@ -105,6 +106,7 @@ def _check_runtime_contract() -> list[str]:
 def _check_source_contracts() -> list[str]:
     errors: list[str] = []
     sources = {
+        "database URL helper module": _read(DATABASE_URLS_MODULE),
         "database module": _read(DATABASE_MODULE),
         "migration runner": _read(MIGRATION_RUNNER),
         "migration shell": _read(MIGRATION_SHELL),
@@ -112,7 +114,10 @@ def _check_source_contracts() -> list[str]:
     }
 
     for label, source in sources.items():
-        if POSTGRES_DEFAULT not in source and label != "database module":
+        if POSTGRES_DEFAULT not in source and label not in {
+            "database module",
+            "database URL helper module",
+        }:
             errors.append(f"{label} does not default to the PostgreSQL local URL")
         if "postgresql" not in source or "postgres" not in source:
             errors.append(f"{label} does not recognize PostgreSQL URL schemes")
@@ -125,9 +130,13 @@ def _check_source_contracts() -> list[str]:
         if "sqlite://" in source and not any(phrase in source for phrase in sqlite_scope_phrases):
             errors.append(f"{label} mentions sqlite:// without local development scope")
 
+    database_urls_source = sources["database URL helper module"]
+    if "POSTGRES_DATABASE_SCHEMES" not in database_urls_source:
+        errors.append("database URL helper module must define the PostgreSQL scheme boundary")
+    if "is_postgres_database_url" not in database_urls_source:
+        errors.append("database URL helper module must expose PostgreSQL URL classification")
+
     database_source = sources["database module"]
-    if "POSTGRES_DATABASE_SCHEMES" not in database_source:
-        errors.append("database module must define the PostgreSQL scheme boundary")
     if "Unsupported database URL scheme" not in database_source:
         errors.append("database module must reject unsupported database URL schemes")
 

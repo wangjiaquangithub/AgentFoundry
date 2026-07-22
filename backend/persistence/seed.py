@@ -18,8 +18,8 @@ from typing import Any
 
 from backend.persistence.database import (
     create_postgres_database,
-    is_postgres_database_url,
 )
+from backend.persistence.database_urls import is_postgres_database_url
 from backend.persistence.migrations import (
     apply_migrations,
     sqlite_path_from_database_url,
