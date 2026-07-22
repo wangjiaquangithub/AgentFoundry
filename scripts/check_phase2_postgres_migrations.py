@@ -32,6 +32,81 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def _constant_string(node: ast.AST) -> str | None:
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    return None
+
+
+def _function(tree: ast.AST, name: str) -> ast.FunctionDef | None:
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == name:
+            return node
+    return None
+
+
+def _calls_function(node: ast.AST, name: str) -> bool:
+    for child in ast.walk(node):
+        if not isinstance(child, ast.Call):
+            continue
+        func = child.func
+        if isinstance(func, ast.Name) and func.id == name:
+            return True
+        if isinstance(func, ast.Attribute) and func.attr == name:
+            return True
+    return False
+
+
+def _has_postgres_env_default(function: ast.FunctionDef | None) -> bool:
+    if function is None:
+        return False
+    for node in ast.walk(function):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if not isinstance(func, ast.Attribute) or func.attr != "getenv":
+            continue
+        if len(node.args) < 2:
+            continue
+        if (
+            _constant_string(node.args[0]) == "AGENTFOUNDRY_DATABASE_URL"
+            and _constant_string(node.args[1]) == POSTGRES_DEFAULT
+        ):
+            return True
+    return False
+
+
+def _test_checks_scheme(test: ast.AST, expected: set[str]) -> bool:
+    if isinstance(test, ast.Compare):
+        values: list[str | None] = []
+        for comparator in test.comparators:
+            if isinstance(comparator, (ast.List, ast.Set, ast.Tuple)):
+                values.extend(_constant_string(element) for element in comparator.elts)
+            else:
+                values.append(_constant_string(comparator))
+        if any(value in expected for value in values):
+            return True
+    return any(_test_checks_scheme(child, expected) for child in ast.iter_child_nodes(test))
+
+
+def _has_scheme_dispatch(
+    function: ast.FunctionDef | None,
+    *,
+    schemes: set[str],
+    target_function: str,
+) -> bool:
+    if function is None:
+        return False
+    for node in ast.walk(function):
+        if not isinstance(node, ast.If):
+            continue
+        if not _test_checks_scheme(node.test, schemes):
+            continue
+        if any(_calls_function(statement, target_function) for statement in node.body):
+            return True
+    return False
+
+
 def _check_runner_contract(source: str) -> list[str]:
     errors: list[str] = []
     if POSTGRES_DEFAULT not in source:
@@ -57,6 +132,28 @@ def _check_runner_contract(source: str) -> list[str]:
     }
     for function_name in sorted(required_functions - functions):
         errors.append(f"missing migration runner function: {function_name}")
+
+    main_function = _function(tree, "main")
+    if not _has_postgres_env_default(main_function):
+        errors.append(
+            "migration runner CLI must default AGENTFOUNDRY_DATABASE_URL to PostgreSQL"
+        )
+
+    apply_function = _function(tree, "apply_migrations")
+    if not _has_scheme_dispatch(
+        apply_function,
+        schemes={"postgresql", "postgres"},
+        target_function="_apply_postgres_migrations",
+    ):
+        errors.append(
+            "apply_migrations must dispatch postgresql:// and postgres:// to PostgreSQL migrations"
+        )
+    if not _has_scheme_dispatch(
+        apply_function,
+        schemes={"sqlite"},
+        target_function="_apply_sqlite_migrations",
+    ):
+        errors.append("apply_migrations must keep sqlite:// as an explicit compatibility path")
 
     return errors
 
