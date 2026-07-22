@@ -10,6 +10,7 @@ import {
 	StatCard,
 } from './common';
 import { WorkflowRunnerPanel } from './WorkflowRunnerPanel';
+import { platformWorkflowViewMetrics } from '../platform-workflow-display';
 import type {
 	EnterpriseWorkflowRunHistoryItem,
 	EnterpriseWorkflowRunResponse,
@@ -93,23 +94,15 @@ export function WorkflowsViewPage({
 	summarizeAuditObject,
 	t,
 }: WorkflowsViewPageProps) {
-	const enabledWorkflowCount = workflowTemplates.filter(
-		(template) => template.enabled,
-	).length;
-	const totalWorkflowSteps = workflowTemplates.reduce(
-		(total, template) => total + template.steps.length,
-		0,
-	);
-	const latestWorkflowRun = workflowRuns[0];
-	const latestWorkflowStatusLabel = latestWorkflowRun
-		? t(
-				latestWorkflowRun.status === 'completed'
-					? 'platform.workflowRunner.statusCompleted'
-					: latestWorkflowRun.status === 'partial'
-						? 'platform.workflowRunner.statusPartial'
-						: 'platform.workflowRunner.statusWorkflowFailed',
-			)
-		: t('platform.workflowRunner.historyEmpty');
+	const {
+		enabledWorkflowCount,
+		totalWorkflowSteps,
+		latestWorkflowStatusLabel,
+	} = platformWorkflowViewMetrics({
+		workflowTemplates,
+		workflowRuns,
+		t,
+	});
 
 	return (
 		<PlatformPageShell>
