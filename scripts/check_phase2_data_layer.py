@@ -1313,43 +1313,47 @@ def _check_postgres_memory_item_writes_wired() -> list[str]:
             "backend/services/composition.py must define "
             "build_configured_postgres_memory_item_write_repository",
         )
-    if not _module_defines_function(main_tree, "_build_memory_item_read_repository"):
-        errors.append(
-            "backend/main.py must define _build_memory_item_read_repository for PostgreSQL memory item reads",
-        )
-    if not _module_defines_function(main_tree, "_build_memory_item_write_repository"):
-        errors.append(
-            "backend/main.py must define _build_memory_item_write_repository for PostgreSQL memory item writes",
-        )
-    if not _module_imports_name(
-        main_tree,
-        "build_configured_postgres_memory_item_read_repository",
+    if not _module_defines_function(
+        composition_tree,
+        "build_memory_item_read_repository",
     ):
         errors.append(
-            "backend/main.py must import "
-            "build_configured_postgres_memory_item_read_repository",
+            "backend/services/composition.py must define build_memory_item_read_repository for memory item read selection",
         )
-    if not _module_imports_name(
-        main_tree,
-        "build_configured_postgres_memory_item_write_repository",
+    if not _module_defines_function(
+        composition_tree,
+        "build_memory_item_write_repository",
     ):
         errors.append(
-            "backend/main.py must import "
-            "build_configured_postgres_memory_item_write_repository",
+            "backend/services/composition.py must define build_memory_item_write_repository for memory item write selection",
         )
-    if "return build_configured_postgres_memory_item_read_repository()" not in main_source:
+    if not _module_imports_name(
+        composition_tree,
+        "PostgresMemoryItemReadRepository",
+    ):
         errors.append(
-            "backend/main.py must delegate PostgreSQL memory item reads to composition.py",
+            "backend/services/composition.py must import PostgresMemoryItemReadRepository",
         )
-    if "return build_configured_postgres_memory_item_write_repository()" not in main_source:
+    if not _module_imports_name(
+        composition_tree,
+        "PostgresMemoryItemWriteRepository",
+    ):
         errors.append(
-            "backend/main.py must delegate PostgreSQL memory item writes to composition.py",
+            "backend/services/composition.py must import PostgresMemoryItemWriteRepository",
         )
-    if "memory_item_reader=_build_memory_item_read_repository()" not in main_source:
+    if "build_configured_postgres_memory_item_read_repository()" not in composition_source:
+        errors.append(
+            "backend/services/composition.py must delegate PostgreSQL memory item reads to the configured repository builder",
+        )
+    if "build_configured_postgres_memory_item_write_repository()" not in composition_source:
+        errors.append(
+            "backend/services/composition.py must delegate PostgreSQL memory item writes to the configured repository builder",
+        )
+    if "memory_item_reader=build_memory_item_read_repository()" not in main_source:
         errors.append(
             "backend/main.py must pass the PostgreSQL memory_item_reader into PlatformMemoryRepository",
         )
-    if "memory_item_writer=_build_memory_item_write_repository()" not in main_source:
+    if "memory_item_writer=build_memory_item_write_repository()" not in main_source:
         errors.append(
             "backend/main.py must pass the PostgreSQL memory_item_writer into PlatformMemoryRepository",
         )

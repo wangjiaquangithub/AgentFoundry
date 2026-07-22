@@ -241,6 +241,18 @@ def build_configured_postgres_memory_item_write_repository() -> (
     return PostgresMemoryItemWriteRepository(database)
 
 
+def build_memory_item_read_repository() -> PostgresMemoryItemReadRepository | None:
+    """Select the configured production memory item read repository."""
+
+    return build_configured_postgres_memory_item_read_repository()
+
+
+def build_memory_item_write_repository() -> PostgresMemoryItemWriteRepository | None:
+    """Select the configured production memory item write repository."""
+
+    return build_configured_postgres_memory_item_write_repository()
+
+
 def build_configured_postgres_runtime_read_repository() -> (
     PostgresRuntimeReadRepository | None
 ):

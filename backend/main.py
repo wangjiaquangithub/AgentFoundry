@@ -173,13 +173,13 @@ from services.composition import (
     build_configured_postgres_knowledge_ingestion_service,
     build_configured_postgres_knowledge_response_service,
     build_configured_postgres_knowledge_retrieval_service,
-    build_configured_postgres_memory_item_read_repository,
-    build_configured_postgres_memory_item_write_repository,
     build_configured_postgres_model_config_service,
     build_configured_postgres_retrieval_event_read_repository,
     build_configured_postgres_retrieval_event_write_repository,
     build_configured_postgres_runtime_read_repository,
     build_configured_postgres_runtime_write_repository,
+    build_memory_item_read_repository,
+    build_memory_item_write_repository,
     build_member_repository,
     build_tool_call_read_repository,
     build_tool_call_write_repository,
@@ -211,14 +211,6 @@ agent_run_repository = build_agent_run_repository(agent_run_fallback_repository)
 approval_request_repository = build_approval_request_repository(
     approval_request_fallback_repository,
 )
-
-
-def _build_memory_item_read_repository() -> Any | None:
-    return build_configured_postgres_memory_item_read_repository()
-
-
-def _build_memory_item_write_repository() -> Any | None:
-    return build_configured_postgres_memory_item_write_repository()
 
 
 def _build_runtime_read_repository() -> Any | None:
@@ -328,8 +320,8 @@ enterprise_router_service = PlatformEnterpriseRouterService(
 )
 platform_memory_repository = PlatformMemoryRepository(
     PLATFORM_MEMORY_DIR,
-    memory_item_reader=_build_memory_item_read_repository(),
-    memory_item_writer=_build_memory_item_write_repository(),
+    memory_item_reader=build_memory_item_read_repository(),
+    memory_item_writer=build_memory_item_write_repository(),
 )
 platform_memory_service = PlatformMemoryService(
     repository=platform_memory_repository,
