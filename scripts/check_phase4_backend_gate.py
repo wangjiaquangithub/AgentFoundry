@@ -87,6 +87,13 @@ CHECKS = (
             "scripts/check_phase4_runtime_invocation_context_persistence_guard.py",
         ),
     ),
+    (
+        "runtime invocation read redaction",
+        (
+            sys.executable,
+            "scripts/check_phase4_runtime_invocation_read_redaction.py",
+        ),
+    ),
 )
 
 

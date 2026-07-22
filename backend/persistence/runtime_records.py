@@ -9,7 +9,7 @@ local development compatibility path during the data-layer migration.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 from backend.persistence.database import PostgresDatabase, SQLiteDatabase
@@ -180,6 +180,65 @@ def _validate_invocation_read_result(
         )
 
 
+def _redact_invocation_read_record(
+    record: RuntimeInvocationRecord,
+) -> RuntimeInvocationRecord:
+    return replace(
+        record,
+        request_summary=_redact_runtime_invocation_summary(record.request_summary),
+        response_summary=_redact_runtime_invocation_summary(record.response_summary),
+    )
+
+
+def _redact_runtime_invocation_summary(value: Any) -> Any:
+    if isinstance(value, dict):
+        redacted: dict[str, Any] = {}
+        for key, nested_value in value.items():
+            if key == "runtime_provider_config" and isinstance(nested_value, dict):
+                redacted[key] = {
+                    config_key: "<configured>"
+                    for config_key, config_value in nested_value.items()
+                    if _configured_runtime_value(config_value)
+                }
+            elif _sensitive_runtime_invocation_summary_key(key):
+                redacted[key] = (
+                    "<configured>"
+                    if _configured_runtime_value(nested_value)
+                    else nested_value
+                )
+            else:
+                redacted[key] = _redact_runtime_invocation_summary(nested_value)
+        return redacted
+    if isinstance(value, list):
+        return [_redact_runtime_invocation_summary(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_redact_runtime_invocation_summary(item) for item in value)
+    return value
+
+
+def _sensitive_runtime_invocation_summary_key(key: str) -> bool:
+    return key in {
+        "access_token",
+        "agentscope_runtime_auth_ref",
+        "api_key",
+        "auth_ref",
+        "auth_token",
+        "bearer_token",
+        "config_ref",
+        "password",
+        "refresh_token",
+        "secret",
+    }
+
+
+def _configured_runtime_value(value: Any) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    return True
+
+
 class SQLiteRuntimeReadRepository:
     """Read runtime providers and tenant-scoped invocations from SQLite."""
 
@@ -255,7 +314,10 @@ class SQLiteRuntimeReadRepository:
 
         with self._database.connect() as connection:
             rows = connection.execute(query, parameters).fetchall()
-        return [_invocation_from_row(dict(row)) for row in rows]
+        return [
+            _redact_invocation_read_record(_invocation_from_row(dict(row)))
+            for row in rows
+        ]
 
     def get_invocation(
         self,
@@ -276,7 +338,7 @@ class SQLiteRuntimeReadRepository:
             ).fetchone()
         if row is None:
             return None
-        return _invocation_from_row(dict(row))
+        return _redact_invocation_read_record(_invocation_from_row(dict(row)))
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
@@ -361,10 +423,7 @@ class PostgresRuntimeReadRepository:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, tuple(parameters))
-                records = [
-                    _invocation_from_row(dict(row))
-                    for row in cursor.fetchall()
-                ]
+                records = [_invocation_from_row(dict(row)) for row in cursor.fetchall()]
         for record in records:
             _validate_invocation_read_result(
                 record,
@@ -372,7 +431,7 @@ class PostgresRuntimeReadRepository:
                 provider_id=provider_id,
                 agent_run_id=agent_run_id,
             )
-        return records
+        return [_redact_invocation_read_record(record) for record in records]
 
     def get_invocation(
         self,
@@ -401,7 +460,7 @@ class PostgresRuntimeReadRepository:
             tenant_id=tenant_id,
             runtime_invocation_id=runtime_invocation_id,
         )
-        return record
+        return _redact_invocation_read_record(record)
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
