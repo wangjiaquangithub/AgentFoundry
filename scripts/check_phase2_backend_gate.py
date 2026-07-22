@@ -20,6 +20,10 @@ CHECKS = (
         "PostgreSQL migrations",
         (sys.executable, "scripts/check_phase2_postgres_migrations.py"),
     ),
+    (
+        "PostgreSQL URL boundary",
+        (sys.executable, "scripts/check_phase2_postgres_url_boundary.py"),
+    ),
     ("production data layer", (sys.executable, "scripts/check_phase2_data_layer.py")),
 )
 
