@@ -1063,6 +1063,8 @@ def _check_postgres_tool_audit_reads_authoritative() -> list[str]:
 def _check_postgres_tool_policy_wired() -> list[str]:
     errors: list[str] = []
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    composition_path = SERVICES_DIR / "composition.py"
+    composition_source = composition_path.read_text(encoding="utf-8")
     tool_service_source = (SERVICES_DIR / "tools.py").read_text(encoding="utf-8")
     tool_policy_source = (REPOSITORIES_DIR / "tool_policy.py").read_text(
         encoding="utf-8",
@@ -1071,14 +1073,39 @@ def _check_postgres_tool_policy_wired() -> list[str]:
         encoding="utf-8",
     )
     main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+    composition_tree = ast.parse(composition_source, filename=str(composition_path))
 
-    if not _module_imports_name(main_tree, "PostgresToolGovernanceReadRepository"):
+    if not _module_imports_name(
+        composition_tree,
+        "PostgresToolGovernanceReadRepository",
+    ):
         errors.append(
-            "backend/main.py must import PostgresToolGovernanceReadRepository for tool policy reads",
+            "backend/services/composition.py must import "
+            "PostgresToolGovernanceReadRepository for tool policy reads",
         )
-    if not _module_imports_name(main_tree, "PostgresToolGovernanceWriteRepository"):
+    if not _module_imports_name(
+        composition_tree,
+        "PostgresToolGovernanceWriteRepository",
+    ):
         errors.append(
-            "backend/main.py must import PostgresToolGovernanceWriteRepository for tool policy writes",
+            "backend/services/composition.py must import "
+            "PostgresToolGovernanceWriteRepository for tool policy writes",
+        )
+    if not _module_defines_function(
+        composition_tree,
+        "build_configured_postgres_tool_governance_read_repository",
+    ):
+        errors.append(
+            "backend/services/composition.py must define "
+            "build_configured_postgres_tool_governance_read_repository",
+        )
+    if not _module_defines_function(
+        composition_tree,
+        "build_configured_postgres_tool_governance_write_repository",
+    ):
+        errors.append(
+            "backend/services/composition.py must define "
+            "build_configured_postgres_tool_governance_write_repository",
         )
     if not _module_defines_function(main_tree, "_build_tool_governance_read_repository"):
         errors.append(
@@ -1087,6 +1114,16 @@ def _check_postgres_tool_policy_wired() -> list[str]:
     if not _module_defines_function(main_tree, "_build_tool_governance_write_repository"):
         errors.append(
             "backend/main.py must define _build_tool_governance_write_repository for PostgreSQL tool policy writes",
+        )
+    if "build_configured_postgres_tool_governance_read_repository()" not in main_source:
+        errors.append(
+            "backend/main.py must delegate PostgreSQL tool governance reads to "
+            "backend/services/composition.py",
+        )
+    if "build_configured_postgres_tool_governance_write_repository()" not in main_source:
+        errors.append(
+            "backend/main.py must delegate PostgreSQL tool governance writes to "
+            "backend/services/composition.py",
         )
     if "tool_governance_reader=_build_tool_governance_read_repository()" not in main_source:
         errors.append(

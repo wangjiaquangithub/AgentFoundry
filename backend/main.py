@@ -113,8 +113,6 @@ from backend.persistence import (
     PostgresModelConfigReadRepository,
     PostgresRuntimeReadRepository,
     PostgresRuntimeWriteRepository,
-    PostgresToolGovernanceReadRepository,
-    PostgresToolGovernanceWriteRepository,
     create_configured_postgres_database,
     inspect_configured_database_status,
 )
@@ -192,6 +190,8 @@ from services.composition import (
     build_configured_postgres_retrieval_event_write_repository,
     build_configured_postgres_tool_call_read_repository,
     build_configured_postgres_tool_call_write_repository,
+    build_configured_postgres_tool_governance_read_repository,
+    build_configured_postgres_tool_governance_write_repository,
     build_configured_postgres_workflow_run_repository,
 )
 from services.platform_status import PlatformStatusService
@@ -244,24 +244,12 @@ def _build_tool_call_read_repository() -> Any | None:
     return build_configured_postgres_tool_call_read_repository()
 
 
-def _build_tool_governance_read_repository() -> (
-    PostgresToolGovernanceReadRepository | None
-):
-    database = create_configured_postgres_database()
-    if database is None:
-        return None
-
-    return PostgresToolGovernanceReadRepository(database)
+def _build_tool_governance_read_repository() -> Any | None:
+    return build_configured_postgres_tool_governance_read_repository()
 
 
-def _build_tool_governance_write_repository() -> (
-    PostgresToolGovernanceWriteRepository | None
-):
-    database = create_configured_postgres_database()
-    if database is None:
-        return None
-
-    return PostgresToolGovernanceWriteRepository(database)
+def _build_tool_governance_write_repository() -> Any | None:
+    return build_configured_postgres_tool_governance_write_repository()
 
 
 def _build_memory_item_read_repository() -> (

@@ -30,6 +30,8 @@ from backend.persistence import (
     PostgresTenancyWriteRepository,
     PostgresToolCallReadRepository,
     PostgresToolCallWriteRepository,
+    PostgresToolGovernanceReadRepository,
+    PostgresToolGovernanceWriteRepository,
     PostgresWorkflowReadRepository,
     PostgresWorkflowWriteRepository,
     create_configured_postgres_database,
@@ -142,6 +144,30 @@ def build_configured_postgres_tool_call_write_repository() -> (
         return None
 
     return PostgresToolCallWriteRepository(database)
+
+
+def build_configured_postgres_tool_governance_read_repository() -> (
+    PostgresToolGovernanceReadRepository | None
+):
+    """Build the tool governance read repository when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresToolGovernanceReadRepository(database)
+
+
+def build_configured_postgres_tool_governance_write_repository() -> (
+    PostgresToolGovernanceWriteRepository | None
+):
+    """Build the tool governance write repository when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresToolGovernanceWriteRepository(database)
 
 
 def build_configured_postgres_member_repository() -> (
