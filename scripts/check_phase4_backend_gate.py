@@ -69,6 +69,10 @@ CHECKS = (
         "agent run invoke boundary",
         (sys.executable, "scripts/check_phase4_agent_run_invoke_boundary.py"),
     ),
+    (
+        "agent run runtime context",
+        (sys.executable, "scripts/check_phase4_agent_run_runtime_context.py"),
+    ),
 )
 
 
