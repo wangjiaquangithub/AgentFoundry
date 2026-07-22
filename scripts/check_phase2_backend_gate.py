@@ -48,6 +48,10 @@ CHECKS = (
         ),
     ),
     (
+        "PostgreSQL index contract",
+        (sys.executable, "scripts/check_phase2_postgres_index_contract.py"),
+    ),
+    (
         "platform database status",
         (sys.executable, "scripts/check_phase2_platform_database_status.py"),
     ),
