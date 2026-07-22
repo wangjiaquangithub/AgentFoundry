@@ -2,7 +2,7 @@
 
 import logging
 from datetime import datetime, timezone
-from typing import Any, Callable, Protocol
+from typing import Any, Awaitable, Callable, Protocol
 from uuid import uuid4
 
 from backend.persistence import RuntimeInvocationRecord, ToolCallRecord
@@ -423,6 +423,20 @@ class PlatformAgentRunService:
             ),
             default_tool_names=default_tool_names,
             safe_path_part=safe_path_part,
+        )
+
+    async def invoke_runtime_adapter_from_execution_context(
+        self,
+        *,
+        invoke_runtime_adapter_from_payload: Callable[
+            ...,
+            Awaitable[dict[str, Any]],
+        ],
+        execution_context: dict[str, Any],
+    ) -> dict[str, Any]:
+        return await invoke_runtime_adapter_from_payload(
+            execution_context["runtime_invocation_request"],
+            agent_metadata=execution_context["agent_metadata"],
         )
 
     @staticmethod
@@ -924,11 +938,13 @@ class PlatformAgentRunService:
         knowledge_payload: dict[str, Any],
         memory_payload: dict[str, Any],
         memory_saved: bool,
+        runtime_boundary_result: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         return self.finalize_routed_response(
             build_runtime_invocation_result_payload=(
                 build_runtime_invocation_result_payload
             ),
+            runtime_boundary_result=runtime_boundary_result,
             **self.build_routed_finalize_context(
                 routed_summary_context=routed_summary_context,
                 execution_context=execution_context,
@@ -963,6 +979,7 @@ class PlatformAgentRunService:
         knowledge_payload: dict[str, Any],
         memory_payload: dict[str, Any],
         max_records: int,
+        runtime_boundary_result: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         routed_summary_context = self.build_routed_summary_context(
             tool_calls=tool_calls,
@@ -998,6 +1015,7 @@ class PlatformAgentRunService:
             knowledge_payload=knowledge_payload,
             memory_payload=memory_payload,
             memory_saved=memory_saved,
+            runtime_boundary_result=runtime_boundary_result,
         )
 
     def finalize_unrouted_run_from_context(
@@ -1018,6 +1036,7 @@ class PlatformAgentRunService:
         memory_payload: dict[str, Any],
         max_records: int,
         decision: dict[str, Any],
+        runtime_boundary_result: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         answer = self.compose_unrouted_answer_from_context(
             knowledge_hits=knowledge_hits,
@@ -1047,6 +1066,7 @@ class PlatformAgentRunService:
             memory_payload=memory_payload,
             memory_saved=memory_saved,
             decision=decision,
+            runtime_boundary_result=runtime_boundary_result,
         )
 
     def build_unrouted_finalize_context(
@@ -1105,11 +1125,13 @@ class PlatformAgentRunService:
         memory_payload: dict[str, Any],
         memory_saved: bool,
         decision: dict[str, Any],
+        runtime_boundary_result: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         return self.finalize_unrouted_response(
             build_runtime_invocation_result_payload=(
                 build_runtime_invocation_result_payload
             ),
+            runtime_boundary_result=runtime_boundary_result,
             **self.build_unrouted_finalize_context(
                 execution_context=execution_context,
                 answer=answer,
@@ -2525,6 +2547,7 @@ class PlatformAgentRunService:
         memory_saved: bool,
         decision: dict[str, Any],
         run_identity: dict[str, str] | None = None,
+        runtime_boundary_result: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         response_trace = self.build_unrouted_response_trace(
             tenant=tenant,
@@ -2571,6 +2594,7 @@ class PlatformAgentRunService:
                 "routing_mode": routing_mode,
                 "routing_source": routing_source,
                 "routing_reason": routing_reason,
+                "runtime_boundary_result": runtime_boundary_result,
                 **({"routing_error": routing_error} if routing_error else {}),
             },
         )
@@ -2610,6 +2634,7 @@ class PlatformAgentRunService:
         memory_payload: dict[str, Any],
         memory_saved: bool,
         run_identity: dict[str, str] | None = None,
+        runtime_boundary_result: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         response_trace = self.build_routed_response_trace(
             primary_call=primary_call,
@@ -2661,6 +2686,7 @@ class PlatformAgentRunService:
                 "routing_source": routing_source,
                 "routing_reason": routing_reason,
                 "tool_call_count": len(tool_calls),
+                "runtime_boundary_result": runtime_boundary_result,
                 **({"routing_error": routing_error} if routing_error else {}),
             },
         )

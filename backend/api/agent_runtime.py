@@ -60,6 +60,7 @@ class AgentRuntimeRouteDependencies:
     safe_path_part: Callable[[str], str]
     describe_runtime_adapter: Callable[..., dict[str, Any]]
     build_runtime_invocation_request_payload: Callable[..., dict[str, Any]]
+    invoke_runtime_adapter_from_payload: Callable[..., Awaitable[dict[str, Any]]]
     build_runtime_invocation_result_payload: Callable[..., dict[str, Any]]
 
 
@@ -115,6 +116,14 @@ def create_agent_runtime_router(
             execution_context
         )
         question = execution_context_view["question"]
+        runtime_boundary_result = (
+            await agent_run_service.invoke_runtime_adapter_from_execution_context(
+                invoke_runtime_adapter_from_payload=(
+                    deps.invoke_runtime_adapter_from_payload
+                ),
+                execution_context=execution_context,
+            )
+        )
         memory_context = (
             agent_run_service.prepare_memory_context_from_execution_context(
                 build_agent_run_context=deps.memory_service.build_agent_run_context,
@@ -198,6 +207,7 @@ def create_agent_runtime_router(
                 memory_payload=memory_payload,
                 max_records=deps.memory_max_records,
                 decision=decision,
+                runtime_boundary_result=runtime_boundary_result,
             )
             return response
 
@@ -241,6 +251,7 @@ def create_agent_runtime_router(
             knowledge_payload=knowledge_payload,
             memory_payload=memory_payload,
             max_records=deps.memory_max_records,
+            runtime_boundary_result=runtime_boundary_result,
         )
         return response
 

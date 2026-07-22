@@ -13,15 +13,18 @@ AGENT_RUNTIME_API_PATH = REPO_ROOT / "backend" / "api" / "agent_runtime.py"
 REQUIRED_DEPENDENCIES = {
     "describe_runtime_adapter",
     "build_runtime_invocation_request_payload",
+    "invoke_runtime_adapter_from_payload",
     "build_runtime_invocation_result_payload",
 }
 
 REQUIRED_ROUTE_REFERENCES = {
     "deps.describe_runtime_adapter",
     "deps.build_runtime_invocation_request_payload",
+    "deps.invoke_runtime_adapter_from_payload",
     "deps.build_runtime_invocation_result_payload",
     "agent_run_service.resolve_run_agent_context",
     "agent_run_service.build_execution_context_from_agent_context",
+    "agent_run_service.invoke_runtime_adapter_from_execution_context",
     "agent_run_service.finalize_unrouted_run_from_context",
     "agent_run_service.finalize_routed_run_from_context",
 }
@@ -35,6 +38,7 @@ FORBIDDEN_IMPORT_MODULES = {
 FORBIDDEN_DIRECT_CALLS = {
     "describe_runtime_adapter",
     "build_runtime_invocation_request_payload",
+    "invoke_runtime_adapter_from_payload",
     "build_runtime_invocation_result_payload",
     "build_adapter_backed_local_invocation_result_payload",
     "get_runtime_adapter",

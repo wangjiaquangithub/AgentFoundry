@@ -168,6 +168,7 @@ from runtime import (
     build_runtime_invocation_request_payload,
     describe_runtime_adapter,
     describe_runtime_provider_health,
+    invoke_runtime_adapter_from_payload,
 )
 from services.approvals import (
     PlatformApprovalService,
@@ -1109,6 +1110,7 @@ app.include_router(
             build_runtime_invocation_request_payload=(
                 build_runtime_invocation_request_payload
             ),
+            invoke_runtime_adapter_from_payload=invoke_runtime_adapter_from_payload,
             build_runtime_invocation_result_payload=(
                 build_adapter_backed_local_invocation_result_payload
             ),

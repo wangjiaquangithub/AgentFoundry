@@ -50,6 +50,10 @@ CHECKS = (
         "runtime adapter invoke boundary",
         (sys.executable, "scripts/check_phase4_runtime_invoke_boundary.py"),
     ),
+    (
+        "agent run invoke boundary",
+        (sys.executable, "scripts/check_phase4_agent_run_invoke_boundary.py"),
+    ),
 )
 
 
