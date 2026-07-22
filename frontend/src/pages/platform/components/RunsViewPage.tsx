@@ -660,13 +660,13 @@ export function RunsViewPage({
 							/>
 						) : (
 							<div className="overflow-hidden border bg-background">
-								<div className="hidden grid-cols-[8rem_minmax(0,2.4fr)_minmax(8rem,0.8fr)_7rem_10rem_2.5rem] gap-3 border-b bg-muted/30 px-4 py-2 text-xs font-medium text-muted-foreground lg:grid">
+								<div className="hidden grid-cols-[8rem_minmax(0,2.4fr)_minmax(8rem,0.8fr)_7rem_10rem_6rem] gap-3 border-b bg-muted/30 px-4 py-2 text-xs font-medium text-muted-foreground lg:grid">
 									<span>{t('platform.monitoring.filterStatus')}</span>
 									<span>{t('platform.monitoring.runObject')}</span>
 									<span>{t('platform.monitoring.agent')}</span>
 									<span>{t('platform.monitoring.duration')}</span>
 									<span>{t('platform.monitoring.updatedAt')}</span>
-									<span className="sr-only">
+									<span className="text-right">
 										{t('platform.monitoring.actions')}
 									</span>
 								</div>
@@ -688,7 +688,7 @@ export function RunsViewPage({
 													setSelectedRun({ type: item.type, id: item.id });
 												}}
 												className={cn(
-													'grid w-full gap-3 border-b border-l-2 border-l-transparent px-4 py-3 text-left text-xs transition-colors last:border-b-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:grid-cols-[8rem_minmax(0,2.4fr)_minmax(8rem,0.8fr)_7rem_10rem_2.5rem] lg:items-center',
+													'group grid w-full gap-3 border-b border-l-2 border-l-transparent px-4 py-3 text-left text-xs transition-colors last:border-b-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:grid-cols-[8rem_minmax(0,2.4fr)_minmax(8rem,0.8fr)_7rem_10rem_6rem] lg:items-center',
 													isActive
 														? 'border-l-primary bg-primary/5 text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.14)]'
 														: item.status === 'failed'
@@ -738,7 +738,10 @@ export function RunsViewPage({
 													{formatTimestamp(item.timestamp)}
 												</div>
 												<div className="hidden justify-end lg:flex">
-													<ChevronRight className="size-4 text-muted-foreground" />
+													<span className="inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-slate-600 transition-colors group-hover:bg-slate-100 group-hover:text-slate-950">
+														{t('platform.monitoring.inspect')}
+														<ChevronRight className="size-4" />
+													</span>
 												</div>
 											</button>
 										);

@@ -63,12 +63,12 @@ export interface PlatformPageShellProps {
 
 export function PlatformPageShell({ children, className }: PlatformPageShellProps) {
 	return (
-		<main className="agentfoundry-platform h-full min-h-0 flex-1 overflow-y-auto bg-slate-100">
-			<div className="mx-auto grid w-full max-w-[1520px] gap-0 lg:grid-cols-[248px_minmax(0,1fr)]">
+		<main className="agentfoundry-platform h-full min-h-0 flex-1 overflow-y-auto bg-[#f5f6f8]">
+			<div className="mx-auto grid w-full max-w-[1600px] gap-0 lg:grid-cols-[272px_minmax(0,1fr)]">
 				<PlatformDesktopNav />
 				<div
 					className={cn(
-						'flex min-w-0 flex-col gap-3 px-3 py-3 sm:px-5 sm:py-4 lg:px-6 xl:px-8',
+						'flex min-w-0 flex-col gap-4 px-3 py-3 sm:px-5 sm:py-5 lg:px-7 xl:px-9',
 						className,
 					)}
 				>
@@ -82,20 +82,20 @@ export function PlatformPageShell({ children, className }: PlatformPageShellProp
 
 function PlatformDesktopNav() {
 	return (
-		<aside className="sticky top-0 hidden h-screen min-h-0 border-r bg-white px-3 py-4 lg:block">
-			<div className="mb-4 border-b px-2 pb-4">
-				<div className="text-base font-semibold tracking-normal text-foreground">AgentFoundry</div>
-				<p className="mt-1 text-xs leading-5 text-muted-foreground">
+		<aside className="sticky top-0 hidden h-screen min-h-0 border-r bg-white px-4 py-5 lg:block">
+			<div className="mb-5 border-b px-1 pb-5">
+				<div className="text-lg font-semibold tracking-normal text-slate-950">AgentFoundry</div>
+				<p className="mt-1 text-xs leading-5 text-slate-500">
 					企业级 Agent 平台控制台
 				</p>
 			</div>
-			<nav aria-label="平台导航" className="space-y-4">
+			<nav aria-label="平台导航" className="space-y-5">
 				{platformSectionGroups.map((group) => (
 					<div key={group.label}>
-						<div className="mb-1.5 px-2 text-[11px] font-semibold uppercase tracking-normal text-slate-500">
+						<div className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-normal text-slate-400">
 							{group.label}
 						</div>
-						<div className="grid gap-0.5">
+						<div className="grid gap-1">
 							{group.items.map(({ label, path, icon: Icon, end }) => (
 								<NavLink
 									key={path}
@@ -103,10 +103,10 @@ function PlatformDesktopNav() {
 									end={end}
 									className={({ isActive }) =>
 										cn(
-											'flex h-9 items-center gap-2 rounded-md px-2.5 text-sm transition-colors',
+											'flex h-10 items-center gap-2.5 rounded-md px-3 text-sm transition-colors',
 											'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
 											isActive
-												? 'bg-slate-900 text-white shadow-[inset_3px_0_0_hsl(var(--primary))]'
+												? 'bg-slate-950 text-white'
 												: 'text-slate-600 hover:bg-slate-100 hover:text-slate-950',
 										)
 									}
@@ -172,19 +172,19 @@ export function PlatformPageHeader({
 	aside,
 }: PlatformPageHeaderProps) {
 	return (
-		<section className="flex flex-col gap-3 rounded-md border bg-white px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
+		<section className="flex flex-col gap-3 border-b border-slate-200 px-0 pb-4 pt-1 lg:flex-row lg:items-start lg:justify-between">
 			<div className="min-w-0">
-				<div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
-					<span className="grid size-7 place-items-center rounded-md border bg-slate-50 text-slate-700">
+				<div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-slate-500">
+					<span className="grid size-7 place-items-center rounded-md border border-slate-200 bg-white text-slate-700">
 						<Icon className="size-4" />
 					</span>
 					<span className="min-w-0 truncate">{eyebrow}</span>
 				</div>
-				<h1 className="text-xl font-semibold tracking-normal text-foreground sm:text-2xl">
+				<h1 className="text-2xl font-semibold tracking-normal text-slate-950 sm:text-[1.7rem]">
 					{title}
 				</h1>
 				{description ? (
-					<p className="mt-1.5 max-w-3xl text-sm leading-6 text-muted-foreground">
+					<p className="mt-1.5 max-w-3xl text-sm leading-6 text-slate-600">
 						{description}
 					</p>
 				) : null}
@@ -284,7 +284,7 @@ export function PlatformMetricsGrid({
 	return (
 		<section
 			className={cn(
-				'overflow-hidden rounded-md border bg-white sm:grid sm:grid-cols-2 xl:grid-cols-4',
+				'overflow-hidden border-y border-slate-200 bg-white sm:grid sm:grid-cols-2 xl:grid-cols-4 lg:rounded-none lg:border-x-0',
 				className,
 			)}
 		>
@@ -303,7 +303,7 @@ export function PlatformSection({
 	return (
 		<section
 			className={cn(
-				'rounded-md border bg-white',
+				'overflow-hidden border-y border-slate-200 bg-white lg:rounded-none lg:border-x-0',
 				className,
 			)}
 		>
@@ -326,7 +326,7 @@ export function PlatformSectionHeader({
 	return (
 		<div
 			className={cn(
-				'flex flex-col gap-3 border-b px-4 py-3 sm:flex-row sm:items-start sm:justify-between',
+				'flex flex-col gap-3 border-b bg-slate-50/70 px-4 py-3 sm:flex-row sm:items-start sm:justify-between',
 				className,
 			)}
 		>
