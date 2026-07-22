@@ -1007,17 +1007,21 @@ class PlatformKnowledgeResponseService:
                 "retrieval_event_id": event_id,
                 "tenant": tenant,
                 "user_id": user_id,
+                "agent_run_id": agent_run_id,
                 "knowledge_base_id": knowledge_base_id,
+                "bound_knowledge_base_ids": [knowledge_base_id],
+                "ready_knowledge_base_ids": [knowledge_base_id],
+                "blocked_knowledge_base_ids": [],
                 "query": question,
+                "status": "ready",
                 "hit_count": len(hits),
                 "document_ids": [
                     str(hit.get("document_id") or "")
                     for hit in hits
                     if str(hit.get("document_id") or "").strip()
                 ],
+                "retrieval_mode": "production_search",
             }
-            if agent_run_id:
-                payload["agent_run_id"] = agent_run_id
 
             persisted_audit_event = self._audit_event_writer.append_audit_event(
                 AuditEventRecord(
@@ -1027,7 +1031,7 @@ class PlatformKnowledgeResponseService:
                     event_type="knowledge_base.retrieved",
                     target_type="knowledge_base",
                     target_id=knowledge_base_id,
-                    payload=payload,
+                    payload=_json_safe(payload),
                     created_at=created_at,
                 ),
             )
