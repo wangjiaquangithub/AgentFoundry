@@ -89,7 +89,7 @@ export function MembersPanel({
 	return (
 		<section
 			ref={membersRef}
-			className="grid gap-4 rounded-lg border bg-background p-4"
+			className="grid gap-4 border-t py-4"
 		>
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 				<div className="min-w-0">

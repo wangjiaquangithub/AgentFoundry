@@ -41,7 +41,7 @@ export function OrchestrationWorkbenchPanel({
 	labels,
 }: OrchestrationWorkbenchPanelProps) {
 	return (
-		<section ref={sectionRef} className="grid gap-4 rounded-lg border bg-background p-4">
+		<section ref={sectionRef} className="grid gap-4 border-t py-4">
 			<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 				<div className="min-w-0">
 					<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">

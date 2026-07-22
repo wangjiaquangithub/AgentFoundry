@@ -22,9 +22,9 @@ export function PlatformFilterBar({
 	className,
 }: PlatformFilterBarProps) {
 	return (
-		<div className={cn('grid gap-3 border-y bg-muted/15 px-3 py-3', className)}>
+		<div className={cn('grid gap-3 border-y bg-muted/10 px-0 py-3', className)}>
 			<div className="flex flex-wrap items-center justify-between gap-2">
-				<Badge variant="secondary" className="rounded-md font-normal">
+				<Badge variant="outline" className="rounded-md bg-background font-normal">
 					{resultLabel}
 				</Badge>
 				<Button

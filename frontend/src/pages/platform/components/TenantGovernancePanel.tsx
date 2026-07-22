@@ -132,7 +132,7 @@ export function TenantGovernancePanel({
 	labels,
 }: TenantGovernancePanelProps) {
 	return (
-		<section className="grid gap-4 rounded-lg border bg-background p-4">
+		<section className="grid gap-4 border-t py-4">
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 				<div>
 					<h2 className="text-base font-semibold">{labels.title}</h2>

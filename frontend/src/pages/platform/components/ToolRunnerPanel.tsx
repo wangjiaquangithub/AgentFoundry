@@ -99,7 +99,7 @@ export function ToolRunnerPanel({
 	return (
 		<section
 			ref={sectionRef}
-			className="overflow-hidden rounded-lg border bg-background"
+			className="overflow-hidden border bg-background"
 		>
 			<div className="border-b p-4">
 				<div className="flex items-start justify-between gap-3">

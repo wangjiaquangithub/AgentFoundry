@@ -218,7 +218,7 @@ export function WorkflowRunnerPanel({
 			</section>
 
 			<div className="grid gap-4">
-				<section className="rounded-lg border bg-background p-4">
+				<section className="border-t py-4">
 					<div className="flex flex-col gap-3 border-b pb-4 sm:flex-row sm:items-start sm:justify-between">
 						<div className="min-w-0">
 							<h2 className="text-base font-semibold">
@@ -349,7 +349,7 @@ export function WorkflowRunnerPanel({
 					</div>
 				</section>
 
-				<section className="rounded-lg border bg-background p-4">
+				<section className="border-t py-4">
 					<div className="flex items-center gap-2 border-b pb-3">
 						<ListChecks className="size-4 text-muted-foreground" />
 						<h3 className="text-sm font-semibold">
@@ -384,7 +384,7 @@ export function WorkflowRunnerPanel({
 			</div>
 
 			<section className="grid gap-4 xl:grid-cols-2">
-				<section className="rounded-lg border bg-background p-4">
+				<section className="border-t py-4">
 					<div className="flex items-center gap-2 border-b pb-3">
 						<CheckCircle2 className="size-4 text-muted-foreground" />
 						<h3 className="text-sm font-semibold">
@@ -476,7 +476,7 @@ export function WorkflowRunnerPanel({
 					)}
 				</section>
 
-				<section className="rounded-lg border bg-background p-4">
+				<section className="border-t py-4">
 					<div className="flex items-center gap-2 border-b pb-3">
 						<FileClock className="size-4 text-muted-foreground" />
 						<h3 className="text-sm font-semibold">

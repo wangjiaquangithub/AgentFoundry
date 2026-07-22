@@ -125,7 +125,7 @@ export function AuditEventsPanel({
 		: null;
 
 	return (
-		<section className="flex flex-col gap-4 rounded-lg border bg-background p-4 shadow-none">
+		<section className="flex flex-col gap-4 border-t py-4">
 			<div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
 				<div>
 					<h2 className="text-base font-semibold">{t('platform.audit.title')}</h2>

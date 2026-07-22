@@ -15,7 +15,6 @@ import type { ComponentType, ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
 	Sheet,
 	SheetContent,
@@ -64,12 +63,12 @@ export interface PlatformPageShellProps {
 
 export function PlatformPageShell({ children, className }: PlatformPageShellProps) {
 	return (
-		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-[hsl(var(--muted)/0.28)]">
-			<div className="mx-auto grid w-full max-w-[1560px] gap-0 lg:grid-cols-[248px_minmax(0,1fr)]">
+		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-background">
+			<div className="mx-auto grid w-full max-w-[1600px] gap-0 lg:grid-cols-[248px_minmax(0,1fr)]">
 				<PlatformDesktopNav />
 				<div
 					className={cn(
-						'flex min-w-0 flex-col gap-5 px-4 py-4 sm:px-6 sm:py-5 lg:px-7 xl:px-9',
+						'flex min-w-0 flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5 lg:px-7 xl:px-8',
 						className,
 					)}
 				>
@@ -83,8 +82,8 @@ export function PlatformPageShell({ children, className }: PlatformPageShellProp
 
 function PlatformDesktopNav() {
 	return (
-		<aside className="sticky top-0 hidden h-screen min-h-0 border-r bg-background/95 px-3 py-5 shadow-[1px_0_0_hsl(var(--border)/0.45)] lg:block">
-			<div className="mb-5 rounded-md border bg-muted/20 px-3 py-3">
+		<aside className="sticky top-0 hidden h-screen min-h-0 border-r bg-muted/20 px-3 py-5 lg:block">
+			<div className="mb-5 border-b px-2 pb-4">
 				<div className="text-sm font-semibold tracking-normal">AgentFoundry</div>
 				<p className="mt-1 text-xs leading-5 text-muted-foreground">
 					企业级 Agent 平台控制台
@@ -173,15 +172,15 @@ export function PlatformPageHeader({
 	aside,
 }: PlatformPageHeaderProps) {
 	return (
-		<section className="flex flex-col gap-4 rounded-lg border bg-background px-4 py-4 shadow-sm lg:flex-row lg:items-start lg:justify-between">
+		<section className="flex flex-col gap-4 border-b pb-4 lg:flex-row lg:items-start lg:justify-between">
 			<div className="min-w-0">
 				<div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
-					<span className="grid size-7 place-items-center rounded-md border bg-background text-foreground">
+					<span className="grid size-7 place-items-center rounded-md bg-muted text-foreground">
 						<Icon className="size-4" />
 					</span>
 					<span className="min-w-0 truncate">{eyebrow}</span>
 				</div>
-				<h1 className="text-[1.25rem] font-semibold tracking-normal text-foreground sm:text-[1.45rem]">
+				<h1 className="text-[1.3rem] font-semibold tracking-normal text-foreground sm:text-[1.55rem]">
 					{title}
 				</h1>
 				{description ? (
@@ -222,7 +221,7 @@ export function PlatformConnectionCard({
 	labels,
 }: PlatformConnectionCardProps) {
 	return (
-		<div className="grid min-w-0 gap-2 rounded-lg border bg-background p-3 text-xs sm:min-w-80">
+		<div className="grid min-w-0 gap-2 border-l px-3 py-1 text-xs sm:min-w-80">
 			<div className="flex items-center justify-between gap-3">
 				<span className="text-muted-foreground">{labels.server}</span>
 				<span className="truncate font-mono" title={serverUrl}>
@@ -256,28 +255,22 @@ export interface StatCardProps {
 
 export function StatCard({ label, value, helper, icon: Icon, loading }: StatCardProps) {
 	return (
-		<Card size="sm" className="min-h-[5.25rem] rounded-md border-border/70 bg-background shadow-none">
-			<CardHeader className="grid-cols-[1fr_auto] gap-2 pb-1.5">
-				<div className="min-w-0">
-					<CardTitle className="truncate text-xs font-medium text-muted-foreground">
-						{label}
-					</CardTitle>
-					{loading ? (
-						<Skeleton className="mt-2.5 h-6 w-14" />
-					) : (
-						<div className="mt-1 text-lg font-semibold tabular-nums">{value}</div>
-					)}
-				</div>
-				<div className="flex size-7 items-center justify-center rounded-md border bg-muted/25">
-					<Icon className="size-4 text-muted-foreground" />
-				</div>
-			</CardHeader>
-			{helper ? (
-				<CardContent className="pt-0 text-xs leading-5 text-muted-foreground">
-					{helper}
-				</CardContent>
-			) : null}
-		</Card>
+		<div className="grid min-h-[4.75rem] grid-cols-[1fr_auto] gap-2 border-l border-border/80 bg-muted/15 px-3 py-2.5">
+			<div className="min-w-0">
+				<div className="truncate text-xs font-medium text-muted-foreground">{label}</div>
+				{loading ? (
+					<Skeleton className="mt-2.5 h-6 w-14" />
+				) : (
+					<div className="mt-1 text-lg font-semibold tabular-nums">{value}</div>
+				)}
+				{helper ? (
+					<div className="mt-1 text-xs leading-5 text-muted-foreground">{helper}</div>
+				) : null}
+			</div>
+			<div className="flex size-7 items-center justify-center rounded-md bg-background text-muted-foreground">
+				<Icon className="size-4" />
+			</div>
+		</div>
 	);
 }
 
@@ -343,7 +336,7 @@ export function PlatformDetailDrawer({
 					className,
 				)}
 			>
-				<SheetHeader className="border-b pr-12">
+				<SheetHeader className="border-b bg-muted/20 pr-12">
 					<SheetTitle>{title}</SheetTitle>
 					{description ? (
 						<SheetDescription className="leading-6">{description}</SheetDescription>

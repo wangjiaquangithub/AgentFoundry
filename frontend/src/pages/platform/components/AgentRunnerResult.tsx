@@ -90,7 +90,7 @@ export function AgentRunnerResult({
 
 			{result ? (
 				<div className="grid gap-3">
-					<div className="rounded-lg border bg-background p-4">
+					<div className="border-t py-4">
 						<div className="mb-3 flex flex-wrap items-center gap-2">
 							<Badge
 								variant={result.routed ? 'outline' : 'destructive'}

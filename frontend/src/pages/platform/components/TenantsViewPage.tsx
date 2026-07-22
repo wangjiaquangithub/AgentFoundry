@@ -323,7 +323,7 @@ export function TenantsViewPage({
 				>
 					{selectedTenantSummary ? (
 						<>
-							<section className="rounded-lg border bg-background p-4">
+							<section className="border-t py-4">
 								<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 									<div className="min-w-0">
 										<div className="flex flex-wrap items-center gap-2">
@@ -429,7 +429,7 @@ export function TenantsViewPage({
 							</section>
 
 							<section className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(300px,0.9fr)]">
-								<div className="rounded-lg border bg-background p-4">
+								<div className="border-t py-4">
 									<div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 										<div>
 											<h3 className="text-sm font-semibold">成员清单</h3>
@@ -492,7 +492,7 @@ export function TenantsViewPage({
 									</div>
 								</div>
 
-								<aside className="rounded-lg border bg-background p-4">
+								<aside className="border-t py-4">
 									<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 										<div className="min-w-0">
 											<h3 className="text-sm font-semibold">

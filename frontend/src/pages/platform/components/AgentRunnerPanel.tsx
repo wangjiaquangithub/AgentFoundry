@@ -124,7 +124,7 @@ export function AgentRunnerPanel({
 					</div>
 				</div>
 
-				<div className="grid gap-4 rounded-lg border bg-background p-4">
+				<div className="grid gap-4 border-t py-4">
 					<div className="grid gap-2">
 						<label className="text-xs font-medium text-muted-foreground">
 							{t('platform.agentRunner.instance')}

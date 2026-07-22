@@ -336,38 +336,38 @@ export function RunsViewPage({
 				}
 			/>
 
-			<section className="overflow-hidden rounded-lg border bg-background shadow-sm">
+			<section className="overflow-hidden border-y bg-muted/10">
 				<div className="grid gap-0 md:grid-cols-2 xl:grid-cols-4">
-				{monitoringStats.map((stat) => {
-					const StatIcon = stat.icon;
-					return (
-						<div
-							key={stat.label}
-							className="grid min-h-20 grid-cols-[1fr_auto] gap-3 border-b px-4 py-3 last:border-b-0 md:even:border-l xl:border-b-0 xl:border-l xl:first:border-l-0"
-						>
-							<div className="min-w-0">
-								<div className="truncate text-xs font-medium text-muted-foreground">
-									{stat.label}
-								</div>
-								<div className="mt-1 text-xl font-semibold tabular-nums">
-									{monitoringLoading ? '-' : stat.value}
-								</div>
-								{stat.helper ? (
-									<div className="mt-0.5 truncate text-xs text-muted-foreground">
-										{stat.helper}
+					{monitoringStats.map((stat) => {
+						const StatIcon = stat.icon;
+						return (
+							<div
+								key={stat.label}
+								className="grid min-h-20 grid-cols-[1fr_auto] gap-3 border-b px-4 py-3 last:border-b-0 md:even:border-l xl:border-b-0 xl:border-l xl:first:border-l-0"
+							>
+								<div className="min-w-0">
+									<div className="truncate text-xs font-medium text-muted-foreground">
+										{stat.label}
 									</div>
-								) : null}
+									<div className="mt-1 text-xl font-semibold tabular-nums">
+										{monitoringLoading ? '-' : stat.value}
+									</div>
+									{stat.helper ? (
+										<div className="mt-0.5 truncate text-xs text-muted-foreground">
+											{stat.helper}
+										</div>
+									) : null}
+								</div>
+								<div className="flex size-7 items-center justify-center rounded-md bg-background">
+									<StatIcon className="size-4 text-muted-foreground" />
+								</div>
 							</div>
-							<div className="flex size-7 items-center justify-center rounded-md border bg-background shadow-sm">
-								<StatIcon className="size-4 text-muted-foreground" />
-							</div>
-						</div>
-					);
-				})}
+						);
+					})}
 				</div>
 			</section>
 
-			<section className="overflow-hidden rounded-lg border bg-background shadow-sm">
+			<section className="overflow-hidden border bg-background">
 				<div className="grid min-w-0 content-start gap-3">
 					<div className="flex flex-col gap-3 border-b bg-background px-4 py-4 lg:flex-row lg:items-start lg:justify-between">
 						<div className="min-w-0">

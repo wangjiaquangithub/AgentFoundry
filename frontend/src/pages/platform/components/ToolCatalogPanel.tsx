@@ -60,7 +60,7 @@ export function ToolCatalogPanel({
 	}, [availableToolItems, query, statusFilter]);
 
 	return (
-		<section ref={sectionRef} className="overflow-hidden rounded-lg border bg-background">
+		<section ref={sectionRef} className="overflow-hidden border bg-background">
 			<div className="flex flex-col gap-4 border-b p-4">
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 					<div className="min-w-0">

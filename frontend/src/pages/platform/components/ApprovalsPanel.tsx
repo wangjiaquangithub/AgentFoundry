@@ -444,7 +444,7 @@ export function ApprovalsPanel({
 			</Dialog>
 
 			<div className="grid items-start gap-4">
-				<div className="flex min-w-0 flex-col gap-4 rounded-lg border bg-background p-4">
+				<div className="flex min-w-0 flex-col gap-4 border-t py-4">
 					<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 					<div className="flex min-w-0 items-start gap-2">
 						<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background">
