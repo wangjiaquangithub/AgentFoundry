@@ -169,34 +169,42 @@ export function RunsViewPage({
 
 		return [
 			{
+				id: 'failed',
 				label: t('platform.monitoring.summaryFailed'),
 				value: failed,
 				helper: t('platform.monitoring.summaryFailedHelper'),
 				icon: CircleAlert,
+				statusFilter: 'failed' as const,
 				tone:
 					failed > 0
 						? 'border-red-500/35 bg-red-500/5 text-red-700'
 						: 'border-border bg-background text-foreground',
 			},
 			{
+				id: 'running',
 				label: t('platform.monitoring.summaryRunning'),
 				value: running,
 				helper: t('platform.monitoring.summaryRunningHelper'),
 				icon: Clock3,
+				statusFilter: 'running' as const,
 				tone:
 					running > 0
 						? 'border-blue-500/35 bg-blue-500/5 text-blue-700'
 						: 'border-border bg-background text-foreground',
 			},
 			{
+				id: 'coverage',
 				label: t('platform.monitoring.summaryCoverage'),
 				value: `${agents}/${workflows}`,
 				helper: t('platform.monitoring.summaryCoverageHelper'),
 				icon: Activity,
+				statusFilter: 'all' as const,
 				tone: 'border-border bg-background text-foreground',
 			},
 		];
 	}, [runItems, t]);
+	const failedRunCount = operationalSummary[0]?.value || 0;
+	const runningRunCount = operationalSummary[1]?.value || 0;
 	const hasRunFilters =
 		runTypeFilter !== 'all' ||
 		runStatusFilter !== 'all' ||
@@ -329,10 +337,17 @@ export function RunsViewPage({
 							{operationalSummary.map((item) => {
 								const SummaryIcon = item.icon;
 								return (
-									<div
+									<button
 										key={item.label}
+										type="button"
+										onClick={() => {
+											setRunStatusFilter(item.statusFilter);
+											if (item.id === 'coverage') {
+												setRunTypeFilter('all');
+											}
+										}}
 										className={cn(
-											'grid grid-cols-[1fr_auto] gap-3 rounded-md border px-3 py-2.5',
+											'grid grid-cols-[1fr_auto] gap-3 rounded-md border px-3 py-2.5 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 											item.tone,
 										)}
 									>
@@ -348,7 +363,7 @@ export function RunsViewPage({
 											</div>
 										</div>
 										<SummaryIcon className="mt-0.5 size-4 text-muted-foreground" />
-									</div>
+									</button>
 								);
 							})}
 						</div>
@@ -411,27 +426,51 @@ export function RunsViewPage({
 						</PlatformFilterBar>
 					</div>
 
-					<aside className="hidden rounded-md border bg-muted/20 p-3 lg:block">
-						<div className="text-xs font-medium uppercase text-muted-foreground">
+					<aside className="hidden rounded-md border bg-background p-3 shadow-sm lg:block">
+						<div className="text-xs font-medium text-muted-foreground">
 							{t('platform.monitoring.monitoringFocus')}
 						</div>
-						<div className="mt-3 grid gap-3 text-sm">
-							<div>
-								<div className="font-medium">
+						<div className="mt-3 grid gap-2">
+							<button
+								type="button"
+								onClick={() => setRunStatusFilter('failed')}
+								className="grid grid-cols-[1fr_auto] gap-2 rounded-md border px-3 py-2 text-left transition-colors hover:bg-red-500/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+							>
+								<span className="text-sm font-medium">
 									{t('platform.monitoring.focusFailures')}
-								</div>
-								<p className="mt-1 text-xs leading-5 text-muted-foreground">
+								</span>
+								<span className="text-sm font-semibold tabular-nums">
+									{failedRunCount}
+								</span>
+								<span className="col-span-2 text-xs text-muted-foreground">
 									{t('platform.monitoring.focusFailuresHelper')}
-								</p>
-							</div>
-							<div className="border-t pt-3">
-								<div className="font-medium">
+								</span>
+							</button>
+							<button
+								type="button"
+								onClick={() => setRunStatusFilter('running')}
+								className="grid grid-cols-[1fr_auto] gap-2 rounded-md border px-3 py-2 text-left transition-colors hover:bg-blue-500/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+							>
+								<span className="text-sm font-medium">
 									{t('platform.monitoring.focusRuntime')}
-								</div>
-								<p className="mt-1 text-xs leading-5 text-muted-foreground">
+								</span>
+								<span className="text-sm font-semibold tabular-nums">
+									{runningRunCount}
+								</span>
+								<span className="col-span-2 text-xs text-muted-foreground">
 									{t('platform.monitoring.focusRuntimeHelper')}
-								</p>
-							</div>
+								</span>
+							</button>
+							{monitoringError ? (
+								<div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-muted-foreground">
+									<div className="font-medium text-foreground">
+										{platformServiceUnavailableTitle}
+									</div>
+									<div className="mt-1">
+										{normalizePlatformErrorMessage(monitoringError)}
+									</div>
+								</div>
+							) : null}
 						</div>
 					</aside>
 				</div>
@@ -510,6 +549,9 @@ export function RunsViewPage({
 									<button
 										key={`${item.type}-${item.id}`}
 										type="button"
+										aria-label={t('platform.monitoring.inspectRun', {
+											name: item.title,
+										})}
 										onClick={() => {
 											setSelectedRun({ type: item.type, id: item.id });
 										}}
@@ -538,14 +580,23 @@ export function RunsViewPage({
 												{item.description}
 											</p>
 										</div>
-										<div>
+										<div className="flex items-center justify-between gap-3 lg:block">
+											<span className="text-muted-foreground lg:hidden">
+												{t('platform.monitoring.filterStatus')}
+											</span>
 											<PlatformStatusBadge status={item.status} t={t} />
 										</div>
-										<div className="truncate text-muted-foreground">
-											{item.agentId || '-'}
+										<div className="flex min-w-0 items-center justify-between gap-3 text-muted-foreground lg:block">
+											<span className="lg:hidden">
+												{t('platform.monitoring.agent')}
+											</span>
+											<span className="truncate">{item.agentId || '-'}</span>
 										</div>
-										<div className="tabular-nums text-muted-foreground">
-											{formatTimestamp(item.timestamp)}
+										<div className="flex items-center justify-between gap-3 tabular-nums text-muted-foreground lg:block">
+											<span className="lg:hidden">
+												{t('platform.monitoring.time')}
+											</span>
+											<span>{formatTimestamp(item.timestamp)}</span>
 										</div>
 										<div className="hidden text-right font-medium text-primary lg:block">
 											{t('platform.monitoring.inspect')}
@@ -665,6 +716,21 @@ export function RunsViewPage({
 										</div>
 									</div>
 								) : null}
+
+								<div className="rounded-md border bg-muted/25 p-3">
+									<div className="text-xs font-medium text-muted-foreground">
+										{t('platform.monitoring.nextAction')}
+									</div>
+									<div className="mt-1 text-sm font-medium">
+										{activeRun.status === 'failed'
+											? t('platform.monitoring.nextActionFailed')
+											: activeRun.status === 'running'
+												? t('platform.monitoring.nextActionRunning')
+												: activeRun.type === 'agent'
+													? t('platform.monitoring.nextActionAgent')
+													: t('platform.monitoring.nextActionWorkflow')}
+									</div>
+								</div>
 							</div>
 						</div>
 					) : null}
@@ -672,6 +738,14 @@ export function RunsViewPage({
 					{activeRun ? (
 						<SheetFooter className="border-t bg-background">
 							<div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+								<Button
+									type="button"
+									size="sm"
+									variant="outline"
+									onClick={() => setSelectedRun(null)}
+								>
+									{t('common.close')}
+								</Button>
 								{activeAgentTurn ? (
 									<Button
 										type="button"
