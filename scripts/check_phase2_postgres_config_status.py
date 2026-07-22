@@ -40,6 +40,14 @@ def _check_status_contract() -> list[str]:
     if "postgresql://" not in empty.message:
         errors.append("unconfigured status must direct operators to postgresql://")
 
+    production_empty = inspect_configured_database_status({"AGENTFOUNDRY_ENV": "production"})
+    if not production_empty.production_mode:
+        errors.append("production environment must be reflected in unconfigured status")
+    if production_empty.production_ready:
+        errors.append("production unconfigured status must not be production ready")
+    if production_empty.operator_ready:
+        errors.append("production unconfigured status must not be operator ready")
+
     postgres = inspect_configured_database_status(
         {
             "AGENTFOUNDRY_DATABASE_URL": (
@@ -80,6 +88,19 @@ def _check_status_contract() -> list[str]:
     if "explicit local development compatibility" not in sqlite.message:
         errors.append("sqlite:// status must be limited to explicit local development compatibility")
 
+    production_sqlite = inspect_configured_database_status(
+        {
+            "AGENTFOUNDRY_ENV": "prod",
+            "AGENTFOUNDRY_DATABASE_URL": "sqlite:////tmp/agentfoundry-local-dev.db",
+        }
+    )
+    if not production_sqlite.production_mode:
+        errors.append("prod environment must be reflected in sqlite:// status")
+    if production_sqlite.production_ready:
+        errors.append("prod sqlite:// status must not be production ready")
+    if production_sqlite.operator_ready:
+        errors.append("prod sqlite:// status must not be operator ready")
+
     unsupported = inspect_configured_database_status(
         {"AGENTFOUNDRY_DATABASE_URL": "mysql://agentfoundry:secret@localhost/db"}
     )
@@ -95,6 +116,21 @@ def _check_status_contract() -> list[str]:
         errors.append("unsupported status must direct production users to PostgreSQL")
     if "secret" in unsupported.message:
         errors.append("unsupported status message must not expose URL credentials")
+
+    production_unsupported = inspect_configured_database_status(
+        {
+            "AGENTFOUNDRY_ENV": "production",
+            "AGENTFOUNDRY_DATABASE_URL": "mysql://agentfoundry:secret@localhost/db",
+        }
+    )
+    if not production_unsupported.production_mode:
+        errors.append("production environment must be reflected in unsupported status")
+    if production_unsupported.production_ready:
+        errors.append("production unsupported status must not be production ready")
+    if production_unsupported.operator_ready:
+        errors.append("production unsupported status must not be operator ready")
+    if "secret" in production_unsupported.message:
+        errors.append("production unsupported status message must not expose URL credentials")
 
     return errors
 
