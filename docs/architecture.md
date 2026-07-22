@@ -85,8 +85,8 @@ backend/
 ```
 
 The production persistence target is PostgreSQL. Local JSON, JSONL, and SQLite
-paths are development or compatibility adapters, not the production system of
-record.
+paths are development, smoke-test, import/export, or compatibility paths, not
+the production system of record.
 
 The current `main.py` can remain as the compatibility entrypoint while production modules are extracted incrementally.
 

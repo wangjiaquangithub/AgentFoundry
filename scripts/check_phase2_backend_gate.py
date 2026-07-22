@@ -59,6 +59,10 @@ CHECKS = (
         "platform database status",
         (sys.executable, "scripts/check_phase2_platform_database_status.py"),
     ),
+    (
+        "PostgreSQL docs contract",
+        (sys.executable, "scripts/check_phase2_postgres_docs_contract.py"),
+    ),
     ("production data layer", (sys.executable, "scripts/check_phase2_data_layer.py")),
 )
 
