@@ -63,12 +63,12 @@ export interface PlatformPageShellProps {
 
 export function PlatformPageShell({ children, className }: PlatformPageShellProps) {
 	return (
-		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-slate-50/70">
-			<div className="mx-auto grid w-full max-w-[1480px] gap-0 lg:grid-cols-[240px_minmax(0,1fr)]">
+		<main className="agentfoundry-platform h-full min-h-0 flex-1 overflow-y-auto bg-slate-100">
+			<div className="mx-auto grid w-full max-w-[1520px] gap-0 lg:grid-cols-[248px_minmax(0,1fr)]">
 				<PlatformDesktopNav />
 				<div
 					className={cn(
-						'flex min-w-0 flex-col gap-4 px-4 py-4 sm:px-5 lg:px-6 xl:px-8',
+						'flex min-w-0 flex-col gap-3 px-3 py-3 sm:px-5 sm:py-4 lg:px-6 xl:px-8',
 						className,
 					)}
 				>
@@ -84,7 +84,7 @@ function PlatformDesktopNav() {
 	return (
 		<aside className="sticky top-0 hidden h-screen min-h-0 border-r bg-white px-3 py-4 lg:block">
 			<div className="mb-4 border-b px-2 pb-4">
-				<div className="text-sm font-semibold tracking-normal text-foreground">AgentFoundry</div>
+				<div className="text-base font-semibold tracking-normal text-foreground">AgentFoundry</div>
 				<p className="mt-1 text-xs leading-5 text-muted-foreground">
 					企业级 Agent 平台控制台
 				</p>
@@ -92,7 +92,7 @@ function PlatformDesktopNav() {
 			<nav aria-label="平台导航" className="space-y-4">
 				{platformSectionGroups.map((group) => (
 					<div key={group.label}>
-						<div className="mb-1 px-2 text-[11px] font-medium uppercase text-muted-foreground">
+						<div className="mb-1.5 px-2 text-[11px] font-semibold uppercase tracking-normal text-slate-500">
 							{group.label}
 						</div>
 						<div className="grid gap-0.5">
@@ -106,8 +106,8 @@ function PlatformDesktopNav() {
 											'flex h-9 items-center gap-2 rounded-md px-2.5 text-sm transition-colors',
 											'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
 											isActive
-												? 'bg-muted text-foreground shadow-[inset_3px_0_0_hsl(var(--primary))]'
-												: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground',
+												? 'bg-slate-900 text-white shadow-[inset_3px_0_0_hsl(var(--primary))]'
+												: 'text-slate-600 hover:bg-slate-100 hover:text-slate-950',
 										)
 									}
 								>
@@ -127,7 +127,7 @@ function PlatformSectionNav() {
 	return (
 		<nav
 			aria-label="平台模块"
-			className="sticky top-0 z-20 -mx-4 border-b bg-background/95 px-4 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/85 sm:-mx-5 sm:px-5 lg:hidden"
+			className="sticky top-0 z-20 -mx-3 border-b bg-white/95 px-3 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-white/85 sm:-mx-5 sm:px-5 lg:hidden"
 		>
 			<div className="flex items-center gap-2 overflow-x-auto">
 				{platformSections.map(({ label, path, icon: Icon, end }) => (
@@ -172,10 +172,10 @@ export function PlatformPageHeader({
 	aside,
 }: PlatformPageHeaderProps) {
 	return (
-		<section className="flex flex-col gap-3 border-b bg-white px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
+		<section className="flex flex-col gap-3 rounded-md border bg-white px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
 			<div className="min-w-0">
 				<div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
-					<span className="grid size-7 place-items-center rounded-md border bg-slate-50 text-foreground">
+					<span className="grid size-7 place-items-center rounded-md border bg-slate-50 text-slate-700">
 						<Icon className="size-4" />
 					</span>
 					<span className="min-w-0 truncate">{eyebrow}</span>
@@ -255,7 +255,7 @@ export interface StatCardProps {
 
 export function StatCard({ label, value, helper, icon: Icon, loading }: StatCardProps) {
 	return (
-		<div className="grid min-h-[5rem] grid-cols-[1fr_auto] gap-2 border-l border-border/70 bg-white px-4 py-3 first:border-l-0">
+		<div className="grid min-h-[4.5rem] grid-cols-[1fr_auto] gap-2 border-l border-border/70 bg-white px-4 py-3 first:border-l-0 max-sm:border-l-0 max-sm:border-t max-sm:first:border-t-0">
 			<div className="min-w-0">
 				<div className="truncate text-xs font-medium text-muted-foreground">{label}</div>
 				{loading ? (
@@ -267,7 +267,7 @@ export function StatCard({ label, value, helper, icon: Icon, loading }: StatCard
 					<div className="mt-1 text-xs leading-5 text-muted-foreground">{helper}</div>
 				) : null}
 			</div>
-			<div className="flex size-8 items-center justify-center rounded-md bg-slate-100 text-muted-foreground">
+			<div className="flex size-8 items-center justify-center rounded-md bg-slate-100 text-slate-600">
 				<Icon className="size-4" />
 			</div>
 		</div>
@@ -284,7 +284,7 @@ export function PlatformMetricsGrid({
 	return (
 		<section
 			className={cn(
-				'overflow-hidden rounded-md border bg-white shadow-sm shadow-slate-200/40 sm:grid sm:grid-cols-2 xl:grid-cols-4',
+				'overflow-hidden rounded-md border bg-white sm:grid sm:grid-cols-2 xl:grid-cols-4',
 				className,
 			)}
 		>
@@ -303,7 +303,7 @@ export function PlatformSection({
 	return (
 		<section
 			className={cn(
-				'rounded-md border bg-white shadow-sm shadow-slate-200/40',
+				'rounded-md border bg-white',
 				className,
 			)}
 		>
@@ -366,7 +366,7 @@ export function PlatformNotice({
 	return (
 		<div
 			className={cn(
-				'flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-800',
+				'flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-800',
 				className,
 			)}
 		>

@@ -192,7 +192,7 @@ export function MemoryViewPage({
 				})}
 			</PlatformMetricsGrid>
 
-			<div className="grid gap-5">
+			<div className="grid gap-4">
 					<section className="grid min-w-0 gap-4">
 						<div className="grid min-w-0 gap-4 rounded-lg border bg-background/80 p-4">
 							<div>

@@ -182,7 +182,7 @@ export function SettingsViewPage({
 				))}
 			</PlatformMetricsGrid>
 
-			<div className="grid gap-5">
+			<div className="grid gap-4">
 				<section className="grid gap-3 border-y py-4 sm:grid-cols-2 xl:grid-cols-4">
 					<div className="rounded-lg border bg-background/80 p-4 shadow-none">
 						<div className="flex items-center gap-2 text-xs text-muted-foreground">

@@ -25,23 +25,23 @@ export function PlatformConsolePanel({
 	labels,
 }: PlatformConsolePanelProps) {
 	return (
-		<section className="grid gap-4 border-t py-4">
-			<div className="min-w-0">
-				<h2 className="text-base font-semibold">{labels.title}</h2>
-				<p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
+		<section className="rounded-md border bg-white">
+			<div className="border-b px-4 py-3">
+				<h2 className="text-sm font-semibold">{labels.title}</h2>
+				<p className="mt-1 max-w-3xl text-xs leading-5 text-muted-foreground">
 					{labels.description}
 				</p>
 			</div>
-			<div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+			<div className="divide-y">
 				{items.map((item) => {
 					const Icon = item.icon;
 
 					return (
 						<div
 							key={item.key}
-							className="grid gap-3 rounded-md border bg-white p-3 shadow-sm shadow-slate-200/40 transition-colors hover:border-primary/30 hover:bg-primary/5"
+							className="grid gap-3 px-4 py-3 transition-colors hover:bg-slate-50 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center"
 						>
-							<div className="flex size-8 items-center justify-center rounded-md bg-background">
+							<div className="flex size-8 items-center justify-center rounded-md border bg-slate-50">
 								<Icon className="size-4 text-muted-foreground" />
 							</div>
 							<div className="min-w-0">
@@ -54,6 +54,7 @@ export function PlatformConsolePanel({
 								type="button"
 								size="sm"
 								variant="outline"
+								className="justify-self-start md:justify-self-end"
 								onClick={item.onClick}
 							>
 								{item.actionLabel}

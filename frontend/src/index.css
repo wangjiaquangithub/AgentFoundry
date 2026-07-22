@@ -212,3 +212,73 @@ body,
 		@apply font-sans;
 	}
 }
+
+@layer components {
+	.agentfoundry-platform {
+		color: var(--foreground);
+	}
+
+	.agentfoundry-platform section {
+		scroll-margin-top: 5rem;
+	}
+
+	.agentfoundry-platform .shadow,
+	.agentfoundry-platform .shadow-sm,
+	.agentfoundry-platform .shadow-md,
+	.agentfoundry-platform .shadow-lg,
+	.agentfoundry-platform .shadow-xl,
+	.agentfoundry-platform .shadow-2xl {
+		box-shadow: none;
+	}
+
+	.agentfoundry-platform .rounded-xl,
+	.agentfoundry-platform .rounded-2xl,
+	.agentfoundry-platform .rounded-3xl,
+	.agentfoundry-platform .rounded-lg {
+		border-radius: 0.5rem;
+	}
+
+	.agentfoundry-platform h1,
+	.agentfoundry-platform h2,
+	.agentfoundry-platform h3 {
+		letter-spacing: 0;
+	}
+
+	.agentfoundry-platform table {
+		font-size: 0.875rem;
+	}
+
+	.agentfoundry-platform th {
+		background: rgb(248 250 252 / 0.9);
+		color: rgb(71 85 105);
+		font-weight: 600;
+	}
+
+	.agentfoundry-platform td,
+	.agentfoundry-platform th {
+		vertical-align: middle;
+	}
+
+	.agentfoundry-platform [data-slot='card'] {
+		border-radius: 0.5rem;
+		box-shadow: none;
+	}
+
+	.agentfoundry-platform [data-slot='card'],
+	.agentfoundry-platform .bg-card {
+		background: #fff;
+	}
+
+	.agentfoundry-platform [data-slot='card-header'] {
+		padding-block: 0.875rem;
+	}
+
+	.agentfoundry-platform [data-slot='card-content'] {
+		padding-block: 1rem;
+	}
+
+	.agentfoundry-platform button,
+	.agentfoundry-platform a {
+		letter-spacing: 0;
+	}
+}

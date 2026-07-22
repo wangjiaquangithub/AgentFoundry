@@ -176,7 +176,7 @@ export function DashboardViewPage({
 		.slice(0, 8);
 
 	return (
-		<PlatformPageShell className="gap-5">
+		<PlatformPageShell>
 			<PlatformDashboardOverview
 				serverUrl={serverUrl}
 				username={username}
