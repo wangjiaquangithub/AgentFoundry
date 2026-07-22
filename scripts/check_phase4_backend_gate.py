@@ -35,6 +35,13 @@ CHECKS = (
             "scripts/check_phase4_adapter_invocation_pending_result.py",
         ),
     ),
+    (
+        "adapter pending result persistence",
+        (
+            sys.executable,
+            "scripts/check_phase4_adapter_pending_result_persistence.py",
+        ),
+    ),
 )
 
 
