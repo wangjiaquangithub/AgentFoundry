@@ -29,6 +29,7 @@ class ProviderRecord:
 class ProviderReader:
     def __init__(self, provider: ProviderRecord) -> None:
         self._provider = provider
+        self.calls: list[dict[str, Any]] = []
 
     def list_providers(
         self,
@@ -37,6 +38,13 @@ class ProviderReader:
         provider_type: str | None = None,
         limit: int = 50,
     ) -> list[ProviderRecord]:
+        self.calls.append(
+            {
+                "status": status,
+                "provider_type": provider_type,
+                "limit": limit,
+            },
+        )
         if status is not None and self._provider.status != status:
             return []
         if (
@@ -47,7 +55,11 @@ class ProviderReader:
         return [self._provider][:limit]
 
 
-def _build_status_service(provider: ProviderRecord) -> Any:
+def _build_status_service(
+    provider: ProviderRecord,
+    *,
+    provider_reader: ProviderReader | None = None,
+) -> Any:
     from runtime import describe_runtime_provider_health
     from services.platform_status import PlatformStatusService
 
@@ -90,7 +102,7 @@ def _build_status_service(provider: ProviderRecord) -> Any:
         enterprise_tool_catalog={},
         approval_required_tools=set(),
         approval_required_workflows=set(),
-        runtime_provider_reader=ProviderReader(provider),
+        runtime_provider_reader=provider_reader or ProviderReader(provider),
     )
 
 
@@ -115,6 +127,45 @@ def _runtime_provider_snapshot(provider: ProviderRecord) -> dict[str, Any]:
     if not isinstance(runtime_provider, dict):
         raise AssertionError(f"runtime_provider must be a dict: {payload}")
     return runtime_provider
+
+
+def _assert_pg_provider_query_is_agentscope_scoped() -> None:
+    provider = ProviderRecord(
+        id="agentscope-platform-adapter",
+        name="AgentScope Platform Adapter",
+        provider_type="agentscope",
+        mode="local-service",
+        status="active",
+        capabilities={"tenant_context": True, "tool_routing": True},
+        config_ref=None,
+    )
+    provider_reader = ProviderReader(provider)
+    status_service = _build_status_service(provider, provider_reader=provider_reader)
+    payload = status_service.platform_snapshot(
+        platform_version="contract-test",
+        data_dir=BACKEND_DIR / "data",
+        runtime={
+            "tenant": "acme",
+            "connector_label": "Acme Enterprise Gateway",
+            "connector_source": "saved_config",
+            "saved_config_enabled": True,
+        },
+        tenant="acme",
+        user_id="acme:alice",
+        identities=[{"user_id": "acme:alice", "tenant": "acme", "role": "admin"}],
+        tenant_workspaces={"acme": {"tenant": "acme"}},
+        subagent_templates=[],
+    )
+
+    if not isinstance(payload.get("runtime_provider"), dict):
+        raise AssertionError(f"runtime provider snapshot missing: {payload}")
+    if not provider_reader.calls:
+        raise AssertionError("runtime provider reader was not called")
+    provider_type = provider_reader.calls[-1].get("provider_type")
+    if provider_type != "agentscope":
+        raise AssertionError(
+            f"runtime provider query must be scoped to agentscope: {provider_reader.calls}",
+        )
 
 
 def _assert_pg_provider_config_ref_gate() -> None:
@@ -230,6 +281,7 @@ def _assert_pg_provider_without_config_ref_gate() -> None:
 
 
 def main() -> int:
+    _assert_pg_provider_query_is_agentscope_scoped()
     _assert_pg_provider_config_ref_gate()
     _assert_pg_provider_config_ref_not_passed_to_gate()
     _assert_pg_provider_without_config_ref_gate()

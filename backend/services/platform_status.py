@@ -452,6 +452,7 @@ class PlatformStatusService:
         try:
             providers = self._runtime_provider_reader.list_providers(
                 status="active",
+                provider_type="agentscope",
                 limit=1,
             )
         except Exception:
