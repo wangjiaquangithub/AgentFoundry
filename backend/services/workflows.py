@@ -45,10 +45,14 @@ class PlatformWorkflowTemplateService:
         *,
         repository: WorkflowTemplateRepositoryProtocol,
         audit_event_writer: AuditEventWriteRepository | None = None,
+        tenant_id: str = "acme",
+        system_actor_user_id: str = "acme:alice",
         now: Callable[[], str] | None = None,
     ) -> None:
         self._repository = repository
         self._audit_event_writer = audit_event_writer
+        self._tenant_id = tenant_id
+        self._system_actor_user_id = system_actor_user_id
         self._now = now or _utc_now_iso
 
     def default_templates(self) -> list[dict[str, Any]]:
@@ -167,7 +171,13 @@ class PlatformWorkflowTemplateService:
     ) -> list[dict[str, Any]]:
         return _merge_by_key(existing, imported, "workflow_type")
 
-    def import_templates_payload(self, value: Any, *, mode: str) -> None:
+    def import_templates_payload(
+        self,
+        value: Any,
+        *,
+        mode: str,
+        actor: str | None = None,
+    ) -> None:
         imported_workflows = self.normalize_import_templates(value)
         workflows = imported_workflows
         if mode != "replace":
@@ -179,7 +189,7 @@ class PlatformWorkflowTemplateService:
         for workflow in imported_workflows:
             self._append_workflow_template_audit_event(
                 workflow=workflow,
-                actor=str(workflow.get("updated_by") or "platform-admin"),
+                actor=self._normalize_actor(actor),
                 event_type="workflow_template.imported",
                 extra_payload={"mode": mode},
             )
@@ -233,7 +243,7 @@ class PlatformWorkflowTemplateService:
     ) -> dict[str, str]:
         return {
             "workflow_type": workflow_type.strip(),
-            "actor": str(actor or "platform-admin").strip() or "platform-admin",
+            "actor": self._normalize_actor(actor),
         }
 
     def update_template(
@@ -351,9 +361,8 @@ class PlatformWorkflowTemplateService:
             persisted_audit_event = self._audit_event_writer.append_audit_event(
                 AuditEventRecord(
                     id=str(uuid4()),
-                    tenant_id="platform",
-                    actor_user_id=str(actor or "platform-admin").strip()
-                    or "platform-admin",
+                    tenant_id=self._tenant_id,
+                    actor_user_id=self._normalize_actor(actor),
                     event_type=event_type,
                     target_type="workflow_template",
                     target_id=workflow_type,
@@ -370,6 +379,12 @@ class PlatformWorkflowTemplateService:
             raise
         except Exception as exc:
             raise PlatformWorkflowTemplateServiceError(500, str(exc)) from exc
+
+    def _normalize_actor(self, actor: str | None) -> str:
+        return (
+            str(actor or self._system_actor_user_id).strip()
+            or self._system_actor_user_id
+        )
 
 
 class PlatformWorkflowRunService:

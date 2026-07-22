@@ -347,6 +347,7 @@ def create_platform_admin_router(
                 deps.workflow_template_service().import_templates_payload(
                     incoming.get("workflow_templates"),
                     mode=mode,
+                    actor=actor,
                 )
             except PlatformWorkflowTemplateServiceError as exc:
                 _raise_service_error(exc)
