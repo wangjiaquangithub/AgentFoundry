@@ -46,6 +46,10 @@ CHECKS = (
         "runtime adapter API contract",
         (sys.executable, "scripts/check_phase4_runtime_api_contract.py"),
     ),
+    (
+        "runtime adapter invoke boundary",
+        (sys.executable, "scripts/check_phase4_runtime_invoke_boundary.py"),
+    ),
 )
 
 

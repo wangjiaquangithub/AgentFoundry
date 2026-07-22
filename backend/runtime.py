@@ -8,7 +8,7 @@ this boundary, not the platform itself.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any, Mapping, Protocol
 
 
 RUNTIME_PROVIDER_HEALTH_REQUIRED_FIELDS = frozenset(
@@ -434,6 +434,81 @@ def build_runtime_invocation_request_payload(
     ).to_dict()
 
 
+def build_runtime_invocation_request_from_payload(
+    payload: Mapping[str, Any],
+) -> RuntimeInvocationRequest:
+    """Build a provider-neutral runtime request from a serialized payload."""
+    context_payload = payload.get("context")
+    if not isinstance(context_payload, Mapping):
+        raise ValueError("Runtime invocation request requires context.")
+
+    question = payload.get("question")
+    if not isinstance(question, str) or not question.strip():
+        raise ValueError("Runtime invocation request requires a non-empty question.")
+
+    metadata = payload.get("metadata")
+    if metadata is not None and not isinstance(metadata, dict):
+        raise ValueError("Runtime invocation request metadata must be an object.")
+
+    context_metadata = context_payload.get("metadata")
+    if context_metadata is not None and not isinstance(context_metadata, dict):
+        raise ValueError("Runtime invocation context metadata must be an object.")
+
+    return RuntimeInvocationRequest(
+        context=RuntimeContext(
+            tenant=_required_text(context_payload, "tenant"),
+            user_id=_required_text(context_payload, "user_id"),
+            session_id=_required_text(context_payload, "session_id"),
+            agent_id=_required_text(context_payload, "agent_id"),
+            agent_name=_optional_text(context_payload.get("agent_name")),
+            metadata=context_metadata,
+        ),
+        question=question,
+        instructions=_optional_text(payload.get("instructions")),
+        tools=_string_tuple(payload.get("tools", ()), "tools"),
+        knowledge_base_ids=_string_tuple(
+            payload.get("knowledge_base_ids", ()),
+            "knowledge_base_ids",
+        ),
+        memory_enabled=bool(payload.get("memory_enabled", False)),
+        metadata=metadata,
+    )
+
+
+async def invoke_runtime_adapter_from_payload(
+    payload: Mapping[str, Any],
+    *,
+    agent_metadata: dict[str, Any] | None = None,
+    runtime_adapter: RuntimeAdapter | None = None,
+) -> dict[str, Any]:
+    """Invoke the selected runtime adapter from a serialized request payload."""
+    request = build_runtime_invocation_request_from_payload(payload)
+    return await invoke_runtime_adapter(
+        request,
+        agent_metadata=agent_metadata,
+        runtime_adapter=runtime_adapter,
+    )
+
+
+async def invoke_runtime_adapter(
+    request: RuntimeInvocationRequest,
+    *,
+    agent_metadata: dict[str, Any] | None = None,
+    runtime_adapter: RuntimeAdapter | None = None,
+) -> dict[str, Any]:
+    """Invoke the selected runtime adapter and normalize its result."""
+    selected_adapter = runtime_adapter or get_runtime_adapter(agent_metadata)
+    adapter_metadata = selected_adapter.describe(
+        agent_metadata
+        or {
+            "agent_id": request.context.agent_id,
+            "agent_name": request.context.agent_name,
+        },
+    )
+    result = await selected_adapter.invoke(request)
+    return normalize_runtime_invocation_result(result.to_dict(), adapter_metadata)
+
+
 def build_runtime_invocation_result_payload(
     *,
     answer: str,
@@ -697,6 +772,27 @@ def _string_list(value: Any) -> list[str]:
     if not isinstance(value, list):
         raise ValueError("Runtime provider capabilities must be a list.")
     return [str(item) for item in value]
+
+
+def _string_tuple(value: Any, field: str) -> tuple[str, ...]:
+    if not isinstance(value, (list, tuple)):
+        raise ValueError(f"Runtime invocation request {field} must be a list.")
+    return tuple(str(item) for item in value)
+
+
+def _required_text(payload: Mapping[str, Any], field: str) -> str:
+    value = payload.get(field)
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"Runtime invocation context requires {field}.")
+    return value
+
+
+def _optional_text(value: Any) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError("Runtime invocation optional text fields must be strings.")
+    return value
 
 
 def describe_runtime_provider_health(
