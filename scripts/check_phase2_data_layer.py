@@ -1225,7 +1225,22 @@ def _check_postgres_audit_events_wired() -> list[str]:
     errors: list[str] = []
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
     platform_status_source = PLATFORM_STATUS_SERVICE_MODULE.read_text(encoding="utf-8")
+    audit_persistence_source = (PERSISTENCE_DIR / "audit_events.py").read_text(
+        encoding="utf-8",
+    )
     main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+
+    for token in (
+        'PRODUCTION_AUDIT_EVENT_SYSTEM_OF_RECORD = "PostgreSQL"',
+        'LOCAL_AUDIT_EVENT_COMPATIBILITY_PATH = "SQLite"',
+        "production system of record",
+        "local compatibility only",
+    ):
+        if token not in audit_persistence_source:
+            errors.append(
+                "backend/persistence/audit_events.py must declare PostgreSQL "
+                f"as the audit event production system of record: {token}",
+            )
 
     if not _module_imports_name(main_tree, "PostgresAuditEventReadRepository"):
         errors.append(

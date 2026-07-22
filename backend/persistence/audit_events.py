@@ -1,8 +1,8 @@
 """Audit event persistence repositories.
 
 Audit events are tenant-scoped governance records. PostgreSQL is the
-production path; SQLite remains an explicit local development compatibility
-path during the data-layer migration.
+production system of record; SQLite remains an explicit local development
+compatibility path during the data-layer migration.
 """
 
 from __future__ import annotations
@@ -12,6 +12,10 @@ from dataclasses import dataclass
 from typing import Any
 
 from backend.persistence.database import PostgresDatabase, SQLiteDatabase
+
+
+PRODUCTION_AUDIT_EVENT_SYSTEM_OF_RECORD = "PostgreSQL"
+LOCAL_AUDIT_EVENT_COMPATIBILITY_PATH = "SQLite"
 
 
 @dataclass(frozen=True)
@@ -71,7 +75,7 @@ def _validate_write_result(
 
 
 class SQLiteAuditEventReadRepository:
-    """Read tenant-scoped audit events from SQLite."""
+    """Read audit events from SQLite for local compatibility only."""
 
     def __init__(self, database: SQLiteDatabase) -> None:
         self._database = database
@@ -152,7 +156,7 @@ class SQLiteAuditEventReadRepository:
 
 
 class PostgresAuditEventReadRepository:
-    """Read tenant-scoped audit events from PostgreSQL."""
+    """Read tenant-scoped audit events from the production system of record."""
 
     def __init__(self, database: PostgresDatabase) -> None:
         self._database = database
@@ -242,7 +246,7 @@ class PostgresAuditEventReadRepository:
 
 
 class PostgresAuditEventWriteRepository:
-    """Write tenant-scoped audit events to PostgreSQL."""
+    """Write tenant-scoped audit events to the production system of record."""
 
     def __init__(self, database: PostgresDatabase) -> None:
         self._database = database
