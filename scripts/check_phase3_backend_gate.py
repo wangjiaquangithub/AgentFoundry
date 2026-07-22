@@ -86,6 +86,13 @@ CHECKS = (
         (sys.executable, "scripts/check_phase3_agent_run_knowledge_readiness.py"),
     ),
     (
+        "agent runtime production fallback",
+        (
+            sys.executable,
+            "scripts/check_phase3_agent_runtime_production_fallback.py",
+        ),
+    ),
+    (
         "agent run retrieval evidence",
         (sys.executable, "scripts/check_phase3_agent_run_retrieval_evidence.py"),
     ),
