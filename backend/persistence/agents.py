@@ -138,16 +138,109 @@ def _optional_clean_string(value: Any) -> str | None:
 
 
 def _json_string_list(value: Any) -> str:
+    return json.dumps(_string_list(value), ensure_ascii=False)
+
+
+def _string_list(value: Any) -> list[str]:
     if not isinstance(value, list):
-        return "[]"
-    return json.dumps(
-        [str(item) for item in value if str(item or "").strip()],
-        ensure_ascii=False,
-    )
+        return []
+    return [str(item) for item in value if str(item or "").strip()]
 
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _validate_agent_write_result(
+    requested: AgentRecord,
+    persisted: AgentRecord,
+) -> None:
+    if not persisted.id:
+        raise RuntimeError("PostgreSQL agent catalog write did not return an agent id.")
+    if not persisted.tenant_id:
+        raise RuntimeError("PostgreSQL agent catalog write did not return a tenant id.")
+    if persisted.id != requested.id:
+        raise RuntimeError("PostgreSQL agent catalog write returned another agent.")
+    if persisted.tenant_id != requested.tenant_id:
+        raise RuntimeError("PostgreSQL agent catalog write returned another tenant.")
+    if persisted.template_id != requested.template_id:
+        raise RuntimeError("PostgreSQL agent catalog write returned another template.")
+    if persisted.name != requested.name:
+        raise RuntimeError("PostgreSQL agent catalog write returned another name.")
+    if persisted.description != requested.description:
+        raise RuntimeError("PostgreSQL agent catalog write returned another description.")
+    if persisted.status != requested.status:
+        raise RuntimeError("PostgreSQL agent catalog write returned another status.")
+    if persisted.owner_user_id != requested.owner_user_id:
+        raise RuntimeError("PostgreSQL agent catalog write returned another owner.")
+    if persisted.current_version_id != requested.current_version_id:
+        raise RuntimeError(
+            "PostgreSQL agent catalog write returned another current version.",
+        )
+    if persisted.memory_enabled != requested.memory_enabled:
+        raise RuntimeError("PostgreSQL agent catalog write returned another memory flag.")
+    if persisted.workflow_enabled != requested.workflow_enabled:
+        raise RuntimeError(
+            "PostgreSQL agent catalog write returned another workflow flag.",
+        )
+    if persisted.allowed_user_ids != requested.allowed_user_ids:
+        raise RuntimeError("PostgreSQL agent catalog write returned another user scope.")
+    if persisted.allowed_roles != requested.allowed_roles:
+        raise RuntimeError("PostgreSQL agent catalog write returned another role scope.")
+    if persisted.capabilities != requested.capabilities:
+        raise RuntimeError("PostgreSQL agent catalog write returned other capabilities.")
+    if persisted.updated_at != requested.updated_at:
+        raise RuntimeError("PostgreSQL agent catalog write returned another update time.")
+
+
+def _validate_agent_version_write_result(
+    requested: AgentVersionRecord,
+    persisted: AgentVersionRecord,
+) -> None:
+    if not persisted.id:
+        raise RuntimeError(
+            "PostgreSQL agent catalog write did not return an agent version id.",
+        )
+    if not persisted.tenant_id:
+        raise RuntimeError(
+            "PostgreSQL agent catalog write did not return a version tenant id.",
+        )
+    if persisted.id != requested.id:
+        raise RuntimeError("PostgreSQL agent catalog write returned another version.")
+    if persisted.tenant_id != requested.tenant_id:
+        raise RuntimeError(
+            "PostgreSQL agent catalog version write returned another tenant.",
+        )
+    if persisted.agent_id != requested.agent_id:
+        raise RuntimeError(
+            "PostgreSQL agent catalog version write returned another agent.",
+        )
+    if persisted.version != requested.version:
+        raise RuntimeError(
+            "PostgreSQL agent catalog version write returned another version number.",
+        )
+    if persisted.instructions != requested.instructions:
+        raise RuntimeError(
+            "PostgreSQL agent catalog version write returned other instructions.",
+        )
+    if persisted.model_config_id != requested.model_config_id:
+        raise RuntimeError(
+            "PostgreSQL agent catalog version write returned another model config.",
+        )
+    if persisted.runtime_provider != requested.runtime_provider:
+        raise RuntimeError(
+            "PostgreSQL agent catalog version write returned another runtime provider.",
+        )
+    if persisted.tool_ids != requested.tool_ids:
+        raise RuntimeError("PostgreSQL agent catalog version write returned other tools.")
+    if persisted.knowledge_base_ids != requested.knowledge_base_ids:
+        raise RuntimeError(
+            "PostgreSQL agent catalog version write returned other knowledge bases.",
+        )
+    if persisted.memory_policy_id != requested.memory_policy_id:
+        raise RuntimeError(
+            "PostgreSQL agent catalog version write returned another memory policy.",
+        )
 
 
 class SQLiteAgentCatalogReadRepository:
@@ -387,6 +480,38 @@ class PostgresAgentCatalogWriteRepository:
             or _clean_string(agent.get("name"))
             or agent_id
         )
+        template_id = _clean_string(agent.get("template_id")) or (
+            "enterprise_knowledge_assistant"
+        )
+        agent_name = _clean_string(agent.get("name")) or agent_id
+        agent_description = _optional_clean_string(agent.get("description"))
+        agent_status = _clean_string(agent.get("status")) or "draft"
+        memory_enabled = bool(agent.get("memory_enabled", False))
+        workflow_enabled = bool(agent.get("workflow_enabled", False))
+        allowed_user_ids = _string_list(agent.get("allowed_user_ids"))
+        allowed_roles = _string_list(agent.get("allowed_roles"))
+        capabilities = _string_list(agent.get("capabilities"))
+        model_config_id = _optional_clean_string(agent.get("model_config_id"))
+        runtime_provider = _clean_string(agent.get("runtime_provider")) or (
+            "local-dev-runtime"
+        )
+        tool_ids = _string_list(agent.get("tools"))
+        knowledge_base_ids = _string_list(agent.get("knowledge_base_ids"))
+        memory_policy_id = _optional_clean_string(agent.get("memory_policy_id"))
+        requested_version = AgentVersionRecord(
+            id=version_id,
+            tenant_id=tenant_id,
+            agent_id=agent_id,
+            version=1,
+            instructions=instructions,
+            model_config_id=model_config_id,
+            runtime_provider=runtime_provider,
+            tool_ids=tool_ids,
+            knowledge_base_ids=knowledge_base_ids,
+            memory_policy_id=memory_policy_id,
+            created_by=owner_user_id,
+            created_at=created_at or updated_at,
+        )
 
         cursor.execute(
             """
@@ -416,17 +541,16 @@ class PostgresAgentCatalogWriteRepository:
             (
                 agent_id,
                 tenant_id,
-                _clean_string(agent.get("template_id"))
-                or "enterprise_knowledge_assistant",
-                _clean_string(agent.get("name")) or agent_id,
-                _optional_clean_string(agent.get("description")),
-                _clean_string(agent.get("status")) or "draft",
+                template_id,
+                agent_name,
+                agent_description,
+                agent_status,
                 owner_user_id,
-                bool(agent.get("memory_enabled", False)),
-                bool(agent.get("workflow_enabled", False)),
-                _json_string_list(agent.get("allowed_user_ids")),
-                _json_string_list(agent.get("allowed_roles")),
-                _json_string_list(agent.get("capabilities")),
+                memory_enabled,
+                workflow_enabled,
+                json.dumps(allowed_user_ids, ensure_ascii=False),
+                json.dumps(allowed_roles, ensure_ascii=False),
+                json.dumps(capabilities, ensure_ascii=False),
                 created_at or updated_at,
                 updated_at or created_at,
             ),
@@ -455,15 +579,18 @@ class PostgresAgentCatalogWriteRepository:
               memory_policy_id, created_by, created_at
             """,
             (
-                version_id,
-                tenant_id,
-                agent_id,
-                instructions,
-                _optional_clean_string(agent.get("model_config_id")),
-                _clean_string(agent.get("runtime_provider")) or "local-dev-runtime",
-                _json_string_list(agent.get("tools")),
-                _json_string_list(agent.get("knowledge_base_ids")),
-                _optional_clean_string(agent.get("memory_policy_id")),
+                requested_version.id,
+                requested_version.tenant_id,
+                requested_version.agent_id,
+                requested_version.instructions,
+                requested_version.model_config_id,
+                requested_version.runtime_provider,
+                json.dumps(requested_version.tool_ids, ensure_ascii=False),
+                json.dumps(
+                    requested_version.knowledge_base_ids,
+                    ensure_ascii=False,
+                ),
+                requested_version.memory_policy_id,
                 owner_user_id,
                 created_at or updated_at,
             ),
@@ -473,6 +600,24 @@ class PostgresAgentCatalogWriteRepository:
             raise RuntimeError("Agent version upsert did not return a row.")
 
         version_record = _agent_version_from_row(dict(version_row))
+        _validate_agent_version_write_result(requested_version, version_record)
+        requested_agent = AgentRecord(
+            id=agent_id,
+            tenant_id=tenant_id,
+            template_id=template_id,
+            name=agent_name,
+            description=agent_description,
+            status=agent_status,
+            owner_user_id=owner_user_id,
+            current_version_id=version_record.id,
+            memory_enabled=memory_enabled,
+            workflow_enabled=workflow_enabled,
+            allowed_user_ids=allowed_user_ids,
+            allowed_roles=allowed_roles,
+            capabilities=capabilities,
+            created_at=created_at or updated_at,
+            updated_at=updated_at or created_at,
+        )
         cursor.execute(
             """
             UPDATE agents
@@ -487,8 +632,10 @@ class PostgresAgentCatalogWriteRepository:
         updated_agent_row = cursor.fetchone()
         if updated_agent_row is None:
             raise RuntimeError("Agent current version update did not return a row.")
+        agent_record = _agent_from_row(dict(updated_agent_row))
+        _validate_agent_write_result(requested_agent, agent_record)
 
         return AgentCatalogWriteResult(
-            agent=_agent_from_row(dict(updated_agent_row)),
+            agent=agent_record,
             version=version_record,
         )

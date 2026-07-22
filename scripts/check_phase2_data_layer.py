@@ -1310,6 +1310,10 @@ def _check_postgres_agent_catalog_wired() -> list[str]:
         "Agent catalog upsert did not return a row.",
         "Agent version upsert did not return a row.",
         "Agent current version update did not return a row.",
+        "_validate_agent_write_result",
+        "_validate_agent_version_write_result",
+        "PostgreSQL agent catalog write returned another current version.",
+        "PostgreSQL agent catalog version write returned another runtime provider.",
     ]
     for token in required_persistence_tokens:
         if token not in agent_persistence_source:
