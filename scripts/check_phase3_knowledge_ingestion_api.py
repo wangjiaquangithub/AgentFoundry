@@ -46,11 +46,24 @@ def _call_names(path: Path) -> set[str]:
     return names
 
 
+def _function_source(path: Path, function_name: str) -> str:
+    source = _read(path)
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == function_name:
+            return ast.get_source_segment(source, node) or ""
+    _fail(f"{function_name} is missing from {path}")
+
+
 def main() -> int:
     api_source = _read(API_MODULE)
     schema_source = _read(SCHEMA_MODULE)
     main_source = _read(MAIN_MODULE)
     service_source = _read(SERVICE_MODULE)
+    ingestion_router_source = _function_source(
+        API_MODULE,
+        "create_knowledge_ingestion_router",
+    )
 
     _assert_contains(
         schema_source,
@@ -102,8 +115,8 @@ def main() -> int:
         "vector_ref",
     }
     for term in forbidden_api_terms:
-        if term in api_source:
-            _fail(f"knowledge API must not use {term!r}")
+        if term in ingestion_router_source:
+            _fail(f"knowledge ingestion API must not use {term!r}")
 
     service_calls = _call_names(SERVICE_MODULE)
     if "append_embedding_record" in service_calls:

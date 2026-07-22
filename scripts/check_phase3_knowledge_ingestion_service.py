@@ -39,8 +39,9 @@ class Documents:
     def __init__(self) -> None:
         self.records: dict[str, DocumentRecord] = {}
 
-    def upsert_document(self, record: DocumentRecord) -> None:
+    def upsert_document(self, record: DocumentRecord) -> DocumentRecord:
         self.records[record.id] = record
+        return record
 
 
 class Chunks:
@@ -48,9 +49,10 @@ class Chunks:
         self.records: dict[str, list[DocumentChunkRecord]] = {}
         self.deleted: list[tuple[str, str]] = []
 
-    def append_document_chunk(self, record: DocumentChunkRecord) -> None:
+    def append_document_chunk(self, record: DocumentChunkRecord) -> DocumentChunkRecord:
         self.records.setdefault(record.document_id, [])
         self.records[record.document_id].append(record)
+        return record
 
     def delete_document_chunks(self, *, tenant_id: str, document_id: str) -> int:
         self.deleted.append((tenant_id, document_id))
