@@ -22,15 +22,18 @@ export function PlatformFilterBar({
 	className,
 }: PlatformFilterBarProps) {
 	return (
-		<div className={cn('grid gap-3 border-y bg-background/80 px-3 py-3', className)}>
+		<div className={cn('grid gap-3 border-y bg-muted/15 px-3 py-3', className)}>
 			<div className="flex flex-wrap items-center justify-between gap-2">
-				<Badge variant="outline">{resultLabel}</Badge>
+				<Badge variant="secondary" className="rounded-md font-normal">
+					{resultLabel}
+				</Badge>
 				<Button
 					type="button"
 					size="sm"
 					variant="ghost"
 					onClick={onClear}
 					disabled={clearDisabled}
+					className="h-8"
 				>
 					{clearLabel}
 				</Button>

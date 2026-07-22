@@ -64,12 +64,12 @@ export interface PlatformPageShellProps {
 
 export function PlatformPageShell({ children, className }: PlatformPageShellProps) {
 	return (
-		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-muted/20">
-			<div className="mx-auto grid w-full max-w-[1500px] gap-0 lg:grid-cols-[232px_minmax(0,1fr)]">
+		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-[hsl(var(--muted)/0.28)]">
+			<div className="mx-auto grid w-full max-w-[1560px] gap-0 lg:grid-cols-[248px_minmax(0,1fr)]">
 				<PlatformDesktopNav />
 				<div
 					className={cn(
-						'flex min-w-0 flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5 lg:px-8',
+						'flex min-w-0 flex-col gap-5 px-4 py-4 sm:px-6 sm:py-5 lg:px-7 xl:px-9',
 						className,
 					)}
 				>
@@ -83,9 +83,9 @@ export function PlatformPageShell({ children, className }: PlatformPageShellProp
 
 function PlatformDesktopNav() {
 	return (
-		<aside className="sticky top-0 hidden h-screen min-h-0 border-r bg-background px-3 py-5 lg:block">
-			<div className="mb-5 border-b px-2 pb-4">
-				<div className="text-sm font-semibold">AgentFoundry</div>
+		<aside className="sticky top-0 hidden h-screen min-h-0 border-r bg-background/95 px-3 py-5 shadow-[1px_0_0_hsl(var(--border)/0.45)] lg:block">
+			<div className="mb-5 rounded-md border bg-muted/20 px-3 py-3">
+				<div className="text-sm font-semibold tracking-normal">AgentFoundry</div>
 				<p className="mt-1 text-xs leading-5 text-muted-foreground">
 					企业级 Agent 平台控制台
 				</p>
@@ -173,7 +173,7 @@ export function PlatformPageHeader({
 	aside,
 }: PlatformPageHeaderProps) {
 	return (
-		<section className="flex flex-col gap-4 border-b bg-background/60 px-0 pb-4 lg:flex-row lg:items-start lg:justify-between">
+		<section className="flex flex-col gap-4 rounded-lg border bg-background px-4 py-4 shadow-sm lg:flex-row lg:items-start lg:justify-between">
 			<div className="min-w-0">
 				<div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
 					<span className="grid size-7 place-items-center rounded-md border bg-background text-foreground">
@@ -351,7 +351,7 @@ export function PlatformDetailDrawer({
 				</SheetHeader>
 				<div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">{children}</div>
 				{footer ? (
-					<SheetFooter className="border-t bg-background p-4 sm:p-5">
+					<SheetFooter className="shrink-0 border-t bg-background p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5">
 						{footer}
 					</SheetFooter>
 				) : null}

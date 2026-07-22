@@ -10,6 +10,7 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from '@/components/ui/empty';
+import { cn } from '@/lib/utils';
 
 export type PlatformEmptyStateVariant = 'noData' | 'filtered' | 'noAccess' | 'error';
 
@@ -40,15 +41,18 @@ export function PlatformEmptyState({
 	const Icon = icons[variant];
 
 	return (
-		<Empty className={className}>
+		<Empty
+			className={cn(
+				'min-h-56 rounded-md border border-dashed bg-muted/15 px-4 py-8 text-center',
+				className,
+			)}
+		>
 			<EmptyHeader>
-				<EmptyMedia variant="icon">
+				<EmptyMedia variant="icon" className="mx-auto size-10 rounded-md border bg-background">
 					<Icon />
 				</EmptyMedia>
-				<EmptyTitle>{title}</EmptyTitle>
-				{description ? (
-					<EmptyDescription>{description}</EmptyDescription>
-				) : null}
+				<EmptyTitle className="text-sm font-semibold">{title}</EmptyTitle>
+				{description ? <EmptyDescription className="max-w-md">{description}</EmptyDescription> : null}
 			</EmptyHeader>
 			{actionLabel && onAction ? (
 				<EmptyContent>
