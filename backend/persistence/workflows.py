@@ -115,7 +115,9 @@ def _validate_workflow_template_write_result(
     persisted: WorkflowTemplateRecord,
 ) -> None:
     if not persisted.id:
-        raise ValueError("PostgreSQL workflow template write did not return an id.")
+        raise ValueError(
+            "PostgreSQL workflow template write did not return a template id.",
+        )
     if not persisted.tenant_id:
         raise ValueError(
             "PostgreSQL workflow template write did not return a tenant id.",

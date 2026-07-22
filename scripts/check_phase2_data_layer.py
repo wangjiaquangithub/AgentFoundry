@@ -2344,6 +2344,135 @@ def _check_postgres_workflow_runs_wired() -> list[str]:
     return errors
 
 
+def _check_postgres_workflow_templates_wired() -> list[str]:
+    errors: list[str] = []
+    main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    composition_source = (SERVICES_DIR / "composition.py").read_text(encoding="utf-8")
+    workflow_repository_source = (REPOSITORIES_DIR / "workflows.py").read_text(
+        encoding="utf-8",
+    )
+    workflow_persistence_source = (PERSISTENCE_DIR / "workflows.py").read_text(
+        encoding="utf-8",
+    )
+    composition_tree = ast.parse(
+        composition_source,
+        filename=str(SERVICES_DIR / "composition.py"),
+    )
+
+    required_composition_imports = [
+        "WorkflowTemplateRepositoryProtocol",
+        "PostgresWorkflowReadRepository",
+        "PostgresWorkflowWriteRepository",
+        "PostgresWorkflowTemplateReadThroughRepository",
+    ]
+    for imported_name in required_composition_imports:
+        if not _module_imports_name(composition_tree, imported_name):
+            errors.append(
+                "backend/services/composition.py must import "
+                f"{imported_name} for workflow template PostgreSQL wiring",
+            )
+
+    if not _module_defines_function(
+        composition_tree,
+        "build_configured_postgres_workflow_template_repository",
+    ):
+        errors.append(
+            "backend/services/composition.py must define build_configured_postgres_workflow_template_repository",
+        )
+    if not _module_defines_function(
+        composition_tree,
+        "build_workflow_template_repository",
+    ):
+        errors.append(
+            "backend/services/composition.py must define build_workflow_template_repository for workflow template repository selection",
+        )
+    if "workflow_template_repository = build_workflow_template_repository(" not in main_source:
+        errors.append(
+            "backend/main.py must build workflow_template_repository through the services.composition selector",
+        )
+    if (
+        "build_configured_postgres_workflow_template_repository()"
+        not in composition_source
+        or "or fallback_repository" not in composition_source
+    ):
+        errors.append(
+            "backend/services/composition.py must select PostgreSQL workflow template storage before the fallback repository",
+        )
+    if "PostgresWorkflowTemplateReadThroughRepository(" not in composition_source:
+        errors.append(
+            "backend/services/composition.py must wrap PostgreSQL workflow repositories with PostgresWorkflowTemplateReadThroughRepository",
+        )
+    if "postgres_reader=PostgresWorkflowReadRepository(database)" not in composition_source:
+        errors.append(
+            "backend/services/composition.py must pass the PostgreSQL workflow reader into the workflow template repository",
+        )
+    if "postgres_writer=PostgresWorkflowWriteRepository(database)" not in composition_source:
+        errors.append(
+            "backend/services/composition.py must pass the PostgreSQL workflow writer into the workflow template repository",
+        )
+    if (
+        "workflow_template_repository = WorkflowTemplateRepository(\n"
+        "    PLATFORM_WORKFLOW_TEMPLATES_PATH,\n"
+        ")\nworkflow_template_repository = build_workflow_template_repository("
+        not in main_source
+    ):
+        errors.append(
+            "backend/main.py must keep local JSON workflow templates as the development fallback behind production PostgreSQL selection",
+        )
+
+    required_read_through_tokens = [
+        "class PostgresWorkflowTemplateReadThroughRepository",
+        "Use PostgreSQL as the source of truth for workflow templates.",
+        "list_templates",
+        "replace_templates",
+        "_postgres_template_to_platform_record",
+        "_platform_template_to_postgres_record",
+    ]
+    for token in required_read_through_tokens:
+        if token not in workflow_repository_source:
+            errors.append(
+                "backend/repositories/workflows.py must provide the PostgreSQL workflow template read-through adapter: "
+                f"{token}",
+            )
+
+    required_persistence_tokens = [
+        "class PostgresWorkflowReadRepository",
+        "class PostgresWorkflowWriteRepository",
+        "def list_templates",
+        "def get_template",
+        "def replace_templates",
+        "FROM workflow_templates",
+        "INSERT INTO workflow_templates",
+        "ON CONFLICT (id) DO UPDATE",
+        "WHERE workflow_templates.tenant_id = EXCLUDED.tenant_id",
+        "_validate_workflow_template_write_result(record, persisted)",
+    ]
+    for token in required_persistence_tokens:
+        if token not in workflow_persistence_source:
+            errors.append(
+                "backend/persistence/workflows.py must persist workflow template records in PostgreSQL: "
+                f"{token}",
+            )
+
+    for token in (
+        "PostgreSQL workflow template write did not return a template id.",
+        "PostgreSQL workflow template write did not return a tenant id.",
+        "PostgreSQL workflow template write returned another template.",
+        "PostgreSQL workflow template write returned another tenant.",
+        "PostgreSQL workflow template write returned another name.",
+        "PostgreSQL workflow template write returned another definition.",
+        "PostgreSQL workflow template write returned another created time.",
+        "PostgreSQL workflow template write returned another updated time.",
+    ):
+        if token not in workflow_persistence_source:
+            errors.append(
+                "backend/persistence/workflows.py must validate persisted PostgreSQL "
+                f"workflow template write records: {token}",
+            )
+
+    return errors
+
+
 def _check_postgres_agent_catalog_wired() -> list[str]:
     errors: list[str] = []
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
@@ -4593,6 +4722,7 @@ def main() -> int:
         *_check_postgres_audit_events_wired(),
         *_check_postgres_retrieval_events_wired(),
         *_check_postgres_retrieval_event_write_records(),
+        *_check_postgres_workflow_templates_wired(),
         *_check_postgres_workflow_runs_wired(),
         *_check_postgres_agent_catalog_wired(),
         *_check_postgres_agent_runs_wired(),
