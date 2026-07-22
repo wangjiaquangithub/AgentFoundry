@@ -1637,6 +1637,7 @@ def _check_postgres_knowledge_ingestion_write_records() -> list[str]:
         "PostgreSQL document write returned another source uri.",
         "PostgreSQL document write returned another object ref.",
         "PostgreSQL document write returned another status.",
+        "PostgreSQL document write returned another updated time.",
     ):
         if token not in document_persistence_source:
             errors.append(

@@ -74,6 +74,8 @@ def _validate_write_result(
         raise ValueError("PostgreSQL document write returned another object ref.")
     if persisted.status != requested.status:
         raise ValueError("PostgreSQL document write returned another status.")
+    if persisted.updated_at != requested.updated_at:
+        raise ValueError("PostgreSQL document write returned another updated time.")
 
 
 class SQLiteDocumentReadRepository:
