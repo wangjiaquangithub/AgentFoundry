@@ -602,6 +602,94 @@ def _check_postgres_url_detection_boundary() -> list[str]:
     return errors
 
 
+def _check_postgres_first_production_database_boundary() -> list[str]:
+    errors: list[str] = []
+    database_source = DATABASE_MODULE.read_text(encoding="utf-8")
+    database_tree = ast.parse(database_source, filename=str(DATABASE_MODULE))
+
+    required_names = [
+        "DATABASE_URL_ENV_VAR",
+        "DEPLOYMENT_ENV_VAR",
+        "PRODUCTION_ENV_VALUES",
+        "is_production_environment",
+        "inspect_configured_database_status",
+        "require_postgres_database_for_production",
+        "create_configured_postgres_database",
+    ]
+    for name in required_names:
+        defines_name = _module_defines_function(database_tree, name) or any(
+            isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id == name for target in node.targets)
+            for node in database_tree.body
+        )
+        if not defines_name:
+            errors.append(
+                "backend/persistence/database.py must keep the PostgreSQL-first "
+                f"production database boundary: {name}",
+            )
+
+    configured_database = next(
+        (
+            node
+            for node in database_tree.body
+            if isinstance(node, ast.FunctionDef)
+            and node.name == "create_configured_postgres_database"
+        ),
+        None,
+    )
+    if configured_database is None:
+        errors.append(
+            "backend/persistence/database.py must expose create_configured_postgres_database",
+        )
+    elif not any(
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "require_postgres_database_for_production"
+        for node in ast.walk(configured_database)
+    ):
+        errors.append(
+            "backend/persistence/database.py:create_configured_postgres_database "
+            "must enforce require_postgres_database_for_production before fallback",
+        )
+
+    create_database = next(
+        (
+            node
+            for node in database_tree.body
+            if isinstance(node, ast.FunctionDef) and node.name == "create_database"
+        ),
+        None,
+    )
+    if create_database is None:
+        errors.append("backend/persistence/database.py must expose create_database")
+    elif any(
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "create_sqlite_database"
+        and not node.args
+        for node in ast.walk(create_database)
+    ):
+        errors.append(
+            "backend/persistence/database.py:create_database must not silently "
+            "default to SQLite; sqlite:// must stay explicit local compatibility",
+        )
+
+    required_error_tokens = [
+        "AGENTFOUNDRY_ENV=production",
+        "sqlite://",
+        "postgresql:// or postgres://",
+        "requires PostgreSQL persistence",
+    ]
+    for token in required_error_tokens:
+        if token not in database_source:
+            errors.append(
+                "backend/persistence/database.py must make production PostgreSQL "
+                f"requirements operator-visible: {token}",
+            )
+
+    return errors
+
+
 def _check_postgres_seed_path() -> list[str]:
     errors: list[str] = []
     seed_source = SEED_MODULE.read_text(encoding="utf-8")
@@ -3940,6 +4028,7 @@ def main() -> int:
         *_check_postgres_persistence_repository_inventory(),
         *_check_postgres_persistence_exports(),
         *_check_postgres_url_detection_boundary(),
+        *_check_postgres_first_production_database_boundary(),
         *_check_postgres_seed_path(),
         *_check_postgres_migration_shell_entrypoint(),
         *_check_postgres_data_workflow_documented(),
