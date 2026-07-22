@@ -174,10 +174,16 @@ def _assert_pg_provider_query_is_agentscope_scoped() -> None:
         raise AssertionError(f"runtime provider snapshot missing: {payload}")
     if not provider_reader.calls:
         raise AssertionError("runtime provider reader was not called")
-    provider_type = provider_reader.calls[-1].get("provider_type")
-    if provider_type != "agentscope":
+    last_call = provider_reader.calls[-1]
+    expected_call = {
+        "status": "active",
+        "provider_type": "agentscope",
+        "limit": 1,
+    }
+    if last_call != expected_call:
         raise AssertionError(
-            f"runtime provider query must be scoped to agentscope: {provider_reader.calls}",
+            "runtime provider query must load one active AgentScope provider: "
+            f"{provider_reader.calls}",
         )
 
 
