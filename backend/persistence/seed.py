@@ -433,17 +433,18 @@ def upsert_runtime_providers(
         connection,
         """
         INSERT INTO runtime_providers (
-          id, name, provider_type, mode, status, capabilities, config_ref,
+          id, name, provider_type, mode, status, capabilities, config_ref, base_url,
           created_at, updated_at
         )
         VALUES ('local-dev-runtime', 'Local development runtime', 'local',
-          'in_process', 'active', ?, NULL, ?, ?)
+          'in_process', 'active', ?, NULL, NULL, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           name = excluded.name,
           provider_type = excluded.provider_type,
           mode = excluded.mode,
           status = excluded.status,
           capabilities = excluded.capabilities,
+          base_url = excluded.base_url,
           updated_at = excluded.updated_at
         """,
         (

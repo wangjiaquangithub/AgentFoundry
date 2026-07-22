@@ -24,6 +24,7 @@ class RuntimeProviderRecord:
     status: str
     capabilities: dict[str, Any]
     config_ref: str | None
+    base_url: str | None
     created_at: str
     updated_at: str
 
@@ -53,6 +54,7 @@ def _provider_from_row(row: dict[str, Any]) -> RuntimeProviderRecord:
         status=row["status"],
         capabilities=_object_from_json(row["capabilities"], row["id"], "capabilities"),
         config_ref=row["config_ref"],
+        base_url=row["base_url"],
         created_at=row["created_at"],
         updated_at=row["updated_at"],
     )
@@ -173,7 +175,7 @@ class SQLiteRuntimeReadRepository:
     ) -> list[RuntimeProviderRecord]:
         query = """
             SELECT id, name, provider_type, mode, status, capabilities,
-              config_ref, created_at, updated_at
+              config_ref, base_url, created_at, updated_at
             FROM runtime_providers
             WHERE 1 = 1
         """
@@ -196,7 +198,7 @@ class SQLiteRuntimeReadRepository:
             row = connection.execute(
                 """
                 SELECT id, name, provider_type, mode, status, capabilities,
-                  config_ref, created_at, updated_at
+                  config_ref, base_url, created_at, updated_at
                 FROM runtime_providers
                 WHERE id = ?
                 """,
@@ -275,7 +277,7 @@ class PostgresRuntimeReadRepository:
     ) -> list[RuntimeProviderRecord]:
         query = """
             SELECT id, name, provider_type, mode, status, capabilities,
-              config_ref, created_at, updated_at
+              config_ref, base_url, created_at, updated_at
             FROM runtime_providers
             WHERE 1 = 1
         """
@@ -300,7 +302,7 @@ class PostgresRuntimeReadRepository:
                 cursor.execute(
                     """
                     SELECT id, name, provider_type, mode, status, capabilities,
-                      config_ref, created_at, updated_at
+                      config_ref, base_url, created_at, updated_at
                     FROM runtime_providers
                     WHERE id = %s
                     """,

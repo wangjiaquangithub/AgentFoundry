@@ -525,7 +525,12 @@ class PlatformStatusService:
     @staticmethod
     def _runtime_provider_native_invocation(provider: Any) -> dict[str, Any]:
         config_ref = str(getattr(provider, "config_ref", "") or "")
+        base_url = str(getattr(provider, "base_url", "") or "")
         runtime_provider_config = {}
+        if base_url.strip():
+            runtime_provider_config["agentscope_runtime_url"] = (
+                CONFIGURED_RUNTIME_PROVIDER_REF
+            )
         if config_ref.strip():
             runtime_provider_config["agentscope_runtime_auth_ref"] = (
                 CONFIGURED_RUNTIME_PROVIDER_REF

@@ -24,6 +24,7 @@ class ProviderRecord:
     status: str
     capabilities: dict[str, bool]
     config_ref: str | None
+    base_url: str | None
 
 
 class ProviderReader:
@@ -151,6 +152,7 @@ def _assert_pg_provider_query_is_agentscope_scoped() -> None:
         status="active",
         capabilities={"tenant_context": True, "tool_routing": True},
         config_ref=None,
+        base_url=None,
     )
     provider_reader = ProviderReader(provider)
     status_service = _build_status_service(provider, provider_reader=provider_reader)
@@ -196,6 +198,7 @@ def _assert_pg_provider_read_error_is_observable() -> None:
         status="active",
         capabilities={"tenant_context": True, "tool_routing": True},
         config_ref=None,
+        base_url=None,
     )
     status_service = _build_status_service(
         provider,
@@ -240,6 +243,7 @@ def _assert_pg_provider_missing_record_is_observable() -> None:
         status="active",
         capabilities={"tenant_context": True},
         config_ref=None,
+        base_url=None,
     )
     runtime_provider = _runtime_provider_snapshot(provider)
 
@@ -267,6 +271,7 @@ def _assert_pg_provider_config_ref_gate() -> None:
             status="active",
             capabilities={"tenant_context": True, "tool_routing": True},
             config_ref=secret_ref,
+            base_url=None,
         ),
     )
 
@@ -323,6 +328,7 @@ def _assert_pg_provider_config_ref_not_passed_to_gate() -> None:
                 status="active",
                 capabilities={"tenant_context": True, "tool_routing": True},
                 config_ref=secret_ref,
+                base_url=None,
             ),
         )
     finally:
@@ -343,6 +349,90 @@ def _assert_pg_provider_config_ref_not_passed_to_gate() -> None:
         )
 
 
+def _assert_pg_provider_base_url_and_config_ref_gate() -> None:
+    secret_ref = "secret://agentscope/runtime-token"
+    provider_url = "https://agentscope-runtime.internal"
+    runtime_provider = _runtime_provider_snapshot(
+        ProviderRecord(
+            id="agentscope-platform-adapter",
+            name="AgentScope Platform Adapter",
+            provider_type="agentscope",
+            mode="local-service",
+            status="active",
+            capabilities={"tenant_context": True, "tool_routing": True},
+            config_ref=secret_ref,
+            base_url=provider_url,
+        ),
+    )
+
+    checks = runtime_provider.get("checks")
+    if not isinstance(checks, dict):
+        raise AssertionError(f"runtime provider checks missing: {runtime_provider}")
+    gate = runtime_provider.get("provider_native_invocation")
+    if not isinstance(gate, dict):
+        raise AssertionError(f"provider native gate missing: {runtime_provider}")
+
+    if checks.get("provider_native_config_ready") is not True:
+        raise AssertionError(f"PG provider config should be ready: {runtime_provider}")
+    if gate.get("configured_keys") != [
+        "agentscope_runtime_url",
+        "agentscope_runtime_auth_ref",
+    ]:
+        raise AssertionError(f"configured keys should not expose values: {gate}")
+    if gate.get("missing_keys") != []:
+        raise AssertionError(f"missing keys mismatch: {gate}")
+    if secret_ref in repr(runtime_provider) or provider_url in repr(runtime_provider):
+        raise AssertionError("runtime provider status must not expose PG config values")
+
+
+def _assert_pg_provider_config_values_not_passed_to_gate() -> None:
+    import services.platform_status as platform_status
+
+    secret_ref = "secret://agentscope/runtime-token"
+    provider_url = "https://agentscope-runtime.internal"
+    captured_metadata: dict[str, Any] | None = None
+    original_gate = platform_status.describe_provider_native_invocation_config_gate
+
+    def capture_gate(agent_metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+        nonlocal captured_metadata
+        captured_metadata = agent_metadata
+        return original_gate(agent_metadata)
+
+    platform_status.describe_provider_native_invocation_config_gate = capture_gate
+    try:
+        gate = platform_status.PlatformStatusService._runtime_provider_native_invocation(
+            ProviderRecord(
+                id="agentscope-platform-adapter",
+                name="AgentScope Platform Adapter",
+                provider_type="agentscope",
+                mode="local-service",
+                status="active",
+                capabilities={"tenant_context": True, "tool_routing": True},
+                config_ref=secret_ref,
+                base_url=provider_url,
+            ),
+        )
+    finally:
+        platform_status.describe_provider_native_invocation_config_gate = original_gate
+
+    if gate.get("missing_keys") != []:
+        raise AssertionError(f"runtime provider config should be complete: {gate}")
+    if captured_metadata is None:
+        raise AssertionError("runtime provider gate metadata was not captured")
+    if secret_ref in repr(captured_metadata) or provider_url in repr(captured_metadata):
+        raise AssertionError("PG config values must not be passed into runtime gate")
+    config = captured_metadata.get("runtime_provider_config")
+    if not isinstance(config, dict):
+        raise AssertionError(f"runtime provider config metadata missing: {captured_metadata}")
+    if config != {
+        "agentscope_runtime_url": "<configured>",
+        "agentscope_runtime_auth_ref": "<configured>",
+    }:
+        raise AssertionError(
+            f"runtime provider gate should receive only configured sentinels: {config}",
+        )
+
+
 def _assert_pg_provider_without_config_ref_gate() -> None:
     runtime_provider = _runtime_provider_snapshot(
         ProviderRecord(
@@ -353,6 +443,7 @@ def _assert_pg_provider_without_config_ref_gate() -> None:
             status="active",
             capabilities={"tenant_context": True, "tool_routing": True},
             config_ref=None,
+            base_url=None,
         ),
     )
 
@@ -374,6 +465,8 @@ def main() -> int:
     _assert_pg_provider_missing_record_is_observable()
     _assert_pg_provider_config_ref_gate()
     _assert_pg_provider_config_ref_not_passed_to_gate()
+    _assert_pg_provider_base_url_and_config_ref_gate()
+    _assert_pg_provider_config_values_not_passed_to_gate()
     _assert_pg_provider_without_config_ref_gate()
     print("Phase 4 runtime provider status config gate passed.")
     return 0
