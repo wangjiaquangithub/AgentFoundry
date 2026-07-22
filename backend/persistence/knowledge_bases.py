@@ -38,6 +38,36 @@ def _knowledge_base_from_row(row: dict[str, Any]) -> KnowledgeBaseRecord:
     )
 
 
+def _validate_write_result(
+    requested: KnowledgeBaseRecord,
+    persisted: KnowledgeBaseRecord,
+) -> None:
+    if not persisted.id:
+        raise ValueError("PostgreSQL knowledge base write did not return a knowledge base id.")
+    if not persisted.tenant_id:
+        raise ValueError("PostgreSQL knowledge base write did not return a tenant id.")
+    if not persisted.name:
+        raise ValueError("PostgreSQL knowledge base write did not return a name.")
+    if not persisted.status:
+        raise ValueError("PostgreSQL knowledge base write did not return a status.")
+    if persisted.id != requested.id:
+        raise ValueError("PostgreSQL knowledge base write returned another knowledge base.")
+    if persisted.tenant_id != requested.tenant_id:
+        raise ValueError("PostgreSQL knowledge base write returned another tenant.")
+    if persisted.name != requested.name:
+        raise ValueError("PostgreSQL knowledge base write returned another name.")
+    if persisted.description != requested.description:
+        raise ValueError("PostgreSQL knowledge base write returned another description.")
+    if persisted.status != requested.status:
+        raise ValueError("PostgreSQL knowledge base write returned another status.")
+    if persisted.embedding_model_config_id != requested.embedding_model_config_id:
+        raise ValueError(
+            "PostgreSQL knowledge base write returned another embedding model config.",
+        )
+    if persisted.updated_at != requested.updated_at:
+        raise ValueError("PostgreSQL knowledge base write returned another updated time.")
+
+
 class SQLiteKnowledgeBaseReadRepository:
     """Read tenant-scoped knowledge base records from SQLite."""
 
@@ -192,4 +222,6 @@ class PostgresKnowledgeBaseWriteRepository:
                 row = cursor.fetchone()
         if row is None:
             raise ValueError("Knowledge base id already exists for another tenant.")
-        return _knowledge_base_from_row(dict(row))
+        persisted = _knowledge_base_from_row(dict(row))
+        _validate_write_result(record, persisted)
+        return persisted

@@ -1553,6 +1553,11 @@ def _check_postgres_knowledge_ingestion_write_records() -> list[str]:
     knowledge_ingestion_source = (SERVICES_DIR / "knowledge_ingestion.py").read_text(
         encoding="utf-8",
     )
+    knowledge_base_persistence_source = (
+        PERSISTENCE_DIR / "knowledge_bases.py"
+    ).read_text(
+        encoding="utf-8",
+    )
     document_persistence_source = (PERSISTENCE_DIR / "documents.py").read_text(
         encoding="utf-8",
     )
@@ -1584,6 +1589,31 @@ def _check_postgres_knowledge_ingestion_write_records() -> list[str]:
             errors.append(
                 "backend/services/knowledge_ingestion.py must use persisted "
                 f"PostgreSQL document chunk write records: {token}",
+            )
+
+    for token in (
+        "def upsert_knowledge_base(",
+        ") -> KnowledgeBaseRecord:",
+        "RETURNING id, tenant_id, name, description, status",
+        "row = cursor.fetchone()",
+        "persisted = _knowledge_base_from_row(dict(row))",
+        "_validate_write_result(record, persisted)",
+        "PostgreSQL knowledge base write did not return a knowledge base id.",
+        "PostgreSQL knowledge base write did not return a tenant id.",
+        "PostgreSQL knowledge base write did not return a name.",
+        "PostgreSQL knowledge base write did not return a status.",
+        "PostgreSQL knowledge base write returned another knowledge base.",
+        "PostgreSQL knowledge base write returned another tenant.",
+        "PostgreSQL knowledge base write returned another name.",
+        "PostgreSQL knowledge base write returned another description.",
+        "PostgreSQL knowledge base write returned another status.",
+        "PostgreSQL knowledge base write returned another embedding model config.",
+        "PostgreSQL knowledge base write returned another updated time.",
+    ):
+        if token not in knowledge_base_persistence_source:
+            errors.append(
+                "backend/persistence/knowledge_bases.py must validate persisted "
+                f"PostgreSQL knowledge base write records: {token}",
             )
 
     for token in (
