@@ -70,6 +70,13 @@ CHECKS = (
         ),
     ),
     (
+        "PostgreSQL model config service behavior",
+        (
+            sys.executable,
+            "scripts/check_phase2_postgres_model_config_service_behavior.py",
+        ),
+    ),
+    (
         "PostgreSQL index contract",
         (sys.executable, "scripts/check_phase2_postgres_index_contract.py"),
     ),
