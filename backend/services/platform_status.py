@@ -447,6 +447,7 @@ class PlatformStatusService:
             "capabilities": self._runtime_provider_capabilities(provider),
             "checks": {
                 "adapter_configured": True,
+                "local_service_completion_wired": True,
                 "provider_invocation_wired": False,
                 "direct_agentscope_dependency": False,
                 "postgres_runtime_provider_record": True,

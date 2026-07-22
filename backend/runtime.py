@@ -25,6 +25,7 @@ RUNTIME_PROVIDER_HEALTH_REQUIRED_FIELDS = frozenset(
 )
 RUNTIME_PROVIDER_HEALTH_REQUIRED_CHECKS = (
     "adapter_configured",
+    "local_service_completion_wired",
     "provider_invocation_wired",
     "direct_agentscope_dependency",
 )
@@ -242,12 +243,14 @@ class AgentScopeRuntimeAdapter:
             status="degraded",
             ready=False,
             message=(
-                "Runtime adapter boundary is configured; provider invocation "
-                "extraction is pending."
+                "Runtime adapter boundary is configured and the AgentFoundry "
+                "local service completion path is available; provider-native "
+                "AgentScope invocation remains pending."
             ),
             capabilities=tuple(capability.id for capability in self.capabilities),
             checks={
                 "adapter_configured": True,
+                "local_service_completion_wired": True,
                 "provider_invocation_wired": False,
                 "direct_agentscope_dependency": False,
             },

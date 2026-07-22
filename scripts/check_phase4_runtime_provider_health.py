@@ -92,6 +92,10 @@ def _assert_health_payload(
         raise AssertionError(f"{label} checks must be an object: {payload}")
     if checks.get("adapter_configured") is not True:
         raise AssertionError(f"{label} adapter_configured check must be true: {payload}")
+    if checks.get("local_service_completion_wired") is not True:
+        raise AssertionError(
+            f"{label} local service completion path must be wired: {payload}",
+        )
     if checks.get("provider_invocation_wired") is not False:
         raise AssertionError(
             f"{label} must not claim provider invocation is wired: {payload}",
@@ -102,8 +106,14 @@ def _assert_health_payload(
         )
 
     message = payload.get("message")
-    if not isinstance(message, str) or "pending" not in message:
-        raise AssertionError(f"{label} should explain pending invocation extraction: {payload}")
+    if (
+        not isinstance(message, str)
+        or "local service completion path is available" not in message
+        or "provider-native AgentScope invocation remains pending" not in message
+    ):
+        raise AssertionError(
+            f"{label} should distinguish local completion from pending provider invocation: {payload}",
+        )
 
 
 def main() -> None:
