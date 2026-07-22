@@ -73,7 +73,7 @@ Username: acme:alice
 
 你应该在右侧看到每次运行的回答、自动选择的企业工具、工具参数、路由来源、权限决策、工具返回结果，以及最近的审计日志。这个演示验证的是平台最小闭环，不是最终产品形态。
 
-工具调用审计日志默认写在：
+开发演示的工具调用审计日志默认写在：
 
 ```bash
 tail -f examples/enterprise_knowledge_assistant/data/audit/tool_calls.jsonl
@@ -86,7 +86,7 @@ tail -f examples/enterprise_knowledge_assistant/data/audit/tool_calls.jsonl
 ### 数据库迁移
 
 AgentFoundry 的生产数据层目标是 PostgreSQL。本地 JSON/JSONL 和 SQLite
-只用于开发兼容，不是生产事实来源。
+只用于开发、smoke 验证、导入导出或兼容路径，不是生产事实来源。
 
 先设置 PostgreSQL 连接串：
 
@@ -366,8 +366,8 @@ ENTERPRISE_TOOL_POLICY_MODE=strict
 | `ENTERPRISE_TICKET_PATH` | `/tenants/{tenant}/tickets/{ticket_id}` | 工单查询路径 |
 | `ENTERPRISE_METRICS_PATH` | `/tenants/{tenant}/departments/{department}/metrics` | 部门指标路径 |
 | `ENTERPRISE_AUDIT_ENABLED` | `1` | 是否写入企业工具审计日志 |
-| `ENTERPRISE_AUDIT_LOG_PATH` | 空 | 自定义企业工具审计 JSONL 路径 |
-| `ENTERPRISE_TOOL_POLICY_PATH` | 空 | 自定义企业工具授权策略 JSON 路径 |
+| `ENTERPRISE_AUDIT_LOG_PATH` | 空 | 自定义企业工具审计 JSONL 路径，仅用于开发兼容 |
+| `ENTERPRISE_TOOL_POLICY_PATH` | 空 | 自定义企业工具授权策略 JSON 路径，仅用于开发兼容 |
 | `ENTERPRISE_TOOL_POLICY_MODE` | `permissive` | 工具授权模式，支持 `permissive` 或 `strict` |
 | `ENTERPRISE_AGENT_ROUTER_BASE_URL` | 空 | 可选模型路由 endpoint；为空时只用内置规则路由 |
 | `ENTERPRISE_AGENT_ROUTER_API_KEY` | 空 | 可选模型路由 API key |
@@ -383,6 +383,6 @@ ENTERPRISE_TOOL_POLICY_MODE=strict
 
 - 认证：把 `X-User-ID` 换成真实登录态，并把租户、部门、角色、数据权限写进 claims 或后端权限服务。
 - 工具：继续按当前 connector 抽象扩展数据库、工单、CRM、BI、代码执行沙箱等真实工具。
-- 权限与审计：当前只读工具已有本地授权策略和 JSONL 审计；生产环境需要把策略接入 IAM/RBAC，并对写操作工具加入审批流、trace id 和错误码。
+- 权限与审计：当前只读工具已有本地授权策略和 JSONL 审计作为开发兼容路径；生产环境需要通过 PostgreSQL 审计事件、IAM/RBAC、写操作审批流、trace id 和错误码形成可追踪记录。
 - RAG：本地 Qdrant 适合开发；生产建议使用远程 Qdrant 或托管向量库，并把 blob store 换成 S3/OSS/内部对象存储。
 - 部署：单进程 MVP 可以启用内嵌 index worker；多进程或多节点时，把 `AGENTSCOPE_ENABLE_INDEX_WORKER=0` 用在 API 进程，并部署独立索引 worker。
