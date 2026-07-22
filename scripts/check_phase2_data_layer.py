@@ -1265,6 +1265,20 @@ def _check_postgres_agent_runs_wired() -> list[str]:
                 f"{token}",
             )
 
+    for token in (
+        "def append_run(",
+        ") -> AgentRunRecord:",
+        "RETURNING id, tenant_id, agent_id, agent_version_id, user_id",
+        "row = cursor.fetchone()",
+        "Agent run upsert did not return a row.",
+        "return _run_from_row(dict(row))",
+    ):
+        if token not in agent_run_persistence_source:
+            errors.append(
+                "backend/persistence/runs.py must return persisted PostgreSQL "
+                f"agent run write records: {token}",
+            )
+
     return errors
 
 

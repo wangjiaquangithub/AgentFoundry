@@ -164,7 +164,7 @@ class PostgresAgentRunWriteRepository:
     def __init__(self, database: PostgresDatabase) -> None:
         self._database = database
 
-    def append_run(self, record: AgentRunRecord) -> None:
+    def append_run(self, record: AgentRunRecord) -> AgentRunRecord:
         with self._database.transaction() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
@@ -179,6 +179,22 @@ class PostgresAgentRunWriteRepository:
                       %s, %s, %s, %s,
                       %s, %s, %s
                     )
+                    ON CONFLICT (id) DO UPDATE SET
+                      tenant_id = EXCLUDED.tenant_id,
+                      agent_id = EXCLUDED.agent_id,
+                      agent_version_id = EXCLUDED.agent_version_id,
+                      user_id = EXCLUDED.user_id,
+                      session_id = EXCLUDED.session_id,
+                      status = EXCLUDED.status,
+                      question = EXCLUDED.question,
+                      answer = EXCLUDED.answer,
+                      runtime_provider = EXCLUDED.runtime_provider,
+                      runtime_invocation_id = EXCLUDED.runtime_invocation_id,
+                      created_at = EXCLUDED.created_at,
+                      completed_at = EXCLUDED.completed_at
+                    RETURNING id, tenant_id, agent_id, agent_version_id, user_id,
+                      session_id, status, question, answer, runtime_provider,
+                      runtime_invocation_id, created_at, completed_at
                     """,
                     (
                         record.id,
@@ -196,6 +212,10 @@ class PostgresAgentRunWriteRepository:
                         record.completed_at,
                     ),
                 )
+                row = cursor.fetchone()
+        if row is None:
+            raise ValueError("Agent run upsert did not return a row.")
+        return _run_from_row(dict(row))
 
     def delete_runs(
         self,

@@ -28,7 +28,7 @@ class AgentRunRepositoryProtocol(Protocol):
     def get(self, turn_id: str, *, tenant: str | None = None) -> dict[str, Any] | None:
         ...
 
-    def append(self, record: dict[str, Any]) -> None:
+    def append(self, record: dict[str, Any]) -> dict[str, Any]:
         ...
 
     def delete(
@@ -100,11 +100,12 @@ class AgentRunRepository:
                 return record
         return None
 
-    def append(self, record: dict[str, Any]) -> None:
+    def append(self, record: dict[str, Any]) -> dict[str, Any]:
         self._path.parent.mkdir(parents=True, exist_ok=True)
         with self._path.open("a", encoding="utf-8") as file:
             file.write(json.dumps(record, ensure_ascii=False, default=str))
             file.write("\n")
+        return record
 
     def replace_all(self, records: list[dict[str, Any]]) -> None:
         self._path.parent.mkdir(parents=True, exist_ok=True)
@@ -197,11 +198,14 @@ class PostgresAgentRunReadThroughRepository:
             return _postgres_run_to_platform_record(record)
         return None
 
-    def append(self, record: dict[str, Any]) -> None:
+    def append(self, record: dict[str, Any]) -> dict[str, Any]:
         if not record.get("tenant"):
             raise ValueError("PostgreSQL agent run writes require tenant context.")
 
-        self._postgres_writer.append_run(_platform_record_to_postgres_run(record))
+        persisted_record = self._postgres_writer.append_run(
+            _platform_record_to_postgres_run(record),
+        )
+        return _postgres_run_to_platform_record(persisted_record)
 
     def delete(
         self,

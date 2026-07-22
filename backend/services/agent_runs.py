@@ -98,8 +98,7 @@ class PlatformAgentRunService:
         return run
 
     def append_run(self, record: dict[str, Any]) -> dict[str, Any]:
-        self._repository.append(record)
-        return record
+        return self._repository.append(record)
 
     def build_run_identity(self) -> dict[str, str]:
         return {
