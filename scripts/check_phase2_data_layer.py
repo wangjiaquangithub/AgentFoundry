@@ -24,6 +24,7 @@ SERVICES_DIR = ROOT / "backend" / "services"
 MAIN_MODULE = ROOT / "backend" / "main.py"
 DATABASE_MODULE = ROOT / "backend" / "persistence" / "database.py"
 SEED_MODULE = ROOT / "backend" / "persistence" / "seed.py"
+MIGRATE_SHELL = ROOT / "scripts" / "migrate_agentfoundry.sh"
 SEED_SHELL = ROOT / "scripts" / "seed_agentfoundry.sh"
 PLATFORM_STATUS_SERVICE_MODULE = SERVICES_DIR / "platform_status.py"
 
@@ -557,6 +558,34 @@ def _check_postgres_seed_path() -> list[str]:
         if token in seed_source:
             errors.append(
                 "backend/persistence/seed.py must not present seed as SQLite-only: "
+                f"{token}",
+            )
+
+    return errors
+
+
+def _check_postgres_migration_shell_entrypoint() -> list[str]:
+    errors: list[str] = []
+    if not MIGRATE_SHELL.exists():
+        return ["scripts/migrate_agentfoundry.sh must exist as the PostgreSQL migration entrypoint"]
+    if not MIGRATE_SHELL.stat().st_mode & 0o111:
+        errors.append("scripts/migrate_agentfoundry.sh must be executable")
+
+    migrate_shell = MIGRATE_SHELL.read_text(encoding="utf-8")
+    required_shell_tokens = [
+        "set -euo pipefail",
+        "AGENTFOUNDRY_DATABASE_URL",
+        "postgresql://agentfoundry:agentfoundry@localhost:5432/agentfoundry",
+        "PostgreSQL is the production target",
+        "sqlite:// URLs are accepted only",
+        'uv run --with "psycopg[binary]"',
+        "from backend.persistence.migrations import main; main()",
+        "--database-url",
+    ]
+    for token in required_shell_tokens:
+        if token not in migrate_shell:
+            errors.append(
+                "scripts/migrate_agentfoundry.sh must provide a PostgreSQL-first migration command: "
                 f"{token}",
             )
 
@@ -3131,6 +3160,7 @@ def main() -> int:
         *_check_postgres_persistence_exports(),
         *_check_postgres_url_detection_boundary(),
         *_check_postgres_seed_path(),
+        *_check_postgres_migration_shell_entrypoint(),
         *_check_postgres_data_workflow_documented(),
         *_check_readme_does_not_promote_local_files_as_production_data_layer(),
         *_check_postgres_write_transaction_boundary(),
@@ -3190,6 +3220,7 @@ def main() -> int:
     )
     print("- PostgreSQL URL detection centralized: yes")
     print("- PostgreSQL seed path guarded: yes")
+    print("- PostgreSQL migration shell entrypoint guarded: yes")
     print("- PostgreSQL data workflow documented: yes")
     print("- local JSON/JSONL production-data wording guarded: yes")
     print("- PostgreSQL write transaction boundary guarded: yes")
