@@ -68,6 +68,21 @@ def _validate_write_result(
         raise ValueError("PostgreSQL knowledge base write returned another updated time.")
 
 
+def _validate_knowledge_base_read_result(
+    record: KnowledgeBaseRecord,
+    *,
+    tenant_id: str,
+    status: str | None = None,
+    knowledge_base_id: str | None = None,
+) -> None:
+    if record.tenant_id != tenant_id:
+        raise ValueError("PostgreSQL knowledge base read returned another tenant.")
+    if status is not None and record.status != status:
+        raise ValueError("PostgreSQL knowledge base read returned another status.")
+    if knowledge_base_id is not None and record.id != knowledge_base_id:
+        raise ValueError("PostgreSQL knowledge base read returned another knowledge base.")
+
+
 class SQLiteKnowledgeBaseReadRepository:
     """Read tenant-scoped knowledge base records from SQLite."""
 
@@ -151,7 +166,10 @@ class PostgresKnowledgeBaseReadRepository:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, tuple(parameters))
-                return [_knowledge_base_from_row(dict(row)) for row in cursor.fetchall()]
+                records = [_knowledge_base_from_row(dict(row)) for row in cursor.fetchall()]
+        for record in records:
+            _validate_knowledge_base_read_result(record, tenant_id=tenant_id, status=status)
+        return records
 
     def get_knowledge_base(
         self,
@@ -173,7 +191,13 @@ class PostgresKnowledgeBaseReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return _knowledge_base_from_row(dict(row))
+        record = _knowledge_base_from_row(dict(row))
+        _validate_knowledge_base_read_result(
+            record,
+            tenant_id=tenant_id,
+            knowledge_base_id=knowledge_base_id,
+        )
+        return record
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
