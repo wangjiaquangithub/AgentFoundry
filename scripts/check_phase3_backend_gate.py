@@ -39,6 +39,13 @@ CHECKS = (
         (sys.executable, "scripts/check_phase3_knowledge_ingestion_service.py"),
     ),
     (
+        "knowledge repository composition",
+        (
+            sys.executable,
+            "scripts/check_phase3_knowledge_repository_composition.py",
+        ),
+    ),
+    (
         "knowledge retrieval API",
         (sys.executable, "scripts/check_phase3_knowledge_retrieval_api.py"),
     ),

@@ -27,6 +27,7 @@ SERVICE_MODULE = ROOT / "backend" / "services" / "knowledge.py"
 RETRIEVAL_EVENTS_MODULE = ROOT / "backend" / "persistence" / "retrieval_events.py"
 AUDIT_EVENTS_MODULE = ROOT / "backend" / "persistence" / "audit_events.py"
 MAIN_MODULE = ROOT / "backend" / "main.py"
+COMPOSITION_MODULE = ROOT / "backend" / "services" / "composition.py"
 
 
 def _read(path: Path) -> str:
@@ -325,6 +326,7 @@ def main() -> int:
     retrieval_events_source = _read(RETRIEVAL_EVENTS_MODULE)
     audit_events_source = _read(AUDIT_EVENTS_MODULE)
     main_source = _read(MAIN_MODULE)
+    composition_source = _read(COMPOSITION_MODULE)
 
     for needle in (
         "retrieval_event_writer: RetrievalEventWriter | None = None",
@@ -388,13 +390,18 @@ def main() -> int:
     for needle in (
         "retrieval_event_writer=PostgresRetrievalEventWriteRepository(database)",
         "audit_event_writer=PostgresAuditEventWriteRepository(database)",
-        "now=now_iso",
     ):
         _assert_contains(
-            main_source,
+            composition_source,
             needle,
-            "main PostgreSQL retrieval audit wiring",
+            "composition PostgreSQL retrieval audit wiring",
         )
+
+    _assert_contains(
+        main_source,
+        "build_configured_postgres_knowledge_retrieval_service(\n        now=now_iso,",
+        "main knowledge retrieval time provider wiring",
+    )
 
     retrieval_builder = main_source.split(
         "def _build_knowledge_retrieval_service", 1
