@@ -21,12 +21,14 @@ from backend.persistence.approvals import (
     SQLiteApprovalReadRepository,
 )
 from backend.persistence.database import (
+    DatabaseConfigurationStatus,
     PostgresDatabase,
     SQLiteDatabase,
     create_configured_postgres_database,
     create_database,
     create_postgres_database,
     create_sqlite_database,
+    inspect_configured_database_status,
     is_postgres_database_url,
 )
 from backend.persistence.document_chunks import (
@@ -129,6 +131,7 @@ __all__ = [
     "AuditEventRecord",
     "DocumentChunkRecord",
     "DocumentRecord",
+    "DatabaseConfigurationStatus",
     "EmbeddingRecord",
     "KnowledgeBaseRecord",
     "MembershipRecord",
@@ -201,6 +204,7 @@ __all__ = [
     "create_database",
     "create_postgres_database",
     "create_sqlite_database",
+    "inspect_configured_database_status",
     "is_postgres_database_url",
     "PostgresWorkflowReadRepository",
     "SQLiteWorkflowReadRepository",

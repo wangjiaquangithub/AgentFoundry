@@ -24,6 +24,10 @@ CHECKS = (
         "PostgreSQL URL boundary",
         (sys.executable, "scripts/check_phase2_postgres_url_boundary.py"),
     ),
+    (
+        "PostgreSQL configuration status",
+        (sys.executable, "scripts/check_phase2_postgres_config_status.py"),
+    ),
     ("production data layer", (sys.executable, "scripts/check_phase2_data_layer.py")),
 )
 

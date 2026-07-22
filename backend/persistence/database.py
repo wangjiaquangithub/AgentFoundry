@@ -14,10 +14,75 @@ from urllib.parse import urlparse
 from backend.persistence.migrations import sqlite_path_from_database_url
 
 POSTGRES_DATABASE_SCHEMES = frozenset({"postgresql", "postgres"})
+DATABASE_URL_ENV_VAR = "AGENTFOUNDRY_DATABASE_URL"
 
 
 def is_postgres_database_url(database_url: str) -> bool:
     return urlparse(database_url.strip()).scheme in POSTGRES_DATABASE_SCHEMES
+
+
+@dataclass(frozen=True)
+class DatabaseConfigurationStatus:
+    """Database configuration status that is safe to expose in health checks."""
+
+    env_var: str
+    configured: bool
+    scheme: str | None
+    backend: str
+    production_ready: bool
+    message: str
+
+
+def inspect_configured_database_status(
+    environ: Mapping[str, str] | None = None,
+) -> DatabaseConfigurationStatus:
+    source = os.environ if environ is None else environ
+    database_url = source.get(DATABASE_URL_ENV_VAR, "").strip()
+    if not database_url:
+        return DatabaseConfigurationStatus(
+            env_var=DATABASE_URL_ENV_VAR,
+            configured=False,
+            scheme=None,
+            backend="unconfigured",
+            production_ready=False,
+            message=(
+                "Set AGENTFOUNDRY_DATABASE_URL to postgresql:// for the "
+                "production data layer."
+            ),
+        )
+
+    scheme = urlparse(database_url).scheme or None
+    if is_postgres_database_url(database_url):
+        return DatabaseConfigurationStatus(
+            env_var=DATABASE_URL_ENV_VAR,
+            configured=True,
+            scheme=scheme,
+            backend="postgresql",
+            production_ready=True,
+            message="Configured for PostgreSQL production persistence.",
+        )
+
+    if scheme == "sqlite":
+        return DatabaseConfigurationStatus(
+            env_var=DATABASE_URL_ENV_VAR,
+            configured=True,
+            scheme=scheme,
+            backend="sqlite",
+            production_ready=False,
+            message="sqlite:// is only for explicit local development compatibility.",
+        )
+
+    return DatabaseConfigurationStatus(
+        env_var=DATABASE_URL_ENV_VAR,
+        configured=True,
+        scheme=scheme,
+        backend="unsupported",
+        production_ready=False,
+        message=(
+            "Unsupported database URL scheme. Use postgresql:// for production "
+            "or sqlite:// for explicit local development compatibility."
+        ),
+    )
 
 
 @dataclass(frozen=True)
@@ -92,7 +157,7 @@ def create_configured_postgres_database(
     environ: Mapping[str, str] | None = None,
 ) -> PostgresDatabase | None:
     source = os.environ if environ is None else environ
-    database_url = source.get("AGENTFOUNDRY_DATABASE_URL", "").strip()
+    database_url = source.get(DATABASE_URL_ENV_VAR, "").strip()
     if not is_postgres_database_url(database_url):
         return None
     return create_postgres_database(database_url)
