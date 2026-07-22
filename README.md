@@ -175,6 +175,15 @@ If you run without `uv`, install `psycopg` in the active Python environment.
 
 ## Verify
 
+Run the backend production gates before changing backend service, data,
+knowledge, runtime, or governance behavior:
+
+```bash
+python3 scripts/check_backend_production_gates.py
+```
+
+Run the platform smoke test when validating the end-to-end local loop:
+
 ```bash
 ./scripts/smoke_agentfoundry.sh
 ```
