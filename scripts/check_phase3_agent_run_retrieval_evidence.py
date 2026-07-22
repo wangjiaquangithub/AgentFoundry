@@ -39,8 +39,9 @@ class RetrievalEvents:
     def __init__(self) -> None:
         self.records: list[Any] = []
 
-    def append_retrieval_event(self, record: Any) -> None:
+    def append_retrieval_event(self, record: Any) -> Any:
         self.records.append(record)
+        return record
 
 
 class AuditEvents:
