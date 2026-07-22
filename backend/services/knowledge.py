@@ -9,7 +9,7 @@ from backend.persistence import AuditEventRecord, RetrievalEventRecord
 
 
 class AuditEventWriter(Protocol):
-    def append_audit_event(self, record: AuditEventRecord) -> None:
+    def append_audit_event(self, record: AuditEventRecord) -> AuditEventRecord:
         ...
 
 
@@ -468,7 +468,7 @@ class PlatformKnowledgeRetrievalService:
                 ],
                 "retrieval_mode": str(payload.get("retrieval_mode") or ""),
             }
-            self._audit_event_writer.append_audit_event(
+            persisted_audit_event = self._audit_event_writer.append_audit_event(
                 AuditEventRecord(
                     id=str(uuid4()),
                     tenant_id=tenant_id,
@@ -480,6 +480,8 @@ class PlatformKnowledgeRetrievalService:
                     created_at=created_at,
                 ),
             )
+            if not persisted_audit_event.id:
+                return
         except Exception:
             return
 
@@ -1017,7 +1019,7 @@ class PlatformKnowledgeResponseService:
             if agent_run_id:
                 payload["agent_run_id"] = agent_run_id
 
-            self._audit_event_writer.append_audit_event(
+            persisted_audit_event = self._audit_event_writer.append_audit_event(
                 AuditEventRecord(
                     id=str(uuid4()),
                     tenant_id=tenant,
@@ -1029,6 +1031,8 @@ class PlatformKnowledgeResponseService:
                     created_at=created_at,
                 ),
             )
+            if not persisted_audit_event.id:
+                return
         except Exception:
             return
 

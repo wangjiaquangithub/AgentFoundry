@@ -1507,6 +1507,41 @@ def _check_postgres_knowledge_ingestion_write_records() -> list[str]:
     return errors
 
 
+def _check_postgres_knowledge_audit_write_records() -> list[str]:
+    errors: list[str] = []
+    knowledge_source = (SERVICES_DIR / "knowledge.py").read_text(encoding="utf-8")
+    audit_persistence_source = (PERSISTENCE_DIR / "audit_events.py").read_text(
+        encoding="utf-8",
+    )
+
+    for token in (
+        "def append_audit_event(self, record: AuditEventRecord) -> AuditEventRecord:",
+        "persisted_audit_event = self._audit_event_writer.append_audit_event(",
+        "if not persisted_audit_event.id:",
+    ):
+        if token not in knowledge_source:
+            errors.append(
+                "backend/services/knowledge.py must use persisted PostgreSQL "
+                f"knowledge audit write records: {token}",
+            )
+
+    for token in (
+        "def append_audit_event(",
+        ") -> AuditEventRecord:",
+        "RETURNING id, tenant_id, actor_user_id, event_type",
+        "row = cursor.fetchone()",
+        "Audit event upsert did not return a row.",
+        "return _audit_event_from_row(dict(row))",
+    ):
+        if token not in audit_persistence_source:
+            errors.append(
+                "backend/persistence/audit_events.py must return persisted "
+                f"PostgreSQL audit event write records: {token}",
+            )
+
+    return errors
+
+
 def _check_postgres_members_wired() -> list[str]:
     errors: list[str] = []
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
@@ -2679,6 +2714,7 @@ def main() -> int:
         *_check_postgres_approval_requests_wired(),
         *_check_postgres_knowledge_readiness_wired(),
         *_check_postgres_knowledge_ingestion_write_records(),
+        *_check_postgres_knowledge_audit_write_records(),
         *_check_postgres_members_wired(),
         *_check_postgres_memory_policy_reads_guarded(),
         *_check_postgres_model_config_reads_guarded(),
@@ -2732,6 +2768,7 @@ def main() -> int:
     print("- PostgreSQL approval requests wired: yes")
     print("- PostgreSQL knowledge readiness reads wired: yes")
     print("- PostgreSQL knowledge ingestion write records: yes")
+    print("- PostgreSQL knowledge audit write records: yes")
     print("- PostgreSQL members wired: yes")
     print("- PostgreSQL memory policy reads guarded: yes")
     print("- PostgreSQL model config reads guarded: yes")
