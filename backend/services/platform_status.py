@@ -455,9 +455,27 @@ class PlatformStatusService:
                 provider_type="agentscope",
                 limit=1,
             )
-        except Exception:
-            LOGGER.exception("Failed to load runtime provider record from PostgreSQL")
-            return self._runtime_provider_health()
+        except Exception as exc:
+            LOGGER.warning(
+                "Failed to load runtime provider record from PostgreSQL: %s",
+                exc.__class__.__name__,
+            )
+            fallback = self._runtime_provider_health()
+            checks = dict(fallback.get("checks") or {})
+            checks.update(
+                {
+                    "postgres_runtime_provider_record": False,
+                    "postgres_runtime_provider_read_error": True,
+                },
+            )
+            return {
+                **fallback,
+                "message": (
+                    "Runtime provider loaded from adapter fallback because the "
+                    "PostgreSQL provider record was unavailable."
+                ),
+                "checks": checks,
+            }
 
         if not providers:
             return self._runtime_provider_health()

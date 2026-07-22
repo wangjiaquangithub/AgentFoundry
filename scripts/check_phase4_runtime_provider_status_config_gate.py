@@ -55,10 +55,23 @@ class ProviderReader:
         return [self._provider][:limit]
 
 
+class FailingProviderReader:
+    def list_providers(
+        self,
+        *,
+        status: str | None = None,
+        provider_type: str | None = None,
+        limit: int = 50,
+    ) -> list[ProviderRecord]:
+        raise RuntimeError(
+            f"database password leaked for {status}/{provider_type}/{limit}",
+        )
+
+
 def _build_status_service(
     provider: ProviderRecord,
     *,
-    provider_reader: ProviderReader | None = None,
+    provider_reader: Any | None = None,
 ) -> Any:
     from runtime import describe_runtime_provider_health
     from services.platform_status import PlatformStatusService
@@ -166,6 +179,50 @@ def _assert_pg_provider_query_is_agentscope_scoped() -> None:
         raise AssertionError(
             f"runtime provider query must be scoped to agentscope: {provider_reader.calls}",
         )
+
+
+def _assert_pg_provider_read_error_is_observable() -> None:
+    provider = ProviderRecord(
+        id="agentscope-platform-adapter",
+        name="AgentScope Platform Adapter",
+        provider_type="agentscope",
+        mode="local-service",
+        status="active",
+        capabilities={"tenant_context": True, "tool_routing": True},
+        config_ref=None,
+    )
+    status_service = _build_status_service(
+        provider,
+        provider_reader=FailingProviderReader(),
+    )
+    payload = status_service.platform_snapshot(
+        platform_version="contract-test",
+        data_dir=BACKEND_DIR / "data",
+        runtime={
+            "tenant": "acme",
+            "connector_label": "Acme Enterprise Gateway",
+            "connector_source": "saved_config",
+            "saved_config_enabled": True,
+        },
+        tenant="acme",
+        user_id="acme:alice",
+        identities=[{"user_id": "acme:alice", "tenant": "acme", "role": "admin"}],
+        tenant_workspaces={"acme": {"tenant": "acme"}},
+        subagent_templates=[],
+    )
+
+    runtime_provider = payload.get("runtime_provider")
+    if not isinstance(runtime_provider, dict):
+        raise AssertionError(f"runtime provider snapshot missing: {payload}")
+    checks = runtime_provider.get("checks")
+    if not isinstance(checks, dict):
+        raise AssertionError(f"runtime provider checks missing: {runtime_provider}")
+    if checks.get("postgres_runtime_provider_record") is not False:
+        raise AssertionError(f"PG record read failure must be visible: {runtime_provider}")
+    if checks.get("postgres_runtime_provider_read_error") is not True:
+        raise AssertionError(f"PG read error check missing: {runtime_provider}")
+    if "database password leaked" in repr(runtime_provider):
+        raise AssertionError("runtime provider status must not expose PG error details")
 
 
 def _assert_pg_provider_config_ref_gate() -> None:
@@ -282,6 +339,7 @@ def _assert_pg_provider_without_config_ref_gate() -> None:
 
 def main() -> int:
     _assert_pg_provider_query_is_agentscope_scoped()
+    _assert_pg_provider_read_error_is_observable()
     _assert_pg_provider_config_ref_gate()
     _assert_pg_provider_config_ref_not_passed_to_gate()
     _assert_pg_provider_without_config_ref_gate()
