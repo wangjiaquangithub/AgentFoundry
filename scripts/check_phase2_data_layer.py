@@ -202,12 +202,18 @@ POSTGRES_AUTHORITATIVE_PERSISTENCE_REPOSITORIES = {
 }
 
 POSTGRES_SCHEME_LITERALS = {"postgres", "postgresql"}
-POSTGRES_TENANT_SCOPED_READ_CLASS_EXEMPTIONS = {
-    "tenancy.py": {"PostgresTenancyReadRepository"},
-}
+POSTGRES_TENANT_SCOPED_READ_CLASS_EXEMPTIONS: dict[str, set[str]] = {}
 POSTGRES_TENANT_SCOPED_READ_METHOD_EXEMPTIONS = {
     "runtime_records.py": {
         "PostgresRuntimeReadRepository": {"get_provider", "list_providers"},
+    },
+    "tenancy.py": {
+        "PostgresTenancyReadRepository": {
+            "get_tenant",
+            "list_memberships",
+            "list_tenants",
+            "list_users",
+        },
     },
     "tools.py": {
         "PostgresToolGovernanceReadRepository": {"load_policy_snapshot"},
@@ -576,6 +582,20 @@ def _string_literals(tree: ast.AST) -> list[str]:
 
 def _normalized_sql_literals(tree: ast.AST) -> list[str]:
     return [" ".join(literal.split()).lower() for literal in _string_literals(tree)]
+
+
+def _class_method(
+    tree: ast.AST,
+    class_name: str,
+    method_name: str,
+) -> ast.FunctionDef | ast.AsyncFunctionDef | None:
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ClassDef) or node.name != class_name:
+            continue
+        for item in node.body:
+            if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)) and item.name == method_name:
+                return item
+    return None
 
 
 def _is_exempt_postgres_read_method(filename: str, class_name: str, method_name: str) -> bool:
@@ -1084,6 +1104,145 @@ def _check_postgres_read_tenant_boundary() -> list[str]:
                         "PostgreSQL read repository query must filter by tenant_id: "
                         f"backend/persistence/{path.name}:{class_node.name}.{method_node.name}",
                     )
+
+    return errors
+
+
+def _check_postgres_tenancy_read_exception_contracts() -> list[str]:
+    errors: list[str] = []
+    path = PERSISTENCE_DIR / "tenancy.py"
+    source = path.read_text(encoding="utf-8")
+    tree = ast.parse(source, filename=str(path))
+    class_name = "PostgresTenancyReadRepository"
+
+    list_tenants = _class_method(tree, class_name, "list_tenants")
+    if list_tenants is None:
+        errors.append("backend/persistence/tenancy.py must keep PostgresTenancyReadRepository.list_tenants")
+    else:
+        if "_validate_tenant_read_result(record, status=status)" not in source:
+            errors.append(
+                "PostgresTenancyReadRepository.list_tenants must validate status on returned tenant records",
+            )
+        if not _method_uses_database_call(list_tenants, "connect"):
+            errors.append(
+                "PostgresTenancyReadRepository.list_tenants must read tenants from PostgreSQL",
+            )
+
+    get_tenant = _class_method(tree, class_name, "get_tenant")
+    if get_tenant is None:
+        errors.append("backend/persistence/tenancy.py must keep PostgresTenancyReadRepository.get_tenant")
+    else:
+        get_tenant_sql = " ".join(_normalized_sql_literals(get_tenant))
+        if not _method_has_required_argument(get_tenant, "tenant_id"):
+            errors.append("PostgresTenancyReadRepository.get_tenant must require tenant_id")
+        if "from tenants where id = %s" not in get_tenant_sql:
+            errors.append(
+                "PostgresTenancyReadRepository.get_tenant must filter the tenants table by id",
+            )
+        if "_validate_tenant_read_result(record, tenant_id=tenant_id)" not in source:
+            errors.append(
+                "PostgresTenancyReadRepository.get_tenant must validate the returned tenant id",
+            )
+
+    list_users = _class_method(tree, class_name, "list_users")
+    if list_users is None:
+        errors.append("backend/persistence/tenancy.py must keep PostgresTenancyReadRepository.list_users")
+    else:
+        list_users_sql = " ".join(_normalized_sql_literals(list_users))
+        required_tokens = [
+            "inner join memberships on memberships.user_id = users.id",
+            "where memberships.tenant_id = %s",
+        ]
+        for token in required_tokens:
+            if token not in list_users_sql:
+                errors.append(
+                    "PostgresTenancyReadRepository.list_users must filter tenant-scoped "
+                    f"user reads through memberships: {token}",
+                )
+        if "parameters = (tenant_id,)" not in source:
+            errors.append(
+                "PostgresTenancyReadRepository.list_users must bind tenant_id in the membership-filtered path",
+            )
+
+    list_memberships = _class_method(tree, class_name, "list_memberships")
+    if list_memberships is None:
+        errors.append(
+            "backend/persistence/tenancy.py must keep PostgresTenancyReadRepository.list_memberships",
+        )
+    else:
+        list_memberships_sql = " ".join(_normalized_sql_literals(list_memberships))
+        if "tenant_id = %s" not in list_memberships_sql:
+            errors.append(
+                "PostgresTenancyReadRepository.list_memberships must filter by tenant_id when provided",
+            )
+        if "_validate_membership_read_result(" not in source:
+            errors.append(
+                "PostgresTenancyReadRepository.list_memberships must validate returned membership scope",
+            )
+
+    return errors
+
+
+def _check_postgres_global_read_exception_contracts() -> list[str]:
+    errors: list[str] = []
+
+    runtime_path = PERSISTENCE_DIR / "runtime_records.py"
+    runtime_source = runtime_path.read_text(encoding="utf-8")
+    runtime_tree = ast.parse(runtime_source, filename=str(runtime_path))
+    for method_name in ("get_provider", "list_providers"):
+        method = _class_method(runtime_tree, "PostgresRuntimeReadRepository", method_name)
+        if method is None:
+            errors.append(
+                f"backend/persistence/runtime_records.py must keep PostgresRuntimeReadRepository.{method_name}",
+            )
+            continue
+        method_sql = " ".join(_normalized_sql_literals(method))
+        if "from runtime_providers" not in method_sql:
+            errors.append(
+                "PostgresRuntimeReadRepository global provider reads must stay on runtime_providers: "
+                f"{method_name}",
+            )
+        if "tenant_id" in method_sql:
+            errors.append(
+                "PostgresRuntimeReadRepository provider reads are platform-global and must not fake tenant scope: "
+                f"{method_name}",
+            )
+        if not _method_uses_database_call(method, "connect"):
+            errors.append(
+                "PostgresRuntimeReadRepository provider reads must read from PostgreSQL: "
+                f"{method_name}",
+            )
+
+    tools_path = PERSISTENCE_DIR / "tools.py"
+    tools_source = tools_path.read_text(encoding="utf-8")
+    tools_tree = ast.parse(tools_source, filename=str(tools_path))
+    method = _class_method(
+        tools_tree,
+        "PostgresToolGovernanceReadRepository",
+        "load_policy_snapshot",
+    )
+    if method is None:
+        errors.append(
+            "backend/persistence/tools.py must keep PostgresToolGovernanceReadRepository.load_policy_snapshot",
+        )
+    else:
+        method_sql = " ".join(_normalized_sql_literals(method))
+        required_tokens = [
+            "from tool_policies",
+            "inner join tools on tools.id = tool_policies.tool_id",
+            "where tool_policies.tenant_id = tools.tenant_id",
+            "from tool_user_policies",
+        ]
+        for token in required_tokens:
+            if token not in method_sql:
+                errors.append(
+                    "PostgresToolGovernanceReadRepository.load_policy_snapshot must build "
+                    f"the platform policy snapshot from PostgreSQL: {token}",
+                )
+        if not _method_uses_database_call(method, "connect"):
+            errors.append(
+                "PostgresToolGovernanceReadRepository.load_policy_snapshot must read from PostgreSQL",
+            )
 
     return errors
 
@@ -4398,6 +4557,8 @@ def main() -> int:
         *_check_runtime_provider_endpoint_data_model_contract(),
         *_check_postgres_write_transaction_boundary(),
         *_check_postgres_read_tenant_boundary(),
+        *_check_postgres_tenancy_read_exception_contracts(),
+        *_check_postgres_global_read_exception_contracts(),
         *_check_postgres_runtime_provider_reads_wired(),
         *_check_postgres_runtime_invocation_writes_wired(),
         *_check_postgres_tool_calls_wired(),
@@ -4463,6 +4624,8 @@ def main() -> int:
     print("- runtime provider endpoint data-model contract guarded: yes")
     print("- PostgreSQL write transaction boundary guarded: yes")
     print("- PostgreSQL read tenant boundary guarded: yes")
+    print("- PostgreSQL tenancy read exception contracts guarded: yes")
+    print("- PostgreSQL global read exception contracts guarded: yes")
     print("- PostgreSQL runtime provider reads wired: yes")
     print("- PostgreSQL runtime invocation writes wired: yes")
     print("- PostgreSQL tool calls wired: yes")
