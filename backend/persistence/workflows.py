@@ -70,7 +70,7 @@ def _run_from_row(row: dict[str, Any]) -> WorkflowRunRecord:
     )
 
 
-def _validate_write_result(
+def _validate_workflow_run_write_result(
     requested: WorkflowRunRecord,
     persisted: WorkflowRunRecord,
 ) -> None:
@@ -107,6 +107,48 @@ def _validate_write_result(
     if persisted.completed_at != requested.completed_at:
         raise ValueError(
             "PostgreSQL workflow run write returned another completed time.",
+        )
+
+
+def _validate_workflow_template_write_result(
+    requested: WorkflowTemplateRecord,
+    persisted: WorkflowTemplateRecord,
+) -> None:
+    if not persisted.id:
+        raise ValueError("PostgreSQL workflow template write did not return an id.")
+    if not persisted.tenant_id:
+        raise ValueError(
+            "PostgreSQL workflow template write did not return a tenant id.",
+        )
+    if not persisted.created_by:
+        raise ValueError(
+            "PostgreSQL workflow template write did not return a creator.",
+        )
+    if persisted.id != requested.id:
+        raise ValueError("PostgreSQL workflow template write returned another template.")
+    if persisted.tenant_id != requested.tenant_id:
+        raise ValueError("PostgreSQL workflow template write returned another tenant.")
+    if persisted.name != requested.name:
+        raise ValueError("PostgreSQL workflow template write returned another name.")
+    if persisted.description != requested.description:
+        raise ValueError(
+            "PostgreSQL workflow template write returned another description.",
+        )
+    if persisted.status != requested.status:
+        raise ValueError("PostgreSQL workflow template write returned another status.")
+    if persisted.definition != requested.definition:
+        raise ValueError(
+            "PostgreSQL workflow template write returned another definition.",
+        )
+    if persisted.created_by != requested.created_by:
+        raise ValueError("PostgreSQL workflow template write returned another creator.")
+    if persisted.created_at != requested.created_at:
+        raise ValueError(
+            "PostgreSQL workflow template write returned another created time.",
+        )
+    if persisted.updated_at != requested.updated_at:
+        raise ValueError(
+            "PostgreSQL workflow template write returned another updated time.",
         )
 
 
@@ -429,10 +471,82 @@ class PostgresWorkflowReadRepository:
 
 
 class PostgresWorkflowWriteRepository:
-    """Write tenant-scoped workflow run records to PostgreSQL."""
+    """Write tenant-scoped workflow records to PostgreSQL."""
 
     def __init__(self, database: PostgresDatabase) -> None:
         self._database = database
+
+    def replace_templates(
+        self,
+        *,
+        tenant_id: str,
+        records: list[WorkflowTemplateRecord],
+    ) -> list[WorkflowTemplateRecord]:
+        for record in records:
+            if record.tenant_id != tenant_id:
+                raise ValueError(
+                    "PostgreSQL workflow template replacement requires one tenant.",
+                )
+
+        persisted_records: list[WorkflowTemplateRecord] = []
+        template_ids = [record.id for record in records]
+        with self._database.transaction() as connection:
+            with connection.cursor() as cursor:
+                if template_ids:
+                    cursor.execute(
+                        """
+                        DELETE FROM workflow_templates
+                        WHERE tenant_id = %s AND NOT (id = ANY(%s))
+                        """,
+                        (tenant_id, template_ids),
+                    )
+                else:
+                    cursor.execute(
+                        "DELETE FROM workflow_templates WHERE tenant_id = %s",
+                        (tenant_id,),
+                    )
+
+                for record in records:
+                    cursor.execute(
+                        """
+                        INSERT INTO workflow_templates (
+                          id, tenant_id, name, description, status, definition,
+                          created_by, created_at, updated_at
+                        )
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (id) DO UPDATE SET
+                          name = EXCLUDED.name,
+                          description = EXCLUDED.description,
+                          status = EXCLUDED.status,
+                          definition = EXCLUDED.definition,
+                          created_by = EXCLUDED.created_by,
+                          created_at = EXCLUDED.created_at,
+                          updated_at = EXCLUDED.updated_at
+                        WHERE workflow_templates.tenant_id = EXCLUDED.tenant_id
+                        RETURNING id, tenant_id, name, description, status,
+                          definition, created_by, created_at, updated_at
+                        """,
+                        (
+                            record.id,
+                            record.tenant_id,
+                            record.name,
+                            record.description,
+                            record.status,
+                            json.dumps(record.definition, ensure_ascii=False, default=str),
+                            record.created_by,
+                            record.created_at,
+                            record.updated_at,
+                        ),
+                    )
+                    row = cursor.fetchone()
+                    if row is None:
+                        raise ValueError(
+                            "Workflow template id already belongs to another tenant.",
+                        )
+                    persisted = _template_from_row(dict(row))
+                    _validate_workflow_template_write_result(record, persisted)
+                    persisted_records.append(persisted)
+        return persisted_records
 
     def append_run(self, record: WorkflowRunRecord) -> WorkflowRunRecord:
         with self._database.transaction() as connection:
@@ -502,5 +616,5 @@ class PostgresWorkflowWriteRepository:
         if row is None:
             raise ValueError("Workflow run upsert did not return a row.")
         persisted = _run_from_row(dict(row))
-        _validate_write_result(record, persisted)
+        _validate_workflow_run_write_result(record, persisted)
         return persisted

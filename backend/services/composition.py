@@ -58,8 +58,10 @@ from backend.repositories.members import (
     PostgresMemberReadThroughRepository,
 )
 from backend.repositories.workflows import (
+    PostgresWorkflowTemplateReadThroughRepository,
     PostgresWorkflowRunReadThroughRepository,
     WorkflowRunRepositoryProtocol,
+    WorkflowTemplateRepositoryProtocol,
 )
 from backend.services.knowledge import (
     PlatformKnowledgeDocumentReadinessService,
@@ -421,6 +423,32 @@ def build_approval_request_repository(
 
     return (
         build_configured_postgres_approval_request_repository()
+        or fallback_repository
+    )
+
+
+def build_configured_postgres_workflow_template_repository() -> (
+    PostgresWorkflowTemplateReadThroughRepository | None
+):
+    """Build the workflow template repository adapter when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresWorkflowTemplateReadThroughRepository(
+        postgres_reader=PostgresWorkflowReadRepository(database),
+        postgres_writer=PostgresWorkflowWriteRepository(database),
+    )
+
+
+def build_workflow_template_repository(
+    fallback_repository: WorkflowTemplateRepositoryProtocol,
+) -> WorkflowTemplateRepositoryProtocol:
+    """Select the configured production workflow template repository."""
+
+    return (
+        build_configured_postgres_workflow_template_repository()
         or fallback_repository
     )
 

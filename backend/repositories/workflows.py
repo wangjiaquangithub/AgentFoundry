@@ -8,6 +8,7 @@ from backend.persistence.workflows import (
     PostgresWorkflowReadRepository,
     PostgresWorkflowWriteRepository,
     WorkflowRunRecord,
+    WorkflowTemplateRecord,
 )
 
 
@@ -48,6 +49,19 @@ class WorkflowTemplateRepository:
             json.dumps(workflows, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
+
+
+class WorkflowTemplateRepositoryProtocol(Protocol):
+    """Repository contract used by the platform workflow template service."""
+
+    def exists(self) -> bool:
+        ...
+
+    def list(self) -> list[dict[str, Any]]:
+        ...
+
+    def save_all(self, workflows: list[dict[str, Any]]) -> None:
+        ...
 
 
 class WorkflowRunRepository:
@@ -179,6 +193,55 @@ class PostgresWorkflowRunReadThroughRepository:
         return _postgres_run_to_platform_record(persisted_record)
 
 
+class PostgresWorkflowTemplateReadThroughRepository:
+    """Use PostgreSQL as the source of truth for workflow templates."""
+
+    def __init__(
+        self,
+        *,
+        postgres_reader: PostgresWorkflowReadRepository,
+        postgres_writer: PostgresWorkflowWriteRepository,
+        tenant_id: str = "acme",
+        created_by: str = "acme:alice",
+    ) -> None:
+        self._postgres_reader = postgres_reader
+        self._postgres_writer = postgres_writer
+        self._tenant_id = tenant_id
+        self._created_by = created_by
+
+    def exists(self) -> bool:
+        return bool(
+            self._postgres_reader.list_templates(
+                tenant_id=self._tenant_id,
+                limit=1,
+            ),
+        )
+
+    def list(self) -> list[dict[str, Any]]:
+        return [
+            _postgres_template_to_platform_record(record)
+            for record in self._postgres_reader.list_templates(
+                tenant_id=self._tenant_id,
+                limit=100,
+            )
+        ]
+
+    def save_all(self, workflows: list[dict[str, Any]]) -> None:
+        records = [
+            _platform_template_to_postgres_record(
+                workflow,
+                tenant_id=self._tenant_id,
+                created_by=self._created_by,
+            )
+            for workflow in workflows
+            if workflow.get("workflow_type")
+        ]
+        self._postgres_writer.replace_templates(
+            tenant_id=self._tenant_id,
+            records=records,
+        )
+
+
 def _postgres_run_to_platform_record(record: WorkflowRunRecord) -> dict[str, Any]:
     if isinstance(record.output, dict):
         platform_record = dict(record.output)
@@ -236,6 +299,52 @@ def _platform_record_to_postgres_run(record: dict[str, Any]) -> WorkflowRunRecor
         ),
         created_at=str(record["started_at"]),
         completed_at=_optional_record_value(record.get("finished_at")),
+    )
+
+
+def _postgres_template_to_platform_record(
+    record: WorkflowTemplateRecord,
+) -> dict[str, Any]:
+    platform_record = dict(record.definition)
+    platform_record["workflow_type"] = record.id
+    platform_record["name"] = record.name
+    platform_record["description"] = record.description or ""
+    platform_record["enabled"] = record.status == "active"
+    platform_record["updated_at"] = record.updated_at
+    platform_record["updated_by"] = (
+        str(platform_record.get("updated_by") or record.created_by).strip()
+        or record.created_by
+    )
+    return platform_record
+
+
+def _platform_template_to_postgres_record(
+    workflow: dict[str, Any],
+    *,
+    tenant_id: str,
+    created_by: str,
+) -> WorkflowTemplateRecord:
+    workflow_type = str(workflow.get("workflow_type") or "").strip()
+    if not workflow_type:
+        raise ValueError("Workflow template requires workflow_type.")
+
+    definition = dict(workflow)
+    definition["workflow_type"] = workflow_type
+    definition["enabled"] = workflow.get("enabled") is not False
+    updated_at = str(workflow.get("updated_at") or "").strip()
+    if not updated_at:
+        raise ValueError("Workflow template requires updated_at.")
+
+    return WorkflowTemplateRecord(
+        id=workflow_type,
+        tenant_id=tenant_id,
+        name=str(workflow.get("name") or workflow_type),
+        description=_optional_record_value(workflow.get("description")),
+        status="active" if workflow.get("enabled") is not False else "disabled",
+        definition=definition,
+        created_by=created_by,
+        created_at=updated_at,
+        updated_at=updated_at,
     )
 
 

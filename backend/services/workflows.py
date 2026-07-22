@@ -7,8 +7,8 @@ from uuid import uuid4
 from backend.persistence import AuditEventRecord
 from repositories.workflows import (
     WorkflowTemplateRegistryError,
-    WorkflowRunRepository,
-    WorkflowTemplateRepository,
+    WorkflowRunRepositoryProtocol,
+    WorkflowTemplateRepositoryProtocol,
 )
 
 
@@ -43,7 +43,7 @@ class PlatformWorkflowTemplateService:
     def __init__(
         self,
         *,
-        repository: WorkflowTemplateRepository,
+        repository: WorkflowTemplateRepositoryProtocol,
         audit_event_writer: AuditEventWriteRepository | None = None,
         now: Callable[[], str] | None = None,
     ) -> None:
@@ -375,7 +375,7 @@ class PlatformWorkflowTemplateService:
 class PlatformWorkflowRunService:
     """Manage persisted enterprise workflow run history."""
 
-    def __init__(self, *, repository: WorkflowRunRepository) -> None:
+    def __init__(self, *, repository: WorkflowRunRepositoryProtocol) -> None:
         self._repository = repository
 
     def list_runs(

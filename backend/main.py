@@ -177,6 +177,7 @@ from services.composition import (
     build_tool_governance_read_repository,
     build_tool_governance_write_repository,
     build_workflow_run_repository,
+    build_workflow_template_repository,
 )
 from services.platform_status import PlatformStatusService
 from services.tools import (
@@ -209,6 +210,9 @@ connector_config_repository = ConnectorConfigRepository(
 )
 workflow_template_repository = WorkflowTemplateRepository(
     PLATFORM_WORKFLOW_TEMPLATES_PATH,
+)
+workflow_template_repository = build_workflow_template_repository(
+    workflow_template_repository,
 )
 workflow_run_fallback_repository = WorkflowRunRepository(PLATFORM_WORKFLOW_RUNS_PATH)
 member_repository = build_member_repository(member_fallback_repository)
