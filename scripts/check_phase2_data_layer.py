@@ -121,6 +121,9 @@ REQUIRED_REPOSITORIES = {
 }
 
 TARGET_COLUMN_WARNINGS: dict[str, set[str]] = {}
+REQUIRED_TARGET_COLUMNS = {
+    "runtime_providers": {"base_url"},
+}
 
 POSTGRES_AUTHORITATIVE_REPOSITORIES = {
     "agents.py": {"PostgresAgentCatalogWriteThroughRepository"},
@@ -309,6 +312,35 @@ def _collect_warnings(schema: dict[str, set[str]]) -> list[str]:
         for column_name in missing_columns:
             warnings.append(f"target model drift: {table_name}.{column_name} is not in migrations")
     return warnings
+
+
+def _check_required_target_columns(schema: dict[str, set[str]]) -> list[str]:
+    errors: list[str] = []
+    for table_name, target_columns in sorted(REQUIRED_TARGET_COLUMNS.items()):
+        existing_columns = schema.get(table_name, set())
+        missing_columns = sorted(target_columns - existing_columns)
+        for column_name in missing_columns:
+            errors.append(f"target model drift: {table_name}.{column_name} is not in migrations")
+    return errors
+
+
+def _check_runtime_provider_endpoint_data_model_contract() -> list[str]:
+    source = DATA_MODEL_DOC.read_text(encoding="utf-8")
+    section_match = re.search(
+        r"`runtime_providers`\s*(?P<body>.*?)(?:\n`runtime_invocations`|\Z)",
+        source,
+        re.DOTALL,
+    )
+    if section_match is None:
+        return ["docs/data-model.md must document the runtime_providers entity"]
+
+    if "- `base_url`" not in section_match.group("body"):
+        return [
+            "docs/data-model.md must document runtime_providers.base_url "
+            "as the PostgreSQL endpoint configuration column",
+        ]
+
+    return []
 
 
 def _uses_fallback_repository(node: ast.AST) -> bool:
@@ -4137,6 +4169,7 @@ def main() -> int:
 
     errors = [
         *_check_required_tables(schema),
+        *_check_required_target_columns(schema),
         *_check_required_repositories(),
         *_check_authoritative_postgres_repositories(),
         *_check_authoritative_postgres_persistence_repositories(),
@@ -4150,6 +4183,7 @@ def main() -> int:
         *_check_postgres_data_workflow_documented(),
         *_check_readme_does_not_promote_local_files_as_production_data_layer(),
         *_check_production_data_layer_docs_contract(),
+        *_check_runtime_provider_endpoint_data_model_contract(),
         *_check_postgres_write_transaction_boundary(),
         *_check_postgres_read_tenant_boundary(),
         *_check_postgres_runtime_provider_reads_wired(),
@@ -4213,6 +4247,7 @@ def main() -> int:
     print("- PostgreSQL data workflow documented: yes")
     print("- local JSON/JSONL production-data wording guarded: yes")
     print("- production data-layer docs contract guarded: yes")
+    print("- runtime provider endpoint data-model contract guarded: yes")
     print("- PostgreSQL write transaction boundary guarded: yes")
     print("- PostgreSQL read tenant boundary guarded: yes")
     print("- PostgreSQL runtime provider reads wired: yes")

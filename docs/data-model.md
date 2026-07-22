@@ -103,6 +103,7 @@ This document defines the production data model target for AgentFoundry. Postgre
 - `mode`
 - `status`
 - `capabilities`
+- `base_url`
 - `config_ref`
 - `created_at`
 - `updated_at`
