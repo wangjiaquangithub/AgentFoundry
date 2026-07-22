@@ -6,6 +6,7 @@ from typing import Any, Awaitable, Callable, Mapping, NoReturn
 from fastapi import APIRouter, HTTPException, Request
 
 from api.schemas import EnterpriseAgentRunRequest
+from persistence.database import is_production_environment
 from services.agent_runs import (
     PlatformAgentRunService,
     PlatformAgentRunServiceError,
@@ -154,6 +155,7 @@ def create_agent_runtime_router(
                 knowledge_document_readiness_service=(
                     deps.knowledge_document_readiness_service
                 ),
+                allow_dev_knowledge_fallback=not is_production_environment(deps.env),
                 execution_context=execution_context,
             )
         )

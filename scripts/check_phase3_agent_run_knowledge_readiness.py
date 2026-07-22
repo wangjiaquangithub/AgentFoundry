@@ -208,6 +208,23 @@ async def main() -> None:
     assert fallback["retrieval_readiness"]["dev_fallback_used"] is True
     assert fallback.get("knowledge_document_readiness") is None
 
+    dev = DevKnowledge()
+    production_only = await run_service.prepare_knowledge_context_from_execution_context(
+        build_agent_run_payload=knowledge_service.build_agent_run_payload,
+        search_agent_knowledge_bases=knowledge_service.search_agent_knowledge_bases,
+        knowledge_base_service=None,
+        dev_knowledge_service=dev,
+        dev_knowledge_provider="agentfoundry-dev-local",
+        knowledge_document_readiness_service=None,
+        allow_dev_knowledge_fallback=False,
+        execution_context=execution_context(),
+    )
+    assert dev.calls == []
+    assert production_only["knowledge_hits"] == []
+    assert production_only["retrieval_readiness"]["status"] == "not_configured"
+    assert production_only["retrieval_readiness"]["dev_fallback_used"] is False
+    assert production_only.get("knowledge_document_readiness") is None
+
 
 if __name__ == "__main__":
     asyncio.run(main())

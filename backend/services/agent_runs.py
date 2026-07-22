@@ -728,6 +728,7 @@ class PlatformAgentRunService:
         dev_knowledge_service: Any,
         dev_knowledge_provider: str,
         knowledge_document_readiness_service: Any | None = None,
+        allow_dev_knowledge_fallback: bool = True,
         execution_context: dict[str, Any],
     ) -> dict[str, Any]:
         response_record_context = execution_context["response_record_context"]
@@ -781,6 +782,7 @@ class PlatformAgentRunService:
             question=str(execution_context["question"]),
             knowledge_base_ids=knowledge_base_ids,
             agent_run_id=str(execution_context["run_identity"]["turn_id"]),
+            allow_dev_fallback=allow_dev_knowledge_fallback,
         )
         knowledge_payload = build_agent_run_payload(
             knowledge_hits=knowledge_hits,
