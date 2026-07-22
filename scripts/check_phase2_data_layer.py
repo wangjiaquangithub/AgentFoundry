@@ -1789,6 +1789,7 @@ def _check_postgres_agent_catalog_wired() -> list[str]:
 def _check_postgres_agent_runs_wired() -> list[str]:
     errors: list[str] = []
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    composition_source = (SERVICES_DIR / "composition.py").read_text(encoding="utf-8")
     agent_run_repository_source = (REPOSITORIES_DIR / "agent_runs.py").read_text(
         encoding="utf-8",
     )
@@ -1796,16 +1797,21 @@ def _check_postgres_agent_runs_wired() -> list[str]:
         encoding="utf-8",
     )
     main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+    composition_tree = ast.parse(
+        composition_source,
+        filename=str(SERVICES_DIR / "composition.py"),
+    )
 
-    required_main_imports = [
+    required_composition_imports = [
         "PostgresAgentRunReadRepository",
         "PostgresAgentRunWriteRepository",
         "PostgresAgentRunReadThroughRepository",
     ]
-    for imported_name in required_main_imports:
-        if not _module_imports_name(main_tree, imported_name):
+    for imported_name in required_composition_imports:
+        if not _module_imports_name(composition_tree, imported_name):
             errors.append(
-                f"backend/main.py must import {imported_name} for agent run PostgreSQL wiring",
+                "backend/services/composition.py must import "
+                f"{imported_name} for agent run PostgreSQL wiring",
             )
 
     if not _module_defines_function(main_tree, "_build_agent_run_repository"):
@@ -1816,17 +1822,28 @@ def _check_postgres_agent_runs_wired() -> list[str]:
         errors.append(
             "backend/main.py must build agent_run_repository through the PostgreSQL selector",
         )
-    if "PostgresAgentRunReadThroughRepository(" not in main_source:
+    if "build_configured_postgres_agent_run_repository()" not in main_source:
         errors.append(
-            "backend/main.py must wrap PostgreSQL agent run repositories with PostgresAgentRunReadThroughRepository",
+            "backend/main.py must delegate agent run PostgreSQL wiring to services.composition",
         )
-    if "postgres_reader=PostgresAgentRunReadRepository(database)" not in main_source:
+    if not _module_defines_function(
+        composition_tree,
+        "build_configured_postgres_agent_run_repository",
+    ):
         errors.append(
-            "backend/main.py must pass the PostgreSQL agent run reader into the read-through repository",
+            "backend/services/composition.py must define build_configured_postgres_agent_run_repository",
         )
-    if "postgres_writer=PostgresAgentRunWriteRepository(database)" not in main_source:
+    if "PostgresAgentRunReadThroughRepository(" not in composition_source:
         errors.append(
-            "backend/main.py must pass the PostgreSQL agent run writer into the read-through repository",
+            "backend/services/composition.py must wrap PostgreSQL agent run repositories with PostgresAgentRunReadThroughRepository",
+        )
+    if "postgres_reader=PostgresAgentRunReadRepository(database)" not in composition_source:
+        errors.append(
+            "backend/services/composition.py must pass the PostgreSQL agent run reader into the read-through repository",
+        )
+    if "postgres_writer=PostgresAgentRunWriteRepository(database)" not in composition_source:
+        errors.append(
+            "backend/services/composition.py must pass the PostgreSQL agent run writer into the read-through repository",
         )
     if "repository=agent_run_repository" not in main_source:
         errors.append(

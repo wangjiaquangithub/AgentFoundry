@@ -108,8 +108,6 @@ from repositories.agents import (
     AgentRepositoryProtocol,
 )
 from backend.persistence import (
-    PostgresAgentRunReadRepository,
-    PostgresAgentRunWriteRepository,
     PostgresApprovalReadRepository,
     PostgresApprovalWriteRepository,
     PostgresMemoryItemReadRepository,
@@ -127,7 +125,6 @@ from backend.persistence import (
 from repositories.agent_runs import (
     AgentRunRepository,
     AgentRunRepositoryProtocol,
-    PostgresAgentRunReadThroughRepository,
 )
 from repositories.approvals import (
     ApprovalRequestRepository,
@@ -178,6 +175,7 @@ from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
 from services.composition import (
     build_configured_postgres_agent_repository,
+    build_configured_postgres_agent_run_repository,
     build_configured_postgres_audit_event_read_repository,
     build_configured_postgres_audit_event_write_repository,
     build_configured_postgres_knowledge_base_read_repository,
@@ -223,14 +221,7 @@ def _build_agent_repository() -> AgentRepositoryProtocol:
 
 
 def _build_agent_run_repository() -> AgentRunRepositoryProtocol:
-    database = create_configured_postgres_database()
-    if database is None:
-        return agent_run_fallback_repository
-
-    return PostgresAgentRunReadThroughRepository(
-        postgres_reader=PostgresAgentRunReadRepository(database),
-        postgres_writer=PostgresAgentRunWriteRepository(database),
-    )
+    return build_configured_postgres_agent_run_repository() or agent_run_fallback_repository
 
 
 agent_repository = _build_agent_repository()
