@@ -25,6 +25,13 @@ CHECKS = (
         (sys.executable, "scripts/check_phase4_runtime_provider_config_gate.py"),
     ),
     (
+        "runtime provider status config gate",
+        (
+            sys.executable,
+            "scripts/check_phase4_runtime_provider_status_config_gate.py",
+        ),
+    ),
+    (
         "adapter-backed local invocation",
         (sys.executable, "scripts/check_phase4_adapter_backed_local_invocation.py"),
     ),

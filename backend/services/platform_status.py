@@ -5,6 +5,8 @@ from collections.abc import Callable
 from dataclasses import asdict, is_dataclass
 from typing import Any, Protocol
 
+from runtime import describe_provider_native_invocation_config_gate
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -437,6 +439,7 @@ class PlatformStatusService:
 
         provider = providers[0]
         status = str(getattr(provider, "status", "") or "unknown")
+        provider_native_invocation = self._runtime_provider_native_invocation(provider)
         return {
             "provider_id": str(getattr(provider, "id", "")),
             "provider": str(getattr(provider, "provider_type", "")),
@@ -445,14 +448,28 @@ class PlatformStatusService:
             "ready": status == "active",
             "message": "Runtime provider loaded from PostgreSQL production data layer.",
             "capabilities": self._runtime_provider_capabilities(provider),
+            "provider_native_invocation": provider_native_invocation,
             "checks": {
                 "adapter_configured": True,
                 "local_service_completion_wired": True,
+                "provider_native_config_ready": bool(
+                    provider_native_invocation["ready"],
+                ),
                 "provider_invocation_wired": False,
                 "direct_agentscope_dependency": False,
                 "postgres_runtime_provider_record": True,
             },
         }
+
+    @staticmethod
+    def _runtime_provider_native_invocation(provider: Any) -> dict[str, Any]:
+        config_ref = str(getattr(provider, "config_ref", "") or "")
+        runtime_provider_config = {}
+        if config_ref:
+            runtime_provider_config["agentscope_runtime_auth_ref"] = config_ref
+        return describe_provider_native_invocation_config_gate(
+            {"runtime_provider_config": runtime_provider_config},
+        )
 
     @staticmethod
     def _runtime_provider_capabilities(provider: Any) -> list[str]:
