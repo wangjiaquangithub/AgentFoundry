@@ -146,6 +146,33 @@ Production work still needs:
 
 Do not connect real enterprise-sensitive data until the production data layer, access control, secret handling, and audit guarantees are in place.
 
+## PostgreSQL Data Workflow
+
+PostgreSQL is the production database target for AgentFoundry. Local JSON/JSONL
+files are development fixtures or import/export inputs, and `sqlite://` is only
+accepted for explicit local compatibility.
+
+Use the default local PostgreSQL URL, or replace it with your own database:
+
+```bash
+export AGENTFOUNDRY_DATABASE_URL=postgresql://agentfoundry:agentfoundry@localhost:5432/agentfoundry
+```
+
+Apply migrations before running production-backed APIs:
+
+```bash
+./scripts/migrate_agentfoundry.sh
+```
+
+Seed development data into PostgreSQL when you need a populated local platform:
+
+```bash
+./scripts/seed_agentfoundry.sh
+```
+
+Both scripts prefer `uv run --with "psycopg[binary]"` when `uv` is available.
+If you run without `uv`, install `psycopg` in the active Python environment.
+
 ## Verify
 
 ```bash

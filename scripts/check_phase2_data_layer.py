@@ -15,6 +15,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+README = ROOT / "README.md"
 MIGRATIONS_DIR = ROOT / "backend" / "persistence" / "migrations"
 PERSISTENCE_DIR = ROOT / "backend" / "persistence"
 PERSISTENCE_INIT_MODULE = PERSISTENCE_DIR / "__init__.py"
@@ -558,6 +559,34 @@ def _check_postgres_seed_path() -> list[str]:
                 "backend/persistence/seed.py must not present seed as SQLite-only: "
                 f"{token}",
             )
+
+    return errors
+
+
+def _check_postgres_data_workflow_documented() -> list[str]:
+    errors: list[str] = []
+    readme_source = README.read_text(encoding="utf-8")
+    normalized_readme_source = " ".join(readme_source.split())
+    required_tokens = [
+        "## PostgreSQL Data Workflow",
+        "PostgreSQL is the production database target",
+        "Local JSON/JSONL",
+        "AGENTFOUNDRY_DATABASE_URL=postgresql://agentfoundry:agentfoundry@localhost:5432/agentfoundry",
+        "./scripts/migrate_agentfoundry.sh",
+        "./scripts/seed_agentfoundry.sh",
+        'uv run --with "psycopg[binary]"',
+    ]
+    for token in required_tokens:
+        if token not in readme_source:
+            errors.append(
+                "README.md must document the PostgreSQL-first migration and seed workflow: "
+                f"{token}",
+            )
+    if "`sqlite://` is only accepted for explicit local compatibility" not in normalized_readme_source:
+        errors.append(
+            "README.md must document the PostgreSQL-first migration and seed workflow: "
+            "`sqlite://` is only accepted for explicit local compatibility",
+        )
 
     return errors
 
@@ -3080,6 +3109,7 @@ def main() -> int:
         *_check_postgres_persistence_exports(),
         *_check_postgres_url_detection_boundary(),
         *_check_postgres_seed_path(),
+        *_check_postgres_data_workflow_documented(),
         *_check_postgres_write_transaction_boundary(),
         *_check_postgres_read_tenant_boundary(),
         *_check_postgres_runtime_provider_reads_wired(),
@@ -3137,6 +3167,7 @@ def main() -> int:
     )
     print("- PostgreSQL URL detection centralized: yes")
     print("- PostgreSQL seed path guarded: yes")
+    print("- PostgreSQL data workflow documented: yes")
     print("- PostgreSQL write transaction boundary guarded: yes")
     print("- PostgreSQL read tenant boundary guarded: yes")
     print("- PostgreSQL runtime provider reads wired: yes")
