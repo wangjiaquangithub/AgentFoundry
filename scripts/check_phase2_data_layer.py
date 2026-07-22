@@ -3321,6 +3321,12 @@ def _check_postgres_document_reads_guarded() -> list[str]:
                     "documents: backend/persistence/documents.py:"
                     f"PostgresDocumentReadRepository.{method_name}",
                 )
+        if not _module_calls_name(method_node, "_validate_document_read_result"):
+            errors.append(
+                "PostgreSQL document read method must validate returned records "
+                "against requested tenant and filters: backend/persistence/documents.py:"
+                f"PostgresDocumentReadRepository.{method_name}",
+            )
 
     return errors
 

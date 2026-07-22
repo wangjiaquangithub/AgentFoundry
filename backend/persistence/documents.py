@@ -78,6 +78,24 @@ def _validate_write_result(
         raise ValueError("PostgreSQL document write returned another updated time.")
 
 
+def _validate_document_read_result(
+    record: DocumentRecord,
+    *,
+    tenant_id: str,
+    document_id: str | None = None,
+    knowledge_base_id: str | None = None,
+    status: str | None = None,
+) -> None:
+    if record.tenant_id != tenant_id:
+        raise ValueError("PostgreSQL document read returned another tenant.")
+    if document_id is not None and record.id != document_id:
+        raise ValueError("PostgreSQL document read returned another document.")
+    if knowledge_base_id is not None and record.knowledge_base_id != knowledge_base_id:
+        raise ValueError("PostgreSQL document read returned another knowledge base.")
+    if status is not None and record.status != status:
+        raise ValueError("PostgreSQL document read returned another status.")
+
+
 class SQLiteDocumentReadRepository:
     """Read tenant-scoped document records from SQLite."""
 
@@ -169,7 +187,16 @@ class PostgresDocumentReadRepository:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, tuple(parameters))
-                return [_document_from_row(dict(row)) for row in cursor.fetchall()]
+                rows = cursor.fetchall()
+        records = [_document_from_row(dict(row)) for row in rows]
+        for record in records:
+            _validate_document_read_result(
+                record,
+                tenant_id=tenant_id,
+                knowledge_base_id=knowledge_base_id,
+                status=status,
+            )
+        return records
 
     def get_document(
         self,
@@ -191,7 +218,13 @@ class PostgresDocumentReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return _document_from_row(dict(row))
+        record = _document_from_row(dict(row))
+        _validate_document_read_result(
+            record,
+            tenant_id=tenant_id,
+            document_id=document_id,
+        )
+        return record
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
