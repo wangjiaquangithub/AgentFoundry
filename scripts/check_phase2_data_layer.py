@@ -2572,6 +2572,7 @@ def _check_postgres_members_wired() -> list[str]:
     )
 
     required_composition_imports = [
+        "MemberRepositoryProtocol",
         "PostgresMemberReadThroughRepository",
         "PostgresTenancyReadRepository",
         "PostgresTenancyWriteRepository",
@@ -2583,13 +2584,13 @@ def _check_postgres_members_wired() -> list[str]:
                 f"{imported_name} for member PostgreSQL wiring",
             )
 
-    if not _module_defines_function(main_tree, "_build_member_repository"):
+    if not _module_defines_function(composition_tree, "build_member_repository"):
         errors.append(
-            "backend/main.py must define _build_member_repository for PostgreSQL members",
+            "backend/services/composition.py must define build_member_repository for member repository selection",
         )
-    if "member_repository = _build_member_repository()" not in main_source:
+    if "member_repository = build_member_repository(" not in main_source:
         errors.append(
-            "backend/main.py must build member_repository through the PostgreSQL selector",
+            "backend/main.py must build member_repository through the services.composition selector",
         )
     if not _module_defines_function(
         composition_tree,
@@ -2599,10 +2600,13 @@ def _check_postgres_members_wired() -> list[str]:
             "backend/services/composition.py must define "
             "build_configured_postgres_member_repository",
         )
-    if "build_configured_postgres_member_repository()" not in main_source:
+    if (
+        "build_configured_postgres_member_repository()"
+        not in composition_source
+        or "or fallback_repository" not in composition_source
+    ):
         errors.append(
-            "backend/main.py must delegate PostgreSQL member repository "
-            "construction to services.composition",
+            "backend/services/composition.py must select PostgreSQL member storage before the fallback repository",
         )
     if "PostgresMemberReadThroughRepository(" not in composition_source:
         errors.append(

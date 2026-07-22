@@ -52,7 +52,10 @@ from backend.repositories.approvals import (
     ApprovalRequestRepositoryProtocol,
     PostgresApprovalReadThroughRepository,
 )
-from backend.repositories.members import PostgresMemberReadThroughRepository
+from backend.repositories.members import (
+    MemberRepositoryProtocol,
+    PostgresMemberReadThroughRepository,
+)
 from backend.repositories.workflows import (
     PostgresWorkflowRunReadThroughRepository,
     WorkflowRunRepositoryProtocol,
@@ -247,6 +250,14 @@ def build_configured_postgres_member_repository() -> (
         postgres_reader=PostgresTenancyReadRepository(database),
         postgres_writer=PostgresTenancyWriteRepository(database),
     )
+
+
+def build_member_repository(
+    fallback_repository: MemberRepositoryProtocol,
+) -> MemberRepositoryProtocol:
+    """Select the configured production member repository."""
+
+    return build_configured_postgres_member_repository() or fallback_repository
 
 
 def build_configured_postgres_agent_repository() -> (

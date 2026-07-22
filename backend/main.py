@@ -120,7 +120,6 @@ from repositories.dev_knowledge import DevKnowledgeRepository
 from repositories.memories import PlatformMemoryRepository
 from repositories.members import (
     MemberRepository,
-    MemberRepositoryProtocol,
 )
 from repositories.workflows import (
     WorkflowRunRepository,
@@ -176,7 +175,6 @@ from services.composition import (
     build_configured_postgres_knowledge_retrieval_service,
     build_configured_postgres_memory_item_read_repository,
     build_configured_postgres_memory_item_write_repository,
-    build_configured_postgres_member_repository,
     build_configured_postgres_model_config_service,
     build_configured_postgres_retrieval_event_read_repository,
     build_configured_postgres_retrieval_event_write_repository,
@@ -186,6 +184,7 @@ from services.composition import (
     build_configured_postgres_tool_call_write_repository,
     build_configured_postgres_tool_governance_read_repository,
     build_configured_postgres_tool_governance_write_repository,
+    build_member_repository,
     build_workflow_run_repository,
 )
 from services.platform_status import PlatformStatusService
@@ -262,10 +261,6 @@ def _build_retrieval_event_read_repository() -> Any | None:
     return build_configured_postgres_retrieval_event_read_repository()
 
 
-def _build_member_repository() -> MemberRepositoryProtocol:
-    return build_configured_postgres_member_repository() or member_fallback_repository
-
-
 connector_config_repository = ConnectorConfigRepository(
     PLATFORM_CONNECTOR_CONFIGS_PATH,
 )
@@ -273,7 +268,7 @@ workflow_template_repository = WorkflowTemplateRepository(
     PLATFORM_WORKFLOW_TEMPLATES_PATH,
 )
 workflow_run_fallback_repository = WorkflowRunRepository(PLATFORM_WORKFLOW_RUNS_PATH)
-member_repository = _build_member_repository()
+member_repository = build_member_repository(member_fallback_repository)
 workflow_run_repository = build_workflow_run_repository(
     workflow_run_fallback_repository,
 )
