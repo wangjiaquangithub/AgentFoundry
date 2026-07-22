@@ -13,6 +13,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
+if str(REPO_ROOT / "backend") not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT / "backend"))
 
 
 BACKEND_ROOT = REPO_ROOT / "backend"
@@ -20,6 +22,15 @@ MAIN_PATH = BACKEND_ROOT / "main.py"
 RUNTIME_PATH = BACKEND_ROOT / "runtime.py"
 AGENT_RUNS_PATH = BACKEND_ROOT / "services" / "agent_runs.py"
 AGENT_RUNTIME_API_PATH = BACKEND_ROOT / "api" / "agent_runtime.py"
+
+
+class RuntimeInvocationWriter:
+    def __init__(self) -> None:
+        self.records: list[Any] = []
+
+    def append_invocation(self, record: Any) -> Any:
+        self.records.append(record)
+        return record
 
 
 def _read(path: Path) -> str:
@@ -148,11 +159,66 @@ def _assert_sample_payload() -> None:
     assert raw["runtime_bridge"]["provider_invocation_wired"] is False
 
 
+def _assert_adapter_backed_evidence_persists() -> None:
+    from backend.runtime import build_runtime_invocation_request_payload
+    from backend.services.agent_runs import PlatformAgentRunService
+
+    writer = RuntimeInvocationWriter()
+    service = PlatformAgentRunService(
+        repository=object(),
+        runtime_invocation_writer=writer,
+    )
+    request_payload = build_runtime_invocation_request_payload(
+        tenant="acme",
+        user_id="acme:alice",
+        session_id="session-1",
+        agent_id="agent-enterprise-support",
+        agent_name="Enterprise Support",
+        question="Summarize open issues.",
+        metadata={"runtime_invocation_id": "runtime-invocation-phase-4-3"},
+    )
+    result_payload = _sample_payload()
+
+    service.append_runtime_invocation_record_from_context(
+        response_trace={
+            "turn_id": "run-phase-4-3",
+            "created_at": "2026-07-21T00:00:00+00:00",
+        },
+        context={
+            "tenant": "acme",
+            "user_id": "acme:alice",
+            "session_id": "session-1",
+            "agent_id": "agent-enterprise-support",
+            "agent_name": "Enterprise Support",
+            "question": "Summarize open issues.",
+            "runtime_invocation_id": "runtime-invocation-phase-4-3",
+            "runtime_invocation_request": request_payload,
+        },
+        runtime_invocation_result=result_payload,
+    )
+
+    assert len(writer.records) == 1
+    record = writer.records[0]
+    raw = record.response_summary["raw"]
+
+    assert record.id == "runtime-invocation-phase-4-3"
+    assert record.provider_id == "agentscope-platform-adapter"
+    assert record.agent_run_id == "run-phase-4-3"
+    assert (
+        record.request_summary["metadata"]["runtime_invocation_id"]
+        == record.response_summary["runtime_invocation_id"]
+    )
+    assert raw["runtime_bridge"]["type"] == "agentfoundry_local_service_completion"
+    assert raw["runtime_bridge"]["adapter_id"] == "agentscope-platform-adapter"
+    assert raw["runtime_bridge"]["provider_invocation_wired"] is False
+
+
 def main() -> None:
     _assert_no_direct_agentscope_imports()
     _assert_main_uses_adapter_backed_builder()
     _assert_runtime_builder_uses_adapter_registry()
     _assert_sample_payload()
+    _assert_adapter_backed_evidence_persists()
     print("phase 4.3 adapter-backed local runtime invocation checks passed")
 
 
