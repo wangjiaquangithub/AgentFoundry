@@ -37,6 +37,16 @@ class ToolPolicyReadRepository(Protocol):
         """Return an authorization policy snapshot from production persistence."""
 
 
+class ToolPolicyRepositoryProtocol(Protocol):
+    """Load and save the effective enterprise tool policy."""
+
+    def load(self) -> dict[str, Any]:
+        ...
+
+    def save(self, policy: dict[str, Any]) -> None:
+        ...
+
+
 class ToolPolicyRepository:
     """Load and save enterprise tool authorization policy configuration."""
 

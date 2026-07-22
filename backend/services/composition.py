@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import Callable
 
 from backend.persistence import (
@@ -56,6 +57,11 @@ from backend.repositories.approvals import (
 from backend.repositories.members import (
     MemberRepositoryProtocol,
     PostgresMemberReadThroughRepository,
+)
+from backend.repositories.tool_policy import (
+    PostgresToolPolicyWriteThroughRepository,
+    ToolPolicyRepository,
+    ToolPolicyRepositoryProtocol,
 )
 from backend.repositories.workflows import (
     PostgresWorkflowTemplateReadThroughRepository,
@@ -258,6 +264,54 @@ def build_tool_governance_write_repository() -> (
     """Select the configured production tool governance write repository."""
 
     return build_configured_postgres_tool_governance_write_repository()
+
+
+def build_configured_postgres_tool_policy_repository(
+    *,
+    default_policy: dict[str, object],
+    enterprise_tool_catalog: dict[str, dict[str, object]],
+    approval_required_tools: set[str],
+    now: Callable[[], str],
+) -> PostgresToolPolicyWriteThroughRepository | None:
+    """Build the tool policy repository adapter when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresToolPolicyWriteThroughRepository(
+        postgres_reader=PostgresToolGovernanceReadRepository(database),
+        postgres_writer=PostgresToolGovernanceWriteRepository(database),
+        default_policy=json.loads(json.dumps(default_policy)),
+        enterprise_tool_catalog=enterprise_tool_catalog,
+        approval_required_tools=approval_required_tools,
+        now=now,
+    )
+
+
+def build_tool_policy_repository_selector(
+    *,
+    default_policy: dict[str, object],
+    enterprise_tool_catalog: dict[str, dict[str, object]],
+    approval_required_tools: set[str],
+    now: Callable[[], str],
+) -> Callable[[ToolPolicyRepository], ToolPolicyRepositoryProtocol]:
+    """Select PostgreSQL tool policy persistence when configured."""
+
+    def select(
+        fallback_repository: ToolPolicyRepository,
+    ) -> ToolPolicyRepositoryProtocol:
+        return (
+            build_configured_postgres_tool_policy_repository(
+                default_policy=default_policy,
+                enterprise_tool_catalog=enterprise_tool_catalog,
+                approval_required_tools=approval_required_tools,
+                now=now,
+            )
+            or fallback_repository
+        )
+
+    return select
 
 
 def build_configured_postgres_memory_item_read_repository() -> (

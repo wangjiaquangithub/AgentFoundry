@@ -175,7 +175,7 @@ from services.composition import (
     build_tool_call_read_repository,
     build_tool_call_write_repository,
     build_tool_governance_read_repository,
-    build_tool_governance_write_repository,
+    build_tool_policy_repository_selector,
     build_workflow_run_repository,
     build_workflow_template_repository,
 )
@@ -286,7 +286,12 @@ def _platform_tool_policy_service() -> PlatformToolPolicyService:
             _platform_access_helpers.identity_metadata(user_id, tenant)
         ),
         tool_governance_reader=build_tool_governance_read_repository(),
-        tool_governance_writer=build_tool_governance_write_repository(),
+        tool_policy_repository_selector=build_tool_policy_repository_selector(
+            default_policy=DEFAULT_TOOL_POLICY,
+            enterprise_tool_catalog=ENTERPRISE_TOOL_CATALOG,
+            approval_required_tools=APPROVAL_REQUIRED_TOOLS,
+            now=now_iso,
+        ),
         audit_event_writer=build_audit_event_write_repository(),
         enterprise_tool_catalog=ENTERPRISE_TOOL_CATALOG,
         approval_required_tools=APPROVAL_REQUIRED_TOOLS,

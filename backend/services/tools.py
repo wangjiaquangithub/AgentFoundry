@@ -8,8 +8,8 @@ from uuid import uuid4
 from backend.persistence import AuditEventRecord
 from permissions import ToolAuthorizationPolicy
 from repositories.tool_policy import (
-    PostgresToolPolicyWriteThroughRepository,
     ToolPolicyRepository,
+    ToolPolicyRepositoryProtocol,
     ToolPolicyWriteRepository,
 )
 
@@ -63,6 +63,9 @@ class PlatformToolPolicyService:
         identity_metadata: Callable[[str, str], list[dict[str, Any]]],
         tool_governance_reader: ToolGovernanceReadRepository | None = None,
         tool_governance_writer: ToolPolicyWriteRepository | None = None,
+        tool_policy_repository_selector: (
+            Callable[[ToolPolicyRepository], ToolPolicyRepositoryProtocol] | None
+        ) = None,
         audit_event_writer: AuditEventWriteRepository | None = None,
         enterprise_tool_catalog: dict[str, dict[str, Any]] | None = None,
         approval_required_tools: set[str] | None = None,
@@ -76,6 +79,7 @@ class PlatformToolPolicyService:
         self._identity_metadata = identity_metadata
         self._tool_governance_reader = tool_governance_reader
         self._tool_governance_writer = tool_governance_writer
+        self._tool_policy_repository_selector = tool_policy_repository_selector
         self._audit_event_writer = audit_event_writer
         self._enterprise_tool_catalog = enterprise_tool_catalog or {}
         self._approval_required_tools = approval_required_tools or set()
@@ -88,7 +92,10 @@ class PlatformToolPolicyService:
             raise PlatformToolPolicyServiceError(500, str(exc)) from exc
 
     def save_policy(self, policy: dict[str, Any]) -> None:
-        self._repository().save(policy)
+        try:
+            self._repository().save(policy)
+        except ValueError as exc:
+            raise PlatformToolPolicyServiceError(500, str(exc)) from exc
 
     def merge_import_policy(
         self,
@@ -765,32 +772,14 @@ class PlatformToolPolicyService:
         except Exception as exc:
             raise PlatformToolPolicyServiceError(500, str(exc)) from exc
 
-    def _repository(self) -> ToolPolicyRepository | PostgresToolPolicyWriteThroughRepository:
+    def _repository(self) -> ToolPolicyRepositoryProtocol:
         fallback_repository = ToolPolicyRepository(
             self._policy_path(),
             json.loads(json.dumps(self._default_policy)),
         )
-        if self._tool_governance_writer is None:
+        if self._tool_policy_repository_selector is None:
             return fallback_repository
-
-        if self._tool_governance_reader is None:
-            raise PlatformToolPolicyServiceError(
-                500,
-                "Tool governance PostgreSQL writer requires a reader.",
-            )
-        if self._now is None:
-            raise PlatformToolPolicyServiceError(
-                500,
-                "Tool governance PostgreSQL writer requires a clock.",
-            )
-        return PostgresToolPolicyWriteThroughRepository(
-            postgres_reader=self._tool_governance_reader,
-            postgres_writer=self._tool_governance_writer,
-            default_policy=json.loads(json.dumps(self._default_policy)),
-            enterprise_tool_catalog=self._enterprise_tool_catalog,
-            approval_required_tools=self._approval_required_tools,
-            now=self._now,
-        )
+        return self._tool_policy_repository_selector(fallback_repository)
 
 
 def _deep_merge_dict(base: dict[str, Any], incoming: dict[str, Any]) -> dict[str, Any]:
