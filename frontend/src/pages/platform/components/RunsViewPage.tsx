@@ -179,53 +179,65 @@ export function RunsViewPage({
 	const runItems = useMemo<RunListItem[]>(
 		() =>
 			[
-			...recentAgentTurns.map((turn) => ({
-				type: 'agent' as const,
-				id: turn.id,
-				title: turn.question,
-				description: turn.answer,
-				timestamp: turn.createdAt,
-				startedAt: turn.createdAt,
-				finishedAt: turn.createdAt,
-				duration: formatDuration(turn.createdAt, turn.createdAt),
-				status: 'success' as PlatformOperationalStatus,
-				agentId: turn.agentId,
-				owner: undefined,
-				scope: undefined,
-				raw: turn,
-			})),
-			...recentWorkflowRuns.map((run) => ({
-				type: 'workflow' as const,
-				id: run.run_id,
-				title: run.workflow_name,
-				description: run.summary || formatTimestamp(run.finished_at || run.started_at),
-				timestamp: run.finished_at || run.started_at,
-				startedAt: run.started_at,
-				finishedAt: run.finished_at,
-				duration: formatDuration(run.started_at, run.finished_at),
-				status: normalizePlatformStatus(run.status),
-				agentId: run.agent_id,
-				owner: run.user_id,
-				scope: run.tenant,
-				raw: run,
-			})),
-		].sort((a, b) => {
-			const left = new Date(a.timestamp).getTime();
-			const right = new Date(b.timestamp).getTime();
-			return (Number.isFinite(right) ? right : 0) - (Number.isFinite(left) ? left : 0);
-		}),
+				...recentAgentTurns.map((turn) => ({
+					type: 'agent' as const,
+					id: turn.id,
+					title: turn.question,
+					description: turn.answer,
+					timestamp: turn.createdAt,
+					startedAt: turn.createdAt,
+					finishedAt: turn.createdAt,
+					duration: formatDuration(turn.createdAt, turn.createdAt),
+					status: 'success' as PlatformOperationalStatus,
+					agentId: turn.agentId,
+					owner: undefined,
+					scope: undefined,
+					raw: turn,
+				})),
+				...recentWorkflowRuns.map((run) => ({
+					type: 'workflow' as const,
+					id: run.run_id,
+					title: run.workflow_name,
+					description:
+						run.summary || formatTimestamp(run.finished_at || run.started_at),
+					timestamp: run.finished_at || run.started_at,
+					startedAt: run.started_at,
+					finishedAt: run.finished_at,
+					duration: formatDuration(run.started_at, run.finished_at),
+					status: normalizePlatformStatus(run.status),
+					agentId: run.agent_id,
+					owner: run.user_id,
+					scope: run.tenant,
+					raw: run,
+				})),
+			].sort((a, b) => {
+				const left = new Date(a.timestamp).getTime();
+				const right = new Date(b.timestamp).getTime();
+				return (
+					(Number.isFinite(right) ? right : 0) -
+					(Number.isFinite(left) ? left : 0)
+				);
+			}),
 		[recentAgentTurns, recentWorkflowRuns],
 	);
 	const filteredRunItems = useMemo(() => {
 		const keyword = runKeywordFilter.trim().toLowerCase();
 
 		return runItems.filter((item) => {
-			const matchesType = runTypeFilter === 'all' || item.type === runTypeFilter;
+			const matchesType =
+				runTypeFilter === 'all' || item.type === runTypeFilter;
 			const matchesStatus =
 				runStatusFilter === 'all' || item.status === runStatusFilter;
 			const matchesKeyword =
 				keyword.length === 0 ||
-				[item.title, item.description, item.agentId, item.owner, item.scope, item.id]
+				[
+					item.title,
+					item.description,
+					item.agentId,
+					item.owner,
+					item.scope,
+					item.id,
+				]
 					.filter(Boolean)
 					.some((value) => String(value).toLowerCase().includes(keyword));
 
@@ -361,7 +373,7 @@ export function RunsViewPage({
 			</section>
 
 			<section className="grid min-h-[34rem] content-start gap-4">
-				<div className="flex flex-col gap-3 border-b pb-4 lg:flex-row lg:items-end lg:justify-between">
+				<div className="flex flex-col gap-3 border-b pb-4 lg:flex-row lg:items-start lg:justify-between">
 					<div className="min-w-0">
 						<div className="flex items-center gap-2">
 							<h2 className="text-base font-semibold">
@@ -401,7 +413,7 @@ export function RunsViewPage({
 				</div>
 
 				<div className="grid gap-3">
-					<div className="grid gap-2 md:grid-cols-3">
+					<div className="grid overflow-hidden rounded-md border bg-background md:grid-cols-3">
 						{operationalSummary.map((item) => {
 							const SummaryIcon = item.icon;
 							return (
@@ -415,7 +427,7 @@ export function RunsViewPage({
 										}
 									}}
 									className={cn(
-										'grid grid-cols-[1fr_auto] gap-3 rounded-md border px-3 py-2.5 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+										'grid grid-cols-[1fr_auto] gap-3 border-b px-3 py-2.5 text-left transition-colors last:border-b-0 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:border-b-0 md:border-r md:last:border-r-0',
 										item.tone,
 									)}
 								>
@@ -560,8 +572,8 @@ export function RunsViewPage({
 						className="min-h-80 rounded-md border border-dashed bg-background/80 p-6"
 					/>
 				) : (
-					<div className="overflow-hidden rounded-md border bg-background shadow-sm">
-						<div className="hidden grid-cols-[8rem_minmax(0,2fr)_minmax(8rem,0.8fr)_7rem_10rem_4.5rem] gap-3 border-b bg-muted/35 px-3 py-2 text-xs font-medium text-muted-foreground lg:grid">
+					<div className="overflow-hidden rounded-md border bg-background">
+						<div className="hidden grid-cols-[8rem_minmax(0,2.2fr)_minmax(8rem,0.8fr)_7rem_10rem_5rem] gap-3 border-b bg-muted/35 px-3 py-2 text-xs font-medium text-muted-foreground lg:grid">
 							<span>{t('platform.monitoring.filterStatus')}</span>
 							<span>{t('platform.monitoring.runObject')}</span>
 							<span>{t('platform.monitoring.agent')}</span>
@@ -586,7 +598,7 @@ export function RunsViewPage({
 											setSelectedRun({ type: item.type, id: item.id });
 										}}
 										className={cn(
-											'grid w-full gap-3 border-b border-l-2 border-l-transparent px-3 py-3 text-left text-xs transition-colors last:border-b-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:grid-cols-[8rem_minmax(0,2fr)_minmax(8rem,0.8fr)_7rem_10rem_4.5rem] lg:items-center',
+											'grid w-full gap-3 border-b border-l-2 border-l-transparent px-3 py-3 text-left text-xs transition-colors last:border-b-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:grid-cols-[8rem_minmax(0,2.2fr)_minmax(8rem,0.8fr)_7rem_10rem_5rem] lg:items-center',
 											isActive
 												? 'border-l-primary bg-primary/5 text-foreground'
 												: item.status === 'failed'
@@ -602,7 +614,7 @@ export function RunsViewPage({
 										</div>
 										<div className="min-w-0">
 											<div className="flex min-w-0 items-center gap-2">
-												<div className="flex size-7 shrink-0 items-center justify-center rounded-md border bg-background">
+												<div className="flex size-7 shrink-0 items-center justify-center rounded-md border bg-muted/25">
 													<ItemIcon className="size-4 text-muted-foreground" />
 												</div>
 												<div className="min-w-0 truncate font-medium">
@@ -615,6 +627,14 @@ export function RunsViewPage({
 													: t('platform.monitoring.workflowRunType')}
 												{item.description ? ` · ${item.description}` : ''}
 											</p>
+											<div className="mt-2 flex flex-wrap gap-1.5 pl-9 lg:hidden">
+												<Badge variant="outline" className="h-5 text-[11px]">
+													{item.agentId || '-'}
+												</Badge>
+												<Badge variant="outline" className="h-5 text-[11px]">
+													{item.duration}
+												</Badge>
+											</div>
 										</div>
 										<div className="flex min-w-0 items-center justify-between gap-3 text-muted-foreground lg:block">
 											<span className="lg:hidden">

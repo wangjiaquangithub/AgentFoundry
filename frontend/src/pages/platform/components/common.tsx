@@ -64,12 +64,12 @@ export interface PlatformPageShellProps {
 
 export function PlatformPageShell({ children, className }: PlatformPageShellProps) {
 	return (
-		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-muted/20">
-			<div className="mx-auto grid w-full max-w-[1480px] gap-0 lg:grid-cols-[220px_minmax(0,1fr)]">
+		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-muted/10">
+			<div className="mx-auto grid w-full max-w-[1520px] gap-0 lg:grid-cols-[232px_minmax(0,1fr)]">
 				<PlatformDesktopNav />
 				<div
 					className={cn(
-						'flex min-w-0 flex-col gap-5 px-4 py-4 sm:px-6 sm:py-5 lg:px-7',
+						'flex min-w-0 flex-col gap-5 px-4 py-4 sm:px-6 sm:py-5 lg:px-8',
 						className,
 					)}
 				>
@@ -83,7 +83,7 @@ export function PlatformPageShell({ children, className }: PlatformPageShellProp
 
 function PlatformDesktopNav() {
 	return (
-		<aside className="sticky top-0 hidden h-screen min-h-0 border-r bg-background/80 px-3 py-4 lg:block">
+		<aside className="sticky top-0 hidden h-screen min-h-0 border-r bg-background px-3 py-4 lg:block">
 			<div className="mb-4 px-2">
 				<div className="text-sm font-semibold">AgentFoundry</div>
 				<p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -107,7 +107,7 @@ function PlatformDesktopNav() {
 											'flex h-8 items-center gap-2 rounded-md px-2 text-sm transition-colors',
 											'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
 											isActive
-												? 'bg-primary text-primary-foreground'
+												? 'bg-muted text-foreground shadow-[inset_2px_0_0_hsl(var(--primary))]'
 												: 'text-muted-foreground hover:bg-muted hover:text-foreground',
 										)
 									}
@@ -256,19 +256,19 @@ export interface StatCardProps {
 
 export function StatCard({ label, value, helper, icon: Icon, loading }: StatCardProps) {
 	return (
-		<Card size="sm" className="min-h-24 rounded-md border-border/80 shadow-none">
-			<CardHeader className="grid-cols-[1fr_auto] gap-2 pb-2">
+		<Card size="sm" className="min-h-[5.75rem] rounded-md border-border/70 bg-background shadow-none">
+			<CardHeader className="grid-cols-[1fr_auto] gap-2 pb-1.5">
 				<div className="min-w-0">
-					<CardTitle className="truncate text-xs font-medium uppercase text-muted-foreground">
+					<CardTitle className="truncate text-xs font-medium text-muted-foreground">
 						{label}
 					</CardTitle>
 					{loading ? (
-						<Skeleton className="mt-3 h-7 w-14" />
+						<Skeleton className="mt-2.5 h-6 w-14" />
 					) : (
-						<div className="mt-2 text-2xl font-semibold tabular-nums">{value}</div>
+						<div className="mt-1.5 text-xl font-semibold tabular-nums">{value}</div>
 					)}
 				</div>
-				<div className="flex size-8 items-center justify-center rounded-md border bg-muted/35">
+				<div className="flex size-7 items-center justify-center rounded-md border bg-muted/25">
 					<Icon className="size-4 text-muted-foreground" />
 				</div>
 			</CardHeader>
