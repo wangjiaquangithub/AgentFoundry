@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Callable
 
 from backend.persistence import (
@@ -58,6 +59,7 @@ from backend.repositories.members import (
     MemberRepositoryProtocol,
     PostgresMemberReadThroughRepository,
 )
+from backend.repositories.memories import PlatformMemoryRepository
 from backend.repositories.tool_policy import (
     PostgresToolPolicyWriteThroughRepository,
     ToolPolicyRepository,
@@ -348,6 +350,16 @@ def build_memory_item_write_repository() -> PostgresMemoryItemWriteRepository | 
     """Select the configured production memory item write repository."""
 
     return build_configured_postgres_memory_item_write_repository()
+
+
+def build_platform_memory_repository(root_dir: Path) -> PlatformMemoryRepository:
+    """Build the platform memory repository with configured production storage."""
+
+    return PlatformMemoryRepository(
+        root_dir,
+        memory_item_reader=build_memory_item_read_repository(),
+        memory_item_writer=build_memory_item_write_repository(),
+    )
 
 
 def build_configured_postgres_runtime_read_repository() -> (

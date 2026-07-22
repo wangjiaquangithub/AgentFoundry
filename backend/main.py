@@ -114,7 +114,6 @@ from repositories.approvals import (
 )
 from repositories.connectors import ConnectorConfigRepository
 from repositories.dev_knowledge import DevKnowledgeRepository
-from repositories.memories import PlatformMemoryRepository
 from repositories.members import (
     MemberRepository,
 )
@@ -165,10 +164,9 @@ from services.composition import (
     build_knowledge_ingestion_service,
     build_knowledge_response_service,
     build_knowledge_retrieval_service,
-    build_memory_item_read_repository,
-    build_memory_item_write_repository,
     build_member_repository,
     build_model_config_service,
+    build_platform_memory_repository,
     build_retrieval_event_read_repository,
     build_runtime_read_repository,
     build_runtime_write_repository,
@@ -232,11 +230,7 @@ enterprise_router_service = PlatformEnterpriseRouterService(
     default_source=ROUTING_SOURCE_RULES,
     model_source=ROUTING_SOURCE_MODEL,
 )
-platform_memory_repository = PlatformMemoryRepository(
-    PLATFORM_MEMORY_DIR,
-    memory_item_reader=build_memory_item_read_repository(),
-    memory_item_writer=build_memory_item_write_repository(),
-)
+platform_memory_repository = build_platform_memory_repository(PLATFORM_MEMORY_DIR)
 platform_memory_service = PlatformMemoryService(
     repository=platform_memory_repository,
     audit_event_writer=build_audit_event_write_repository(),
