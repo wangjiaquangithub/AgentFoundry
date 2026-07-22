@@ -115,8 +115,17 @@ def _check_runner_contract(source: str) -> list[str]:
         errors.append("migration runner does not recognize PostgreSQL URL schemes")
     if "TIMESTAMPTZ" not in source:
         errors.append("PostgreSQL schema_migrations table must use TIMESTAMPTZ")
-    if "sqlite:// is" not in source and "sqlite:// for local development" not in source:
-        errors.append("migration runner help text must label sqlite:// as local development only")
+    if "sqlite:// for explicit local development compatibility" not in source:
+        errors.append(
+            "migration runner errors must label sqlite:// as explicit local development compatibility"
+        )
+    if (
+        "sqlite:// is" not in source
+        or "explicit local development compatibility only" not in source
+    ):
+        errors.append(
+            "migration runner help text must label sqlite:// as explicit local development compatibility only"
+        )
 
     tree = ast.parse(source, filename=str(MIGRATION_RUNNER))
     functions = {
@@ -168,6 +177,10 @@ def _check_shell_contract(source: str) -> list[str]:
         errors.append("migration shell help text must say PostgreSQL is the production target")
     if "sqlite:// URLs are accepted only for" not in source:
         errors.append("migration shell help text must label sqlite:// as local development compatibility")
+    if "sqlite:// for explicit local development compatibility" not in source:
+        errors.append(
+            "migration shell errors must label sqlite:// as explicit local development compatibility"
+        )
     return errors
 
 
@@ -226,7 +239,7 @@ def main() -> int:
     print("Phase 2 PostgreSQL migration gate")
     print(f"- migrations scanned: {len(_migration_files())}")
     print("- production default: PostgreSQL")
-    print("- sqlite:// scope: local development compatibility")
+    print("- sqlite:// scope: explicit local development compatibility")
 
     if errors:
         print("\nErrors:")

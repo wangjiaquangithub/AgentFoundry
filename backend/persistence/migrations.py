@@ -145,7 +145,7 @@ def apply_migrations(database_url: str) -> list[Migration]:
         return _apply_postgres_migrations(database_url)
     raise ValueError(
         "Unsupported database URL scheme. Use postgresql:// for production "
-        "or sqlite:// for local development."
+        "or sqlite:// for explicit local development compatibility."
     )
 
 
@@ -159,7 +159,7 @@ def main() -> None:
         ),
         help=(
             "Database URL. Use postgresql:// for production; sqlite:// is "
-            "available for local development compatibility."
+            "explicit local development compatibility only."
         ),
     )
     args = parser.parse_args()

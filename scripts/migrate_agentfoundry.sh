@@ -52,7 +52,7 @@ case "$DATABASE_URL" in
     ;;
   *)
     echo "unsupported AGENTFOUNDRY_DATABASE_URL scheme: $DATABASE_URL" >&2
-    echo "use postgresql:// for production or sqlite:// for local development" >&2
+    echo "use postgresql:// for production or sqlite:// for explicit local development compatibility" >&2
     exit 2
     ;;
 esac
