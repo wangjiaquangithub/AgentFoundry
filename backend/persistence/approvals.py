@@ -124,6 +124,30 @@ def _validate_decision_write_result(
         raise ValueError("PostgreSQL approval decision returned another payload.")
 
 
+def _validate_approval_read_result(
+    record: ApprovalRecord,
+    *,
+    tenant_id: str,
+    approval_id: str | None = None,
+    status: str | None = None,
+    request_type: str | None = None,
+    target_type: str | None = None,
+    target_id: str | None = None,
+) -> None:
+    if record.tenant_id != tenant_id:
+        raise ValueError("PostgreSQL approval read returned another tenant.")
+    if approval_id is not None and record.id != approval_id:
+        raise ValueError("PostgreSQL approval read returned another approval.")
+    if status is not None and record.status != status:
+        raise ValueError("PostgreSQL approval read returned another status.")
+    if request_type is not None and record.request_type != request_type:
+        raise ValueError("PostgreSQL approval read returned another request type.")
+    if target_type is not None and record.target_type != target_type:
+        raise ValueError("PostgreSQL approval read returned another target type.")
+    if target_id is not None and record.target_id != target_id:
+        raise ValueError("PostgreSQL approval read returned another target.")
+
+
 class SQLiteApprovalReadRepository:
     """Read tenant-scoped approval records from SQLite."""
 
@@ -262,7 +286,16 @@ class PostgresApprovalReadRepository:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, tuple(parameters))
-                return [_approval_from_row(dict(row)) for row in cursor.fetchall()]
+                rows = cursor.fetchall()
+        records = [_approval_from_row(dict(row)) for row in rows]
+        for record in records:
+            _validate_approval_read_result(
+                record,
+                tenant_id=tenant_id,
+                status=status,
+                request_type=request_type,
+            )
+        return records
 
     def get_approval(
         self,
@@ -285,7 +318,13 @@ class PostgresApprovalReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return _approval_from_row(dict(row))
+        record = _approval_from_row(dict(row))
+        _validate_approval_read_result(
+            record,
+            tenant_id=tenant_id,
+            approval_id=approval_id,
+        )
+        return record
 
     def list_for_target(
         self,
@@ -312,7 +351,17 @@ class PostgresApprovalReadRepository:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, tuple(parameters))
-                return [_approval_from_row(dict(row)) for row in cursor.fetchall()]
+                rows = cursor.fetchall()
+        records = [_approval_from_row(dict(row)) for row in rows]
+        for record in records:
+            _validate_approval_read_result(
+                record,
+                tenant_id=tenant_id,
+                target_type=target_type,
+                target_id=target_id,
+                status=status,
+            )
+        return records
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)

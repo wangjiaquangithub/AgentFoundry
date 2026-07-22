@@ -3818,6 +3818,13 @@ def _check_postgres_approval_request_reads_guarded() -> list[str]:
                     "backend/persistence/approvals.py:"
                     f"PostgresApprovalReadRepository.{method_name}",
                 )
+        if not _module_calls_name(method_node, "_validate_approval_read_result"):
+            errors.append(
+                "PostgreSQL approval request read method must validate returned "
+                "records against requested tenant and filters: "
+                "backend/persistence/approvals.py:"
+                f"PostgresApprovalReadRepository.{method_name}",
+            )
 
     return errors
 
