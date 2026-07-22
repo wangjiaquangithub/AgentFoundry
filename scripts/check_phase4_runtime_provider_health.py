@@ -136,6 +136,7 @@ def main() -> None:
             query=lambda **_kwargs: [],
         ),
         audit_event_reader=None,
+        retrieval_event_reader=None,
         tool_policy=SimpleNamespace(
             mode="audit",
             describe_for_user=lambda _tenant, _user_id, _tools: [],
