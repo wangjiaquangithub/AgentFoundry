@@ -243,6 +243,37 @@ def _validate_agent_version_write_result(
         )
 
 
+def _validate_agent_read_result(
+    record: AgentRecord,
+    *,
+    tenant_id: str,
+    agent_id: str | None = None,
+    status: str | None = None,
+) -> None:
+    if record.tenant_id != tenant_id:
+        raise ValueError("PostgreSQL agent catalog read returned another tenant.")
+    if agent_id is not None and record.id != agent_id:
+        raise ValueError("PostgreSQL agent catalog read returned another agent.")
+    if status is not None and record.status != status:
+        raise ValueError("PostgreSQL agent catalog read returned another status.")
+
+
+def _validate_agent_version_read_result(
+    record: AgentVersionRecord,
+    *,
+    tenant_id: str,
+    agent_id: str | None = None,
+) -> None:
+    if record.tenant_id != tenant_id:
+        raise ValueError(
+            "PostgreSQL agent catalog version read returned another tenant.",
+        )
+    if agent_id is not None and record.agent_id != agent_id:
+        raise ValueError(
+            "PostgreSQL agent catalog version read returned another agent.",
+        )
+
+
 class SQLiteAgentCatalogReadRepository:
     """Read tenant-scoped agent catalog records from SQLite."""
 
@@ -369,7 +400,14 @@ class PostgresAgentCatalogReadRepository:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, tuple(parameters))
-                return [_agent_from_row(dict(row)) for row in cursor.fetchall()]
+                records = [_agent_from_row(dict(row)) for row in cursor.fetchall()]
+        for record in records:
+            _validate_agent_read_result(
+                record,
+                tenant_id=tenant_id,
+                status=status,
+            )
+        return records
 
     def get_agent(self, *, tenant_id: str, agent_id: str) -> AgentRecord | None:
         with self._database.connect() as connection:
@@ -387,7 +425,9 @@ class PostgresAgentCatalogReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return _agent_from_row(dict(row))
+        record = _agent_from_row(dict(row))
+        _validate_agent_read_result(record, tenant_id=tenant_id, agent_id=agent_id)
+        return record
 
     def list_versions(
         self,
@@ -409,7 +449,14 @@ class PostgresAgentCatalogReadRepository:
                     (tenant_id, agent_id),
                 )
                 rows = cursor.fetchall()
-        return [_agent_version_from_row(dict(row)) for row in rows]
+        records = [_agent_version_from_row(dict(row)) for row in rows]
+        for record in records:
+            _validate_agent_version_read_result(
+                record,
+                tenant_id=tenant_id,
+                agent_id=agent_id,
+            )
+        return records
 
     def get_current_version(
         self,
@@ -438,7 +485,13 @@ class PostgresAgentCatalogReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return _agent_version_from_row(dict(row))
+        record = _agent_version_from_row(dict(row))
+        _validate_agent_version_read_result(
+            record,
+            tenant_id=tenant_id,
+            agent_id=agent_id,
+        )
+        return record
 
 
 class PostgresAgentCatalogWriteRepository:

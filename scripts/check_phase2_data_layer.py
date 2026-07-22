@@ -3705,6 +3705,18 @@ def _check_postgres_agent_catalog_reads_guarded() -> list[str]:
                     "agent catalog records: backend/persistence/agents.py:"
                     f"PostgresAgentCatalogReadRepository.{method_name}",
                 )
+        expected_validator = (
+            "_validate_agent_read_result"
+            if method_name in {"list_agents", "get_agent"}
+            else "_validate_agent_version_read_result"
+        )
+        if not _module_calls_name(method_node, expected_validator):
+            errors.append(
+                "PostgreSQL agent catalog read method must validate returned "
+                "records against requested tenant and filters: "
+                "backend/persistence/agents.py:"
+                f"PostgresAgentCatalogReadRepository.{method_name}",
+            )
 
     return errors
 
