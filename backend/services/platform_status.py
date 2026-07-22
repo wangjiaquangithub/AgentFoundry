@@ -482,6 +482,7 @@ class PlatformStatusService:
         status = str(getattr(provider, "status", "") or "unknown")
         provider_native_invocation = self._runtime_provider_native_invocation(provider)
         return {
+            "source": "postgresql",
             "provider_id": str(getattr(provider, "id", "")),
             "provider": str(getattr(provider, "provider_type", "")),
             "mode": str(getattr(provider, "mode", "")),
@@ -518,6 +519,7 @@ class PlatformStatusService:
         )
         return {
             **fallback,
+            "source": "adapter_fallback",
             "message": message,
             "checks": fallback_checks,
         }

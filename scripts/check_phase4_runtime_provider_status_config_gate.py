@@ -143,6 +143,14 @@ def _runtime_provider_snapshot(provider: ProviderRecord) -> dict[str, Any]:
     return runtime_provider
 
 
+def _assert_pg_provider_snapshot_is_public(runtime_provider: dict[str, Any]) -> None:
+    leaked_fields = {"config_ref", "base_url"} & set(runtime_provider)
+    if leaked_fields:
+        raise AssertionError(
+            f"runtime provider status must not expose PG config fields: {leaked_fields}",
+        )
+
+
 def _assert_pg_provider_query_is_agentscope_scoped() -> None:
     provider = ProviderRecord(
         id="agentscope-platform-adapter",
@@ -174,6 +182,9 @@ def _assert_pg_provider_query_is_agentscope_scoped() -> None:
 
     if not isinstance(payload.get("runtime_provider"), dict):
         raise AssertionError(f"runtime provider snapshot missing: {payload}")
+    if payload["runtime_provider"].get("source") != "postgresql":
+        raise AssertionError(f"PG provider source marker missing: {payload}")
+    _assert_pg_provider_snapshot_is_public(payload["runtime_provider"])
     if not provider_reader.calls:
         raise AssertionError("runtime provider reader was not called")
     last_call = provider_reader.calls[-1]
@@ -223,6 +234,8 @@ def _assert_pg_provider_read_error_is_observable() -> None:
     runtime_provider = payload.get("runtime_provider")
     if not isinstance(runtime_provider, dict):
         raise AssertionError(f"runtime provider snapshot missing: {payload}")
+    if runtime_provider.get("source") != "adapter_fallback":
+        raise AssertionError(f"PG read failure must use fallback source: {runtime_provider}")
     checks = runtime_provider.get("checks")
     if not isinstance(checks, dict):
         raise AssertionError(f"runtime provider checks missing: {runtime_provider}")
@@ -250,6 +263,8 @@ def _assert_pg_provider_missing_record_is_observable() -> None:
     checks = runtime_provider.get("checks")
     if not isinstance(checks, dict):
         raise AssertionError(f"runtime provider checks missing: {runtime_provider}")
+    if runtime_provider.get("source") != "adapter_fallback":
+        raise AssertionError(f"missing PG record must use fallback source: {runtime_provider}")
     if checks.get("postgres_runtime_provider_record") is not False:
         raise AssertionError(f"missing PG agentscope record must be visible: {runtime_provider}")
     if checks.get("postgres_runtime_provider_missing") is not True:
@@ -278,6 +293,9 @@ def _assert_pg_provider_config_ref_gate() -> None:
     checks = runtime_provider.get("checks")
     if not isinstance(checks, dict):
         raise AssertionError(f"runtime provider checks missing: {runtime_provider}")
+    if runtime_provider.get("source") != "postgresql":
+        raise AssertionError(f"PG provider source marker missing: {runtime_provider}")
+    _assert_pg_provider_snapshot_is_public(runtime_provider)
     gate = runtime_provider.get("provider_native_invocation")
     if not isinstance(gate, dict):
         raise AssertionError(f"provider native gate missing: {runtime_provider}")
@@ -368,6 +386,9 @@ def _assert_pg_provider_base_url_and_config_ref_gate() -> None:
     checks = runtime_provider.get("checks")
     if not isinstance(checks, dict):
         raise AssertionError(f"runtime provider checks missing: {runtime_provider}")
+    if runtime_provider.get("source") != "postgresql":
+        raise AssertionError(f"PG provider source marker missing: {runtime_provider}")
+    _assert_pg_provider_snapshot_is_public(runtime_provider)
     gate = runtime_provider.get("provider_native_invocation")
     if not isinstance(gate, dict):
         raise AssertionError(f"provider native gate missing: {runtime_provider}")
@@ -450,6 +471,9 @@ def _assert_pg_provider_without_config_ref_gate() -> None:
     gate = runtime_provider.get("provider_native_invocation")
     if not isinstance(gate, dict):
         raise AssertionError(f"provider native gate missing: {runtime_provider}")
+    if runtime_provider.get("source") != "postgresql":
+        raise AssertionError(f"PG provider source marker missing: {runtime_provider}")
+    _assert_pg_provider_snapshot_is_public(runtime_provider)
     if gate.get("configured_keys") != []:
         raise AssertionError(f"configured keys should be empty: {gate}")
     if gate.get("missing_keys") != [
