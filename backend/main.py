@@ -117,14 +117,6 @@ from backend.persistence import (
     PostgresApprovalWriteRepository,
     PostgresAuditEventReadRepository,
     PostgresAuditEventWriteRepository,
-    PostgresDocumentChunkReadRepository,
-    PostgresDocumentChunkWriteRepository,
-    PostgresDocumentReadRepository,
-    PostgresDocumentWriteRepository,
-    PostgresEmbeddingRecordReadRepository,
-    PostgresEmbeddingRecordWriteRepository,
-    PostgresKnowledgeBaseReadRepository,
-    PostgresKnowledgeBaseWriteRepository,
     PostgresMemoryItemReadRepository,
     PostgresMemoryItemWriteRepository,
     PostgresModelConfigReadRepository,
@@ -198,7 +190,15 @@ from services.knowledge_ingestion import PlatformKnowledgeIngestionService
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
 from services.composition import (
+    build_configured_postgres_knowledge_base_read_repository,
+    build_configured_postgres_knowledge_base_write_repository,
+    build_configured_postgres_knowledge_document_chunk_read_repository,
+    build_configured_postgres_knowledge_document_chunk_write_repository,
+    build_configured_postgres_knowledge_document_read_repository,
     build_configured_postgres_knowledge_document_readiness_service,
+    build_configured_postgres_knowledge_document_write_repository,
+    build_configured_postgres_knowledge_embedding_record_read_repository,
+    build_configured_postgres_knowledge_embedding_record_write_repository,
     build_configured_postgres_knowledge_ingestion_service,
     build_configured_postgres_knowledge_retrieval_service,
     build_configured_postgres_model_config_service,
@@ -425,84 +425,36 @@ def _build_knowledge_document_readiness_service() -> (
     return build_configured_postgres_knowledge_document_readiness_service()
 
 
-def _build_knowledge_base_read_repository() -> (
-    PostgresKnowledgeBaseReadRepository | None
-):
-    database = create_configured_postgres_database()
-    if database is None:
-        return None
-
-    return PostgresKnowledgeBaseReadRepository(database)
+def _build_knowledge_base_read_repository() -> Any | None:
+    return build_configured_postgres_knowledge_base_read_repository()
 
 
-def _build_knowledge_base_write_repository() -> (
-    PostgresKnowledgeBaseWriteRepository | None
-):
-    database = create_configured_postgres_database()
-    if database is None:
-        return None
-
-    return PostgresKnowledgeBaseWriteRepository(database)
+def _build_knowledge_base_write_repository() -> Any | None:
+    return build_configured_postgres_knowledge_base_write_repository()
 
 
-def _build_knowledge_document_read_repository() -> (
-    PostgresDocumentReadRepository | None
-):
-    database = create_configured_postgres_database()
-    if database is None:
-        return None
-
-    return PostgresDocumentReadRepository(database)
+def _build_knowledge_document_read_repository() -> Any | None:
+    return build_configured_postgres_knowledge_document_read_repository()
 
 
-def _build_knowledge_document_write_repository() -> (
-    PostgresDocumentWriteRepository | None
-):
-    database = create_configured_postgres_database()
-    if database is None:
-        return None
-
-    return PostgresDocumentWriteRepository(database)
+def _build_knowledge_document_write_repository() -> Any | None:
+    return build_configured_postgres_knowledge_document_write_repository()
 
 
-def _build_knowledge_document_chunk_read_repository() -> (
-    PostgresDocumentChunkReadRepository | None
-):
-    database = create_configured_postgres_database()
-    if database is None:
-        return None
-
-    return PostgresDocumentChunkReadRepository(database)
+def _build_knowledge_document_chunk_read_repository() -> Any | None:
+    return build_configured_postgres_knowledge_document_chunk_read_repository()
 
 
-def _build_knowledge_document_chunk_write_repository() -> (
-    PostgresDocumentChunkWriteRepository | None
-):
-    database = create_configured_postgres_database()
-    if database is None:
-        return None
-
-    return PostgresDocumentChunkWriteRepository(database)
+def _build_knowledge_document_chunk_write_repository() -> Any | None:
+    return build_configured_postgres_knowledge_document_chunk_write_repository()
 
 
-def _build_knowledge_embedding_record_read_repository() -> (
-    PostgresEmbeddingRecordReadRepository | None
-):
-    database = create_configured_postgres_database()
-    if database is None:
-        return None
-
-    return PostgresEmbeddingRecordReadRepository(database)
+def _build_knowledge_embedding_record_read_repository() -> Any | None:
+    return build_configured_postgres_knowledge_embedding_record_read_repository()
 
 
-def _build_knowledge_embedding_record_write_repository() -> (
-    PostgresEmbeddingRecordWriteRepository | None
-):
-    database = create_configured_postgres_database()
-    if database is None:
-        return None
-
-    return PostgresEmbeddingRecordWriteRepository(database)
+def _build_knowledge_embedding_record_write_repository() -> Any | None:
+    return build_configured_postgres_knowledge_embedding_record_write_repository()
 
 
 def _build_knowledge_retrieval_service() -> (

@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 API_MODULE = ROOT / "backend" / "api" / "knowledge.py"
 SCHEMA_MODULE = ROOT / "backend" / "api" / "schemas.py"
 MAIN_MODULE = ROOT / "backend" / "main.py"
+COMPOSITION_MODULE = ROOT / "backend" / "services" / "composition.py"
 CHUNKS_MODULE = ROOT / "backend" / "persistence" / "document_chunks.py"
 
 
@@ -36,6 +37,7 @@ def main() -> int:
     api_source = _read(API_MODULE)
     schema_source = _read(SCHEMA_MODULE)
     main_source = _read(MAIN_MODULE)
+    composition_source = _read(COMPOSITION_MODULE)
     chunks_source = _read(CHUNKS_MODULE)
 
     _assert_contains(
@@ -69,9 +71,9 @@ def main() -> int:
         "main PostgreSQL chunk write repository builder",
     )
     _assert_contains(
-        main_source,
+        composition_source,
         "PostgresDocumentChunkWriteRepository",
-        "main PostgreSQL chunk write repository wiring",
+        "composition PostgreSQL chunk write repository wiring",
     )
     _assert_contains(
         chunks_source,

@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 API_MODULE = ROOT / "backend" / "api" / "knowledge.py"
 SCHEMA_MODULE = ROOT / "backend" / "api" / "schemas.py"
 MAIN_MODULE = ROOT / "backend" / "main.py"
+COMPOSITION_MODULE = ROOT / "backend" / "services" / "composition.py"
 
 
 def _read(path: Path) -> str:
@@ -35,6 +36,7 @@ def main() -> int:
     api_source = _read(API_MODULE)
     schema_source = _read(SCHEMA_MODULE)
     main_source = _read(MAIN_MODULE)
+    composition_source = _read(COMPOSITION_MODULE)
 
     _assert_contains(
         schema_source,
@@ -80,9 +82,9 @@ def main() -> int:
         "PostgresModelConfigReadRepository",
     ):
         _assert_contains(
-            main_source,
+            composition_source,
             repository_name,
-            "main PostgreSQL readiness repository wiring",
+            "composition PostgreSQL readiness repository wiring",
         )
 
     forbidden_api_terms = {

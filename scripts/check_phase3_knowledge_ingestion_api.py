@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 API_MODULE = ROOT / "backend" / "api" / "knowledge.py"
 SCHEMA_MODULE = ROOT / "backend" / "api" / "schemas.py"
 MAIN_MODULE = ROOT / "backend" / "main.py"
+COMPOSITION_MODULE = ROOT / "backend" / "services" / "composition.py"
 SERVICE_MODULE = ROOT / "backend" / "services" / "knowledge_ingestion.py"
 
 
@@ -59,6 +60,7 @@ def main() -> int:
     api_source = _read(API_MODULE)
     schema_source = _read(SCHEMA_MODULE)
     main_source = _read(MAIN_MODULE)
+    composition_source = _read(COMPOSITION_MODULE)
     service_source = _read(SERVICE_MODULE)
     ingestion_router_source = _function_source(
         API_MODULE,
@@ -92,18 +94,23 @@ def main() -> int:
     )
     _assert_contains(
         main_source,
+        "_build_knowledge_ingestion_service",
+        "main ingestion service builder",
+    )
+    _assert_contains(
+        composition_source,
         "PostgresDocumentWriteRepository",
-        "main document write repository wiring",
+        "composition document write repository wiring",
     )
     _assert_contains(
-        main_source,
+        composition_source,
         "PostgresDocumentChunkWriteRepository",
-        "main chunk write repository wiring",
+        "composition chunk write repository wiring",
     )
     _assert_contains(
-        main_source,
+        composition_source,
         "PostgresEmbeddingRecordWriteRepository",
-        "main embedding cleanup repository wiring",
+        "composition embedding cleanup repository wiring",
     )
 
     forbidden_api_terms = {

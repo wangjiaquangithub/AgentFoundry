@@ -14,6 +14,7 @@ from backend.persistence import (
     PostgresEmbeddingRecordReadRepository,
     PostgresEmbeddingRecordWriteRepository,
     PostgresKnowledgeBaseReadRepository,
+    PostgresKnowledgeBaseWriteRepository,
     PostgresModelConfigReadRepository,
     PostgresModelConfigWriteRepository,
     PostgresRetrievalEventWriteRepository,
@@ -49,6 +50,102 @@ def build_configured_postgres_model_config_service() -> (
         return None
 
     return build_postgres_model_config_service(database)
+
+
+def build_configured_postgres_knowledge_base_read_repository() -> (
+    PostgresKnowledgeBaseReadRepository | None
+):
+    """Build the knowledge base read repository when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresKnowledgeBaseReadRepository(database)
+
+
+def build_configured_postgres_knowledge_base_write_repository() -> (
+    PostgresKnowledgeBaseWriteRepository | None
+):
+    """Build the knowledge base write repository when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresKnowledgeBaseWriteRepository(database)
+
+
+def build_configured_postgres_knowledge_document_read_repository() -> (
+    PostgresDocumentReadRepository | None
+):
+    """Build the knowledge document read repository when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresDocumentReadRepository(database)
+
+
+def build_configured_postgres_knowledge_document_write_repository() -> (
+    PostgresDocumentWriteRepository | None
+):
+    """Build the knowledge document write repository when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresDocumentWriteRepository(database)
+
+
+def build_configured_postgres_knowledge_document_chunk_read_repository() -> (
+    PostgresDocumentChunkReadRepository | None
+):
+    """Build the document chunk read repository when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresDocumentChunkReadRepository(database)
+
+
+def build_configured_postgres_knowledge_document_chunk_write_repository() -> (
+    PostgresDocumentChunkWriteRepository | None
+):
+    """Build the document chunk write repository when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresDocumentChunkWriteRepository(database)
+
+
+def build_configured_postgres_knowledge_embedding_record_read_repository() -> (
+    PostgresEmbeddingRecordReadRepository | None
+):
+    """Build the embedding record read repository when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresEmbeddingRecordReadRepository(database)
+
+
+def build_configured_postgres_knowledge_embedding_record_write_repository() -> (
+    PostgresEmbeddingRecordWriteRepository | None
+):
+    """Build the embedding record write repository when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresEmbeddingRecordWriteRepository(database)
 
 
 def build_postgres_knowledge_document_readiness_service(

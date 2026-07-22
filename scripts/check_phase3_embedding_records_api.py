@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 API_MODULE = ROOT / "backend" / "api" / "knowledge.py"
 SCHEMA_MODULE = ROOT / "backend" / "api" / "schemas.py"
 MAIN_MODULE = ROOT / "backend" / "main.py"
+COMPOSITION_MODULE = ROOT / "backend" / "services" / "composition.py"
 EMBEDDING_RECORDS_MODULE = ROOT / "backend" / "persistence" / "embedding_records.py"
 
 
@@ -36,6 +37,7 @@ def main() -> int:
     api_source = _read(API_MODULE)
     schema_source = _read(SCHEMA_MODULE)
     main_source = _read(MAIN_MODULE)
+    composition_source = _read(COMPOSITION_MODULE)
     embedding_records_source = _read(EMBEDDING_RECORDS_MODULE)
 
     for schema_name in (
@@ -79,12 +81,22 @@ def main() -> int:
     for wiring in (
         "create_knowledge_embedding_records_router",
         "KnowledgeEmbeddingRecordsRouteDependencies",
-        "PostgresEmbeddingRecordReadRepository",
-        "PostgresEmbeddingRecordWriteRepository",
         "_build_knowledge_embedding_record_read_repository",
         "_build_knowledge_embedding_record_write_repository",
     ):
         _assert_contains(main_source, wiring, "main PostgreSQL embedding wiring")
+
+    for wiring in (
+        "PostgresEmbeddingRecordReadRepository",
+        "PostgresEmbeddingRecordWriteRepository",
+        "build_configured_postgres_knowledge_embedding_record_read_repository",
+        "build_configured_postgres_knowledge_embedding_record_write_repository",
+    ):
+        _assert_contains(
+            composition_source,
+            wiring,
+            "composition PostgreSQL embedding wiring",
+        )
 
     forbidden_api_terms = {
         "SQLiteEmbedding",

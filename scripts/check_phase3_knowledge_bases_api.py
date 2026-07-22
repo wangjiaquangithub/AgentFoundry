@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 API_MODULE = ROOT / "backend" / "api" / "knowledge.py"
 SCHEMA_MODULE = ROOT / "backend" / "api" / "schemas.py"
 MAIN_MODULE = ROOT / "backend" / "main.py"
+COMPOSITION_MODULE = ROOT / "backend" / "services" / "composition.py"
 REPOSITORY_MODULE = ROOT / "backend" / "persistence" / "knowledge_bases.py"
 
 
@@ -36,6 +37,7 @@ def main() -> int:
     api_source = _read(API_MODULE)
     schema_source = _read(SCHEMA_MODULE)
     main_source = _read(MAIN_MODULE)
+    composition_source = _read(COMPOSITION_MODULE)
     repository_source = _read(REPOSITORY_MODULE)
 
     for schema_name in (
@@ -81,12 +83,22 @@ def main() -> int:
     for wiring in (
         "create_knowledge_bases_router",
         "KnowledgeBasesRouteDependencies",
-        "PostgresKnowledgeBaseReadRepository",
-        "PostgresKnowledgeBaseWriteRepository",
         "_build_knowledge_base_read_repository",
         "_build_knowledge_base_write_repository",
     ):
         _assert_contains(main_source, wiring, "main PostgreSQL knowledge base wiring")
+
+    for wiring in (
+        "PostgresKnowledgeBaseReadRepository",
+        "PostgresKnowledgeBaseWriteRepository",
+        "build_configured_postgres_knowledge_base_read_repository",
+        "build_configured_postgres_knowledge_base_write_repository",
+    ):
+        _assert_contains(
+            composition_source,
+            wiring,
+            "composition PostgreSQL knowledge base wiring",
+        )
 
     forbidden_api_terms = {
         "SQLiteKnowledgeBase",
