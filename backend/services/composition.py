@@ -8,8 +8,11 @@ from backend.persistence import (
     PostgresAuditEventWriteRepository,
     PostgresDatabase,
     PostgresDocumentChunkReadRepository,
+    PostgresDocumentChunkWriteRepository,
     PostgresDocumentReadRepository,
+    PostgresDocumentWriteRepository,
     PostgresEmbeddingRecordReadRepository,
+    PostgresEmbeddingRecordWriteRepository,
     PostgresKnowledgeBaseReadRepository,
     PostgresModelConfigReadRepository,
     PostgresModelConfigWriteRepository,
@@ -20,6 +23,7 @@ from backend.services.knowledge import (
     PlatformKnowledgeDocumentReadinessService,
     PlatformKnowledgeRetrievalService,
 )
+from backend.services.knowledge_ingestion import PlatformKnowledgeIngestionService
 from backend.services.model_configs import PlatformModelConfigService
 
 
@@ -71,6 +75,40 @@ def build_configured_postgres_knowledge_document_readiness_service() -> (
         return None
 
     return build_postgres_knowledge_document_readiness_service(database)
+
+
+def build_postgres_knowledge_ingestion_service(
+    database: PostgresDatabase,
+    *,
+    now: Callable[[], str] | None = None,
+) -> PlatformKnowledgeIngestionService:
+    """Build the PostgreSQL-backed knowledge ingestion service."""
+
+    kwargs = {}
+    if now is not None:
+        kwargs["now"] = now
+
+    return PlatformKnowledgeIngestionService(
+        knowledge_base_repository=PostgresKnowledgeBaseReadRepository(database),
+        document_repository=PostgresDocumentWriteRepository(database),
+        document_chunk_repository=PostgresDocumentChunkWriteRepository(database),
+        document_chunk_read_repository=PostgresDocumentChunkReadRepository(database),
+        embedding_record_repository=PostgresEmbeddingRecordWriteRepository(database),
+        **kwargs,
+    )
+
+
+def build_configured_postgres_knowledge_ingestion_service(
+    *,
+    now: Callable[[], str] | None = None,
+) -> PlatformKnowledgeIngestionService | None:
+    """Build the knowledge ingestion service when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return build_postgres_knowledge_ingestion_service(database, now=now)
 
 
 def build_postgres_knowledge_retrieval_service(
