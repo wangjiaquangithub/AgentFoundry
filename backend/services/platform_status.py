@@ -460,25 +460,22 @@ class PlatformStatusService:
                 "Failed to load runtime provider record from PostgreSQL: %s",
                 exc.__class__.__name__,
             )
-            fallback = self._runtime_provider_health()
-            checks = dict(fallback.get("checks") or {})
-            checks.update(
-                {
-                    "postgres_runtime_provider_record": False,
-                    "postgres_runtime_provider_read_error": True,
-                },
-            )
-            return {
-                **fallback,
-                "message": (
+            return self._runtime_provider_fallback_snapshot(
+                message=(
                     "Runtime provider loaded from adapter fallback because the "
                     "PostgreSQL provider record was unavailable."
                 ),
-                "checks": checks,
-            }
+                checks={"postgres_runtime_provider_read_error": True},
+            )
 
         if not providers:
-            return self._runtime_provider_health()
+            return self._runtime_provider_fallback_snapshot(
+                message=(
+                    "Runtime provider loaded from adapter fallback because no active "
+                    "AgentScope provider record was found in PostgreSQL."
+                ),
+                checks={"postgres_runtime_provider_missing": True},
+            )
 
         provider = providers[0]
         status = str(getattr(provider, "status", "") or "unknown")
@@ -502,6 +499,26 @@ class PlatformStatusService:
                 "direct_agentscope_dependency": False,
                 "postgres_runtime_provider_record": True,
             },
+        }
+
+    def _runtime_provider_fallback_snapshot(
+        self,
+        *,
+        message: str,
+        checks: dict[str, bool],
+    ) -> dict[str, Any]:
+        fallback = self._runtime_provider_health()
+        fallback_checks = dict(fallback.get("checks") or {})
+        fallback_checks.update(
+            {
+                "postgres_runtime_provider_record": False,
+                **checks,
+            },
+        )
+        return {
+            **fallback,
+            "message": message,
+            "checks": fallback_checks,
         }
 
     @staticmethod

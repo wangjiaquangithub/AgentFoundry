@@ -225,6 +225,31 @@ def _assert_pg_provider_read_error_is_observable() -> None:
         raise AssertionError("runtime provider status must not expose PG error details")
 
 
+def _assert_pg_provider_missing_record_is_observable() -> None:
+    provider = ProviderRecord(
+        id="openai-runtime",
+        name="OpenAI Runtime",
+        provider_type="openai",
+        mode="remote",
+        status="active",
+        capabilities={"tenant_context": True},
+        config_ref=None,
+    )
+    runtime_provider = _runtime_provider_snapshot(provider)
+
+    checks = runtime_provider.get("checks")
+    if not isinstance(checks, dict):
+        raise AssertionError(f"runtime provider checks missing: {runtime_provider}")
+    if checks.get("postgres_runtime_provider_record") is not False:
+        raise AssertionError(f"missing PG agentscope record must be visible: {runtime_provider}")
+    if checks.get("postgres_runtime_provider_missing") is not True:
+        raise AssertionError(f"missing PG provider check missing: {runtime_provider}")
+    if runtime_provider.get("provider") != "agentscope":
+        raise AssertionError(
+            f"missing PG record should fall back to adapter health only: {runtime_provider}",
+        )
+
+
 def _assert_pg_provider_config_ref_gate() -> None:
     secret_ref = "secret://agentscope/runtime-token"
     runtime_provider = _runtime_provider_snapshot(
@@ -340,6 +365,7 @@ def _assert_pg_provider_without_config_ref_gate() -> None:
 def main() -> int:
     _assert_pg_provider_query_is_agentscope_scoped()
     _assert_pg_provider_read_error_is_observable()
+    _assert_pg_provider_missing_record_is_observable()
     _assert_pg_provider_config_ref_gate()
     _assert_pg_provider_config_ref_not_passed_to_gate()
     _assert_pg_provider_without_config_ref_gate()
