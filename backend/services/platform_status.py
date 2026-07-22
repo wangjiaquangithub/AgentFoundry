@@ -387,19 +387,20 @@ class PlatformStatusService:
         configured = bool(snapshot.get("configured"))
         backend = str(snapshot.get("backend") or "unconfigured")
         required_backend = str(snapshot.get("required_backend") or "postgresql")
-        production_ready = bool(snapshot.get("production_ready"))
         driver_available = bool(snapshot.get("driver_available"))
         runtime_ready = bool(snapshot.get("runtime_ready"))
         production_mode = bool(snapshot.get("production_mode"))
         postgresql_backend = backend == "postgresql"
         production_database_backend = postgresql_backend and required_backend == "postgresql"
+        production_ready = bool(snapshot.get("production_ready")) and production_database_backend
         computed_operator_ready = (
             configured
             and production_database_backend
             and production_ready
             and runtime_ready
         )
-        operator_ready = bool(snapshot.get("operator_ready", computed_operator_ready))
+        reported_operator_ready = bool(snapshot.get("operator_ready", computed_operator_ready))
+        operator_ready = computed_operator_ready and reported_operator_ready
         production_system_of_record = (
             configured
             and production_database_backend

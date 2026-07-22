@@ -152,6 +152,26 @@ def main() -> int:
             "unsupported",
             False,
         ),
+        (
+            "spoofed_sqlite_operator_ready",
+            lambda: {
+                "env_var": "AGENTFOUNDRY_DATABASE_URL",
+                "deployment_env_var": "AGENTFOUNDRY_ENV",
+                "production_mode": True,
+                "configured": True,
+                "scheme": "sqlite",
+                "backend": "sqlite",
+                "required_backend": "postgresql",
+                "production_ready": True,
+                "driver_package": None,
+                "driver_available": False,
+                "runtime_ready": True,
+                "operator_ready": True,
+                "message": "sqlite:// is only for explicit local development compatibility.",
+            },
+            "sqlite",
+            False,
+        ),
     )
 
     for label, status_factory, expected_backend, expected_ready in cases:
