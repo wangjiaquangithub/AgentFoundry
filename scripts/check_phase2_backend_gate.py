@@ -41,6 +41,10 @@ CHECKS = (
         (sys.executable, "scripts/check_phase2_postgres_seed_migration_toggle.py"),
     ),
     (
+        "PostgreSQL seed completeness",
+        (sys.executable, "scripts/check_phase2_postgres_seed_completeness.py"),
+    ),
+    (
         "PostgreSQL repository transaction contract",
         (
             sys.executable,
