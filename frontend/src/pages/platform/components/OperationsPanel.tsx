@@ -89,20 +89,20 @@ export function OperationsPanel({
 				</div>
 			</div>
 
-			<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-				<div className="rounded-lg border bg-background p-3">
+			<div className="overflow-hidden rounded-md border bg-white shadow-sm shadow-slate-200/40 sm:grid sm:grid-cols-2 xl:grid-cols-4">
+				<div className="border-l border-border/70 p-3 first:border-l-0">
 					<div className="text-xs text-muted-foreground">{labels.totalAgents}</div>
 					<div className="mt-1 text-2xl font-semibold tabular-nums">
 						{activeAgents.length}
 					</div>
 				</div>
-				<div className="rounded-lg border bg-background p-3">
+				<div className="border-l border-border/70 p-3 first:border-l-0">
 					<div className="text-xs text-muted-foreground">{labels.readyAgents}</div>
 					<div className="mt-1 text-2xl font-semibold tabular-nums">
 						{readyAgents.length}
 					</div>
 				</div>
-				<div className="rounded-lg border bg-background p-3">
+				<div className="border-l border-border/70 p-3 first:border-l-0">
 					<div className="text-xs text-muted-foreground">
 						{labels.needsConfiguration}
 					</div>
@@ -110,7 +110,7 @@ export function OperationsPanel({
 						{blockedOrPartialAgents.length}
 					</div>
 				</div>
-				<div className="rounded-lg border bg-background p-3">
+				<div className="border-l border-border/70 p-3 first:border-l-0">
 					<div className="text-xs text-muted-foreground">
 						{labels.pendingApprovals}
 					</div>

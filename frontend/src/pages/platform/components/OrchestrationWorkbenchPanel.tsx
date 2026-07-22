@@ -68,7 +68,7 @@ export function OrchestrationWorkbenchPanel({
 					</Button>
 				</div>
 			</div>
-			<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+			<div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
 				{steps.map((step, index) => {
 					const StepIcon = step.icon;
 
@@ -77,7 +77,7 @@ export function OrchestrationWorkbenchPanel({
 							key={step.key}
 							type="button"
 							onClick={step.onClick}
-							className="grid min-h-40 gap-3 rounded-lg border bg-background p-3 text-left transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+							className="grid min-h-36 gap-3 rounded-md border bg-white p-3 text-left shadow-sm shadow-slate-200/40 transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 						>
 							<div className="flex items-start justify-between gap-3">
 								<div className="flex min-w-0 items-center gap-2">

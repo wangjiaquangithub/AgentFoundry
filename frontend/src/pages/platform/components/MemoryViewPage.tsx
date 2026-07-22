@@ -12,7 +12,12 @@ import {
 import { useMemo, useState } from 'react';
 
 import { formatTimestamp } from '../platform-utils';
-import { PlatformPageHeader, PlatformPageShell, StatCard } from './common';
+import {
+	PlatformMetricsGrid,
+	PlatformPageHeader,
+	PlatformPageShell,
+	StatCard,
+} from './common';
 import type { MemoryOperationsItem } from './MemoryOperationsPanel';
 import { PlatformEmptyState } from './PlatformEmptyState';
 import { PlatformFilterBar } from './PlatformFilterBar';
@@ -145,7 +150,7 @@ export function MemoryViewPage({
 				}
 			/>
 
-			<section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+			<PlatformMetricsGrid>
 				{[
 						{
 							label: t('platform.memoryOps.loadedRuns'),
@@ -185,7 +190,7 @@ export function MemoryViewPage({
 						/>
 					);
 				})}
-			</section>
+			</PlatformMetricsGrid>
 
 			<div className="grid gap-5">
 					<section className="grid min-w-0 gap-4">

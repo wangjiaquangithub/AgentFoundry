@@ -4,6 +4,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { ApprovalsPanel, type ApprovalFormState } from './ApprovalsPanel';
 import {
 	PlatformConnectionCard,
+	PlatformMetricsGrid,
 	PlatformPageHeader,
 	PlatformPageShell,
 	StatCard,
@@ -136,7 +137,7 @@ export function ApprovalsViewPage({
 				}
 			/>
 
-			<section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+			<PlatformMetricsGrid>
 				<StatCard
 					label={t('platform.approvals.total')}
 					value={approvalSummary.total}
@@ -165,7 +166,7 @@ export function ApprovalsViewPage({
 					icon={XCircle}
 					loading={approvalLoading}
 				/>
-			</section>
+			</PlatformMetricsGrid>
 
 			<ApprovalsPanel
 				approvalForm={approvalForm}

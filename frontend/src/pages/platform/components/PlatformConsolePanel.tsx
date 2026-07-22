@@ -32,14 +32,14 @@ export function PlatformConsolePanel({
 					{labels.description}
 				</p>
 			</div>
-			<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+			<div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
 				{items.map((item) => {
 					const Icon = item.icon;
 
 					return (
 						<div
 							key={item.key}
-							className="grid gap-3 rounded-md border bg-muted/10 p-3 transition-colors hover:border-primary/30 hover:bg-primary/5"
+							className="grid gap-3 rounded-md border bg-white p-3 shadow-sm shadow-slate-200/40 transition-colors hover:border-primary/30 hover:bg-primary/5"
 						>
 							<div className="flex size-8 items-center justify-center rounded-md bg-background">
 								<Icon className="size-4 text-muted-foreground" />

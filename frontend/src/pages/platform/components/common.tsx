@@ -63,12 +63,12 @@ export interface PlatformPageShellProps {
 
 export function PlatformPageShell({ children, className }: PlatformPageShellProps) {
 	return (
-		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-muted/10">
-			<div className="mx-auto grid w-full max-w-[1440px] gap-0 lg:grid-cols-[232px_minmax(0,1fr)]">
+		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-slate-50/70">
+			<div className="mx-auto grid w-full max-w-[1480px] gap-0 lg:grid-cols-[240px_minmax(0,1fr)]">
 				<PlatformDesktopNav />
 				<div
 					className={cn(
-						'flex min-w-0 flex-col gap-3 px-4 py-4 sm:px-5 lg:px-6 xl:px-7',
+						'flex min-w-0 flex-col gap-4 px-4 py-4 sm:px-5 lg:px-6 xl:px-8',
 						className,
 					)}
 				>
@@ -82,7 +82,7 @@ export function PlatformPageShell({ children, className }: PlatformPageShellProp
 
 function PlatformDesktopNav() {
 	return (
-		<aside className="sticky top-0 hidden h-screen min-h-0 border-r bg-background px-3 py-4 lg:block">
+		<aside className="sticky top-0 hidden h-screen min-h-0 border-r bg-white px-3 py-4 lg:block">
 			<div className="mb-4 border-b px-2 pb-4">
 				<div className="text-sm font-semibold tracking-normal text-foreground">AgentFoundry</div>
 				<p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -172,10 +172,10 @@ export function PlatformPageHeader({
 	aside,
 }: PlatformPageHeaderProps) {
 	return (
-		<section className="flex flex-col gap-3 border-b bg-background px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
+		<section className="flex flex-col gap-3 border-b bg-white px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
 			<div className="min-w-0">
 				<div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
-					<span className="grid size-7 place-items-center rounded-md bg-muted text-foreground">
+					<span className="grid size-7 place-items-center rounded-md border bg-slate-50 text-foreground">
 						<Icon className="size-4" />
 					</span>
 					<span className="min-w-0 truncate">{eyebrow}</span>
@@ -255,21 +255,88 @@ export interface StatCardProps {
 
 export function StatCard({ label, value, helper, icon: Icon, loading }: StatCardProps) {
 	return (
-		<div className="grid min-h-[4.5rem] grid-cols-[1fr_auto] gap-2 border-l border-border bg-background px-3 py-2.5 first:border-l-0">
+		<div className="grid min-h-[5rem] grid-cols-[1fr_auto] gap-2 border-l border-border/70 bg-white px-4 py-3 first:border-l-0">
 			<div className="min-w-0">
 				<div className="truncate text-xs font-medium text-muted-foreground">{label}</div>
 				{loading ? (
 					<Skeleton className="mt-2.5 h-6 w-14" />
 				) : (
-					<div className="mt-1 text-base font-semibold tabular-nums text-foreground">{value}</div>
+					<div className="mt-1 text-lg font-semibold tabular-nums text-foreground">{value}</div>
 				)}
 				{helper ? (
 					<div className="mt-1 text-xs leading-5 text-muted-foreground">{helper}</div>
 				) : null}
 			</div>
-			<div className="flex size-7 items-center justify-center rounded-md bg-muted text-muted-foreground">
+			<div className="flex size-8 items-center justify-center rounded-md bg-slate-100 text-muted-foreground">
 				<Icon className="size-4" />
 			</div>
+		</div>
+	);
+}
+
+export function PlatformMetricsGrid({
+	children,
+	className,
+}: {
+	children: ReactNode;
+	className?: string;
+}) {
+	return (
+		<section
+			className={cn(
+				'overflow-hidden rounded-md border bg-white shadow-sm shadow-slate-200/40 sm:grid sm:grid-cols-2 xl:grid-cols-4',
+				className,
+			)}
+		>
+			{children}
+		</section>
+	);
+}
+
+export function PlatformSection({
+	children,
+	className,
+}: {
+	children: ReactNode;
+	className?: string;
+}) {
+	return (
+		<section
+			className={cn(
+				'rounded-md border bg-white shadow-sm shadow-slate-200/40',
+				className,
+			)}
+		>
+			{children}
+		</section>
+	);
+}
+
+export function PlatformSectionHeader({
+	title,
+	description,
+	actions,
+	className,
+}: {
+	title: ReactNode;
+	description?: ReactNode;
+	actions?: ReactNode;
+	className?: string;
+}) {
+	return (
+		<div
+			className={cn(
+				'flex flex-col gap-3 border-b px-4 py-3 sm:flex-row sm:items-start sm:justify-between',
+				className,
+			)}
+		>
+			<div className="min-w-0">
+				<h2 className="text-sm font-semibold text-foreground">{title}</h2>
+				{description ? (
+					<p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
+				) : null}
+			</div>
+			{actions ? <div className="flex shrink-0 flex-wrap gap-2">{actions}</div> : null}
 		</div>
 	);
 }

@@ -70,11 +70,11 @@ export function GovernanceHealthPanel({
 
 			{error ? <PlatformNotice>{error}</PlatformNotice> : null}
 
-			<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+			<div className="overflow-hidden rounded-md border bg-white shadow-sm shadow-slate-200/40 sm:grid sm:grid-cols-2 xl:grid-cols-4">
 				{items.map((item) => {
 					const Icon = item.icon;
 					return (
-						<div key={item.label} className="rounded-lg border bg-background p-3">
+						<div key={item.label} className="border-l border-border/70 p-3 first:border-l-0">
 							<div className="flex items-start justify-between gap-3">
 								<div className="min-w-0">
 									<div className="text-xs text-muted-foreground">{item.label}</div>

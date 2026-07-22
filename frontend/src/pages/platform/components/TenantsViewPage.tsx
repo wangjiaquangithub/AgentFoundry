@@ -14,6 +14,7 @@ import { useMemo, useState } from 'react';
 
 import {
 	PlatformDetailDrawer,
+	PlatformMetricsGrid,
 	PlatformNotice,
 	PlatformPageHeader,
 	PlatformPageShell,
@@ -156,7 +157,7 @@ export function TenantsViewPage({
 			{platformMembersError ? <PlatformNotice>{platformMembersError}</PlatformNotice> : null}
 			{connectorsError ? <PlatformNotice>{connectorsError}</PlatformNotice> : null}
 
-			<section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+			<PlatformMetricsGrid className="xl:grid-cols-5">
 				{[
 					{
 						label: t('platform.members.tenantGroups'),
@@ -195,7 +196,7 @@ export function TenantsViewPage({
 						/>
 					);
 				})}
-			</section>
+			</PlatformMetricsGrid>
 
 			<section className="grid gap-4">
 				<div className="grid max-h-none content-start gap-4 border-y bg-background py-4 xl:rounded-lg xl:border xl:p-4">

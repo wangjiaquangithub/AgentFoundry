@@ -18,6 +18,7 @@ import { countArrayField, formatTimestamp } from '../platform-utils';
 import {
 	PlatformPageHeader,
 	PlatformPageShell,
+	PlatformMetricsGrid,
 	PlatformNotice,
 	StatCard,
 	StateBadge,
@@ -142,7 +143,7 @@ export function DashboardConnectorsSection({
 				}
 			/>
 
-			<section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+			<PlatformMetricsGrid>
 				<StatCard
 					label={t('platform.connectors.supported')}
 					value={supportedConnectorCount}
@@ -171,7 +172,7 @@ export function DashboardConnectorsSection({
 					icon={ServerCog}
 					loading={connectorsLoading}
 				/>
-			</section>
+			</PlatformMetricsGrid>
 
 			<section ref={connectorCenterRef} className="grid gap-4">
 				{connectorsError ? (

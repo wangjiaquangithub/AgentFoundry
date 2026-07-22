@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
 	PlatformConnectionCard,
+	PlatformMetricsGrid,
 	PlatformPageHeader,
 	StatCard,
 	type HealthState,
@@ -78,11 +79,11 @@ export function PlatformDashboardOverview({
 			/>
 
 			<section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-				<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+				<PlatformMetricsGrid>
 					{stats.map((stat) => (
 						<StatCard key={stat.label} {...stat} />
 					))}
-				</div>
+				</PlatformMetricsGrid>
 
 				<div className="grid gap-3 rounded-md border bg-background p-4">
 					<div className="min-w-0">

@@ -4,6 +4,7 @@ import type { RefObject } from 'react';
 
 import {
 	PlatformConnectionCard,
+	PlatformMetricsGrid,
 	PlatformPageHeader,
 	PlatformPageShell,
 	StatCard,
@@ -133,7 +134,7 @@ export function WorkflowsViewPage({
 				}
 			/>
 
-			<section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+			<PlatformMetricsGrid>
 				<StatCard
 					label={t('platform.workflowRunner.templates')}
 					value={workflowTemplates.length}
@@ -168,7 +169,7 @@ export function WorkflowsViewPage({
 					icon={History}
 					loading={workflowRunsLoading}
 				/>
-			</section>
+			</PlatformMetricsGrid>
 
 			<section ref={workflowRunnerRef}>
 				<WorkflowRunnerPanel

@@ -172,12 +172,12 @@ export function MonitoringSnapshotPanel({
 				</div>
 			</div>
 
-			<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+			<div className="overflow-hidden rounded-md border bg-white shadow-sm shadow-slate-200/40 md:grid md:grid-cols-2 xl:grid-cols-4">
 				{stats.map((stat) => {
 					const StatIcon = stat.icon;
 
 					return (
-						<div key={stat.label} className="grid gap-3 rounded-lg border bg-background p-3">
+						<div key={stat.label} className="grid gap-3 border-l border-border/70 p-3 first:border-l-0">
 							<div className="flex items-center justify-between gap-3">
 								<div className="text-sm font-medium">{stat.label}</div>
 								<div className="grid size-8 place-items-center rounded-md border bg-background">

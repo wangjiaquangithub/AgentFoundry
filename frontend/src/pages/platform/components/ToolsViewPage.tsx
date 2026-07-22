@@ -11,6 +11,7 @@ import { useState } from 'react';
 
 import {
 	PlatformConnectionCard,
+	PlatformMetricsGrid,
 	PlatformPageHeader,
 	PlatformPageShell,
 	StatCard,
@@ -188,7 +189,7 @@ export function ToolsViewPage({
 				}
 			/>
 
-			<section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+			<PlatformMetricsGrid>
 				<StatCard
 					label={t('platform.toolCatalog.title')}
 					value={availableToolItems.length}
@@ -217,7 +218,7 @@ export function ToolsViewPage({
 					icon={ShieldAlert}
 					loading={toolCatalogLoading}
 				/>
-			</section>
+			</PlatformMetricsGrid>
 
 			<ToolCatalogPanel
 				sectionRef={configManagementRef}
