@@ -303,7 +303,6 @@ export function RunsViewPage({
 				item.type === selectedRun.type && item.id === selectedRun.id,
 			)
 		: undefined;
-	const previewRun = activeRun ?? filteredRunItems[0];
 	const activeAgentTurn =
 		activeRun?.type === 'agent'
 			? (activeRun.raw as MonitoringAgentTurn)
@@ -311,14 +310,6 @@ export function RunsViewPage({
 	const activeWorkflowRun =
 		activeRun?.type === 'workflow'
 			? (activeRun.raw as EnterpriseWorkflowRunHistoryItem)
-			: undefined;
-	const previewAgentTurn =
-		previewRun?.type === 'agent'
-			? (previewRun.raw as MonitoringAgentTurn)
-			: undefined;
-	const previewWorkflowRun =
-		previewRun?.type === 'workflow'
-			? (previewRun.raw as EnterpriseWorkflowRunHistoryItem)
 			: undefined;
 
 	return (
@@ -381,7 +372,7 @@ export function RunsViewPage({
 				})}
 			</section>
 
-			<section className="grid min-h-[34rem] content-start gap-4 xl:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_24rem]">
+			<section className="grid min-h-[34rem] content-start gap-4">
 				<div className="grid min-w-0 content-start gap-3">
 					<div className="flex flex-col gap-3 border-b pb-3 lg:flex-row lg:items-start lg:justify-between">
 						<div className="min-w-0">
@@ -674,150 +665,6 @@ export function RunsViewPage({
 					</div>
 					)}
 				</div>
-
-				<aside className="hidden min-w-0 xl:block">
-					<div className="sticky top-5 overflow-hidden rounded-md border bg-background">
-						<div className="border-b px-4 py-3">
-							<div className="flex items-start justify-between gap-3">
-								<div className="min-w-0">
-									<h2 className="text-sm font-semibold">
-										{t('platform.monitoring.runDetail')}
-									</h2>
-									<p className="mt-1 text-xs leading-5 text-muted-foreground">
-										{t('platform.monitoring.runDetailDescription')}
-									</p>
-								</div>
-								{previewRun ? (
-									<PlatformStatusBadge
-										status={previewRun.status}
-										t={t}
-										className="shrink-0"
-									/>
-								) : null}
-							</div>
-						</div>
-
-						{previewRun ? (
-							<div className="grid gap-4 p-4">
-								<div className="flex items-start gap-3 border-b pb-4">
-									<div className="flex size-9 shrink-0 items-center justify-center rounded-md border bg-muted/25">
-										{previewRun.type === 'agent' ? (
-											<BotMessageSquare className="size-4 text-muted-foreground" />
-										) : (
-											<Workflow className="size-4 text-muted-foreground" />
-										)}
-									</div>
-									<div className="min-w-0">
-										<h3 className="line-clamp-2 text-sm font-semibold">
-											{previewRun.title}
-										</h3>
-										<p className="mt-1 line-clamp-4 text-xs leading-5 text-muted-foreground">
-											{previewRun.description}
-										</p>
-									</div>
-								</div>
-
-								<div className="grid gap-3 text-sm">
-									<div className="grid grid-cols-[7rem_minmax(0,1fr)] gap-3">
-										<span className="text-xs text-muted-foreground">
-											{t('platform.monitoring.type')}
-										</span>
-										<span className="truncate font-medium">
-											{previewRun.type === 'agent'
-												? t('platform.monitoring.agentRunType')
-												: t('platform.monitoring.workflowRunType')}
-										</span>
-									</div>
-									<div className="grid grid-cols-[7rem_minmax(0,1fr)] gap-3">
-										<span className="text-xs text-muted-foreground">
-											{t('platform.monitoring.agent')}
-										</span>
-										<span className="truncate font-medium">
-											{previewRun.agentId || '-'}
-										</span>
-									</div>
-									<div className="grid grid-cols-[7rem_minmax(0,1fr)] gap-3">
-										<span className="text-xs text-muted-foreground">
-											{t('platform.monitoring.duration')}
-										</span>
-										<span className="font-medium">{previewRun.duration}</span>
-									</div>
-									<div className="grid grid-cols-[7rem_minmax(0,1fr)] gap-3">
-										<span className="text-xs text-muted-foreground">
-											{t('platform.monitoring.updatedAt')}
-										</span>
-										<span className="font-medium">
-											{formatTimestamp(previewRun.timestamp)}
-										</span>
-									</div>
-									<div className="grid grid-cols-[7rem_minmax(0,1fr)] gap-3">
-										<span className="text-xs text-muted-foreground">
-											{t('platform.monitoring.runId')}
-										</span>
-										<span className="truncate font-mono text-xs">
-											{previewRun.id}
-										</span>
-									</div>
-								</div>
-
-								{previewWorkflowRun ? (
-									<div className="border-t pt-4">
-										<div className="mb-2 text-xs font-medium text-muted-foreground">
-											{t('platform.monitoring.stepsStatus')}
-										</div>
-										<div className="flex flex-wrap gap-2">
-											{formatRunStatusCounts(previewWorkflowRun.status_counts, t).map(
-												(item) => (
-													<Badge key={item.status} variant="secondary">
-														{item.label}: {item.count}
-													</Badge>
-												),
-											)}
-										</div>
-									</div>
-								) : null}
-
-								<div className="rounded-md border bg-muted/25 p-3">
-									<div className="text-xs font-medium text-muted-foreground">
-										{t('platform.monitoring.nextAction')}
-									</div>
-									<div className="mt-1 text-sm font-medium">
-										{previewRun.status === 'failed'
-											? t('platform.monitoring.nextActionFailed')
-											: previewRun.status === 'running'
-												? t('platform.monitoring.nextActionRunning')
-												: previewRun.type === 'agent'
-													? t('platform.monitoring.nextActionAgent')
-													: t('platform.monitoring.nextActionWorkflow')}
-									</div>
-								</div>
-
-								{previewAgentTurn ? (
-									<Button
-										type="button"
-										size="sm"
-										onClick={() => onSelectAgentTurn(previewAgentTurn)}
-									>
-										<BotMessageSquare className="size-4" />
-										{t('platform.monitoring.viewResponse')}
-									</Button>
-								) : (
-									<Button type="button" size="sm" onClick={onRunWorkflow}>
-										<Workflow className="size-4" />
-										{t('platform.monitoring.continueWorkflow')}
-									</Button>
-								)}
-							</div>
-						) : (
-							<PlatformEmptyState
-								variant={isInitialLoading ? 'noData' : 'filtered'}
-								title={t('platform.monitoring.runDetail')}
-								description={t('platform.monitoring.runDetailDescription')}
-								className="min-h-80 p-5"
-							/>
-						)}
-					</div>
-				</aside>
 			</section>
 
 			<Sheet
