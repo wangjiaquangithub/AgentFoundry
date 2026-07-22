@@ -51,6 +51,13 @@ CHECKS = (
         ),
     ),
     (
+        "provider-native HTTP invocation client",
+        (
+            sys.executable,
+            "scripts/check_phase4_provider_http_invocation_client.py",
+        ),
+    ),
+    (
         "adapter invocation pending result",
         (
             sys.executable,
