@@ -7,6 +7,10 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import {
+	normalizePlatformErrorMessage,
+	platformServiceUnavailableTitle,
+} from '../platform-error-state';
 import { formatTimestamp } from '../platform-utils';
 import {
 	PlatformPageHeader,
@@ -23,6 +27,7 @@ import {
 	type PlatformOperationalStatus,
 } from './platform-status';
 import { PlatformEmptyState } from './PlatformEmptyState';
+import { PlatformFilterBar } from './PlatformFilterBar';
 import { PlatformStatusBadge } from './PlatformStatusBadge';
 import type {
 	EnterpriseWorkflowRunHistoryItem,
@@ -45,6 +50,7 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from '@/components/ui/sheet';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -52,6 +58,7 @@ type Translate = (key: string, options?: Record<string, unknown>) => string;
 interface RunsViewPageProps {
 	monitoringHealthState: HealthState;
 	monitoringLoading: boolean;
+	monitoringError?: unknown;
 	monitoringStats: MonitoringStat[];
 	recentAgentTurns: MonitoringAgentTurn[];
 	recentWorkflowRuns: EnterpriseWorkflowRunHistoryItem[];
@@ -93,6 +100,7 @@ function formatRunStatusCounts(
 export function RunsViewPage({
 	monitoringHealthState,
 	monitoringLoading,
+	monitoringError,
 	monitoringStats,
 	recentAgentTurns,
 	recentWorkflowRuns,
@@ -155,6 +163,13 @@ export function RunsViewPage({
 		runTypeFilter !== 'all' ||
 		runStatusFilter !== 'all' ||
 		runKeywordFilter.trim().length > 0;
+	const isInitialLoading = monitoringLoading && runItems.length === 0;
+	const hasInitialError = Boolean(monitoringError) && runItems.length === 0;
+	const resetRunFilters = () => {
+		setRunTypeFilter('all');
+		setRunStatusFilter('all');
+		setRunKeywordFilter('');
+	};
 	const activeRun = selectedRun
 		? filteredRunItems.find(
 			(item) =>
@@ -270,86 +285,100 @@ export function RunsViewPage({
 					</div>
 				</div>
 
-				<div className="grid gap-3 border-b pb-3">
-					<div className="flex flex-wrap items-center justify-between gap-2">
-						<div className="text-xs font-medium text-muted-foreground">
-							{t('platform.ux.filters.results', {
-								count: filteredRunItems.length,
-							})}
-						</div>
-						<Button
-							type="button"
-							size="sm"
-							variant="ghost"
-							onClick={() => {
-								setRunTypeFilter('all');
-								setRunStatusFilter('all');
-								setRunKeywordFilter('');
-							}}
-							disabled={!hasRunFilters}
-						>
-							{t('platform.ux.filters.clear')}
-						</Button>
-					</div>
+				<PlatformFilterBar
+					resultLabel={t('platform.ux.filters.results', {
+						count: filteredRunItems.length,
+					})}
+					clearLabel={t('platform.ux.filters.clear')}
+					onClear={resetRunFilters}
+					clearDisabled={!hasRunFilters}
+				>
+					<Select
+						value={runTypeFilter}
+						onValueChange={(value) => setRunTypeFilter(value as RunTypeFilter)}
+					>
+						<SelectTrigger className="h-9 w-full">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">
+								{t('platform.monitoring.allTypes')}
+							</SelectItem>
+							<SelectItem value="agent">
+								{t('platform.monitoring.agentRunType')}
+							</SelectItem>
+							<SelectItem value="workflow">
+								{t('platform.monitoring.workflowRunType')}
+							</SelectItem>
+						</SelectContent>
+					</Select>
+					<Select
+						value={runStatusFilter}
+						onValueChange={(value) =>
+							setRunStatusFilter(value as RunStatusFilter)
+						}
+					>
+						<SelectTrigger className="h-9 w-full">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">
+								{t('platform.monitoring.allStatuses')}
+							</SelectItem>
+							{runStatuses.map((status) => (
+								<SelectItem key={status} value={status}>
+									{t(`platform.statuses.${status}`)}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+					<Input
+						className="h-9 md:col-span-2 xl:col-span-4"
+						value={runKeywordFilter}
+						onChange={(event) => setRunKeywordFilter(event.target.value)}
+						placeholder={t('platform.monitoring.keywordPlaceholder')}
+					/>
+				</PlatformFilterBar>
 
-					<div className="grid gap-2 md:grid-cols-[10rem_10rem_minmax(14rem,1fr)]">
-						<div className="min-w-0">
-							<Select
-								value={runTypeFilter}
-								onValueChange={(value) =>
-									setRunTypeFilter(value as RunTypeFilter)
-								}
-							>
-								<SelectTrigger className="h-9 w-full">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">
-										{t('platform.monitoring.allTypes')}
-									</SelectItem>
-									<SelectItem value="agent">
-										{t('platform.monitoring.agentRunType')}
-									</SelectItem>
-									<SelectItem value="workflow">
-										{t('platform.monitoring.workflowRunType')}
-									</SelectItem>
-								</SelectContent>
-							</Select>
+				{isInitialLoading ? (
+					<div className="overflow-hidden rounded-md border bg-background">
+						<div className="hidden grid-cols-[7rem_minmax(0,1.8fr)_8rem_minmax(8rem,0.8fr)_10rem_4.5rem] gap-3 border-b bg-muted/35 px-3 py-2 lg:grid">
+							<Skeleton className="h-4 w-14" />
+							<Skeleton className="h-4 w-28" />
+							<Skeleton className="h-4 w-16" />
+							<Skeleton className="h-4 w-20" />
+							<Skeleton className="h-4 w-16" />
+							<Skeleton className="ml-auto h-4 w-10" />
 						</div>
-						<div className="min-w-0">
-							<Select
-								value={runStatusFilter}
-								onValueChange={(value) =>
-									setRunStatusFilter(value as RunStatusFilter)
-								}
-							>
-								<SelectTrigger className="h-9 w-full">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">
-										{t('platform.monitoring.allStatuses')}
-									</SelectItem>
-									{runStatuses.map((status) => (
-										<SelectItem key={status} value={status}>
-											{t(`platform.statuses.${status}`)}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-						<div className="min-w-0">
-							<Input
-								className="h-9"
-								value={runKeywordFilter}
-								onChange={(event) => setRunKeywordFilter(event.target.value)}
-								placeholder={t('platform.monitoring.keywordPlaceholder')}
-							/>
+						<div>
+							{[0, 1, 2, 3, 4].map((item) => (
+								<div
+									key={item}
+									className="grid gap-3 border-b px-3 py-3 last:border-b-0 lg:grid-cols-[7rem_minmax(0,1.8fr)_8rem_minmax(8rem,0.8fr)_10rem_4.5rem] lg:items-center"
+								>
+									<Skeleton className="h-7 w-24" />
+									<div className="grid gap-2">
+										<Skeleton className="h-4 w-3/4" />
+										<Skeleton className="h-3 w-1/2" />
+									</div>
+									<Skeleton className="h-6 w-20" />
+									<Skeleton className="h-4 w-24" />
+									<Skeleton className="h-4 w-28" />
+									<Skeleton className="ml-auto h-4 w-10" />
+								</div>
+							))}
 						</div>
 					</div>
-				</div>
-
-				{runItems.length === 0 ? (
+				) : hasInitialError ? (
+					<PlatformEmptyState
+						variant="error"
+						title={platformServiceUnavailableTitle}
+						description={normalizePlatformErrorMessage(monitoringError)}
+						actionLabel={t('platform.monitoring.refresh')}
+						onAction={() => void onRefreshMonitoring()}
+						className="min-h-80 rounded-md border border-dashed bg-background/80 p-6"
+					/>
+				) : runItems.length === 0 ? (
 					<PlatformEmptyState
 						variant="noData"
 						title={t('platform.monitoring.noRunsTitle')}
@@ -362,11 +391,7 @@ export function RunsViewPage({
 						title={t('platform.ux.empty.filteredTitle')}
 						description={t('platform.ux.empty.filteredDescription')}
 						actionLabel={t('platform.ux.filters.clear')}
-						onAction={() => {
-							setRunTypeFilter('all');
-							setRunStatusFilter('all');
-							setRunKeywordFilter('');
-						}}
+						onAction={resetRunFilters}
 						className="min-h-80 rounded-md border border-dashed bg-background/80 p-6"
 					/>
 				) : (

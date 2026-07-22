@@ -1906,6 +1906,7 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 				{...createPlatformRunsViewProps({
 					monitoringHealthState: monitoringActivitySummary.healthState,
 					monitoringLoading,
+					monitoringError: agentRunsError || workflowRunsError || platformError,
 					monitoringStats,
 					recentAgentTurns: monitoringActivitySummary.recentAgentTurns,
 					recentWorkflowRuns,
