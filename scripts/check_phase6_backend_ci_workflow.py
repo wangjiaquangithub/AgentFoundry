@@ -25,6 +25,7 @@ REQUIRED_SNIPPETS = (
     "actions/checkout@v4",
     "actions/setup-python@v5",
     'python-version: "3.11"',
+    "run: python3 -m compileall backend",
     "run: python3 scripts/check_backend_production_gates.py",
 )
 
@@ -44,6 +45,11 @@ def main() -> int:
 
     if text.count("run: python3 scripts/check_backend_production_gates.py") != 1:
         failures.append(f"{WORKFLOW} must run the backend production gate exactly once")
+
+    if text.find("run: python3 -m compileall backend") > text.find(
+        "run: python3 scripts/check_backend_production_gates.py"
+    ):
+        failures.append(f"{WORKFLOW} must compile backend before running production gates")
 
     if failures:
         for failure in failures:

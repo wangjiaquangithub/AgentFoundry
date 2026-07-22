@@ -30,5 +30,8 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Compile backend
+        run: python3 -m compileall backend
+
       - name: Run backend production gates
         run: python3 scripts/check_backend_production_gates.py
