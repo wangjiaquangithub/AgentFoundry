@@ -168,10 +168,37 @@ def main() -> int:
             raise AssertionError(
                 f"{label} production_ready should be {expected_ready}: {database}",
             )
+        if not isinstance(database.get("operator_ready"), bool):
+            raise AssertionError(f"{label} should expose boolean operator_ready: {database}")
         if not isinstance(database.get("runtime_ready"), bool):
             raise AssertionError(f"{label} should expose boolean runtime_ready: {database}")
         if not isinstance(database.get("driver_available"), bool):
             raise AssertionError(f"{label} should expose boolean driver_available: {database}")
+        checks = database.get("checks")
+        if not isinstance(checks, dict):
+            raise AssertionError(f"{label} should expose database readiness checks: {database}")
+        expected_checks = {
+            "configured",
+            "postgresql_backend",
+            "production_database_backend",
+            "driver_available",
+            "runtime_ready",
+            "production_mode",
+        }
+        missing_checks = expected_checks.difference(checks)
+        if missing_checks:
+            raise AssertionError(
+                f"{label} database checks missing {sorted(missing_checks)}: {database}",
+            )
+        non_boolean_checks = [
+            key
+            for key in expected_checks
+            if not isinstance(checks.get(key), bool)
+        ]
+        if non_boolean_checks:
+            raise AssertionError(
+                f"{label} database checks must be booleans: {database}",
+            )
         if database.get("env_var") != "AGENTFOUNDRY_DATABASE_URL":
             raise AssertionError(f"{label} should expose the config env var: {database}")
         if expected_backend == "postgresql":
@@ -183,10 +210,27 @@ def main() -> int:
                 raise AssertionError(
                     f"{label} runtime_ready should follow driver availability: {database}",
                 )
+            if database.get("operator_ready") is not database.get("runtime_ready"):
+                raise AssertionError(
+                    f"{label} operator_ready should require runtime readiness: {database}",
+                )
+            if checks.get("postgresql_backend") is not True:
+                raise AssertionError(
+                    f"{label} should mark PostgreSQL backend check true: {database}",
+                )
         elif database.get("driver_package") is not None or database.get("driver_available"):
             raise AssertionError(
                 f"{label} should not expose a production database driver: {database}",
             )
+        else:
+            if database.get("operator_ready") is not False:
+                raise AssertionError(
+                    f"{label} should not be operator-ready without PostgreSQL: {database}",
+                )
+            if checks.get("postgresql_backend") is not False:
+                raise AssertionError(
+                    f"{label} should mark PostgreSQL backend check false: {database}",
+                )
         _assert_no_secret_leak(database)
 
     print("Phase 2 platform database status contract passed.")

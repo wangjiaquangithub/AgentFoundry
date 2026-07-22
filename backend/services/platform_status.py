@@ -342,18 +342,80 @@ class PlatformStatusService:
         """Return a credential-safe production data-layer configuration snapshot."""
         if self._database_config_status is None:
             return {
+                "env_var": "AGENTFOUNDRY_DATABASE_URL",
+                "deployment_env_var": "AGENTFOUNDRY_ENV",
                 "configured": False,
                 "backend": "unconfigured",
+                "required_backend": "postgresql",
                 "production_ready": False,
+                "driver_package": None,
+                "driver_available": False,
+                "runtime_ready": False,
+                "operator_ready": False,
+                "checks": {
+                    "configured": False,
+                    "postgresql_backend": False,
+                    "production_database_backend": False,
+                    "driver_available": False,
+                    "runtime_ready": False,
+                    "production_mode": False,
+                },
                 "message": "Database configuration status is not wired.",
             }
 
         status = self._database_config_status()
         if is_dataclass(status):
-            return dict(asdict(status))
-        if isinstance(status, dict):
-            return dict(status)
-        raise TypeError("Database configuration status must be a dataclass or dict.")
+            snapshot = dict(asdict(status))
+        elif isinstance(status, dict):
+            snapshot = dict(status)
+        else:
+            raise TypeError("Database configuration status must be a dataclass or dict.")
+
+        return self._normalize_database_status_snapshot(snapshot)
+
+    @staticmethod
+    def _normalize_database_status_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
+        """Add operator-facing PostgreSQL readiness checks without exposing DSNs."""
+        configured = bool(snapshot.get("configured"))
+        backend = str(snapshot.get("backend") or "unconfigured")
+        required_backend = str(snapshot.get("required_backend") or "postgresql")
+        production_ready = bool(snapshot.get("production_ready"))
+        driver_available = bool(snapshot.get("driver_available"))
+        runtime_ready = bool(snapshot.get("runtime_ready"))
+        production_mode = bool(snapshot.get("production_mode"))
+        postgresql_backend = backend == "postgresql"
+        production_database_backend = postgresql_backend and required_backend == "postgresql"
+        operator_ready = (
+            configured
+            and production_database_backend
+            and production_ready
+            and runtime_ready
+        )
+
+        normalized = {
+            "env_var": snapshot.get("env_var") or "AGENTFOUNDRY_DATABASE_URL",
+            "deployment_env_var": snapshot.get("deployment_env_var") or "AGENTFOUNDRY_ENV",
+            "production_mode": production_mode,
+            "configured": configured,
+            "scheme": snapshot.get("scheme"),
+            "backend": backend,
+            "required_backend": required_backend,
+            "production_ready": production_ready,
+            "driver_package": snapshot.get("driver_package"),
+            "driver_available": driver_available,
+            "runtime_ready": runtime_ready,
+            "operator_ready": operator_ready,
+            "checks": {
+                "configured": configured,
+                "postgresql_backend": postgresql_backend,
+                "production_database_backend": production_database_backend,
+                "driver_available": driver_available,
+                "runtime_ready": runtime_ready,
+                "production_mode": production_mode,
+            },
+            "message": snapshot.get("message"),
+        }
+        return normalized
 
     def _runtime_provider_snapshot(self) -> dict[str, Any]:
         """Return runtime provider health from PostgreSQL when available."""
