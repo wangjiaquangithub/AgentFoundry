@@ -7,7 +7,7 @@ this boundary, not the platform itself.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Mapping, Protocol
 
 
@@ -302,10 +302,7 @@ class AgentScopeRuntimeAdapter:
         instead of a provider-specific exception.
         """
         runtime_adapter = self.describe(
-            {
-                "agent_id": request.context.agent_id,
-                "agent_name": request.context.agent_name,
-            },
+            _runtime_agent_metadata_from_request(request),
         )
         error = (
             "AgentScope provider invocation is pending adapter wiring; "
@@ -321,7 +318,7 @@ class AgentScopeRuntimeAdapter:
                 ],
                 "adapter_id": self.id,
             },
-            "request": request.to_dict(),
+            "request": _runtime_invocation_request_audit_payload(request),
         }
         payload = build_runtime_invocation_error_result_payload(
             error=error,
@@ -545,7 +542,11 @@ async def invoke_runtime_adapter(
             "agent_name": request.context.agent_name,
         },
     )
-    result = await selected_adapter.invoke(request)
+    invocation_request = _runtime_invocation_request_with_agent_metadata(
+        request,
+        agent_metadata,
+    )
+    result = await selected_adapter.invoke(invocation_request)
     return normalize_runtime_invocation_result(result.to_dict(), adapter_metadata)
 
 
@@ -878,6 +879,70 @@ def _optional_text(value: Any) -> str | None:
 
 def _configured_config_value(value: Any) -> bool:
     return isinstance(value, str) and bool(value.strip())
+
+
+def _runtime_invocation_request_with_agent_metadata(
+    request: RuntimeInvocationRequest,
+    agent_metadata: dict[str, Any] | None,
+) -> RuntimeInvocationRequest:
+    if agent_metadata is None:
+        return request
+    metadata = dict(request.metadata or {})
+    metadata["agent_metadata"] = dict(agent_metadata)
+    return replace(request, metadata=metadata)
+
+
+def _runtime_agent_metadata_from_request(
+    request: RuntimeInvocationRequest,
+) -> dict[str, Any]:
+    metadata = request.metadata or {}
+    context_metadata = request.context.metadata or {}
+    agent_metadata: dict[str, Any] = {
+        "agent_id": request.context.agent_id,
+        "agent_name": request.context.agent_name,
+    }
+    for source in (context_metadata, metadata):
+        runtime_provider_config = source.get("runtime_provider_config")
+        if isinstance(runtime_provider_config, dict):
+            agent_metadata["runtime_provider_config"] = runtime_provider_config
+    nested_agent_metadata = metadata.get("agent_metadata")
+    if isinstance(nested_agent_metadata, dict):
+        agent_metadata.update(nested_agent_metadata)
+        agent_metadata["agent_id"] = request.context.agent_id
+        agent_metadata["agent_name"] = request.context.agent_name
+    return agent_metadata
+
+
+def _runtime_invocation_request_audit_payload(
+    request: RuntimeInvocationRequest,
+) -> dict[str, Any]:
+    payload = request.to_dict()
+    metadata = payload.get("metadata")
+    if isinstance(metadata, dict):
+        payload["metadata"] = _redact_runtime_provider_config(metadata)
+    context = payload.get("context")
+    if isinstance(context, dict):
+        context_metadata = context.get("metadata")
+        if isinstance(context_metadata, dict):
+            context["metadata"] = _redact_runtime_provider_config(context_metadata)
+    return payload
+
+
+def _redact_runtime_provider_config(metadata: dict[str, Any]) -> dict[str, Any]:
+    redacted = dict(metadata)
+    nested_agent_metadata = redacted.get("agent_metadata")
+    if isinstance(nested_agent_metadata, dict):
+        redacted["agent_metadata"] = _redact_runtime_provider_config(
+            nested_agent_metadata,
+        )
+    runtime_provider_config = redacted.get("runtime_provider_config")
+    if isinstance(runtime_provider_config, dict):
+        redacted["runtime_provider_config"] = {
+            key: "<configured>"
+            for key in RUNTIME_PROVIDER_NATIVE_INVOCATION_REQUIRED_CONFIG
+            if _configured_config_value(runtime_provider_config.get(key))
+        }
+    return redacted
 
 
 def describe_runtime_provider_health(

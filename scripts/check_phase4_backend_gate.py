@@ -32,6 +32,10 @@ CHECKS = (
         ),
     ),
     (
+        "runtime pending config gate",
+        (sys.executable, "scripts/check_phase4_runtime_pending_config_gate.py"),
+    ),
+    (
         "adapter-backed local invocation",
         (sys.executable, "scripts/check_phase4_adapter_backed_local_invocation.py"),
     ),
