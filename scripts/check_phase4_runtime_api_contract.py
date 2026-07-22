@@ -46,6 +46,10 @@ FORBIDDEN_DIRECT_CALLS = {
     "RuntimeInvocationResult",
 }
 
+FORBIDDEN_DIRECT_DEPENDENCY_CALLS = {
+    f"deps.{name}" for name in FORBIDDEN_DIRECT_CALLS
+}
+
 
 def _parse(path: Path) -> ast.Module:
     return ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
@@ -68,6 +72,12 @@ def _attribute_path(node: ast.AST) -> str | None:
         parts.append(current.id)
         return ".".join(reversed(parts))
     return None
+
+
+def _call_name(node: ast.Call) -> str | None:
+    if isinstance(node.func, ast.Name):
+        return node.func.id
+    return _attribute_path(node.func)
 
 
 def _find_class(tree: ast.Module, name: str) -> ast.ClassDef:
@@ -130,9 +140,15 @@ def _assert_route_has_no_direct_runtime_calls(tree: ast.Module) -> None:
     for node in ast.walk(route):
         if not isinstance(node, ast.Call):
             continue
-        if isinstance(node.func, ast.Name) and node.func.id in FORBIDDEN_DIRECT_CALLS:
+        call_name = _call_name(node)
+        if call_name in FORBIDDEN_DIRECT_CALLS:
             raise AssertionError(
-                f"runtime route directly calls runtime contract: {node.func.id}"
+                f"runtime route directly calls runtime contract: {call_name}"
+            )
+        if call_name in FORBIDDEN_DIRECT_DEPENDENCY_CALLS:
+            raise AssertionError(
+                "runtime route directly calls injected runtime dependency: "
+                f"{call_name}"
             )
 
 
