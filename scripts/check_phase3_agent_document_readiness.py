@@ -22,8 +22,12 @@ class Agents:
     def __init__(self, records: list[dict[str, Any]]) -> None:
         self._records = records
 
-    def list(self) -> list[dict[str, Any]]:
-        return [dict(record) for record in self._records]
+    def list(self, *, tenant: str | None = None) -> list[dict[str, Any]]:
+        return [
+            dict(record)
+            for record in self._records
+            if tenant is None or record.get("tenant") == tenant
+        ]
 
     def get(self, agent_id: str) -> dict[str, Any] | None:
         return next(
