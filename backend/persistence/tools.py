@@ -50,6 +50,12 @@ class ToolUserPolicyRecord:
     updated_at: str
 
 
+@dataclass(frozen=True)
+class ToolPolicyWriteResult:
+    policy_records: list[ToolPolicyRecord]
+    user_policy_records: list[ToolUserPolicyRecord]
+
+
 def _tool_from_row(row: dict[str, Any]) -> ToolRecord:
     schema = _object_from_json(row["schema"], row["id"], "schema")
     return ToolRecord(
@@ -504,10 +510,15 @@ class PostgresToolGovernanceWriteRepository:
         enterprise_tool_catalog: dict[str, dict[str, Any]],
         approval_required_tools: set[str],
         timestamp: str,
-    ) -> None:
+    ) -> ToolPolicyWriteResult:
+        policy_records: list[ToolPolicyRecord] = []
+        user_policy_records: list[ToolUserPolicyRecord] = []
         tenants = policy.get("tenants")
         if not isinstance(tenants, dict):
-            return
+            return ToolPolicyWriteResult(
+                policy_records=policy_records,
+                user_policy_records=user_policy_records,
+            )
 
         with self._database.transaction() as connection:
             with connection.cursor() as cursor:
@@ -582,6 +593,9 @@ class PostgresToolGovernanceWriteRepository:
                               approval_required = EXCLUDED.approval_required,
                               data_access_scope = EXCLUDED.data_access_scope,
                               updated_at = EXCLUDED.updated_at
+                            RETURNING id, tenant_id, tool_id, allowed_roles,
+                              approval_required, rate_limit, data_access_scope,
+                              created_at, updated_at
                             """,
                             (
                                 f"{tool_id}:policy",
@@ -593,6 +607,12 @@ class PostgresToolGovernanceWriteRepository:
                                 timestamp,
                             ),
                         )
+                        row = cursor.fetchone()
+                        if row is None:
+                            raise ValueError(
+                                "Tool policy upsert did not return a row.",
+                            )
+                        policy_records.append(_policy_from_row(dict(row)))
 
                     users = tenant_policy.get("users")
                     if not isinstance(users, dict):
@@ -647,6 +667,8 @@ class PostgresToolGovernanceWriteRepository:
                             SET allow_tools = EXCLUDED.allow_tools,
                               deny_tools = EXCLUDED.deny_tools,
                               updated_at = EXCLUDED.updated_at
+                            RETURNING id, tenant_id, user_id, allow_tools,
+                              deny_tools, created_at, updated_at
                             """,
                             (
                                 f"{clean_tenant_id}:{clean_user_id}:tool-policy",
@@ -658,3 +680,14 @@ class PostgresToolGovernanceWriteRepository:
                                 timestamp,
                             ),
                         )
+                        row = cursor.fetchone()
+                        if row is None:
+                            raise ValueError(
+                                "Tool user policy upsert did not return a row.",
+                            )
+                        user_policy_records.append(_user_policy_from_row(dict(row)))
+
+        return ToolPolicyWriteResult(
+            policy_records=policy_records,
+            user_policy_records=user_policy_records,
+        )

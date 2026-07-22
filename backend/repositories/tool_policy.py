@@ -2,7 +2,14 @@
 
 import json
 from pathlib import Path
-from typing import Any, Callable, Protocol
+from typing import Any, Callable, Protocol, Sequence
+
+
+class ToolPolicyWriteResult(Protocol):
+    """Concrete records returned by production tool policy writes."""
+
+    policy_records: Sequence[Any]
+    user_policy_records: Sequence[Any]
 
 
 class ToolPolicyWriteRepository(Protocol):
@@ -15,8 +22,8 @@ class ToolPolicyWriteRepository(Protocol):
         enterprise_tool_catalog: dict[str, dict[str, Any]],
         approval_required_tools: set[str],
         timestamp: str,
-    ) -> None:
-        """Persist tenant-scoped tool policy records."""
+    ) -> ToolPolicyWriteResult:
+        """Persist tenant-scoped tool policy records and return written rows."""
 
 
 class ToolPolicyReadRepository(Protocol):
@@ -82,9 +89,17 @@ class PostgresToolPolicyWriteThroughRepository:
         return snapshot
 
     def save(self, policy: dict[str, Any]) -> None:
-        self._postgres_writer.save_policy(
+        persisted_policy = self._postgres_writer.save_policy(
             policy,
             enterprise_tool_catalog=self._enterprise_tool_catalog,
             approval_required_tools=self._approval_required_tools,
             timestamp=self._now(),
         )
+        for record in (
+            *persisted_policy.policy_records,
+            *persisted_policy.user_policy_records,
+        ):
+            if not getattr(record, "id", None):
+                raise ValueError(
+                    "PostgreSQL tool policy write did not return a persisted id.",
+                )

@@ -799,13 +799,19 @@ def _check_postgres_tool_policy_wired() -> list[str]:
             )
 
     required_persistence_tokens = [
+        "class ToolPolicyWriteResult",
         "class PostgresToolGovernanceReadRepository",
         "class PostgresToolGovernanceWriteRepository",
         "def load_policy_snapshot",
         "def save_policy",
+        ") -> ToolPolicyWriteResult:",
         "INSERT INTO tools",
         "INSERT INTO tool_policies",
         "INSERT INTO tool_user_policies",
+        "RETURNING id, tenant_id, tool_id, allowed_roles",
+        "Tool policy upsert did not return a row.",
+        "RETURNING id, tenant_id, user_id, allow_tools",
+        "Tool user policy upsert did not return a row.",
     ]
     for token in required_persistence_tokens:
         if token not in tool_persistence_source:

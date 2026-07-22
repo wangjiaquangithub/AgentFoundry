@@ -106,7 +106,9 @@ from backend.persistence.tools import (
     PostgresToolGovernanceWriteRepository,
     SQLiteToolGovernanceReadRepository,
     ToolPolicyRecord,
+    ToolPolicyWriteResult,
     ToolRecord,
+    ToolUserPolicyRecord,
 )
 from backend.persistence.workflows import (
     PostgresWorkflowReadRepository,
@@ -185,7 +187,9 @@ __all__ = [
     "TenantRecord",
     "ToolCallRecord",
     "ToolPolicyRecord",
+    "ToolPolicyWriteResult",
     "ToolRecord",
+    "ToolUserPolicyRecord",
     "UserRecord",
     "WorkflowRunRecord",
     "WorkflowTemplateRecord",
