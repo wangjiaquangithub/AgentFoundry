@@ -76,6 +76,30 @@ def _validate_write_result(
         raise ValueError("PostgreSQL memory item write returned another created time.")
 
 
+def _validate_memory_item_read_result(
+    record: MemoryItemRecord,
+    *,
+    tenant_id: str,
+    user_id: str | None = None,
+    agent_id: str | None = None,
+    session_id: str | None = None,
+    source_run_id: str | None = None,
+    memory_item_id: str | None = None,
+) -> None:
+    if record.tenant_id != tenant_id:
+        raise ValueError("PostgreSQL memory item read returned another tenant.")
+    if user_id is not None and record.user_id != user_id:
+        raise ValueError("PostgreSQL memory item read returned another user.")
+    if agent_id is not None and record.agent_id != agent_id:
+        raise ValueError("PostgreSQL memory item read returned another agent.")
+    if session_id is not None and record.session_id != session_id:
+        raise ValueError("PostgreSQL memory item read returned another session.")
+    if source_run_id is not None and record.source_run_id != source_run_id:
+        raise ValueError("PostgreSQL memory item read returned another source run.")
+    if memory_item_id is not None and record.id != memory_item_id:
+        raise ValueError("PostgreSQL memory item read returned another item.")
+
+
 class SQLiteMemoryItemReadRepository:
     """Read tenant-scoped memory items from SQLite."""
 
@@ -183,7 +207,17 @@ class PostgresMemoryItemReadRepository:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, tuple(parameters))
-                return [_memory_item_from_row(dict(row)) for row in cursor.fetchall()]
+                records = [_memory_item_from_row(dict(row)) for row in cursor.fetchall()]
+        for record in records:
+            _validate_memory_item_read_result(
+                record,
+                tenant_id=tenant_id,
+                user_id=user_id,
+                agent_id=agent_id,
+                session_id=session_id,
+                source_run_id=source_run_id,
+            )
+        return records
 
     def get_memory_item(
         self,
@@ -205,7 +239,13 @@ class PostgresMemoryItemReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return _memory_item_from_row(dict(row))
+        record = _memory_item_from_row(dict(row))
+        _validate_memory_item_read_result(
+            record,
+            tenant_id=tenant_id,
+            memory_item_id=memory_item_id,
+        )
+        return record
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
