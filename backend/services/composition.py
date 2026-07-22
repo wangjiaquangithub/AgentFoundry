@@ -5,6 +5,7 @@ from __future__ import annotations
 from backend.persistence import (
     PostgresAuditEventWriteRepository,
     PostgresDatabase,
+    PostgresModelConfigReadRepository,
     PostgresModelConfigWriteRepository,
     create_configured_postgres_database,
 )
@@ -17,6 +18,7 @@ def build_postgres_model_config_service(
     """Build the PostgreSQL-backed model config service."""
 
     return PlatformModelConfigService(
+        model_config_reader=PostgresModelConfigReadRepository(database),
         model_config_writer=PostgresModelConfigWriteRepository(database),
         audit_event_writer=PostgresAuditEventWriteRepository(database),
     )

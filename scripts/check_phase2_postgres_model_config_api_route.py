@@ -74,16 +74,29 @@ def _check_route_module() -> list[str]:
 
     if "ModelConfigRouteDependencies" not in _class_names(tree):
         errors.append("model config route must declare ModelConfigRouteDependencies")
-    if "EnterpriseModelConfigUpsertRequest" not in imports:
-        errors.append("model config route must use the API request schema")
+    for schema_name in (
+        "EnterpriseModelConfigsRequest",
+        "EnterpriseModelConfigDetailRequest",
+        "EnterpriseModelConfigUpsertRequest",
+    ):
+        if schema_name not in imports:
+            errors.append(f"model config route must use {schema_name}")
     if "ModelConfigApiCommandInput" not in imports:
         errors.append("model config route must convert API input to ModelConfigApiCommandInput")
     if "PlatformModelConfigServiceError" not in imports:
         errors.append("model config route must translate service errors")
+    if "/enterprise/platform/model-configs" not in constants:
+        errors.append("model config route must expose the list endpoint")
+    if "/enterprise/platform/model-configs/detail" not in constants:
+        errors.append("model config route must expose the detail endpoint")
     if "/enterprise/platform/model-configs/upsert" not in constants:
         errors.append("model config route must expose the upsert endpoint")
     if not _calls_attribute(tree, "model_config_service"):
         errors.append("model config route must obtain service from route dependencies")
+    if not _calls_attribute(tree, "list_model_configs_for_api"):
+        errors.append("model config route must call the service list API boundary")
+    if not _calls_attribute(tree, "get_model_config_for_api"):
+        errors.append("model config route must call the service detail API boundary")
     if not _calls_attribute(tree, "upsert_model_config_from_api"):
         errors.append("model config route must call the service API boundary")
     if "PostgresModelConfigWriteRepository" in imports:
@@ -95,10 +108,17 @@ def _check_route_module() -> list[str]:
 
 
 def _check_schema_module() -> list[str]:
+    errors: list[str] = []
     tree = _parse_module(SCHEMA_MODULE)
-    if "EnterpriseModelConfigUpsertRequest" not in _class_names(tree):
-        return ["backend/api/schemas.py must define EnterpriseModelConfigUpsertRequest"]
-    return []
+    class_names = _class_names(tree)
+    for schema_name in (
+        "EnterpriseModelConfigsRequest",
+        "EnterpriseModelConfigDetailRequest",
+        "EnterpriseModelConfigUpsertRequest",
+    ):
+        if schema_name not in class_names:
+            errors.append(f"backend/api/schemas.py must define {schema_name}")
+    return errors
 
 
 def _check_main_module() -> list[str]:
@@ -128,7 +148,7 @@ def main() -> int:
     errors = [*_check_route_module(), *_check_schema_module(), *_check_main_module()]
 
     print("Phase 2 PostgreSQL model config API route gate")
-    print("- route: /enterprise/platform/model-configs/upsert")
+    print("- routes: /enterprise/platform/model-configs, /detail, /upsert")
     print("- persistence: PostgreSQL service boundary only")
     print("- response: secret-safe service payload")
 

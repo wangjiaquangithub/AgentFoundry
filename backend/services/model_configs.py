@@ -27,6 +27,28 @@ class ModelConfigWriteRepository(Protocol):
         """Persist one tenant-scoped model configuration."""
 
 
+class ModelConfigReadRepository(Protocol):
+    """Read tenant-scoped model configs from the production system of record."""
+
+    def list_model_configs(
+        self,
+        *,
+        tenant_id: str,
+        purpose: str | None = None,
+        status: str | None = None,
+        limit: int = 50,
+    ) -> list[ModelConfigRecord]:
+        """Return tenant-scoped model configurations."""
+
+    def get_model_config(
+        self,
+        *,
+        tenant_id: str,
+        model_config_id: str,
+    ) -> ModelConfigRecord | None:
+        """Return one tenant-scoped model configuration."""
+
+
 class AuditEventWriteRepository(Protocol):
     """Write tenant-scoped governance audit events."""
 
@@ -72,10 +94,12 @@ class PlatformModelConfigService:
         *,
         model_config_writer: ModelConfigWriteRepository,
         audit_event_writer: AuditEventWriteRepository,
+        model_config_reader: ModelConfigReadRepository | None = None,
         now: Callable[[], str] | None = None,
     ) -> None:
         self._model_config_writer = model_config_writer
         self._audit_event_writer = audit_event_writer
+        self._model_config_reader = model_config_reader
         self._now = now or _utc_now_iso
 
     def upsert_model_config(
@@ -136,6 +160,50 @@ class PlatformModelConfigService:
         )
         return model_config_response_payload(persisted)
 
+    def list_model_configs_for_api(
+        self,
+        *,
+        tenant_id: str,
+        purpose: str | None = None,
+        status: str | None = None,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        if self._model_config_reader is None:
+            raise PlatformModelConfigServiceError(
+                503,
+                "Production model configuration reads require PostgreSQL.",
+            )
+
+        tenant = _required_text(tenant_id, "tenant_id")
+        records = self._model_config_reader.list_model_configs(
+            tenant_id=tenant,
+            purpose=_optional_text(purpose),
+            status=_optional_text(status),
+            limit=_clamp_limit(limit),
+        )
+        return [model_config_response_payload(record) for record in records]
+
+    def get_model_config_for_api(
+        self,
+        *,
+        tenant_id: str,
+        model_config_id: str,
+    ) -> dict[str, Any]:
+        if self._model_config_reader is None:
+            raise PlatformModelConfigServiceError(
+                503,
+                "Production model configuration reads require PostgreSQL.",
+            )
+
+        tenant = _required_text(tenant_id, "tenant_id")
+        record = self._model_config_reader.get_model_config(
+            tenant_id=tenant,
+            model_config_id=_required_text(model_config_id, "model_config_id"),
+        )
+        if record is None:
+            raise PlatformModelConfigServiceError(404, "model configuration was not found.")
+        return model_config_response_payload(record)
+
     def _append_model_config_audit_event(
         self,
         *,
@@ -186,6 +254,10 @@ def _optional_text(value: str | None) -> str | None:
         return None
     normalized = str(value).strip()
     return normalized or None
+
+
+def _clamp_limit(limit: int) -> int:
+    return min(max(int(limit), 1), 100)
 
 
 def model_config_response_payload(record: ModelConfigRecord) -> dict[str, Any]:

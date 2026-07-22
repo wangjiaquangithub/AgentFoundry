@@ -123,6 +123,18 @@ class EnterpriseModelConfigUpsertRequest(BaseModel):
     model_config_id: str | None = None
 
 
+class EnterpriseModelConfigsRequest(BaseModel):
+    tenant: str | None = None
+    purpose: str | None = None
+    status: str | None = None
+    limit: int = Field(default=50, ge=1, le=100)
+
+
+class EnterpriseModelConfigDetailRequest(BaseModel):
+    model_config_id: str
+    tenant: str | None = None
+
+
 class EnterpriseKnowledgeBasesRequest(BaseModel):
     status: str | None = None
     tenant: str | None = None
