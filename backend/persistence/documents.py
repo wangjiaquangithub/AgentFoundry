@@ -42,6 +42,40 @@ def _document_from_row(row: dict[str, Any]) -> DocumentRecord:
     )
 
 
+def _validate_write_result(
+    requested: DocumentRecord,
+    persisted: DocumentRecord,
+) -> None:
+    if not persisted.id:
+        raise ValueError("PostgreSQL document write did not return a document id.")
+    if not persisted.tenant_id:
+        raise ValueError("PostgreSQL document write did not return a tenant id.")
+    if not persisted.knowledge_base_id:
+        raise ValueError("PostgreSQL document write did not return a knowledge base.")
+    if not persisted.title:
+        raise ValueError("PostgreSQL document write did not return a title.")
+    if not persisted.source_type:
+        raise ValueError("PostgreSQL document write did not return a source type.")
+    if not persisted.status:
+        raise ValueError("PostgreSQL document write did not return a status.")
+    if persisted.id != requested.id:
+        raise ValueError("PostgreSQL document write returned another document.")
+    if persisted.tenant_id != requested.tenant_id:
+        raise ValueError("PostgreSQL document write returned another tenant.")
+    if persisted.knowledge_base_id != requested.knowledge_base_id:
+        raise ValueError("PostgreSQL document write returned another knowledge base.")
+    if persisted.title != requested.title:
+        raise ValueError("PostgreSQL document write returned another title.")
+    if persisted.source_type != requested.source_type:
+        raise ValueError("PostgreSQL document write returned another source type.")
+    if persisted.source_uri != requested.source_uri:
+        raise ValueError("PostgreSQL document write returned another source uri.")
+    if persisted.object_ref != requested.object_ref:
+        raise ValueError("PostgreSQL document write returned another object ref.")
+    if persisted.status != requested.status:
+        raise ValueError("PostgreSQL document write returned another status.")
+
+
 class SQLiteDocumentReadRepository:
     """Read tenant-scoped document records from SQLite."""
 
@@ -208,4 +242,6 @@ class PostgresDocumentWriteRepository:
                 row = cursor.fetchone()
         if row is None:
             raise ValueError("Document id already exists for another tenant.")
-        return _document_from_row(dict(row))
+        persisted = _document_from_row(dict(row))
+        _validate_write_result(record, persisted)
+        return persisted

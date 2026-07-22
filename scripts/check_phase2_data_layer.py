@@ -1588,11 +1588,26 @@ def _check_postgres_knowledge_ingestion_write_records() -> list[str]:
         ") -> DocumentRecord:",
         "RETURNING id, tenant_id, knowledge_base_id, title, source_type",
         "row = cursor.fetchone()",
-        "return _document_from_row(dict(row))",
+        "persisted = _document_from_row(dict(row))",
+        "_validate_write_result(record, persisted)",
+        "PostgreSQL document write did not return a document id.",
+        "PostgreSQL document write did not return a tenant id.",
+        "PostgreSQL document write did not return a knowledge base.",
+        "PostgreSQL document write did not return a title.",
+        "PostgreSQL document write did not return a source type.",
+        "PostgreSQL document write did not return a status.",
+        "PostgreSQL document write returned another document.",
+        "PostgreSQL document write returned another tenant.",
+        "PostgreSQL document write returned another knowledge base.",
+        "PostgreSQL document write returned another title.",
+        "PostgreSQL document write returned another source type.",
+        "PostgreSQL document write returned another source uri.",
+        "PostgreSQL document write returned another object ref.",
+        "PostgreSQL document write returned another status.",
     ):
         if token not in document_persistence_source:
             errors.append(
-                "backend/persistence/documents.py must return persisted "
+                "backend/persistence/documents.py must validate persisted "
                 f"PostgreSQL document write records: {token}",
             )
 
