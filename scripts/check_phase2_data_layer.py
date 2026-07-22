@@ -22,6 +22,7 @@ REPOSITORIES_DIR = ROOT / "backend" / "repositories"
 SERVICES_DIR = ROOT / "backend" / "services"
 MAIN_MODULE = ROOT / "backend" / "main.py"
 DATABASE_MODULE = ROOT / "backend" / "persistence" / "database.py"
+SEED_MODULE = ROOT / "backend" / "persistence" / "seed.py"
 PLATFORM_STATUS_SERVICE_MODULE = SERVICES_DIR / "platform_status.py"
 
 AUDIT_EVENT_WRITER_SERVICE_MODULES = {
@@ -500,6 +501,47 @@ def _check_postgres_url_detection_boundary() -> list[str]:
             "backend/main.py must not duplicate PostgreSQL scheme literals: "
             f"{', '.join(scheme_literals)}",
         )
+
+    return errors
+
+
+def _check_postgres_seed_path() -> list[str]:
+    errors: list[str] = []
+    seed_source = SEED_MODULE.read_text(encoding="utf-8")
+    seed_tree = ast.parse(seed_source, filename=str(SEED_MODULE))
+
+    required_tokens = [
+        "is_postgres_database_url",
+        "create_postgres_database",
+        "seed_postgres_development_data",
+        "seed_sqlite_development_data",
+        "parameter_marker=\"%s\"",
+        "postgresql://",
+        "postgres://",
+        "sqlite:// is only for explicit local compatibility",
+    ]
+    for token in required_tokens:
+        if token not in seed_source:
+            errors.append(
+                "backend/persistence/seed.py must support PostgreSQL seeding while keeping SQLite explicit: "
+                f"{token}",
+            )
+
+    if not _module_uses_name(seed_tree, "apply_migrations"):
+        errors.append(
+            "backend/persistence/seed.py must apply migrations before PostgreSQL seeding",
+        )
+
+    disallowed_tokens = [
+        "only accepts explicit sqlite:// URLs",
+        "intentionally limited to local SQLite compatibility",
+    ]
+    for token in disallowed_tokens:
+        if token in seed_source:
+            errors.append(
+                "backend/persistence/seed.py must not present seed as SQLite-only: "
+                f"{token}",
+            )
 
     return errors
 
@@ -3021,6 +3063,7 @@ def main() -> int:
         *_check_postgres_persistence_repository_inventory(),
         *_check_postgres_persistence_exports(),
         *_check_postgres_url_detection_boundary(),
+        *_check_postgres_seed_path(),
         *_check_postgres_write_transaction_boundary(),
         *_check_postgres_read_tenant_boundary(),
         *_check_postgres_runtime_provider_reads_wired(),
@@ -3077,6 +3120,7 @@ def main() -> int:
         f"{authoritative_repository_count + authoritative_persistence_count}",
     )
     print("- PostgreSQL URL detection centralized: yes")
+    print("- PostgreSQL seed path guarded: yes")
     print("- PostgreSQL write transaction boundary guarded: yes")
     print("- PostgreSQL read tenant boundary guarded: yes")
     print("- PostgreSQL runtime provider reads wired: yes")

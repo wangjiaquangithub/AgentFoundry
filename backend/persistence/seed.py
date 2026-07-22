@@ -1,9 +1,9 @@
-"""Seed local development data into explicit SQLite compatibility storage.
+"""Seed development fixture data into the configured database.
 
 The seed command treats JSON files as development inputs only. It does not
 replace repository storage or make local JSON the production source of truth.
-PostgreSQL is the production database target; this command is intentionally
-limited to local SQLite compatibility while the production seed path is defined.
+PostgreSQL is the production database target; SQLite remains available only as
+an explicit local compatibility path.
 """
 
 from __future__ import annotations
@@ -16,6 +16,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from backend.persistence.database import (
+    create_postgres_database,
+    is_postgres_database_url,
+)
 from backend.persistence.migrations import (
     apply_migrations,
     sqlite_path_from_database_url,
@@ -79,6 +83,18 @@ def normalize_json(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True)
 
 
+def execute_seed(
+    connection: Any,
+    sql: str,
+    parameters: tuple[Any, ...] = (),
+    *,
+    parameter_marker: str,
+) -> Any:
+    if parameter_marker == "?":
+        return connection.execute(sql, parameters)
+    return connection.execute(sql.replace("?", parameter_marker), parameters)
+
+
 def extract_tenants(tenant_fixture: dict[str, Any], agents: list[dict[str, Any]]) -> set[str]:
     tenants = set(tenant_fixture.get("tenants", {}).keys())
     tenants.update(
@@ -113,6 +129,105 @@ def seed_development_data(
     tool_policy_path: Path = DEFAULT_TOOL_POLICY_PATH,
     apply_schema_migrations: bool = True,
 ) -> SeedSummary:
+    if is_postgres_database_url(database_url):
+        return seed_postgres_development_data(
+            database_url=database_url,
+            tenant_fixture_path=tenant_fixture_path,
+            agents_path=agents_path,
+            tool_policy_path=tool_policy_path,
+            apply_schema_migrations=apply_schema_migrations,
+        )
+    return seed_sqlite_development_data(
+        database_url=database_url,
+        tenant_fixture_path=tenant_fixture_path,
+        agents_path=agents_path,
+        tool_policy_path=tool_policy_path,
+        apply_schema_migrations=apply_schema_migrations,
+    )
+
+
+def _load_seed_inputs(
+    tenant_fixture_path: Path,
+    agents_path: Path,
+    tool_policy_path: Path,
+) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
+    tenant_fixture = load_json(tenant_fixture_path, {"tenants": {}})
+    agents = load_json(agents_path, [])
+    tool_policy = load_json(tool_policy_path, {"tenants": {}})
+    if not isinstance(tenant_fixture, dict):
+        raise ValueError(f"Expected an object in {tenant_fixture_path}")
+    if not isinstance(agents, list):
+        raise ValueError(f"Expected a list in {agents_path}")
+    if not isinstance(tool_policy, dict):
+        raise ValueError(f"Expected an object in {tool_policy_path}")
+    return tenant_fixture, agents, tool_policy
+
+
+def seed_postgres_development_data(
+    *,
+    database_url: str,
+    tenant_fixture_path: Path = DEFAULT_TENANT_FIXTURE_PATH,
+    agents_path: Path = DEFAULT_AGENTS_PATH,
+    tool_policy_path: Path = DEFAULT_TOOL_POLICY_PATH,
+    apply_schema_migrations: bool = True,
+) -> SeedSummary:
+    if apply_schema_migrations:
+        apply_migrations(database_url)
+
+    tenant_fixture, agents, tool_policy = _load_seed_inputs(
+        tenant_fixture_path,
+        agents_path,
+        tool_policy_path,
+    )
+    summary = SeedSummary()
+    timestamp = now_iso()
+    tenants = extract_tenants(tenant_fixture, agents)
+    user_ids = extract_user_ids(agents, tool_policy)
+
+    database = create_postgres_database(database_url)
+    with database.transaction() as connection:
+        summary.tenants = upsert_tenants(connection, tenants, timestamp, parameter_marker="%s")
+        summary.users = upsert_users(connection, user_ids, timestamp, parameter_marker="%s")
+        summary.memberships = upsert_memberships(
+            connection,
+            user_ids,
+            timestamp,
+            parameter_marker="%s",
+        )
+        summary.memory_policies = upsert_memory_policies(
+            connection,
+            tenants,
+            timestamp,
+            parameter_marker="%s",
+        )
+        summary.runtime_providers = upsert_runtime_providers(
+            connection,
+            timestamp,
+            parameter_marker="%s",
+        )
+        summary.tools, summary.tool_policies = upsert_tools_and_policies(
+            connection,
+            tool_policy,
+            timestamp,
+            parameter_marker="%s",
+        )
+        (
+            summary.agents,
+            summary.agent_versions,
+            summary.updated_agent_versions,
+            summary.warnings,
+        ) = upsert_agents(connection, agents, user_ids, timestamp, parameter_marker="%s")
+    return summary
+
+
+def seed_sqlite_development_data(
+    *,
+    database_url: str,
+    tenant_fixture_path: Path = DEFAULT_TENANT_FIXTURE_PATH,
+    agents_path: Path = DEFAULT_AGENTS_PATH,
+    tool_policy_path: Path = DEFAULT_TOOL_POLICY_PATH,
+    apply_schema_migrations: bool = True,
+) -> SeedSummary:
     database_path = sqlite_path_from_development_seed_url(database_url)
     if str(database_path) == ":memory:":
         raise ValueError("The seed command requires a file-backed SQLite database.")
@@ -120,12 +235,11 @@ def seed_development_data(
     if apply_schema_migrations:
         apply_migrations(database_url)
 
-    tenant_fixture = load_json(tenant_fixture_path, {"tenants": {}})
-    agents = load_json(agents_path, [])
-    tool_policy = load_json(tool_policy_path, {"tenants": {}})
-    if not isinstance(agents, list):
-        raise ValueError(f"Expected a list in {agents_path}")
-
+    tenant_fixture, agents, tool_policy = _load_seed_inputs(
+        tenant_fixture_path,
+        agents_path,
+        tool_policy_path,
+    )
     summary = SeedSummary()
     timestamp = now_iso()
     tenants = extract_tenants(tenant_fixture, agents)
@@ -135,29 +249,37 @@ def seed_development_data(
     with sqlite3.connect(str(database_path)) as connection:
         connection.execute("PRAGMA foreign_keys = ON")
         with connection:
-            summary.tenants = upsert_tenants(connection, tenants, timestamp)
-            summary.users = upsert_users(connection, user_ids, timestamp)
-            summary.memberships = upsert_memberships(connection, user_ids, timestamp)
+            summary.tenants = upsert_tenants(connection, tenants, timestamp, parameter_marker="?")
+            summary.users = upsert_users(connection, user_ids, timestamp, parameter_marker="?")
+            summary.memberships = upsert_memberships(
+                connection,
+                user_ids,
+                timestamp,
+                parameter_marker="?",
+            )
             summary.memory_policies = upsert_memory_policies(
                 connection,
                 tenants,
                 timestamp,
+                parameter_marker="?",
             )
             summary.runtime_providers = upsert_runtime_providers(
                 connection,
                 timestamp,
+                parameter_marker="?",
             )
             summary.tools, summary.tool_policies = upsert_tools_and_policies(
                 connection,
                 tool_policy,
                 timestamp,
+                parameter_marker="?",
             )
             (
                 summary.agents,
                 summary.agent_versions,
                 summary.updated_agent_versions,
                 summary.warnings,
-            ) = upsert_agents(connection, agents, user_ids, timestamp)
+            ) = upsert_agents(connection, agents, user_ids, timestamp, parameter_marker="?")
     return summary
 
 
@@ -166,18 +288,21 @@ def sqlite_path_from_development_seed_url(database_url: str) -> Path:
         return sqlite_path_from_database_url(database_url)
     except ValueError as exc:
         raise ValueError(
-            "The development seed command only accepts explicit sqlite:// URLs. "
-            "Use PostgreSQL migrations for production schema setup."
+            "The SQLite compatibility seed path requires an explicit sqlite:// URL. "
+            "Use postgresql:// or postgres:// for the production seed path."
         ) from exc
 
 
 def upsert_tenants(
-    connection: sqlite3.Connection,
+    connection: Any,
     tenants: set[str],
     timestamp: str,
+    *,
+    parameter_marker: str,
 ) -> int:
     for tenant_id in sorted(tenants):
-        connection.execute(
+        execute_seed(
+            connection,
             """
             INSERT INTO tenants (id, name, status, plan, created_at, updated_at)
             VALUES (?, ?, 'active', 'development', ?, ?)
@@ -188,17 +313,21 @@ def upsert_tenants(
               updated_at = excluded.updated_at
             """,
             (tenant_id, tenant_id.title(), timestamp, timestamp),
+            parameter_marker=parameter_marker,
         )
     return len(tenants)
 
 
 def upsert_users(
-    connection: sqlite3.Connection,
+    connection: Any,
     user_ids: set[str],
     timestamp: str,
+    *,
+    parameter_marker: str,
 ) -> int:
     for user_id in sorted(user_ids):
-        connection.execute(
+        execute_seed(
+            connection,
             """
             INSERT INTO users (id, display_name, email, status, created_at, updated_at)
             VALUES (?, ?, ?, 'active', ?, ?)
@@ -215,21 +344,25 @@ def upsert_users(
                 timestamp,
                 timestamp,
             ),
+            parameter_marker=parameter_marker,
         )
     return len(user_ids)
 
 
 def upsert_memberships(
-    connection: sqlite3.Connection,
+    connection: Any,
     user_ids: set[str],
     timestamp: str,
+    *,
+    parameter_marker: str,
 ) -> int:
     count = 0
     for user_id in sorted(user_ids):
         tenant_id = tenant_from_user_id(user_id)
         if not tenant_id:
             continue
-        connection.execute(
+        execute_seed(
+            connection,
             """
             INSERT INTO memberships (
               id, tenant_id, user_id, role, workspace_ids, created_at, updated_at
@@ -247,18 +380,22 @@ def upsert_memberships(
                 timestamp,
                 timestamp,
             ),
+            parameter_marker=parameter_marker,
         )
         count += 1
     return count
 
 
 def upsert_memory_policies(
-    connection: sqlite3.Connection,
+    connection: Any,
     tenants: set[str],
     timestamp: str,
+    *,
+    parameter_marker: str,
 ) -> int:
     for tenant_id in sorted(tenants):
-        connection.execute(
+        execute_seed(
+            connection,
             """
             INSERT INTO memory_policies (
               id, tenant_id, name, scope, retention_days, write_mode,
@@ -281,15 +418,19 @@ def upsert_memory_policies(
                 timestamp,
                 timestamp,
             ),
+            parameter_marker=parameter_marker,
         )
     return len(tenants)
 
 
 def upsert_runtime_providers(
-    connection: sqlite3.Connection,
+    connection: Any,
     timestamp: str,
+    *,
+    parameter_marker: str,
 ) -> int:
-    connection.execute(
+    execute_seed(
+        connection,
         """
         INSERT INTO runtime_providers (
           id, name, provider_type, mode, status, capabilities, config_ref,
@@ -316,14 +457,17 @@ def upsert_runtime_providers(
             timestamp,
             timestamp,
         ),
+        parameter_marker=parameter_marker,
     )
     return 1
 
 
 def upsert_tools_and_policies(
-    connection: sqlite3.Connection,
+    connection: Any,
     tool_policy: dict[str, Any],
     timestamp: str,
+    *,
+    parameter_marker: str,
 ) -> tuple[int, int]:
     tool_count = 0
     policy_count = 0
@@ -337,7 +481,8 @@ def upsert_tools_and_policies(
             continue
         for tool_name in sorted(str(tool_name) for tool_name in allowed_tools):
             tool_id = f"{tenant_id}:{tool_name}"
-            connection.execute(
+            execute_seed(
+                connection,
                 """
                 INSERT INTO tools (
                   id, tenant_id, name, description, category, schema, status,
@@ -359,9 +504,11 @@ def upsert_tools_and_policies(
                     timestamp,
                     timestamp,
                 ),
+                parameter_marker=parameter_marker,
             )
             tool_count += 1
-            connection.execute(
+            execute_seed(
+                connection,
                 """
                 INSERT INTO tool_policies (
                   id, tenant_id, tool_id, allowed_roles, approval_required,
@@ -382,16 +529,19 @@ def upsert_tools_and_policies(
                     timestamp,
                     timestamp,
                 ),
+                parameter_marker=parameter_marker,
             )
             policy_count += 1
     return tool_count, policy_count
 
 
 def upsert_agents(
-    connection: sqlite3.Connection,
+    connection: Any,
     agents: list[dict[str, Any]],
     user_ids: set[str],
     timestamp: str,
+    *,
+    parameter_marker: str,
 ) -> tuple[int, int, int, list[str]]:
     warnings: list[str] = []
     agent_count = 0
@@ -415,7 +565,8 @@ def upsert_agents(
         memory_policy_id = (
             f"{tenant_id}:default-memory" if agent.get("memory_enabled") else None
         )
-        connection.execute(
+        execute_seed(
+            connection,
             """
             INSERT INTO agents (
               id, tenant_id, name, description, status, owner_user_id,
@@ -440,14 +591,17 @@ def upsert_agents(
                 created_at,
                 updated_at,
             ),
+            parameter_marker=parameter_marker,
         )
-        agent_count += 1
 
-        previous_version = connection.execute(
+        previous_version = execute_seed(
+            connection,
             "SELECT id FROM agent_versions WHERE id = ?",
             (version_id,),
+            parameter_marker=parameter_marker,
         ).fetchone()
-        connection.execute(
+        execute_seed(
+            connection,
             """
             INSERT INTO agent_versions (
               id, tenant_id, agent_id, version, instructions, model_config_id,
@@ -473,18 +627,22 @@ def upsert_agents(
                 owner_user_id,
                 created_at,
             ),
+            parameter_marker=parameter_marker,
         )
+        agent_count += 1
         if previous_version:
             version_update_count += 1
         else:
             version_count += 1
-        connection.execute(
+        execute_seed(
+            connection,
             """
             UPDATE agents
             SET current_version_id = ?
             WHERE id = ?
             """,
             (version_id, agent_id),
+            parameter_marker=parameter_marker,
         )
     return agent_count, version_count, version_update_count, warnings
 
@@ -492,16 +650,16 @@ def upsert_agents(
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
-            "Seed AgentFoundry development JSON data into explicit local SQLite "
-            "compatibility storage."
+            "Seed AgentFoundry development JSON fixture data into PostgreSQL, "
+            "with sqlite:// kept for explicit local compatibility."
         ),
     )
     parser.add_argument(
         "--database-url",
         required=True,
         help=(
-            "Explicit sqlite:// URL for local development compatibility storage. "
-            "PostgreSQL is the production target and is managed by migrations."
+            "Database URL. Use postgresql:// or postgres:// for the production "
+            "seed path; sqlite:// is only for explicit local compatibility."
         ),
     )
     parser.add_argument(
