@@ -37,6 +37,10 @@ CHECKS = (
         (sys.executable, "scripts/check_phase2_postgres_runtime_dependencies.py"),
     ),
     (
+        "PostgreSQL seed migration toggle",
+        (sys.executable, "scripts/check_phase2_postgres_seed_migration_toggle.py"),
+    ),
+    (
         "platform database status",
         (sys.executable, "scripts/check_phase2_platform_database_status.py"),
     ),
