@@ -20,7 +20,7 @@ class PlatformAgentServiceError(ValueError):
 class AuditEventWriteRepository(Protocol):
     """Write platform governance audit events."""
 
-    def append_audit_event(self, record: AuditEventRecord) -> None:
+    def append_audit_event(self, record: AuditEventRecord) -> AuditEventRecord:
         """Persist one audit event."""
 
 
@@ -1041,7 +1041,7 @@ class PlatformAgentService:
             or "platform-admin",
         }
         try:
-            self._audit_event_writer.append_audit_event(
+            persisted_audit_event = self._audit_event_writer.append_audit_event(
                 AuditEventRecord(
                     id=str(uuid4()),
                     tenant_id=tenant,
@@ -1054,6 +1054,11 @@ class PlatformAgentService:
                     created_at=datetime.now(timezone.utc).isoformat(),
                 ),
             )
+            if not persisted_audit_event.id:
+                raise PlatformAgentServiceError(
+                    500,
+                    "PostgreSQL audit event write did not return a persisted id.",
+                )
         except ValueError:
             raise
         except Exception as exc:

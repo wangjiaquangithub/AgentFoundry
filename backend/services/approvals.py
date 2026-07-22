@@ -19,7 +19,7 @@ class PlatformApprovalServiceError(ValueError):
 class AuditEventWriteRepository(Protocol):
     """Write tenant-scoped approval audit events."""
 
-    def append_audit_event(self, record: AuditEventRecord) -> None:
+    def append_audit_event(self, record: AuditEventRecord) -> AuditEventRecord:
         """Persist one audit event."""
 
 
@@ -414,7 +414,7 @@ class PlatformApprovalService:
             else [],
         }
         try:
-            self._audit_event_writer.append_audit_event(
+            persisted_audit_event = self._audit_event_writer.append_audit_event(
                 AuditEventRecord(
                     id=str(uuid4()),
                     tenant_id=tenant,
@@ -427,6 +427,11 @@ class PlatformApprovalService:
                     created_at=self._now(),
                 ),
             )
+            if not persisted_audit_event.id:
+                raise PlatformApprovalServiceError(
+                    500,
+                    "PostgreSQL audit event write did not return a persisted id.",
+                )
         except ValueError:
             raise
         except Exception as exc:

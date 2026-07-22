@@ -1542,6 +1542,25 @@ def _check_postgres_knowledge_audit_write_records() -> list[str]:
     return errors
 
 
+def _check_postgres_service_audit_write_records() -> list[str]:
+    errors: list[str] = []
+
+    for filename in sorted(AUDIT_EVENT_WRITER_SERVICE_MODULES):
+        service_source = (SERVICES_DIR / filename).read_text(encoding="utf-8")
+        for token in (
+            "def append_audit_event(self, record: AuditEventRecord) -> AuditEventRecord:",
+            "persisted_audit_event = self._audit_event_writer.append_audit_event(",
+            "if not persisted_audit_event.id:",
+        ):
+            if token not in service_source:
+                errors.append(
+                    f"backend/services/{filename} must use persisted PostgreSQL "
+                    f"service audit write records: {token}",
+                )
+
+    return errors
+
+
 def _check_postgres_members_wired() -> list[str]:
     errors: list[str] = []
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
@@ -2715,6 +2734,7 @@ def main() -> int:
         *_check_postgres_knowledge_readiness_wired(),
         *_check_postgres_knowledge_ingestion_write_records(),
         *_check_postgres_knowledge_audit_write_records(),
+        *_check_postgres_service_audit_write_records(),
         *_check_postgres_members_wired(),
         *_check_postgres_memory_policy_reads_guarded(),
         *_check_postgres_model_config_reads_guarded(),
@@ -2769,6 +2789,7 @@ def main() -> int:
     print("- PostgreSQL knowledge readiness reads wired: yes")
     print("- PostgreSQL knowledge ingestion write records: yes")
     print("- PostgreSQL knowledge audit write records: yes")
+    print("- PostgreSQL service audit write records: yes")
     print("- PostgreSQL members wired: yes")
     print("- PostgreSQL memory policy reads guarded: yes")
     print("- PostgreSQL model config reads guarded: yes")

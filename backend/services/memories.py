@@ -11,7 +11,7 @@ from repositories.memories import PlatformMemoryRepository
 
 
 class AuditEventWriter(Protocol):
-    def append_audit_event(self, record: AuditEventRecord) -> None:
+    def append_audit_event(self, record: AuditEventRecord) -> AuditEventRecord:
         ...
 
 
@@ -457,7 +457,7 @@ class PlatformMemoryService:
             created_at = datetime.now(timezone.utc).isoformat()
 
         try:
-            self._audit_event_writer.append_audit_event(
+            persisted_audit_event = self._audit_event_writer.append_audit_event(
                 AuditEventRecord(
                     id=str(uuid4()),
                     tenant_id=tenant,
@@ -490,6 +490,8 @@ class PlatformMemoryService:
                     created_at=created_at,
                 ),
             )
+            if not persisted_audit_event.id:
+                return
         except Exception:
             return
 
