@@ -26,8 +26,13 @@ RUNTIME_PROVIDER_HEALTH_REQUIRED_FIELDS = frozenset(
 RUNTIME_PROVIDER_HEALTH_REQUIRED_CHECKS = (
     "adapter_configured",
     "local_service_completion_wired",
+    "provider_native_config_ready",
     "provider_invocation_wired",
     "direct_agentscope_dependency",
+)
+RUNTIME_PROVIDER_NATIVE_INVOCATION_REQUIRED_CONFIG = (
+    "agentscope_runtime_url",
+    "agentscope_runtime_auth_ref",
 )
 RUNTIME_INVOCATION_RESULT_REQUIRED_FIELDS = frozenset(
     {
@@ -179,6 +184,28 @@ class RuntimeProviderHealth:
         }
 
 
+@dataclass(frozen=True)
+class RuntimeProviderConfigGate:
+    """Readiness gate for provider-native runtime invocation configuration."""
+
+    id: str
+    required_keys: tuple[str, ...]
+    configured_keys: tuple[str, ...]
+    missing_keys: tuple[str, ...]
+    ready: bool
+    message: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "required_keys": list(self.required_keys),
+            "configured_keys": list(self.configured_keys),
+            "missing_keys": list(self.missing_keys),
+            "ready": self.ready,
+            "message": self.message,
+        }
+
+
 class RuntimeAdapter(Protocol):
     """Runtime adapter contract implemented by concrete providers."""
 
@@ -218,6 +245,9 @@ class AgentScopeRuntimeAdapter:
 
     def describe(self, agent_metadata: dict[str, Any] | None = None) -> dict[str, Any]:
         """Return provider metadata suitable for API responses."""
+        config_gate = describe_provider_native_invocation_config_gate(
+            agent_metadata,
+        )
         metadata = agent_metadata or {}
         return {
             "id": self.id,
@@ -231,11 +261,14 @@ class AgentScopeRuntimeAdapter:
             ],
             "agent_id": metadata.get("agent_id"),
             "agent_name": metadata.get("agent_name"),
+            "provider_native_invocation": config_gate,
         }
 
     def health(self, agent_metadata: dict[str, Any] | None = None) -> dict[str, Any]:
         """Return conservative runtime provider health for platform operations."""
-        _metadata = agent_metadata or {}
+        config_gate = describe_provider_native_invocation_config_gate(
+            agent_metadata,
+        )
         return RuntimeProviderHealth(
             provider_id=self.id,
             provider=self.provider,
@@ -251,6 +284,7 @@ class AgentScopeRuntimeAdapter:
             checks={
                 "adapter_configured": True,
                 "local_service_completion_wired": True,
+                "provider_native_config_ready": config_gate["ready"],
                 "provider_invocation_wired": False,
                 "direct_agentscope_dependency": False,
             },
@@ -282,6 +316,9 @@ class AgentScopeRuntimeAdapter:
             "runtime_bridge": {
                 "type": "agentscope_adapter_invocation_pending",
                 "provider_invocation_wired": False,
+                "provider_native_invocation": runtime_adapter[
+                    "provider_native_invocation"
+                ],
                 "adapter_id": self.id,
             },
             "request": request.to_dict(),
@@ -616,6 +653,9 @@ def build_adapter_backed_local_invocation_result_payload(
         "runtime_bridge": {
             "type": "agentfoundry_local_service_completion",
             "provider_invocation_wired": False,
+            "provider_native_invocation": adapter_metadata[
+                "provider_native_invocation"
+            ],
             "adapter_id": adapter_metadata["id"],
         },
     }
@@ -646,6 +686,44 @@ def describe_runtime_adapter(
     """Return provider metadata for the selected runtime adapter."""
     runtime_adapter = get_runtime_adapter(agent_metadata)
     return runtime_adapter.describe(agent_metadata)
+
+
+def describe_provider_native_invocation_config_gate(
+    agent_metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Return the provider-native invocation config gate without secret values."""
+    config = (agent_metadata or {}).get("runtime_provider_config")
+    if not isinstance(config, Mapping):
+        config = {}
+    configured_keys = tuple(
+        key
+        for key in RUNTIME_PROVIDER_NATIVE_INVOCATION_REQUIRED_CONFIG
+        if _configured_config_value(config.get(key))
+    )
+    missing_keys = tuple(
+        key
+        for key in RUNTIME_PROVIDER_NATIVE_INVOCATION_REQUIRED_CONFIG
+        if key not in configured_keys
+    )
+    ready = not missing_keys
+    if ready:
+        message = (
+            "Provider-native invocation configuration is present; adapter "
+            "implementation must still wire provider invocation before enabling it."
+        )
+    else:
+        message = (
+            "Provider-native AgentScope invocation is blocked until required "
+            "configuration references are present."
+        )
+    return RuntimeProviderConfigGate(
+        id="agentscope_provider_native_invocation_config",
+        required_keys=RUNTIME_PROVIDER_NATIVE_INVOCATION_REQUIRED_CONFIG,
+        configured_keys=configured_keys,
+        missing_keys=missing_keys,
+        ready=ready,
+        message=message,
+    ).to_dict()
 
 
 def normalize_runtime_provider_health(
@@ -796,6 +874,10 @@ def _optional_text(value: Any) -> str | None:
     if not isinstance(value, str):
         raise ValueError("Runtime invocation optional text fields must be strings.")
     return value
+
+
+def _configured_config_value(value: Any) -> bool:
+    return isinstance(value, str) and bool(value.strip())
 
 
 def describe_runtime_provider_health(
