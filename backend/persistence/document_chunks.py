@@ -70,6 +70,21 @@ def _validate_write_result(
         raise ValueError("PostgreSQL document chunk write returned another metadata.")
 
 
+def _validate_document_chunk_read_result(
+    record: DocumentChunkRecord,
+    *,
+    tenant_id: str,
+    document_id: str | None = None,
+    chunk_id: str | None = None,
+) -> None:
+    if record.tenant_id != tenant_id:
+        raise ValueError("PostgreSQL document chunk read returned another tenant.")
+    if document_id is not None and record.document_id != document_id:
+        raise ValueError("PostgreSQL document chunk read returned another document.")
+    if chunk_id is not None and record.id != chunk_id:
+        raise ValueError("PostgreSQL document chunk read returned another chunk.")
+
+
 class SQLiteDocumentChunkReadRepository:
     """Read tenant-scoped document chunk records from SQLite."""
 
@@ -147,7 +162,15 @@ class PostgresDocumentChunkReadRepository:
                     """,
                     (tenant_id, document_id, self._clamp_limit(limit)),
                 )
-                return [_document_chunk_from_row(dict(row)) for row in cursor.fetchall()]
+                rows = cursor.fetchall()
+        records = [_document_chunk_from_row(dict(row)) for row in rows]
+        for record in records:
+            _validate_document_chunk_read_result(
+                record,
+                tenant_id=tenant_id,
+                document_id=document_id,
+            )
+        return records
 
     def get_document_chunk(
         self,
@@ -169,7 +192,13 @@ class PostgresDocumentChunkReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return _document_chunk_from_row(dict(row))
+        record = _document_chunk_from_row(dict(row))
+        _validate_document_chunk_read_result(
+            record,
+            tenant_id=tenant_id,
+            chunk_id=chunk_id,
+        )
+        return record
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 200)

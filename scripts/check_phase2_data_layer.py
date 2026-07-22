@@ -3384,6 +3384,13 @@ def _check_postgres_document_chunk_reads_guarded() -> list[str]:
                     "document chunks: backend/persistence/document_chunks.py:"
                     f"PostgresDocumentChunkReadRepository.{method_name}",
                 )
+        if not _module_calls_name(method_node, "_validate_document_chunk_read_result"):
+            errors.append(
+                "PostgreSQL document chunk read method must validate returned records "
+                "against requested tenant and filters: "
+                "backend/persistence/document_chunks.py:"
+                f"PostgresDocumentChunkReadRepository.{method_name}",
+            )
 
     return errors
 
