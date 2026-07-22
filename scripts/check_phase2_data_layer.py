@@ -1538,6 +1538,12 @@ def _check_postgres_approval_requests_wired() -> list[str]:
         "row = cursor.fetchone()",
         "Approval insert did not return a row.",
         "_validate_write_result(record, persisted)",
+        "_validate_decision_write_result(",
+        "PostgreSQL approval decision returned another approval.",
+        "PostgreSQL approval decision returned another tenant.",
+        "PostgreSQL approval decision returned another status.",
+        "PostgreSQL approval decision returned another approver.",
+        "PostgreSQL approval decision returned another resolution time.",
         "return persisted",
     ):
         if token not in approval_persistence_source:

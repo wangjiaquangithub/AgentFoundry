@@ -98,6 +98,32 @@ def _validate_write_result(
         raise ValueError("PostgreSQL approval write returned another resolved time.")
 
 
+def _validate_decision_write_result(
+    *,
+    tenant_id: str,
+    approval_id: str,
+    status: str,
+    approved_by: str,
+    resolved_at: str,
+    payload: dict[str, Any],
+    persisted: ApprovalRecord,
+) -> None:
+    if persisted.id != approval_id:
+        raise ValueError("PostgreSQL approval decision returned another approval.")
+    if persisted.tenant_id != tenant_id:
+        raise ValueError("PostgreSQL approval decision returned another tenant.")
+    if persisted.status != status:
+        raise ValueError("PostgreSQL approval decision returned another status.")
+    if persisted.approved_by != approved_by:
+        raise ValueError("PostgreSQL approval decision returned another approver.")
+    if persisted.resolved_at != resolved_at:
+        raise ValueError(
+            "PostgreSQL approval decision returned another resolution time.",
+        )
+    if persisted.payload != payload:
+        raise ValueError("PostgreSQL approval decision returned another payload.")
+
+
 class SQLiteApprovalReadRepository:
     """Read tenant-scoped approval records from SQLite."""
 
@@ -150,7 +176,17 @@ class SQLiteApprovalReadRepository:
             ).fetchone()
         if row is None:
             return None
-        return _approval_from_row(dict(row))
+        persisted = _approval_from_row(dict(row))
+        _validate_decision_write_result(
+            tenant_id=tenant_id,
+            approval_id=approval_id,
+            status=status,
+            approved_by=approved_by,
+            resolved_at=resolved_at,
+            payload=payload,
+            persisted=persisted,
+        )
+        return persisted
 
     def list_for_target(
         self,
