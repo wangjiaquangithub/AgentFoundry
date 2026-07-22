@@ -22,6 +22,12 @@ export interface PlatformWorkflowViewMetrics {
 	latestWorkflowStatusLabel: string;
 }
 
+export interface PlatformWorkflowRunnerDisplayState {
+	selectedWorkflowTools: string[];
+	recentWorkflowRuns: EnterpriseWorkflowRunHistoryItem[];
+	pendingDisableTools: string[];
+}
+
 export function platformWorkflowDisplayStateForStatus(values: {
 	selection: {
 		values: Parameters<typeof workflowSelectionStateForTemplates>[0];
@@ -76,5 +82,33 @@ export function platformWorkflowViewMetrics(values: {
 		enabledWorkflowCount,
 		totalWorkflowSteps,
 		latestWorkflowStatusLabel,
+	};
+}
+
+export function platformWorkflowRunnerDisplayState(values: {
+	selectedWorkflowTemplate: EnterpriseWorkflowTemplate | null;
+	workflowRuns: EnterpriseWorkflowRunHistoryItem[];
+	templatePendingDisable: EnterpriseWorkflowTemplate | null;
+}): PlatformWorkflowRunnerDisplayState {
+	const selectedWorkflowTools = values.selectedWorkflowTemplate
+		? Array.from(
+				new Set(
+					values.selectedWorkflowTemplate.steps.map((step) => step.tool_name),
+				),
+			)
+		: [];
+	const recentWorkflowRuns = values.workflowRuns.slice(0, 5);
+	const pendingDisableTools = values.templatePendingDisable
+		? Array.from(
+				new Set(
+					values.templatePendingDisable.steps.map((step) => step.tool_name),
+				),
+			)
+		: [];
+
+	return {
+		selectedWorkflowTools,
+		recentWorkflowRuns,
+		pendingDisableTools,
 	};
 }

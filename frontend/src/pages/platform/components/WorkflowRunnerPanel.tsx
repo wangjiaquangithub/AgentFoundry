@@ -9,6 +9,7 @@ import {
 import { useState } from 'react';
 
 import { workflowInputLabelKeys } from '../platform-defaults';
+import { platformWorkflowRunnerDisplayState } from '../platform-workflow-display';
 import {
 	formatTimestamp,
 	workflowInputLabel,
@@ -98,15 +99,15 @@ export function WorkflowRunnerPanel({
 }: WorkflowRunnerPanelProps) {
 	const [templatePendingDisable, setTemplatePendingDisable] =
 		useState<EnterpriseWorkflowTemplate | null>(null);
-	const selectedWorkflowTools = selectedWorkflowTemplate
-		? Array.from(
-				new Set(selectedWorkflowTemplate.steps.map((step) => step.tool_name)),
-			)
-		: [];
-	const recentWorkflowRuns = workflowRuns.slice(0, 5);
-	const pendingDisableTools = templatePendingDisable
-		? Array.from(new Set(templatePendingDisable.steps.map((step) => step.tool_name)))
-		: [];
+	const {
+		selectedWorkflowTools,
+		recentWorkflowRuns,
+		pendingDisableTools,
+	} = platformWorkflowRunnerDisplayState({
+		selectedWorkflowTemplate,
+		workflowRuns,
+		templatePendingDisable,
+	});
 	const confirmDisableTemplate = () => {
 		if (!templatePendingDisable) {
 			return;
