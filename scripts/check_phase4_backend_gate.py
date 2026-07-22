@@ -73,6 +73,13 @@ CHECKS = (
         "agent run runtime context",
         (sys.executable, "scripts/check_phase4_agent_run_runtime_context.py"),
     ),
+    (
+        "runtime invocation request context contract",
+        (
+            sys.executable,
+            "scripts/check_phase4_runtime_invocation_request_context_contract.py",
+        ),
+    ),
 )
 
 
