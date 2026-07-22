@@ -103,6 +103,18 @@ def execution_context(run_identity: dict[str, str]) -> dict[str, Any]:
     }
 
 
+def memory_hit() -> dict[str, Any]:
+    return {
+        "memory_id": "memory-approval-context",
+        "snippet": "Alice previously asked about approval evidence.",
+        "score": 0.66,
+        "metadata": {
+            "source_type": "long_term_memory",
+            "retrieval_source": "production",
+        },
+    }
+
+
 async def main() -> None:
     run_service = PlatformAgentRunService(repository=Runs())
     retrieval_events = RetrievalEvents()
@@ -206,6 +218,25 @@ async def main() -> None:
     assert fallback_trace["evidence"]["production_knowledge_hit_count"] == 0
     assert fallback_trace["evidence"]["dev_fallback_knowledge_hit_count"] == 1
     assert fallback_trace["evidence"]["dev_fallback_knowledge_used"] is True
+
+    memory_boundary_trace = run_service.build_unrouted_response_trace(
+        tenant="acme",
+        user_id="acme:alice",
+        agent_id="agent_support",
+        session_id="session_support",
+        knowledge_hits=[],
+        memory_hits=[memory_hit()],
+        memory_saved=False,
+        run_identity={
+            "turn_id": "run_memory_boundary_check",
+            "created_at": "2026-01-01T00:02:00+00:00",
+        },
+    )
+    assert memory_boundary_trace["evidence"]["knowledge_hit_count"] == 0
+    assert memory_boundary_trace["evidence"]["production_knowledge_hit_count"] == 0
+    assert memory_boundary_trace["evidence"]["dev_fallback_knowledge_hit_count"] == 0
+    assert memory_boundary_trace["evidence"]["dev_fallback_knowledge_used"] is False
+    assert memory_boundary_trace["evidence"]["memory_hit_count"] == 1
 
 
 if __name__ == "__main__":
