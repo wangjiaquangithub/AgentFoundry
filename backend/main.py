@@ -123,7 +123,6 @@ from repositories.members import (
     MemberRepositoryProtocol,
 )
 from repositories.workflows import (
-    WorkflowRunRepositoryProtocol,
     WorkflowRunRepository,
     WorkflowTemplateRepository,
 )
@@ -187,7 +186,7 @@ from services.composition import (
     build_configured_postgres_tool_call_write_repository,
     build_configured_postgres_tool_governance_read_repository,
     build_configured_postgres_tool_governance_write_repository,
-    build_configured_postgres_workflow_run_repository,
+    build_workflow_run_repository,
 )
 from services.platform_status import PlatformStatusService
 from services.tools import (
@@ -275,16 +274,9 @@ workflow_template_repository = WorkflowTemplateRepository(
 )
 workflow_run_fallback_repository = WorkflowRunRepository(PLATFORM_WORKFLOW_RUNS_PATH)
 member_repository = _build_member_repository()
-
-
-def _build_workflow_run_repository() -> WorkflowRunRepositoryProtocol:
-    return (
-        build_configured_postgres_workflow_run_repository()
-        or workflow_run_fallback_repository
-    )
-
-
-workflow_run_repository = _build_workflow_run_repository()
+workflow_run_repository = build_workflow_run_repository(
+    workflow_run_fallback_repository,
+)
 dev_knowledge_repository = DevKnowledgeRepository(PLATFORM_DEV_KNOWLEDGE_PATH)
 dev_knowledge_service = PlatformDevKnowledgeService(
     repository=dev_knowledge_repository,

@@ -53,7 +53,10 @@ from backend.repositories.approvals import (
     PostgresApprovalReadThroughRepository,
 )
 from backend.repositories.members import PostgresMemberReadThroughRepository
-from backend.repositories.workflows import PostgresWorkflowRunReadThroughRepository
+from backend.repositories.workflows import (
+    PostgresWorkflowRunReadThroughRepository,
+    WorkflowRunRepositoryProtocol,
+)
 from backend.services.knowledge import (
     PlatformKnowledgeDocumentReadinessService,
     PlatformKnowledgeResponseService,
@@ -330,6 +333,17 @@ def build_configured_postgres_workflow_run_repository() -> (
     return PostgresWorkflowRunReadThroughRepository(
         postgres_reader=PostgresWorkflowReadRepository(database),
         postgres_writer=PostgresWorkflowWriteRepository(database),
+    )
+
+
+def build_workflow_run_repository(
+    fallback_repository: WorkflowRunRepositoryProtocol,
+) -> WorkflowRunRepositoryProtocol:
+    """Select the configured production workflow run repository."""
+
+    return (
+        build_configured_postgres_workflow_run_repository()
+        or fallback_repository
     )
 
 

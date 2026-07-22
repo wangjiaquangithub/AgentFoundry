@@ -1721,6 +1721,7 @@ def _check_postgres_workflow_runs_wired() -> list[str]:
     )
 
     required_composition_imports = [
+        "WorkflowRunRepositoryProtocol",
         "PostgresWorkflowReadRepository",
         "PostgresWorkflowWriteRepository",
         "PostgresWorkflowRunReadThroughRepository",
@@ -1732,17 +1733,24 @@ def _check_postgres_workflow_runs_wired() -> list[str]:
                 f"{imported_name} for workflow run PostgreSQL wiring",
             )
 
-    if not _module_defines_function(main_tree, "_build_workflow_run_repository"):
+    if not _module_defines_function(
+        composition_tree,
+        "build_workflow_run_repository",
+    ):
         errors.append(
-            "backend/main.py must define _build_workflow_run_repository for PostgreSQL workflow runs",
+            "backend/services/composition.py must define build_workflow_run_repository for workflow run repository selection",
         )
-    if "workflow_run_repository = _build_workflow_run_repository()" not in main_source:
+    if "workflow_run_repository = build_workflow_run_repository(" not in main_source:
         errors.append(
-            "backend/main.py must build workflow_run_repository through the PostgreSQL selector",
+            "backend/main.py must build workflow_run_repository through the services.composition selector",
         )
-    if "build_configured_postgres_workflow_run_repository()" not in main_source:
+    if (
+        "build_configured_postgres_workflow_run_repository()"
+        not in composition_source
+        or "or fallback_repository" not in composition_source
+    ):
         errors.append(
-            "backend/main.py must delegate workflow run PostgreSQL wiring to services.composition",
+            "backend/services/composition.py must select PostgreSQL workflow storage before the fallback repository",
         )
     if not _module_defines_function(
         composition_tree,
