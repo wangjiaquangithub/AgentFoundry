@@ -171,10 +171,18 @@ def assert_runtime_persistence_evidence_link() -> None:
     assert len(writer.records) == 1
     record = writer.records[0]
     assert record.id == "runtime-invocation-1"
+    assert record.provider_id == result_payload["provider_id"]
+    assert record.provider_run_id == "provider-run-1"
+    assert record.agent_run_id == "agent-run-1"
     assert (
         record.request_summary["metadata"]["runtime_invocation_id"]
         == record.response_summary["runtime_invocation_id"]
     )
+    assert record.response_summary["provider_id"] == result_payload["provider_id"]
+    assert record.response_summary["provider"] == result_payload["provider"]
+    assert record.response_summary["mode"] == result_payload["mode"]
+    assert record.response_summary["agent_run_id"] == "agent-run-1"
+    assert record.response_summary["provider_run_id"] == "provider-run-1"
 
     mismatched_result = {
         **result_payload,
