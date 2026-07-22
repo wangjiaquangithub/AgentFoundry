@@ -469,6 +469,18 @@ def _module_uses_name(tree: ast.AST, name: str) -> bool:
     return any(isinstance(node, ast.Name) and node.id == name for node in ast.walk(tree))
 
 
+def _module_calls_name(tree: ast.AST, name: str) -> bool:
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        function = node.func
+        if isinstance(function, ast.Name) and function.id == name:
+            return True
+        if isinstance(function, ast.Attribute) and function.attr == name:
+            return True
+    return False
+
+
 def _call_has_keyword_string(
     node: ast.Call,
     *,
@@ -686,6 +698,56 @@ def _check_postgres_first_production_database_boundary() -> list[str]:
                 "backend/persistence/database.py must make production PostgreSQL "
                 f"requirements operator-visible: {token}",
             )
+
+    return errors
+
+
+def _check_postgres_composition_ownership_boundary() -> list[str]:
+    errors: list[str] = []
+    guarded_repository_classes = {
+        class_name
+        for class_names in POSTGRES_AUTHORITATIVE_PERSISTENCE_REPOSITORIES.values()
+        for class_name in class_names
+    }
+    scanned_modules = [MAIN_MODULE, *sorted(SERVICES_DIR.glob("*.py"))]
+
+    for path in scanned_modules:
+        if path == COMPOSITION_MODULE:
+            continue
+
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        display_path = path.relative_to(ROOT)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ImportFrom):
+                continue
+            if node.module != "backend.persistence":
+                continue
+
+            for alias in node.names:
+                imported_name = alias.name
+                if imported_name in guarded_repository_classes:
+                    errors.append(
+                        "PostgreSQL persistence repository imports must stay in "
+                        f"backend/services/composition.py: {display_path}:{imported_name}",
+                    )
+                if imported_name == "create_configured_postgres_database":
+                    errors.append(
+                        "PostgreSQL database selection must stay in "
+                        f"backend/services/composition.py: {display_path}:create_configured_postgres_database",
+                    )
+
+        if _module_calls_name(tree, "create_configured_postgres_database"):
+            errors.append(
+                "PostgreSQL database selection must not be called outside "
+                f"backend/services/composition.py: {display_path}",
+            )
+
+        for class_name in sorted(guarded_repository_classes):
+            if _module_calls_name(tree, class_name):
+                errors.append(
+                    "PostgreSQL persistence repository construction must stay in "
+                    f"backend/services/composition.py: {display_path}:{class_name}",
+                )
 
     return errors
 
@@ -4029,6 +4091,7 @@ def main() -> int:
         *_check_postgres_persistence_exports(),
         *_check_postgres_url_detection_boundary(),
         *_check_postgres_first_production_database_boundary(),
+        *_check_postgres_composition_ownership_boundary(),
         *_check_postgres_seed_path(),
         *_check_postgres_migration_shell_entrypoint(),
         *_check_postgres_data_workflow_documented(),
@@ -4091,6 +4154,7 @@ def main() -> int:
         f"{authoritative_repository_count + authoritative_persistence_count}",
     )
     print("- PostgreSQL URL detection centralized: yes")
+    print("- PostgreSQL composition ownership guarded: yes")
     print("- PostgreSQL seed path guarded: yes")
     print("- PostgreSQL migration shell entrypoint guarded: yes")
     print("- PostgreSQL data workflow documented: yes")
