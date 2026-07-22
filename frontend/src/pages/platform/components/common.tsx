@@ -16,6 +16,14 @@ import { NavLink } from 'react-router-dom';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetFooter,
+	SheetHeader,
+	SheetTitle,
+} from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
@@ -251,5 +259,49 @@ export function PlatformNotice({
 			<AlertTriangle className="mt-0.5 size-4 shrink-0" />
 			<span className="min-w-0 break-words">{children}</span>
 		</div>
+	);
+}
+
+export interface PlatformDetailDrawerProps {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	title: ReactNode;
+	description?: ReactNode;
+	children: ReactNode;
+	footer?: ReactNode;
+	className?: string;
+}
+
+export function PlatformDetailDrawer({
+	open,
+	onOpenChange,
+	title,
+	description,
+	children,
+	footer,
+	className,
+}: PlatformDetailDrawerProps) {
+	return (
+		<Sheet open={open} onOpenChange={onOpenChange}>
+			<SheetContent
+				className={cn(
+					'w-full gap-0 overflow-hidden p-0 sm:max-w-xl lg:max-w-2xl',
+					className,
+				)}
+			>
+				<SheetHeader className="border-b pr-12">
+					<SheetTitle>{title}</SheetTitle>
+					{description ? (
+						<SheetDescription className="leading-6">{description}</SheetDescription>
+					) : null}
+				</SheetHeader>
+				<div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">{children}</div>
+				{footer ? (
+					<SheetFooter className="border-t bg-background p-4 sm:p-5">
+						{footer}
+					</SheetFooter>
+				) : null}
+			</SheetContent>
+		</Sheet>
 	);
 }

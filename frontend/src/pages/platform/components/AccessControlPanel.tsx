@@ -10,7 +10,9 @@ import {
 	ShieldCheck,
 	UserRound,
 } from 'lucide-react';
+import { useState } from 'react';
 
+import { PlatformDetailDrawer, PlatformNotice } from './common';
 import type {
 	EnterpriseApprovalRequestItem,
 	EnterpriseAuditEvent,
@@ -21,7 +23,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { PlatformNotice } from './common';
 
 export interface AccessTenantSummary {
 	tenant: string;
@@ -133,6 +134,11 @@ export function AccessControlPanel({
 	onInspectIdentityAudit,
 	labels,
 }: AccessControlPanelProps) {
+	const [identityDrawerOpen, setIdentityDrawerOpen] = useState(false);
+	const selectedIdentityNeedsReview =
+		selectedIdentityDeniedTools.length > 0 ||
+		selectedIdentityPendingApprovals.length > 0;
+
 	return (
 		<section className="grid gap-4 rounded-lg border bg-background p-4">
 			<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -184,14 +190,14 @@ export function AccessControlPanel({
 			{governanceError ? <PlatformNotice>{governanceError}</PlatformNotice> : null}
 
 			{governanceLoading && !governance ? (
-				<div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.8fr)]">
+				<div className="grid gap-3 md:grid-cols-2">
 					<Skeleton className="h-56 w-full" />
 					<Skeleton className="h-56 w-full" />
 				</div>
 			) : null}
 
 			{enterpriseIdentities.length > 0 ? (
-				<div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.8fr)]">
+				<div className="grid gap-3">
 					<div className="grid gap-3">
 						<div className="rounded-lg border bg-background p-3">
 							<div className="mb-3 flex items-center justify-between gap-3">
@@ -249,7 +255,10 @@ export function AccessControlPanel({
 											selectedIdentity?.user_id === row.identity.user_id &&
 												'border-primary bg-primary/5',
 										)}
-										onClick={() => onSelectIdentity(row.identity.user_id)}
+										onClick={() => {
+											onSelectIdentity(row.identity.user_id);
+											setIdentityDrawerOpen(true);
+										}}
 									>
 										<div className="flex items-start justify-between gap-3">
 											<div className="min-w-0">
@@ -280,25 +289,32 @@ export function AccessControlPanel({
 						</div>
 					</div>
 
-					<div className="grid content-start gap-3 rounded-lg border bg-background p-3">
-						<div className="flex items-center justify-between gap-3">
-							<div className="flex items-center gap-2">
-								<ShieldCheck className="size-4 text-muted-foreground" />
-								<h3 className="text-sm font-medium">{labels.selectedPolicy}</h3>
-							</div>
-							{selectedIdentityDeniedTools.length > 0 ||
-							selectedIdentityPendingApprovals.length > 0 ? (
-								<Badge variant="secondary">
-									<AlertTriangle className="size-3" />
-									{labels.needsReview}
-								</Badge>
-							) : (
-								<Badge variant="outline">{labels.normal}</Badge>
-							)}
-						</div>
-
+					<PlatformDetailDrawer
+						open={identityDrawerOpen && Boolean(selectedIdentity)}
+						onOpenChange={setIdentityDrawerOpen}
+						title={selectedIdentity?.display_name ?? labels.selectedPolicy}
+						description={
+							selectedIdentity
+								? `${selectedIdentity.tenant} · ${selectedIdentity.role}`
+								: undefined
+						}
+					>
 						{selectedIdentity ? (
 							<>
+								<div className="mb-3 flex items-center justify-between gap-3">
+									<div className="flex items-center gap-2">
+										<ShieldCheck className="size-4 text-muted-foreground" />
+										<h3 className="text-sm font-medium">{labels.selectedPolicy}</h3>
+									</div>
+									{selectedIdentityNeedsReview ? (
+										<Badge variant="secondary">
+											<AlertTriangle className="size-3" />
+											{labels.needsReview}
+										</Badge>
+									) : (
+										<Badge variant="outline">{labels.normal}</Badge>
+									)}
+								</div>
 								<div className="rounded-md border bg-background p-3">
 									<div className="text-sm font-medium">{selectedIdentity.display_name}</div>
 									<div className="mt-1 text-xs text-muted-foreground">
@@ -464,12 +480,8 @@ export function AccessControlPanel({
 									</Button>
 								</div>
 							</>
-						) : (
-							<div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
-								{labels.noIdentity}
-							</div>
-						)}
-					</div>
+						) : null}
+					</PlatformDetailDrawer>
 				</div>
 			) : (
 				<div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">

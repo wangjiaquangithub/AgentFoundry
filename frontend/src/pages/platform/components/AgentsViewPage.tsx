@@ -11,7 +11,7 @@ import {
 	Workflow,
 	Wrench,
 } from 'lucide-react';
-import { type ComponentType, type RefObject } from 'react';
+import { type ComponentType, type RefObject, useState } from 'react';
 
 import {
 	AgentManagementOverview,
@@ -24,6 +24,7 @@ import {
 import { AgentRunnerResult } from './AgentRunnerResult';
 import {
 	PlatformNotice,
+	PlatformDetailDrawer,
 	PlatformPageHeader,
 	PlatformPageShell,
 	StateBadge,
@@ -183,6 +184,7 @@ function AgentLifecycleWorkspace({
 }: AgentLifecycleWorkspaceProps) {
 	const selectedAgentCapabilities = selectedAgent?.capabilities ?? [];
 	const selectedAgentTools = selectedAgent?.tools ?? [];
+	const [agentDrawerOpen, setAgentDrawerOpen] = useState(false);
 
 	return (
 		<section className="grid gap-4 border-y bg-background/70 py-4">
@@ -202,7 +204,7 @@ function AgentLifecycleWorkspace({
 				</Badge>
 			</div>
 
-			<div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(18rem,0.42fr)_minmax(0,1fr)]">
+			<div className="grid min-w-0 gap-4">
 				<div className="grid gap-2">
 					<div className="text-xs font-medium text-muted-foreground">
 						{t('platform.agentManagement.lifecycle.inventory')}
@@ -226,7 +228,10 @@ function AgentLifecycleWorkspace({
 									<button
 										key={agent.id}
 										type="button"
-										onClick={() => onSelectAgent(agent.id)}
+										onClick={() => {
+											onSelectAgent(agent.id);
+											setAgentDrawerOpen(true);
+										}}
 										className={cn(
 											'grid w-full gap-2 rounded-lg border bg-background/80 p-3 text-left transition-colors',
 											'hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
@@ -272,23 +277,25 @@ function AgentLifecycleWorkspace({
 					)}
 				</div>
 
-				<div className="grid min-w-0 gap-4 rounded-lg border bg-background/80 p-4">
+				<PlatformDetailDrawer
+					open={agentDrawerOpen && Boolean(selectedAgent)}
+					onOpenChange={setAgentDrawerOpen}
+					title={
+						selectedAgent?.name ??
+						t('platform.agentManagement.lifecycle.selectTitle')
+					}
+					description={selectedAgent?.description}
+				>
 					{selectedAgent ? (
 						<>
 							<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 								<div className="min-w-0">
 									<div className="flex flex-wrap items-center gap-2">
-										<h3 className="truncate text-lg font-semibold">
-											{selectedAgent.name}
-										</h3>
 										<StateBadge
 											state={selectedAgentReadinessState}
 											label={selectedAgentReadinessLabel}
 										/>
 									</div>
-									<p className="mt-1 line-clamp-2 text-sm leading-6 text-muted-foreground">
-										{selectedAgent.description}
-									</p>
 								</div>
 								<div className="flex flex-wrap gap-2">
 									<Button type="button" size="sm" onClick={onRunAgent}>
@@ -451,17 +458,8 @@ function AgentLifecycleWorkspace({
 								</Badge>
 							</div>
 						</>
-					) : (
-						<PlatformEmptyState
-							variant="noData"
-							title={t('platform.agentManagement.lifecycle.selectTitle')}
-							description={t(
-								'platform.agentManagement.lifecycle.selectDescription',
-							)}
-							className="rounded-lg border border-dashed bg-background p-10"
-						/>
-					)}
-				</div>
+					) : null}
+				</PlatformDetailDrawer>
 			</div>
 		</section>
 	);

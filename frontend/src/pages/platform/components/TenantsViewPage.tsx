@@ -13,6 +13,7 @@ import {
 import { useMemo, useState } from 'react';
 
 import {
+	PlatformDetailDrawer,
 	PlatformNotice,
 	PlatformPageHeader,
 	PlatformPageShell,
@@ -72,6 +73,8 @@ export function TenantsViewPage({
 	t,
 }: TenantsViewPageProps) {
 	const [tenantQuery, setTenantQuery] = useState('');
+	const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
+	const [tenantDrawerOpen, setTenantDrawerOpen] = useState(false);
 	const filteredTenantSummaries = useMemo(() => {
 		const normalizedQuery = tenantQuery.trim().toLowerCase();
 
@@ -100,11 +103,10 @@ export function TenantsViewPage({
 			);
 		});
 	}, [platformMemberTenantSummaries, tenantQuery]);
-	const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
-	const selectedTenantSummary =
-		filteredTenantSummaries.find((summary) => summary.tenant === selectedTenant) ??
-		filteredTenantSummaries[0] ??
-		null;
+	const selectedTenantSummary = selectedTenant
+		? filteredTenantSummaries.find((summary) => summary.tenant === selectedTenant) ??
+			null
+		: null;
 	const selectedWorkspace = selectedTenantSummary
 		? tenantWorkspaces.find(([tenant]) => tenant === selectedTenantSummary.tenant)?.[1]
 		: null;
@@ -203,7 +205,7 @@ export function TenantsViewPage({
 								{t('platform.members.groupedListTitle')}
 							</h2>
 							<p className="mt-1 text-xs leading-5 text-muted-foreground">
-								搜索租户、成员或角色，选择后在右侧查看治理详情。
+								搜索租户、成员或角色，选择后打开治理详情。
 							</p>
 						</div>
 						<Badge variant="outline">
@@ -235,7 +237,10 @@ export function TenantsViewPage({
 									<button
 										type="button"
 										key={tenantSummary.tenant}
-										onClick={() => setSelectedTenant(tenantSummary.tenant)}
+										onClick={() => {
+											setSelectedTenant(tenantSummary.tenant);
+											setTenantDrawerOpen(true);
+										}}
 										className={cn(
 											'grid w-full gap-3 rounded-lg border p-3 text-left transition-colors',
 											isSelected
@@ -296,7 +301,26 @@ export function TenantsViewPage({
 					)}
 				</div>
 
-				<div className="grid content-start gap-4">
+				<PlatformDetailDrawer
+					open={tenantDrawerOpen && Boolean(selectedTenantSummary)}
+					onOpenChange={setTenantDrawerOpen}
+					title={selectedTenantSummary?.tenant ?? '租户治理详情'}
+					description="集中核对该租户的成员身份、Agent 绑定、审批风险和连接器资源。"
+					footer={
+						selectedTenantSummary ? (
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={() => onNavigate('/platform/agents')}
+								className="w-full sm:w-auto"
+							>
+								<BotMessageSquare className="size-4" />
+								{t('platform.agentManagement.title')}
+							</Button>
+						) : null
+					}
+				>
 					{selectedTenantSummary ? (
 						<>
 							<section className="rounded-lg border bg-background p-4">
@@ -326,16 +350,6 @@ export function TenantsViewPage({
 											该租户的成员身份、Agent 绑定、审批风险和连接器资源集中在这里核对。
 										</p>
 									</div>
-									<Button
-										type="button"
-										size="sm"
-										variant="outline"
-										onClick={() => onNavigate('/platform/agents')}
-										className="w-full sm:w-auto"
-									>
-										<BotMessageSquare className="size-4" />
-										{t('platform.agentManagement.title')}
-									</Button>
 								</div>
 
 								<div className="mt-4 grid overflow-hidden rounded-lg border bg-background sm:grid-cols-2 xl:grid-cols-4">
@@ -531,12 +545,8 @@ export function TenantsViewPage({
 								</aside>
 							</section>
 						</>
-					) : (
-						<div className="rounded-lg border border-dashed bg-background p-8 text-sm text-muted-foreground">
-							{t('platform.members.empty')}
-						</div>
-					)}
-				</div>
+					) : null}
+				</PlatformDetailDrawer>
 			</section>
 		</PlatformPageShell>
 	);
