@@ -160,6 +160,26 @@ def _validate_write_result(
         )
 
 
+def _validate_invocation_read_result(
+    record: RuntimeInvocationRecord,
+    *,
+    tenant_id: str,
+    provider_id: str | None = None,
+    agent_run_id: str | None = None,
+    runtime_invocation_id: str | None = None,
+) -> None:
+    if record.tenant_id != tenant_id:
+        raise ValueError("PostgreSQL runtime invocation read returned another tenant.")
+    if provider_id is not None and record.provider_id != provider_id:
+        raise ValueError("PostgreSQL runtime invocation read returned another provider.")
+    if agent_run_id is not None and record.agent_run_id != agent_run_id:
+        raise ValueError("PostgreSQL runtime invocation read returned another agent run.")
+    if runtime_invocation_id is not None and record.id != runtime_invocation_id:
+        raise ValueError(
+            "PostgreSQL runtime invocation read returned another invocation.",
+        )
+
+
 class SQLiteRuntimeReadRepository:
     """Read runtime providers and tenant-scoped invocations from SQLite."""
 
@@ -341,7 +361,18 @@ class PostgresRuntimeReadRepository:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, tuple(parameters))
-                return [_invocation_from_row(dict(row)) for row in cursor.fetchall()]
+                records = [
+                    _invocation_from_row(dict(row))
+                    for row in cursor.fetchall()
+                ]
+        for record in records:
+            _validate_invocation_read_result(
+                record,
+                tenant_id=tenant_id,
+                provider_id=provider_id,
+                agent_run_id=agent_run_id,
+            )
+        return records
 
     def get_invocation(
         self,
@@ -364,7 +395,13 @@ class PostgresRuntimeReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return _invocation_from_row(dict(row))
+        record = _invocation_from_row(dict(row))
+        _validate_invocation_read_result(
+            record,
+            tenant_id=tenant_id,
+            runtime_invocation_id=runtime_invocation_id,
+        )
+        return record
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)

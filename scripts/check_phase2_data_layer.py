@@ -3958,6 +3958,16 @@ def _check_postgres_runtime_reads_guarded() -> list[str]:
                     "tables and filters: backend/persistence/runtime_records.py:"
                     f"PostgresRuntimeReadRepository.{method_name}",
                 )
+        if method_name in {"list_invocations", "get_invocation"} and not _module_calls_name(
+            method_node,
+            "_validate_invocation_read_result",
+        ):
+            errors.append(
+                "PostgreSQL runtime invocation read method must validate returned "
+                "evidence against requested tenant and filters: "
+                "backend/persistence/runtime_records.py:"
+                f"PostgresRuntimeReadRepository.{method_name}",
+            )
 
     return errors
 
