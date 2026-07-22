@@ -828,6 +828,7 @@ class PlatformKnowledgeResponseService:
         readiness = self.build_retrieval_readiness(
             knowledge_base_ids=knowledge_base_ids,
             production_retriever_available=knowledge_base_service is not None,
+            allow_dev_fallback=allow_dev_fallback,
         )
         if not knowledge_base_ids:
             return [], None, readiness
@@ -926,6 +927,7 @@ class PlatformKnowledgeResponseService:
             production_hit_count=production_hit_count,
             dev_fallback_hit_count=dev_fallback_hit_count,
             knowledge_error=knowledge_error,
+            allow_dev_fallback=allow_dev_fallback,
         )
         return trimmed_hits, knowledge_error, readiness
 
@@ -937,6 +939,7 @@ class PlatformKnowledgeResponseService:
         production_hit_count: int = 0,
         dev_fallback_hit_count: int = 0,
         knowledge_error: str | None = None,
+        allow_dev_fallback: bool = True,
     ) -> dict[str, Any]:
         bound_knowledge_base_ids = [
             str(knowledge_base_id).strip()
@@ -950,6 +953,9 @@ class PlatformKnowledgeResponseService:
         elif knowledge_error and not production_hit_count and not dev_fallback_used:
             status = "blocked"
             guidance = "Production retrieval failed. Check knowledge service and embedding configuration."
+        elif not production_retriever_available and not allow_dev_fallback:
+            status = "blocked"
+            guidance = "Production knowledge retrieval is unavailable; configure the PostgreSQL retriever and embedding provider."
         elif not production_retriever_available:
             status = "degraded" if dev_fallback_used else "not_configured"
             guidance = "Configure the production knowledge retriever and embedding provider."
@@ -967,6 +973,12 @@ class PlatformKnowledgeResponseService:
             "production_hit_count": production_hit_count,
             "dev_fallback_hit_count": dev_fallback_hit_count,
             "dev_fallback_used": dev_fallback_used,
+            "dev_fallback_allowed": allow_dev_fallback,
+            "retrieval_mode": (
+                "production"
+                if not allow_dev_fallback
+                else "production_with_dev_fallback"
+            ),
         }
         if knowledge_error:
             payload["knowledge_error"] = knowledge_error

@@ -221,8 +221,10 @@ async def main() -> None:
     )
     assert dev.calls == []
     assert production_only["knowledge_hits"] == []
-    assert production_only["retrieval_readiness"]["status"] == "not_configured"
+    assert production_only["retrieval_readiness"]["status"] == "blocked"
     assert production_only["retrieval_readiness"]["dev_fallback_used"] is False
+    assert production_only["retrieval_readiness"]["dev_fallback_allowed"] is False
+    assert production_only["retrieval_readiness"]["retrieval_mode"] == "production"
     assert production_only.get("knowledge_document_readiness") is None
 
 

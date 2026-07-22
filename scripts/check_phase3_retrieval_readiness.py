@@ -74,6 +74,8 @@ async def main() -> None:
     assert no_binding["status"] == "not_configured"
     assert no_binding["production_hit_count"] == 0
     assert no_binding["dev_fallback_hit_count"] == 0
+    assert no_binding["dev_fallback_allowed"] is True
+    assert no_binding["retrieval_mode"] == "production_with_dev_fallback"
 
     hits, _, fallback = await service.search_agent_knowledge_bases(
         knowledge_base_service=None,
@@ -91,6 +93,8 @@ async def main() -> None:
     assert fallback["production_hit_count"] == 0
     assert fallback["dev_fallback_hit_count"] == 1
     assert fallback["dev_fallback_used"] is True
+    assert fallback["dev_fallback_allowed"] is True
+    assert fallback["retrieval_mode"] == "production_with_dev_fallback"
 
     _, _, production_ready = await service.search_agent_knowledge_bases(
         knowledge_base_service=EmptyProductionKnowledge(),
@@ -105,6 +109,25 @@ async def main() -> None:
     assert production_ready["production_retriever_available"] is True
     assert production_ready["production_hit_count"] == 0
     assert production_ready["dev_fallback_hit_count"] == 1
+    assert production_ready["dev_fallback_allowed"] is True
+    assert production_ready["retrieval_mode"] == "production_with_dev_fallback"
+
+    unavailable_hits, _, production_unavailable = await service.search_agent_knowledge_bases(
+        knowledge_base_service=None,
+        dev_knowledge_service=DevKnowledge(),
+        dev_knowledge_provider="agentfoundry-dev-local",
+        user_id="acme:alice",
+        tenant="acme",
+        question="How do approvals work?",
+        knowledge_base_ids=["kb_support"],
+        allow_dev_fallback=False,
+    )
+    assert unavailable_hits == []
+    assert production_unavailable["status"] == "blocked"
+    assert production_unavailable["production_retriever_available"] is False
+    assert production_unavailable["dev_fallback_allowed"] is False
+    assert production_unavailable["retrieval_mode"] == "production"
+    assert "PostgreSQL retriever" in production_unavailable["guidance"]
 
     production_hits, _, production_only = await service.search_agent_knowledge_bases(
         knowledge_base_service=EmptyProductionKnowledge(),
@@ -122,6 +145,8 @@ async def main() -> None:
     assert production_only["production_hit_count"] == 0
     assert production_only["dev_fallback_hit_count"] == 0
     assert production_only["dev_fallback_used"] is False
+    assert production_only["dev_fallback_allowed"] is False
+    assert production_only["retrieval_mode"] == "production"
 
     production_hits, _, production_ready = await service.search_agent_knowledge_bases(
         knowledge_base_service=ProductionKnowledge(),
@@ -138,6 +163,8 @@ async def main() -> None:
     assert production_ready["production_retriever_available"] is True
     assert production_ready["production_hit_count"] == 1
     assert production_ready["dev_fallback_hit_count"] == 0
+    assert production_ready["dev_fallback_allowed"] is True
+    assert production_ready["retrieval_mode"] == "production_with_dev_fallback"
 
 
 if __name__ == "__main__":
