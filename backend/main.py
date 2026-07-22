@@ -106,9 +106,6 @@ from platform_config import (
 from repositories.agents import (
     AgentRepository,
 )
-from backend.persistence import (
-    inspect_configured_database_status,
-)
 from repositories.agent_runs import (
     AgentRunRepository,
 )
@@ -155,6 +152,7 @@ from services.composition import (
     build_approval_request_repository,
     build_audit_event_read_repository,
     build_audit_event_write_repository,
+    build_database_config_status_inspector,
     build_knowledge_base_read_repository,
     build_knowledge_base_write_repository,
     build_knowledge_document_chunk_read_repository,
@@ -382,7 +380,7 @@ def _platform_status_service() -> PlatformStatusService:
         enterprise_tool_catalog=ENTERPRISE_TOOL_CATALOG,
         approval_required_tools=APPROVAL_REQUIRED_TOOLS,
         approval_required_workflows=APPROVAL_REQUIRED_WORKFLOWS,
-        database_config_status=inspect_configured_database_status,
+        database_config_status=build_database_config_status_inspector(),
     )
 
 

@@ -39,6 +39,7 @@ from backend.persistence import (
     PostgresWorkflowReadRepository,
     PostgresWorkflowWriteRepository,
     create_configured_postgres_database,
+    inspect_configured_database_status,
 )
 from backend.repositories.agents import (
     AgentRepositoryProtocol,
@@ -97,6 +98,12 @@ def build_model_config_service() -> PlatformModelConfigService | None:
     """Select the configured production model config service implementation."""
 
     return build_configured_postgres_model_config_service()
+
+
+def build_database_config_status_inspector() -> Callable[..., dict[str, object]]:
+    """Select the configured production database status inspector."""
+
+    return inspect_configured_database_status
 
 
 def build_configured_postgres_audit_event_read_repository() -> (
