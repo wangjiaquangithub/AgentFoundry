@@ -44,6 +44,13 @@ class MembershipRecord:
     updated_at: str
 
 
+@dataclass(frozen=True)
+class TenancyWriteResult:
+    tenant: TenantRecord
+    user: UserRecord
+    membership: MembershipRecord
+
+
 def _membership_from_row(row: dict[str, Any]) -> MembershipRecord:
     workspace_ids = json.loads(row["workspace_ids"])
     if not isinstance(workspace_ids, list) or not all(
@@ -259,7 +266,7 @@ class PostgresTenancyWriteRepository:
         status: str,
         created_at: str,
         updated_at: str,
-    ) -> None:
+    ) -> TenancyWriteResult:
         with self._database.transaction() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
@@ -270,6 +277,7 @@ class PostgresTenancyWriteRepository:
                       name = excluded.name,
                       status = excluded.status,
                       updated_at = excluded.updated_at
+                    RETURNING id, name, status, plan, created_at, updated_at
                     """,
                     (
                         tenant_id,
@@ -278,6 +286,10 @@ class PostgresTenancyWriteRepository:
                         updated_at,
                     ),
                 )
+                tenant_row = cursor.fetchone()
+                if tenant_row is None:
+                    raise RuntimeError("Tenant upsert did not return a row.")
+
                 cursor.execute(
                     """
                     INSERT INTO users (
@@ -288,6 +300,7 @@ class PostgresTenancyWriteRepository:
                       display_name = excluded.display_name,
                       status = excluded.status,
                       updated_at = excluded.updated_at
+                    RETURNING id, display_name, email, status, created_at, updated_at
                     """,
                     (
                         user_id,
@@ -298,6 +311,10 @@ class PostgresTenancyWriteRepository:
                         updated_at,
                     ),
                 )
+                user_row = cursor.fetchone()
+                if user_row is None:
+                    raise RuntimeError("User upsert did not return a row.")
+
                 cursor.execute(
                     """
                     INSERT INTO memberships (
@@ -307,6 +324,8 @@ class PostgresTenancyWriteRepository:
                     ON CONFLICT(tenant_id, user_id) DO UPDATE SET
                       role = excluded.role,
                       updated_at = excluded.updated_at
+                    RETURNING id, tenant_id, user_id, role, workspace_ids,
+                      created_at, updated_at
                     """,
                     (
                         f"{tenant_id}:{user_id}",
@@ -317,6 +336,15 @@ class PostgresTenancyWriteRepository:
                         updated_at,
                     ),
                 )
+                membership_row = cursor.fetchone()
+                if membership_row is None:
+                    raise RuntimeError("Membership upsert did not return a row.")
+
+        return TenancyWriteResult(
+            tenant=TenantRecord(**dict(tenant_row)),
+            user=UserRecord(**dict(user_row)),
+            membership=_membership_from_row(dict(membership_row)),
+        )
 
 
 def _display_name_from_id(value: str) -> str:

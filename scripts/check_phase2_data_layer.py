@@ -1629,10 +1629,17 @@ def _check_postgres_members_wired() -> list[str]:
 
     required_read_through_tokens = [
         "class PostgresMemberReadThroughRepository",
+        "TenancyWriteResult",
         "list_memberships",
         "list_users",
         "list_tenants",
         "upsert_member",
+        "_validate_write_result",
+        "PostgreSQL member write did not return a tenant id.",
+        "PostgreSQL member write did not return a user id.",
+        "PostgreSQL member write did not return a membership id.",
+        "PostgreSQL member write returned a membership for another tenant.",
+        "PostgreSQL member write returned a membership for another user.",
         "Member tenant is required for PostgreSQL writes.",
         "Member user_id is required for PostgreSQL writes.",
     ]
@@ -1644,12 +1651,19 @@ def _check_postgres_members_wired() -> list[str]:
             )
 
     required_persistence_tokens = [
+        "class TenancyWriteResult",
         "class PostgresTenancyReadRepository",
         "class PostgresTenancyWriteRepository",
         "def list_tenants",
         "def list_users",
         "def list_memberships",
         "def upsert_member",
+        "RETURNING id, name, status, plan",
+        "RETURNING id, display_name, email, status",
+        "RETURNING id, tenant_id, user_id, role",
+        "Tenant upsert did not return a row.",
+        "User upsert did not return a row.",
+        "Membership upsert did not return a row.",
         "FROM memberships",
         "INSERT INTO users",
         "INSERT INTO memberships",

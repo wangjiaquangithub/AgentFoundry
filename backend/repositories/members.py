@@ -9,6 +9,7 @@ from backend.persistence.tenancy import (
     MembershipRecord,
     PostgresTenancyReadRepository,
     PostgresTenancyWriteRepository,
+    TenancyWriteResult,
     TenantRecord,
     UserRecord,
 )
@@ -93,14 +94,32 @@ class PostgresMemberReadThroughRepository:
             if not isinstance(raw_member, dict):
                 continue
             member = _normalized_member_for_postgres(raw_member)
-            self._postgres_writer.upsert_member(
-                tenant_id=member["tenant"],
-                user_id=member["user_id"],
-                display_name=member["display_name"],
-                role=member["role"],
-                status=member["status"],
-                created_at=member["created_at"],
-                updated_at=member["updated_at"],
+            self._validate_write_result(
+                self._postgres_writer.upsert_member(
+                    tenant_id=member["tenant"],
+                    user_id=member["user_id"],
+                    display_name=member["display_name"],
+                    role=member["role"],
+                    status=member["status"],
+                    created_at=member["created_at"],
+                    updated_at=member["updated_at"],
+                ),
+            )
+
+    def _validate_write_result(self, result: TenancyWriteResult) -> None:
+        if not result.tenant.id:
+            raise ValueError("PostgreSQL member write did not return a tenant id.")
+        if not result.user.id:
+            raise ValueError("PostgreSQL member write did not return a user id.")
+        if not result.membership.id:
+            raise ValueError("PostgreSQL member write did not return a membership id.")
+        if result.membership.tenant_id != result.tenant.id:
+            raise ValueError(
+                "PostgreSQL member write returned a membership for another tenant.",
+            )
+        if result.membership.user_id != result.user.id:
+            raise ValueError(
+                "PostgreSQL member write returned a membership for another user.",
             )
 
 

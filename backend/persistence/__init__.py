@@ -93,6 +93,7 @@ from backend.persistence.tenancy import (
     PostgresTenancyReadRepository,
     PostgresTenancyWriteRepository,
     SQLiteTenancyReadRepository,
+    TenancyWriteResult,
     TenantRecord,
     UserRecord,
 )
@@ -187,6 +188,7 @@ __all__ = [
     "SQLiteToolCallReadRepository",
     "SQLiteToolGovernanceReadRepository",
     "TenantRecord",
+    "TenancyWriteResult",
     "ToolCallRecord",
     "ToolPolicyRecord",
     "ToolPolicyWriteResult",
