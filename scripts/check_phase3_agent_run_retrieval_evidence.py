@@ -202,6 +202,12 @@ async def main() -> None:
     assert fallback_context["retrieval_readiness"]["production_hit_count"] == 0
     assert fallback_context["retrieval_readiness"]["dev_fallback_hit_count"] == 1
     assert fallback_context["retrieval_readiness"]["dev_fallback_used"] is True
+    assert len(retrieval_events.records) == 1, (
+        "dev fallback retrieval must not create production retrieval events"
+    )
+    assert len(audit_events.records) == 1, (
+        "dev fallback retrieval must not create production audit events"
+    )
 
     fallback_trace = run_service.build_unrouted_response_trace(
         tenant="acme",
