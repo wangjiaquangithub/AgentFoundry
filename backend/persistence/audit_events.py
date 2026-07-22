@@ -266,17 +266,7 @@ class PostgresAuditEventWriteRepository:
                       %s, %s, %s, %s, %s,
                       %s
                     )
-                    ON CONFLICT (id) DO UPDATE SET
-                      tenant_id = EXCLUDED.tenant_id,
-                      actor_user_id = EXCLUDED.actor_user_id,
-                      event_type = EXCLUDED.event_type,
-                      target_type = EXCLUDED.target_type,
-                      target_id = EXCLUDED.target_id,
-                      payload = EXCLUDED.payload,
-                      resource_type = EXCLUDED.resource_type,
-                      resource_id = EXCLUDED.resource_id,
-                      metadata = EXCLUDED.metadata,
-                      created_at = EXCLUDED.created_at
+                    ON CONFLICT (id) DO NOTHING
                     RETURNING id, tenant_id, actor_user_id, event_type,
                       resource_type AS target_type,
                       resource_id AS target_id,
@@ -298,8 +288,22 @@ class PostgresAuditEventWriteRepository:
                     ),
                 )
                 row = cursor.fetchone()
+                if row is None:
+                    cursor.execute(
+                        """
+                        SELECT id, tenant_id, actor_user_id, event_type,
+                          resource_type AS target_type,
+                          resource_id AS target_id,
+                          metadata AS payload,
+                          created_at
+                        FROM audit_events
+                        WHERE id = %s
+                        """,
+                        (record.id,),
+                    )
+                    row = cursor.fetchone()
         if row is None:
-            raise ValueError("Audit event upsert did not return a row.")
+            raise ValueError("PostgreSQL audit event append did not return a row.")
         persisted = _audit_event_from_row(dict(row))
         _validate_write_result(record, persisted)
         return persisted

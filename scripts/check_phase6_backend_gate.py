@@ -17,6 +17,10 @@ CHECKS = (
         [sys.executable, "scripts/check_phase6_tenant_access_boundary.py"],
     ),
     (
+        "audit event immutability",
+        [sys.executable, "scripts/check_phase6_audit_event_immutability.py"],
+    ),
+    (
         "secret hygiene",
         [sys.executable, "scripts/check_phase6_secret_hygiene.py"],
     ),

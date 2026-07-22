@@ -441,7 +441,9 @@ def main() -> int:
         "resource_id AS target_id",
         "metadata AS payload",
         "row = cursor.fetchone()",
-        "Audit event upsert did not return a row.",
+        "ON CONFLICT (id) DO NOTHING",
+        "PostgreSQL audit event append did not return a row.",
+        "_validate_write_result(record, persisted)",
         "return _audit_event_from_row(dict(row))",
     ):
         _assert_contains(
