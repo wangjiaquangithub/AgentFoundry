@@ -39,7 +39,7 @@ def _check_status_contract() -> list[str]:
     postgres = inspect_configured_database_status(
         {
             "AGENTFOUNDRY_DATABASE_URL": (
-                "postgresql://agentfoundry:secret@localhost:5432/agentfoundry"
+                "postgresql://agentfoundry:agentfoundry@localhost:5432/agentfoundry"
             )
         }
     )
@@ -51,7 +51,7 @@ def _check_status_contract() -> list[str]:
         errors.append("database status message must not expose URL credentials")
 
     postgres_alias = inspect_configured_database_status(
-        {"AGENTFOUNDRY_DATABASE_URL": "postgres://agentfoundry:secret@localhost/db"}
+        {"AGENTFOUNDRY_DATABASE_URL": "postgres://agentfoundry:agentfoundry@localhost/db"}
     )
     if not postgres_alias.production_ready or postgres_alias.scheme != "postgres":
         errors.append("postgres:// alias must remain accepted as PostgreSQL")

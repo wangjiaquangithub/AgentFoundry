@@ -86,6 +86,7 @@ SECRET_ASSIGNMENT_RE = re.compile(
 )
 DATABASE_URL_RE = re.compile(r"\b(?:postgresql|postgres)://[^\s\"'`<>]+")
 NON_SECRET_ASSIGNMENT_SUFFIXES = (
+    "_ENV_VAR",
     "_PATTERN",
     "_PATTERNS",
     "_RE",

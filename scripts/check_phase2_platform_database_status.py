@@ -119,7 +119,7 @@ def main() -> int:
             lambda: inspect_configured_database_status(
                 {
                     "AGENTFOUNDRY_DATABASE_URL": (
-                        "postgresql://agentfoundry:secret@localhost:5432/agentfoundry"
+                        "postgresql://agentfoundry:agentfoundry@localhost:5432/agentfoundry"
                     )
                 },
             ),

@@ -36,7 +36,7 @@ def _check_postgres_driver_status() -> list[str]:
     postgres = inspect_configured_database_status(
         {
             "AGENTFOUNDRY_DATABASE_URL": (
-                "postgresql://agentfoundry:secret@localhost:5432/agentfoundry"
+                "postgresql://agentfoundry:agentfoundry@localhost:5432/agentfoundry"
             )
         }
     )
@@ -74,7 +74,7 @@ def _check_connect_error_mentions_driver() -> list[str]:
         return []
 
     database = PostgresDatabase(
-        database_url="postgresql://agentfoundry:secret@localhost:5432/agentfoundry",
+        database_url="postgresql://agentfoundry:agentfoundry@localhost:5432/agentfoundry",
     )
     try:
         database.connect()
