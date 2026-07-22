@@ -3445,6 +3445,13 @@ def _check_postgres_embedding_record_reads_guarded() -> list[str]:
                     "embedding records: backend/persistence/embedding_records.py:"
                     f"PostgresEmbeddingRecordReadRepository.{method_name}",
                 )
+        if not _module_calls_name(method_node, "_validate_embedding_record_read_result"):
+            errors.append(
+                "PostgreSQL embedding record read method must validate returned records "
+                "against requested tenant and filters: "
+                "backend/persistence/embedding_records.py:"
+                f"PostgresEmbeddingRecordReadRepository.{method_name}",
+            )
 
     return errors
 

@@ -64,6 +64,26 @@ def _validate_write_result(
         raise ValueError("PostgreSQL embedding record write returned another vector ref.")
 
 
+def _validate_embedding_record_read_result(
+    record: EmbeddingRecord,
+    *,
+    tenant_id: str,
+    chunk_id: str | None = None,
+    model_config_id: str | None = None,
+    embedding_record_id: str | None = None,
+) -> None:
+    if record.tenant_id != tenant_id:
+        raise ValueError("PostgreSQL embedding record read returned another tenant.")
+    if chunk_id is not None and record.chunk_id != chunk_id:
+        raise ValueError("PostgreSQL embedding record read returned another chunk.")
+    if model_config_id is not None and record.model_config_id != model_config_id:
+        raise ValueError(
+            "PostgreSQL embedding record read returned another model config.",
+        )
+    if embedding_record_id is not None and record.id != embedding_record_id:
+        raise ValueError("PostgreSQL embedding record read returned another record.")
+
+
 class SQLiteEmbeddingRecordReadRepository:
     """Read tenant-scoped embedding records from SQLite."""
 
@@ -155,7 +175,16 @@ class PostgresEmbeddingRecordReadRepository:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, tuple(parameters))
-                return [_embedding_record_from_row(dict(row)) for row in cursor.fetchall()]
+                rows = cursor.fetchall()
+        records = [_embedding_record_from_row(dict(row)) for row in rows]
+        for record in records:
+            _validate_embedding_record_read_result(
+                record,
+                tenant_id=tenant_id,
+                chunk_id=chunk_id,
+                model_config_id=model_config_id,
+            )
+        return records
 
     def get_embedding_record(
         self,
@@ -177,7 +206,13 @@ class PostgresEmbeddingRecordReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return _embedding_record_from_row(dict(row))
+        record = _embedding_record_from_row(dict(row))
+        _validate_embedding_record_read_result(
+            record,
+            tenant_id=tenant_id,
+            embedding_record_id=embedding_record_id,
+        )
+        return record
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 200)
