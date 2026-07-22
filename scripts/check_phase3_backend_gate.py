@@ -46,6 +46,27 @@ CHECKS = (
         ),
     ),
     (
+        "knowledge ingestion composition",
+        (
+            sys.executable,
+            "scripts/check_phase3_knowledge_ingestion_composition.py",
+        ),
+    ),
+    (
+        "knowledge readiness composition",
+        (
+            sys.executable,
+            "scripts/check_phase3_knowledge_readiness_composition.py",
+        ),
+    ),
+    (
+        "knowledge retrieval composition",
+        (
+            sys.executable,
+            "scripts/check_phase3_knowledge_retrieval_composition.py",
+        ),
+    ),
+    (
         "knowledge retrieval API",
         (sys.executable, "scripts/check_phase3_knowledge_retrieval_api.py"),
     ),
