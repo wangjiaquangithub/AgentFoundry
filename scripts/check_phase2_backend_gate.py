@@ -105,6 +105,34 @@ CHECKS = (
         ),
     ),
     (
+        "PostgreSQL memory composition boundary",
+        (
+            sys.executable,
+            "scripts/check_phase2_memory_pg_composition_boundary.py",
+        ),
+    ),
+    (
+        "PostgreSQL tool policy composition boundary",
+        (
+            sys.executable,
+            "scripts/check_phase2_tool_policy_pg_composition_boundary.py",
+        ),
+    ),
+    (
+        "PostgreSQL workflow template repository",
+        (
+            sys.executable,
+            "scripts/check_phase2_postgres_workflow_template_repository.py",
+        ),
+    ),
+    (
+        "workflow template audit tenant alignment",
+        (
+            sys.executable,
+            "scripts/check_phase2_workflow_template_audit_tenant_alignment.py",
+        ),
+    ),
+    (
         "PostgreSQL index contract",
         (sys.executable, "scripts/check_phase2_postgres_index_contract.py"),
     ),
