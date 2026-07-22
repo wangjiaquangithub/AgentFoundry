@@ -1636,11 +1636,21 @@ def _check_postgres_knowledge_audit_write_records() -> list[str]:
         "RETURNING id, tenant_id, actor_user_id, event_type",
         "row = cursor.fetchone()",
         "Audit event upsert did not return a row.",
-        "return _audit_event_from_row(dict(row))",
+        "persisted = _audit_event_from_row(dict(row))",
+        "_validate_write_result(record, persisted)",
+        "PostgreSQL audit event write did not return an event id.",
+        "PostgreSQL audit event write did not return an event type.",
+        "PostgreSQL audit event write returned another event.",
+        "PostgreSQL audit event write returned another tenant.",
+        "PostgreSQL audit event write returned another actor.",
+        "PostgreSQL audit event write returned another event type.",
+        "PostgreSQL audit event write returned another target type.",
+        "PostgreSQL audit event write returned another target.",
+        "PostgreSQL audit event write returned another payload.",
     ):
         if token not in audit_persistence_source:
             errors.append(
-                "backend/persistence/audit_events.py must return persisted "
+                "backend/persistence/audit_events.py must validate persisted "
                 f"PostgreSQL audit event write records: {token}",
             )
 

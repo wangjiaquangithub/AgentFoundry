@@ -46,6 +46,30 @@ def _payload_from_json(value: dict[str, Any] | str, event_id: str) -> dict[str, 
     return parsed
 
 
+def _validate_write_result(
+    requested: AuditEventRecord,
+    persisted: AuditEventRecord,
+) -> None:
+    if not persisted.id:
+        raise ValueError("PostgreSQL audit event write did not return an event id.")
+    if not persisted.event_type:
+        raise ValueError("PostgreSQL audit event write did not return an event type.")
+    if persisted.id != requested.id:
+        raise ValueError("PostgreSQL audit event write returned another event.")
+    if persisted.tenant_id != requested.tenant_id:
+        raise ValueError("PostgreSQL audit event write returned another tenant.")
+    if persisted.actor_user_id != requested.actor_user_id:
+        raise ValueError("PostgreSQL audit event write returned another actor.")
+    if persisted.event_type != requested.event_type:
+        raise ValueError("PostgreSQL audit event write returned another event type.")
+    if persisted.target_type != requested.target_type:
+        raise ValueError("PostgreSQL audit event write returned another target type.")
+    if persisted.target_id != requested.target_id:
+        raise ValueError("PostgreSQL audit event write returned another target.")
+    if persisted.payload != requested.payload:
+        raise ValueError("PostgreSQL audit event write returned another payload.")
+
+
 class SQLiteAuditEventReadRepository:
     """Read tenant-scoped audit events from SQLite."""
 
@@ -272,4 +296,6 @@ class PostgresAuditEventWriteRepository:
                 row = cursor.fetchone()
         if row is None:
             raise ValueError("Audit event upsert did not return a row.")
-        return _audit_event_from_row(dict(row))
+        persisted = _audit_event_from_row(dict(row))
+        _validate_write_result(record, persisted)
+        return persisted
