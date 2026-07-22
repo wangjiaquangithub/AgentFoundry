@@ -180,11 +180,11 @@ from services.composition import (
     build_configured_postgres_retrieval_event_write_repository,
     build_configured_postgres_runtime_read_repository,
     build_configured_postgres_runtime_write_repository,
-    build_configured_postgres_tool_governance_read_repository,
-    build_configured_postgres_tool_governance_write_repository,
     build_member_repository,
     build_tool_call_read_repository,
     build_tool_call_write_repository,
+    build_tool_governance_read_repository,
+    build_tool_governance_write_repository,
     build_workflow_run_repository,
 )
 from services.platform_status import PlatformStatusService
@@ -211,14 +211,6 @@ agent_run_repository = build_agent_run_repository(agent_run_fallback_repository)
 approval_request_repository = build_approval_request_repository(
     approval_request_fallback_repository,
 )
-
-
-def _build_tool_governance_read_repository() -> Any | None:
-    return build_configured_postgres_tool_governance_read_repository()
-
-
-def _build_tool_governance_write_repository() -> Any | None:
-    return build_configured_postgres_tool_governance_write_repository()
 
 
 def _build_memory_item_read_repository() -> Any | None:
@@ -387,8 +379,8 @@ def _platform_tool_policy_service() -> PlatformToolPolicyService:
         identity_metadata=lambda user_id, tenant: (
             _platform_access_helpers.identity_metadata(user_id, tenant)
         ),
-        tool_governance_reader=_build_tool_governance_read_repository(),
-        tool_governance_writer=_build_tool_governance_write_repository(),
+        tool_governance_reader=build_tool_governance_read_repository(),
+        tool_governance_writer=build_tool_governance_write_repository(),
         audit_event_writer=_build_audit_event_write_repository(),
         enterprise_tool_catalog=ENTERPRISE_TOOL_CATALOG,
         approval_required_tools=APPROVAL_REQUIRED_TOOLS,

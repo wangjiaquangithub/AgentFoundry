@@ -201,6 +201,22 @@ def build_configured_postgres_tool_governance_write_repository() -> (
     return PostgresToolGovernanceWriteRepository(database)
 
 
+def build_tool_governance_read_repository() -> (
+    PostgresToolGovernanceReadRepository | None
+):
+    """Select the configured production tool governance read repository."""
+
+    return build_configured_postgres_tool_governance_read_repository()
+
+
+def build_tool_governance_write_repository() -> (
+    PostgresToolGovernanceWriteRepository | None
+):
+    """Select the configured production tool governance write repository."""
+
+    return build_configured_postgres_tool_governance_write_repository()
+
+
 def build_configured_postgres_memory_item_read_repository() -> (
     PostgresMemoryItemReadRepository | None
 ):

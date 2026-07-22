@@ -1174,29 +1174,33 @@ def _check_postgres_tool_policy_wired() -> list[str]:
             "backend/services/composition.py must define "
             "build_configured_postgres_tool_governance_write_repository",
         )
-    if not _module_defines_function(main_tree, "_build_tool_governance_read_repository"):
+    if not _module_defines_function(
+        composition_tree,
+        "build_tool_governance_read_repository",
+    ):
         errors.append(
-            "backend/main.py must define _build_tool_governance_read_repository for PostgreSQL tool policy reads",
+            "backend/services/composition.py must define build_tool_governance_read_repository for tool policy read selection",
         )
-    if not _module_defines_function(main_tree, "_build_tool_governance_write_repository"):
+    if not _module_defines_function(
+        composition_tree,
+        "build_tool_governance_write_repository",
+    ):
         errors.append(
-            "backend/main.py must define _build_tool_governance_write_repository for PostgreSQL tool policy writes",
+            "backend/services/composition.py must define build_tool_governance_write_repository for tool policy write selection",
         )
-    if "build_configured_postgres_tool_governance_read_repository()" not in main_source:
+    if "build_configured_postgres_tool_governance_read_repository()" not in composition_source:
         errors.append(
-            "backend/main.py must delegate PostgreSQL tool governance reads to "
-            "backend/services/composition.py",
+            "backend/services/composition.py must delegate PostgreSQL tool governance reads to the configured repository builder",
         )
-    if "build_configured_postgres_tool_governance_write_repository()" not in main_source:
+    if "build_configured_postgres_tool_governance_write_repository()" not in composition_source:
         errors.append(
-            "backend/main.py must delegate PostgreSQL tool governance writes to "
-            "backend/services/composition.py",
+            "backend/services/composition.py must delegate PostgreSQL tool governance writes to the configured repository builder",
         )
-    if "tool_governance_reader=_build_tool_governance_read_repository()" not in main_source:
+    if "tool_governance_reader=build_tool_governance_read_repository()" not in main_source:
         errors.append(
             "backend/main.py must pass the PostgreSQL tool_governance_reader into PlatformToolPolicyService",
         )
-    if "tool_governance_writer=_build_tool_governance_write_repository()" not in main_source:
+    if "tool_governance_writer=build_tool_governance_write_repository()" not in main_source:
         errors.append(
             "backend/main.py must pass the PostgreSQL tool_governance_writer into PlatformToolPolicyService",
         )
