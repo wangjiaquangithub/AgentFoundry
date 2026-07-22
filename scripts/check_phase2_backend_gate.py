@@ -41,6 +41,13 @@ CHECKS = (
         (sys.executable, "scripts/check_phase2_postgres_seed_migration_toggle.py"),
     ),
     (
+        "PostgreSQL repository transaction contract",
+        (
+            sys.executable,
+            "scripts/check_phase2_postgres_repository_transaction_contract.py",
+        ),
+    ),
+    (
         "platform database status",
         (sys.executable, "scripts/check_phase2_platform_database_status.py"),
     ),
