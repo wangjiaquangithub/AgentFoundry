@@ -15,14 +15,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PERSISTENCE_MODULE = ROOT / "backend" / "persistence" / "model_configs.py"
+SERVICE_MODULE = ROOT / "backend" / "services" / "model_configs.py"
 BACKEND_DIR = ROOT / "backend"
 
-INTENTIONALLY_PENDING_MODEL_CONFIG_WRITE_EXPOSURE = {
-    "PostgresModelConfigWriteRepository.upsert_model_config": (
-        "No stable model config write API contract exists yet; expose it through "
-        "a real settings/model-config service slice instead of a demo endpoint."
-    ),
-}
+ALLOWED_MODEL_CONFIG_WRITE_EXPOSURE = {SERVICE_MODULE}
 
 
 def _parse_module(path: Path) -> ast.Module:
@@ -110,20 +106,20 @@ def _check_exposure_state() -> tuple[list[str], bool]:
     ]
 
     exposed = bool(importing_modules or calling_modules)
-    pending_contract = "PostgresModelConfigWriteRepository.upsert_model_config"
-    pending_reason = INTENTIONALLY_PENDING_MODEL_CONFIG_WRITE_EXPOSURE.get(pending_contract)
+    exposed_modules = set(importing_modules) | set(calling_modules)
+    unexpected_modules = exposed_modules - ALLOWED_MODEL_CONFIG_WRITE_EXPOSURE
 
-    if not exposed and not pending_reason:
+    if not exposed:
         errors.append(
-            "PostgreSQL model config write path is not wired outside persistence, "
-            "but the pending exposure is not documented in this gate.",
+            "PostgreSQL model config write path must be mediated by "
+            "backend/services/model_configs.py before API exposure.",
         )
         return errors, exposed
 
-    if exposed and pending_reason:
+    for module in sorted(unexpected_modules):
         errors.append(
-            "PostgreSQL model config write path is now wired outside persistence; "
-            "remove the pending exposure entry and add a real API/service contract gate.",
+            "PostgreSQL model config write path is exposed outside the approved "
+            f"service boundary: {module.relative_to(ROOT)}",
         )
 
     return errors, exposed
@@ -137,8 +133,7 @@ def main() -> int:
     print("Phase 2 PostgreSQL model config write exposure gate")
     print("- repository: PostgresModelConfigWriteRepository.upsert_model_config")
     print(f"- wired outside persistence: {'yes' if exposed else 'no'}")
-    if not exposed:
-        print("- pending exposure tracked: yes")
+    print("- approved service boundary: backend/services/model_configs.py")
 
     if errors:
         print("\nErrors:")
