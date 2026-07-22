@@ -1449,13 +1449,19 @@ def _check_postgres_audit_events_wired() -> list[str]:
             "backend/services/composition.py must import "
             "PostgresAuditEventWriteRepository for audit event writes",
         )
-    if not _module_defines_function(main_tree, "_build_audit_event_read_repository"):
+    if not _module_defines_function(
+        composition_tree,
+        "build_audit_event_read_repository",
+    ):
         errors.append(
-            "backend/main.py must define _build_audit_event_read_repository for PostgreSQL audit event reads",
+            "backend/services/composition.py must define build_audit_event_read_repository for PostgreSQL audit event reads",
         )
-    if not _module_defines_function(main_tree, "_build_audit_event_write_repository"):
+    if not _module_defines_function(
+        composition_tree,
+        "build_audit_event_write_repository",
+    ):
         errors.append(
-            "backend/main.py must define _build_audit_event_write_repository for PostgreSQL audit event writes",
+            "backend/services/composition.py must define build_audit_event_write_repository for PostgreSQL audit event writes",
         )
     if not _module_defines_function(
         composition_tree,
@@ -1486,12 +1492,12 @@ def _check_postgres_audit_events_wired() -> list[str]:
         "build_configured_postgres_audit_event_read_repository()",
         "build_configured_postgres_audit_event_write_repository()",
     ):
-        if delegated_builder not in main_source:
+        if delegated_builder not in composition_source:
             errors.append(
-                "backend/main.py must delegate PostgreSQL audit event "
-                f"repository construction to services.composition: {delegated_builder}",
+                "backend/services/composition.py must delegate PostgreSQL audit event "
+                f"repository construction to configured builders: {delegated_builder}",
             )
-    if "audit_event_reader=_build_audit_event_read_repository()" not in main_source:
+    if "audit_event_reader=build_audit_event_read_repository()" not in main_source:
         errors.append(
             "backend/main.py must pass the PostgreSQL audit_event_reader into PlatformStatusService",
         )
@@ -1549,7 +1555,7 @@ def _check_postgres_audit_events_wired() -> list[str]:
             service_call_source = main_source[service_position:]
         else:
             service_call_source = main_source[service_position:next_function_position]
-        if "audit_event_writer=_build_audit_event_write_repository()" not in service_call_source:
+        if "audit_event_writer=build_audit_event_write_repository()" not in service_call_source:
             errors.append(
                 f"backend/main.py must pass the PostgreSQL audit_event_writer into {service_name}",
             )

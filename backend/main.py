@@ -159,8 +159,8 @@ from services.composition import (
     build_agent_run_repository,
     build_agent_repository,
     build_approval_request_repository,
-    build_configured_postgres_audit_event_read_repository,
-    build_configured_postgres_audit_event_write_repository,
+    build_audit_event_read_repository,
+    build_audit_event_write_repository,
     build_configured_postgres_knowledge_base_read_repository,
     build_configured_postgres_knowledge_base_write_repository,
     build_configured_postgres_knowledge_document_chunk_read_repository,
@@ -211,14 +211,6 @@ agent_run_repository = build_agent_run_repository(agent_run_fallback_repository)
 approval_request_repository = build_approval_request_repository(
     approval_request_fallback_repository,
 )
-
-
-def _build_audit_event_read_repository() -> Any | None:
-    return build_configured_postgres_audit_event_read_repository()
-
-
-def _build_audit_event_write_repository() -> Any | None:
-    return build_configured_postgres_audit_event_write_repository()
 
 
 def _build_retrieval_event_write_repository() -> Any | None:
@@ -317,7 +309,7 @@ platform_memory_repository = PlatformMemoryRepository(
 )
 platform_memory_service = PlatformMemoryService(
     repository=platform_memory_repository,
-    audit_event_writer=_build_audit_event_write_repository(),
+    audit_event_writer=build_audit_event_write_repository(),
 )
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 enterprise_connector = build_enterprise_connector()
@@ -365,7 +357,7 @@ def _platform_tool_policy_service() -> PlatformToolPolicyService:
         ),
         tool_governance_reader=build_tool_governance_read_repository(),
         tool_governance_writer=build_tool_governance_write_repository(),
-        audit_event_writer=_build_audit_event_write_repository(),
+        audit_event_writer=build_audit_event_write_repository(),
         enterprise_tool_catalog=ENTERPRISE_TOOL_CATALOG,
         approval_required_tools=APPROVAL_REQUIRED_TOOLS,
         now=now_iso,
@@ -451,7 +443,7 @@ def _platform_status_service() -> PlatformStatusService:
         ),
         agent_run_repository=agent_run_repository,
         audit_logger=tool_audit_logger,
-        audit_event_reader=_build_audit_event_read_repository(),
+        audit_event_reader=build_audit_event_read_repository(),
         retrieval_event_reader=_build_retrieval_event_read_repository(),
         tool_policy=tool_authorization_policy,
         connector_health=connector_health,
@@ -542,7 +534,7 @@ def _platform_agent_service() -> PlatformAgentService:
             include_inactive=True,
         ),
         role_for_user=_platform_access_helpers.role_for_user,
-        audit_event_writer=_build_audit_event_write_repository(),
+        audit_event_writer=build_audit_event_write_repository(),
         knowledge_document_readiness_service=(
             _build_knowledge_document_readiness_service()
         ),
@@ -571,7 +563,7 @@ def _platform_member_service() -> PlatformMemberService:
     return PlatformMemberService(
         repository=member_repository,
         tenant_hint_from_user_id=tenant_hint_from_user_id,
-        audit_event_writer=_build_audit_event_write_repository(),
+        audit_event_writer=build_audit_event_write_repository(),
         now=now_iso,
     )
 
@@ -584,7 +576,7 @@ def _platform_connector_config_service() -> PlatformConnectorConfigService:
     return PlatformConnectorConfigService(
         repository=connector_config_repository,
         global_connector=enterprise_connector,
-        audit_event_writer=_build_audit_event_write_repository(),
+        audit_event_writer=build_audit_event_write_repository(),
         now=now_iso,
     )
 
@@ -660,7 +652,7 @@ app = create_app(
 def _platform_workflow_template_service() -> PlatformWorkflowTemplateService:
     return PlatformWorkflowTemplateService(
         repository=workflow_template_repository,
-        audit_event_writer=_build_audit_event_write_repository(),
+        audit_event_writer=build_audit_event_write_repository(),
         now=now_iso,
     )
 
@@ -672,7 +664,7 @@ def _platform_workflow_run_service() -> PlatformWorkflowRunService:
 def _platform_approval_service() -> PlatformApprovalService:
     return PlatformApprovalService(
         repository=approval_request_repository,
-        audit_event_writer=_build_audit_event_write_repository(),
+        audit_event_writer=build_audit_event_write_repository(),
         now=now_iso,
     )
 

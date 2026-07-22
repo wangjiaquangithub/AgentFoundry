@@ -117,6 +117,18 @@ def build_configured_postgres_audit_event_write_repository() -> (
     return PostgresAuditEventWriteRepository(database)
 
 
+def build_audit_event_read_repository() -> PostgresAuditEventReadRepository | None:
+    """Select the configured production audit event read repository."""
+
+    return build_configured_postgres_audit_event_read_repository()
+
+
+def build_audit_event_write_repository() -> PostgresAuditEventWriteRepository | None:
+    """Select the configured production audit event write repository."""
+
+    return build_configured_postgres_audit_event_write_repository()
+
+
 def build_configured_postgres_retrieval_event_read_repository() -> (
     PostgresRetrievalEventReadRepository | None
 ):
