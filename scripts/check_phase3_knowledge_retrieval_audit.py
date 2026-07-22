@@ -110,6 +110,11 @@ class _ProductionKnowledgeService:
         ]
 
 
+class _EmptyProductionKnowledgeService:
+    async def search(self, **_: Any) -> list[Any]:
+        return []
+
+
 class _DevKnowledgeService:
     def search(self, **_: Any) -> list[dict[str, Any]]:
         return []
@@ -242,6 +247,78 @@ async def _assert_agent_run_retrieval_audit_contract() -> None:
             )
 
 
+async def _assert_agent_run_zero_hit_retrieval_audit_contract() -> None:
+    retrieval_events = _RetrievalEvents()
+    audit_events = _AuditEvents()
+    service = PlatformKnowledgeResponseService(
+        retrieval_event_writer=retrieval_events,
+        audit_event_writer=audit_events,
+        now=lambda: "2026-01-01T00:00:00+00:00",
+    )
+
+    hits, knowledge_error, readiness = await service.search_agent_knowledge_bases(
+        knowledge_base_service=_EmptyProductionKnowledgeService(),
+        dev_knowledge_service=_DevKnowledgeService(),
+        dev_knowledge_provider="agentfoundry-dev-local",
+        user_id="acme:alice",
+        tenant="acme",
+        question="missing runbook evidence",
+        knowledge_base_ids=["kb_empty"],
+        top_k=3,
+        agent_run_id="run_phase3_agent_empty_audit_check",
+    )
+
+    if knowledge_error is not None:
+        _fail("zero-hit production retrieval must not return a knowledge error")
+    if readiness["status"] != "ready":
+        _fail("zero-hit production retrieval must keep retrieval readiness ready")
+    if hits:
+        _fail("zero-hit production retrieval check must not return hits")
+    if readiness["production_hit_count"] != 0:
+        _fail("zero-hit production retrieval readiness must report no production hits")
+    if readiness["dev_fallback_hit_count"] != 0:
+        _fail("zero-hit production retrieval readiness must not report dev fallback hits")
+    if readiness["dev_fallback_used"]:
+        _fail("zero-hit production retrieval readiness must not use dev fallback")
+    if len(retrieval_events.records) != 1:
+        _fail("zero-hit production retrieval must write one retrieval event")
+    if len(audit_events.records) != 1:
+        _fail("zero-hit production retrieval must write one audit event")
+
+    retrieval_event = retrieval_events.records[0]
+    audit_event = audit_events.records[0]
+    audit_payload = audit_event.payload
+    expected_payload = {
+        "schema_version": 1,
+        "retrieval_event_id": retrieval_event.id,
+        "tenant": "acme",
+        "user_id": "acme:alice",
+        "agent_run_id": "run_phase3_agent_empty_audit_check",
+        "knowledge_base_id": "kb_empty",
+        "bound_knowledge_base_ids": ["kb_empty"],
+        "ready_knowledge_base_ids": ["kb_empty"],
+        "blocked_knowledge_base_ids": [],
+        "query": "missing runbook evidence",
+        "status": "ready",
+        "hit_count": 0,
+        "document_ids": [],
+        "retrieval_mode": "production_search",
+    }
+
+    if audit_event.event_type != "knowledge_base.retrieved":
+        _fail("zero-hit audit event type must be knowledge_base.retrieved")
+    if audit_event.target_type != "knowledge_base":
+        _fail("zero-hit audit event target type must be knowledge_base")
+    if audit_event.target_id != "kb_empty":
+        _fail("zero-hit audit event target id must match the retrieved knowledge base")
+    for key, expected in expected_payload.items():
+        if audit_payload.get(key) != expected:
+            _fail(
+                "zero-hit audit payload field "
+                f"{key!r} expected {expected!r}, got {audit_payload.get(key)!r}"
+            )
+
+
 def main() -> int:
     api_source = _read(API_MODULE)
     service_source = _read(SERVICE_MODULE)
@@ -337,6 +414,7 @@ def main() -> int:
 
     _assert_runtime_retrieval_audit_contract()
     asyncio.run(_assert_agent_run_retrieval_audit_contract())
+    asyncio.run(_assert_agent_run_zero_hit_retrieval_audit_contract())
 
     print("OK: Phase 3 knowledge retrieval writes retrieval and audit events")
     return 0
