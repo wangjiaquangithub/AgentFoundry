@@ -44,6 +44,7 @@ class DatabaseConfigurationStatus:
     driver_package: str | None
     driver_available: bool
     runtime_ready: bool
+    operator_ready: bool
     message: str
 
 
@@ -70,6 +71,7 @@ def inspect_configured_database_status(
             driver_package=None,
             driver_available=False,
             runtime_ready=False,
+            operator_ready=False,
             message=(
                 "Set AGENTFOUNDRY_DATABASE_URL to postgresql:// for the "
                 "production data layer."
@@ -91,6 +93,7 @@ def inspect_configured_database_status(
             driver_package="psycopg",
             driver_available=driver_available,
             runtime_ready=driver_available,
+            operator_ready=driver_available,
             message=(
                 "Configured for PostgreSQL production persistence."
                 if driver_available
@@ -111,6 +114,7 @@ def inspect_configured_database_status(
             driver_package=None,
             driver_available=False,
             runtime_ready=False,
+            operator_ready=False,
             message="sqlite:// is only for explicit local development compatibility.",
         )
 
@@ -126,6 +130,7 @@ def inspect_configured_database_status(
         driver_package=None,
         driver_available=False,
         runtime_ready=False,
+        operator_ready=False,
         message=(
             "Unsupported database URL scheme. Use postgresql:// for production "
             "or sqlite:// for explicit local development compatibility."

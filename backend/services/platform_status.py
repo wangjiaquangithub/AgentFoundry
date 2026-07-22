@@ -385,12 +385,13 @@ class PlatformStatusService:
         production_mode = bool(snapshot.get("production_mode"))
         postgresql_backend = backend == "postgresql"
         production_database_backend = postgresql_backend and required_backend == "postgresql"
-        operator_ready = (
+        computed_operator_ready = (
             configured
             and production_database_backend
             and production_ready
             and runtime_ready
         )
+        operator_ready = bool(snapshot.get("operator_ready", computed_operator_ready))
 
         normalized = {
             "env_var": snapshot.get("env_var") or "AGENTFOUNDRY_DATABASE_URL",

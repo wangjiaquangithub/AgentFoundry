@@ -31,6 +31,8 @@ def _check_status_contract() -> list[str]:
         errors.append("empty environment must be reported as unconfigured")
     if empty.production_ready:
         errors.append("empty environment must not be production ready")
+    if empty.operator_ready:
+        errors.append("empty environment must not be operator ready")
     if empty.backend != "unconfigured":
         errors.append("empty environment must use the unconfigured backend label")
     if empty.required_backend != "postgresql":
@@ -47,6 +49,8 @@ def _check_status_contract() -> list[str]:
     )
     if not postgres.configured or not postgres.production_ready:
         errors.append("postgresql:// status must be configured and production ready")
+    if postgres.operator_ready is not postgres.runtime_ready:
+        errors.append("postgresql:// operator_ready must follow runtime readiness")
     if postgres.scheme != "postgresql" or postgres.backend != "postgresql":
         errors.append("postgresql:// status must expose the PostgreSQL backend")
     if postgres.required_backend != "postgresql":
@@ -67,6 +71,8 @@ def _check_status_contract() -> list[str]:
         errors.append("sqlite:// status must report that a URL is configured")
     if sqlite.production_ready:
         errors.append("sqlite:// status must not be production ready")
+    if sqlite.operator_ready:
+        errors.append("sqlite:// status must not be operator ready")
     if sqlite.backend != "sqlite":
         errors.append("sqlite:// status must expose the local compatibility backend")
     if sqlite.required_backend != "postgresql":
@@ -79,6 +85,8 @@ def _check_status_contract() -> list[str]:
     )
     if unsupported.production_ready:
         errors.append("unsupported URL schemes must not be production ready")
+    if unsupported.operator_ready:
+        errors.append("unsupported URL schemes must not be operator ready")
     if unsupported.backend != "unsupported" or unsupported.scheme != "mysql":
         errors.append("unsupported status must preserve the scheme without accepting it")
     if unsupported.required_backend != "postgresql":

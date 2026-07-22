@@ -15,7 +15,7 @@ sys.path.insert(0, str(ROOT))
 
 def _expect_status_fields(status: Any, label: str) -> list[str]:
     errors: list[str] = []
-    for field in ("driver_package", "driver_available", "runtime_ready"):
+    for field in ("driver_package", "driver_available", "runtime_ready", "operator_ready"):
         if not hasattr(status, field):
             errors.append(f"{label} status must expose {field}")
     return errors
@@ -47,6 +47,8 @@ def _check_postgres_driver_status() -> list[str]:
         errors.append("postgresql:// status must report actual psycopg availability")
     if postgres.runtime_ready is not expected_driver_available:
         errors.append("postgresql:// runtime_ready must require psycopg availability")
+    if postgres.operator_ready is not expected_driver_available:
+        errors.append("postgresql:// operator_ready must require psycopg availability")
     if "secret" in repr(postgres):
         errors.append("postgresql:// runtime dependency status must not expose credentials")
 
@@ -56,12 +58,16 @@ def _check_postgres_driver_status() -> list[str]:
     errors.extend(_expect_status_fields(sqlite, "sqlite://"))
     if sqlite.driver_package is not None:
         errors.append("sqlite:// status must not claim a PostgreSQL driver package")
-    if sqlite.driver_available or sqlite.runtime_ready:
+    if sqlite.driver_available or sqlite.runtime_ready or sqlite.operator_ready:
         errors.append("sqlite:// must not be reported as PostgreSQL runtime ready")
 
     unconfigured = inspect_configured_database_status({})
     errors.extend(_expect_status_fields(unconfigured, "unconfigured"))
-    if unconfigured.driver_available or unconfigured.runtime_ready:
+    if (
+        unconfigured.driver_available
+        or unconfigured.runtime_ready
+        or unconfigured.operator_ready
+    ):
         errors.append("unconfigured status must not be runtime ready")
 
     return errors

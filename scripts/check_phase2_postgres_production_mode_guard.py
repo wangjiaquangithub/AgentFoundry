@@ -61,6 +61,8 @@ def _check_production_guard_contract() -> list[str]:
         errors.append("development SQLite compatibility must not report production mode")
     if local_sqlite_status.production_ready:
         errors.append("development SQLite compatibility must not be production ready")
+    if local_sqlite_status.operator_ready:
+        errors.append("development SQLite compatibility must not be operator ready")
 
     postgres_status = require_postgres_database_for_production(
         {
@@ -70,6 +72,8 @@ def _check_production_guard_contract() -> list[str]:
     )
     if not postgres_status.production_mode or not postgres_status.production_ready:
         errors.append("production PostgreSQL URL must pass the production guard")
+    if postgres_status.operator_ready is not postgres_status.runtime_ready:
+        errors.append("production PostgreSQL operator readiness must follow runtime readiness")
     configured = create_configured_postgres_database(
         {
             "AGENTFOUNDRY_ENV": "production",
@@ -114,6 +118,8 @@ def _check_production_guard_contract() -> list[str]:
         errors.append("status must expose production_mode for production SQLite rejection")
     if sqlite_status.production_ready:
         errors.append("production SQLite status must not be production ready")
+    if sqlite_status.operator_ready:
+        errors.append("production SQLite status must not be operator ready")
 
     return errors
 
