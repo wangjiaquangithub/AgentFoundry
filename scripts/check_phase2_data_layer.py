@@ -469,6 +469,59 @@ def _module_uses_name(tree: ast.AST, name: str) -> bool:
     return any(isinstance(node, ast.Name) and node.id == name for node in ast.walk(tree))
 
 
+def _call_has_keyword_string(
+    node: ast.Call,
+    *,
+    keyword_name: str,
+    keyword_value: str,
+) -> bool:
+    return any(
+        keyword.arg == keyword_name
+        and isinstance(keyword.value, ast.Constant)
+        and keyword.value.value == keyword_value
+        for keyword in node.keywords
+    )
+
+
+def _call_has_keyword_int(
+    node: ast.Call,
+    *,
+    keyword_name: str,
+    keyword_value: int,
+) -> bool:
+    return any(
+        keyword.arg == keyword_name
+        and isinstance(keyword.value, ast.Constant)
+        and keyword.value.value == keyword_value
+        for keyword in node.keywords
+    )
+
+
+def _platform_status_selects_active_agentscope_provider(tree: ast.AST) -> bool:
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        function = node.func
+        if not isinstance(function, ast.Attribute) or function.attr != "list_providers":
+            continue
+        if not _call_has_keyword_string(
+            node,
+            keyword_name="status",
+            keyword_value="active",
+        ):
+            continue
+        if not _call_has_keyword_string(
+            node,
+            keyword_name="provider_type",
+            keyword_value="agentscope",
+        ):
+            continue
+        if not _call_has_keyword_int(node, keyword_name="limit", keyword_value=1):
+            continue
+        return True
+    return False
+
+
 def _string_literals(tree: ast.AST) -> list[str]:
     return [
         node.value
@@ -808,6 +861,10 @@ def _check_postgres_runtime_provider_reads_wired() -> list[str]:
     platform_status_source = PLATFORM_STATUS_SERVICE_MODULE.read_text(encoding="utf-8")
     main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
     composition_tree = ast.parse(composition_source, filename=str(COMPOSITION_MODULE))
+    platform_status_tree = ast.parse(
+        platform_status_source,
+        filename=str(PLATFORM_STATUS_SERVICE_MODULE),
+    )
 
     if not _module_imports_name(composition_tree, "PostgresRuntimeReadRepository"):
         errors.append(
@@ -846,9 +903,9 @@ def _check_postgres_runtime_provider_reads_wired() -> list[str]:
         errors.append(
             "backend/services/platform_status.py must accept a runtime_provider_reader",
         )
-    if 'status="active"' not in platform_status_source:
+    if not _platform_status_selects_active_agentscope_provider(platform_status_tree):
         errors.append(
-            "backend/services/platform_status.py must select an active runtime provider from PostgreSQL",
+            "backend/services/platform_status.py must select the active AgentScope runtime provider from PostgreSQL",
         )
     if "postgres_runtime_provider_record" not in platform_status_source:
         errors.append(
