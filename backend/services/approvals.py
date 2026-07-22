@@ -209,13 +209,13 @@ class PlatformApprovalService:
             "decided_by": None,
             "decision_note": None,
         }
-        self._repository.append(record)
+        persisted_record = self._repository.append(record)
         self._append_approval_audit_event(
-            approval=record,
+            approval=persisted_record,
             actor=requested_by,
             event_type="approval.requested",
         )
-        return record
+        return persisted_record
 
     def require_approval(
         self,

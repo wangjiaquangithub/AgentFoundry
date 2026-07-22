@@ -248,7 +248,7 @@ class PostgresApprovalWriteRepository:
     def __init__(self, database: PostgresDatabase) -> None:
         self._database = database
 
-    def append_approval(self, record: ApprovalRecord) -> None:
+    def append_approval(self, record: ApprovalRecord) -> ApprovalRecord:
         with self._database.transaction() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
@@ -263,6 +263,9 @@ class PostgresApprovalWriteRepository:
                       %s, %s, %s, %s, %s,
                       %s
                     )
+                    RETURNING id, tenant_id, request_type, target_type, target_id,
+                      status, requested_by, approved_by, reason, payload, created_at,
+                      resolved_at
                     """,
                     (
                         record.id,
@@ -279,6 +282,10 @@ class PostgresApprovalWriteRepository:
                         record.resolved_at,
                     ),
                 )
+                row = cursor.fetchone()
+        if row is None:
+            raise ValueError("Approval insert did not return a row.")
+        return _approval_from_row(dict(row))
 
     def update_approval_status(
         self,

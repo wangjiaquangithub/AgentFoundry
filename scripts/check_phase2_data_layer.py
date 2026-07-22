@@ -1348,6 +1348,21 @@ def _check_postgres_approval_requests_wired() -> list[str]:
             "backend/services/approvals.py must depend on ApprovalRequestRepositoryProtocol",
         )
 
+    approval_persistence_source = (PERSISTENCE_DIR / "approvals.py").read_text(encoding="utf-8")
+    for token in (
+        "def append_approval(",
+        ") -> ApprovalRecord:",
+        "RETURNING id, tenant_id, request_type, target_type, target_id",
+        "row = cursor.fetchone()",
+        "Approval insert did not return a row.",
+        "return _approval_from_row(dict(row))",
+    ):
+        if token not in approval_persistence_source:
+            errors.append(
+                "backend/persistence/approvals.py must return persisted PostgreSQL "
+                f"approval write records: {token}",
+            )
+
     return errors
 
 

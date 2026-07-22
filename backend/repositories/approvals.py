@@ -33,7 +33,7 @@ class ApprovalRequestRepositoryProtocol(Protocol):
     ) -> dict[str, Any] | None:
         ...
 
-    def append(self, record: dict[str, Any]) -> None:
+    def append(self, record: dict[str, Any]) -> dict[str, Any]:
         ...
 
     def update_status(
@@ -96,11 +96,12 @@ class ApprovalRequestRepository:
                 break
         return records
 
-    def append(self, record: dict[str, Any]) -> None:
+    def append(self, record: dict[str, Any]) -> dict[str, Any]:
         self._path.parent.mkdir(parents=True, exist_ok=True)
         with self._path.open("a", encoding="utf-8") as file:
             file.write(json.dumps(record, ensure_ascii=False, default=str))
             file.write("\n")
+        return record
 
     def get(
         self,
@@ -225,13 +226,14 @@ class PostgresApprovalReadThroughRepository:
             return _postgres_approval_to_platform_record(postgres_record)
         return None
 
-    def append(self, record: dict[str, Any]) -> None:
+    def append(self, record: dict[str, Any]) -> dict[str, Any]:
         if not record.get("tenant"):
             raise ValueError("PostgreSQL approval writes require tenant context.")
 
-        self._postgres_writer.append_approval(
+        persisted_record = self._postgres_writer.append_approval(
             _platform_record_to_postgres_approval(record),
         )
+        return _postgres_approval_to_platform_record(persisted_record)
 
     def update_status(
         self,
