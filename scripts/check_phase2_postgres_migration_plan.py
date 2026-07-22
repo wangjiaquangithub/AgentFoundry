@@ -42,6 +42,43 @@ def _calls_name(node: ast.AST, name: str) -> bool:
     return False
 
 
+def _constant_string(node: ast.AST) -> str | None:
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    return None
+
+
+def _test_checks_scheme(test: ast.AST, expected: set[str]) -> bool:
+    if isinstance(test, ast.Compare):
+        values: list[str | None] = []
+        for comparator in test.comparators:
+            if isinstance(comparator, (ast.List, ast.Set, ast.Tuple)):
+                values.extend(_constant_string(element) for element in comparator.elts)
+            else:
+                values.append(_constant_string(comparator))
+        if any(value in expected for value in values):
+            return True
+    return any(_test_checks_scheme(child, expected) for child in ast.iter_child_nodes(test))
+
+
+def _has_scheme_dispatch(
+    function: ast.FunctionDef | None,
+    *,
+    schemes: set[str],
+    target_function: str,
+) -> bool:
+    if function is None:
+        return False
+    for node in ast.walk(function):
+        if not isinstance(node, ast.If):
+            continue
+        if not _test_checks_scheme(node.test, schemes):
+            continue
+        if any(_calls_name(statement, target_function) for statement in node.body):
+            return True
+    return False
+
+
 def _check_static_contract() -> list[str]:
     errors: list[str] = []
     source = _read(MIGRATION_RUNNER)
@@ -74,6 +111,26 @@ def _check_static_contract() -> list[str]:
             continue
         if not _calls_name(function, "plan_migrations"):
             errors.append(f"{function_name} must use plan_migrations")
+
+    apply_function = _function(tree, "apply_migrations")
+    if apply_function is None:
+        errors.append("missing migration apply function: apply_migrations")
+    if not _has_scheme_dispatch(
+        apply_function,
+        schemes={"postgresql", "postgres"},
+        target_function="_apply_postgres_migrations",
+    ):
+        errors.append(
+            "apply_migrations must dispatch postgresql:// and postgres:// to PostgreSQL migrations"
+        )
+    if not _has_scheme_dispatch(
+        apply_function,
+        schemes={"sqlite"},
+        target_function="_apply_sqlite_migrations",
+    ):
+        errors.append(
+            "apply_migrations must keep sqlite:// as the explicit local compatibility path"
+        )
 
     return errors
 
@@ -108,6 +165,7 @@ def main() -> int:
     print("Phase 2 PostgreSQL migration planning gate")
     print("- migration plan: deterministic")
     print("- planning boundary: no database connection")
+    print("- migration dispatch: PostgreSQL-first with explicit SQLite compatibility")
     print("- production target: PostgreSQL")
 
     if errors:
