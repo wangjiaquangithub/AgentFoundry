@@ -49,13 +49,6 @@ const platformSections: Array<{
 	{ group: 'Configure', label: 'Models / Settings', path: '/platform/settings', icon: Boxes },
 ];
 
-const platformSectionGroups = [
-	{ label: 'Operate', items: platformSections.filter((item) => item.group === 'Operate') },
-	{ label: 'Build', items: platformSections.filter((item) => item.group === 'Build') },
-	{ label: 'Govern', items: platformSections.filter((item) => item.group === 'Govern') },
-	{ label: 'Configure', items: platformSections.filter((item) => item.group === 'Configure') },
-];
-
 export interface PlatformPageShellProps {
 	children: ReactNode;
 	className?: string;
@@ -64,8 +57,7 @@ export interface PlatformPageShellProps {
 export function PlatformPageShell({ children, className }: PlatformPageShellProps) {
 	return (
 		<main className="agentfoundry-platform h-full min-h-0 flex-1 overflow-y-auto bg-[#f5f6f8]">
-			<div className="mx-auto grid w-full max-w-[1600px] gap-0 lg:grid-cols-[272px_minmax(0,1fr)]">
-				<PlatformDesktopNav />
+			<div className="mx-auto grid w-full max-w-[1600px] gap-0">
 				<div
 					className={cn(
 						'flex min-w-0 flex-col gap-4 px-3 py-3 sm:px-5 sm:py-5 lg:px-7 xl:px-9',
@@ -77,49 +69,6 @@ export function PlatformPageShell({ children, className }: PlatformPageShellProp
 				</div>
 			</div>
 		</main>
-	);
-}
-
-function PlatformDesktopNav() {
-	return (
-		<aside className="sticky top-0 hidden h-screen min-h-0 border-r bg-white px-4 py-5 lg:block">
-			<div className="mb-5 border-b px-1 pb-5">
-				<div className="text-lg font-semibold tracking-normal text-slate-950">AgentFoundry</div>
-				<p className="mt-1 text-xs leading-5 text-slate-500">
-					企业级 Agent 平台控制台
-				</p>
-			</div>
-			<nav aria-label="平台导航" className="space-y-5">
-				{platformSectionGroups.map((group) => (
-					<div key={group.label}>
-						<div className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-normal text-slate-400">
-							{group.label}
-						</div>
-						<div className="grid gap-1">
-							{group.items.map(({ label, path, icon: Icon, end }) => (
-								<NavLink
-									key={path}
-									to={path}
-									end={end}
-									className={({ isActive }) =>
-										cn(
-											'flex h-10 items-center gap-2.5 rounded-md px-3 text-sm transition-colors',
-											'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-											isActive
-												? 'bg-slate-950 text-white'
-												: 'text-slate-600 hover:bg-slate-100 hover:text-slate-950',
-										)
-									}
-								>
-									<Icon className="size-4 shrink-0" />
-									<span className="min-w-0 truncate">{label}</span>
-								</NavLink>
-							))}
-						</div>
-					</div>
-				))}
-			</nav>
-		</aside>
 	);
 }
 
@@ -337,6 +286,88 @@ export function PlatformSectionHeader({
 				) : null}
 			</div>
 			{actions ? <div className="flex shrink-0 flex-wrap gap-2">{actions}</div> : null}
+		</div>
+	);
+}
+
+export function PlatformListSurface({
+	children,
+	className,
+}: {
+	children: ReactNode;
+	className?: string;
+}) {
+	return (
+		<div
+			className={cn(
+				'overflow-hidden rounded-md border border-slate-200 bg-white divide-y divide-slate-200',
+				className,
+			)}
+		>
+			{children}
+		</div>
+	);
+}
+
+export function PlatformListRow({
+	children,
+	className,
+	selected,
+}: {
+	children: ReactNode;
+	className?: string;
+	selected?: boolean;
+}) {
+	return (
+		<div
+			className={cn(
+				'min-w-0 px-3 py-3 transition-colors',
+				selected && 'bg-primary/5',
+				className,
+			)}
+		>
+			{children}
+		</div>
+	);
+}
+
+export function PlatformKeyValueGrid({
+	children,
+	className,
+}: {
+	children: ReactNode;
+	className?: string;
+}) {
+	return (
+		<div
+			className={cn(
+				'grid overflow-hidden rounded-md border border-slate-200 bg-white sm:grid-cols-2',
+				className,
+			)}
+		>
+			{children}
+		</div>
+	);
+}
+
+export function PlatformKeyValueItem({
+	label,
+	value,
+	className,
+}: {
+	label: ReactNode;
+	value: ReactNode;
+	className?: string;
+}) {
+	return (
+		<div
+			className={cn(
+				'min-w-0 border-t border-slate-200 px-3 py-2 first:border-t-0 sm:border-l sm:[&:nth-child(-n+2)]:border-t-0 sm:[&:nth-child(odd)]:border-l-0',
+				className,
+			)}
+		>
+			<div className="text-xs text-muted-foreground">{label}</div>
+			<div className="mt-1 min-w-0 truncate text-sm font-medium">{value}</div>
 		</div>
 	);
 }
