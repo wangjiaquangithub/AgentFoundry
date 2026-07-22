@@ -2427,6 +2427,8 @@ class PlatformAgentRunService:
                     "runtime_invocation_id": str(runtime_invocation_id),
                 },
             }
+        request_summary = _redact_runtime_invocation_summary(request_summary)
+        response_summary = _redact_runtime_invocation_summary(runtime_invocation_result)
 
         try:
             self._runtime_invocation_writer.append_invocation(
@@ -2438,7 +2440,7 @@ class PlatformAgentRunService:
                     ),
                     agent_run_id=turn_id,
                     request_summary=request_summary,
-                    response_summary=runtime_invocation_result,
+                    response_summary=response_summary,
                     provider_run_id=_optional_string(
                         runtime_invocation_result.get("provider_run_id"),
                     ),
@@ -2768,6 +2770,34 @@ def _optional_dict(value: Any) -> dict[str, Any] | None:
     if isinstance(value, dict):
         return value
     return None
+
+
+def _redact_runtime_invocation_summary(value: Any) -> Any:
+    if isinstance(value, dict):
+        redacted: dict[str, Any] = {}
+        for key, nested_value in value.items():
+            if key == "runtime_provider_config" and isinstance(nested_value, dict):
+                redacted[key] = {
+                    config_key: "<configured>"
+                    for config_key, config_value in nested_value.items()
+                    if _configured_runtime_value(config_value)
+                }
+            else:
+                redacted[key] = _redact_runtime_invocation_summary(nested_value)
+        return redacted
+    if isinstance(value, list):
+        return [_redact_runtime_invocation_summary(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_redact_runtime_invocation_summary(item) for item in value)
+    return value
+
+
+def _configured_runtime_value(value: Any) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    return True
 
 
 def _runtime_invocation_id_from_request_summary(

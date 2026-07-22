@@ -38,6 +38,10 @@ async def assert_adapter_pending_result_persists() -> None:
         runtime_invocation_writer=writer,
     )
     runtime_invocation_id = "runtime-invocation-pending-persist-1"
+    provider_config = {
+        "agentscope_runtime_url": "https://agentscope-runtime.internal",
+        "agentscope_runtime_auth_ref": "secret://agentscope/runtime-token",
+    }
     request = RuntimeInvocationRequest(
         context=RuntimeContext(
             tenant="acme",
@@ -45,15 +49,22 @@ async def assert_adapter_pending_result_persists() -> None:
             session_id="session-pending-persist-1",
             agent_id="agent-support",
             agent_name="Support Agent",
+            metadata={
+                "runtime_provider_config": provider_config,
+            },
         ),
         question="Summarize the runtime boundary.",
         tools=("knowledge.search",),
         knowledge_base_ids=("kb-handbook",),
         memory_enabled=True,
-        metadata={"runtime_invocation_id": runtime_invocation_id},
+        metadata={
+            "runtime_invocation_id": runtime_invocation_id,
+            "runtime_provider_config": provider_config,
+        },
     )
 
     result_payload = (await adapter.invoke(request)).to_dict()
+    result_payload["raw"]["unredacted_request_echo"] = request.to_dict()
     service.append_runtime_invocation_record_from_context(
         response_trace={
             "turn_id": "agent-run-pending-persist-1",
@@ -87,9 +98,25 @@ async def assert_adapter_pending_result_persists() -> None:
         runtime_invocation_id
     )
     assert record.request_summary["context"]["tenant"] == "acme"
+    assert record.request_summary["metadata"]["runtime_provider_config"] == {
+        "agentscope_runtime_url": "<configured>",
+        "agentscope_runtime_auth_ref": "<configured>",
+    }
+    assert record.request_summary["context"]["metadata"]["runtime_provider_config"] == {
+        "agentscope_runtime_url": "<configured>",
+        "agentscope_runtime_auth_ref": "<configured>",
+    }
     assert record.response_summary["status"] == "failed"
     assert record.response_summary["runtime_invocation_id"] == runtime_invocation_id
     assert record.response_summary["raw"]["runtime_error"]["message"] == record.error
+    persisted_payload = repr(
+        {
+            "request_summary": record.request_summary,
+            "response_summary": record.response_summary,
+        },
+    )
+    assert "https://agentscope-runtime.internal" not in persisted_payload
+    assert "secret://agentscope/runtime-token" not in persisted_payload
     runtime_bridge = record.response_summary["raw"]["runtime_bridge"]
     assert runtime_bridge["type"] == "agentscope_adapter_invocation_pending"
     assert runtime_bridge["provider_invocation_wired"] is False
