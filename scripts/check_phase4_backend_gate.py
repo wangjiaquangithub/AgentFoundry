@@ -24,6 +24,10 @@ CHECKS = (
         "adapter-backed local invocation",
         (sys.executable, "scripts/check_phase4_adapter_backed_local_invocation.py"),
     ),
+    (
+        "runtime invocation error contract",
+        (sys.executable, "scripts/check_phase4_runtime_invocation_error_contract.py"),
+    ),
 )
 
 

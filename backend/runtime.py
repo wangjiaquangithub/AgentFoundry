@@ -39,6 +39,7 @@ RUNTIME_INVOCATION_RESULT_REQUIRED_FIELDS = frozenset(
         "raw",
     },
 )
+RUNTIME_INVOCATION_FAILURE_STATUSES = frozenset({"failed", "error", "cancelled"})
 
 
 @dataclass(frozen=True)
@@ -423,6 +424,46 @@ def build_runtime_invocation_result_payload(
     return normalize_runtime_invocation_result(payload, adapter)
 
 
+def build_runtime_invocation_error_result_payload(
+    *,
+    error: str,
+    evidence: dict[str, Any],
+    runtime_adapter: dict[str, Any] | None = None,
+    status: str = "failed",
+    answer: str = "",
+    runtime_invocation_id: str | None = None,
+    agent_run_id: str | None = None,
+    provider_run_id: str | None = None,
+    completed_at: str | None = None,
+    latency_ms: int | None = None,
+    token_usage: dict[str, Any] | None = None,
+    raw: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build a serialized provider-neutral runtime invocation failure result."""
+    error_text = str(error).strip()
+    raw_payload = {
+        **(raw or {}),
+        "runtime_error": {
+            "message": error_text,
+            "status": status,
+        },
+    }
+    return build_runtime_invocation_result_payload(
+        answer=answer,
+        status=status,
+        evidence=evidence,
+        runtime_adapter=runtime_adapter,
+        runtime_invocation_id=runtime_invocation_id,
+        agent_run_id=agent_run_id,
+        provider_run_id=provider_run_id,
+        completed_at=completed_at,
+        latency_ms=latency_ms,
+        token_usage=token_usage,
+        error=error_text,
+        raw=raw_payload,
+    )
+
+
 def build_adapter_backed_local_invocation_result_payload(
     *,
     answer: str,
@@ -568,6 +609,24 @@ def normalize_runtime_invocation_result(
         raise ValueError("Runtime invocation result evidence must be an object.")
     if not isinstance(result.get("raw"), dict):
         raise ValueError("Runtime invocation result raw payload must be an object.")
+
+    error = result.get("error")
+    if error is not None and not isinstance(error, str):
+        raise ValueError("Runtime invocation result error must be a string.")
+    if result["status"] in RUNTIME_INVOCATION_FAILURE_STATUSES:
+        if not isinstance(error, str) or not error.strip():
+            raise ValueError(
+                "Runtime invocation failure result requires a non-empty error.",
+            )
+        runtime_error = result["raw"].get("runtime_error")
+        if not isinstance(runtime_error, dict):
+            raise ValueError(
+                "Runtime invocation failure result requires raw.runtime_error.",
+            )
+        if runtime_error.get("message") != error.strip():
+            raise ValueError(
+                "Runtime invocation failure raw.runtime_error.message must match error.",
+            )
 
     latency_ms = result.get("latency_ms")
     if latency_ms is not None and (
