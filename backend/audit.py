@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""JSONL audit logging for enterprise tool calls."""
+"""Enterprise tool-call audit logging with PostgreSQL as production authority."""
 from __future__ import annotations
 
 import json
@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Protocol, TypeVar
 from uuid import uuid4
 
-from backend.persistence import ToolCallRecord
+from backend.persistence import ToolCallRecord, is_production_environment
 
 
 LOGGER = logging.getLogger(__name__)
@@ -53,7 +53,11 @@ class ToolCallReadRepository(Protocol):
 
 
 class ToolAuditLogger:
-    """Persist compact tool-call audit events with JSONL as local fallback."""
+    """Persist compact tool-call audit events.
+
+    PostgreSQL is authoritative in production mode. JSONL remains a local
+    development fallback so smoke tests can run without database credentials.
+    """
 
     def __init__(
         self,
@@ -62,11 +66,15 @@ class ToolAuditLogger:
         enabled: bool = True,
         tool_call_writer: ToolCallWriteRepository | None = None,
         tool_call_reader: ToolCallReadRepository | None = None,
+        production_mode: bool | None = None,
     ) -> None:
         self.path = Path(path).expanduser()
         self.enabled = enabled
         self._tool_call_writer = tool_call_writer
         self._tool_call_reader = tool_call_reader
+        self._production_mode = (
+            is_production_environment() if production_mode is None else production_mode
+        )
         self._lock = threading.Lock()
 
     @classmethod
@@ -269,16 +277,28 @@ class ToolAuditLogger:
         return self.query(limit=limit)
 
     def _write(self, event: dict[str, Any]) -> None:
-        """Best-effort audit write; storage failure should not break tool calls."""
+        """Write one audit event.
+
+        Production mode fails closed because tool-call audit records are part of
+        the authoritative PostgreSQL system of record.
+        """
         if self._tool_call_writer is not None:
             try:
                 self._tool_call_writer.append_tool_call(_event_to_tool_call_record(event))
                 return
             except Exception as exc:
+                if self._production_mode:
+                    raise RuntimeError(
+                        "PostgreSQL tool audit write failed in production mode."
+                    ) from exc
                 LOGGER.warning(
                     "Failed to write enterprise audit event to PostgreSQL: %s",
                     exc,
                 )
+        elif self._production_mode:
+            raise RuntimeError(
+                "PostgreSQL tool audit writer is required in production mode."
+            )
 
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)

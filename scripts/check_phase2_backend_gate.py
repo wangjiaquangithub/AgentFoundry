@@ -41,6 +41,10 @@ CHECKS = (
         (sys.executable, "scripts/check_phase2_postgres_production_mode_guard.py"),
     ),
     (
+        "PostgreSQL tool audit authority",
+        (sys.executable, "scripts/check_phase2_postgres_tool_audit_authority.py"),
+    ),
+    (
         "PostgreSQL seed migration toggle",
         (sys.executable, "scripts/check_phase2_postgres_seed_migration_toggle.py"),
     ),
