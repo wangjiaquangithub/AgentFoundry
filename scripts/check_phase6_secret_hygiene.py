@@ -85,6 +85,14 @@ SECRET_ASSIGNMENT_RE = re.compile(
     r"(?P<value>.+?)\s*$"
 )
 DATABASE_URL_RE = re.compile(r"\b(?:postgresql|postgres)://[^\s\"'`<>]+")
+NON_SECRET_ASSIGNMENT_SUFFIXES = (
+    "_PATTERN",
+    "_PATTERNS",
+    "_RE",
+    "_SUFFIX",
+    "_SUFFIXES",
+    "_URLS",
+)
 
 
 def tracked_files() -> list[Path]:
@@ -202,6 +210,9 @@ def check_secret_patterns(path: Path, text: str) -> list[str]:
             continue
 
         name = assignment.group("name")
+        if name.endswith(NON_SECRET_ASSIGNMENT_SUFFIXES):
+            continue
+
         value = clean_assignment_value(assignment.group("value"))
         if is_placeholder_value(value):
             continue
