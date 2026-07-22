@@ -17,6 +17,7 @@ from backend.runtime import (  # noqa: E402
     describe_runtime_adapter,
     build_runtime_invocation_request_payload,
     build_runtime_invocation_result_payload,
+    normalize_runtime_invocation_result,
 )
 from backend.services.agent_runs import PlatformAgentRunService  # noqa: E402
 
@@ -91,6 +92,39 @@ def assert_runtime_result_contract() -> None:
     assert payload["status"] == "completed"
     assert payload["token_usage"]["input_tokens"] == 12
     assert payload["raw"]["tool_call_count"] == 1
+
+    try:
+        build_runtime_invocation_result_payload(
+            answer="Done.",
+            status="completed",
+            evidence={"tenant": "acme"},
+        )
+    except ValueError as exc:
+        assert "missing fields" in str(exc)
+    else:
+        raise AssertionError("runtime result without adapter metadata should fail")
+
+    mismatched_result = {
+        **payload,
+        "provider": "unexpected-runtime",
+    }
+    try:
+        normalize_runtime_invocation_result(mismatched_result, runtime_adapter)
+    except ValueError as exc:
+        assert "does not match adapter metadata" in str(exc)
+    else:
+        raise AssertionError("runtime result provider mismatch should fail")
+
+    invalid_latency_result = {
+        **payload,
+        "latency_ms": -1,
+    }
+    try:
+        normalize_runtime_invocation_result(invalid_latency_result, runtime_adapter)
+    except ValueError as exc:
+        assert "latency_ms" in str(exc)
+    else:
+        raise AssertionError("runtime result with invalid latency should fail")
 
 
 def assert_runtime_persistence_evidence_link() -> None:

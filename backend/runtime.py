@@ -28,6 +28,17 @@ RUNTIME_PROVIDER_HEALTH_REQUIRED_CHECKS = (
     "provider_invocation_wired",
     "direct_agentscope_dependency",
 )
+RUNTIME_INVOCATION_RESULT_REQUIRED_FIELDS = frozenset(
+    {
+        "answer",
+        "status",
+        "evidence",
+        "provider_id",
+        "provider",
+        "mode",
+        "raw",
+    },
+)
 
 
 @dataclass(frozen=True)
@@ -393,7 +404,7 @@ def build_runtime_invocation_result_payload(
 ) -> dict[str, Any]:
     """Build a serialized provider-neutral runtime invocation result."""
     adapter = runtime_adapter or {}
-    return RuntimeInvocationResult(
+    payload = RuntimeInvocationResult(
         answer=answer,
         status=status,
         evidence=evidence,
@@ -409,6 +420,7 @@ def build_runtime_invocation_result_payload(
         error=error,
         raw=raw,
     ).to_dict()
+    return normalize_runtime_invocation_result(payload, adapter)
 
 
 def build_adapter_backed_local_invocation_result_payload(
@@ -518,6 +530,61 @@ def normalize_runtime_provider_health(
         **health,
         "capabilities": health_capabilities,
         "checks": dict(checks),
+    }
+
+
+def normalize_runtime_invocation_result(
+    result: dict[str, Any],
+    adapter_metadata: dict[str, Any],
+) -> dict[str, Any]:
+    """Validate runtime invocation result identity and payload shape."""
+    missing_fields = RUNTIME_INVOCATION_RESULT_REQUIRED_FIELDS - result.keys()
+    if missing_fields:
+        raise ValueError(
+            f"Runtime invocation result missing fields: {sorted(missing_fields)}",
+        )
+
+    expected_identity = {
+        "provider_id": adapter_metadata.get("id"),
+        "provider": adapter_metadata.get("provider"),
+        "mode": adapter_metadata.get("mode"),
+    }
+    for field, expected_value in expected_identity.items():
+        if not expected_value:
+            raise ValueError(
+                f"Runtime invocation result requires adapter metadata field: {field}",
+            )
+        if result.get(field) != expected_value:
+            raise ValueError(
+                "Runtime invocation result does not match adapter metadata: "
+                f"{field}={result.get(field)!r}, expected {expected_value!r}",
+            )
+
+    if not isinstance(result.get("answer"), str):
+        raise ValueError("Runtime invocation result answer must be a string.")
+    if not isinstance(result.get("status"), str) or not result["status"]:
+        raise ValueError("Runtime invocation result status must be a non-empty string.")
+    if not isinstance(result.get("evidence"), dict):
+        raise ValueError("Runtime invocation result evidence must be an object.")
+    if not isinstance(result.get("raw"), dict):
+        raise ValueError("Runtime invocation result raw payload must be an object.")
+
+    latency_ms = result.get("latency_ms")
+    if latency_ms is not None and (
+        not isinstance(latency_ms, int) or latency_ms < 0
+    ):
+        raise ValueError(
+            "Runtime invocation result latency_ms must be a non-negative integer.",
+        )
+
+    token_usage = result.get("token_usage")
+    if token_usage is not None and not isinstance(token_usage, dict):
+        raise ValueError("Runtime invocation result token_usage must be an object.")
+
+    return {
+        **result,
+        "raw": dict(result["raw"]),
+        "evidence": dict(result["evidence"]),
     }
 
 
