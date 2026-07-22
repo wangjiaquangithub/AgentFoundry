@@ -1,0 +1,34 @@
+name: Backend production gates
+
+on:
+  pull_request:
+    paths:
+      - "backend/**"
+      - "docs/**"
+      - "scripts/**"
+      - ".github/workflows/backend-production-gates.yml"
+  push:
+    branches:
+      - main
+      - "codex/**"
+    paths:
+      - "backend/**"
+      - "docs/**"
+      - "scripts/**"
+      - ".github/workflows/backend-production-gates.yml"
+
+jobs:
+  backend-production-gates:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run backend production gates
+        run: python3 scripts/check_backend_production_gates.py
