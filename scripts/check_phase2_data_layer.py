@@ -163,7 +163,10 @@ POSTGRES_AUTHORITATIVE_PERSISTENCE_REPOSITORIES = {
         "PostgresMemoryItemWriteRepository",
     },
     "memory_policies.py": {"PostgresMemoryPolicyReadRepository"},
-    "model_configs.py": {"PostgresModelConfigReadRepository"},
+    "model_configs.py": {
+        "PostgresModelConfigReadRepository",
+        "PostgresModelConfigWriteRepository",
+    },
     "retrieval_events.py": {
         "PostgresRetrievalEventReadRepository",
         "PostgresRetrievalEventWriteRepository",

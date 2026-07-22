@@ -72,6 +72,7 @@ from backend.persistence.memory_policies import (
 from backend.persistence.model_configs import (
     ModelConfigRecord,
     PostgresModelConfigReadRepository,
+    PostgresModelConfigWriteRepository,
     SQLiteModelConfigReadRepository,
 )
 from backend.persistence.retrieval_events import (
@@ -162,6 +163,7 @@ __all__ = [
     "PostgresMemoryItemWriteRepository",
     "PostgresMemoryPolicyReadRepository",
     "PostgresModelConfigReadRepository",
+    "PostgresModelConfigWriteRepository",
     "PostgresRetrievalEventReadRepository",
     "PostgresRetrievalEventWriteRepository",
     "PostgresRuntimeReadRepository",

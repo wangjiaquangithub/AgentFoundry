@@ -42,6 +42,44 @@ def _model_config_from_row(row: dict[str, Any]) -> ModelConfigRecord:
     )
 
 
+def _validate_write_result(
+    requested: ModelConfigRecord,
+    persisted: ModelConfigRecord,
+) -> None:
+    if not persisted.id:
+        raise ValueError("PostgreSQL model config write did not return a model config id.")
+    if not persisted.tenant_id:
+        raise ValueError("PostgreSQL model config write did not return a tenant id.")
+    if not persisted.name:
+        raise ValueError("PostgreSQL model config write did not return a name.")
+    if not persisted.provider:
+        raise ValueError("PostgreSQL model config write did not return a provider.")
+    if not persisted.model:
+        raise ValueError("PostgreSQL model config write did not return a model.")
+    if not persisted.purpose:
+        raise ValueError("PostgreSQL model config write did not return a purpose.")
+    if not persisted.status:
+        raise ValueError("PostgreSQL model config write did not return a status.")
+    if persisted.id != requested.id:
+        raise ValueError("PostgreSQL model config write returned another model config.")
+    if persisted.tenant_id != requested.tenant_id:
+        raise ValueError("PostgreSQL model config write returned another tenant.")
+    if persisted.name != requested.name:
+        raise ValueError("PostgreSQL model config write returned another name.")
+    if persisted.provider != requested.provider:
+        raise ValueError("PostgreSQL model config write returned another provider.")
+    if persisted.model != requested.model:
+        raise ValueError("PostgreSQL model config write returned another model.")
+    if persisted.purpose != requested.purpose:
+        raise ValueError("PostgreSQL model config write returned another purpose.")
+    if persisted.status != requested.status:
+        raise ValueError("PostgreSQL model config write returned another status.")
+    if persisted.config_ref != requested.config_ref:
+        raise ValueError("PostgreSQL model config write returned another config ref.")
+    if persisted.updated_at != requested.updated_at:
+        raise ValueError("PostgreSQL model config write returned another updated time.")
+
+
 class SQLiteModelConfigReadRepository:
     """Read tenant-scoped model configs from SQLite."""
 
@@ -101,6 +139,61 @@ class SQLiteModelConfigReadRepository:
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
+
+
+class PostgresModelConfigWriteRepository:
+    """Write tenant-scoped model configs to PostgreSQL."""
+
+    def __init__(self, database: PostgresDatabase) -> None:
+        self._database = database
+
+    def upsert_model_config(self, record: ModelConfigRecord) -> ModelConfigRecord:
+        with self._database.transaction() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO model_configs (
+                      id, tenant_id, name, provider, model, purpose, status,
+                      config_ref, credential_ref, created_at, updated_at
+                    )
+                    VALUES (
+                      %s, %s, %s, %s, %s, %s, %s,
+                      %s, %s, %s, %s
+                    )
+                    ON CONFLICT (id) DO UPDATE SET
+                      name = EXCLUDED.name,
+                      provider = EXCLUDED.provider,
+                      model = EXCLUDED.model,
+                      purpose = EXCLUDED.purpose,
+                      status = EXCLUDED.status,
+                      config_ref = EXCLUDED.config_ref,
+                      credential_ref = EXCLUDED.credential_ref,
+                      updated_at = EXCLUDED.updated_at
+                    WHERE model_configs.tenant_id = EXCLUDED.tenant_id
+                    RETURNING id, tenant_id, name, provider, model, purpose, status,
+                      COALESCE(credential_ref, config_ref) AS config_ref,
+                      created_at, updated_at
+                    """,
+                    (
+                        record.id,
+                        record.tenant_id,
+                        record.name,
+                        record.provider,
+                        record.model,
+                        record.purpose,
+                        record.status,
+                        record.config_ref,
+                        record.config_ref,
+                        record.created_at,
+                        record.updated_at,
+                    ),
+                )
+                row = cursor.fetchone()
+        if row is None:
+            raise ValueError("Model config id already exists for another tenant.")
+        persisted = _model_config_from_row(dict(row))
+        _validate_write_result(record, persisted)
+        return persisted
 
 
 class PostgresModelConfigReadRepository:
