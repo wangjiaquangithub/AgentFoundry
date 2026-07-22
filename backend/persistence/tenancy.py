@@ -70,6 +70,64 @@ def _membership_from_row(row: dict[str, Any]) -> MembershipRecord:
     )
 
 
+def _validate_tenant_write_result(
+    requested: TenantRecord,
+    persisted: TenantRecord,
+) -> None:
+    if persisted.id != requested.id:
+        raise RuntimeError(
+            "PostgreSQL tenant write returned a record for another tenant.",
+        )
+    if persisted.name != requested.name:
+        raise RuntimeError("PostgreSQL tenant write returned an unexpected name.")
+    if persisted.status != requested.status:
+        raise RuntimeError("PostgreSQL tenant write returned an unexpected status.")
+    if persisted.updated_at != requested.updated_at:
+        raise RuntimeError(
+            "PostgreSQL tenant write returned an unexpected updated_at value.",
+        )
+
+
+def _validate_user_write_result(
+    requested: UserRecord,
+    persisted: UserRecord,
+) -> None:
+    if persisted.id != requested.id:
+        raise RuntimeError(
+            "PostgreSQL user write returned a record for another user.",
+        )
+    if persisted.display_name != requested.display_name:
+        raise RuntimeError(
+            "PostgreSQL user write returned an unexpected display name.",
+        )
+    if persisted.status != requested.status:
+        raise RuntimeError("PostgreSQL user write returned an unexpected status.")
+    if persisted.updated_at != requested.updated_at:
+        raise RuntimeError(
+            "PostgreSQL user write returned an unexpected updated_at value.",
+        )
+
+
+def _validate_membership_write_result(
+    requested: MembershipRecord,
+    persisted: MembershipRecord,
+) -> None:
+    if persisted.tenant_id != requested.tenant_id:
+        raise RuntimeError(
+            "PostgreSQL membership write returned a record for another tenant.",
+        )
+    if persisted.user_id != requested.user_id:
+        raise RuntimeError(
+            "PostgreSQL membership write returned a record for another user.",
+        )
+    if persisted.role != requested.role:
+        raise RuntimeError("PostgreSQL membership write returned an unexpected role.")
+    if persisted.updated_at != requested.updated_at:
+        raise RuntimeError(
+            "PostgreSQL membership write returned an unexpected updated_at value.",
+        )
+
+
 class SQLiteTenancyReadRepository:
     """Read tenant, user, and membership records from SQLite."""
 
@@ -267,6 +325,32 @@ class PostgresTenancyWriteRepository:
         created_at: str,
         updated_at: str,
     ) -> TenancyWriteResult:
+        requested_tenant = TenantRecord(
+            id=tenant_id,
+            name=_display_name_from_id(tenant_id),
+            status="active",
+            plan="development",
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+        requested_user = UserRecord(
+            id=user_id,
+            display_name=display_name,
+            email=_email_from_user_id(user_id),
+            status=status,
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+        requested_membership = MembershipRecord(
+            id=f"{tenant_id}:{user_id}",
+            tenant_id=tenant_id,
+            user_id=user_id,
+            role=role,
+            workspace_ids=[],
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+
         with self._database.transaction() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
@@ -280,15 +364,17 @@ class PostgresTenancyWriteRepository:
                     RETURNING id, name, status, plan, created_at, updated_at
                     """,
                     (
-                        tenant_id,
-                        _display_name_from_id(tenant_id),
-                        created_at,
-                        updated_at,
+                        requested_tenant.id,
+                        requested_tenant.name,
+                        requested_tenant.created_at,
+                        requested_tenant.updated_at,
                     ),
                 )
                 tenant_row = cursor.fetchone()
                 if tenant_row is None:
                     raise RuntimeError("Tenant upsert did not return a row.")
+                tenant_record = TenantRecord(**dict(tenant_row))
+                _validate_tenant_write_result(requested_tenant, tenant_record)
 
                 cursor.execute(
                     """
@@ -303,17 +389,19 @@ class PostgresTenancyWriteRepository:
                     RETURNING id, display_name, email, status, created_at, updated_at
                     """,
                     (
-                        user_id,
-                        display_name,
-                        _email_from_user_id(user_id),
-                        status,
-                        created_at,
-                        updated_at,
+                        requested_user.id,
+                        requested_user.display_name,
+                        requested_user.email,
+                        requested_user.status,
+                        requested_user.created_at,
+                        requested_user.updated_at,
                     ),
                 )
                 user_row = cursor.fetchone()
                 if user_row is None:
                     raise RuntimeError("User upsert did not return a row.")
+                user_record = UserRecord(**dict(user_row))
+                _validate_user_write_result(requested_user, user_record)
 
                 cursor.execute(
                     """
@@ -328,22 +416,27 @@ class PostgresTenancyWriteRepository:
                       created_at, updated_at
                     """,
                     (
-                        f"{tenant_id}:{user_id}",
-                        tenant_id,
-                        user_id,
-                        role,
-                        created_at,
-                        updated_at,
+                        requested_membership.id,
+                        requested_membership.tenant_id,
+                        requested_membership.user_id,
+                        requested_membership.role,
+                        requested_membership.created_at,
+                        requested_membership.updated_at,
                     ),
                 )
                 membership_row = cursor.fetchone()
                 if membership_row is None:
                     raise RuntimeError("Membership upsert did not return a row.")
+                membership_record = _membership_from_row(dict(membership_row))
+                _validate_membership_write_result(
+                    requested_membership,
+                    membership_record,
+                )
 
         return TenancyWriteResult(
-            tenant=TenantRecord(**dict(tenant_row)),
-            user=UserRecord(**dict(user_row)),
-            membership=_membership_from_row(dict(membership_row)),
+            tenant=tenant_record,
+            user=user_record,
+            membership=membership_record,
         )
 
 
