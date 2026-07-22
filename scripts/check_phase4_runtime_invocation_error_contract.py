@@ -112,6 +112,51 @@ def assert_failure_result_requires_error_evidence() -> None:
     else:
         raise AssertionError("failed runtime result with mismatched error should fail")
 
+    mismatched_raw_status = {
+        **valid_payload,
+        "raw": {
+            "runtime_error": {
+                "message": "Provider timed out.",
+                "status": "completed",
+            },
+        },
+    }
+    try:
+        normalize_runtime_invocation_result(mismatched_raw_status, runtime_adapter)
+    except ValueError as exc:
+        assert "status must match" in str(exc)
+    else:
+        raise AssertionError(
+            "failed runtime result with mismatched raw status should fail",
+        )
+
+
+def assert_result_status_lifecycle_is_closed() -> None:
+    runtime_adapter = describe_runtime_adapter({"agent_id": "agent-1"})
+    payload = build_runtime_invocation_error_result_payload(
+        error="Provider timed out.",
+        evidence={"tenant": "acme", "agent_id": "agent-1"},
+        runtime_adapter=runtime_adapter,
+        runtime_invocation_id="runtime-invocation-error-1",
+    )
+
+    unknown_status = {
+        **payload,
+        "status": "provider-specific-timeout",
+        "raw": {
+            "runtime_error": {
+                "message": "Provider timed out.",
+                "status": "provider-specific-timeout",
+            },
+        },
+    }
+    try:
+        normalize_runtime_invocation_result(unknown_status, runtime_adapter)
+    except ValueError as exc:
+        assert "status must be one of" in str(exc)
+    else:
+        raise AssertionError("runtime result with unknown status should fail")
+
 
 def assert_error_result_persists_to_runtime_invocation_record() -> None:
     writer = RuntimeInvocationWriter()
@@ -214,6 +259,7 @@ def assert_no_direct_agentscope_dependency() -> None:
 def main() -> None:
     assert_error_result_contract()
     assert_failure_result_requires_error_evidence()
+    assert_result_status_lifecycle_is_closed()
     assert_error_result_persists_to_runtime_invocation_record()
     assert_no_direct_agentscope_dependency()
     print("phase 4.4 runtime invocation error contract ok")

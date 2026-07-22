@@ -45,6 +45,9 @@ RUNTIME_INVOCATION_RESULT_REQUIRED_FIELDS = frozenset(
         "raw",
     },
 )
+RUNTIME_INVOCATION_RESULT_STATUSES = frozenset(
+    {"pending", "running", "completed", "failed", "error", "cancelled"},
+)
 RUNTIME_INVOCATION_FAILURE_STATUSES = frozenset({"failed", "error", "cancelled"})
 
 
@@ -806,8 +809,14 @@ def normalize_runtime_invocation_result(
 
     if not isinstance(result.get("answer"), str):
         raise ValueError("Runtime invocation result answer must be a string.")
-    if not isinstance(result.get("status"), str) or not result["status"]:
+    if not isinstance(result.get("status"), str) or not result["status"].strip():
         raise ValueError("Runtime invocation result status must be a non-empty string.")
+    status = result["status"].strip()
+    if status not in RUNTIME_INVOCATION_RESULT_STATUSES:
+        raise ValueError(
+            "Runtime invocation result status must be one of: "
+            f"{sorted(RUNTIME_INVOCATION_RESULT_STATUSES)}.",
+        )
     if not isinstance(result.get("evidence"), dict):
         raise ValueError("Runtime invocation result evidence must be an object.")
     if not isinstance(result.get("raw"), dict):
@@ -816,7 +825,7 @@ def normalize_runtime_invocation_result(
     error = result.get("error")
     if error is not None and not isinstance(error, str):
         raise ValueError("Runtime invocation result error must be a string.")
-    if result["status"] in RUNTIME_INVOCATION_FAILURE_STATUSES:
+    if status in RUNTIME_INVOCATION_FAILURE_STATUSES:
         if not isinstance(error, str) or not error.strip():
             raise ValueError(
                 "Runtime invocation failure result requires a non-empty error.",
@@ -829,6 +838,10 @@ def normalize_runtime_invocation_result(
         if runtime_error.get("message") != error.strip():
             raise ValueError(
                 "Runtime invocation failure raw.runtime_error.message must match error.",
+            )
+        if runtime_error.get("status") != status:
+            raise ValueError(
+                "Runtime invocation failure raw.runtime_error.status must match status.",
             )
 
     latency_ms = result.get("latency_ms")
@@ -845,6 +858,7 @@ def normalize_runtime_invocation_result(
 
     return {
         **result,
+        "status": status,
         "raw": dict(result["raw"]),
         "evidence": dict(result["evidence"]),
     }
