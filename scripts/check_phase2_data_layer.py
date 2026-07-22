@@ -653,7 +653,20 @@ def _check_postgres_runtime_invocation_writes_wired() -> list[str]:
         "RETURNING id, tenant_id, provider_id, agent_run_id",
         "row = cursor.fetchone()",
         "Runtime invocation upsert did not return a row.",
-        "return _invocation_from_row(dict(row))",
+        "_validate_write_result(record, persisted)",
+        "PostgreSQL runtime invocation write returned another invocation.",
+        "PostgreSQL runtime invocation write returned another tenant.",
+        "PostgreSQL runtime invocation write returned another provider.",
+        "PostgreSQL runtime invocation write returned another agent run.",
+        "PostgreSQL runtime invocation write returned another request summary.",
+        "PostgreSQL runtime invocation write returned another response summary.",
+        "PostgreSQL runtime invocation write returned another provider run.",
+        "PostgreSQL runtime invocation write returned another latency.",
+        "PostgreSQL runtime invocation write returned another token usage.",
+        "PostgreSQL runtime invocation write returned another error.",
+        "PostgreSQL runtime invocation write returned another created time.",
+        "PostgreSQL runtime invocation write returned another completed time.",
+        "return persisted",
     ):
         if token not in runtime_persistence_source:
             errors.append(

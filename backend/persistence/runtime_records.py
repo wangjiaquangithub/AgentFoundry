@@ -108,6 +108,56 @@ def _optional_object_from_json(
     return _object_from_json(value, record_id, field_name)
 
 
+def _validate_write_result(
+    requested: RuntimeInvocationRecord,
+    persisted: RuntimeInvocationRecord,
+) -> None:
+    if persisted.id != requested.id:
+        raise ValueError(
+            "PostgreSQL runtime invocation write returned another invocation.",
+        )
+    if persisted.tenant_id != requested.tenant_id:
+        raise ValueError("PostgreSQL runtime invocation write returned another tenant.")
+    if persisted.provider_id != requested.provider_id:
+        raise ValueError(
+            "PostgreSQL runtime invocation write returned another provider.",
+        )
+    if persisted.agent_run_id != requested.agent_run_id:
+        raise ValueError(
+            "PostgreSQL runtime invocation write returned another agent run.",
+        )
+    if persisted.request_summary != requested.request_summary:
+        raise ValueError(
+            "PostgreSQL runtime invocation write returned another request summary.",
+        )
+    if persisted.response_summary != requested.response_summary:
+        raise ValueError(
+            "PostgreSQL runtime invocation write returned another response summary.",
+        )
+    if persisted.provider_run_id != requested.provider_run_id:
+        raise ValueError(
+            "PostgreSQL runtime invocation write returned another provider run.",
+        )
+    if persisted.latency_ms != requested.latency_ms:
+        raise ValueError(
+            "PostgreSQL runtime invocation write returned another latency.",
+        )
+    if persisted.token_usage != requested.token_usage:
+        raise ValueError(
+            "PostgreSQL runtime invocation write returned another token usage.",
+        )
+    if persisted.error != requested.error:
+        raise ValueError("PostgreSQL runtime invocation write returned another error.")
+    if persisted.created_at != requested.created_at:
+        raise ValueError(
+            "PostgreSQL runtime invocation write returned another created time.",
+        )
+    if persisted.completed_at != requested.completed_at:
+        raise ValueError(
+            "PostgreSQL runtime invocation write returned another completed time.",
+        )
+
+
 class SQLiteRuntimeReadRepository:
     """Read runtime providers and tenant-scoped invocations from SQLite."""
 
@@ -396,4 +446,6 @@ class PostgresRuntimeWriteRepository:
                 row = cursor.fetchone()
         if row is None:
             raise ValueError("Runtime invocation upsert did not return a row.")
-        return _invocation_from_row(dict(row))
+        persisted = _invocation_from_row(dict(row))
+        _validate_write_result(record, persisted)
+        return persisted
