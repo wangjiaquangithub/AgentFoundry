@@ -28,6 +28,13 @@ CHECKS = (
         "runtime invocation error contract",
         (sys.executable, "scripts/check_phase4_runtime_invocation_error_contract.py"),
     ),
+    (
+        "adapter invocation pending result",
+        (
+            sys.executable,
+            "scripts/check_phase4_adapter_invocation_pending_result.py",
+        ),
+    ),
 )
 
 

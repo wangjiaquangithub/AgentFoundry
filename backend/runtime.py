@@ -257,15 +257,61 @@ class AgentScopeRuntimeAdapter:
         self,
         request: RuntimeInvocationRequest,
     ) -> RuntimeInvocationResult:
-        """Placeholder for provider execution extraction from main.py.
+        """Return a provider-neutral pending failure until invocation is wired.
 
         Current platform run behavior still lives in main.py. This method is the
-        production boundary that will receive that logic during service
-        extraction.
+        production boundary that will receive that logic during runtime
+        extraction, so callers should receive an auditable platform result
+        instead of a provider-specific exception.
         """
-        raise NotImplementedError(
-            "AgentScope invocation is still implemented in backend/main.py. "
-            "Move provider-specific execution here during runtime extraction.",
+        runtime_adapter = self.describe(
+            {
+                "agent_id": request.context.agent_id,
+                "agent_name": request.context.agent_name,
+            },
+        )
+        error = (
+            "AgentScope provider invocation is pending adapter wiring; "
+            "current platform runs still execute through the AgentFoundry local "
+            "service path."
+        )
+        raw = {
+            "runtime_bridge": {
+                "type": "agentscope_adapter_invocation_pending",
+                "provider_invocation_wired": False,
+                "adapter_id": self.id,
+            },
+            "request": request.to_dict(),
+        }
+        payload = build_runtime_invocation_error_result_payload(
+            error=error,
+            evidence={
+                "tenant": request.context.tenant,
+                "user_id": request.context.user_id,
+                "session_id": request.context.session_id,
+                "agent_id": request.context.agent_id,
+                "agent_name": request.context.agent_name,
+            },
+            runtime_adapter=runtime_adapter,
+            runtime_invocation_id=(request.metadata or {}).get("runtime_invocation_id"),
+            raw=raw,
+        )
+        normalized = normalize_runtime_invocation_result(payload, runtime_adapter)
+        return RuntimeInvocationResult(
+            answer=normalized["answer"],
+            status=normalized["status"],
+            evidence=normalized["evidence"],
+            provider_id=normalized["provider_id"],
+            provider=normalized["provider"],
+            mode=normalized["mode"],
+            runtime_invocation_id=normalized.get("runtime_invocation_id"),
+            agent_run_id=normalized.get("agent_run_id"),
+            provider_run_id=normalized.get("provider_run_id"),
+            completed_at=normalized.get("completed_at"),
+            latency_ms=normalized.get("latency_ms"),
+            token_usage=normalized.get("token_usage"),
+            error=normalized.get("error"),
+            raw=normalized["raw"],
         )
 
 
