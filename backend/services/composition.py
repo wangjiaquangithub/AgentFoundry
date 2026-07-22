@@ -22,6 +22,8 @@ from backend.persistence import (
     PostgresEmbeddingRecordWriteRepository,
     PostgresKnowledgeBaseReadRepository,
     PostgresKnowledgeBaseWriteRepository,
+    PostgresMemoryItemReadRepository,
+    PostgresMemoryItemWriteRepository,
     PostgresModelConfigReadRepository,
     PostgresModelConfigWriteRepository,
     PostgresRetrievalEventReadRepository,
@@ -168,6 +170,30 @@ def build_configured_postgres_tool_governance_write_repository() -> (
         return None
 
     return PostgresToolGovernanceWriteRepository(database)
+
+
+def build_configured_postgres_memory_item_read_repository() -> (
+    PostgresMemoryItemReadRepository | None
+):
+    """Build the memory item read repository when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresMemoryItemReadRepository(database)
+
+
+def build_configured_postgres_memory_item_write_repository() -> (
+    PostgresMemoryItemWriteRepository | None
+):
+    """Build the memory item write repository when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresMemoryItemWriteRepository(database)
 
 
 def build_configured_postgres_member_repository() -> (

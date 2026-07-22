@@ -108,8 +108,6 @@ from repositories.agents import (
     AgentRepositoryProtocol,
 )
 from backend.persistence import (
-    PostgresMemoryItemReadRepository,
-    PostgresMemoryItemWriteRepository,
     PostgresModelConfigReadRepository,
     PostgresRuntimeReadRepository,
     PostgresRuntimeWriteRepository,
@@ -184,6 +182,8 @@ from services.composition import (
     build_configured_postgres_knowledge_ingestion_service,
     build_configured_postgres_knowledge_response_service,
     build_configured_postgres_knowledge_retrieval_service,
+    build_configured_postgres_memory_item_read_repository,
+    build_configured_postgres_memory_item_write_repository,
     build_configured_postgres_member_repository,
     build_configured_postgres_model_config_service,
     build_configured_postgres_retrieval_event_read_repository,
@@ -252,24 +252,12 @@ def _build_tool_governance_write_repository() -> Any | None:
     return build_configured_postgres_tool_governance_write_repository()
 
 
-def _build_memory_item_read_repository() -> (
-    PostgresMemoryItemReadRepository | None
-):
-    database = create_configured_postgres_database()
-    if database is None:
-        return None
-
-    return PostgresMemoryItemReadRepository(database)
+def _build_memory_item_read_repository() -> Any | None:
+    return build_configured_postgres_memory_item_read_repository()
 
 
-def _build_memory_item_write_repository() -> (
-    PostgresMemoryItemWriteRepository | None
-):
-    database = create_configured_postgres_database()
-    if database is None:
-        return None
-
-    return PostgresMemoryItemWriteRepository(database)
+def _build_memory_item_write_repository() -> Any | None:
+    return build_configured_postgres_memory_item_write_repository()
 
 
 def _build_runtime_read_repository() -> PostgresRuntimeReadRepository | None:
