@@ -44,6 +44,30 @@ def _hits_from_json(value: list[Any] | str, event_id: str) -> list[Any]:
     return parsed
 
 
+def _validate_write_result(
+    requested: RetrievalEventRecord,
+    persisted: RetrievalEventRecord,
+) -> None:
+    if not persisted.id:
+        raise ValueError("PostgreSQL retrieval event write did not return an event id.")
+    if not persisted.tenant_id:
+        raise ValueError("PostgreSQL retrieval event write did not return a tenant id.")
+    if not persisted.query:
+        raise ValueError("PostgreSQL retrieval event write did not return a query.")
+    if persisted.id != requested.id:
+        raise ValueError("PostgreSQL retrieval event write returned another event.")
+    if persisted.tenant_id != requested.tenant_id:
+        raise ValueError("PostgreSQL retrieval event write returned another tenant.")
+    if persisted.agent_run_id != requested.agent_run_id:
+        raise ValueError("PostgreSQL retrieval event write returned another agent run.")
+    if persisted.knowledge_base_id != requested.knowledge_base_id:
+        raise ValueError(
+            "PostgreSQL retrieval event write returned another knowledge base.",
+        )
+    if persisted.query != requested.query:
+        raise ValueError("PostgreSQL retrieval event write returned another query.")
+
+
 class SQLiteRetrievalEventReadRepository:
     """Read tenant-scoped retrieval events from SQLite."""
 
@@ -201,4 +225,6 @@ class PostgresRetrievalEventWriteRepository:
                 row = cursor.fetchone()
         if row is None:
             raise ValueError("Retrieval event insert did not return a row.")
-        return _retrieval_event_from_row(dict(row))
+        persisted = _retrieval_event_from_row(dict(row))
+        _validate_write_result(record, persisted)
+        return persisted

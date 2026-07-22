@@ -1024,6 +1024,37 @@ def _check_postgres_retrieval_events_wired() -> list[str]:
     return errors
 
 
+def _check_postgres_retrieval_event_write_records() -> list[str]:
+    errors: list[str] = []
+    retrieval_event_path = PERSISTENCE_DIR / "retrieval_events.py"
+    retrieval_event_source = retrieval_event_path.read_text(encoding="utf-8")
+
+    for token in (
+        "def append_retrieval_event(",
+        ") -> RetrievalEventRecord:",
+        "RETURNING id, tenant_id, agent_run_id, knowledge_base_id",
+        "row = cursor.fetchone()",
+        "Retrieval event insert did not return a row.",
+        "persisted = _retrieval_event_from_row(dict(row))",
+        "_validate_write_result(record, persisted)",
+        "PostgreSQL retrieval event write did not return an event id.",
+        "PostgreSQL retrieval event write did not return a tenant id.",
+        "PostgreSQL retrieval event write did not return a query.",
+        "PostgreSQL retrieval event write returned another event.",
+        "PostgreSQL retrieval event write returned another tenant.",
+        "PostgreSQL retrieval event write returned another agent run.",
+        "PostgreSQL retrieval event write returned another knowledge base.",
+        "PostgreSQL retrieval event write returned another query.",
+    ):
+        if token not in retrieval_event_source:
+            errors.append(
+                "backend/persistence/retrieval_events.py must validate persisted "
+                f"PostgreSQL retrieval event write records: {token}",
+            )
+
+    return errors
+
+
 def _check_postgres_workflow_runs_wired() -> list[str]:
     errors: list[str] = []
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
@@ -2815,6 +2846,7 @@ def main() -> int:
         *_check_postgres_memory_item_writes_wired(),
         *_check_postgres_audit_events_wired(),
         *_check_postgres_retrieval_events_wired(),
+        *_check_postgres_retrieval_event_write_records(),
         *_check_postgres_workflow_runs_wired(),
         *_check_postgres_agent_catalog_wired(),
         *_check_postgres_agent_runs_wired(),
