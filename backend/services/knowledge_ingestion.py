@@ -21,12 +21,12 @@ class KnowledgeBaseReadRepository(Protocol):
 
 
 class DocumentWriteRepository(Protocol):
-    def upsert_document(self, record: DocumentRecord) -> None:
+    def upsert_document(self, record: DocumentRecord) -> DocumentRecord:
         ...
 
 
 class DocumentChunkWriteRepository(Protocol):
-    def append_document_chunk(self, record: DocumentChunkRecord) -> None:
+    def append_document_chunk(self, record: DocumentChunkRecord) -> DocumentChunkRecord:
         ...
 
     def delete_document_chunks(self, *, tenant_id: str, document_id: str) -> int:
@@ -156,7 +156,7 @@ class PlatformKnowledgeIngestionService:
             text=text,
         )
         self._replace_existing_chunks(tenant_id=tenant_id, document_id=document_id)
-        self._document_repository.upsert_document(
+        persisted_document = self._document_repository.upsert_document(
             DocumentRecord(
                 id=document_id,
                 tenant_id=tenant_id,
@@ -170,16 +170,19 @@ class PlatformKnowledgeIngestionService:
                 updated_at=now,
             ),
         )
+        persisted_chunks: list[DocumentChunkRecord] = []
         for chunk in chunks:
-            self._document_chunk_repository.append_document_chunk(
-                DocumentChunkRecord(
-                    id=chunk.id,
-                    tenant_id=tenant_id,
-                    document_id=document_id,
-                    chunk_index=chunk.index,
-                    content=chunk.content,
-                    metadata=chunk.metadata,
-                    created_at=now,
+            persisted_chunks.append(
+                self._document_chunk_repository.append_document_chunk(
+                    DocumentChunkRecord(
+                        id=chunk.id,
+                        tenant_id=tenant_id,
+                        document_id=persisted_document.id,
+                        chunk_index=chunk.index,
+                        content=chunk.content,
+                        metadata=chunk.metadata,
+                        created_at=now,
+                    ),
                 ),
             )
 
@@ -193,9 +196,9 @@ class PlatformKnowledgeIngestionService:
         return KnowledgeIngestionResult(
             tenant_id=tenant_id,
             knowledge_base_id=knowledge_base_id,
-            document_id=document_id,
+            document_id=persisted_document.id,
             status="ready",
-            chunk_count=len(chunks),
+            chunk_count=len(persisted_chunks),
             embedding_model_config_id=embedding_model_config_id,
             embedding_required=True,
             guidance=guidance,

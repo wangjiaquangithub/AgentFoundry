@@ -1443,6 +1443,70 @@ def _check_postgres_knowledge_readiness_wired() -> list[str]:
     return errors
 
 
+def _check_postgres_knowledge_ingestion_write_records() -> list[str]:
+    errors: list[str] = []
+    knowledge_ingestion_source = (SERVICES_DIR / "knowledge_ingestion.py").read_text(
+        encoding="utf-8",
+    )
+    document_persistence_source = (PERSISTENCE_DIR / "documents.py").read_text(
+        encoding="utf-8",
+    )
+    chunk_persistence_source = (PERSISTENCE_DIR / "document_chunks.py").read_text(
+        encoding="utf-8",
+    )
+
+    for token in (
+        "def upsert_document(self, record: DocumentRecord) -> DocumentRecord:",
+        "persisted_document = self._document_repository.upsert_document(",
+        "document_id=persisted_document.id",
+    ):
+        if token not in knowledge_ingestion_source:
+            errors.append(
+                "backend/services/knowledge_ingestion.py must use persisted "
+                f"PostgreSQL document write records: {token}",
+            )
+
+    for token in (
+        "def append_document_chunk(self, record: DocumentChunkRecord) -> DocumentChunkRecord:",
+        "persisted_chunks: list[DocumentChunkRecord] = []",
+        "persisted_chunks.append(",
+        "chunk_count=len(persisted_chunks)",
+    ):
+        if token not in knowledge_ingestion_source:
+            errors.append(
+                "backend/services/knowledge_ingestion.py must use persisted "
+                f"PostgreSQL document chunk write records: {token}",
+            )
+
+    for token in (
+        "def upsert_document(",
+        ") -> DocumentRecord:",
+        "RETURNING id, tenant_id, knowledge_base_id, title, source_type",
+        "row = cursor.fetchone()",
+        "return _document_from_row(dict(row))",
+    ):
+        if token not in document_persistence_source:
+            errors.append(
+                "backend/persistence/documents.py must return persisted "
+                f"PostgreSQL document write records: {token}",
+            )
+
+    for token in (
+        "def append_document_chunk(",
+        ") -> DocumentChunkRecord:",
+        "RETURNING id, tenant_id, document_id, chunk_index, content",
+        "row = cursor.fetchone()",
+        "return _document_chunk_from_row(dict(row))",
+    ):
+        if token not in chunk_persistence_source:
+            errors.append(
+                "backend/persistence/document_chunks.py must return persisted "
+                f"PostgreSQL document chunk write records: {token}",
+            )
+
+    return errors
+
+
 def _check_postgres_members_wired() -> list[str]:
     errors: list[str] = []
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
@@ -2614,6 +2678,7 @@ def main() -> int:
         *_check_postgres_agent_runs_wired(),
         *_check_postgres_approval_requests_wired(),
         *_check_postgres_knowledge_readiness_wired(),
+        *_check_postgres_knowledge_ingestion_write_records(),
         *_check_postgres_members_wired(),
         *_check_postgres_memory_policy_reads_guarded(),
         *_check_postgres_model_config_reads_guarded(),
@@ -2666,6 +2731,7 @@ def main() -> int:
     print("- PostgreSQL agent runs wired: yes")
     print("- PostgreSQL approval requests wired: yes")
     print("- PostgreSQL knowledge readiness reads wired: yes")
+    print("- PostgreSQL knowledge ingestion write records: yes")
     print("- PostgreSQL members wired: yes")
     print("- PostgreSQL memory policy reads guarded: yes")
     print("- PostgreSQL model config reads guarded: yes")
