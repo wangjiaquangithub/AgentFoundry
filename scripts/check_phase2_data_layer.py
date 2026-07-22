@@ -1866,6 +1866,7 @@ def _check_postgres_agent_catalog_wired() -> list[str]:
     )
 
     required_composition_imports = [
+        "AgentRepositoryProtocol",
         "PostgresAgentCatalogReadRepository",
         "PostgresAgentCatalogWriteRepository",
         "PostgresAgentCatalogWriteThroughRepository",
@@ -1877,17 +1878,17 @@ def _check_postgres_agent_catalog_wired() -> list[str]:
                 f"{imported_name} for agent catalog PostgreSQL wiring",
             )
 
-    if not _module_defines_function(main_tree, "_build_agent_repository"):
+    if not _module_defines_function(composition_tree, "build_agent_repository"):
         errors.append(
-            "backend/main.py must define _build_agent_repository for PostgreSQL agent catalog records",
+            "backend/services/composition.py must define build_agent_repository for agent catalog repository selection",
         )
-    if "agent_repository = _build_agent_repository()" not in main_source:
+    if "agent_repository = build_agent_repository(agent_fallback_repository)" not in main_source:
         errors.append(
-            "backend/main.py must build agent_repository through the PostgreSQL selector",
+            "backend/main.py must build agent_repository through the services.composition selector",
         )
-    if "build_configured_postgres_agent_repository()" not in main_source:
+    if "build_configured_postgres_agent_repository() or fallback_repository" not in composition_source:
         errors.append(
-            "backend/main.py must delegate agent catalog PostgreSQL wiring to services.composition",
+            "backend/services/composition.py must select PostgreSQL agent catalog storage before the fallback repository",
         )
     if not _module_defines_function(
         composition_tree,
