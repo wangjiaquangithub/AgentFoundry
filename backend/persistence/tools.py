@@ -202,6 +202,36 @@ def _validate_user_policy_write_result(
         raise ValueError("PostgreSQL tool user policy write returned another update time.")
 
 
+def _validate_tool_read_result(
+    record: ToolRecord,
+    *,
+    tenant_id: str,
+    tool_id: str | None = None,
+    name: str | None = None,
+    status: str | None = None,
+) -> None:
+    if record.tenant_id != tenant_id:
+        raise ValueError("PostgreSQL tool read returned another tenant.")
+    if tool_id is not None and record.id != tool_id:
+        raise ValueError("PostgreSQL tool read returned another tool.")
+    if name is not None and record.name != name:
+        raise ValueError("PostgreSQL tool read returned another tool name.")
+    if status is not None and record.status != status:
+        raise ValueError("PostgreSQL tool read returned another status.")
+
+
+def _validate_tool_policy_read_result(
+    record: ToolPolicyRecord,
+    *,
+    tenant_id: str,
+    tool_id: str | None = None,
+) -> None:
+    if record.tenant_id != tenant_id:
+        raise ValueError("PostgreSQL tool policy read returned another tenant.")
+    if tool_id is not None and record.tool_id != tool_id:
+        raise ValueError("PostgreSQL tool policy read returned another tool.")
+
+
 class SQLiteToolGovernanceReadRepository:
     """Read tenant-scoped tool catalog and policy records from SQLite."""
 
@@ -447,7 +477,15 @@ class PostgresToolGovernanceReadRepository:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, tuple(parameters))
-                return [_tool_from_row(dict(row)) for row in cursor.fetchall()]
+                rows = cursor.fetchall()
+        records = [_tool_from_row(dict(row)) for row in rows]
+        for record in records:
+            _validate_tool_read_result(
+                record,
+                tenant_id=tenant_id,
+                status=status,
+            )
+        return records
 
     def get_tool(self, *, tenant_id: str, tool_id: str) -> ToolRecord | None:
         with self._database.connect() as connection:
@@ -464,7 +502,9 @@ class PostgresToolGovernanceReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return _tool_from_row(dict(row))
+        record = _tool_from_row(dict(row))
+        _validate_tool_read_result(record, tenant_id=tenant_id, tool_id=tool_id)
+        return record
 
     def get_tool_by_name(self, *, tenant_id: str, name: str) -> ToolRecord | None:
         with self._database.connect() as connection:
@@ -481,7 +521,9 @@ class PostgresToolGovernanceReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return _tool_from_row(dict(row))
+        record = _tool_from_row(dict(row))
+        _validate_tool_read_result(record, tenant_id=tenant_id, name=name)
+        return record
 
     def list_policies(self, *, tenant_id: str) -> list[ToolPolicyRecord]:
         with self._database.connect() as connection:
@@ -497,7 +539,10 @@ class PostgresToolGovernanceReadRepository:
                     (tenant_id,),
                 )
                 rows = cursor.fetchall()
-        return [_policy_from_row(dict(row)) for row in rows]
+        records = [_policy_from_row(dict(row)) for row in rows]
+        for record in records:
+            _validate_tool_policy_read_result(record, tenant_id=tenant_id)
+        return records
 
     def get_policy_for_tool(
         self,
@@ -519,7 +564,9 @@ class PostgresToolGovernanceReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return _policy_from_row(dict(row))
+        record = _policy_from_row(dict(row))
+        _validate_tool_policy_read_result(record, tenant_id=tenant_id, tool_id=tool_id)
+        return record
 
     def get_policy_for_tool_name(
         self,
@@ -546,7 +593,9 @@ class PostgresToolGovernanceReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return _policy_from_row(dict(row))
+        record = _policy_from_row(dict(row))
+        _validate_tool_policy_read_result(record, tenant_id=tenant_id)
+        return record
 
 
 class PostgresToolGovernanceWriteRepository:

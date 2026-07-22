@@ -4141,6 +4141,18 @@ def _check_postgres_tool_governance_reads_guarded() -> list[str]:
                     "tenant-scoped tool tables and filters: backend/persistence/tools.py:"
                     f"PostgresToolGovernanceReadRepository.{method_name}",
                 )
+        expected_validator = (
+            "_validate_tool_read_result"
+            if method_name in {"list_tools", "get_tool", "get_tool_by_name"}
+            else "_validate_tool_policy_read_result"
+        )
+        if not _module_calls_name(method_node, expected_validator):
+            errors.append(
+                "PostgreSQL tool governance read method must validate returned "
+                "records against requested tenant and filters: "
+                "backend/persistence/tools.py:"
+                f"PostgresToolGovernanceReadRepository.{method_name}",
+            )
 
     return errors
 
