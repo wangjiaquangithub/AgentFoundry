@@ -100,7 +100,17 @@ def _database_status(payload: dict[str, Any]) -> dict[str, Any]:
 
 def _assert_no_secret_leak(database: dict[str, Any]) -> None:
     rendered = repr(database)
-    if "secret" in rendered or "agentfoundry:secret" in rendered:
+    leaked_fragments = (
+        "secret",
+        "agentfoundry:agentfoundry",
+        "agentfoundry:secret",
+        "localhost:5432",
+        "mysql://",
+        "postgresql://agentfoundry",
+        "sqlite:////tmp",
+    )
+    leaked = [fragment for fragment in leaked_fragments if fragment in rendered]
+    if leaked:
         raise AssertionError(f"database status must not expose credentials: {database}")
 
 
@@ -160,8 +170,23 @@ def main() -> int:
             )
         if not isinstance(database.get("runtime_ready"), bool):
             raise AssertionError(f"{label} should expose boolean runtime_ready: {database}")
+        if not isinstance(database.get("driver_available"), bool):
+            raise AssertionError(f"{label} should expose boolean driver_available: {database}")
         if database.get("env_var") != "AGENTFOUNDRY_DATABASE_URL":
             raise AssertionError(f"{label} should expose the config env var: {database}")
+        if expected_backend == "postgresql":
+            if database.get("driver_package") != "psycopg":
+                raise AssertionError(
+                    f"{label} should expose psycopg as the PostgreSQL driver: {database}",
+                )
+            if database.get("runtime_ready") is not database.get("driver_available"):
+                raise AssertionError(
+                    f"{label} runtime_ready should follow driver availability: {database}",
+                )
+        elif database.get("driver_package") is not None or database.get("driver_available"):
+            raise AssertionError(
+                f"{label} should not expose a production database driver: {database}",
+            )
         _assert_no_secret_leak(database)
 
     print("Phase 2 platform database status contract passed.")
