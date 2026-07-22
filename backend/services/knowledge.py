@@ -834,7 +834,7 @@ class PlatformKnowledgeResponseService:
 
         hits: list[dict[str, Any]] = []
         errors: list[str] = []
-        production_hit_count = 0
+        queried_production_knowledge_base_ids: list[str] = []
         if knowledge_base_service is not None:
             for knowledge_base_id in knowledge_base_ids:
                 try:
@@ -848,20 +848,12 @@ class PlatformKnowledgeResponseService:
                     errors.append(f"{knowledge_base_id}: {exc}")
                     continue
 
+                queried_production_knowledge_base_ids.append(knowledge_base_id)
                 formatted_results = [
                     self.format_hit(knowledge_base_id, hit)
                     for hit in results
                 ]
                 hits.extend(formatted_results)
-                production_hit_count += len(formatted_results)
-                self._append_retrieval_event(
-                    tenant=tenant,
-                    user_id=user_id,
-                    knowledge_base_id=knowledge_base_id,
-                    question=question,
-                    hits=formatted_results,
-                    agent_run_id=agent_run_id,
-                )
 
         if allow_dev_fallback and len(hits) < top_k:
             seen = {
@@ -890,6 +882,33 @@ class PlatformKnowledgeResponseService:
 
         hits.sort(key=lambda item: item["score"], reverse=True)
         trimmed_hits = hits[:top_k]
+        production_hits_by_knowledge_base_id: dict[str, list[dict[str, Any]]] = {}
+        for hit in trimmed_hits:
+            if hit.get("retrieval_source") != "production":
+                continue
+            knowledge_base_id = str(hit.get("knowledge_base_id") or "").strip()
+            if not knowledge_base_id:
+                continue
+            production_hits_by_knowledge_base_id.setdefault(
+                knowledge_base_id,
+                [],
+            ).append(hit)
+
+        for knowledge_base_id in queried_production_knowledge_base_ids:
+            self._append_retrieval_event(
+                tenant=tenant,
+                user_id=user_id,
+                knowledge_base_id=knowledge_base_id,
+                question=question,
+                hits=production_hits_by_knowledge_base_id.get(knowledge_base_id, []),
+                agent_run_id=agent_run_id,
+            )
+
+        production_hit_count = sum(
+            1
+            for hit in trimmed_hits
+            if hit.get("retrieval_source") == "production"
+        )
         dev_fallback_hit_count = sum(
             1
             for hit in trimmed_hits

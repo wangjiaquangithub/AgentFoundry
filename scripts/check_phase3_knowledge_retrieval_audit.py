@@ -121,6 +121,40 @@ class _EmptyProductionKnowledgeService:
         return []
 
 
+class _OverflowProductionKnowledgeService:
+    async def search(self, **_: Any) -> list[Any]:
+        return [
+            SimpleNamespace(
+                score=0.98,
+                document_id="doc_returned",
+                chunk=SimpleNamespace(
+                    content=SimpleNamespace(
+                        type="text",
+                        text="Returned evidence must match persisted retrieval audit.",
+                    ),
+                    source="postgres://knowledge/doc_returned",
+                    chunk_index=0,
+                    total_chunks=2,
+                    metadata={"source_type": "postgres"},
+                ),
+            ),
+            SimpleNamespace(
+                score=0.88,
+                document_id="doc_trimmed",
+                chunk=SimpleNamespace(
+                    content=SimpleNamespace(
+                        type="text",
+                        text="Trimmed evidence must not be persisted for this run.",
+                    ),
+                    source="postgres://knowledge/doc_trimmed",
+                    chunk_index=1,
+                    total_chunks=2,
+                    metadata={"source_type": "postgres"},
+                ),
+            ),
+        ]
+
+
 class _DevKnowledgeService:
     def search(self, **_: Any) -> list[dict[str, Any]]:
         return []
@@ -389,6 +423,56 @@ async def _assert_agent_run_zero_hit_retrieval_audit_contract() -> None:
             )
 
 
+async def _assert_agent_run_trimmed_retrieval_audit_contract() -> None:
+    retrieval_events = _RetrievalEvents()
+    audit_events = _AuditEvents()
+    service = PlatformKnowledgeResponseService(
+        retrieval_event_writer=retrieval_events,
+        audit_event_writer=audit_events,
+        now=lambda: "2026-01-01T00:00:00+00:00",
+    )
+
+    hits, knowledge_error, readiness = await service.search_agent_knowledge_bases(
+        knowledge_base_service=_OverflowProductionKnowledgeService(),
+        dev_knowledge_service=_DevKnowledgeService(),
+        dev_knowledge_provider="agentfoundry-dev-local",
+        user_id="acme:alice",
+        tenant="acme",
+        question="trimmed evidence",
+        knowledge_base_ids=["kb_runbook"],
+        top_k=1,
+        agent_run_id="run_phase3_agent_trimmed_audit_check",
+    )
+
+    if knowledge_error is not None:
+        _fail("trimmed production retrieval must not return a knowledge error")
+    if readiness["status"] != "ready":
+        _fail("trimmed production retrieval did not return ready retrieval status")
+    if readiness["production_hit_count"] != 1:
+        _fail("trimmed retrieval readiness must count returned production hits only")
+    if len(hits) != 1:
+        _fail("trimmed production retrieval must return one hit")
+    if hits[0].get("document_id") != "doc_returned":
+        _fail("trimmed production retrieval returned the wrong document")
+    if len(retrieval_events.records) != 1:
+        _fail("trimmed production retrieval must write one retrieval event")
+    if len(audit_events.records) != 1:
+        _fail("trimmed production retrieval must write one audit event")
+
+    retrieval_event = retrieval_events.records[0]
+    audit_event = audit_events.records[0]
+    audit_payload = audit_event.payload
+
+    if [hit.get("document_id") for hit in retrieval_event.hits] != ["doc_returned"]:
+        _fail("retrieval event hits must match returned trimmed evidence")
+    if audit_payload.get("hit_count") != 1:
+        _fail("trimmed retrieval audit must count returned evidence only")
+    if audit_payload.get("document_ids") != ["doc_returned"]:
+        _fail("trimmed retrieval audit document ids must match returned evidence")
+    if audit_payload.get("agent_run_id") != "run_phase3_agent_trimmed_audit_check":
+        _fail("trimmed retrieval audit must preserve the agent run id")
+
+
 def main() -> int:
     api_source = _read(API_MODULE)
     service_source = _read(SERVICE_MODULE)
@@ -497,6 +581,7 @@ def main() -> int:
     _assert_runtime_blocked_retrieval_audit_guidance_contract()
     asyncio.run(_assert_agent_run_retrieval_audit_contract())
     asyncio.run(_assert_agent_run_zero_hit_retrieval_audit_contract())
+    asyncio.run(_assert_agent_run_trimmed_retrieval_audit_contract())
 
     print("OK: Phase 3 knowledge retrieval writes retrieval and audit events")
     return 0
