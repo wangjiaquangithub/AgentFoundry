@@ -17,6 +17,50 @@ const workflowRunnerPanelSourcePath = path.resolve(
 	scriptDir,
 	'../src/pages/platform/components/WorkflowRunnerPanel.tsx',
 );
+const toolsPageSourcePath = path.resolve(
+	scriptDir,
+	'../src/pages/platform/components/ToolsViewPage.tsx',
+);
+const toolRunnerPanelSourcePath = path.resolve(
+	scriptDir,
+	'../src/pages/platform/components/ToolRunnerPanel.tsx',
+);
+const agentsPageSourcePath = path.resolve(
+	scriptDir,
+	'../src/pages/platform/components/AgentsViewPage.tsx',
+);
+const approvalsPageSourcePath = path.resolve(
+	scriptDir,
+	'../src/pages/platform/components/ApprovalsViewPage.tsx',
+);
+const approvalsPanelSourcePath = path.resolve(
+	scriptDir,
+	'../src/pages/platform/components/ApprovalsPanel.tsx',
+);
+const runsPageSourcePath = path.resolve(
+	scriptDir,
+	'../src/pages/platform/components/RunsViewPage.tsx',
+);
+const memoryPageSourcePath = path.resolve(
+	scriptDir,
+	'../src/pages/platform/components/MemoryViewPage.tsx',
+);
+const settingsPageSourcePath = path.resolve(
+	scriptDir,
+	'../src/pages/platform/components/SettingsViewPage.tsx',
+);
+const configManagementPanelSourcePath = path.resolve(
+	scriptDir,
+	'../src/pages/platform/components/ConfigManagementPanel.tsx',
+);
+const tenantsPageSourcePath = path.resolve(
+	scriptDir,
+	'../src/pages/platform/components/TenantsViewPage.tsx',
+);
+const connectorsSectionSourcePath = path.resolve(
+	scriptDir,
+	'../src/pages/platform/components/DashboardConnectorsSection.tsx',
+);
 const localeSourcePaths = [
 	path.resolve(scriptDir, '../src/i18n/locales/en.json'),
 	path.resolve(scriptDir, '../src/i18n/locales/zh.json'),
@@ -46,6 +90,7 @@ const routePageExpectations = [
 		view: 'workflows',
 		component: 'WorkflowsViewPage',
 		componentSourcePath: workflowsPageSourcePath,
+		panelSourcePath: workflowRunnerPanelSourcePath,
 		requiredComponentSnippets: [
 			'PlatformMetricsGrid',
 			'WorkflowRunnerPanel',
@@ -76,6 +121,157 @@ const routePageExpectations = [
 			'platform.workflowRunner.run',
 			'platform.workflowRunner.summary',
 			'platform.workflowRunner.toolCalls',
+		],
+	},
+	{
+		route: '/platform/tools',
+		view: 'tools',
+		component: 'ToolsViewPage',
+		componentSourcePath: toolsPageSourcePath,
+		panelSourcePath: toolRunnerPanelSourcePath,
+		requiredComponentSnippets: [
+			'PlatformMetricsGrid',
+			'ToolCatalogPanel',
+			'ToolRunnerPanel',
+			"t('platform.toolCatalog.title')",
+			"t('platform.toolCatalog.description')",
+			"t('platform.toolRunner.openRunner')",
+		],
+		requiredPanelSnippets: [
+			"t('platform.toolRunner.title')",
+			"t('platform.toolRunner.selectTool')",
+			"t('platform.toolRunner.run')",
+			"t('platform.toolRunner.requestApproval')",
+			"t('platform.toolRunner.result')",
+			"t('platform.toolRunner.error')",
+		],
+		requiredLocaleKeys: [
+			'platform.toolCatalog.title',
+			'platform.toolCatalog.description',
+			'platform.toolRunner.title',
+			'platform.toolRunner.description',
+			'platform.toolRunner.selectTool',
+			'platform.toolRunner.run',
+			'platform.toolRunner.requestApproval',
+						'platform.toolRunner.result',
+			'platform.toolRunner.error',
+		],
+	},
+	{
+		route: '/platform/agents',
+		view: 'agents',
+		component: 'AgentsViewPage',
+		componentSourcePath: agentsPageSourcePath,
+		requiredComponentSnippets: [
+			'PlatformPageShell',
+			'PlatformPageHeader',
+		],
+		requiredLocaleKeys: [
+			'platform.agentManagement.description',
+			'platform.agentManagement.title',
+		],
+	},
+	{
+		route: '/platform/approvals',
+		view: 'approvals',
+		component: 'ApprovalsViewPage',
+		componentSourcePath: approvalsPageSourcePath,
+		panelSourcePath: approvalsPanelSourcePath,
+		requiredComponentSnippets: [
+			'PlatformMetricsGrid',
+			'ApprovalsPanel',
+			"t('platform.approvals.title')",
+			"t('platform.approvals.description')",
+		],
+		requiredPanelSnippets: [
+			"t('platform.approvals.agent')",
+			"t('platform.approvals.approve')",
+			"t('platform.approvals.reject')",
+		],
+		requiredLocaleKeys: [
+			'platform.approvals.title',
+			'platform.approvals.description',
+			'platform.approvals.pending',
+			'platform.approvals.approve',
+			'platform.approvals.reject',
+		],
+	},
+	{
+		route: '/platform/runs',
+		view: 'runs',
+		component: 'RunsViewPage',
+		componentSourcePath: runsPageSourcePath,
+		requiredComponentSnippets: [
+			'PlatformDetailDrawer',
+			"t('platform.monitoring.description')",
+			"t('platform.monitoring.actions')",
+		],
+		requiredLocaleKeys: [
+			'platform.monitoring.description',
+			'platform.monitoring.actions',
+			'platform.monitoring.agent',
+		],
+	},
+	{
+		route: '/platform/memory',
+		view: 'memory',
+		component: 'MemoryViewPage',
+		componentSourcePath: memoryPageSourcePath,
+		requiredComponentSnippets: [
+			'PlatformMetricsGrid',
+			'PlatformPageShell',
+			"t('platform.memoryOps.description')",
+		],
+		requiredLocaleKeys: [
+			'platform.memoryOps.description',
+			'platform.memoryOps.eyebrow',
+		],
+	},
+	{
+		route: '/platform/settings',
+		view: 'settings',
+		component: 'SettingsViewPage',
+		componentSourcePath: settingsPageSourcePath,
+		panelSourcePath: configManagementPanelSourcePath,
+		requiredComponentSnippets: [
+			'PlatformConnectionCard',
+			'ConfigManagementPanel',
+			"t('platform.settings.description')",
+		],
+		requiredPanelSnippets: [
+			"t('platform.configManagement.title')",
+			"t('platform.configManagement.description')",
+		],
+		requiredLocaleKeys: [
+			'platform.settings.description',
+			'platform.configManagement.title',
+			'platform.configManagement.description',
+		],
+	},
+	{
+		route: '/platform/tenants',
+		view: 'tenants',
+		component: 'TenantsViewPage',
+		componentSourcePath: tenantsPageSourcePath,
+		requiredComponentSnippets: [
+			'PlatformMetricsGrid',
+			'PlatformPageShell',
+			'PlatformNotice',
+		],
+		requiredLocaleKeys: [],
+	},
+	{
+		route: '/platform/connectors',
+		view: 'connectors',
+		component: 'DashboardConnectorsSection',
+		componentSourcePath: connectorsSectionSourcePath,
+		requiredComponentSnippets: [
+			'PlatformPageShell',
+			'PlatformMetricsGrid',
+			"t('platform.connectors.description')",
+		],
+		requiredLocaleKeys: [
+			'platform.connectors.description',
 		],
 	},
 ];
@@ -141,7 +337,6 @@ async function assertLocaleKeys(expectation) {
 async function assertRoutePageExpectations() {
 	const viewRoutes = await readPlatformViewRoutesFromApp();
 	const platformPageSource = await readFile(platformPageSourcePath, 'utf8');
-	const workflowRunnerPanelSource = await readFile(workflowRunnerPanelSourcePath, 'utf8');
 
 	for (const expectation of routePageExpectations) {
 		const actualView = viewRoutes.get(expectation.route);
@@ -162,11 +357,14 @@ async function assertRoutePageExpectations() {
 			`${expectation.component} source`,
 			expectation.requiredComponentSnippets,
 		);
-		assertSourceIncludes(
-			workflowRunnerPanelSource,
-			'WorkflowRunnerPanel source',
-			expectation.requiredPanelSnippets,
-		);
+		if (expectation.panelSourcePath && expectation.requiredPanelSnippets?.length) {
+			const panelSource = await readFile(expectation.panelSourcePath, 'utf8');
+			assertSourceIncludes(
+				panelSource,
+				`${path.basename(expectation.panelSourcePath)} source`,
+				expectation.requiredPanelSnippets,
+			);
+		}
 		await assertLocaleKeys(expectation);
 	}
 }
