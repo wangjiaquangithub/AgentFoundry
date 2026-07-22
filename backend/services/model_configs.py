@@ -49,6 +49,21 @@ class ModelConfigWriteCommand:
     actor_user_id: str
 
 
+@dataclass(frozen=True)
+class ModelConfigApiCommandInput:
+    """API-facing model config write input before service command conversion."""
+
+    id: str
+    tenant_id: str
+    name: str
+    provider: str
+    model: str
+    purpose: str
+    status: str
+    config_ref: str | None
+    actor_user_id: str
+
+
 class PlatformModelConfigService:
     """Manage tenant-scoped model configuration records with audit evidence."""
 
@@ -102,6 +117,25 @@ class PlatformModelConfigService:
 
         return persisted
 
+    def upsert_model_config_from_api(
+        self,
+        input: ModelConfigApiCommandInput,
+    ) -> dict[str, Any]:
+        persisted = self.upsert_model_config(
+            ModelConfigWriteCommand(
+                id=input.id,
+                tenant_id=input.tenant_id,
+                name=input.name,
+                provider=input.provider,
+                model=input.model,
+                purpose=input.purpose,
+                status=input.status,
+                config_ref=input.config_ref,
+                actor_user_id=input.actor_user_id,
+            ),
+        )
+        return model_config_response_payload(persisted)
+
     def _append_model_config_audit_event(
         self,
         *,
@@ -152,6 +186,23 @@ def _optional_text(value: str | None) -> str | None:
         return None
     normalized = str(value).strip()
     return normalized or None
+
+
+def model_config_response_payload(record: ModelConfigRecord) -> dict[str, Any]:
+    """Return an API-safe model config payload without secret references."""
+
+    return {
+        "id": record.id,
+        "tenant_id": record.tenant_id,
+        "name": record.name,
+        "provider": record.provider,
+        "model": record.model,
+        "purpose": record.purpose,
+        "status": record.status,
+        "created_at": record.created_at,
+        "updated_at": record.updated_at,
+        "config_ref_configured": bool(record.config_ref),
+    }
 
 
 def _utc_now_iso() -> str:
