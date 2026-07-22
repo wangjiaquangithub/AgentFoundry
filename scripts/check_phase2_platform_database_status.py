@@ -150,10 +150,16 @@ def main() -> int:
             raise AssertionError(
                 f"{label} backend should be {expected_backend}: {database}",
             )
+        if database.get("required_backend") != "postgresql":
+            raise AssertionError(
+                f"{label} should expose PostgreSQL as required backend: {database}",
+            )
         if database.get("production_ready") is not expected_ready:
             raise AssertionError(
                 f"{label} production_ready should be {expected_ready}: {database}",
             )
+        if not isinstance(database.get("runtime_ready"), bool):
+            raise AssertionError(f"{label} should expose boolean runtime_ready: {database}")
         if database.get("env_var") != "AGENTFOUNDRY_DATABASE_URL":
             raise AssertionError(f"{label} should expose the config env var: {database}")
         _assert_no_secret_leak(database)
