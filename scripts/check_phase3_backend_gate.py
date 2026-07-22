@@ -92,12 +92,33 @@ CHECKS = (
 )
 
 
+def check_gate_covers_phase3_scripts() -> None:
+    expected_scripts = {
+        str(path.relative_to(ROOT))
+        for path in (ROOT / "scripts").glob("check_phase3_*.py")
+        if path.name != Path(__file__).name
+    }
+    configured_scripts = {
+        command[1]
+        for _, command in CHECKS
+        if len(command) >= 2
+        and command[0] == sys.executable
+        and command[1].startswith("scripts/check_phase3_")
+    }
+    missing = sorted(expected_scripts - configured_scripts)
+    if missing:
+        raise RuntimeError(
+            "Phase 3 backend gate is missing check scripts: " + ", ".join(missing)
+        )
+
+
 def run_check(label: str, command: tuple[str, ...]) -> None:
     print(f"[phase3-backend-gate] {label}: {' '.join(command)}")
     subprocess.run(command, cwd=ROOT, check=True)
 
 
 def main() -> int:
+    check_gate_covers_phase3_scripts()
     for label, command in CHECKS:
         run_check(label, command)
     print("[phase3-backend-gate] passed")
