@@ -198,6 +198,7 @@ from services.knowledge_ingestion import PlatformKnowledgeIngestionService
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
 from services.composition import (
+    build_configured_postgres_knowledge_document_readiness_service,
     build_configured_postgres_knowledge_retrieval_service,
     build_configured_postgres_model_config_service,
 )
@@ -420,17 +421,7 @@ knowledge_response_service = PlatformKnowledgeResponseService(
 def _build_knowledge_document_readiness_service() -> (
     PlatformKnowledgeDocumentReadinessService | None
 ):
-    database = create_configured_postgres_database()
-    if database is None:
-        return None
-
-    return PlatformKnowledgeDocumentReadinessService(
-        knowledge_base_repository=PostgresKnowledgeBaseReadRepository(database),
-        document_repository=PostgresDocumentReadRepository(database),
-        document_chunk_repository=PostgresDocumentChunkReadRepository(database),
-        embedding_record_repository=PostgresEmbeddingRecordReadRepository(database),
-        model_config_repository=PostgresModelConfigReadRepository(database),
-    )
+    return build_configured_postgres_knowledge_document_readiness_service()
 
 
 def _build_knowledge_base_read_repository() -> (

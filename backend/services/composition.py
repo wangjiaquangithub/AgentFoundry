@@ -9,13 +9,17 @@ from backend.persistence import (
     PostgresDatabase,
     PostgresDocumentChunkReadRepository,
     PostgresDocumentReadRepository,
+    PostgresEmbeddingRecordReadRepository,
     PostgresKnowledgeBaseReadRepository,
     PostgresModelConfigReadRepository,
     PostgresModelConfigWriteRepository,
     PostgresRetrievalEventWriteRepository,
     create_configured_postgres_database,
 )
-from backend.services.knowledge import PlatformKnowledgeRetrievalService
+from backend.services.knowledge import (
+    PlatformKnowledgeDocumentReadinessService,
+    PlatformKnowledgeRetrievalService,
+)
 from backend.services.model_configs import PlatformModelConfigService
 
 
@@ -41,6 +45,32 @@ def build_configured_postgres_model_config_service() -> (
         return None
 
     return build_postgres_model_config_service(database)
+
+
+def build_postgres_knowledge_document_readiness_service(
+    database: PostgresDatabase,
+) -> PlatformKnowledgeDocumentReadinessService:
+    """Build the PostgreSQL-backed knowledge document readiness service."""
+
+    return PlatformKnowledgeDocumentReadinessService(
+        knowledge_base_repository=PostgresKnowledgeBaseReadRepository(database),
+        document_repository=PostgresDocumentReadRepository(database),
+        document_chunk_repository=PostgresDocumentChunkReadRepository(database),
+        embedding_record_repository=PostgresEmbeddingRecordReadRepository(database),
+        model_config_repository=PostgresModelConfigReadRepository(database),
+    )
+
+
+def build_configured_postgres_knowledge_document_readiness_service() -> (
+    PlatformKnowledgeDocumentReadinessService | None
+):
+    """Build the knowledge readiness service when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return build_postgres_knowledge_document_readiness_service(database)
 
 
 def build_postgres_knowledge_retrieval_service(

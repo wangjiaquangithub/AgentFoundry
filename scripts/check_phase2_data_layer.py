@@ -1852,26 +1852,39 @@ def _check_postgres_approval_requests_wired() -> list[str]:
 def _check_postgres_knowledge_readiness_wired() -> list[str]:
     errors: list[str] = []
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    composition_path = SERVICES_DIR / "composition.py"
+    composition_source = composition_path.read_text(encoding="utf-8")
     knowledge_source = (SERVICES_DIR / "knowledge.py").read_text(encoding="utf-8")
     agents_source = (SERVICES_DIR / "agents.py").read_text(encoding="utf-8")
     main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+    composition_tree = ast.parse(composition_source, filename=str(composition_path))
 
-    required_main_imports = [
+    required_composition_imports = [
         "PostgresKnowledgeBaseReadRepository",
         "PostgresDocumentReadRepository",
         "PostgresDocumentChunkReadRepository",
         "PostgresEmbeddingRecordReadRepository",
         "PostgresModelConfigReadRepository",
     ]
-    for imported_name in required_main_imports:
-        if not _module_imports_name(main_tree, imported_name):
+    for imported_name in required_composition_imports:
+        if not _module_imports_name(composition_tree, imported_name):
             errors.append(
-                f"backend/main.py must import {imported_name} for knowledge readiness reads",
+                "backend/services/composition.py must import "
+                f"{imported_name} for knowledge readiness reads",
             )
 
     if not _module_defines_function(main_tree, "_build_knowledge_document_readiness_service"):
         errors.append(
             "backend/main.py must define _build_knowledge_document_readiness_service for PostgreSQL knowledge readiness",
+        )
+    if not _module_defines_function(
+        composition_tree,
+        "build_postgres_knowledge_document_readiness_service",
+    ):
+        errors.append(
+            "backend/services/composition.py must define "
+            "build_postgres_knowledge_document_readiness_service for "
+            "PostgreSQL knowledge readiness",
         )
 
     required_constructor_wiring = [
@@ -1882,9 +1895,10 @@ def _check_postgres_knowledge_readiness_wired() -> list[str]:
         "model_config_repository=PostgresModelConfigReadRepository(database)",
     ]
     for wiring in required_constructor_wiring:
-        if wiring not in main_source:
+        if wiring not in composition_source:
             errors.append(
-                "backend/main.py must wire PostgreSQL knowledge readiness reader: "
+                "backend/services/composition.py must wire PostgreSQL "
+                "knowledge readiness reader: "
                 f"{wiring}",
             )
 
