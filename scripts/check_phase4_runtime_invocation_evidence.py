@@ -149,6 +149,8 @@ def assert_runtime_persistence_evidence_link() -> None:
         runtime_invocation_id="runtime-invocation-1",
         agent_run_id="agent-run-1",
         provider_run_id="provider-run-1",
+        latency_ms=125,
+        token_usage={"input_tokens": 12, "output_tokens": 4},
         completed_at="2026-07-21T00:00:00+00:00",
     )
     service.append_runtime_invocation_record_from_context(
@@ -174,6 +176,9 @@ def assert_runtime_persistence_evidence_link() -> None:
     assert record.provider_id == result_payload["provider_id"]
     assert record.provider_run_id == "provider-run-1"
     assert record.agent_run_id == "agent-run-1"
+    assert record.latency_ms == 125
+    assert record.token_usage == {"input_tokens": 12, "output_tokens": 4}
+    assert record.completed_at == "2026-07-21T00:00:00+00:00"
     assert (
         record.request_summary["metadata"]["runtime_invocation_id"]
         == record.response_summary["runtime_invocation_id"]
@@ -183,6 +188,8 @@ def assert_runtime_persistence_evidence_link() -> None:
     assert record.response_summary["mode"] == result_payload["mode"]
     assert record.response_summary["agent_run_id"] == "agent-run-1"
     assert record.response_summary["provider_run_id"] == "provider-run-1"
+    assert record.response_summary["latency_ms"] == 125
+    assert record.response_summary["token_usage"]["output_tokens"] == 4
 
     mismatched_result = {
         **result_payload,

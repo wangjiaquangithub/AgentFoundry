@@ -18,9 +18,9 @@ from backend.persistence.runtime_records import (  # noqa: E402
 )
 
 
-SECRET_REF = "secret://agentscope/runtime-token"
+SECRET_REF = "replace-with-local-secret"
 PROVIDER_URL = "https://agentscope-runtime.internal"
-API_KEY = "sk-runtime-secret"
+API_KEY = "your-api-key"
 
 
 class FakeCursor:
