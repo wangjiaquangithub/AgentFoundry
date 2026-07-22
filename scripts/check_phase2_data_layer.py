@@ -3781,6 +3781,84 @@ def _check_postgres_agent_run_reads_guarded() -> list[str]:
     return errors
 
 
+def _check_postgres_audit_event_reads_guarded() -> list[str]:
+    errors: list[str] = []
+    audit_path = PERSISTENCE_DIR / "audit_events.py"
+    audit_source = audit_path.read_text(encoding="utf-8")
+    audit_tree = ast.parse(audit_source, filename=str(audit_path))
+
+    if "PostgresAuditEventReadRepository" not in audit_source:
+        errors.append(
+            "backend/persistence/audit_events.py must define "
+            "PostgresAuditEventReadRepository",
+        )
+        return errors
+
+    required_methods = {
+        "list_audit_events": ["FROM audit_events", "WHERE tenant_id = %s"],
+        "get_audit_event": ["FROM audit_events", "WHERE tenant_id = %s AND id = %s"],
+    }
+    for method_name, sql_tokens in required_methods.items():
+        method_node = _find_class_method(
+            audit_tree,
+            class_name="PostgresAuditEventReadRepository",
+            method_name=method_name,
+        )
+        if method_node is None:
+            errors.append(
+                "PostgreSQL audit event read repository missing method: "
+                "backend/persistence/audit_events.py:"
+                f"PostgresAuditEventReadRepository.{method_name}",
+            )
+            continue
+        if not _method_has_required_argument(method_node, "tenant_id"):
+            errors.append(
+                "PostgreSQL audit event read method must require tenant_id: "
+                "backend/persistence/audit_events.py:"
+                f"PostgresAuditEventReadRepository.{method_name}",
+            )
+        if not _method_uses_database_call(method_node, "connect"):
+            errors.append(
+                "PostgreSQL audit event read method must read through PostgreSQL: "
+                "backend/persistence/audit_events.py:"
+                f"PostgresAuditEventReadRepository.{method_name}",
+            )
+        normalized_sql = " ".join(_normalized_sql_literals(method_node))
+        for sql_token in sql_tokens:
+            if sql_token.lower() not in normalized_sql:
+                errors.append(
+                    "PostgreSQL audit event read method must query tenant-scoped "
+                    "audit events: backend/persistence/audit_events.py:"
+                    f"PostgresAuditEventReadRepository.{method_name}",
+                )
+        if not _module_calls_name(method_node, "_validate_audit_event_read_result"):
+            errors.append(
+                "PostgreSQL audit event read method must validate returned records "
+                "against requested tenant and filters: backend/persistence/audit_events.py:"
+                f"PostgresAuditEventReadRepository.{method_name}",
+            )
+
+    list_for_target = _find_class_method(
+        audit_tree,
+        class_name="PostgresAuditEventReadRepository",
+        method_name="list_for_target",
+    )
+    if list_for_target is None:
+        errors.append(
+            "PostgreSQL audit event read repository missing method: "
+            "backend/persistence/audit_events.py:"
+            "PostgresAuditEventReadRepository.list_for_target",
+        )
+    elif not _module_calls_name(list_for_target, "list_audit_events"):
+        errors.append(
+            "PostgreSQL audit event target reads must delegate to guarded "
+            "list_audit_events: backend/persistence/audit_events.py:"
+            "PostgresAuditEventReadRepository.list_for_target",
+        )
+
+    return errors
+
+
 def _check_postgres_approval_request_reads_guarded() -> list[str]:
     errors: list[str] = []
     approval_path = PERSISTENCE_DIR / "approvals.py"
@@ -4285,6 +4363,7 @@ def main() -> int:
         *_check_postgres_workflow_template_reads_guarded(),
         *_check_postgres_agent_catalog_reads_guarded(),
         *_check_postgres_agent_run_reads_guarded(),
+        *_check_postgres_audit_event_reads_guarded(),
         *_check_postgres_approval_request_reads_guarded(),
         *_check_postgres_membership_reads_guarded(),
         *_check_postgres_runtime_reads_guarded(),
@@ -4348,6 +4427,7 @@ def main() -> int:
     print("- PostgreSQL workflow template reads guarded: yes")
     print("- PostgreSQL agent catalog reads guarded: yes")
     print("- PostgreSQL agent run reads guarded: yes")
+    print("- PostgreSQL audit event reads guarded: yes")
     print("- PostgreSQL approval request reads guarded: yes")
     print("- PostgreSQL membership reads guarded: yes")
     print("- PostgreSQL runtime reads guarded: yes")

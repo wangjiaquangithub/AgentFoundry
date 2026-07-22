@@ -74,6 +74,30 @@ def _validate_write_result(
         raise ValueError("PostgreSQL audit event write returned another payload.")
 
 
+def _validate_audit_event_read_result(
+    record: AuditEventRecord,
+    *,
+    tenant_id: str,
+    audit_event_id: str | None = None,
+    event_type: str | None = None,
+    actor_user_id: str | None = None,
+    target_type: str | None = None,
+    target_id: str | None = None,
+) -> None:
+    if record.tenant_id != tenant_id:
+        raise ValueError("PostgreSQL audit event read returned another tenant.")
+    if audit_event_id is not None and record.id != audit_event_id:
+        raise ValueError("PostgreSQL audit event read returned another event.")
+    if event_type is not None and record.event_type != event_type:
+        raise ValueError("PostgreSQL audit event read returned another event type.")
+    if actor_user_id is not None and record.actor_user_id != actor_user_id:
+        raise ValueError("PostgreSQL audit event read returned another actor.")
+    if target_type is not None and record.target_type != target_type:
+        raise ValueError("PostgreSQL audit event read returned another target type.")
+    if target_id is not None and record.target_id != target_id:
+        raise ValueError("PostgreSQL audit event read returned another target.")
+
+
 class SQLiteAuditEventReadRepository:
     """Read audit events from SQLite for local compatibility only."""
 
@@ -199,7 +223,18 @@ class PostgresAuditEventReadRepository:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, tuple(parameters))
-                return [_audit_event_from_row(dict(row)) for row in cursor.fetchall()]
+                rows = cursor.fetchall()
+        records = [_audit_event_from_row(dict(row)) for row in rows]
+        for record in records:
+            _validate_audit_event_read_result(
+                record,
+                tenant_id=tenant_id,
+                event_type=event_type,
+                actor_user_id=actor_user_id,
+                target_type=target_type,
+                target_id=target_id,
+            )
+        return records
 
     def get_audit_event(
         self,
@@ -224,7 +259,13 @@ class PostgresAuditEventReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return _audit_event_from_row(dict(row))
+        record = _audit_event_from_row(dict(row))
+        _validate_audit_event_read_result(
+            record,
+            tenant_id=tenant_id,
+            audit_event_id=audit_event_id,
+        )
+        return record
 
     def list_for_target(
         self,
