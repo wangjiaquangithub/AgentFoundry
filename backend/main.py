@@ -118,8 +118,6 @@ from backend.persistence import (
     PostgresMemoryItemReadRepository,
     PostgresMemoryItemWriteRepository,
     PostgresModelConfigReadRepository,
-    PostgresRetrievalEventReadRepository,
-    PostgresRetrievalEventWriteRepository,
     PostgresRuntimeReadRepository,
     PostgresRuntimeWriteRepository,
     PostgresTenancyReadRepository,
@@ -203,6 +201,8 @@ from services.composition import (
     build_configured_postgres_knowledge_response_service,
     build_configured_postgres_knowledge_retrieval_service,
     build_configured_postgres_model_config_service,
+    build_configured_postgres_retrieval_event_read_repository,
+    build_configured_postgres_retrieval_event_write_repository,
 )
 from services.platform_status import PlatformStatusService
 from services.tools import (
@@ -344,24 +344,12 @@ def _build_audit_event_write_repository() -> Any | None:
     return build_configured_postgres_audit_event_write_repository()
 
 
-def _build_retrieval_event_write_repository() -> (
-    PostgresRetrievalEventWriteRepository | None
-):
-    database = create_configured_postgres_database()
-    if database is None:
-        return None
-
-    return PostgresRetrievalEventWriteRepository(database)
+def _build_retrieval_event_write_repository() -> Any | None:
+    return build_configured_postgres_retrieval_event_write_repository()
 
 
-def _build_retrieval_event_read_repository() -> (
-    PostgresRetrievalEventReadRepository | None
-):
-    database = create_configured_postgres_database()
-    if database is None:
-        return None
-
-    return PostgresRetrievalEventReadRepository(database)
+def _build_retrieval_event_read_repository() -> Any | None:
+    return build_configured_postgres_retrieval_event_read_repository()
 
 
 def _build_member_repository() -> MemberRepositoryProtocol:

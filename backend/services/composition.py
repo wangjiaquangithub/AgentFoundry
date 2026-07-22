@@ -18,6 +18,7 @@ from backend.persistence import (
     PostgresKnowledgeBaseWriteRepository,
     PostgresModelConfigReadRepository,
     PostgresModelConfigWriteRepository,
+    PostgresRetrievalEventReadRepository,
     PostgresRetrievalEventWriteRepository,
     create_configured_postgres_database,
 )
@@ -76,6 +77,30 @@ def build_configured_postgres_audit_event_write_repository() -> (
         return None
 
     return PostgresAuditEventWriteRepository(database)
+
+
+def build_configured_postgres_retrieval_event_read_repository() -> (
+    PostgresRetrievalEventReadRepository | None
+):
+    """Build the retrieval event read repository when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresRetrievalEventReadRepository(database)
+
+
+def build_configured_postgres_retrieval_event_write_repository() -> (
+    PostgresRetrievalEventWriteRepository | None
+):
+    """Build the retrieval event write repository when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresRetrievalEventWriteRepository(database)
 
 
 def build_configured_postgres_knowledge_base_read_repository() -> (

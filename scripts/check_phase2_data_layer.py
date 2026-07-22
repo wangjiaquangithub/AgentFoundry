@@ -1384,14 +1384,29 @@ def _check_postgres_retrieval_events_wired() -> list[str]:
         encoding="utf-8",
     )
     main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+    composition_source = (SERVICES_DIR / "composition.py").read_text(
+        encoding="utf-8",
+    )
+    composition_tree = ast.parse(
+        composition_source,
+        filename=str(SERVICES_DIR / "composition.py"),
+    )
 
-    if not _module_imports_name(main_tree, "PostgresRetrievalEventReadRepository"):
+    if not _module_imports_name(
+        composition_tree,
+        "PostgresRetrievalEventReadRepository",
+    ):
         errors.append(
-            "backend/main.py must import PostgresRetrievalEventReadRepository for retrieval event reads",
+            "backend/services/composition.py must import "
+            "PostgresRetrievalEventReadRepository for retrieval event reads",
         )
-    if not _module_imports_name(main_tree, "PostgresRetrievalEventWriteRepository"):
+    if not _module_imports_name(
+        composition_tree,
+        "PostgresRetrievalEventWriteRepository",
+    ):
         errors.append(
-            "backend/main.py must import PostgresRetrievalEventWriteRepository for retrieval event writes",
+            "backend/services/composition.py must import "
+            "PostgresRetrievalEventWriteRepository for retrieval event writes",
         )
     if not _module_defines_function(main_tree, "_build_retrieval_event_read_repository"):
         errors.append(
@@ -1405,7 +1420,40 @@ def _check_postgres_retrieval_events_wired() -> list[str]:
         errors.append(
             "backend/main.py must pass the PostgreSQL retrieval_event_reader into PlatformStatusService",
         )
-    composition_source = (SERVICES_DIR / "composition.py").read_text(encoding="utf-8")
+    if not _module_defines_function(
+        composition_tree,
+        "build_configured_postgres_retrieval_event_read_repository",
+    ):
+        errors.append(
+            "backend/services/composition.py must define "
+            "build_configured_postgres_retrieval_event_read_repository",
+        )
+    if not _module_defines_function(
+        composition_tree,
+        "build_configured_postgres_retrieval_event_write_repository",
+    ):
+        errors.append(
+            "backend/services/composition.py must define "
+            "build_configured_postgres_retrieval_event_write_repository",
+        )
+    for wiring in (
+        "return PostgresRetrievalEventReadRepository(database)",
+        "return PostgresRetrievalEventWriteRepository(database)",
+    ):
+        if wiring not in composition_source:
+            errors.append(
+                "backend/services/composition.py must wire PostgreSQL retrieval "
+                f"event repositories: {wiring}",
+            )
+    for delegated_builder in (
+        "build_configured_postgres_retrieval_event_read_repository()",
+        "build_configured_postgres_retrieval_event_write_repository()",
+    ):
+        if delegated_builder not in main_source:
+            errors.append(
+                "backend/main.py must delegate PostgreSQL retrieval event "
+                f"repository construction to services.composition: {delegated_builder}",
+            )
     if (
         "retrieval_event_writer=PostgresRetrievalEventWriteRepository(database)"
         not in composition_source
