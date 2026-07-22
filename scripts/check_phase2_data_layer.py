@@ -834,8 +834,12 @@ def _check_postgres_tool_policy_wired() -> list[str]:
         "INSERT INTO tool_user_policies",
         "RETURNING id, tenant_id, tool_id, allowed_roles",
         "Tool policy upsert did not return a row.",
+        "_validate_policy_write_result(",
+        "policy_records.append(persisted_policy)",
         "RETURNING id, tenant_id, user_id, allow_tools",
         "Tool user policy upsert did not return a row.",
+        "_validate_user_policy_write_result(",
+        "user_policy_records.append(persisted_user_policy)",
     ]
     for token in required_persistence_tokens:
         if token not in tool_persistence_source:

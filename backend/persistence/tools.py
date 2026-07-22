@@ -150,6 +150,58 @@ def _rate_limit_from_json(
     raise ValueError(f"Tool policy {record_id} has invalid rate_limit JSON.")
 
 
+def _validate_policy_write_result(
+    requested: ToolPolicyRecord,
+    persisted: ToolPolicyRecord,
+) -> None:
+    if not persisted.id:
+        raise ValueError("PostgreSQL tool policy write did not return a policy id.")
+    if not persisted.tenant_id:
+        raise ValueError("PostgreSQL tool policy write did not return a tenant id.")
+    if not persisted.tool_id:
+        raise ValueError("PostgreSQL tool policy write did not return a tool id.")
+    if persisted.id != requested.id:
+        raise ValueError("PostgreSQL tool policy write returned another policy.")
+    if persisted.tenant_id != requested.tenant_id:
+        raise ValueError("PostgreSQL tool policy write returned another tenant.")
+    if persisted.tool_id != requested.tool_id:
+        raise ValueError("PostgreSQL tool policy write returned another tool.")
+    if persisted.allowed_roles != requested.allowed_roles:
+        raise ValueError("PostgreSQL tool policy write returned another role set.")
+    if persisted.approval_required != requested.approval_required:
+        raise ValueError("PostgreSQL tool policy write returned another approval flag.")
+    if persisted.rate_limit != requested.rate_limit:
+        raise ValueError("PostgreSQL tool policy write returned another rate limit.")
+    if persisted.data_access_scope != requested.data_access_scope:
+        raise ValueError("PostgreSQL tool policy write returned another data scope.")
+    if persisted.updated_at != requested.updated_at:
+        raise ValueError("PostgreSQL tool policy write returned another update time.")
+
+
+def _validate_user_policy_write_result(
+    requested: ToolUserPolicyRecord,
+    persisted: ToolUserPolicyRecord,
+) -> None:
+    if not persisted.id:
+        raise ValueError("PostgreSQL tool user policy write did not return a policy id.")
+    if not persisted.tenant_id:
+        raise ValueError("PostgreSQL tool user policy write did not return a tenant id.")
+    if not persisted.user_id:
+        raise ValueError("PostgreSQL tool user policy write did not return a user id.")
+    if persisted.id != requested.id:
+        raise ValueError("PostgreSQL tool user policy write returned another policy.")
+    if persisted.tenant_id != requested.tenant_id:
+        raise ValueError("PostgreSQL tool user policy write returned another tenant.")
+    if persisted.user_id != requested.user_id:
+        raise ValueError("PostgreSQL tool user policy write returned another user.")
+    if persisted.allow_tools != requested.allow_tools:
+        raise ValueError("PostgreSQL tool user policy write returned another allow list.")
+    if persisted.deny_tools != requested.deny_tools:
+        raise ValueError("PostgreSQL tool user policy write returned another deny list.")
+    if persisted.updated_at != requested.updated_at:
+        raise ValueError("PostgreSQL tool user policy write returned another update time.")
+
+
 class SQLiteToolGovernanceReadRepository:
     """Read tenant-scoped tool catalog and policy records from SQLite."""
 
@@ -580,6 +632,17 @@ class PostgresToolGovernanceWriteRepository:
                                 timestamp,
                             ),
                         )
+                        requested_policy = ToolPolicyRecord(
+                            id=f"{tool_id}:policy",
+                            tenant_id=clean_tenant_id,
+                            tool_id=tool_id,
+                            allowed_roles=["admin", "member"],
+                            approval_required=tool_name in approval_required_tools,
+                            rate_limit=None,
+                            data_access_scope="tenant",
+                            created_at=timestamp,
+                            updated_at=timestamp,
+                        )
                         cursor.execute(
                             """
                             INSERT INTO tool_policies (
@@ -598,11 +661,11 @@ class PostgresToolGovernanceWriteRepository:
                               created_at, updated_at
                             """,
                             (
-                                f"{tool_id}:policy",
-                                clean_tenant_id,
-                                tool_id,
-                                json.dumps(["admin", "member"]),
-                                1 if tool_name in approval_required_tools else 0,
+                                requested_policy.id,
+                                requested_policy.tenant_id,
+                                requested_policy.tool_id,
+                                json.dumps(requested_policy.allowed_roles),
+                                1 if requested_policy.approval_required else 0,
                                 timestamp,
                                 timestamp,
                             ),
@@ -612,7 +675,12 @@ class PostgresToolGovernanceWriteRepository:
                             raise ValueError(
                                 "Tool policy upsert did not return a row.",
                             )
-                        policy_records.append(_policy_from_row(dict(row)))
+                        persisted_policy = _policy_from_row(dict(row))
+                        _validate_policy_write_result(
+                            requested_policy,
+                            persisted_policy,
+                        )
+                        policy_records.append(persisted_policy)
 
                     users = tenant_policy.get("users")
                     if not isinstance(users, dict):
@@ -640,6 +708,15 @@ class PostgresToolGovernanceWriteRepository:
                             for item in raw_deny_tools
                             if str(item).strip()
                         ]
+                        requested_user_policy = ToolUserPolicyRecord(
+                            id=f"{clean_tenant_id}:{clean_user_id}:tool-policy",
+                            tenant_id=clean_tenant_id,
+                            user_id=clean_user_id,
+                            allow_tools=allow_tools,
+                            deny_tools=deny_tools,
+                            created_at=timestamp,
+                            updated_at=timestamp,
+                        )
                         cursor.execute(
                             """
                             INSERT INTO users (
@@ -671,11 +748,17 @@ class PostgresToolGovernanceWriteRepository:
                               deny_tools, created_at, updated_at
                             """,
                             (
-                                f"{clean_tenant_id}:{clean_user_id}:tool-policy",
-                                clean_tenant_id,
-                                clean_user_id,
-                                json.dumps(allow_tools, ensure_ascii=False),
-                                json.dumps(deny_tools, ensure_ascii=False),
+                                requested_user_policy.id,
+                                requested_user_policy.tenant_id,
+                                requested_user_policy.user_id,
+                                json.dumps(
+                                    requested_user_policy.allow_tools,
+                                    ensure_ascii=False,
+                                ),
+                                json.dumps(
+                                    requested_user_policy.deny_tools,
+                                    ensure_ascii=False,
+                                ),
                                 timestamp,
                                 timestamp,
                             ),
@@ -685,7 +768,12 @@ class PostgresToolGovernanceWriteRepository:
                             raise ValueError(
                                 "Tool user policy upsert did not return a row.",
                             )
-                        user_policy_records.append(_user_policy_from_row(dict(row)))
+                        persisted_user_policy = _user_policy_from_row(dict(row))
+                        _validate_user_policy_write_result(
+                            requested_user_policy,
+                            persisted_user_policy,
+                        )
+                        user_policy_records.append(persisted_user_policy)
 
         return ToolPolicyWriteResult(
             policy_records=policy_records,
