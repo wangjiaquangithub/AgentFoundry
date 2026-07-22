@@ -147,12 +147,6 @@ from services.connectors import (
 )
 from services.dev_knowledge import PlatformDevKnowledgeService
 from services.enterprise_router import PlatformEnterpriseRouterService
-from services.knowledge import (
-    PlatformKnowledgeDocumentReadinessService,
-    PlatformKnowledgeResponseService,
-    PlatformKnowledgeRetrievalService,
-)
-from services.knowledge_ingestion import PlatformKnowledgeIngestionService
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
 from services.composition import (
@@ -161,19 +155,19 @@ from services.composition import (
     build_approval_request_repository,
     build_audit_event_read_repository,
     build_audit_event_write_repository,
-    build_configured_postgres_knowledge_document_readiness_service,
-    build_configured_postgres_knowledge_ingestion_service,
-    build_configured_postgres_knowledge_response_service,
-    build_configured_postgres_knowledge_retrieval_service,
     build_configured_postgres_model_config_service,
     build_knowledge_base_read_repository,
     build_knowledge_base_write_repository,
     build_knowledge_document_chunk_read_repository,
     build_knowledge_document_chunk_write_repository,
+    build_knowledge_document_readiness_service,
     build_knowledge_document_read_repository,
     build_knowledge_document_write_repository,
     build_knowledge_embedding_record_read_repository,
     build_knowledge_embedding_record_write_repository,
+    build_knowledge_ingestion_service,
+    build_knowledge_response_service,
+    build_knowledge_retrieval_service,
     build_memory_item_read_repository,
     build_memory_item_write_repository,
     build_member_repository,
@@ -227,32 +221,7 @@ dev_knowledge_repository = DevKnowledgeRepository(PLATFORM_DEV_KNOWLEDGE_PATH)
 dev_knowledge_service = PlatformDevKnowledgeService(
     repository=dev_knowledge_repository,
 )
-knowledge_response_service = (
-    build_configured_postgres_knowledge_response_service(now=now_iso)
-    or PlatformKnowledgeResponseService(now=now_iso)
-)
-
-
-def _build_knowledge_document_readiness_service() -> (
-    PlatformKnowledgeDocumentReadinessService | None
-):
-    return build_configured_postgres_knowledge_document_readiness_service()
-
-
-def _build_knowledge_retrieval_service() -> (
-    PlatformKnowledgeRetrievalService | None
-):
-    return build_configured_postgres_knowledge_retrieval_service(
-        now=now_iso,
-    )
-
-
-def _build_knowledge_ingestion_service() -> (
-    PlatformKnowledgeIngestionService | None
-):
-    return build_configured_postgres_knowledge_ingestion_service(
-        now=now_iso,
-    )
+knowledge_response_service = build_knowledge_response_service(now=now_iso)
 
 
 enterprise_router_service = PlatformEnterpriseRouterService(
@@ -495,7 +464,7 @@ def _platform_agent_service() -> PlatformAgentService:
         role_for_user=_platform_access_helpers.role_for_user,
         audit_event_writer=build_audit_event_write_repository(),
         knowledge_document_readiness_service=(
-            _build_knowledge_document_readiness_service()
+            build_knowledge_document_readiness_service()
         ),
     )
 
@@ -700,7 +669,7 @@ app.include_router(
 app.include_router(
     create_knowledge_ingestion_router(
         KnowledgeIngestionRouteDependencies(
-            ingestion_service=_build_knowledge_ingestion_service,
+            ingestion_service=lambda: build_knowledge_ingestion_service(now=now_iso),
             tenant_hint_from_user_id=tenant_hint_from_user_id,
         )
     )
@@ -709,7 +678,7 @@ app.include_router(
 app.include_router(
     create_knowledge_readiness_router(
         KnowledgeReadinessRouteDependencies(
-            readiness_service=_build_knowledge_document_readiness_service,
+            readiness_service=build_knowledge_document_readiness_service,
             tenant_hint_from_user_id=tenant_hint_from_user_id,
         )
     )
@@ -759,7 +728,7 @@ app.include_router(
 app.include_router(
     create_knowledge_retrieval_router(
         KnowledgeRetrievalRouteDependencies(
-            retrieval_service=_build_knowledge_retrieval_service,
+            retrieval_service=lambda: build_knowledge_retrieval_service(now=now_iso),
             tenant_hint_from_user_id=tenant_hint_from_user_id,
         )
     )
@@ -821,7 +790,7 @@ app.include_router(
             memory_service=platform_memory_service,
             knowledge_response_service=knowledge_response_service,
             knowledge_document_readiness_service=(
-                _build_knowledge_document_readiness_service()
+                build_knowledge_document_readiness_service()
             ),
             dev_knowledge_service=dev_knowledge_service,
             enterprise_router_service=enterprise_router_service,

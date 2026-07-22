@@ -1535,12 +1535,12 @@ def _check_postgres_audit_events_wired() -> list[str]:
                     "audit_event_writer into PlatformKnowledgeResponseService",
                 )
             if (
-                "build_configured_postgres_knowledge_response_service(now=now_iso)"
+                "build_knowledge_response_service(now=now_iso)"
                 not in main_source
             ):
                 errors.append(
                     "backend/main.py must delegate PlatformKnowledgeResponseService "
-                    "PostgreSQL audit event wiring to services.composition",
+                    "selection to services.composition",
                 )
             continue
         service_constructor = f"{service_name}("
@@ -1656,12 +1656,12 @@ def _check_postgres_retrieval_events_wired() -> list[str]:
             "retrieval_event_writer into PlatformKnowledgeResponseService",
         )
     if (
-        "build_configured_postgres_knowledge_response_service(now=now_iso)"
+        "build_knowledge_response_service(now=now_iso)"
         not in main_source
     ):
         errors.append(
             "backend/main.py must delegate PlatformKnowledgeResponseService "
-            "PostgreSQL retrieval event wiring to services.composition",
+            "selection to services.composition",
         )
     if "retrieval_event_reader" not in platform_status_source:
         errors.append(
@@ -2286,10 +2286,62 @@ def _check_postgres_knowledge_readiness_wired() -> list[str]:
                 f"{imported_name} for knowledge readiness reads",
             )
 
-    if not _module_defines_function(main_tree, "_build_knowledge_document_readiness_service"):
+    knowledge_service_selectors = [
+        "build_knowledge_document_readiness_service",
+        "build_knowledge_ingestion_service",
+        "build_knowledge_retrieval_service",
+        "build_knowledge_response_service",
+    ]
+    for selector_name in knowledge_service_selectors:
+        if not _module_defines_function(composition_tree, selector_name):
+            errors.append(
+                "backend/services/composition.py must define "
+                f"{selector_name} as a production knowledge service selector",
+            )
+        if not _module_imports_name(main_tree, selector_name):
+            errors.append(
+                "backend/main.py must import the composition selector "
+                f"{selector_name}",
+            )
+
+    local_knowledge_service_builders = [
+        "_build_knowledge_document_readiness_service",
+        "_build_knowledge_ingestion_service",
+        "_build_knowledge_retrieval_service",
+    ]
+    for builder_name in local_knowledge_service_builders:
+        if _module_defines_function(main_tree, builder_name):
+            errors.append(
+                "backend/main.py must not define local knowledge service "
+                f"selector {builder_name}; use backend/services/composition.py",
+            )
+
+    required_main_service_wiring = [
+        "build_knowledge_response_service(now=now_iso)",
+        "build_knowledge_document_readiness_service()",
+        "ingestion_service=lambda: build_knowledge_ingestion_service(now=now_iso)",
+        "readiness_service=build_knowledge_document_readiness_service",
+        "retrieval_service=lambda: build_knowledge_retrieval_service(now=now_iso)",
+    ]
+    for wiring in required_main_service_wiring:
+        if wiring not in main_source:
+            errors.append(
+                "backend/main.py must wire knowledge routes through "
+                f"composition service selector: {wiring}",
+            )
+
+    if "build_configured_postgres_knowledge_response_service" in main_source:
         errors.append(
-            "backend/main.py must define _build_knowledge_document_readiness_service for PostgreSQL knowledge readiness",
+            "backend/main.py must not import or call the configured PostgreSQL "
+            "knowledge response factory directly; use build_knowledge_response_service",
         )
+    for builder_name in local_knowledge_service_builders:
+        if builder_name in main_source:
+            errors.append(
+                "backend/main.py must not call local knowledge service "
+                f"selector {builder_name}; use backend/services/composition.py",
+            )
+
     if not _module_defines_function(
         composition_tree,
         "build_postgres_knowledge_document_readiness_service",

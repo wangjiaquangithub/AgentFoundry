@@ -624,6 +624,14 @@ def build_configured_postgres_knowledge_document_readiness_service() -> (
     return build_postgres_knowledge_document_readiness_service(database)
 
 
+def build_knowledge_document_readiness_service() -> (
+    PlatformKnowledgeDocumentReadinessService | None
+):
+    """Select the configured knowledge readiness service implementation."""
+
+    return build_configured_postgres_knowledge_document_readiness_service()
+
+
 def build_postgres_knowledge_ingestion_service(
     database: PostgresDatabase,
     *,
@@ -658,6 +666,15 @@ def build_configured_postgres_knowledge_ingestion_service(
     return build_postgres_knowledge_ingestion_service(database, now=now)
 
 
+def build_knowledge_ingestion_service(
+    *,
+    now: Callable[[], str] | None = None,
+) -> PlatformKnowledgeIngestionService | None:
+    """Select the configured knowledge ingestion service implementation."""
+
+    return build_configured_postgres_knowledge_ingestion_service(now=now)
+
+
 def build_postgres_knowledge_retrieval_service(
     database: PostgresDatabase,
     *,
@@ -688,6 +705,15 @@ def build_configured_postgres_knowledge_retrieval_service(
     return build_postgres_knowledge_retrieval_service(database, now=now)
 
 
+def build_knowledge_retrieval_service(
+    *,
+    now: Callable[[], str] | None = None,
+) -> PlatformKnowledgeRetrievalService | None:
+    """Select the configured knowledge retrieval service implementation."""
+
+    return build_configured_postgres_knowledge_retrieval_service(now=now)
+
+
 def build_postgres_knowledge_response_service(
     database: PostgresDatabase,
     *,
@@ -713,3 +739,15 @@ def build_configured_postgres_knowledge_response_service(
         return None
 
     return build_postgres_knowledge_response_service(database, now=now)
+
+
+def build_knowledge_response_service(
+    *,
+    now: Callable[[], str] | None = None,
+) -> PlatformKnowledgeResponseService:
+    """Select the configured knowledge response service implementation."""
+
+    return (
+        build_configured_postgres_knowledge_response_service(now=now)
+        or PlatformKnowledgeResponseService(now=now)
+    )
