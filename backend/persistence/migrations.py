@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import os
 import sqlite3
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
@@ -34,6 +35,15 @@ def migration_registry() -> list[Migration]:
             raise ValueError(f"Invalid migration filename: {path.name}")
         migrations.append(Migration(version=version, name=name, path=path))
     return migrations
+
+
+def plan_migrations(completed_versions: Iterable[str]) -> list[Migration]:
+    completed = set(completed_versions)
+    return [
+        migration
+        for migration in migration_registry()
+        if migration.version not in completed
+    ]
 
 
 def sqlite_path_from_database_url(database_url: str) -> Path:
@@ -82,9 +92,7 @@ def _apply_sqlite_migrations(database_url: str) -> list[Migration]:
             row[0]
             for row in connection.execute("SELECT version FROM schema_migrations")
         }
-        for migration in migration_registry():
-            if migration.version in completed:
-                continue
+        for migration in plan_migrations(completed):
             with migration.path.open("r", encoding="utf-8") as migration_file:
                 connection.executescript(migration_file.read())
             connection.execute(
@@ -115,9 +123,7 @@ def _apply_postgres_migrations(database_url: str) -> list[Migration]:
             )
             cursor.execute("SELECT version FROM schema_migrations")
             completed = {row[0] for row in cursor.fetchall()}
-            for migration in migration_registry():
-                if migration.version in completed:
-                    continue
+            for migration in plan_migrations(completed):
                 with migration.path.open("r", encoding="utf-8") as migration_file:
                     cursor.execute(migration_file.read())
                 cursor.execute(
