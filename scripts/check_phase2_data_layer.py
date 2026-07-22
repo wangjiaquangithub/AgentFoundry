@@ -1232,6 +1232,13 @@ def _check_postgres_audit_events_wired() -> list[str]:
         encoding="utf-8",
     )
     main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+    composition_source = (SERVICES_DIR / "composition.py").read_text(
+        encoding="utf-8",
+    )
+    composition_tree = ast.parse(
+        composition_source,
+        filename=str(SERVICES_DIR / "composition.py"),
+    )
 
     for token in (
         'PRODUCTION_AUDIT_EVENT_SYSTEM_OF_RECORD = "PostgreSQL"',
@@ -1245,13 +1252,21 @@ def _check_postgres_audit_events_wired() -> list[str]:
                 f"as the audit event production system of record: {token}",
             )
 
-    if not _module_imports_name(main_tree, "PostgresAuditEventReadRepository"):
+    if not _module_imports_name(
+        composition_tree,
+        "PostgresAuditEventReadRepository",
+    ):
         errors.append(
-            "backend/main.py must import PostgresAuditEventReadRepository for audit event reads",
+            "backend/services/composition.py must import "
+            "PostgresAuditEventReadRepository for audit event reads",
         )
-    if not _module_imports_name(main_tree, "PostgresAuditEventWriteRepository"):
+    if not _module_imports_name(
+        composition_tree,
+        "PostgresAuditEventWriteRepository",
+    ):
         errors.append(
-            "backend/main.py must import PostgresAuditEventWriteRepository for audit event writes",
+            "backend/services/composition.py must import "
+            "PostgresAuditEventWriteRepository for audit event writes",
         )
     if not _module_defines_function(main_tree, "_build_audit_event_read_repository"):
         errors.append(
@@ -1261,6 +1276,40 @@ def _check_postgres_audit_events_wired() -> list[str]:
         errors.append(
             "backend/main.py must define _build_audit_event_write_repository for PostgreSQL audit event writes",
         )
+    if not _module_defines_function(
+        composition_tree,
+        "build_configured_postgres_audit_event_read_repository",
+    ):
+        errors.append(
+            "backend/services/composition.py must define "
+            "build_configured_postgres_audit_event_read_repository",
+        )
+    if not _module_defines_function(
+        composition_tree,
+        "build_configured_postgres_audit_event_write_repository",
+    ):
+        errors.append(
+            "backend/services/composition.py must define "
+            "build_configured_postgres_audit_event_write_repository",
+        )
+    for wiring in (
+        "return PostgresAuditEventReadRepository(database)",
+        "return PostgresAuditEventWriteRepository(database)",
+    ):
+        if wiring not in composition_source:
+            errors.append(
+                "backend/services/composition.py must wire PostgreSQL audit "
+                f"event repositories: {wiring}",
+            )
+    for delegated_builder in (
+        "build_configured_postgres_audit_event_read_repository()",
+        "build_configured_postgres_audit_event_write_repository()",
+    ):
+        if delegated_builder not in main_source:
+            errors.append(
+                "backend/main.py must delegate PostgreSQL audit event "
+                f"repository construction to services.composition: {delegated_builder}",
+            )
     if "audit_event_reader=_build_audit_event_read_repository()" not in main_source:
         errors.append(
             "backend/main.py must pass the PostgreSQL audit_event_reader into PlatformStatusService",
@@ -1285,9 +1334,6 @@ def _check_postgres_audit_events_wired() -> list[str]:
                 f"backend/services/{filename} must call append_audit_event",
             )
         if service_name == "PlatformKnowledgeResponseService":
-            composition_source = (SERVICES_DIR / "composition.py").read_text(
-                encoding="utf-8",
-            )
             if "build_postgres_knowledge_response_service" not in composition_source:
                 errors.append(
                     "backend/services/composition.py must define "

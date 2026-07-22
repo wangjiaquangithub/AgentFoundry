@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Callable
 
 from backend.persistence import (
+    PostgresAuditEventReadRepository,
     PostgresAuditEventWriteRepository,
     PostgresDatabase,
     PostgresDocumentChunkReadRepository,
@@ -51,6 +52,30 @@ def build_configured_postgres_model_config_service() -> (
         return None
 
     return build_postgres_model_config_service(database)
+
+
+def build_configured_postgres_audit_event_read_repository() -> (
+    PostgresAuditEventReadRepository | None
+):
+    """Build the audit event read repository when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresAuditEventReadRepository(database)
+
+
+def build_configured_postgres_audit_event_write_repository() -> (
+    PostgresAuditEventWriteRepository | None
+):
+    """Build the audit event write repository when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresAuditEventWriteRepository(database)
 
 
 def build_configured_postgres_knowledge_base_read_repository() -> (

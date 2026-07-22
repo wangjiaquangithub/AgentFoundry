@@ -115,8 +115,6 @@ from backend.persistence import (
     PostgresAgentRunWriteRepository,
     PostgresApprovalReadRepository,
     PostgresApprovalWriteRepository,
-    PostgresAuditEventReadRepository,
-    PostgresAuditEventWriteRepository,
     PostgresMemoryItemReadRepository,
     PostgresMemoryItemWriteRepository,
     PostgresModelConfigReadRepository,
@@ -190,6 +188,8 @@ from services.knowledge_ingestion import PlatformKnowledgeIngestionService
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
 from services.composition import (
+    build_configured_postgres_audit_event_read_repository,
+    build_configured_postgres_audit_event_write_repository,
     build_configured_postgres_knowledge_base_read_repository,
     build_configured_postgres_knowledge_base_write_repository,
     build_configured_postgres_knowledge_document_chunk_read_repository,
@@ -336,24 +336,12 @@ def _build_runtime_write_repository() -> PostgresRuntimeWriteRepository | None:
     return PostgresRuntimeWriteRepository(database)
 
 
-def _build_audit_event_read_repository() -> (
-    PostgresAuditEventReadRepository | None
-):
-    database = create_configured_postgres_database()
-    if database is None:
-        return None
-
-    return PostgresAuditEventReadRepository(database)
+def _build_audit_event_read_repository() -> Any | None:
+    return build_configured_postgres_audit_event_read_repository()
 
 
-def _build_audit_event_write_repository() -> (
-    PostgresAuditEventWriteRepository | None
-):
-    database = create_configured_postgres_database()
-    if database is None:
-        return None
-
-    return PostgresAuditEventWriteRepository(database)
+def _build_audit_event_write_repository() -> Any | None:
+    return build_configured_postgres_audit_event_write_repository()
 
 
 def _build_retrieval_event_write_repository() -> (
