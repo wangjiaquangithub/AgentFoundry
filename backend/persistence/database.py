@@ -12,23 +12,16 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from backend.persistence.database_urls import (
+    POSTGRES_DATABASE_SCHEMES,
+    has_postgres_database_name,
+    is_postgres_database_url,
+)
 from backend.persistence.migrations import sqlite_path_from_database_url
 
-POSTGRES_DATABASE_SCHEMES = frozenset({"postgresql", "postgres"})
 DATABASE_URL_ENV_VAR = "AGENTFOUNDRY_DATABASE_URL"
 DEPLOYMENT_ENV_VAR = "AGENTFOUNDRY_ENV"
 PRODUCTION_ENV_VALUES = frozenset({"prod", "production"})
-
-
-def is_postgres_database_url(database_url: str) -> bool:
-    return urlparse(database_url.strip()).scheme in POSTGRES_DATABASE_SCHEMES
-
-
-def has_postgres_database_name(database_url: str) -> bool:
-    parsed = urlparse(database_url.strip())
-    if parsed.scheme not in POSTGRES_DATABASE_SCHEMES:
-        return False
-    return bool(parsed.path.strip("/"))
 
 
 def is_production_environment(environ: Mapping[str, str] | None = None) -> bool:

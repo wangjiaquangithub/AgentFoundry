@@ -16,8 +16,12 @@ from pathlib import Path
 from types import ModuleType
 from urllib.parse import unquote, urlparse
 
+from backend.persistence.database_urls import (
+    POSTGRES_DATABASE_SCHEMES,
+    has_postgres_database_name as postgres_database_url_has_name,
+)
+
 MIGRATIONS_DIR = Path(__file__).with_name("migrations")
-POSTGRES_DATABASE_SCHEMES = {"postgresql", "postgres"}
 
 
 @dataclass(frozen=True)
@@ -57,13 +61,6 @@ def sqlite_path_from_database_url(database_url: str) -> Path:
     if not parsed.path:
         raise ValueError("SQLite database URL must include a path.")
     return Path(unquote(parsed.path))
-
-
-def postgres_database_url_has_name(database_url: str) -> bool:
-    parsed = urlparse(database_url.strip())
-    if parsed.scheme not in POSTGRES_DATABASE_SCHEMES:
-        return False
-    return bool(parsed.path.strip("/"))
 
 
 def _import_psycopg() -> ModuleType:

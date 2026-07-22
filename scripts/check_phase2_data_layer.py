@@ -29,6 +29,7 @@ COMPOSITION_MODULE = SERVICES_DIR / "composition.py"
 MAIN_MODULE = ROOT / "backend" / "main.py"
 AUDIT_MODULE = ROOT / "backend" / "audit.py"
 DATABASE_MODULE = ROOT / "backend" / "persistence" / "database.py"
+DATABASE_URLS_MODULE = ROOT / "backend" / "persistence" / "database_urls.py"
 SEED_MODULE = ROOT / "backend" / "persistence" / "seed.py"
 MIGRATE_SHELL = ROOT / "scripts" / "migrate_agentfoundry.sh"
 SEED_SHELL = ROOT / "scripts" / "seed_agentfoundry.sh"
@@ -616,16 +617,26 @@ def _check_postgres_url_detection_boundary() -> list[str]:
     errors: list[str] = []
 
     database_tree = ast.parse(DATABASE_MODULE.read_text(encoding="utf-8"), filename=str(DATABASE_MODULE))
+    database_urls_tree = ast.parse(
+        DATABASE_URLS_MODULE.read_text(encoding="utf-8"),
+        filename=str(DATABASE_URLS_MODULE),
+    )
     composition_tree = ast.parse(
         COMPOSITION_MODULE.read_text(encoding="utf-8"),
         filename=str(COMPOSITION_MODULE),
     )
     main_tree = ast.parse(MAIN_MODULE.read_text(encoding="utf-8"), filename=str(MAIN_MODULE))
 
-    if not _module_defines_function(database_tree, "is_postgres_database_url"):
+    if not _module_defines_function(database_urls_tree, "is_postgres_database_url"):
         errors.append(
             "missing centralized PostgreSQL URL helper: "
-            "backend/persistence/database.py:is_postgres_database_url",
+            "backend/persistence/database_urls.py:is_postgres_database_url",
+        )
+
+    if not _module_defines_function(database_urls_tree, "has_postgres_database_name"):
+        errors.append(
+            "missing centralized PostgreSQL URL database-name helper: "
+            "backend/persistence/database_urls.py:has_postgres_database_name",
         )
 
     if not _module_defines_function(database_tree, "create_configured_postgres_database"):
