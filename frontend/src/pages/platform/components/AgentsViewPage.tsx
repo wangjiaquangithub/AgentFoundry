@@ -187,8 +187,8 @@ function AgentLifecycleWorkspace({
 	const [agentDrawerOpen, setAgentDrawerOpen] = useState(false);
 
 	return (
-		<section className="grid gap-4 border-y bg-background/70 py-4">
-			<div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+		<section className="grid gap-4 border-y bg-background/70 py-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
+			<div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between xl:col-span-2">
 				<div className="min-w-0">
 					<h2 className="text-base font-semibold">
 						{t('platform.agentManagement.lifecycle.title')}
@@ -461,6 +461,119 @@ function AgentLifecycleWorkspace({
 					) : null}
 				</PlatformDetailDrawer>
 			</div>
+
+			<aside className="hidden rounded-lg border bg-background p-4 xl:sticky xl:top-4 xl:grid xl:gap-4">
+				{selectedAgent ? (
+					<>
+						<div className="border-b pb-3">
+							<div className="flex items-start justify-between gap-3">
+								<div className="min-w-0">
+									<h3 className="truncate text-sm font-semibold">
+										{selectedAgent.name}
+									</h3>
+									<p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+										{selectedAgent.description}
+									</p>
+								</div>
+								<StateBadge
+									state={selectedAgentReadinessState}
+									label={selectedAgentReadinessLabel}
+								/>
+							</div>
+							<div className="mt-3 truncate font-mono text-xs text-muted-foreground">
+								{selectedAgent.id}
+							</div>
+						</div>
+
+						<div className="grid grid-cols-2 gap-2 text-xs">
+							<div className="rounded-lg border bg-muted/20 p-3">
+								<div className="text-muted-foreground">
+									{t('platform.agentManagement.lifecycle.toolBindings')}
+								</div>
+								<div className="mt-1 text-lg font-semibold tabular-nums">
+									{selectedAgentToolCount}
+								</div>
+							</div>
+							<div className="rounded-lg border bg-muted/20 p-3">
+								<div className="text-muted-foreground">
+									{t('platform.agentManagement.knowledgeBases')}
+								</div>
+								<div className="mt-1 text-lg font-semibold tabular-nums">
+									{selectedAgentKnowledgeCount}
+								</div>
+							</div>
+						</div>
+
+						<div className="grid gap-2 text-xs">
+							<div>
+								<div className="text-muted-foreground">
+									{t('platform.agentManagement.modelCredential')}
+								</div>
+								<div className="mt-1 truncate font-mono text-sm">
+									{selectedAgentModelLabel}
+								</div>
+							</div>
+							<div>
+								<div className="text-muted-foreground">
+									{t('platform.agentManagement.lifecycle.accessScope')}
+								</div>
+								<div
+									className={cn(
+										'mt-1 truncate text-sm font-medium',
+										!selectedAgentAccessAllowed && 'text-red-700',
+									)}
+								>
+									{selectedAgentAccessLabel}
+								</div>
+							</div>
+						</div>
+
+						<div className="grid gap-2 border-t pt-3">
+							<Button type="button" size="sm" onClick={onRunAgent}>
+								<Play />
+								{t('platform.agentManagement.runAgent')}
+							</Button>
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={() => {
+									setAgentDrawerOpen(true);
+								}}
+							>
+								<BotMessageSquare />
+								{t('platform.agentManagement.lifecycle.selectTitle')}
+							</Button>
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={() => onEditAgent(selectedAgent)}
+							>
+								<Pencil />
+								{t('platform.agentManagement.edit')}
+							</Button>
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={() => onRunWorkflow(selectedAgent)}
+								disabled={!selectedAgent.workflow_enabled}
+							>
+								<Workflow />
+								{t('platform.agentManagement.workflow')}
+							</Button>
+						</div>
+					</>
+				) : (
+					<PlatformEmptyState
+						variant="noData"
+						title={t('platform.agentManagement.lifecycle.selectTitle')}
+						description={t('platform.agentManagement.lifecycle.description')}
+						className="rounded-lg border border-dashed p-4"
+					/>
+				)}
+			</aside>
 		</section>
 	);
 }

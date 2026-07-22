@@ -64,12 +64,12 @@ export interface PlatformPageShellProps {
 
 export function PlatformPageShell({ children, className }: PlatformPageShellProps) {
 	return (
-		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-muted/10">
-			<div className="mx-auto grid w-full max-w-[1520px] gap-0 lg:grid-cols-[232px_minmax(0,1fr)]">
+		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-muted/15">
+			<div className="mx-auto grid w-full max-w-[1440px] gap-0 lg:grid-cols-[220px_minmax(0,1fr)]">
 				<PlatformDesktopNav />
 				<div
 					className={cn(
-						'flex min-w-0 flex-col gap-5 px-4 py-4 sm:px-6 sm:py-5 lg:px-8',
+						'flex min-w-0 flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5 lg:px-7',
 						className,
 					)}
 				>
@@ -83,7 +83,7 @@ export function PlatformPageShell({ children, className }: PlatformPageShellProp
 
 function PlatformDesktopNav() {
 	return (
-		<aside className="sticky top-0 hidden h-screen min-h-0 border-r bg-background px-3 py-4 lg:block">
+		<aside className="sticky top-0 hidden h-screen min-h-0 border-r bg-background px-2.5 py-4 lg:block">
 			<div className="mb-4 px-2">
 				<div className="text-sm font-semibold">AgentFoundry</div>
 				<p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -173,7 +173,7 @@ export function PlatformPageHeader({
 	aside,
 }: PlatformPageHeaderProps) {
 	return (
-		<section className="flex flex-col gap-4 border-b pb-4 lg:flex-row lg:items-start lg:justify-between">
+		<section className="flex flex-col gap-4 border-b pb-3 lg:flex-row lg:items-start lg:justify-between">
 			<div className="min-w-0">
 				<div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
 					<span className="grid size-7 place-items-center rounded-md border bg-background text-foreground">
@@ -181,11 +181,11 @@ export function PlatformPageHeader({
 					</span>
 					<span className="min-w-0 truncate">{eyebrow}</span>
 				</div>
-				<h1 className="text-[1.35rem] font-semibold tracking-normal text-foreground sm:text-2xl">
+				<h1 className="text-[1.25rem] font-semibold tracking-normal text-foreground sm:text-[1.45rem]">
 					{title}
 				</h1>
 				{description ? (
-					<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+					<p className="mt-1.5 max-w-3xl text-sm leading-6 text-muted-foreground">
 						{description}
 					</p>
 				) : null}
@@ -256,7 +256,7 @@ export interface StatCardProps {
 
 export function StatCard({ label, value, helper, icon: Icon, loading }: StatCardProps) {
 	return (
-		<Card size="sm" className="min-h-[5.75rem] rounded-md border-border/70 bg-background shadow-none">
+		<Card size="sm" className="min-h-[5.25rem] rounded-md border-border/70 bg-background shadow-none">
 			<CardHeader className="grid-cols-[1fr_auto] gap-2 pb-1.5">
 				<div className="min-w-0">
 					<CardTitle className="truncate text-xs font-medium text-muted-foreground">
@@ -265,7 +265,7 @@ export function StatCard({ label, value, helper, icon: Icon, loading }: StatCard
 					{loading ? (
 						<Skeleton className="mt-2.5 h-6 w-14" />
 					) : (
-						<div className="mt-1.5 text-xl font-semibold tabular-nums">{value}</div>
+						<div className="mt-1 text-lg font-semibold tabular-nums">{value}</div>
 					)}
 				</div>
 				<div className="flex size-7 items-center justify-center rounded-md border bg-muted/25">

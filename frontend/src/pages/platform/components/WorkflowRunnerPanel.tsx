@@ -117,8 +117,8 @@ export function WorkflowRunnerPanel({
 	};
 
 	return (
-		<section className="grid items-start gap-4 2xl:grid-cols-[22rem_minmax(0,1fr)]">
-			<aside className="rounded-lg border bg-background">
+		<section className="grid items-start gap-4 xl:grid-cols-[18rem_minmax(0,1fr)_22rem]">
+			<aside className="rounded-lg border bg-background xl:sticky xl:top-4">
 				<div className="flex items-center justify-between gap-3 border-b p-4">
 					<div className="flex items-center gap-2">
 						<Workflow className="size-4 text-muted-foreground" />
@@ -383,7 +383,7 @@ export function WorkflowRunnerPanel({
 				</section>
 			</div>
 
-			<aside className="grid gap-4 2xl:col-span-2">
+			<aside className="grid gap-4 xl:sticky xl:top-4">
 				<section className="rounded-lg border bg-background p-4">
 					<div className="flex items-center gap-2 border-b pb-3">
 						<CheckCircle2 className="size-4 text-muted-foreground" />

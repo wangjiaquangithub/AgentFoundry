@@ -218,6 +218,12 @@ export function ApprovalsPanel({
 			: pendingDecision?.action === 'reject'
 				? 'platform.approvals.confirmReject'
 				: 'platform.approvals.confirmApprove';
+	const previewApproval =
+		approvalRequests.find((approval) => approval.status === 'pending') ??
+		approvalRequests[0];
+	const previewApprovalTarget = previewApproval
+		? getApprovalTarget(previewApproval)
+		: '-';
 
 	return (
 		<section className="grid gap-4">
@@ -444,8 +450,9 @@ export function ApprovalsPanel({
 				</DialogContent>
 			</Dialog>
 
-			<div className="flex min-w-0 flex-col gap-4 rounded-lg border bg-background p-4">
-				<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+			<div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
+				<div className="flex min-w-0 flex-col gap-4 rounded-lg border bg-background p-4">
+					<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 					<div className="flex min-w-0 items-start gap-2">
 						<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background">
 							<ListChecks className="size-4 text-muted-foreground" />
@@ -829,6 +836,117 @@ export function ApprovalsPanel({
 						})}
 					</div>
 				)}
+				</div>
+
+				<aside className="hidden xl:sticky xl:top-4 xl:grid xl:gap-4">
+					<section className="rounded-lg border bg-background p-4">
+						<div className="flex items-start justify-between gap-3 border-b pb-3">
+							<div>
+								<h3 className="text-sm font-semibold">
+									{t('platform.approvals.listTitle')}
+								</h3>
+								<p className="mt-1 text-xs leading-5 text-muted-foreground">
+									{t('platform.approvals.listDescription')}
+								</p>
+							</div>
+							<Badge variant="secondary">
+								{t('platform.approvals.pendingCount', {
+									count: pendingCount,
+								})}
+							</Badge>
+						</div>
+
+						<div className="mt-4 grid gap-3 text-sm">
+							<div className="grid grid-cols-2 gap-3">
+								<div className="rounded-lg border bg-muted/20 p-3">
+									<div className="text-xs text-muted-foreground">
+										{t('platform.approvals.pending')}
+									</div>
+									<div className="mt-1 text-lg font-semibold tabular-nums">
+										{pendingCount}
+									</div>
+								</div>
+								<div className="rounded-lg border bg-muted/20 p-3">
+									<div className="text-xs text-muted-foreground">
+										{t('platform.ux.filters.results', {
+											count: approvalRequests.length,
+										})}
+									</div>
+									<div className="mt-1 text-lg font-semibold tabular-nums">
+										{approvalRequests.length}
+									</div>
+								</div>
+							</div>
+
+							{previewApproval ? (
+								<div className="rounded-lg border bg-background p-3">
+									<div className="flex flex-wrap items-center gap-2">
+										<PlatformStatusBadge status={previewApproval.status} t={t} />
+										<Badge variant="outline">
+											{t(
+												`platform.approvals.${previewApproval.request_type === 'tool_run' ? 'toolRun' : previewApproval.request_type === 'workflow_run' ? 'workflowRun' : 'agentAction'}`,
+											)}
+										</Badge>
+									</div>
+									<div className="mt-3 grid gap-2 text-xs">
+										<div>
+											<div className="text-muted-foreground">
+												{t('platform.ux.confirm.target')}
+											</div>
+											<div className="mt-1 break-all font-mono">
+												{previewApprovalTarget}
+											</div>
+										</div>
+										<div>
+											<div className="text-muted-foreground">
+												{t('platform.approvals.requestedBy')}
+											</div>
+											<div className="mt-1 break-all font-mono">
+												{previewApproval.requested_by} / {previewApproval.user_id}
+											</div>
+										</div>
+										<div>
+											<div className="text-muted-foreground">
+												{t('platform.approvals.requestedAt')}
+											</div>
+											<div className="mt-1">
+												{formatTimestamp(previewApproval.requested_at)}
+											</div>
+										</div>
+									</div>
+								</div>
+							) : (
+								<PlatformEmptyState
+									variant="noData"
+									title={t('platform.ux.empty.noDataTitle')}
+									description={t('platform.ux.empty.noDataDescription')}
+									className="rounded-lg border border-dashed p-4"
+								/>
+							)}
+						</div>
+					</section>
+
+					<div className="grid gap-2 rounded-lg border bg-background p-4">
+						<Button
+							type="button"
+							size="sm"
+							onClick={() => setCreateApprovalOpen(true)}
+						>
+							<ListChecks />
+							{t('platform.approvals.create')}
+						</Button>
+						<Button
+							type="button"
+							size="sm"
+							variant="outline"
+							onClick={() => void onRefetchApprovals()}
+							disabled={approvalLoading}
+						>
+							<RefreshCcw className={cn(approvalLoading && 'animate-spin')} />
+							{t('platform.approvals.refresh')}
+						</Button>
+					</div>
+				</aside>
 			</div>
 			<PlatformConfirmAction
 				open={Boolean(pendingDecision)}

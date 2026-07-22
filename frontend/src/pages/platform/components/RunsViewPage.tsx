@@ -303,6 +303,7 @@ export function RunsViewPage({
 				item.type === selectedRun.type && item.id === selectedRun.id,
 			)
 		: undefined;
+	const previewRun = activeRun ?? filteredRunItems[0];
 	const activeAgentTurn =
 		activeRun?.type === 'agent'
 			? (activeRun.raw as MonitoringAgentTurn)
@@ -310,6 +311,14 @@ export function RunsViewPage({
 	const activeWorkflowRun =
 		activeRun?.type === 'workflow'
 			? (activeRun.raw as EnterpriseWorkflowRunHistoryItem)
+			: undefined;
+	const previewAgentTurn =
+		previewRun?.type === 'agent'
+			? (previewRun.raw as MonitoringAgentTurn)
+			: undefined;
+	const previewWorkflowRun =
+		previewRun?.type === 'workflow'
+			? (previewRun.raw as EnterpriseWorkflowRunHistoryItem)
 			: undefined;
 
 	return (
@@ -372,48 +381,49 @@ export function RunsViewPage({
 				})}
 			</section>
 
-			<section className="grid min-h-[34rem] content-start gap-4">
-				<div className="flex flex-col gap-3 border-b pb-4 lg:flex-row lg:items-start lg:justify-between">
-					<div className="min-w-0">
-						<div className="flex items-center gap-2">
-							<h2 className="text-base font-semibold">
-								{t('platform.monitoring.runRecords')}
-							</h2>
-							<Badge variant="secondary" className="shrink-0">
-								{filteredRunItems.length}
-							</Badge>
+			<section className="grid min-h-[34rem] content-start gap-4 xl:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_24rem]">
+				<div className="grid min-w-0 content-start gap-3">
+					<div className="flex flex-col gap-3 border-b pb-3 lg:flex-row lg:items-start lg:justify-between">
+						<div className="min-w-0">
+							<div className="flex items-center gap-2">
+								<h2 className="text-base font-semibold">
+									{t('platform.monitoring.runRecords')}
+								</h2>
+								<Badge variant="secondary" className="shrink-0">
+									{filteredRunItems.length}
+								</Badge>
+							</div>
+							<p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
+								{t('platform.monitoring.runQueueDescription')}
+							</p>
 						</div>
-						<p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-							{t('platform.monitoring.runQueueDescription')}
-						</p>
+
+						<div className="flex flex-col gap-2 sm:flex-row lg:min-w-[18rem] lg:justify-end">
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								onClick={onRunAgent}
+								className="justify-start"
+							>
+								<BotMessageSquare className="size-4" />
+								{t('platform.monitoring.runAgent')}
+							</Button>
+							<Button
+								type="button"
+								size="sm"
+								variant="default"
+								onClick={onRunWorkflow}
+								className="justify-start"
+							>
+								<Workflow className="size-4" />
+								{t('platform.monitoring.runWorkflow')}
+							</Button>
+						</div>
 					</div>
 
-					<div className="flex flex-col gap-2 sm:flex-row lg:min-w-[18rem] lg:justify-end">
-						<Button
-							type="button"
-							size="sm"
-							variant="outline"
-							onClick={onRunAgent}
-							className="justify-start"
-						>
-							<BotMessageSquare className="size-4" />
-							{t('platform.monitoring.runAgent')}
-						</Button>
-						<Button
-							type="button"
-							size="sm"
-							variant="default"
-							onClick={onRunWorkflow}
-							className="justify-start"
-						>
-							<Workflow className="size-4" />
-							{t('platform.monitoring.runWorkflow')}
-						</Button>
-					</div>
-				</div>
-
-				<div className="grid gap-3">
-					<div className="grid overflow-hidden rounded-md border bg-background md:grid-cols-3">
+					<div className="grid gap-3">
+						<div className="grid overflow-hidden rounded-md border bg-background md:grid-cols-3">
 						{operationalSummary.map((item) => {
 							const SummaryIcon = item.icon;
 							return (
@@ -446,16 +456,16 @@ export function RunsViewPage({
 								</button>
 							);
 						})}
-					</div>
+						</div>
 
-					<PlatformFilterBar
-						resultLabel={t('platform.ux.filters.results', {
-							count: filteredRunItems.length,
-						})}
-						clearLabel={t('platform.ux.filters.clear')}
-						onClear={resetRunFilters}
-						clearDisabled={!hasRunFilters}
-					>
+						<PlatformFilterBar
+							resultLabel={t('platform.ux.filters.results', {
+								count: filteredRunItems.length,
+							})}
+							clearLabel={t('platform.ux.filters.clear')}
+							onClear={resetRunFilters}
+							clearDisabled={!hasRunFilters}
+						>
 						<Select
 							value={runTypeFilter}
 							onValueChange={(value) =>
@@ -503,21 +513,21 @@ export function RunsViewPage({
 							onChange={(event) => setRunKeywordFilter(event.target.value)}
 							placeholder={t('platform.monitoring.keywordPlaceholder')}
 						/>
-					</PlatformFilterBar>
-				</div>
-
-				{monitoringError && runItems.length > 0 ? (
-					<div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-muted-foreground">
-						<span className="font-medium text-foreground">
-							{platformServiceUnavailableTitle}
-						</span>
-						<span className="ml-2">
-							{normalizePlatformErrorMessage(monitoringError)}
-						</span>
+						</PlatformFilterBar>
 					</div>
-				) : null}
 
-				{isInitialLoading ? (
+					{monitoringError && runItems.length > 0 ? (
+						<div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-muted-foreground">
+							<span className="font-medium text-foreground">
+								{platformServiceUnavailableTitle}
+							</span>
+							<span className="ml-2">
+								{normalizePlatformErrorMessage(monitoringError)}
+							</span>
+						</div>
+					) : null}
+
+					{isInitialLoading ? (
 					<div className="overflow-hidden rounded-md border bg-background">
 						<div className="hidden grid-cols-[8rem_minmax(0,2fr)_minmax(8rem,0.8fr)_7rem_10rem_4.5rem] gap-3 border-b bg-muted/35 px-3 py-2 lg:grid">
 							<Skeleton className="h-4 w-14" />
@@ -571,7 +581,7 @@ export function RunsViewPage({
 						onAction={resetRunFilters}
 						className="min-h-80 rounded-md border border-dashed bg-background/80 p-6"
 					/>
-				) : (
+					) : (
 					<div className="overflow-hidden rounded-md border bg-background">
 						<div className="hidden grid-cols-[8rem_minmax(0,2.2fr)_minmax(8rem,0.8fr)_7rem_10rem_5rem] gap-3 border-b bg-muted/35 px-3 py-2 text-xs font-medium text-muted-foreground lg:grid">
 							<span>{t('platform.monitoring.filterStatus')}</span>
@@ -662,7 +672,152 @@ export function RunsViewPage({
 							})}
 						</div>
 					</div>
-				)}
+					)}
+				</div>
+
+				<aside className="hidden min-w-0 xl:block">
+					<div className="sticky top-5 overflow-hidden rounded-md border bg-background">
+						<div className="border-b px-4 py-3">
+							<div className="flex items-start justify-between gap-3">
+								<div className="min-w-0">
+									<h2 className="text-sm font-semibold">
+										{t('platform.monitoring.runDetail')}
+									</h2>
+									<p className="mt-1 text-xs leading-5 text-muted-foreground">
+										{t('platform.monitoring.runDetailDescription')}
+									</p>
+								</div>
+								{previewRun ? (
+									<PlatformStatusBadge
+										status={previewRun.status}
+										t={t}
+										className="shrink-0"
+									/>
+								) : null}
+							</div>
+						</div>
+
+						{previewRun ? (
+							<div className="grid gap-4 p-4">
+								<div className="flex items-start gap-3 border-b pb-4">
+									<div className="flex size-9 shrink-0 items-center justify-center rounded-md border bg-muted/25">
+										{previewRun.type === 'agent' ? (
+											<BotMessageSquare className="size-4 text-muted-foreground" />
+										) : (
+											<Workflow className="size-4 text-muted-foreground" />
+										)}
+									</div>
+									<div className="min-w-0">
+										<h3 className="line-clamp-2 text-sm font-semibold">
+											{previewRun.title}
+										</h3>
+										<p className="mt-1 line-clamp-4 text-xs leading-5 text-muted-foreground">
+											{previewRun.description}
+										</p>
+									</div>
+								</div>
+
+								<div className="grid gap-3 text-sm">
+									<div className="grid grid-cols-[7rem_minmax(0,1fr)] gap-3">
+										<span className="text-xs text-muted-foreground">
+											{t('platform.monitoring.type')}
+										</span>
+										<span className="truncate font-medium">
+											{previewRun.type === 'agent'
+												? t('platform.monitoring.agentRunType')
+												: t('platform.monitoring.workflowRunType')}
+										</span>
+									</div>
+									<div className="grid grid-cols-[7rem_minmax(0,1fr)] gap-3">
+										<span className="text-xs text-muted-foreground">
+											{t('platform.monitoring.agent')}
+										</span>
+										<span className="truncate font-medium">
+											{previewRun.agentId || '-'}
+										</span>
+									</div>
+									<div className="grid grid-cols-[7rem_minmax(0,1fr)] gap-3">
+										<span className="text-xs text-muted-foreground">
+											{t('platform.monitoring.duration')}
+										</span>
+										<span className="font-medium">{previewRun.duration}</span>
+									</div>
+									<div className="grid grid-cols-[7rem_minmax(0,1fr)] gap-3">
+										<span className="text-xs text-muted-foreground">
+											{t('platform.monitoring.updatedAt')}
+										</span>
+										<span className="font-medium">
+											{formatTimestamp(previewRun.timestamp)}
+										</span>
+									</div>
+									<div className="grid grid-cols-[7rem_minmax(0,1fr)] gap-3">
+										<span className="text-xs text-muted-foreground">
+											{t('platform.monitoring.runId')}
+										</span>
+										<span className="truncate font-mono text-xs">
+											{previewRun.id}
+										</span>
+									</div>
+								</div>
+
+								{previewWorkflowRun ? (
+									<div className="border-t pt-4">
+										<div className="mb-2 text-xs font-medium text-muted-foreground">
+											{t('platform.monitoring.stepsStatus')}
+										</div>
+										<div className="flex flex-wrap gap-2">
+											{formatRunStatusCounts(previewWorkflowRun.status_counts, t).map(
+												(item) => (
+													<Badge key={item.status} variant="secondary">
+														{item.label}: {item.count}
+													</Badge>
+												),
+											)}
+										</div>
+									</div>
+								) : null}
+
+								<div className="rounded-md border bg-muted/25 p-3">
+									<div className="text-xs font-medium text-muted-foreground">
+										{t('platform.monitoring.nextAction')}
+									</div>
+									<div className="mt-1 text-sm font-medium">
+										{previewRun.status === 'failed'
+											? t('platform.monitoring.nextActionFailed')
+											: previewRun.status === 'running'
+												? t('platform.monitoring.nextActionRunning')
+												: previewRun.type === 'agent'
+													? t('platform.monitoring.nextActionAgent')
+													: t('platform.monitoring.nextActionWorkflow')}
+									</div>
+								</div>
+
+								{previewAgentTurn ? (
+									<Button
+										type="button"
+										size="sm"
+										onClick={() => onSelectAgentTurn(previewAgentTurn)}
+									>
+										<BotMessageSquare className="size-4" />
+										{t('platform.monitoring.viewResponse')}
+									</Button>
+								) : (
+									<Button type="button" size="sm" onClick={onRunWorkflow}>
+										<Workflow className="size-4" />
+										{t('platform.monitoring.continueWorkflow')}
+									</Button>
+								)}
+							</div>
+						) : (
+							<PlatformEmptyState
+								variant={isInitialLoading ? 'noData' : 'filtered'}
+								title={t('platform.monitoring.runDetail')}
+								description={t('platform.monitoring.runDetailDescription')}
+								className="min-h-80 p-5"
+							/>
+						)}
+					</div>
+				</aside>
 			</section>
 
 			<Sheet
