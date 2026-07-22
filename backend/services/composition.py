@@ -93,6 +93,12 @@ def build_configured_postgres_model_config_service() -> (
     return build_postgres_model_config_service(database)
 
 
+def build_model_config_service() -> PlatformModelConfigService | None:
+    """Select the configured production model config service implementation."""
+
+    return build_configured_postgres_model_config_service()
+
+
 def build_configured_postgres_audit_event_read_repository() -> (
     PostgresAuditEventReadRepository | None
 ):

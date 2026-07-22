@@ -50,6 +50,7 @@ def _check_factory_contract() -> list[str]:
         tree,
         "build_configured_postgres_model_config_service",
     )
+    build_selector = _function_node(tree, "build_model_config_service")
     if build_service is None:
         errors.append(
             "backend/services/composition.py must define "
@@ -83,6 +84,20 @@ def _check_factory_contract() -> list[str]:
                 "configured model config service factory must delegate to the "
                 "PostgreSQL service factory",
             )
+
+    if build_selector is None:
+        errors.append(
+            "backend/services/composition.py must define build_model_config_service() "
+            "as the production model config service selector",
+        )
+    elif not _calls_name(
+        build_selector,
+        "build_configured_postgres_model_config_service",
+    ):
+        errors.append(
+            "model config service selector must delegate to the configured "
+            "PostgreSQL service factory",
+        )
 
     source = FACTORY_MODULE.read_text(encoding="utf-8")
     for forbidden in ("SQLite", "sqlite", "FastAPI", "APIRouter"):

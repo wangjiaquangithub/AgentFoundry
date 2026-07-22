@@ -155,7 +155,6 @@ from services.composition import (
     build_approval_request_repository,
     build_audit_event_read_repository,
     build_audit_event_write_repository,
-    build_configured_postgres_model_config_service,
     build_knowledge_base_read_repository,
     build_knowledge_base_write_repository,
     build_knowledge_document_chunk_read_repository,
@@ -171,6 +170,7 @@ from services.composition import (
     build_memory_item_read_repository,
     build_memory_item_write_repository,
     build_member_repository,
+    build_model_config_service,
     build_retrieval_event_read_repository,
     build_runtime_read_repository,
     build_runtime_write_repository,
@@ -746,7 +746,7 @@ app.include_router(
 app.include_router(
     create_model_config_router(
         ModelConfigRouteDependencies(
-            model_config_service=build_configured_postgres_model_config_service,
+            model_config_service=build_model_config_service,
             tenant_hint_from_user_id=tenant_hint_from_user_id,
         )
     )

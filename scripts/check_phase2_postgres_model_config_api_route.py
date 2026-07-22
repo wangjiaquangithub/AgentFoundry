@@ -130,8 +130,13 @@ def _check_main_module() -> list[str]:
         errors.append("backend/main.py must import create_model_config_router")
     if "ModelConfigRouteDependencies" not in imports:
         errors.append("backend/main.py must import ModelConfigRouteDependencies")
-    if "build_configured_postgres_model_config_service" not in imports:
-        errors.append("backend/main.py must import the configured PostgreSQL service builder")
+    if "build_model_config_service" not in imports:
+        errors.append("backend/main.py must import the model config service selector")
+    if "build_configured_postgres_model_config_service" in imports:
+        errors.append(
+            "backend/main.py must not import the configured PostgreSQL model "
+            "config service builder directly",
+        )
     if not _calls_name(tree, "create_model_config_router"):
         errors.append("backend/main.py must mount the model config router")
     if "tenant_hint_from_user_id" not in _attribute_names(tree) and (
