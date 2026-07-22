@@ -50,6 +50,32 @@ def _metadata_from_json(value: dict[str, Any] | str, item_id: str) -> dict[str, 
     return parsed
 
 
+def _validate_write_result(
+    requested: MemoryItemRecord,
+    persisted: MemoryItemRecord,
+) -> None:
+    if persisted.id != requested.id:
+        raise ValueError("PostgreSQL memory item write returned another item.")
+    if persisted.tenant_id != requested.tenant_id:
+        raise ValueError("PostgreSQL memory item write returned another tenant.")
+    if persisted.user_id != requested.user_id:
+        raise ValueError("PostgreSQL memory item write returned another user.")
+    if persisted.agent_id != requested.agent_id:
+        raise ValueError("PostgreSQL memory item write returned another agent.")
+    if persisted.session_id != requested.session_id:
+        raise ValueError("PostgreSQL memory item write returned another session.")
+    if persisted.content != requested.content:
+        raise ValueError("PostgreSQL memory item write returned another content.")
+    if persisted.source_run_id != requested.source_run_id:
+        raise ValueError("PostgreSQL memory item write returned another source run.")
+    if persisted.metadata != requested.metadata:
+        raise ValueError("PostgreSQL memory item write returned another metadata.")
+    if persisted.expires_at != requested.expires_at:
+        raise ValueError("PostgreSQL memory item write returned another expiry time.")
+    if persisted.created_at != requested.created_at:
+        raise ValueError("PostgreSQL memory item write returned another created time.")
+
+
 class SQLiteMemoryItemReadRepository:
     """Read tenant-scoped memory items from SQLite."""
 
@@ -233,4 +259,6 @@ class PostgresMemoryItemWriteRepository:
                 row = cursor.fetchone()
         if row is None:
             raise ValueError("Memory item upsert did not return a row.")
-        return _memory_item_from_row(dict(row))
+        persisted = _memory_item_from_row(dict(row))
+        _validate_write_result(record, persisted)
+        return persisted

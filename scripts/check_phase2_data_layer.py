@@ -879,7 +879,18 @@ def _check_postgres_memory_item_writes_wired() -> list[str]:
         "RETURNING id, tenant_id, user_id, agent_id, session_id",
         "row = cursor.fetchone()",
         "Memory item upsert did not return a row.",
-        "return _memory_item_from_row(dict(row))",
+        "_validate_write_result(record, persisted)",
+        "PostgreSQL memory item write returned another item.",
+        "PostgreSQL memory item write returned another tenant.",
+        "PostgreSQL memory item write returned another user.",
+        "PostgreSQL memory item write returned another agent.",
+        "PostgreSQL memory item write returned another session.",
+        "PostgreSQL memory item write returned another content.",
+        "PostgreSQL memory item write returned another source run.",
+        "PostgreSQL memory item write returned another metadata.",
+        "PostgreSQL memory item write returned another expiry time.",
+        "PostgreSQL memory item write returned another created time.",
+        "return persisted",
     ):
         if token not in memory_persistence_source:
             errors.append(
