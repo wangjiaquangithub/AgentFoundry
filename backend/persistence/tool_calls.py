@@ -94,6 +94,30 @@ def _validate_write_result(
         raise ValueError("PostgreSQL tool call write returned another completed time.")
 
 
+def _validate_tool_call_read_result(
+    record: ToolCallRecord,
+    *,
+    tenant_id: str,
+    agent_run_id: str | None = None,
+    tool_id: str | None = None,
+    allowed: bool | None = None,
+    approval_id: str | None = None,
+    tool_call_id: str | None = None,
+) -> None:
+    if record.tenant_id != tenant_id:
+        raise ValueError("PostgreSQL tool call read returned another tenant.")
+    if agent_run_id is not None and record.agent_run_id != agent_run_id:
+        raise ValueError("PostgreSQL tool call read returned another agent run.")
+    if tool_id is not None and record.tool_id != tool_id:
+        raise ValueError("PostgreSQL tool call read returned another tool.")
+    if allowed is not None and record.allowed != allowed:
+        raise ValueError("PostgreSQL tool call read returned another allowed flag.")
+    if approval_id is not None and record.approval_id != approval_id:
+        raise ValueError("PostgreSQL tool call read returned another approval.")
+    if tool_call_id is not None and record.id != tool_call_id:
+        raise ValueError("PostgreSQL tool call read returned another call.")
+
+
 class SQLiteToolCallReadRepository:
     """Read tenant-scoped tool call records from SQLite."""
 
@@ -219,7 +243,20 @@ class PostgresToolCallReadRepository:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, tuple(parameters))
-                return [_tool_call_from_row(dict(row)) for row in cursor.fetchall()]
+                records = [
+                    _tool_call_from_row(dict(row))
+                    for row in cursor.fetchall()
+                ]
+        for record in records:
+            _validate_tool_call_read_result(
+                record,
+                tenant_id=tenant_id,
+                agent_run_id=agent_run_id,
+                tool_id=tool_id,
+                allowed=allowed,
+                approval_id=approval_id,
+            )
+        return records
 
     def get_tool_call(
         self,
@@ -241,7 +278,13 @@ class PostgresToolCallReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return _tool_call_from_row(dict(row))
+        record = _tool_call_from_row(dict(row))
+        _validate_tool_call_read_result(
+            record,
+            tenant_id=tenant_id,
+            tool_call_id=tool_call_id,
+        )
+        return record
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)

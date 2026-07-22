@@ -4041,6 +4041,13 @@ def _check_postgres_tool_call_reads_guarded() -> list[str]:
                     "call tables and filters: backend/persistence/tool_calls.py:"
                     f"PostgresToolCallReadRepository.{method_name}",
                 )
+        if not _module_calls_name(method_node, "_validate_tool_call_read_result"):
+            errors.append(
+                "PostgreSQL tool call read method must validate returned evidence "
+                "against requested tenant and filters: "
+                "backend/persistence/tool_calls.py:"
+                f"PostgresToolCallReadRepository.{method_name}",
+            )
 
     return errors
 
