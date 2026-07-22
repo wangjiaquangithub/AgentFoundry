@@ -114,7 +114,6 @@ from repositories.agent_runs import (
 )
 from repositories.approvals import (
     ApprovalRequestRepository,
-    ApprovalRequestRepositoryProtocol,
 )
 from repositories.connectors import ConnectorConfigRepository
 from repositories.dev_knowledge import DevKnowledgeRepository
@@ -161,7 +160,7 @@ from services.memories import PlatformMemoryService
 from services.composition import (
     build_agent_run_repository,
     build_agent_repository,
-    build_configured_postgres_approval_request_repository,
+    build_approval_request_repository,
     build_configured_postgres_audit_event_read_repository,
     build_configured_postgres_audit_event_write_repository,
     build_configured_postgres_knowledge_base_read_repository,
@@ -211,16 +210,9 @@ member_fallback_repository = MemberRepository(PLATFORM_MEMBERS_PATH)
 
 agent_repository = build_agent_repository(agent_fallback_repository)
 agent_run_repository = build_agent_run_repository(agent_run_fallback_repository)
-
-
-def _build_approval_request_repository() -> ApprovalRequestRepositoryProtocol:
-    return (
-        build_configured_postgres_approval_request_repository()
-        or approval_request_fallback_repository
-    )
-
-
-approval_request_repository = _build_approval_request_repository()
+approval_request_repository = build_approval_request_repository(
+    approval_request_fallback_repository,
+)
 
 
 def _build_tool_call_write_repository() -> Any | None:

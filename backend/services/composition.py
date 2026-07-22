@@ -48,7 +48,10 @@ from backend.repositories.agent_runs import (
     AgentRunRepositoryProtocol,
     PostgresAgentRunReadThroughRepository,
 )
-from backend.repositories.approvals import PostgresApprovalReadThroughRepository
+from backend.repositories.approvals import (
+    ApprovalRequestRepositoryProtocol,
+    PostgresApprovalReadThroughRepository,
+)
 from backend.repositories.members import PostgresMemberReadThroughRepository
 from backend.repositories.workflows import PostgresWorkflowRunReadThroughRepository
 from backend.services.knowledge import (
@@ -301,6 +304,17 @@ def build_configured_postgres_approval_request_repository() -> (
     return PostgresApprovalReadThroughRepository(
         postgres_reader=PostgresApprovalReadRepository(database),
         postgres_writer=PostgresApprovalWriteRepository(database),
+    )
+
+
+def build_approval_request_repository(
+    fallback_repository: ApprovalRequestRepositoryProtocol,
+) -> ApprovalRequestRepositoryProtocol:
+    """Select the configured production approval request repository."""
+
+    return (
+        build_configured_postgres_approval_request_repository()
+        or fallback_repository
     )
 
 

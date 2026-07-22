@@ -2133,6 +2133,7 @@ def _check_postgres_approval_requests_wired() -> list[str]:
     )
 
     required_composition_imports = [
+        "ApprovalRequestRepositoryProtocol",
         "PostgresApprovalReadRepository",
         "PostgresApprovalWriteRepository",
         "PostgresApprovalReadThroughRepository",
@@ -2143,17 +2144,24 @@ def _check_postgres_approval_requests_wired() -> list[str]:
                 "backend/services/composition.py must import "
                 f"{imported_name} for approval request PostgreSQL wiring",
             )
-    if not _module_defines_function(main_tree, "_build_approval_request_repository"):
+    if not _module_defines_function(
+        composition_tree,
+        "build_approval_request_repository",
+    ):
         errors.append(
-            "backend/main.py must define _build_approval_request_repository for PostgreSQL approval requests",
+            "backend/services/composition.py must define build_approval_request_repository for approval request repository selection",
         )
-    if "approval_request_repository = _build_approval_request_repository()" not in main_source:
+    if "approval_request_repository = build_approval_request_repository(" not in main_source:
         errors.append(
-            "backend/main.py must build the approval_request_repository through the PostgreSQL selector",
+            "backend/main.py must build approval_request_repository through the services.composition selector",
         )
-    if "build_configured_postgres_approval_request_repository()" not in main_source:
+    if (
+        "build_configured_postgres_approval_request_repository()"
+        not in composition_source
+        or "or fallback_repository" not in composition_source
+    ):
         errors.append(
-            "backend/main.py must delegate approval request PostgreSQL wiring to services.composition",
+            "backend/services/composition.py must select PostgreSQL approval storage before the fallback repository",
         )
     if not _module_defines_function(
         composition_tree,
