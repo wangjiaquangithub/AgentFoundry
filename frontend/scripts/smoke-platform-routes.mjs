@@ -9,7 +9,7 @@ const baseUrl = (process.env.PLATFORM_UI_BASE_URL || defaultBaseUrl).replace(/\/
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const appSourcePath = path.resolve(scriptDir, '../src/App.tsx');
 
-const routes = [
+const requiredPlatformRoutes = [
 	'/platform',
 	'/platform/agents',
 	'/platform/tools',
@@ -27,21 +27,17 @@ const platformRoutePattern = /path:\s*['"](?<route>\/platform(?:\/[a-z0-9-]+)?)[
 
 async function readPlatformRoutesFromApp() {
 	const source = await readFile(appSourcePath, 'utf8');
-	return [...source.matchAll(platformRoutePattern)].map((match) => match.groups.route);
+	return [...new Set([...source.matchAll(platformRoutePattern)].map((match) => match.groups.route))];
 }
 
 function assertRouteCoverage(appRoutes) {
-	const smokeRouteSet = new Set(routes);
 	const appRouteSet = new Set(appRoutes);
-	const missing = appRoutes.filter((route) => !smokeRouteSet.has(route));
-	const stale = routes.filter((route) => !appRouteSet.has(route));
+	const missingRequired = requiredPlatformRoutes.filter((route) => !appRouteSet.has(route));
 
-	if (missing.length > 0 || stale.length > 0) {
-		const details = [
-			missing.length > 0 ? `missing from smoke routes: ${missing.join(', ')}` : null,
-			stale.length > 0 ? `not configured in App.tsx: ${stale.join(', ')}` : null,
-		].filter(Boolean).join('; ');
-		throw new Error(`Platform route coverage is out of sync with App.tsx: ${details}`);
+	if (missingRequired.length > 0) {
+		throw new Error(
+			`Platform route coverage is missing required App.tsx routes: ${missingRequired.join(', ')}`,
+		);
 	}
 }
 
@@ -73,8 +69,8 @@ async function assertAsset(assetPath) {
 }
 
 async function main() {
-	const appRoutes = await readPlatformRoutesFromApp();
-	assertRouteCoverage(appRoutes);
+	const routes = await readPlatformRoutesFromApp();
+	assertRouteCoverage(routes);
 
 	const firstRoute = await fetchText(routes[0]);
 	assertHtmlRoute(routes[0], firstRoute.response, firstRoute.text);
