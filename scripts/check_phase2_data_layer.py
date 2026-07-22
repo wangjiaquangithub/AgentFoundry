@@ -1595,15 +1595,21 @@ def _check_postgres_retrieval_events_wired() -> list[str]:
             "backend/services/composition.py must import "
             "PostgresRetrievalEventWriteRepository for retrieval event writes",
         )
-    if not _module_defines_function(main_tree, "_build_retrieval_event_read_repository"):
+    if not _module_defines_function(
+        composition_tree,
+        "build_retrieval_event_read_repository",
+    ):
         errors.append(
-            "backend/main.py must define _build_retrieval_event_read_repository for PostgreSQL retrieval event reads",
+            "backend/services/composition.py must define build_retrieval_event_read_repository for PostgreSQL retrieval event reads",
         )
-    if not _module_defines_function(main_tree, "_build_retrieval_event_write_repository"):
+    if not _module_defines_function(
+        composition_tree,
+        "build_retrieval_event_write_repository",
+    ):
         errors.append(
-            "backend/main.py must define _build_retrieval_event_write_repository for PostgreSQL retrieval event writes",
+            "backend/services/composition.py must define build_retrieval_event_write_repository for PostgreSQL retrieval event writes",
         )
-    if "retrieval_event_reader=_build_retrieval_event_read_repository()" not in main_source:
+    if "retrieval_event_reader=build_retrieval_event_read_repository()" not in main_source:
         errors.append(
             "backend/main.py must pass the PostgreSQL retrieval_event_reader into PlatformStatusService",
         )
@@ -1636,10 +1642,10 @@ def _check_postgres_retrieval_events_wired() -> list[str]:
         "build_configured_postgres_retrieval_event_read_repository()",
         "build_configured_postgres_retrieval_event_write_repository()",
     ):
-        if delegated_builder not in main_source:
+        if delegated_builder not in composition_source:
             errors.append(
-                "backend/main.py must delegate PostgreSQL retrieval event "
-                f"repository construction to services.composition: {delegated_builder}",
+                "backend/services/composition.py must delegate PostgreSQL retrieval event "
+                f"repository construction to configured builders: {delegated_builder}",
             )
     if (
         "retrieval_event_writer=PostgresRetrievalEventWriteRepository(database)"

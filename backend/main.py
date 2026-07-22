@@ -174,11 +174,10 @@ from services.composition import (
     build_configured_postgres_knowledge_response_service,
     build_configured_postgres_knowledge_retrieval_service,
     build_configured_postgres_model_config_service,
-    build_configured_postgres_retrieval_event_read_repository,
-    build_configured_postgres_retrieval_event_write_repository,
     build_memory_item_read_repository,
     build_memory_item_write_repository,
     build_member_repository,
+    build_retrieval_event_read_repository,
     build_runtime_read_repository,
     build_runtime_write_repository,
     build_tool_call_read_repository,
@@ -211,14 +210,6 @@ agent_run_repository = build_agent_run_repository(agent_run_fallback_repository)
 approval_request_repository = build_approval_request_repository(
     approval_request_fallback_repository,
 )
-
-
-def _build_retrieval_event_write_repository() -> Any | None:
-    return build_configured_postgres_retrieval_event_write_repository()
-
-
-def _build_retrieval_event_read_repository() -> Any | None:
-    return build_configured_postgres_retrieval_event_read_repository()
 
 
 connector_config_repository = ConnectorConfigRepository(
@@ -444,7 +435,7 @@ def _platform_status_service() -> PlatformStatusService:
         agent_run_repository=agent_run_repository,
         audit_logger=tool_audit_logger,
         audit_event_reader=build_audit_event_read_repository(),
-        retrieval_event_reader=_build_retrieval_event_read_repository(),
+        retrieval_event_reader=build_retrieval_event_read_repository(),
         tool_policy=tool_authorization_policy,
         connector_health=connector_health,
         runtime_provider_health=describe_runtime_provider_health,
@@ -809,7 +800,7 @@ app.include_router(
 app.include_router(
     create_knowledge_retrieval_events_router(
         KnowledgeRetrievalEventsRouteDependencies(
-            retrieval_event_repository=_build_retrieval_event_read_repository,
+            retrieval_event_repository=build_retrieval_event_read_repository,
             tenant_hint_from_user_id=tenant_hint_from_user_id,
         )
     )

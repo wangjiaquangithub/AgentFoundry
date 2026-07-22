@@ -153,6 +153,22 @@ def build_configured_postgres_retrieval_event_write_repository() -> (
     return PostgresRetrievalEventWriteRepository(database)
 
 
+def build_retrieval_event_read_repository() -> (
+    PostgresRetrievalEventReadRepository | None
+):
+    """Select the configured production retrieval event read repository."""
+
+    return build_configured_postgres_retrieval_event_read_repository()
+
+
+def build_retrieval_event_write_repository() -> (
+    PostgresRetrievalEventWriteRepository | None
+):
+    """Select the configured production retrieval event write repository."""
+
+    return build_configured_postgres_retrieval_event_write_repository()
+
+
 def build_configured_postgres_tool_call_read_repository() -> (
     PostgresToolCallReadRepository | None
 ):
