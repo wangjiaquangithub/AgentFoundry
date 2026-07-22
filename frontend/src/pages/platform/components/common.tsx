@@ -48,7 +48,7 @@ export interface PlatformPageShellProps {
 
 export function PlatformPageShell({ children, className }: PlatformPageShellProps) {
 	return (
-		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-muted/25">
+		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-muted/15">
 			<div
 				className={cn(
 					'mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8',
@@ -66,7 +66,7 @@ function PlatformSectionNav() {
 	return (
 		<nav
 			aria-label="平台模块"
-			className="sticky top-0 z-20 -mx-4 border-b bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/85 sm:-mx-5 sm:px-5 lg:hidden"
+			className="sticky top-0 z-20 -mx-4 border-b bg-background/95 px-4 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/85 sm:-mx-5 sm:px-5 lg:hidden"
 		>
 			<div className="flex items-center gap-2 overflow-x-auto">
 				{platformSections.map(({ label, path, icon: Icon, end }) => (
@@ -76,11 +76,11 @@ function PlatformSectionNav() {
 						end={end}
 						className={({ isActive }) =>
 							cn(
-								'inline-flex h-9 shrink-0 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors',
+								'inline-flex h-8 shrink-0 items-center gap-2 rounded-md border px-2.5 text-xs font-medium transition-colors',
 								'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
 								isActive
 									? 'border-primary bg-primary text-primary-foreground'
-									: 'border-border bg-background text-muted-foreground hover:border-primary/30 hover:text-foreground',
+									: 'border-transparent bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground',
 							)
 						}
 					>
@@ -131,7 +131,7 @@ export function PlatformPageHeader({
 			{actions || aside ? (
 				<div className="flex min-w-0 flex-col gap-3 lg:items-end">
 					{actions ? (
-						<div className="flex flex-wrap gap-2 lg:justify-end">{actions}</div>
+						<div className="flex flex-wrap gap-2 lg:max-w-lg lg:justify-end">{actions}</div>
 					) : null}
 					{aside}
 				</div>

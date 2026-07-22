@@ -23,6 +23,14 @@ import type {
 } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
 	Select,
@@ -138,6 +146,7 @@ export function ApprovalsPanel({
 	const pendingCount = approvalRequests.filter((approval) => approval.status === 'pending').length;
 	const [pendingDecision, setPendingDecision] =
 		useState<PendingApprovalDecision | null>(null);
+	const [createApprovalOpen, setCreateApprovalOpen] = useState(false);
 	const hasActiveApprovalFilters = Boolean(
 		approvalFilters.status ||
 			approvalFilters.tenant.trim() ||
@@ -175,6 +184,10 @@ export function ApprovalsPanel({
 		}
 		closePendingDecision();
 	};
+	const handleCreateApproval = async () => {
+		await onCreateApproval();
+		setCreateApprovalOpen(false);
+	};
 	const pendingDecisionTarget = pendingDecision
 		? getApprovalTarget(pendingDecision.approval)
 		: '';
@@ -207,23 +220,25 @@ export function ApprovalsPanel({
 				: 'platform.approvals.confirmApprove';
 
 	return (
-		<section className="grid gap-4 2xl:grid-cols-[minmax(340px,0.48fr)_minmax(0,1fr)] 2xl:items-start">
-			<div className="grid gap-4 rounded-lg border bg-background p-4">
-				<div className="flex items-start gap-2">
-					<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background">
-						<ShieldCheck className="size-4 text-muted-foreground" />
-					</div>
-					<div className="min-w-0">
-						<h2 className="text-sm font-semibold">
-							{t('platform.approvals.createTitle')}
-						</h2>
-						<p className="mt-1 text-xs leading-5 text-muted-foreground">
-							{t('platform.approvals.createDescription')}
-						</p>
-					</div>
-				</div>
+		<section className="grid gap-4">
+			<Dialog open={createApprovalOpen} onOpenChange={setCreateApprovalOpen}>
+				<DialogContent className="max-h-[calc(100vh-2rem)] overflow-hidden sm:max-w-3xl">
+					<DialogHeader className="pr-10">
+						<div className="flex items-start gap-2">
+							<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background">
+								<ShieldCheck className="size-4 text-muted-foreground" />
+							</div>
+							<div className="min-w-0">
+								<DialogTitle>{t('platform.approvals.createTitle')}</DialogTitle>
+								<DialogDescription>
+									{t('platform.approvals.createDescription')}
+								</DialogDescription>
+							</div>
+						</div>
+					</DialogHeader>
 
-				<div className="grid gap-3">
+					<div className="min-h-0 overflow-y-auto pr-1">
+						<div className="grid gap-3">
 					<div className="grid gap-3 sm:grid-cols-2">
 						<div className="grid gap-2">
 							<label className="text-xs font-medium text-muted-foreground">
@@ -411,21 +426,23 @@ export function ApprovalsPanel({
 							/>
 						</div>
 					</div>
-				</div>
+						</div>
+					</div>
 
-				<div className="flex justify-end border-t pt-4">
-					<Button
-						className="w-full sm:w-auto"
-						onClick={onCreateApproval}
-						disabled={creatingApproval}
-					>
-						<ListChecks className={cn(creatingApproval && 'animate-pulse')} />
-						{creatingApproval
-							? t('platform.approvals.creating')
-							: t('platform.approvals.create')}
-					</Button>
-				</div>
-			</div>
+					<DialogFooter>
+						<Button
+							className="w-full sm:w-auto"
+							onClick={() => void handleCreateApproval()}
+							disabled={creatingApproval}
+						>
+							<ListChecks className={cn(creatingApproval && 'animate-pulse')} />
+							{creatingApproval
+								? t('platform.approvals.creating')
+								: t('platform.approvals.create')}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 
 			<div className="flex min-w-0 flex-col gap-4 rounded-lg border bg-background p-4">
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -454,17 +471,28 @@ export function ApprovalsPanel({
 							</p>
 						</div>
 					</div>
-					<Button
-						type="button"
-						size="sm"
-						variant="outline"
-						className="w-full sm:w-auto"
-						onClick={() => void onRefetchApprovals()}
-						disabled={approvalLoading}
-					>
-						<RefreshCcw className={cn(approvalLoading && 'animate-spin')} />
-						{t('platform.approvals.refresh')}
-					</Button>
+					<div className="flex flex-col gap-2 sm:flex-row">
+						<Button
+							type="button"
+							size="sm"
+							className="w-full sm:w-auto"
+							onClick={() => setCreateApprovalOpen(true)}
+						>
+							<ListChecks />
+							{t('platform.approvals.create')}
+						</Button>
+						<Button
+							type="button"
+							size="sm"
+							variant="outline"
+							className="w-full sm:w-auto"
+							onClick={() => void onRefetchApprovals()}
+							disabled={approvalLoading}
+						>
+							<RefreshCcw className={cn(approvalLoading && 'animate-spin')} />
+							{t('platform.approvals.refresh')}
+						</Button>
+					</div>
 				</div>
 
 				<PlatformFilterBar

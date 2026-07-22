@@ -535,8 +535,7 @@ export function AuditEventsPanel({
 														{t('common.error')}
 													</div>
 													<div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-														{selectedAuditEvent.error.message ||
-															t('platform.audit.eventErrorFallback')}
+														{t('platform.audit.eventErrorFallback')}
 													</div>
 												</div>
 											) : null}

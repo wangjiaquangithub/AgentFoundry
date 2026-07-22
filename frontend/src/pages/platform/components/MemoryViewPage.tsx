@@ -19,6 +19,14 @@ import { PlatformFilterBar } from './PlatformFilterBar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetFooter,
+	SheetHeader,
+	SheetTitle,
+} from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -79,8 +87,7 @@ export function MemoryViewPage({
 		});
 	}, [memoryFilter, memoryOperationsItems, memorySearch]);
 
-	const selectedItem =
-		filteredItems.find((item) => item.key === selectedScopeKey) ?? filteredItems[0] ?? null;
+	const selectedItem = filteredItems.find((item) => item.key === selectedScopeKey) ?? null;
 	const sourceCount = new Set(memoryOperationsItems.flatMap((item) => item.sources)).size;
 	const hasActiveFilters = memoryFilter !== 'all' || memorySearch.trim().length > 0;
 	const sourceRows = useMemo(() => {
@@ -343,133 +350,148 @@ export function MemoryViewPage({
 							)}
 						</div>
 
-						<aside className="grid gap-4 rounded-lg border bg-background/80 p-4">
+					</section>
+
+					<Sheet
+						open={Boolean(selectedItem)}
+						onOpenChange={(open) => {
+							if (!open) {
+								setSelectedScopeKey(null);
+							}
+						}}
+					>
+						<SheetContent className="w-full sm:max-w-xl">
+							<SheetHeader className="border-b pr-12">
 								<div className="flex items-start justify-between gap-3">
 									<div>
-										<h2 className="text-sm font-semibold">
+										<SheetTitle>
 											{t('platform.memoryOps.selectedScopeTitle')}
-										</h2>
-										<p className="mt-1 text-xs leading-5 text-muted-foreground">
+										</SheetTitle>
+										<SheetDescription>
 											{t('platform.memoryOps.selectedScopeDescription')}
-										</p>
+										</SheetDescription>
 									</div>
 									{selectedItem ? (
-										<Badge variant={selectedItem.memoryHitCount > 0 ? 'default' : 'outline'}>
+										<Badge
+											variant={
+												selectedItem.memoryHitCount > 0 ? 'default' : 'outline'
+											}
+										>
 											{selectedItem.memoryHitCount > 0
 												? t('platform.memoryOps.hitStatus')
 												: t('platform.memoryOps.pendingHitStatus')}
 										</Badge>
 									) : null}
-							</div>
+								</div>
+							</SheetHeader>
 
 							{selectedItem ? (
-								<>
-									<div className="rounded-lg border bg-background p-3">
-										<div className="flex min-w-0 items-start gap-3">
-											<div className="grid size-9 shrink-0 place-items-center rounded-lg border bg-background">
-												<UserRound className="size-4 text-muted-foreground" />
+								<div className="min-h-0 flex-1 overflow-y-auto px-4">
+									<div className="grid gap-4 py-4">
+										<div className="rounded-lg border bg-background p-3">
+											<div className="flex min-w-0 items-start gap-3">
+												<div className="grid size-9 shrink-0 place-items-center rounded-lg border bg-background">
+													<UserRound className="size-4 text-muted-foreground" />
+												</div>
+												<div className="min-w-0">
+													<h3 className="truncate text-sm font-semibold">
+														{selectedItem.agentName}
+													</h3>
+													<p className="mt-1 break-all font-mono text-xs text-muted-foreground">
+														{selectedItem.key}
+													</p>
+												</div>
 											</div>
-											<div className="min-w-0">
-												<h3 className="truncate text-sm font-semibold">
-													{selectedItem.agentName}
-												</h3>
-												<p className="mt-1 break-all font-mono text-xs text-muted-foreground">
-													{selectedItem.key}
+										</div>
+
+										<div className="grid grid-cols-3 gap-2">
+											{[
+												{
+													label: t('platform.memoryOps.runs'),
+													value: selectedItem.runCount,
+												},
+												{
+													label: t('platform.memoryOps.hits'),
+													value: selectedItem.memoryHitCount,
+												},
+												{
+													label: t('platform.memoryOps.writes'),
+													value: selectedItem.memorySavedCount,
+												},
+											].map((metric) => (
+												<div
+													key={metric.label}
+													className="rounded-md border px-3 py-2"
+												>
+													<div className="truncate text-xs text-muted-foreground">
+														{metric.label}
+													</div>
+													<div className="mt-1 text-lg font-semibold tabular-nums">
+														{metric.value}
+													</div>
+												</div>
+											))}
+										</div>
+
+										<div className="grid gap-3">
+											<div className="rounded-lg border p-3">
+												<div className="text-xs text-muted-foreground">
+													{t('platform.memoryOps.latestQuestion')}
+												</div>
+												<p className="mt-2 text-sm leading-6">
+													{selectedItem.latestQuestion ||
+														t('platform.memoryOps.noQuestion')}
+												</p>
+											</div>
+											<div className="rounded-lg border p-3">
+												<div className="text-xs text-muted-foreground">
+													{t('platform.memoryOps.latestAnswer')}
+												</div>
+												<p className="mt-2 text-sm leading-6 text-muted-foreground">
+													{selectedItem.latestAnswer ||
+														t('platform.memoryOps.noAnswer')}
 												</p>
 											</div>
 										</div>
-									</div>
-
-									<div className="grid grid-cols-3 gap-2">
-										{[
-											{
-												label: t('platform.memoryOps.runs'),
-												value: selectedItem.runCount,
-											},
-											{
-												label: t('platform.memoryOps.hits'),
-												value: selectedItem.memoryHitCount,
-											},
-											{
-												label: t('platform.memoryOps.writes'),
-												value: selectedItem.memorySavedCount,
-											},
-										].map((metric) => (
-											<div key={metric.label} className="rounded-md border px-3 py-2">
-												<div className="truncate text-xs text-muted-foreground">
-													{metric.label}
-												</div>
-												<div className="mt-1 text-lg font-semibold tabular-nums">
-													{metric.value}
-												</div>
-											</div>
-										))}
-									</div>
-
-									<div className="grid gap-3">
-										<div className="rounded-lg border p-3">
-											<div className="text-xs text-muted-foreground">
-												{t('platform.memoryOps.latestQuestion')}
-											</div>
-											<p className="mt-2 text-sm leading-6">
-												{selectedItem.latestQuestion ||
-													t('platform.memoryOps.noQuestion')}
-											</p>
-										</div>
-										<div className="rounded-lg border p-3">
-											<div className="text-xs text-muted-foreground">
-												{t('platform.memoryOps.latestAnswer')}
-											</div>
-											<p className="mt-2 line-clamp-6 text-sm leading-6 text-muted-foreground">
-												{selectedItem.latestAnswer ||
-													t('platform.memoryOps.noAnswer')}
-											</p>
-										</div>
-									</div>
 
 										<div>
 											<div className="mb-2 text-xs text-muted-foreground">
 												{t('platform.memoryOps.memorySources')}
 											</div>
-										<div className="flex flex-wrap gap-1">
-											{selectedItem.sources.length ? (
-												selectedItem.sources.map((source) => (
-													<Badge key={source} variant="outline">
-														{source}
+											<div className="flex flex-wrap gap-1">
+												{selectedItem.sources.length ? (
+													selectedItem.sources.map((source) => (
+														<Badge key={source} variant="outline">
+															{source}
+														</Badge>
+													))
+												) : (
+													<Badge variant="outline">
+														{t('platform.memoryOps.noSources')}
 													</Badge>
-												))
-											) : (
-												<Badge variant="outline">
-													{t('platform.memoryOps.noSources')}
-												</Badge>
-											)}
+												)}
+											</div>
 										</div>
 									</div>
+								</div>
+							) : null}
 
-									<div className="grid gap-2 border-t pt-4 sm:grid-cols-2 xl:grid-cols-1">
-										<Button type="button" onClick={() => onNavigate('/platform/runs')}>
-											<ArrowRight className="size-4" />
-											{t('platform.memoryOps.openRun')}
-										</Button>
-										<Button
-											type="button"
-											variant="outline"
-											onClick={() => onNavigate('/platform/agents')}
-										>
-											<Play className="size-4" />
-											{t('platform.memoryOps.runAgent')}
-										</Button>
-									</div>
-									</>
-								) : (
-									<PlatformEmptyState
-										variant="noData"
-										title={t('platform.memoryOps.selectScopeTitle')}
-										description={t('platform.memoryOps.selectScopeDescription')}
-									/>
-								)}
-						</aside>
-					</section>
+							<SheetFooter className="border-t bg-background">
+								<Button type="button" onClick={() => onNavigate('/platform/runs')}>
+									<ArrowRight className="size-4" />
+									{t('platform.memoryOps.openRun')}
+								</Button>
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() => onNavigate('/platform/agents')}
+								>
+									<Play className="size-4" />
+									{t('platform.memoryOps.runAgent')}
+								</Button>
+							</SheetFooter>
+						</SheetContent>
+					</Sheet>
 
 					<section className="rounded-lg border bg-background/80 p-4">
 							<div className="flex items-start justify-between gap-3">
