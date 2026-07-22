@@ -162,7 +162,7 @@ class ToolAuditLogger:
             return []
 
         if tenant and self._tool_call_reader is not None:
-            events = self._query_tool_call_records(
+            return self._query_tool_call_records(
                 tenant=tenant,
                 user_id=user_id,
                 agent_id=agent_id,
@@ -170,8 +170,6 @@ class ToolAuditLogger:
                 success=success,
                 limit=normalized_limit,
             )
-            if events is not None:
-                return events
 
         return self._query_jsonl(
             tenant=tenant,
@@ -191,7 +189,7 @@ class ToolAuditLogger:
         tool_name: str | None,
         success: bool | None,
         limit: int,
-    ) -> list[dict[str, Any]] | None:
+    ) -> list[dict[str, Any]]:
         read_limit = (
             200
             if any((user_id, agent_id, tool_name)) or success is not None
@@ -207,7 +205,7 @@ class ToolAuditLogger:
                 "Failed to read enterprise audit events from PostgreSQL: %s",
                 exc,
             )
-            return None
+            return []
 
         events = [_tool_call_record_to_event(record) for record in records]
         return [

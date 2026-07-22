@@ -26,6 +26,7 @@ PERSISTENCE_INIT_MODULE = PERSISTENCE_DIR / "__init__.py"
 REPOSITORIES_DIR = ROOT / "backend" / "repositories"
 SERVICES_DIR = ROOT / "backend" / "services"
 MAIN_MODULE = ROOT / "backend" / "main.py"
+AUDIT_MODULE = ROOT / "backend" / "audit.py"
 DATABASE_MODULE = ROOT / "backend" / "persistence" / "database.py"
 SEED_MODULE = ROOT / "backend" / "persistence" / "seed.py"
 MIGRATE_SHELL = ROOT / "scripts" / "migrate_agentfoundry.sh"
@@ -958,6 +959,69 @@ def _check_postgres_tool_calls_wired() -> list[str]:
                 "backend/persistence/tool_calls.py must return persisted "
                 f"PostgreSQL tool call write records: {token}",
             )
+
+    return errors
+
+
+def _check_postgres_tool_audit_reads_authoritative() -> list[str]:
+    errors: list[str] = []
+    audit_source = AUDIT_MODULE.read_text(encoding="utf-8")
+    audit_tree = ast.parse(audit_source, filename=str(AUDIT_MODULE))
+    classes = {
+        node.name: node
+        for node in ast.walk(audit_tree)
+        if isinstance(node, ast.ClassDef)
+    }
+    logger_class = classes.get("ToolAuditLogger")
+    if logger_class is None:
+        return ["backend/audit.py must define ToolAuditLogger"]
+
+    methods = {
+        node.name: node
+        for node in logger_class.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    query_method = methods.get("query")
+    record_query_method = methods.get("_query_tool_call_records")
+    if query_method is None:
+        errors.append("backend/audit.py:ToolAuditLogger.query must exist")
+    if record_query_method is None:
+        errors.append("backend/audit.py:ToolAuditLogger._query_tool_call_records must exist")
+    if query_method is None or record_query_method is None:
+        return errors
+
+    authoritative_query = False
+    for node in ast.walk(query_method):
+        if not isinstance(node, ast.If):
+            continue
+        condition_source = ast.get_source_segment(audit_source, node.test) or ""
+        if "tenant" not in condition_source or "_tool_call_reader" not in condition_source:
+            continue
+        for statement in node.body:
+            if not isinstance(statement, ast.Return):
+                continue
+            value = statement.value
+            if isinstance(value, ast.Call):
+                function = value.func
+                if isinstance(function, ast.Attribute) and function.attr == "_query_tool_call_records":
+                    authoritative_query = True
+                    break
+
+    if not authoritative_query:
+        errors.append(
+            "backend/audit.py must treat configured PostgreSQL tool-call audit reads "
+            "as authoritative instead of falling back to JSONL",
+        )
+
+    for node in ast.walk(record_query_method):
+        if not isinstance(node, ast.ExceptHandler):
+            continue
+        for child in ast.walk(node):
+            if isinstance(child, ast.Return) and isinstance(child.value, ast.Constant) and child.value.value is None:
+                errors.append(
+                    "backend/audit.py must not return None after PostgreSQL tool-call audit read failure; "
+                    "None re-enables JSONL fallback",
+                )
 
     return errors
 
@@ -3243,6 +3307,7 @@ def main() -> int:
         *_check_postgres_runtime_provider_reads_wired(),
         *_check_postgres_runtime_invocation_writes_wired(),
         *_check_postgres_tool_calls_wired(),
+        *_check_postgres_tool_audit_reads_authoritative(),
         *_check_postgres_tool_policy_wired(),
         *_check_postgres_memory_item_writes_wired(),
         *_check_postgres_audit_events_wired(),
@@ -3304,6 +3369,7 @@ def main() -> int:
     print("- PostgreSQL runtime provider reads wired: yes")
     print("- PostgreSQL runtime invocation writes wired: yes")
     print("- PostgreSQL tool calls wired: yes")
+    print("- PostgreSQL tool audit reads authoritative: yes")
     print("- PostgreSQL tool policy write-through wired: yes")
     print("- PostgreSQL memory item writes wired: yes")
     print("- PostgreSQL audit events wired: yes")
