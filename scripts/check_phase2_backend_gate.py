@@ -91,6 +91,13 @@ CHECKS = (
         ),
     ),
     (
+        "PostgreSQL model config API route boundary",
+        (
+            sys.executable,
+            "scripts/check_phase2_postgres_model_config_api_route.py",
+        ),
+    ),
+    (
         "PostgreSQL index contract",
         (sys.executable, "scripts/check_phase2_postgres_index_contract.py"),
     ),

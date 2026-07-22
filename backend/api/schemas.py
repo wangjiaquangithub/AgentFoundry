@@ -112,6 +112,17 @@ class EnterpriseKnowledgeIngestRequest(BaseModel):
     document_id: str | None = None
 
 
+class EnterpriseModelConfigUpsertRequest(BaseModel):
+    name: str
+    provider: str
+    model: str
+    purpose: str
+    status: str = "active"
+    config_ref: str | None = None
+    tenant: str | None = None
+    model_config_id: str | None = None
+
+
 class EnterpriseKnowledgeBasesRequest(BaseModel):
     status: str | None = None
     tenant: str | None = None

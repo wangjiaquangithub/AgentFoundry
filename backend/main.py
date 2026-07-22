@@ -42,6 +42,10 @@ from api.knowledge import (
     create_knowledge_retrieval_router,
     create_knowledge_retrieval_events_router,
 )
+from api.model_configs import (
+    ModelConfigRouteDependencies,
+    create_model_config_router,
+)
 from api.platform_admin import (
     PlatformAdminRouteDependencies,
     create_platform_admin_router,
@@ -193,6 +197,7 @@ from services.knowledge import (
 from services.knowledge_ingestion import PlatformKnowledgeIngestionService
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
+from services.composition import build_configured_postgres_model_config_service
 from services.platform_status import PlatformStatusService
 from services.tools import (
     PlatformToolPolicyService,
@@ -1053,6 +1058,15 @@ app.include_router(
     create_knowledge_retrieval_events_router(
         KnowledgeRetrievalEventsRouteDependencies(
             retrieval_event_repository=_build_retrieval_event_read_repository,
+            tenant_hint_from_user_id=tenant_hint_from_user_id,
+        )
+    )
+)
+
+app.include_router(
+    create_model_config_router(
+        ModelConfigRouteDependencies(
+            model_config_service=build_configured_postgres_model_config_service,
             tenant_hint_from_user_id=tenant_hint_from_user_id,
         )
     )
