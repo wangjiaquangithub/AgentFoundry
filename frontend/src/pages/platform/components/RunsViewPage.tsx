@@ -44,6 +44,14 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetFooter,
+	SheetHeader,
+	SheetTitle,
+} from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -187,11 +195,12 @@ export function RunsViewPage({
 		runTypeFilter !== 'all' ||
 		runStatusFilter !== 'all' ||
 		runKeywordFilter.trim().length > 0;
-	const activeRun =
-		filteredRunItems.find(
+	const activeRun = selectedRun
+		? filteredRunItems.find(
 			(item) =>
-				item.type === selectedRun?.type && item.id === selectedRun?.id,
-		) ?? filteredRunItems[0];
+				item.type === selectedRun.type && item.id === selectedRun.id,
+			)
+		: undefined;
 	const activeAgentTurn =
 		activeRun?.type === 'agent'
 			? (activeRun.raw as MonitoringAgentTurn)
@@ -313,7 +322,7 @@ export function RunsViewPage({
 				</section>
 
 				<section>
-					<section className="grid gap-4 xl:grid-cols-[minmax(22rem,0.95fr)_minmax(0,1.35fr)]">
+					<section className="grid gap-4">
 						<div className="grid min-h-[30rem] content-start gap-3 rounded-lg border bg-background/80 p-4 shadow-none">
 							<div className="flex items-start justify-between gap-3">
 								<div className="min-w-0">
@@ -437,9 +446,6 @@ export function RunsViewPage({
 												type="button"
 												onClick={() => {
 													setSelectedRun({ type: item.type, id: item.id });
-													if (item.type === 'agent') {
-														onSelectAgentTurn(item.raw as MonitoringAgentTurn);
-													}
 												}}
 												className={cn(
 													'grid grid-cols-[auto_1fr] gap-3 rounded-md border p-3 text-left text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
@@ -499,136 +505,6 @@ export function RunsViewPage({
 							)}
 						</div>
 
-						<div className="grid gap-4">
-							<section className="grid min-h-[20rem] content-start gap-4 rounded-lg border bg-background/80 p-4 shadow-none">
-								<div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-									<div className="min-w-0">
-										<h2 className="text-sm font-semibold">
-											{t('platform.monitoring.runDetail')}
-										</h2>
-										<p className="mt-1 text-xs leading-5 text-muted-foreground">
-											{t('platform.monitoring.runDetailDescription')}
-										</p>
-									</div>
-									{activeRun ? (
-										<PlatformStatusBadge
-											status={activeRun.status}
-											t={t}
-											className="shrink-0"
-										/>
-									) : null}
-								</div>
-
-								{activeRun ? (
-									<>
-										<div className="rounded-md border bg-background p-4">
-											<div className="flex items-start gap-3">
-												<div className="flex size-10 shrink-0 items-center justify-center rounded-md border bg-background">
-													{activeRun.type === 'agent' ? (
-														<BotMessageSquare className="size-5 text-muted-foreground" />
-													) : (
-														<Workflow className="size-5 text-muted-foreground" />
-													)}
-												</div>
-												<div className="min-w-0">
-													<h3 className="line-clamp-2 text-base font-semibold">
-														{activeRun.title}
-													</h3>
-													<p className="mt-2 line-clamp-4 text-sm leading-6 text-muted-foreground">
-														{activeRun.description}
-													</p>
-												</div>
-											</div>
-										</div>
-
-										<div className="grid gap-3 md:grid-cols-3">
-											<div className="rounded-md border p-3">
-												<div className="text-xs text-muted-foreground">
-													{t('platform.monitoring.type')}
-												</div>
-												<div className="mt-1 text-sm font-medium">
-													{activeRun.type === 'agent'
-														? t('platform.monitoring.agentRunType')
-														: t('platform.monitoring.workflowRunType')}
-												</div>
-											</div>
-											<div className="rounded-md border p-3">
-												<div className="text-xs text-muted-foreground">
-													{t('platform.monitoring.agent')}
-												</div>
-												<div className="mt-1 truncate text-sm font-medium">
-													{activeRun.agentId || '-'}
-												</div>
-											</div>
-											<div className="rounded-md border p-3">
-												<div className="text-xs text-muted-foreground">
-													{t('platform.monitoring.time')}
-												</div>
-												<div className="mt-1 text-sm font-medium">
-													{formatTimestamp(activeRun.timestamp)}
-												</div>
-											</div>
-										</div>
-
-										{activeWorkflowRun ? (
-											<div className="rounded-md border p-3">
-												<div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
-													<CheckCircle2 className="size-4" />
-													{t('platform.monitoring.stepsStatus')}
-												</div>
-												<div className="flex flex-wrap gap-2">
-													{Object.entries(activeWorkflowRun.status_counts || {}).map(
-														([status, count]) => (
-															<Badge key={status} variant="secondary">
-																{status}: {count}
-															</Badge>
-														),
-													)}
-												</div>
-											</div>
-										) : null}
-
-										<div className="flex flex-wrap gap-2">
-											{activeAgentTurn ? (
-												<Button
-													type="button"
-													size="sm"
-													onClick={() => onSelectAgentTurn(activeAgentTurn)}
-												>
-													<BotMessageSquare className="size-4" />
-													{t('platform.monitoring.viewResponse')}
-												</Button>
-											) : (
-												<Button type="button" size="sm" onClick={onRunWorkflow}>
-													<Workflow className="size-4" />
-													{t('platform.monitoring.continueWorkflow')}
-												</Button>
-											)}
-											<Button
-												type="button"
-												size="sm"
-												variant="outline"
-												onClick={onOpenGovernance}
-											>
-												<ShieldCheck className="size-4" />
-												{t('platform.monitoring.governanceAudit')}
-											</Button>
-										</div>
-									</>
-								) : (
-									<PlatformEmptyState
-										variant={hasRunFilters ? 'filtered' : 'noData'}
-										title={t('platform.monitoring.noRunDetail')}
-										description={
-											hasRunFilters
-												? t('platform.ux.empty.filteredDescription')
-												: t('platform.monitoring.noRunsDescription')
-										}
-										className="min-h-64 rounded-md border border-dashed bg-background/80 p-6"
-									/>
-								)}
-							</section>
-
 							<section className="grid content-start gap-3 rounded-lg border bg-background/80 p-4 shadow-none">
 								<div className="flex items-start justify-between gap-3">
 									<div className="min-w-0">
@@ -682,7 +558,6 @@ export function RunsViewPage({
 									</div>
 								)}
 							</section>
-						</div>
 					</section>
 				</section>
 
@@ -718,6 +593,142 @@ export function RunsViewPage({
 					/>
 				</section>
 			</div>
+
+			<Sheet
+				open={Boolean(activeRun)}
+				onOpenChange={(open) => {
+					if (!open) {
+						setSelectedRun(null);
+					}
+				}}
+			>
+				<SheetContent
+					side="right"
+					className="w-full gap-0 overflow-hidden p-0 sm:max-w-xl lg:max-w-2xl"
+				>
+					<SheetHeader className="border-b pr-12">
+						<div className="flex items-start justify-between gap-3">
+							<div className="min-w-0">
+								<SheetTitle>{t('platform.monitoring.runDetail')}</SheetTitle>
+								<SheetDescription className="mt-1">
+									{t('platform.monitoring.runDetailDescription')}
+								</SheetDescription>
+							</div>
+							{activeRun ? (
+								<PlatformStatusBadge
+									status={activeRun.status}
+									t={t}
+									className="shrink-0"
+								/>
+							) : null}
+						</div>
+					</SheetHeader>
+
+					{activeRun ? (
+						<div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+							<div className="grid gap-4">
+								<div className="rounded-md border bg-background p-4">
+									<div className="flex items-start gap-3">
+										<div className="flex size-10 shrink-0 items-center justify-center rounded-md border bg-background">
+											{activeRun.type === 'agent' ? (
+												<BotMessageSquare className="size-5 text-muted-foreground" />
+											) : (
+												<Workflow className="size-5 text-muted-foreground" />
+											)}
+										</div>
+										<div className="min-w-0">
+											<h3 className="line-clamp-2 text-base font-semibold">
+												{activeRun.title}
+											</h3>
+											<p className="mt-2 line-clamp-4 text-sm leading-6 text-muted-foreground">
+												{activeRun.description}
+											</p>
+										</div>
+									</div>
+								</div>
+
+								<div className="grid gap-3 md:grid-cols-3">
+									<div className="rounded-md border p-3">
+										<div className="text-xs text-muted-foreground">
+											{t('platform.monitoring.type')}
+										</div>
+										<div className="mt-1 text-sm font-medium">
+											{activeRun.type === 'agent'
+												? t('platform.monitoring.agentRunType')
+												: t('platform.monitoring.workflowRunType')}
+										</div>
+									</div>
+									<div className="rounded-md border p-3">
+										<div className="text-xs text-muted-foreground">
+											{t('platform.monitoring.agent')}
+										</div>
+										<div className="mt-1 truncate text-sm font-medium">
+											{activeRun.agentId || '-'}
+										</div>
+									</div>
+									<div className="rounded-md border p-3">
+										<div className="text-xs text-muted-foreground">
+											{t('platform.monitoring.time')}
+										</div>
+										<div className="mt-1 text-sm font-medium">
+											{formatTimestamp(activeRun.timestamp)}
+										</div>
+									</div>
+								</div>
+
+								{activeWorkflowRun ? (
+									<div className="rounded-md border p-3">
+										<div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+											<CheckCircle2 className="size-4" />
+											{t('platform.monitoring.stepsStatus')}
+										</div>
+										<div className="flex flex-wrap gap-2">
+											{Object.entries(activeWorkflowRun.status_counts || {}).map(
+												([status, count]) => (
+													<Badge key={status} variant="secondary">
+														{status}: {count}
+													</Badge>
+												),
+											)}
+										</div>
+									</div>
+								) : null}
+							</div>
+						</div>
+					) : null}
+
+					{activeRun ? (
+						<SheetFooter className="border-t bg-background">
+							<div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+								<Button
+									type="button"
+									size="sm"
+									variant="outline"
+									onClick={onOpenGovernance}
+								>
+									<ShieldCheck className="size-4" />
+									{t('platform.monitoring.governanceAudit')}
+								</Button>
+								{activeAgentTurn ? (
+									<Button
+										type="button"
+										size="sm"
+										onClick={() => onSelectAgentTurn(activeAgentTurn)}
+									>
+										<BotMessageSquare className="size-4" />
+										{t('platform.monitoring.viewResponse')}
+									</Button>
+								) : (
+									<Button type="button" size="sm" onClick={onRunWorkflow}>
+										<Workflow className="size-4" />
+										{t('platform.monitoring.continueWorkflow')}
+									</Button>
+								)}
+							</div>
+						</SheetFooter>
+					) : null}
+				</SheetContent>
+			</Sheet>
 		</PlatformPageShell>
 	);
 }
