@@ -27,7 +27,7 @@ from backend.runtime_provider_clients import (  # noqa: E402
 
 
 AUTH_REF = "secret://agentscope/runtime-token"
-TOKEN = "runtime-token-value"
+TOKEN = "replace-with-real-token"
 READY_RUNTIME_CONFIG = {
     "agentscope_runtime_url": "http://agentscope-runtime.internal:18080",
     "agentscope_runtime_auth_ref": AUTH_REF,
