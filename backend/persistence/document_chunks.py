@@ -44,6 +44,32 @@ def _metadata_from_json(value: dict[str, Any] | str, chunk_id: str) -> dict[str,
     return parsed
 
 
+def _validate_write_result(
+    requested: DocumentChunkRecord,
+    persisted: DocumentChunkRecord,
+) -> None:
+    if not persisted.id:
+        raise ValueError("PostgreSQL document chunk write did not return a chunk id.")
+    if not persisted.tenant_id:
+        raise ValueError("PostgreSQL document chunk write did not return a tenant id.")
+    if not persisted.document_id:
+        raise ValueError("PostgreSQL document chunk write did not return a document id.")
+    if not persisted.content:
+        raise ValueError("PostgreSQL document chunk write did not return content.")
+    if persisted.id != requested.id:
+        raise ValueError("PostgreSQL document chunk write returned another chunk.")
+    if persisted.tenant_id != requested.tenant_id:
+        raise ValueError("PostgreSQL document chunk write returned another tenant.")
+    if persisted.document_id != requested.document_id:
+        raise ValueError("PostgreSQL document chunk write returned another document.")
+    if persisted.chunk_index != requested.chunk_index:
+        raise ValueError("PostgreSQL document chunk write returned another chunk index.")
+    if persisted.content != requested.content:
+        raise ValueError("PostgreSQL document chunk write returned another content.")
+    if persisted.metadata != requested.metadata:
+        raise ValueError("PostgreSQL document chunk write returned another metadata.")
+
+
 class SQLiteDocumentChunkReadRepository:
     """Read tenant-scoped document chunk records from SQLite."""
 
@@ -189,7 +215,9 @@ class PostgresDocumentChunkWriteRepository:
                 row = cursor.fetchone()
         if row is None:
             raise ValueError("Document chunk upsert did not return a record.")
-        return _document_chunk_from_row(dict(row))
+        persisted = _document_chunk_from_row(dict(row))
+        _validate_write_result(record, persisted)
+        return persisted
 
     def delete_document_chunks(self, *, tenant_id: str, document_id: str) -> int:
         with self._database.transaction() as connection:

@@ -1616,11 +1616,22 @@ def _check_postgres_knowledge_ingestion_write_records() -> list[str]:
         ") -> DocumentChunkRecord:",
         "RETURNING id, tenant_id, document_id, chunk_index, content",
         "row = cursor.fetchone()",
-        "return _document_chunk_from_row(dict(row))",
+        "persisted = _document_chunk_from_row(dict(row))",
+        "_validate_write_result(record, persisted)",
+        "PostgreSQL document chunk write did not return a chunk id.",
+        "PostgreSQL document chunk write did not return a tenant id.",
+        "PostgreSQL document chunk write did not return a document id.",
+        "PostgreSQL document chunk write did not return content.",
+        "PostgreSQL document chunk write returned another chunk.",
+        "PostgreSQL document chunk write returned another tenant.",
+        "PostgreSQL document chunk write returned another document.",
+        "PostgreSQL document chunk write returned another chunk index.",
+        "PostgreSQL document chunk write returned another content.",
+        "PostgreSQL document chunk write returned another metadata.",
     ):
         if token not in chunk_persistence_source:
             errors.append(
-                "backend/persistence/document_chunks.py must return persisted "
+                "backend/persistence/document_chunks.py must validate persisted "
                 f"PostgreSQL document chunk write records: {token}",
             )
 
