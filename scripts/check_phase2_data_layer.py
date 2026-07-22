@@ -3576,6 +3576,12 @@ def _check_postgres_retrieval_event_reads_guarded() -> list[str]:
                 "backend/persistence/retrieval_events.py:"
                 f"PostgresRetrievalEventReadRepository.{method_name}",
             )
+        if not _module_calls_name(method_node, "_validate_retrieval_event_read_result"):
+            errors.append(
+                "PostgreSQL retrieval event read method must validate returned tenant "
+                "and filter fields: backend/persistence/retrieval_events.py:"
+                f"PostgresRetrievalEventReadRepository.{method_name}",
+            )
         normalized_sql = " ".join(_normalized_sql_literals(method_node))
         for sql_token in sql_tokens:
             if sql_token.lower() not in normalized_sql:

@@ -72,6 +72,24 @@ def _validate_write_result(
         raise ValueError("PostgreSQL retrieval event write returned another created time.")
 
 
+def _validate_retrieval_event_read_result(
+    record: RetrievalEventRecord,
+    *,
+    tenant_id: str,
+    agent_run_id: str | None = None,
+    knowledge_base_id: str | None = None,
+    retrieval_event_id: str | None = None,
+) -> None:
+    if record.tenant_id != tenant_id:
+        raise ValueError("PostgreSQL retrieval event read returned another tenant.")
+    if agent_run_id is not None and record.agent_run_id != agent_run_id:
+        raise ValueError("PostgreSQL retrieval event read returned another agent run.")
+    if knowledge_base_id is not None and record.knowledge_base_id != knowledge_base_id:
+        raise ValueError("PostgreSQL retrieval event read returned another knowledge base.")
+    if retrieval_event_id is not None and record.id != retrieval_event_id:
+        raise ValueError("PostgreSQL retrieval event read returned another event.")
+
+
 class SQLiteRetrievalEventReadRepository:
     """Read tenant-scoped retrieval events from SQLite."""
 
@@ -163,7 +181,15 @@ class PostgresRetrievalEventReadRepository:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, tuple(parameters))
-                return [_retrieval_event_from_row(dict(row)) for row in cursor.fetchall()]
+                records = [_retrieval_event_from_row(dict(row)) for row in cursor.fetchall()]
+        for record in records:
+            _validate_retrieval_event_read_result(
+                record,
+                tenant_id=tenant_id,
+                agent_run_id=agent_run_id,
+                knowledge_base_id=knowledge_base_id,
+            )
+        return records
 
     def get_retrieval_event(
         self,
@@ -185,7 +211,13 @@ class PostgresRetrievalEventReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return _retrieval_event_from_row(dict(row))
+        record = _retrieval_event_from_row(dict(row))
+        _validate_retrieval_event_read_result(
+            record,
+            tenant_id=tenant_id,
+            retrieval_event_id=retrieval_event_id,
+        )
+        return record
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
