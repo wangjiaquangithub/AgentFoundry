@@ -1077,6 +1077,7 @@ def _check_postgres_workflow_runs_wired() -> list[str]:
         "PostgreSQL workflow run writes require tenant context.",
         "list_runs",
         "append_run",
+        "_validate_write_result",
         "_postgres_run_to_platform_record",
         "_platform_record_to_postgres_run",
     ]
@@ -1114,6 +1115,22 @@ def _check_postgres_workflow_runs_wired() -> list[str]:
         if token not in workflow_persistence_source:
             errors.append(
                 "backend/persistence/workflows.py must return persisted PostgreSQL "
+                f"workflow run write records: {token}",
+            )
+
+    for token in (
+        "PostgreSQL workflow run write did not return a run id.",
+        "PostgreSQL workflow run write did not return a tenant id.",
+        "PostgreSQL workflow run write did not return a workflow template id.",
+        "PostgreSQL workflow run write did not return a user id.",
+        "PostgreSQL workflow run write returned another run.",
+        "PostgreSQL workflow run write returned another tenant.",
+        "PostgreSQL workflow run write returned another workflow template.",
+        "PostgreSQL workflow run write returned another user.",
+    ):
+        if token not in workflow_repository_source:
+            errors.append(
+                "backend/repositories/workflows.py must validate PostgreSQL "
                 f"workflow run write records: {token}",
             )
 
