@@ -28,6 +28,10 @@ CHECKS = (
         "PostgreSQL configuration status",
         (sys.executable, "scripts/check_phase2_postgres_config_status.py"),
     ),
+    (
+        "platform database status",
+        (sys.executable, "scripts/check_phase2_platform_database_status.py"),
+    ),
     ("production data layer", (sys.executable, "scripts/check_phase2_data_layer.py")),
 )
 

@@ -137,6 +137,7 @@ from backend.persistence import (
     PostgresWorkflowReadRepository,
     PostgresWorkflowWriteRepository,
     create_configured_postgres_database,
+    inspect_configured_database_status,
 )
 from repositories.agent_runs import (
     AgentRunRepository,
@@ -695,6 +696,7 @@ def _platform_status_service() -> PlatformStatusService:
         enterprise_tool_catalog=ENTERPRISE_TOOL_CATALOG,
         approval_required_tools=APPROVAL_REQUIRED_TOOLS,
         approval_required_workflows=APPROVAL_REQUIRED_WORKFLOWS,
+        database_config_status=inspect_configured_database_status,
     )
 
 

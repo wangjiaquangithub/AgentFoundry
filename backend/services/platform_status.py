@@ -2,6 +2,7 @@
 
 import logging
 from collections.abc import Callable
+from dataclasses import asdict, is_dataclass
 from typing import Any, Protocol
 
 
@@ -80,6 +81,7 @@ class PlatformStatusService:
         approval_required_tools: set[str],
         approval_required_workflows: set[str],
         runtime_provider_reader: RuntimeProviderReadRepository | None = None,
+        database_config_status: Callable[[], Any] | None = None,
     ) -> None:
         self._list_approval_records = list_approval_records
         self._load_workflow_runs = load_workflow_runs
@@ -102,6 +104,7 @@ class PlatformStatusService:
         self._enterprise_tool_catalog = enterprise_tool_catalog
         self._approval_required_tools = approval_required_tools
         self._approval_required_workflows = approval_required_workflows
+        self._database_config_status = database_config_status
 
     @staticmethod
     def runtime_tenant(runtime: dict[str, Any]) -> str:
@@ -297,6 +300,7 @@ class PlatformStatusService:
             "storage": {
                 "data_dir": str(data_dir),
                 "audit_log_path": str(self._audit_logger.path),
+                "database": self._database_status_snapshot(),
             },
             "audit": {
                 "enabled": self._audit_logger.enabled,
@@ -333,6 +337,23 @@ class PlatformStatusService:
                 for template in subagent_templates
             ],
         }
+
+    def _database_status_snapshot(self) -> dict[str, Any]:
+        """Return a credential-safe production data-layer configuration snapshot."""
+        if self._database_config_status is None:
+            return {
+                "configured": False,
+                "backend": "unconfigured",
+                "production_ready": False,
+                "message": "Database configuration status is not wired.",
+            }
+
+        status = self._database_config_status()
+        if is_dataclass(status):
+            return dict(asdict(status))
+        if isinstance(status, dict):
+            return dict(status)
+        raise TypeError("Database configuration status must be a dataclass or dict.")
 
     def _runtime_provider_snapshot(self) -> dict[str, Any]:
         """Return runtime provider health from PostgreSQL when available."""
