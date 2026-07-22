@@ -165,6 +165,18 @@ def build_configured_postgres_tool_call_write_repository() -> (
     return PostgresToolCallWriteRepository(database)
 
 
+def build_tool_call_read_repository() -> PostgresToolCallReadRepository | None:
+    """Select the configured production tool call read repository."""
+
+    return build_configured_postgres_tool_call_read_repository()
+
+
+def build_tool_call_write_repository() -> PostgresToolCallWriteRepository | None:
+    """Select the configured production tool call write repository."""
+
+    return build_configured_postgres_tool_call_write_repository()
+
+
 def build_configured_postgres_tool_governance_read_repository() -> (
     PostgresToolGovernanceReadRepository | None
 ):
