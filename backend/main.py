@@ -197,7 +197,10 @@ from services.knowledge import (
 from services.knowledge_ingestion import PlatformKnowledgeIngestionService
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
-from services.composition import build_configured_postgres_model_config_service
+from services.composition import (
+    build_configured_postgres_knowledge_retrieval_service,
+    build_configured_postgres_model_config_service,
+)
 from services.platform_status import PlatformStatusService
 from services.tools import (
     PlatformToolPolicyService,
@@ -513,16 +516,7 @@ def _build_knowledge_embedding_record_write_repository() -> (
 def _build_knowledge_retrieval_service() -> (
     PlatformKnowledgeRetrievalService | None
 ):
-    database = create_configured_postgres_database()
-    if database is None:
-        return None
-
-    return PlatformKnowledgeRetrievalService(
-        knowledge_base_repository=PostgresKnowledgeBaseReadRepository(database),
-        document_repository=PostgresDocumentReadRepository(database),
-        document_chunk_repository=PostgresDocumentChunkReadRepository(database),
-        retrieval_event_writer=PostgresRetrievalEventWriteRepository(database),
-        audit_event_writer=PostgresAuditEventWriteRepository(database),
+    return build_configured_postgres_knowledge_retrieval_service(
         now=now_iso,
     )
 

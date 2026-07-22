@@ -2,13 +2,20 @@
 
 from __future__ import annotations
 
+from typing import Callable
+
 from backend.persistence import (
     PostgresAuditEventWriteRepository,
     PostgresDatabase,
+    PostgresDocumentChunkReadRepository,
+    PostgresDocumentReadRepository,
+    PostgresKnowledgeBaseReadRepository,
     PostgresModelConfigReadRepository,
     PostgresModelConfigWriteRepository,
+    PostgresRetrievalEventWriteRepository,
     create_configured_postgres_database,
 )
+from backend.services.knowledge import PlatformKnowledgeRetrievalService
 from backend.services.model_configs import PlatformModelConfigService
 
 
@@ -34,3 +41,33 @@ def build_configured_postgres_model_config_service() -> (
         return None
 
     return build_postgres_model_config_service(database)
+
+
+def build_postgres_knowledge_retrieval_service(
+    database: PostgresDatabase,
+    *,
+    now: Callable[[], str] | None = None,
+) -> PlatformKnowledgeRetrievalService:
+    """Build the PostgreSQL-backed knowledge retrieval service."""
+
+    return PlatformKnowledgeRetrievalService(
+        knowledge_base_repository=PostgresKnowledgeBaseReadRepository(database),
+        document_repository=PostgresDocumentReadRepository(database),
+        document_chunk_repository=PostgresDocumentChunkReadRepository(database),
+        retrieval_event_writer=PostgresRetrievalEventWriteRepository(database),
+        audit_event_writer=PostgresAuditEventWriteRepository(database),
+        now=now,
+    )
+
+
+def build_configured_postgres_knowledge_retrieval_service(
+    *,
+    now: Callable[[], str] | None = None,
+) -> PlatformKnowledgeRetrievalService | None:
+    """Build the knowledge retrieval service when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return build_postgres_knowledge_retrieval_service(database, now=now)
