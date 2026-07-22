@@ -823,6 +823,7 @@ class PlatformKnowledgeResponseService:
         knowledge_base_ids: list[str],
         top_k: int = 3,
         agent_run_id: str | None = None,
+        allow_dev_fallback: bool = True,
     ) -> tuple[list[dict[str, Any]], str | None, dict[str, Any]]:
         readiness = self.build_retrieval_readiness(
             knowledge_base_ids=knowledge_base_ids,
@@ -862,7 +863,7 @@ class PlatformKnowledgeResponseService:
                     agent_run_id=agent_run_id,
                 )
 
-        if len(hits) < top_k:
+        if allow_dev_fallback and len(hits) < top_k:
             seen = {
                 (
                     str(hit.get("knowledge_base_id") or ""),

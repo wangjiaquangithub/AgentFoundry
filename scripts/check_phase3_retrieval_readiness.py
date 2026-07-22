@@ -106,6 +106,23 @@ async def main() -> None:
     assert production_ready["production_hit_count"] == 0
     assert production_ready["dev_fallback_hit_count"] == 1
 
+    production_hits, _, production_only = await service.search_agent_knowledge_bases(
+        knowledge_base_service=EmptyProductionKnowledge(),
+        dev_knowledge_service=DevKnowledge(),
+        dev_knowledge_provider="agentfoundry-dev-local",
+        user_id="acme:alice",
+        tenant="acme",
+        question="No matching terms",
+        knowledge_base_ids=["kb_support"],
+        allow_dev_fallback=False,
+    )
+    assert production_hits == []
+    assert production_only["status"] == "ready"
+    assert production_only["production_retriever_available"] is True
+    assert production_only["production_hit_count"] == 0
+    assert production_only["dev_fallback_hit_count"] == 0
+    assert production_only["dev_fallback_used"] is False
+
     production_hits, _, production_ready = await service.search_agent_knowledge_bases(
         knowledge_base_service=ProductionKnowledge(),
         dev_knowledge_service=DevKnowledge(),
