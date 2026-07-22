@@ -644,6 +644,22 @@ def _check_postgres_runtime_invocation_writes_wired() -> list[str]:
         errors.append(
             "backend/services/agent_runs.py must call the runtime invocation writer",
         )
+    runtime_persistence_source = (PERSISTENCE_DIR / "runtime_records.py").read_text(
+        encoding="utf-8",
+    )
+    for token in (
+        "def append_invocation(",
+        ") -> RuntimeInvocationRecord:",
+        "RETURNING id, tenant_id, provider_id, agent_run_id",
+        "row = cursor.fetchone()",
+        "Runtime invocation upsert did not return a row.",
+        "return _invocation_from_row(dict(row))",
+    ):
+        if token not in runtime_persistence_source:
+            errors.append(
+                "backend/persistence/runtime_records.py must return persisted "
+                f"PostgreSQL runtime invocation write records: {token}",
+            )
 
     return errors
 

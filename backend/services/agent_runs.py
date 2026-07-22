@@ -23,7 +23,10 @@ class ToolCallWriteRepositoryProtocol(Protocol):
 class RuntimeInvocationWriteRepositoryProtocol(Protocol):
     """Persistence boundary for production runtime invocation evidence."""
 
-    def append_invocation(self, record: RuntimeInvocationRecord) -> None:
+    def append_invocation(
+        self,
+        record: RuntimeInvocationRecord,
+    ) -> RuntimeInvocationRecord:
         """Persist one tenant-scoped runtime invocation record."""
 
 

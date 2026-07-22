@@ -324,7 +324,10 @@ class PostgresRuntimeWriteRepository:
     def __init__(self, database: PostgresDatabase) -> None:
         self._database = database
 
-    def append_invocation(self, record: RuntimeInvocationRecord) -> None:
+    def append_invocation(
+        self,
+        record: RuntimeInvocationRecord,
+    ) -> RuntimeInvocationRecord:
         with self._database.transaction() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
@@ -339,7 +342,21 @@ class PostgresRuntimeWriteRepository:
                       %s, %s, %s, %s,
                       %s, %s, %s
                     )
-                    ON CONFLICT (id) DO NOTHING
+                    ON CONFLICT (id) DO UPDATE SET
+                      tenant_id = EXCLUDED.tenant_id,
+                      provider_id = EXCLUDED.provider_id,
+                      agent_run_id = EXCLUDED.agent_run_id,
+                      request_summary = EXCLUDED.request_summary,
+                      response_summary = EXCLUDED.response_summary,
+                      provider_run_id = EXCLUDED.provider_run_id,
+                      latency_ms = EXCLUDED.latency_ms,
+                      token_usage = EXCLUDED.token_usage,
+                      error = EXCLUDED.error,
+                      created_at = EXCLUDED.created_at,
+                      completed_at = EXCLUDED.completed_at
+                    RETURNING id, tenant_id, provider_id, agent_run_id,
+                      request_summary, response_summary, provider_run_id,
+                      latency_ms, token_usage, error, created_at, completed_at
                     """,
                     (
                         record.id,
@@ -376,3 +393,7 @@ class PostgresRuntimeWriteRepository:
                         record.completed_at,
                     ),
                 )
+                row = cursor.fetchone()
+        if row is None:
+            raise ValueError("Runtime invocation upsert did not return a row.")
+        return _invocation_from_row(dict(row))
