@@ -96,9 +96,16 @@ def _resolve_tenant(
     request: Request,
     tenant_hint_from_user_id: Callable[[str], str | None],
 ) -> str:
-    tenant_id = tenant or tenant_hint_from_user_id(
-        request.headers.get("X-User-ID") or "",
-    )
+    explicit_tenant = (tenant or "").strip()
+    user_id = request.headers.get("X-User-ID") or ""
+    hinted_tenant = tenant_hint_from_user_id(user_id)
+    if explicit_tenant and hinted_tenant and explicit_tenant != hinted_tenant:
+        raise HTTPException(
+            status_code=403,
+            detail="tenant does not match X-User-ID tenant boundary.",
+        )
+
+    tenant_id = explicit_tenant or hinted_tenant
     if not tenant_id:
         raise HTTPException(
             status_code=400,

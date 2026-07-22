@@ -246,11 +246,30 @@ def assert_pg_agent_catalog_requires_tenant_scope() -> None:
             raise AssertionError(f"PostgreSQL {method_name} allowed unscoped reads.")
 
 
+def assert_knowledge_api_rejects_tenant_mismatch() -> None:
+    source = (BACKEND_DIR / "api" / "knowledge.py").read_text(encoding="utf-8")
+    required_fragments = (
+        "explicit_tenant and hinted_tenant",
+        "explicit_tenant != hinted_tenant",
+        "status_code=403",
+        "tenant does not match X-User-ID tenant boundary",
+    )
+    missing_fragments = [
+        fragment for fragment in required_fragments if fragment not in source
+    ]
+    if missing_fragments:
+        raise AssertionError(
+            "Knowledge API tenant mismatch guard is incomplete: "
+            + ", ".join(missing_fragments),
+        )
+
+
 def main() -> None:
     assert_agent_list_is_tenant_scoped()
     assert_cross_tenant_runtime_access_is_denied()
     assert_access_scope_rejects_other_tenant_users()
     assert_pg_agent_catalog_requires_tenant_scope()
+    assert_knowledge_api_rejects_tenant_mismatch()
     print("Phase 6 tenant access boundary contract passed.")
 
 
