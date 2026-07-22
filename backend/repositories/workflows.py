@@ -97,11 +97,12 @@ class WorkflowRunRepository:
                 break
         return records
 
-    def append(self, record: dict[str, Any]) -> None:
+    def append(self, record: dict[str, Any]) -> dict[str, Any]:
         self._path.parent.mkdir(parents=True, exist_ok=True)
         with self._path.open("a", encoding="utf-8") as file:
             file.write(json.dumps(record, ensure_ascii=False, default=str))
             file.write("\n")
+        return record
 
 
 class WorkflowRunRepositoryProtocol(Protocol):
@@ -118,7 +119,7 @@ class WorkflowRunRepositoryProtocol(Protocol):
     ) -> list[dict[str, Any]]:
         ...
 
-    def append(self, record: dict[str, Any]) -> None:
+    def append(self, record: dict[str, Any]) -> dict[str, Any]:
         ...
 
 
@@ -168,11 +169,14 @@ class PostgresWorkflowRunReadThroughRepository:
             ]
         return postgres_records[: _clamp_limit(limit)]
 
-    def append(self, record: dict[str, Any]) -> None:
+    def append(self, record: dict[str, Any]) -> dict[str, Any]:
         if not record.get("tenant"):
             raise ValueError("PostgreSQL workflow run writes require tenant context.")
 
-        self._postgres_writer.append_run(_platform_record_to_postgres_run(record))
+        persisted_record = self._postgres_writer.append_run(
+            _platform_record_to_postgres_run(record),
+        )
+        return _postgres_run_to_platform_record(persisted_record)
 
 
 def _postgres_run_to_platform_record(record: WorkflowRunRecord) -> dict[str, Any]:

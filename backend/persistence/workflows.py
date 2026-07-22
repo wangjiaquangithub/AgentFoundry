@@ -323,7 +323,7 @@ class PostgresWorkflowWriteRepository:
     def __init__(self, database: PostgresDatabase) -> None:
         self._database = database
 
-    def append_run(self, record: WorkflowRunRecord) -> None:
+    def append_run(self, record: WorkflowRunRecord) -> WorkflowRunRecord:
         with self._database.transaction() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
@@ -338,6 +338,22 @@ class PostgresWorkflowWriteRepository:
                       %s, %s, %s, %s, %s,
                       %s, %s, %s
                     )
+                    ON CONFLICT (id) DO UPDATE SET
+                      tenant_id = EXCLUDED.tenant_id,
+                      workflow_template_id = EXCLUDED.workflow_template_id,
+                      user_id = EXCLUDED.user_id,
+                      triggered_by = EXCLUDED.triggered_by,
+                      status = EXCLUDED.status,
+                      input = EXCLUDED.input,
+                      inputs = EXCLUDED.inputs,
+                      output = EXCLUDED.output,
+                      outputs = EXCLUDED.outputs,
+                      error = EXCLUDED.error,
+                      created_at = EXCLUDED.created_at,
+                      completed_at = EXCLUDED.completed_at
+                    RETURNING id, tenant_id, workflow_template_id, user_id,
+                      triggered_by, status, input, inputs, output, outputs,
+                      error, created_at, completed_at
                     """,
                     (
                         record.id,
@@ -371,3 +387,7 @@ class PostgresWorkflowWriteRepository:
                         record.completed_at,
                     ),
                 )
+                row = cursor.fetchone()
+        if row is None:
+            raise ValueError("Workflow run upsert did not return a row.")
+        return _run_from_row(dict(row))

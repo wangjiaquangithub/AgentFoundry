@@ -1097,6 +1097,20 @@ def _check_postgres_workflow_runs_wired() -> list[str]:
                 f"{token}",
             )
 
+    for token in (
+        "def append_run(",
+        ") -> WorkflowRunRecord:",
+        "RETURNING id, tenant_id, workflow_template_id, user_id",
+        "row = cursor.fetchone()",
+        "Workflow run upsert did not return a row.",
+        "return _run_from_row(dict(row))",
+    ):
+        if token not in workflow_persistence_source:
+            errors.append(
+                "backend/persistence/workflows.py must return persisted PostgreSQL "
+                f"workflow run write records: {token}",
+            )
+
     return errors
 
 
