@@ -267,6 +267,13 @@ class PostgresApprovalReadThroughRepository:
             )
             if updated is None:
                 return None
+            _validate_decision_result(
+                postgres_record,
+                updated,
+                status=status,
+                approved_by=decided_by,
+                resolved_at=decided_at,
+            )
             return _postgres_approval_to_platform_record(updated)
 
         return None
@@ -318,6 +325,23 @@ def _validate_write_result(
         raise ValueError("PostgreSQL approval write returned another target type.")
     if persisted.target_id != requested.target_id:
         raise ValueError("PostgreSQL approval write returned another target.")
+
+
+def _validate_decision_result(
+    requested: ApprovalRecord,
+    persisted: ApprovalRecord,
+    *,
+    status: str,
+    approved_by: str,
+    resolved_at: str,
+) -> None:
+    _validate_write_result(requested, persisted)
+    if persisted.status != status:
+        raise ValueError("PostgreSQL approval decision returned another status.")
+    if persisted.approved_by != approved_by:
+        raise ValueError("PostgreSQL approval decision returned another approver.")
+    if persisted.resolved_at != resolved_at:
+        raise ValueError("PostgreSQL approval decision returned another resolution time.")
 
 
 def _platform_record_to_postgres_approval(record: dict[str, Any]) -> ApprovalRecord:

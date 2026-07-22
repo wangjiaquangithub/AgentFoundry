@@ -1397,6 +1397,10 @@ def _check_postgres_approval_requests_wired() -> list[str]:
         )
     for token in (
         "_validate_write_result(postgres_record, persisted_record)",
+        "_validate_decision_result(",
+        "PostgreSQL approval decision returned another status.",
+        "PostgreSQL approval decision returned another approver.",
+        "PostgreSQL approval decision returned another resolution time.",
         "PostgreSQL approval write did not return an approval id.",
         "PostgreSQL approval write did not return a tenant id.",
         "PostgreSQL approval write did not return a request type.",
