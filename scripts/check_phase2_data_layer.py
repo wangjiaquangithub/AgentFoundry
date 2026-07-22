@@ -591,6 +591,28 @@ def _check_postgres_data_workflow_documented() -> list[str]:
     return errors
 
 
+def _check_readme_does_not_promote_local_files_as_production_data_layer() -> list[str]:
+    errors: list[str] = []
+    readme_source = README.read_text(encoding="utf-8")
+    normalized_readme_source = " ".join(readme_source.lower().split())
+    disallowed_patterns = [
+        r"json/jsonl[^.]{0,80}production (?:storage|data layer|database)",
+        r"jsonl[^.]{0,80}production (?:storage|data layer|database)",
+        r"production (?:storage|data layer|database)[^.]{0,80}json/jsonl",
+        r"production (?:storage|data layer|database)[^.]{0,80}jsonl",
+        r"local json/jsonl files are production",
+        r"local jsonl files are production",
+    ]
+    for pattern in disallowed_patterns:
+        if re.search(pattern, normalized_readme_source):
+            errors.append(
+                "README.md must not present local JSON/JSONL files as the production data layer: "
+                f"{pattern}",
+            )
+
+    return errors
+
+
 def _check_postgres_write_transaction_boundary() -> list[str]:
     errors: list[str] = []
 
@@ -3110,6 +3132,7 @@ def main() -> int:
         *_check_postgres_url_detection_boundary(),
         *_check_postgres_seed_path(),
         *_check_postgres_data_workflow_documented(),
+        *_check_readme_does_not_promote_local_files_as_production_data_layer(),
         *_check_postgres_write_transaction_boundary(),
         *_check_postgres_read_tenant_boundary(),
         *_check_postgres_runtime_provider_reads_wired(),
@@ -3168,6 +3191,7 @@ def main() -> int:
     print("- PostgreSQL URL detection centralized: yes")
     print("- PostgreSQL seed path guarded: yes")
     print("- PostgreSQL data workflow documented: yes")
+    print("- local JSON/JSONL production-data wording guarded: yes")
     print("- PostgreSQL write transaction boundary guarded: yes")
     print("- PostgreSQL read tenant boundary guarded: yes")
     print("- PostgreSQL runtime provider reads wired: yes")
