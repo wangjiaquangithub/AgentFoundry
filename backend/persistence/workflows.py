@@ -70,6 +70,46 @@ def _run_from_row(row: dict[str, Any]) -> WorkflowRunRecord:
     )
 
 
+def _validate_write_result(
+    requested: WorkflowRunRecord,
+    persisted: WorkflowRunRecord,
+) -> None:
+    if not persisted.id:
+        raise ValueError("PostgreSQL workflow run write did not return a run id.")
+    if not persisted.tenant_id:
+        raise ValueError("PostgreSQL workflow run write did not return a tenant id.")
+    if not persisted.workflow_template_id:
+        raise ValueError(
+            "PostgreSQL workflow run write did not return a workflow template id.",
+        )
+    if not persisted.user_id:
+        raise ValueError("PostgreSQL workflow run write did not return a user id.")
+    if persisted.id != requested.id:
+        raise ValueError("PostgreSQL workflow run write returned another run.")
+    if persisted.tenant_id != requested.tenant_id:
+        raise ValueError("PostgreSQL workflow run write returned another tenant.")
+    if persisted.workflow_template_id != requested.workflow_template_id:
+        raise ValueError(
+            "PostgreSQL workflow run write returned another workflow template.",
+        )
+    if persisted.user_id != requested.user_id:
+        raise ValueError("PostgreSQL workflow run write returned another user.")
+    if persisted.status != requested.status:
+        raise ValueError("PostgreSQL workflow run write returned another status.")
+    if persisted.input != requested.input:
+        raise ValueError("PostgreSQL workflow run write returned another input.")
+    if persisted.output != requested.output:
+        raise ValueError("PostgreSQL workflow run write returned another output.")
+    if persisted.error != requested.error:
+        raise ValueError("PostgreSQL workflow run write returned another error.")
+    if persisted.created_at != requested.created_at:
+        raise ValueError("PostgreSQL workflow run write returned another created time.")
+    if persisted.completed_at != requested.completed_at:
+        raise ValueError(
+            "PostgreSQL workflow run write returned another completed time.",
+        )
+
+
 def _postgres_run_projection() -> str:
     return """
         id, tenant_id, workflow_template_id, triggered_by AS user_id, status,
@@ -390,4 +430,6 @@ class PostgresWorkflowWriteRepository:
                 row = cursor.fetchone()
         if row is None:
             raise ValueError("Workflow run upsert did not return a row.")
-        return _run_from_row(dict(row))
+        persisted = _run_from_row(dict(row))
+        _validate_write_result(record, persisted)
+        return persisted

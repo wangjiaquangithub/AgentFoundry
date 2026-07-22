@@ -1178,7 +1178,22 @@ def _check_postgres_workflow_runs_wired() -> list[str]:
         "RETURNING id, tenant_id, workflow_template_id, user_id",
         "row = cursor.fetchone()",
         "Workflow run upsert did not return a row.",
-        "return _run_from_row(dict(row))",
+        "_validate_write_result(record, persisted)",
+        "PostgreSQL workflow run write did not return a run id.",
+        "PostgreSQL workflow run write did not return a tenant id.",
+        "PostgreSQL workflow run write did not return a workflow template id.",
+        "PostgreSQL workflow run write did not return a user id.",
+        "PostgreSQL workflow run write returned another run.",
+        "PostgreSQL workflow run write returned another tenant.",
+        "PostgreSQL workflow run write returned another workflow template.",
+        "PostgreSQL workflow run write returned another user.",
+        "PostgreSQL workflow run write returned another status.",
+        "PostgreSQL workflow run write returned another input.",
+        "PostgreSQL workflow run write returned another output.",
+        "PostgreSQL workflow run write returned another error.",
+        "PostgreSQL workflow run write returned another created time.",
+        "PostgreSQL workflow run write returned another completed time.",
+        "return persisted",
     ):
         if token not in workflow_persistence_source:
             errors.append(
