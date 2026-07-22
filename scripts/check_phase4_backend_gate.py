@@ -42,6 +42,10 @@ CHECKS = (
             "scripts/check_phase4_adapter_pending_result_persistence.py",
         ),
     ),
+    (
+        "runtime adapter API contract",
+        (sys.executable, "scripts/check_phase4_runtime_api_contract.py"),
+    ),
 )
 
 
