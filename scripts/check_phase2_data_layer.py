@@ -1529,7 +1529,8 @@ def _check_postgres_approval_requests_wired() -> list[str]:
         "RETURNING id, tenant_id, request_type, target_type, target_id",
         "row = cursor.fetchone()",
         "Approval insert did not return a row.",
-        "return _approval_from_row(dict(row))",
+        "_validate_write_result(record, persisted)",
+        "return persisted",
     ):
         if token not in approval_persistence_source:
             errors.append(

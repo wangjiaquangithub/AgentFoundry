@@ -58,6 +58,46 @@ def _object_from_json(
     return parsed
 
 
+def _validate_write_result(
+    requested: ApprovalRecord,
+    persisted: ApprovalRecord,
+) -> None:
+    if not persisted.id:
+        raise ValueError("PostgreSQL approval write did not return an approval id.")
+    if not persisted.tenant_id:
+        raise ValueError("PostgreSQL approval write did not return a tenant id.")
+    if not persisted.request_type:
+        raise ValueError("PostgreSQL approval write did not return a request type.")
+    if not persisted.target_type:
+        raise ValueError("PostgreSQL approval write did not return a target type.")
+    if not persisted.target_id:
+        raise ValueError("PostgreSQL approval write did not return a target id.")
+    if persisted.id != requested.id:
+        raise ValueError("PostgreSQL approval write returned another approval.")
+    if persisted.tenant_id != requested.tenant_id:
+        raise ValueError("PostgreSQL approval write returned another tenant.")
+    if persisted.request_type != requested.request_type:
+        raise ValueError("PostgreSQL approval write returned another request type.")
+    if persisted.target_type != requested.target_type:
+        raise ValueError("PostgreSQL approval write returned another target type.")
+    if persisted.target_id != requested.target_id:
+        raise ValueError("PostgreSQL approval write returned another target.")
+    if persisted.status != requested.status:
+        raise ValueError("PostgreSQL approval write returned another status.")
+    if persisted.requested_by != requested.requested_by:
+        raise ValueError("PostgreSQL approval write returned another requester.")
+    if persisted.approved_by != requested.approved_by:
+        raise ValueError("PostgreSQL approval write returned another approver.")
+    if persisted.reason != requested.reason:
+        raise ValueError("PostgreSQL approval write returned another reason.")
+    if persisted.payload != requested.payload:
+        raise ValueError("PostgreSQL approval write returned another payload.")
+    if persisted.created_at != requested.created_at:
+        raise ValueError("PostgreSQL approval write returned another created time.")
+    if persisted.resolved_at != requested.resolved_at:
+        raise ValueError("PostgreSQL approval write returned another resolved time.")
+
+
 class SQLiteApprovalReadRepository:
     """Read tenant-scoped approval records from SQLite."""
 
@@ -285,7 +325,9 @@ class PostgresApprovalWriteRepository:
                 row = cursor.fetchone()
         if row is None:
             raise ValueError("Approval insert did not return a row.")
-        return _approval_from_row(dict(row))
+        persisted = _approval_from_row(dict(row))
+        _validate_write_result(record, persisted)
+        return persisted
 
     def update_approval_status(
         self,
