@@ -161,6 +161,49 @@ def _assert_pg_provider_config_ref_gate() -> None:
         raise AssertionError("runtime provider status must not expose config_ref value")
 
 
+def _assert_pg_provider_config_ref_not_passed_to_gate() -> None:
+    import services.platform_status as platform_status
+
+    secret_ref = "secret://agentscope/runtime-token"
+    captured_metadata: dict[str, Any] | None = None
+    original_gate = platform_status.describe_provider_native_invocation_config_gate
+
+    def capture_gate(agent_metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+        nonlocal captured_metadata
+        captured_metadata = agent_metadata
+        return original_gate(agent_metadata)
+
+    platform_status.describe_provider_native_invocation_config_gate = capture_gate
+    try:
+        gate = platform_status.PlatformStatusService._runtime_provider_native_invocation(
+            ProviderRecord(
+                id="agentscope-platform-adapter",
+                name="AgentScope Platform Adapter",
+                provider_type="agentscope",
+                mode="local-service",
+                status="active",
+                capabilities={"tenant_context": True, "tool_routing": True},
+                config_ref=secret_ref,
+            ),
+        )
+    finally:
+        platform_status.describe_provider_native_invocation_config_gate = original_gate
+
+    if gate.get("configured_keys") != ["agentscope_runtime_auth_ref"]:
+        raise AssertionError(f"config ref should mark auth ref configured: {gate}")
+    if captured_metadata is None:
+        raise AssertionError("runtime provider gate metadata was not captured")
+    if secret_ref in repr(captured_metadata):
+        raise AssertionError("config_ref value must not be passed into runtime gate")
+    config = captured_metadata.get("runtime_provider_config")
+    if not isinstance(config, dict):
+        raise AssertionError(f"runtime provider config metadata missing: {captured_metadata}")
+    if config.get("agentscope_runtime_auth_ref") != "<configured>":
+        raise AssertionError(
+            f"runtime provider gate should receive only configured sentinel: {config}",
+        )
+
+
 def _assert_pg_provider_without_config_ref_gate() -> None:
     runtime_provider = _runtime_provider_snapshot(
         ProviderRecord(
@@ -188,6 +231,7 @@ def _assert_pg_provider_without_config_ref_gate() -> None:
 
 def main() -> int:
     _assert_pg_provider_config_ref_gate()
+    _assert_pg_provider_config_ref_not_passed_to_gate()
     _assert_pg_provider_without_config_ref_gate()
     print("Phase 4 runtime provider status config gate passed.")
     return 0

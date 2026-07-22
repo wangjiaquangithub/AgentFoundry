@@ -9,6 +9,7 @@ from runtime import describe_provider_native_invocation_config_gate
 
 
 LOGGER = logging.getLogger(__name__)
+CONFIGURED_RUNTIME_PROVIDER_REF = "<configured>"
 
 
 class AuditEventReadRepository(Protocol):
@@ -488,8 +489,10 @@ class PlatformStatusService:
     def _runtime_provider_native_invocation(provider: Any) -> dict[str, Any]:
         config_ref = str(getattr(provider, "config_ref", "") or "")
         runtime_provider_config = {}
-        if config_ref:
-            runtime_provider_config["agentscope_runtime_auth_ref"] = config_ref
+        if config_ref.strip():
+            runtime_provider_config["agentscope_runtime_auth_ref"] = (
+                CONFIGURED_RUNTIME_PROVIDER_REF
+            )
         return describe_provider_native_invocation_config_gate(
             {"runtime_provider_config": runtime_provider_config},
         )
