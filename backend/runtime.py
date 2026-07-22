@@ -235,6 +235,17 @@ class RuntimeAdapter(Protocol):
         ...
 
 
+class RuntimeProviderInvocationClient(Protocol):
+    """Provider-native runtime invocation client behind the adapter boundary."""
+
+    async def invoke(
+        self,
+        envelope: Mapping[str, Any],
+    ) -> Mapping[str, Any]:
+        """Invoke the provider-native runtime with a platform-owned envelope."""
+        ...
+
+
 @dataclass(frozen=True)
 class AgentScopeRuntimeAdapter:
     """AgentScope provider metadata and future invocation boundary."""
@@ -245,6 +256,7 @@ class AgentScopeRuntimeAdapter:
     mode: str
     description: str
     capabilities: tuple[RuntimeCapability, ...]
+    provider_client: RuntimeProviderInvocationClient | None = None
 
     def describe(self, agent_metadata: dict[str, Any] | None = None) -> dict[str, Any]:
         """Return provider metadata suitable for API responses."""
@@ -272,23 +284,34 @@ class AgentScopeRuntimeAdapter:
         config_gate = describe_provider_native_invocation_config_gate(
             agent_metadata,
         )
+        provider_invocation_wired = self.provider_client is not None
+        ready = config_gate["ready"] and provider_invocation_wired
+        if ready:
+            status = "ready"
+            message = (
+                "Runtime adapter boundary is configured and provider-native "
+                "AgentScope invocation is wired through AgentFoundry."
+            )
+        else:
+            status = "degraded"
+            message = (
+                "Runtime adapter boundary is configured and the AgentFoundry "
+                "local service completion path is available; provider-native "
+                "AgentScope invocation remains pending."
+            )
         return RuntimeProviderHealth(
             provider_id=self.id,
             provider=self.provider,
             mode=self.mode,
-            status="degraded",
-            ready=False,
-            message=(
-                "Runtime adapter boundary is configured and the AgentFoundry "
-                "local service completion path is available; provider-native "
-                "AgentScope invocation remains pending."
-            ),
+            status=status,
+            ready=ready,
+            message=message,
             capabilities=tuple(capability.id for capability in self.capabilities),
             checks={
                 "adapter_configured": True,
                 "local_service_completion_wired": True,
                 "provider_native_config_ready": config_gate["ready"],
-                "provider_invocation_wired": False,
+                "provider_invocation_wired": provider_invocation_wired,
                 "direct_agentscope_dependency": False,
             },
         ).to_dict()
@@ -307,51 +330,17 @@ class AgentScopeRuntimeAdapter:
         runtime_adapter = self.describe(
             _runtime_agent_metadata_from_request(request),
         )
-        error = (
-            "AgentScope provider invocation is pending adapter wiring; "
-            "current platform runs still execute through the AgentFoundry local "
-            "service path."
-        )
-        raw = {
-            "runtime_bridge": {
-                "type": "agentscope_adapter_invocation_pending",
-                "provider_invocation_wired": False,
-                "provider_native_invocation": runtime_adapter[
-                    "provider_native_invocation"
-                ],
-                "adapter_id": self.id,
-            },
-            "request": _runtime_invocation_request_audit_payload(request),
-        }
-        payload = build_runtime_invocation_error_result_payload(
-            error=error,
-            evidence={
-                "tenant": request.context.tenant,
-                "user_id": request.context.user_id,
-                "session_id": request.context.session_id,
-                "agent_id": request.context.agent_id,
-                "agent_name": request.context.agent_name,
-            },
+        if self.provider_client is not None:
+            return await _invoke_agentscope_provider_client(
+                provider_client=self.provider_client,
+                request=request,
+                runtime_adapter=runtime_adapter,
+            )
+
+        return _build_agentscope_pending_invocation_result(
+            adapter=self,
+            request=request,
             runtime_adapter=runtime_adapter,
-            runtime_invocation_id=(request.metadata or {}).get("runtime_invocation_id"),
-            raw=raw,
-        )
-        normalized = normalize_runtime_invocation_result(payload, runtime_adapter)
-        return RuntimeInvocationResult(
-            answer=normalized["answer"],
-            status=normalized["status"],
-            evidence=normalized["evidence"],
-            provider_id=normalized["provider_id"],
-            provider=normalized["provider"],
-            mode=normalized["mode"],
-            runtime_invocation_id=normalized.get("runtime_invocation_id"),
-            agent_run_id=normalized.get("agent_run_id"),
-            provider_run_id=normalized.get("provider_run_id"),
-            completed_at=normalized.get("completed_at"),
-            latency_ms=normalized.get("latency_ms"),
-            token_usage=normalized.get("token_usage"),
-            error=normalized.get("error"),
-            raw=normalized["raw"],
         )
 
 
@@ -397,6 +386,133 @@ AGENTSCOPE_PLATFORM_ADAPTER = AgentScopeRuntimeAdapter(
         ),
     ),
 )
+
+
+def _build_agentscope_pending_invocation_result(
+    *,
+    adapter: AgentScopeRuntimeAdapter,
+    request: RuntimeInvocationRequest,
+    runtime_adapter: dict[str, Any],
+) -> RuntimeInvocationResult:
+    """Build the default pending result while provider invocation is unwired."""
+    error = (
+        "AgentScope provider invocation is pending adapter wiring; "
+        "current platform runs still execute through the AgentFoundry local "
+        "service path."
+    )
+    raw = {
+        "runtime_bridge": {
+            "type": "agentscope_adapter_invocation_pending",
+            "provider_invocation_wired": False,
+            "provider_native_invocation": runtime_adapter[
+                "provider_native_invocation"
+            ],
+            "adapter_id": adapter.id,
+        },
+        "request": _runtime_invocation_request_audit_payload(request),
+    }
+    payload = build_runtime_invocation_error_result_payload(
+        error=error,
+        evidence=_runtime_invocation_evidence_from_request(request),
+        runtime_adapter=runtime_adapter,
+        runtime_invocation_id=(request.metadata or {}).get("runtime_invocation_id"),
+        raw=raw,
+    )
+    normalized = normalize_runtime_invocation_result(payload, runtime_adapter)
+    return RuntimeInvocationResult(
+        answer=normalized["answer"],
+        status=normalized["status"],
+        evidence=normalized["evidence"],
+        provider_id=normalized["provider_id"],
+        provider=normalized["provider"],
+        mode=normalized["mode"],
+        runtime_invocation_id=normalized.get("runtime_invocation_id"),
+        agent_run_id=normalized.get("agent_run_id"),
+        provider_run_id=normalized.get("provider_run_id"),
+        completed_at=normalized.get("completed_at"),
+        latency_ms=normalized.get("latency_ms"),
+        token_usage=normalized.get("token_usage"),
+        error=normalized.get("error"),
+        raw=normalized["raw"],
+    )
+
+
+async def _invoke_agentscope_provider_client(
+    *,
+    provider_client: RuntimeProviderInvocationClient,
+    request: RuntimeInvocationRequest,
+    runtime_adapter: dict[str, Any],
+) -> RuntimeInvocationResult:
+    """Invoke an injected AgentScope provider client and normalize the result."""
+    config_gate = runtime_adapter["provider_native_invocation"]
+    if not config_gate["ready"]:
+        error = (
+            "AgentScope provider invocation requires configured runtime URL "
+            "and auth reference before provider-native execution can run."
+        )
+        raw = {
+            "runtime_bridge": {
+                "type": "agentscope_provider_native_config_blocked",
+                "provider_invocation_wired": True,
+                "provider_native_invocation": config_gate,
+                "adapter_id": runtime_adapter["id"],
+            },
+            "request": _runtime_invocation_request_audit_payload(request),
+        }
+        payload = build_runtime_invocation_error_result_payload(
+            error=error,
+            evidence=_runtime_invocation_evidence_from_request(request),
+            runtime_adapter=runtime_adapter,
+            runtime_invocation_id=(request.metadata or {}).get("runtime_invocation_id"),
+            raw=raw,
+        )
+        normalized = normalize_runtime_invocation_result(payload, runtime_adapter)
+        return RuntimeInvocationResult(
+            answer=normalized["answer"],
+            status=normalized["status"],
+            evidence=normalized["evidence"],
+            provider_id=normalized["provider_id"],
+            provider=normalized["provider"],
+            mode=normalized["mode"],
+            runtime_invocation_id=normalized.get("runtime_invocation_id"),
+            agent_run_id=normalized.get("agent_run_id"),
+            provider_run_id=normalized.get("provider_run_id"),
+            completed_at=normalized.get("completed_at"),
+            latency_ms=normalized.get("latency_ms"),
+            token_usage=normalized.get("token_usage"),
+            error=normalized.get("error"),
+            raw=normalized["raw"],
+        )
+
+    envelope = build_agentscope_provider_native_invocation_envelope(
+        request=request,
+        runtime_adapter=runtime_adapter,
+    )
+    provider_response = await provider_client.invoke(envelope)
+    if not isinstance(provider_response, Mapping):
+        raise ValueError("AgentScope provider client must return an object.")
+
+    normalized = _normalize_agentscope_provider_client_response(
+        provider_response,
+        request=request,
+        runtime_adapter=runtime_adapter,
+    )
+    return RuntimeInvocationResult(
+        answer=normalized["answer"],
+        status=normalized["status"],
+        evidence=normalized["evidence"],
+        provider_id=normalized["provider_id"],
+        provider=normalized["provider"],
+        mode=normalized["mode"],
+        runtime_invocation_id=normalized.get("runtime_invocation_id"),
+        agent_run_id=normalized.get("agent_run_id"),
+        provider_run_id=normalized.get("provider_run_id"),
+        completed_at=normalized.get("completed_at"),
+        latency_ms=normalized.get("latency_ms"),
+        token_usage=normalized.get("token_usage"),
+        error=normalized.get("error"),
+        raw=normalized["raw"],
+    )
 
 
 def build_runtime_context(
@@ -513,6 +629,39 @@ def build_runtime_invocation_request_from_payload(
         memory_enabled=bool(payload.get("memory_enabled", False)),
         metadata=metadata,
     )
+
+
+def build_agentscope_provider_native_invocation_envelope(
+    *,
+    request: RuntimeInvocationRequest,
+    runtime_adapter: dict[str, Any],
+) -> dict[str, Any]:
+    """Build the platform-owned envelope for provider-native AgentScope calls."""
+    agent_metadata = _runtime_agent_metadata_from_request(request)
+    config = agent_metadata.get("runtime_provider_config")
+    if not isinstance(config, Mapping):
+        config = {}
+
+    config_gate = describe_provider_native_invocation_config_gate(agent_metadata)
+    if not config_gate["ready"]:
+        raise ValueError(
+            "AgentScope provider-native invocation requires runtime URL and auth reference.",
+        )
+
+    runtime_url = str(config["agentscope_runtime_url"]).strip()
+    auth_ref = str(config["agentscope_runtime_auth_ref"]).strip()
+    return {
+        "provider_id": runtime_adapter["id"],
+        "provider": runtime_adapter["provider"],
+        "mode": runtime_adapter["mode"],
+        "endpoint": runtime_url,
+        "auth_ref": auth_ref,
+        "request": request.to_dict(),
+        "audit": {
+            "provider_native_invocation": config_gate,
+            "request": _runtime_invocation_request_audit_payload(request),
+        },
+    }
 
 
 async def invoke_runtime_adapter_from_payload(
@@ -676,6 +825,65 @@ def build_adapter_backed_local_invocation_result_payload(
         token_usage=token_usage,
         error=error,
         raw=raw_payload,
+    )
+
+
+def _normalize_agentscope_provider_client_response(
+    provider_response: Mapping[str, Any],
+    *,
+    request: RuntimeInvocationRequest,
+    runtime_adapter: dict[str, Any],
+) -> dict[str, Any]:
+    status = str(provider_response.get("status") or "completed").strip()
+    evidence = provider_response.get("evidence")
+    if not isinstance(evidence, dict):
+        evidence = _runtime_invocation_evidence_from_request(request)
+
+    provider_raw = provider_response.get("raw")
+    raw_payload = {
+        "runtime_bridge": {
+            "type": "agentscope_provider_native_invocation",
+            "provider_invocation_wired": True,
+            "provider_native_invocation": runtime_adapter["provider_native_invocation"],
+            "adapter_id": runtime_adapter["id"],
+        },
+        "request": _runtime_invocation_request_audit_payload(request),
+        "provider_response": (
+            dict(provider_raw) if isinstance(provider_raw, Mapping) else {}
+        ),
+    }
+    runtime_invocation_id = _optional_provider_text(
+        provider_response.get("runtime_invocation_id"),
+    ) or (request.metadata or {}).get("runtime_invocation_id")
+    common = {
+        "evidence": evidence,
+        "runtime_adapter": runtime_adapter,
+        "runtime_invocation_id": runtime_invocation_id,
+        "agent_run_id": _optional_provider_text(provider_response.get("agent_run_id")),
+        "provider_run_id": _optional_provider_text(
+            provider_response.get("provider_run_id"),
+        ),
+        "completed_at": _optional_provider_text(provider_response.get("completed_at")),
+        "latency_ms": provider_response.get("latency_ms"),
+        "token_usage": provider_response.get("token_usage"),
+        "raw": raw_payload,
+    }
+    if status in RUNTIME_INVOCATION_FAILURE_STATUSES:
+        return build_runtime_invocation_error_result_payload(
+            answer=str(provider_response.get("answer") or ""),
+            status=status,
+            error=str(
+                provider_response.get("error")
+                or "AgentScope provider invocation failed.",
+            ),
+            **common,
+        )
+
+    return build_runtime_invocation_result_payload(
+        answer=str(provider_response.get("answer") or ""),
+        status=status,
+        error=_optional_provider_text(provider_response.get("error")),
+        **common,
     )
 
 
@@ -891,8 +1099,27 @@ def _optional_text(value: Any) -> str | None:
     return value
 
 
+def _optional_provider_text(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
 def _configured_config_value(value: Any) -> bool:
     return isinstance(value, str) and bool(value.strip())
+
+
+def _runtime_invocation_evidence_from_request(
+    request: RuntimeInvocationRequest,
+) -> dict[str, Any]:
+    return {
+        "tenant": request.context.tenant,
+        "user_id": request.context.user_id,
+        "session_id": request.context.session_id,
+        "agent_id": request.context.agent_id,
+        "agent_name": request.context.agent_name,
+    }
 
 
 def _runtime_invocation_request_with_agent_metadata(

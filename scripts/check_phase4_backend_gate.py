@@ -44,6 +44,13 @@ CHECKS = (
         (sys.executable, "scripts/check_phase4_runtime_invocation_error_contract.py"),
     ),
     (
+        "provider-native invocation client seam",
+        (
+            sys.executable,
+            "scripts/check_phase4_provider_native_invocation_client.py",
+        ),
+    ),
+    (
         "adapter invocation pending result",
         (
             sys.executable,
