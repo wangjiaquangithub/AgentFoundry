@@ -343,13 +343,13 @@ export function RunsViewPage({
 				}
 			/>
 
-			<section className="grid gap-0 border-y md:grid-cols-2 xl:grid-cols-4">
+			<section className="grid gap-0 border-y bg-muted/15 md:grid-cols-2 xl:grid-cols-4">
 				{monitoringStats.map((stat) => {
 					const StatIcon = stat.icon;
 					return (
 						<div
 							key={stat.label}
-							className="grid min-h-16 grid-cols-[1fr_auto] gap-3 border-b py-3 pr-4 last:border-b-0 md:odd:pr-5 md:even:border-l md:even:pl-5 xl:border-b-0 xl:border-l xl:first:border-l-0 xl:first:pl-0 xl:not(:first-child):pl-5"
+							className="grid min-h-16 grid-cols-[1fr_auto] gap-3 border-b bg-background/70 px-3 py-3 last:border-b-0 md:even:border-l xl:border-b-0 xl:border-l xl:first:border-l-0"
 						>
 							<div className="min-w-0">
 								<div className="truncate text-xs font-medium text-muted-foreground">
@@ -364,7 +364,7 @@ export function RunsViewPage({
 									</div>
 								) : null}
 							</div>
-							<div className="flex size-7 items-center justify-center rounded-md border bg-background">
+							<div className="flex size-7 items-center justify-center rounded-md border bg-background shadow-sm">
 								<StatIcon className="size-4 text-muted-foreground" />
 							</div>
 						</div>
@@ -372,9 +372,9 @@ export function RunsViewPage({
 				})}
 			</section>
 
-			<section className="grid min-h-[34rem] content-start gap-4">
+			<section className="grid min-h-[34rem] content-start">
 				<div className="grid min-w-0 content-start gap-3">
-					<div className="flex flex-col gap-3 border-b pb-3 lg:flex-row lg:items-start lg:justify-between">
+					<div className="flex flex-col gap-3 border-b py-3 lg:flex-row lg:items-start lg:justify-between">
 						<div className="min-w-0">
 							<div className="flex items-center gap-2">
 								<h2 className="text-base font-semibold">
@@ -395,7 +395,7 @@ export function RunsViewPage({
 								size="sm"
 								variant="outline"
 								onClick={onRunAgent}
-								className="justify-start"
+								className="justify-start sm:justify-center"
 							>
 								<BotMessageSquare className="size-4" />
 								{t('platform.monitoring.runAgent')}
@@ -405,7 +405,7 @@ export function RunsViewPage({
 								size="sm"
 								variant="default"
 								onClick={onRunWorkflow}
-								className="justify-start"
+								className="justify-start sm:justify-center"
 							>
 								<Workflow className="size-4" />
 								{t('platform.monitoring.runWorkflow')}
@@ -413,8 +413,8 @@ export function RunsViewPage({
 						</div>
 					</div>
 
-					<div className="grid gap-3">
-						<div className="grid overflow-hidden rounded-md border bg-background md:grid-cols-3">
+					<div className="overflow-hidden rounded-md border bg-background">
+						<div className="grid border-b bg-muted/20 md:grid-cols-3">
 						{operationalSummary.map((item) => {
 							const SummaryIcon = item.icon;
 							return (
@@ -428,7 +428,7 @@ export function RunsViewPage({
 										}
 									}}
 									className={cn(
-										'grid grid-cols-[1fr_auto] gap-3 border-b px-3 py-2.5 text-left transition-colors last:border-b-0 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:border-b-0 md:border-r md:last:border-r-0',
+										'grid grid-cols-[1fr_auto] gap-3 border-b px-3 py-2 text-left transition-colors last:border-b-0 hover:bg-background/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:border-b-0 md:border-r md:last:border-r-0',
 										item.tone,
 									)}
 								>
@@ -457,53 +457,53 @@ export function RunsViewPage({
 							onClear={resetRunFilters}
 							clearDisabled={!hasRunFilters}
 						>
-						<Select
-							value={runTypeFilter}
-							onValueChange={(value) =>
-								setRunTypeFilter(value as RunTypeFilter)
-							}
-						>
-							<SelectTrigger className="h-9 w-full">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="all">
-									{t('platform.monitoring.allTypes')}
-								</SelectItem>
-								<SelectItem value="agent">
-									{t('platform.monitoring.agentRunType')}
-								</SelectItem>
-								<SelectItem value="workflow">
-									{t('platform.monitoring.workflowRunType')}
-								</SelectItem>
-							</SelectContent>
-						</Select>
-						<Select
-							value={runStatusFilter}
-							onValueChange={(value) =>
-								setRunStatusFilter(value as RunStatusFilter)
-							}
-						>
-							<SelectTrigger className="h-9 w-full">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="all">
-									{t('platform.monitoring.allStatuses')}
-								</SelectItem>
-								{runStatuses.map((status) => (
-									<SelectItem key={status} value={status}>
-										{t(`platform.statuses.${status}`)}
+							<Select
+								value={runTypeFilter}
+								onValueChange={(value) =>
+									setRunTypeFilter(value as RunTypeFilter)
+								}
+							>
+								<SelectTrigger className="h-9 w-full">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="all">
+										{t('platform.monitoring.allTypes')}
 									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						<Input
-							className="h-9 md:col-span-2 xl:col-span-4"
-							value={runKeywordFilter}
-							onChange={(event) => setRunKeywordFilter(event.target.value)}
-							placeholder={t('platform.monitoring.keywordPlaceholder')}
-						/>
+									<SelectItem value="agent">
+										{t('platform.monitoring.agentRunType')}
+									</SelectItem>
+									<SelectItem value="workflow">
+										{t('platform.monitoring.workflowRunType')}
+									</SelectItem>
+								</SelectContent>
+							</Select>
+							<Select
+								value={runStatusFilter}
+								onValueChange={(value) =>
+									setRunStatusFilter(value as RunStatusFilter)
+								}
+							>
+								<SelectTrigger className="h-9 w-full">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="all">
+										{t('platform.monitoring.allStatuses')}
+									</SelectItem>
+									{runStatuses.map((status) => (
+										<SelectItem key={status} value={status}>
+											{t(`platform.statuses.${status}`)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							<Input
+								className="h-9 md:col-span-2 xl:col-span-4"
+								value={runKeywordFilter}
+								onChange={(event) => setRunKeywordFilter(event.target.value)}
+								placeholder={t('platform.monitoring.keywordPlaceholder')}
+							/>
 						</PlatformFilterBar>
 					</div>
 
@@ -519,94 +519,96 @@ export function RunsViewPage({
 					) : null}
 
 					{isInitialLoading ? (
-					<div className="overflow-hidden rounded-md border bg-background">
-						<div className="hidden grid-cols-[8rem_minmax(0,2fr)_minmax(8rem,0.8fr)_7rem_10rem_4.5rem] gap-3 border-b bg-muted/35 px-3 py-2 lg:grid">
-							<Skeleton className="h-4 w-14" />
-							<Skeleton className="h-4 w-28" />
-							<Skeleton className="h-4 w-16" />
-							<Skeleton className="h-4 w-20" />
-							<Skeleton className="h-4 w-16" />
-							<Skeleton className="ml-auto h-4 w-10" />
-						</div>
-						<div>
-							{[0, 1, 2, 3, 4].map((item) => (
-								<div
-									key={item}
-									className="grid gap-3 border-b px-3 py-3 last:border-b-0 lg:grid-cols-[8rem_minmax(0,2fr)_minmax(8rem,0.8fr)_7rem_10rem_4.5rem] lg:items-center"
-								>
-									<Skeleton className="h-7 w-24" />
-									<div className="grid gap-2">
-										<Skeleton className="h-4 w-3/4" />
-										<Skeleton className="h-3 w-1/2" />
-									</div>
-									<Skeleton className="h-6 w-20" />
-									<Skeleton className="h-4 w-24" />
-									<Skeleton className="h-4 w-28" />
-									<Skeleton className="ml-auto h-4 w-10" />
-								</div>
-							))}
-						</div>
-					</div>
-				) : hasInitialError ? (
-					<PlatformEmptyState
-						variant="error"
-						title={platformServiceUnavailableTitle}
-						description={normalizePlatformErrorMessage(monitoringError)}
-						actionLabel={t('platform.monitoring.refresh')}
-						onAction={() => void onRefreshMonitoring()}
-						className="min-h-80 rounded-md border border-dashed bg-background/80 p-6"
-					/>
-				) : runItems.length === 0 ? (
-					<PlatformEmptyState
-						variant="noData"
-						title={t('platform.monitoring.noRunsTitle')}
-						description={t('platform.monitoring.noRunsDescription')}
-						className="min-h-80 rounded-md border border-dashed bg-background/80 p-6"
-					/>
-				) : filteredRunItems.length === 0 ? (
-					<PlatformEmptyState
-						variant="filtered"
-						title={t('platform.ux.empty.filteredTitle')}
-						description={t('platform.ux.empty.filteredDescription')}
-						actionLabel={t('platform.ux.filters.clear')}
-						onAction={resetRunFilters}
-						className="min-h-80 rounded-md border border-dashed bg-background/80 p-6"
-					/>
-					) : (
-					<div className="overflow-hidden rounded-md border bg-background">
-						<div className="hidden grid-cols-[8rem_minmax(0,2.2fr)_minmax(8rem,0.8fr)_7rem_10rem_5rem] gap-3 border-b bg-muted/35 px-3 py-2 text-xs font-medium text-muted-foreground lg:grid">
-							<span>{t('platform.monitoring.filterStatus')}</span>
-							<span>{t('platform.monitoring.runObject')}</span>
-							<span>{t('platform.monitoring.agent')}</span>
-							<span>{t('platform.monitoring.duration')}</span>
-							<span>{t('platform.monitoring.updatedAt')}</span>
-							<span className="text-right">{t('platform.monitoring.actions')}</span>
-						</div>
-						<div>
-							{filteredRunItems.map((item) => {
-								const ItemIcon =
-									item.type === 'agent' ? BotMessageSquare : Workflow;
-								const isActive =
-									activeRun?.type === item.type && activeRun.id === item.id;
-								return (
-									<button
-										key={`${item.type}-${item.id}`}
-										type="button"
-										aria-label={t('platform.monitoring.inspectRun', {
-											name: item.title,
-										})}
-										onClick={() => {
-											setSelectedRun({ type: item.type, id: item.id });
-										}}
-										className={cn(
-											'grid w-full gap-3 border-b border-l-2 border-l-transparent px-3 py-3 text-left text-xs transition-colors last:border-b-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:grid-cols-[8rem_minmax(0,2.2fr)_minmax(8rem,0.8fr)_7rem_10rem_5rem] lg:items-center',
-											isActive
-												? 'border-l-primary bg-primary/5 text-foreground'
-												: item.status === 'failed'
-													? 'border-l-red-500 bg-background hover:bg-red-500/5'
-												: 'bg-background hover:bg-muted/50',
-										)}
+						<div className="overflow-hidden rounded-md border bg-background">
+							<div className="hidden grid-cols-[8rem_minmax(0,2fr)_minmax(8rem,0.8fr)_7rem_10rem_4.5rem] gap-3 border-b bg-muted/35 px-3 py-2 lg:grid">
+								<Skeleton className="h-4 w-14" />
+								<Skeleton className="h-4 w-28" />
+								<Skeleton className="h-4 w-16" />
+								<Skeleton className="h-4 w-20" />
+								<Skeleton className="h-4 w-16" />
+								<Skeleton className="ml-auto h-4 w-10" />
+							</div>
+							<div>
+								{[0, 1, 2, 3, 4].map((item) => (
+									<div
+										key={item}
+										className="grid gap-3 border-b px-3 py-3 last:border-b-0 lg:grid-cols-[8rem_minmax(0,2fr)_minmax(8rem,0.8fr)_7rem_10rem_4.5rem] lg:items-center"
 									>
+										<Skeleton className="h-7 w-24" />
+										<div className="grid gap-2">
+											<Skeleton className="h-4 w-3/4" />
+											<Skeleton className="h-3 w-1/2" />
+										</div>
+										<Skeleton className="h-6 w-20" />
+										<Skeleton className="h-4 w-24" />
+										<Skeleton className="h-4 w-28" />
+										<Skeleton className="ml-auto h-4 w-10" />
+									</div>
+								))}
+							</div>
+						</div>
+					) : hasInitialError ? (
+						<PlatformEmptyState
+							variant="error"
+							title={platformServiceUnavailableTitle}
+							description={normalizePlatformErrorMessage(monitoringError)}
+							actionLabel={t('platform.monitoring.refresh')}
+							onAction={() => void onRefreshMonitoring()}
+							className="min-h-80 rounded-md border border-dashed bg-background/80 p-6"
+						/>
+					) : runItems.length === 0 ? (
+						<PlatformEmptyState
+							variant="noData"
+							title={t('platform.monitoring.noRunsTitle')}
+							description={t('platform.monitoring.noRunsDescription')}
+							className="min-h-80 rounded-md border border-dashed bg-background/80 p-6"
+						/>
+					) : filteredRunItems.length === 0 ? (
+						<PlatformEmptyState
+							variant="filtered"
+							title={t('platform.ux.empty.filteredTitle')}
+							description={t('platform.ux.empty.filteredDescription')}
+							actionLabel={t('platform.ux.filters.clear')}
+							onAction={resetRunFilters}
+							className="min-h-80 rounded-md border border-dashed bg-background/80 p-6"
+						/>
+					) : (
+						<div className="overflow-hidden rounded-md border bg-background">
+							<div className="hidden grid-cols-[8rem_minmax(0,2.2fr)_minmax(8rem,0.8fr)_7rem_10rem_5rem] gap-3 border-b bg-muted/35 px-3 py-2 text-xs font-medium text-muted-foreground lg:grid">
+								<span>{t('platform.monitoring.filterStatus')}</span>
+								<span>{t('platform.monitoring.runObject')}</span>
+								<span>{t('platform.monitoring.agent')}</span>
+								<span>{t('platform.monitoring.duration')}</span>
+								<span>{t('platform.monitoring.updatedAt')}</span>
+								<span className="text-right">
+									{t('platform.monitoring.actions')}
+								</span>
+							</div>
+							<div>
+								{filteredRunItems.map((item) => {
+									const ItemIcon =
+										item.type === 'agent' ? BotMessageSquare : Workflow;
+									const isActive =
+										activeRun?.type === item.type && activeRun.id === item.id;
+									return (
+										<button
+											key={`${item.type}-${item.id}`}
+											type="button"
+											aria-label={t('platform.monitoring.inspectRun', {
+												name: item.title,
+											})}
+											onClick={() => {
+												setSelectedRun({ type: item.type, id: item.id });
+											}}
+											className={cn(
+												'grid w-full gap-3 border-b border-l-2 border-l-transparent px-3 py-3 text-left text-xs transition-colors last:border-b-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:grid-cols-[8rem_minmax(0,2.2fr)_minmax(8rem,0.8fr)_7rem_10rem_5rem] lg:items-center',
+												isActive
+													? 'border-l-primary bg-primary/5 text-foreground'
+													: item.status === 'failed'
+														? 'border-l-red-500 bg-background hover:bg-red-500/5'
+														: 'bg-background hover:bg-muted/50',
+											)}
+										>
 										<div className="flex items-center justify-between gap-3 lg:block">
 											<span className="text-muted-foreground lg:hidden">
 												{t('platform.monitoring.filterStatus')}
@@ -658,11 +660,11 @@ export function RunsViewPage({
 										<div className="hidden text-right font-medium text-primary lg:block">
 											{t('platform.monitoring.inspect')}
 										</div>
-									</button>
-								);
-							})}
+										</button>
+									);
+								})}
+							</div>
 						</div>
-					</div>
 					)}
 				</div>
 			</section>
