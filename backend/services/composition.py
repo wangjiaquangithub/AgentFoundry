@@ -44,7 +44,10 @@ from backend.repositories.agents import (
     AgentRepositoryProtocol,
     PostgresAgentCatalogWriteThroughRepository,
 )
-from backend.repositories.agent_runs import PostgresAgentRunReadThroughRepository
+from backend.repositories.agent_runs import (
+    AgentRunRepositoryProtocol,
+    PostgresAgentRunReadThroughRepository,
+)
 from backend.repositories.approvals import PostgresApprovalReadThroughRepository
 from backend.repositories.members import PostgresMemberReadThroughRepository
 from backend.repositories.workflows import PostgresWorkflowRunReadThroughRepository
@@ -276,6 +279,14 @@ def build_configured_postgres_agent_run_repository() -> (
         postgres_reader=PostgresAgentRunReadRepository(database),
         postgres_writer=PostgresAgentRunWriteRepository(database),
     )
+
+
+def build_agent_run_repository(
+    fallback_repository: AgentRunRepositoryProtocol,
+) -> AgentRunRepositoryProtocol:
+    """Select the configured production agent run repository."""
+
+    return build_configured_postgres_agent_run_repository() or fallback_repository
 
 
 def build_configured_postgres_approval_request_repository() -> (

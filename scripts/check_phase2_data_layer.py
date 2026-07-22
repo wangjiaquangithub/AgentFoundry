@@ -1985,6 +1985,7 @@ def _check_postgres_agent_runs_wired() -> list[str]:
     )
 
     required_composition_imports = [
+        "AgentRunRepositoryProtocol",
         "PostgresAgentRunReadRepository",
         "PostgresAgentRunWriteRepository",
         "PostgresAgentRunReadThroughRepository",
@@ -1996,17 +1997,20 @@ def _check_postgres_agent_runs_wired() -> list[str]:
                 f"{imported_name} for agent run PostgreSQL wiring",
             )
 
-    if not _module_defines_function(main_tree, "_build_agent_run_repository"):
+    if not _module_defines_function(composition_tree, "build_agent_run_repository"):
         errors.append(
-            "backend/main.py must define _build_agent_run_repository for PostgreSQL agent runs",
+            "backend/services/composition.py must define build_agent_run_repository for agent run repository selection",
         )
-    if "agent_run_repository = _build_agent_run_repository()" not in main_source:
+    if (
+        "agent_run_repository = build_agent_run_repository(agent_run_fallback_repository)"
+        not in main_source
+    ):
         errors.append(
-            "backend/main.py must build agent_run_repository through the PostgreSQL selector",
+            "backend/main.py must build agent_run_repository through the services.composition selector",
         )
-    if "build_configured_postgres_agent_run_repository()" not in main_source:
+    if "build_configured_postgres_agent_run_repository() or fallback_repository" not in composition_source:
         errors.append(
-            "backend/main.py must delegate agent run PostgreSQL wiring to services.composition",
+            "backend/services/composition.py must select PostgreSQL agent run storage before the fallback repository",
         )
     if not _module_defines_function(
         composition_tree,

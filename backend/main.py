@@ -111,7 +111,6 @@ from backend.persistence import (
 )
 from repositories.agent_runs import (
     AgentRunRepository,
-    AgentRunRepositoryProtocol,
 )
 from repositories.approvals import (
     ApprovalRequestRepository,
@@ -160,8 +159,8 @@ from services.knowledge_ingestion import PlatformKnowledgeIngestionService
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
 from services.composition import (
+    build_agent_run_repository,
     build_agent_repository,
-    build_configured_postgres_agent_run_repository,
     build_configured_postgres_approval_request_repository,
     build_configured_postgres_audit_event_read_repository,
     build_configured_postgres_audit_event_write_repository,
@@ -210,12 +209,8 @@ approval_request_fallback_repository = ApprovalRequestRepository(
 )
 member_fallback_repository = MemberRepository(PLATFORM_MEMBERS_PATH)
 
-def _build_agent_run_repository() -> AgentRunRepositoryProtocol:
-    return build_configured_postgres_agent_run_repository() or agent_run_fallback_repository
-
-
 agent_repository = build_agent_repository(agent_fallback_repository)
-agent_run_repository = _build_agent_run_repository()
+agent_run_repository = build_agent_run_repository(agent_run_fallback_repository)
 
 
 def _build_approval_request_repository() -> ApprovalRequestRepositoryProtocol:
