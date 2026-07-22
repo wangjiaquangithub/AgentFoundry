@@ -468,6 +468,9 @@ class PlatformKnowledgeRetrievalService:
                 ],
                 "retrieval_mode": str(payload.get("retrieval_mode") or ""),
             }
+            guidance = str(payload.get("guidance") or "").strip()
+            if guidance:
+                audit_payload["guidance"] = guidance
             persisted_audit_event = self._audit_event_writer.append_audit_event(
                 AuditEventRecord(
                     id=str(uuid4()),

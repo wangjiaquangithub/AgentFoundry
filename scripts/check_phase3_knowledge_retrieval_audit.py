@@ -49,6 +49,11 @@ class _KnowledgeBases:
         return SimpleNamespace(id="kb_support", status="active")
 
 
+class _BlockedKnowledgeBases:
+    def get_knowledge_base(self, **_: Any) -> Any:
+        return SimpleNamespace(id="kb_blocked", status="draft")
+
+
 class _Documents:
     def list_documents(self, **_: Any) -> list[Any]:
         return [
@@ -178,6 +183,70 @@ def _assert_runtime_retrieval_audit_contract() -> None:
         if audit_payload.get(key) != expected:
             _fail(
                 "runtime audit payload field "
+                f"{key!r} expected {expected!r}, got {audit_payload.get(key)!r}"
+            )
+
+
+def _assert_runtime_blocked_retrieval_audit_guidance_contract() -> None:
+    retrieval_events = _RetrievalEvents()
+    audit_events = _AuditEvents()
+    service = PlatformKnowledgeRetrievalService(
+        knowledge_base_repository=_BlockedKnowledgeBases(),
+        document_repository=_Documents(),
+        document_chunk_repository=_DocumentChunks(),
+        retrieval_event_writer=retrieval_events,
+        audit_event_writer=audit_events,
+        now=lambda: "2026-01-01T00:00:00+00:00",
+    )
+
+    payload = service.retrieve(
+        tenant_id="acme",
+        user_id="acme:alice",
+        agent_run_id="run_phase3_blocked_guidance_check",
+        knowledge_base_ids=["kb_blocked"],
+        query="approval evidence",
+    )
+
+    if payload["status"] != "blocked":
+        _fail("blocked runtime retrieval check did not return blocked status")
+    if payload.get("guidance") != "No requested knowledge base is ready for retrieval.":
+        _fail("blocked runtime retrieval payload must include guidance")
+    if len(retrieval_events.records) != 1:
+        _fail("blocked runtime retrieval check did not write one retrieval event")
+    if len(audit_events.records) != 1:
+        _fail("blocked runtime retrieval check did not write one audit event")
+
+    retrieval_event = retrieval_events.records[0]
+    audit_event = audit_events.records[0]
+    audit_payload = audit_event.payload
+    expected_payload = {
+        "schema_version": 1,
+        "retrieval_event_id": retrieval_event.id,
+        "tenant": "acme",
+        "user_id": "acme:alice",
+        "agent_run_id": "run_phase3_blocked_guidance_check",
+        "knowledge_base_id": "kb_blocked",
+        "bound_knowledge_base_ids": ["kb_blocked"],
+        "ready_knowledge_base_ids": [],
+        "blocked_knowledge_base_ids": ["kb_blocked"],
+        "query": "approval evidence",
+        "status": "blocked",
+        "hit_count": 0,
+        "document_ids": [],
+        "retrieval_mode": "deterministic_lexical",
+        "guidance": "No requested knowledge base is ready for retrieval.",
+    }
+
+    if audit_event.event_type != "knowledge_base.retrieved":
+        _fail("blocked runtime audit event type must be knowledge_base.retrieved")
+    if audit_event.target_type != "knowledge_base":
+        _fail("blocked runtime audit event target type must be knowledge_base")
+    if audit_event.target_id != "kb_blocked":
+        _fail("blocked runtime audit event target id must match the bound knowledge base")
+    for key, expected in expected_payload.items():
+        if audit_payload.get(key) != expected:
+            _fail(
+                "blocked runtime audit payload field "
                 f"{key!r} expected {expected!r}, got {audit_payload.get(key)!r}"
             )
 
@@ -423,6 +492,7 @@ def main() -> int:
             )
 
     _assert_runtime_retrieval_audit_contract()
+    _assert_runtime_blocked_retrieval_audit_guidance_contract()
     asyncio.run(_assert_agent_run_retrieval_audit_contract())
     asyncio.run(_assert_agent_run_zero_hit_retrieval_audit_contract())
 
