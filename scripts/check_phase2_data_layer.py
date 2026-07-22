@@ -827,24 +827,18 @@ def _check_postgres_runtime_provider_reads_wired() -> list[str]:
             "backend/services/composition.py must build PostgresRuntimeReadRepository "
             "from the configured PostgreSQL database",
         )
-    if not _module_imports_name(
-        main_tree,
-        "build_configured_postgres_runtime_read_repository",
+    if not _module_defines_function(
+        composition_tree,
+        "build_runtime_read_repository",
     ):
         errors.append(
-            "backend/main.py must import build_configured_postgres_runtime_read_repository "
-            "from backend/services/composition.py",
+            "backend/services/composition.py must define build_runtime_read_repository for runtime provider read selection",
         )
-    if not _module_defines_function(main_tree, "_build_runtime_read_repository"):
+    if "build_configured_postgres_runtime_read_repository()" not in composition_source:
         errors.append(
-            "backend/main.py must define _build_runtime_read_repository for PostgreSQL runtime provider reads",
+            "backend/services/composition.py must delegate PostgreSQL runtime provider reads to the configured repository builder",
         )
-    if "return build_configured_postgres_runtime_read_repository()" not in main_source:
-        errors.append(
-            "backend/main.py must delegate PostgreSQL runtime provider repository construction "
-            "to backend/services/composition.py",
-        )
-    if "runtime_provider_reader=" not in main_source:
+    if "runtime_provider_reader=build_runtime_read_repository()" not in main_source:
         errors.append(
             "backend/main.py must pass runtime_provider_reader into PlatformStatusService",
         )
@@ -890,24 +884,18 @@ def _check_postgres_runtime_invocation_writes_wired() -> list[str]:
             "backend/services/composition.py must build PostgresRuntimeWriteRepository "
             "from the configured PostgreSQL database",
         )
-    if not _module_imports_name(
-        main_tree,
-        "build_configured_postgres_runtime_write_repository",
+    if not _module_defines_function(
+        composition_tree,
+        "build_runtime_write_repository",
     ):
         errors.append(
-            "backend/main.py must import build_configured_postgres_runtime_write_repository "
-            "from backend/services/composition.py",
+            "backend/services/composition.py must define build_runtime_write_repository for runtime invocation write selection",
         )
-    if not _module_defines_function(main_tree, "_build_runtime_write_repository"):
+    if "build_configured_postgres_runtime_write_repository()" not in composition_source:
         errors.append(
-            "backend/main.py must define _build_runtime_write_repository for PostgreSQL runtime invocation writes",
+            "backend/services/composition.py must delegate PostgreSQL runtime invocation writes to the configured repository builder",
         )
-    if "return build_configured_postgres_runtime_write_repository()" not in main_source:
-        errors.append(
-            "backend/main.py must delegate PostgreSQL runtime invocation repository construction "
-            "to backend/services/composition.py",
-        )
-    if "runtime_invocation_writer=" not in main_source:
+    if "runtime_invocation_writer=build_runtime_write_repository()" not in main_source:
         errors.append(
             "backend/main.py must pass runtime_invocation_writer into PlatformAgentRunService",
         )

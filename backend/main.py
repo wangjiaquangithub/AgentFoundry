@@ -176,11 +176,11 @@ from services.composition import (
     build_configured_postgres_model_config_service,
     build_configured_postgres_retrieval_event_read_repository,
     build_configured_postgres_retrieval_event_write_repository,
-    build_configured_postgres_runtime_read_repository,
-    build_configured_postgres_runtime_write_repository,
     build_memory_item_read_repository,
     build_memory_item_write_repository,
     build_member_repository,
+    build_runtime_read_repository,
+    build_runtime_write_repository,
     build_tool_call_read_repository,
     build_tool_call_write_repository,
     build_tool_governance_read_repository,
@@ -211,14 +211,6 @@ agent_run_repository = build_agent_run_repository(agent_run_fallback_repository)
 approval_request_repository = build_approval_request_repository(
     approval_request_fallback_repository,
 )
-
-
-def _build_runtime_read_repository() -> Any | None:
-    return build_configured_postgres_runtime_read_repository()
-
-
-def _build_runtime_write_repository() -> Any | None:
-    return build_configured_postgres_runtime_write_repository()
 
 
 def _build_audit_event_read_repository() -> Any | None:
@@ -464,7 +456,7 @@ def _platform_status_service() -> PlatformStatusService:
         tool_policy=tool_authorization_policy,
         connector_health=connector_health,
         runtime_provider_health=describe_runtime_provider_health,
-        runtime_provider_reader=_build_runtime_read_repository(),
+        runtime_provider_reader=build_runtime_read_repository(),
         agent_readiness=agent_service.readiness,
         enterprise_tool_names=ENTERPRISE_TOOL_NAMES,
         enterprise_tool_catalog=ENTERPRISE_TOOL_CATALOG,
@@ -565,7 +557,7 @@ def _platform_agent_run_service() -> PlatformAgentRunService:
     return PlatformAgentRunService(
         repository=agent_run_repository,
         tool_call_writer=build_tool_call_write_repository(),
-        runtime_invocation_writer=_build_runtime_write_repository(),
+        runtime_invocation_writer=build_runtime_write_repository(),
     )
 
 

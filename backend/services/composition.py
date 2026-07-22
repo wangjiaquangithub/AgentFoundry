@@ -277,6 +277,18 @@ def build_configured_postgres_runtime_write_repository() -> (
     return PostgresRuntimeWriteRepository(database)
 
 
+def build_runtime_read_repository() -> PostgresRuntimeReadRepository | None:
+    """Select the configured production runtime read repository."""
+
+    return build_configured_postgres_runtime_read_repository()
+
+
+def build_runtime_write_repository() -> PostgresRuntimeWriteRepository | None:
+    """Select the configured production runtime write repository."""
+
+    return build_configured_postgres_runtime_write_repository()
+
+
 def build_configured_postgres_member_repository() -> (
     PostgresMemberReadThroughRepository | None
 ):
