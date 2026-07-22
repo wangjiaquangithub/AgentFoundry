@@ -2362,6 +2362,38 @@ class PlatformAgentRunService:
                     "agent_name": context.get("agent_name"),
                 },
                 "question": context.get("question"),
+                "metadata": {
+                    "runtime_invocation_id": str(runtime_invocation_id),
+                },
+            }
+        else:
+            request_runtime_invocation_id = (
+                _runtime_invocation_id_from_request_summary(request_summary)
+            )
+            if (
+                request_runtime_invocation_id is not None
+                and request_runtime_invocation_id != str(runtime_invocation_id)
+            ):
+                logger.warning(
+                    "Skipped runtime invocation persistence because request and "
+                    "result evidence identifiers do not match.",
+                    extra={
+                        "agent_run_id": turn_id,
+                        "tenant_id": tenant,
+                        "request_runtime_invocation_id": request_runtime_invocation_id,
+                        "result_runtime_invocation_id": str(runtime_invocation_id),
+                    },
+                )
+                return
+            request_metadata = request_summary.get("metadata")
+            if not isinstance(request_metadata, dict):
+                request_metadata = {}
+            request_summary = {
+                **request_summary,
+                "metadata": {
+                    **request_metadata,
+                    "runtime_invocation_id": str(runtime_invocation_id),
+                },
             }
 
         try:
@@ -2700,3 +2732,15 @@ def _optional_dict(value: Any) -> dict[str, Any] | None:
     if isinstance(value, dict):
         return value
     return None
+
+
+def _runtime_invocation_id_from_request_summary(
+    request_summary: dict[str, Any],
+) -> str | None:
+    metadata = request_summary.get("metadata")
+    if not isinstance(metadata, dict):
+        return None
+    runtime_invocation_id = metadata.get("runtime_invocation_id")
+    if runtime_invocation_id is None:
+        return None
+    return str(runtime_invocation_id)

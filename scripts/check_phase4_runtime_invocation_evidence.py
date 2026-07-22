@@ -4,18 +4,32 @@
 from __future__ import annotations
 
 import ast
+import logging
 import sys
 from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(REPO_ROOT / "backend"))
 
 from backend.runtime import (  # noqa: E402
     describe_runtime_adapter,
     build_runtime_invocation_request_payload,
     build_runtime_invocation_result_payload,
 )
+from backend.services.agent_runs import PlatformAgentRunService  # noqa: E402
+
+agent_runs_logger = logging.getLogger("backend.services.agent_runs")
+
+
+class RuntimeInvocationWriter:
+    def __init__(self) -> None:
+        self.records = []
+
+    def append_invocation(self, record):
+        self.records.append(record)
+        return record
 
 
 def assert_runtime_request_contract() -> None:
@@ -79,6 +93,83 @@ def assert_runtime_result_contract() -> None:
     assert payload["raw"]["tool_call_count"] == 1
 
 
+def assert_runtime_persistence_evidence_link() -> None:
+    writer = RuntimeInvocationWriter()
+    service = PlatformAgentRunService(
+        repository=object(),
+        runtime_invocation_writer=writer,
+    )
+    request_payload = build_runtime_invocation_request_payload(
+        tenant="acme",
+        user_id="acme:alice",
+        session_id="session-1",
+        agent_id="agent-1",
+        question="Summarize the contract.",
+        metadata={"runtime_invocation_id": "runtime-invocation-1"},
+    )
+    result_payload = build_runtime_invocation_result_payload(
+        answer="Done.",
+        status="completed",
+        evidence={"tenant": "acme", "agent_id": "agent-1"},
+        runtime_adapter=describe_runtime_adapter({"agent_id": "agent-1"}),
+        runtime_invocation_id="runtime-invocation-1",
+        agent_run_id="agent-run-1",
+        provider_run_id="provider-run-1",
+        completed_at="2026-07-21T00:00:00+00:00",
+    )
+    service.append_runtime_invocation_record_from_context(
+        response_trace={
+            "turn_id": "agent-run-1",
+            "created_at": "2026-07-21T00:00:00+00:00",
+        },
+        context={
+            "tenant": "acme",
+            "user_id": "acme:alice",
+            "session_id": "session-1",
+            "agent_id": "agent-1",
+            "question": "Summarize the contract.",
+            "runtime_invocation_id": "runtime-invocation-1",
+            "runtime_invocation_request": request_payload,
+        },
+        runtime_invocation_result=result_payload,
+    )
+
+    assert len(writer.records) == 1
+    record = writer.records[0]
+    assert record.id == "runtime-invocation-1"
+    assert (
+        record.request_summary["metadata"]["runtime_invocation_id"]
+        == record.response_summary["runtime_invocation_id"]
+    )
+
+    mismatched_result = {
+        **result_payload,
+        "runtime_invocation_id": "runtime-invocation-2",
+    }
+    previous_logger_disabled = agent_runs_logger.disabled
+    agent_runs_logger.disabled = True
+    try:
+        service.append_runtime_invocation_record_from_context(
+            response_trace={
+                "turn_id": "agent-run-2",
+                "created_at": "2026-07-21T00:01:00+00:00",
+            },
+            context={
+                "tenant": "acme",
+                "user_id": "acme:alice",
+                "session_id": "session-1",
+                "agent_id": "agent-1",
+                "question": "Summarize the contract.",
+                "runtime_invocation_id": "runtime-invocation-1",
+                "runtime_invocation_request": request_payload,
+            },
+            runtime_invocation_result=mismatched_result,
+        )
+    finally:
+        agent_runs_logger.disabled = previous_logger_disabled
+    assert len(writer.records) == 1
+
+
 def assert_no_direct_agentscope_dependency() -> None:
     checked_files = (
         REPO_ROOT / "backend" / "runtime.py",
@@ -102,6 +193,7 @@ def assert_no_direct_agentscope_dependency() -> None:
 def main() -> None:
     assert_runtime_request_contract()
     assert_runtime_result_contract()
+    assert_runtime_persistence_evidence_link()
     assert_no_direct_agentscope_dependency()
     print("phase 4.1 runtime invocation evidence contract ok")
 
