@@ -128,6 +128,30 @@ def _validate_membership_write_result(
         )
 
 
+def _validate_tenant_read_result(
+    record: TenantRecord,
+    *,
+    tenant_id: str | None = None,
+    status: str | None = None,
+) -> None:
+    if tenant_id is not None and record.id != tenant_id:
+        raise ValueError("PostgreSQL tenant read returned another tenant.")
+    if status is not None and record.status != status:
+        raise ValueError("PostgreSQL tenant read returned another status.")
+
+
+def _validate_membership_read_result(
+    record: MembershipRecord,
+    *,
+    tenant_id: str | None = None,
+    user_id: str | None = None,
+) -> None:
+    if tenant_id is not None and record.tenant_id != tenant_id:
+        raise ValueError("PostgreSQL membership read returned another tenant.")
+    if user_id is not None and record.user_id != user_id:
+        raise ValueError("PostgreSQL membership read returned another user.")
+
+
 class SQLiteTenancyReadRepository:
     """Read tenant, user, and membership records from SQLite."""
 
@@ -237,7 +261,11 @@ class PostgresTenancyReadRepository:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, parameters)
-                return [TenantRecord(**dict(row)) for row in cursor.fetchall()]
+                rows = cursor.fetchall()
+        records = [TenantRecord(**dict(row)) for row in rows]
+        for record in records:
+            _validate_tenant_read_result(record, status=status)
+        return records
 
     def get_tenant(self, tenant_id: str) -> TenantRecord | None:
         with self._database.connect() as connection:
@@ -253,7 +281,9 @@ class PostgresTenancyReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return TenantRecord(**dict(row))
+        record = TenantRecord(**dict(row))
+        _validate_tenant_read_result(record, tenant_id=tenant_id)
+        return record
 
     def list_users(self, *, tenant_id: str | None = None) -> list[UserRecord]:
         if tenant_id is None:
@@ -305,7 +335,14 @@ class PostgresTenancyReadRepository:
             with connection.cursor() as cursor:
                 cursor.execute(query, tuple(parameters))
                 rows = cursor.fetchall()
-        return [_membership_from_row(dict(row)) for row in rows]
+        records = [_membership_from_row(dict(row)) for row in rows]
+        for record in records:
+            _validate_membership_read_result(
+                record,
+                tenant_id=tenant_id,
+                user_id=user_id,
+            )
+        return records
 
 
 class PostgresTenancyWriteRepository:

@@ -3892,6 +3892,21 @@ def _check_postgres_membership_reads_guarded() -> list[str]:
                     "tenancy tables and filters: backend/persistence/tenancy.py:"
                     f"PostgresTenancyReadRepository.{method_name}",
                 )
+        read_validator = {
+            "list_tenants": "_validate_tenant_read_result",
+            "get_tenant": "_validate_tenant_read_result",
+            "list_memberships": "_validate_membership_read_result",
+        }.get(method_name)
+        if read_validator is not None and not _module_calls_name(
+            method_node,
+            read_validator,
+        ):
+            errors.append(
+                "PostgreSQL membership read method must validate returned "
+                "records against requested scope and filters: "
+                "backend/persistence/tenancy.py:"
+                f"PostgresTenancyReadRepository.{method_name}",
+            )
 
     return errors
 
