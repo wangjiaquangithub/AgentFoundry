@@ -2,6 +2,8 @@ import {
 	Activity,
 	BotMessageSquare,
 	CheckCircle2,
+	CircleAlert,
+	Clock3,
 	RefreshCcw,
 	Workflow,
 } from 'lucide-react';
@@ -159,6 +161,42 @@ export function RunsViewPage({
 			return matchesType && matchesStatus && matchesKeyword;
 		});
 	}, [runItems, runKeywordFilter, runStatusFilter, runTypeFilter]);
+	const operationalSummary = useMemo(() => {
+		const failed = runItems.filter((item) => item.status === 'failed').length;
+		const running = runItems.filter((item) => item.status === 'running').length;
+		const workflows = runItems.filter((item) => item.type === 'workflow').length;
+		const agents = runItems.filter((item) => item.type === 'agent').length;
+
+		return [
+			{
+				label: t('platform.monitoring.summaryFailed'),
+				value: failed,
+				helper: t('platform.monitoring.summaryFailedHelper'),
+				icon: CircleAlert,
+				tone:
+					failed > 0
+						? 'border-red-500/35 bg-red-500/5 text-red-700'
+						: 'border-border bg-background text-foreground',
+			},
+			{
+				label: t('platform.monitoring.summaryRunning'),
+				value: running,
+				helper: t('platform.monitoring.summaryRunningHelper'),
+				icon: Clock3,
+				tone:
+					running > 0
+						? 'border-blue-500/35 bg-blue-500/5 text-blue-700'
+						: 'border-border bg-background text-foreground',
+			},
+			{
+				label: t('platform.monitoring.summaryCoverage'),
+				value: `${agents}/${workflows}`,
+				helper: t('platform.monitoring.summaryCoverageHelper'),
+				icon: Activity,
+				tone: 'border-border bg-background text-foreground',
+			},
+		];
+	}, [runItems, t]);
 	const hasRunFilters =
 		runTypeFilter !== 'all' ||
 		runStatusFilter !== 'all' ||
@@ -245,8 +283,8 @@ export function RunsViewPage({
 				})}
 			</section>
 
-			<section className="grid min-h-[34rem] content-start gap-3">
-				<div className="flex flex-col gap-3 border-b pb-3 lg:flex-row lg:items-end lg:justify-between">
+			<section className="grid min-h-[34rem] content-start gap-4">
+				<div className="flex flex-col gap-3 border-b pb-4 lg:flex-row lg:items-end lg:justify-between">
 					<div className="min-w-0">
 						<div className="flex items-center gap-2">
 							<h2 className="text-base font-semibold">
@@ -285,60 +323,118 @@ export function RunsViewPage({
 					</div>
 				</div>
 
-				<PlatformFilterBar
-					resultLabel={t('platform.ux.filters.results', {
-						count: filteredRunItems.length,
-					})}
-					clearLabel={t('platform.ux.filters.clear')}
-					onClear={resetRunFilters}
-					clearDisabled={!hasRunFilters}
-				>
-					<Select
-						value={runTypeFilter}
-						onValueChange={(value) => setRunTypeFilter(value as RunTypeFilter)}
-					>
-						<SelectTrigger className="h-9 w-full">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">
-								{t('platform.monitoring.allTypes')}
-							</SelectItem>
-							<SelectItem value="agent">
-								{t('platform.monitoring.agentRunType')}
-							</SelectItem>
-							<SelectItem value="workflow">
-								{t('platform.monitoring.workflowRunType')}
-							</SelectItem>
-						</SelectContent>
-					</Select>
-					<Select
-						value={runStatusFilter}
-						onValueChange={(value) =>
-							setRunStatusFilter(value as RunStatusFilter)
-						}
-					>
-						<SelectTrigger className="h-9 w-full">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">
-								{t('platform.monitoring.allStatuses')}
-							</SelectItem>
-							{runStatuses.map((status) => (
-								<SelectItem key={status} value={status}>
-									{t(`platform.statuses.${status}`)}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-					<Input
-						className="h-9 md:col-span-2 xl:col-span-4"
-						value={runKeywordFilter}
-						onChange={(event) => setRunKeywordFilter(event.target.value)}
-						placeholder={t('platform.monitoring.keywordPlaceholder')}
-					/>
-				</PlatformFilterBar>
+				<div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_18rem]">
+					<div className="grid gap-3">
+						<div className="grid gap-2 md:grid-cols-3">
+							{operationalSummary.map((item) => {
+								const SummaryIcon = item.icon;
+								return (
+									<div
+										key={item.label}
+										className={cn(
+											'grid grid-cols-[1fr_auto] gap-3 rounded-md border px-3 py-2.5',
+											item.tone,
+										)}
+									>
+										<div className="min-w-0">
+											<div className="truncate text-xs font-medium text-muted-foreground">
+												{item.label}
+											</div>
+											<div className="mt-1 text-lg font-semibold tabular-nums">
+												{monitoringLoading ? '-' : item.value}
+											</div>
+											<div className="mt-0.5 truncate text-xs text-muted-foreground">
+												{item.helper}
+											</div>
+										</div>
+										<SummaryIcon className="mt-0.5 size-4 text-muted-foreground" />
+									</div>
+								);
+							})}
+						</div>
+
+						<PlatformFilterBar
+							resultLabel={t('platform.ux.filters.results', {
+								count: filteredRunItems.length,
+							})}
+							clearLabel={t('platform.ux.filters.clear')}
+							onClear={resetRunFilters}
+							clearDisabled={!hasRunFilters}
+						>
+							<Select
+								value={runTypeFilter}
+								onValueChange={(value) =>
+									setRunTypeFilter(value as RunTypeFilter)
+								}
+							>
+								<SelectTrigger className="h-9 w-full">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="all">
+										{t('platform.monitoring.allTypes')}
+									</SelectItem>
+									<SelectItem value="agent">
+										{t('platform.monitoring.agentRunType')}
+									</SelectItem>
+									<SelectItem value="workflow">
+										{t('platform.monitoring.workflowRunType')}
+									</SelectItem>
+								</SelectContent>
+							</Select>
+							<Select
+								value={runStatusFilter}
+								onValueChange={(value) =>
+									setRunStatusFilter(value as RunStatusFilter)
+								}
+							>
+								<SelectTrigger className="h-9 w-full">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="all">
+										{t('platform.monitoring.allStatuses')}
+									</SelectItem>
+									{runStatuses.map((status) => (
+										<SelectItem key={status} value={status}>
+											{t(`platform.statuses.${status}`)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							<Input
+								className="h-9 md:col-span-2 xl:col-span-4"
+								value={runKeywordFilter}
+								onChange={(event) => setRunKeywordFilter(event.target.value)}
+								placeholder={t('platform.monitoring.keywordPlaceholder')}
+							/>
+						</PlatformFilterBar>
+					</div>
+
+					<aside className="hidden rounded-md border bg-muted/20 p-3 lg:block">
+						<div className="text-xs font-medium uppercase text-muted-foreground">
+							{t('platform.monitoring.monitoringFocus')}
+						</div>
+						<div className="mt-3 grid gap-3 text-sm">
+							<div>
+								<div className="font-medium">
+									{t('platform.monitoring.focusFailures')}
+								</div>
+								<p className="mt-1 text-xs leading-5 text-muted-foreground">
+									{t('platform.monitoring.focusFailuresHelper')}
+								</p>
+							</div>
+							<div className="border-t pt-3">
+								<div className="font-medium">
+									{t('platform.monitoring.focusRuntime')}
+								</div>
+								<p className="mt-1 text-xs leading-5 text-muted-foreground">
+									{t('platform.monitoring.focusRuntimeHelper')}
+								</p>
+							</div>
+						</div>
+					</aside>
+				</div>
 
 				{isInitialLoading ? (
 					<div className="overflow-hidden rounded-md border bg-background">
@@ -395,7 +491,7 @@ export function RunsViewPage({
 						className="min-h-80 rounded-md border border-dashed bg-background/80 p-6"
 					/>
 				) : (
-					<div className="overflow-hidden rounded-md border bg-background">
+					<div className="overflow-hidden rounded-md border bg-background shadow-sm">
 						<div className="hidden grid-cols-[7rem_minmax(0,1.8fr)_8rem_minmax(8rem,0.8fr)_10rem_4.5rem] gap-3 border-b bg-muted/35 px-3 py-2 text-xs font-medium text-muted-foreground lg:grid">
 							<span>{t('platform.monitoring.type')}</span>
 							<span>{t('platform.monitoring.runObject')}</span>
@@ -418,9 +514,11 @@ export function RunsViewPage({
 											setSelectedRun({ type: item.type, id: item.id });
 										}}
 										className={cn(
-											'grid w-full gap-3 border-b px-3 py-3 text-left text-xs transition-colors last:border-b-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:grid-cols-[7rem_minmax(0,1.8fr)_8rem_minmax(8rem,0.8fr)_10rem_4.5rem] lg:items-center',
+											'grid w-full gap-3 border-b border-l-2 border-l-transparent px-3 py-3 text-left text-xs transition-colors last:border-b-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:grid-cols-[7rem_minmax(0,1.8fr)_8rem_minmax(8rem,0.8fr)_10rem_4.5rem] lg:items-center',
 											isActive
-												? 'bg-primary/5 text-foreground'
+												? 'border-l-primary bg-primary/5 text-foreground'
+												: item.status === 'failed'
+													? 'border-l-red-500 bg-background hover:bg-red-500/5'
 												: 'bg-background hover:bg-muted/50',
 										)}
 									>
@@ -449,7 +547,7 @@ export function RunsViewPage({
 										<div className="tabular-nums text-muted-foreground">
 											{formatTimestamp(item.timestamp)}
 										</div>
-										<div className="text-right font-medium text-primary">
+										<div className="hidden text-right font-medium text-primary lg:block">
 											{t('platform.monitoring.inspect')}
 										</div>
 									</button>
@@ -493,7 +591,7 @@ export function RunsViewPage({
 					{activeRun ? (
 						<div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
 							<div className="grid gap-4">
-								<div className="rounded-md border bg-background p-4">
+								<div className="border-b pb-4">
 									<div className="flex items-start gap-3">
 										<div className="flex size-10 shrink-0 items-center justify-center rounded-md border bg-background">
 											{activeRun.type === 'agent' ? (
@@ -514,7 +612,7 @@ export function RunsViewPage({
 								</div>
 
 								<div className="grid gap-3 md:grid-cols-2">
-									<div className="rounded-md border p-3">
+									<div className="border-b pb-3 md:border-b-0 md:border-r md:pr-3">
 										<div className="text-xs text-muted-foreground">
 											{t('platform.monitoring.type')}
 										</div>
@@ -524,7 +622,7 @@ export function RunsViewPage({
 												: t('platform.monitoring.workflowRunType')}
 										</div>
 									</div>
-									<div className="rounded-md border p-3">
+									<div className="border-b pb-3 md:border-b-0">
 										<div className="text-xs text-muted-foreground">
 											{t('platform.monitoring.agent')}
 										</div>
@@ -532,7 +630,7 @@ export function RunsViewPage({
 											{activeRun.agentId || '-'}
 										</div>
 									</div>
-									<div className="rounded-md border p-3">
+									<div className="border-b pb-3 md:border-b-0 md:border-r md:pr-3">
 										<div className="text-xs text-muted-foreground">
 											{t('platform.monitoring.time')}
 										</div>
@@ -540,10 +638,18 @@ export function RunsViewPage({
 											{formatTimestamp(activeRun.timestamp)}
 										</div>
 									</div>
+									<div>
+										<div className="text-xs text-muted-foreground">
+											{t('platform.monitoring.runId')}
+										</div>
+										<div className="mt-1 truncate font-mono text-xs">
+											{activeRun.id}
+										</div>
+									</div>
 								</div>
 
 								{activeWorkflowRun ? (
-									<div className="rounded-md border p-3">
+									<div className="border-t pt-4">
 										<div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
 											<CheckCircle2 className="size-4" />
 											{t('platform.monitoring.stepsStatus')}
