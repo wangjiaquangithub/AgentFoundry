@@ -1559,6 +1559,9 @@ def _check_postgres_knowledge_ingestion_write_records() -> list[str]:
     chunk_persistence_source = (PERSISTENCE_DIR / "document_chunks.py").read_text(
         encoding="utf-8",
     )
+    embedding_persistence_source = (PERSISTENCE_DIR / "embedding_records.py").read_text(
+        encoding="utf-8",
+    )
 
     for token in (
         "def upsert_document(self, record: DocumentRecord) -> DocumentRecord:",
@@ -1633,6 +1636,30 @@ def _check_postgres_knowledge_ingestion_write_records() -> list[str]:
             errors.append(
                 "backend/persistence/document_chunks.py must validate persisted "
                 f"PostgreSQL document chunk write records: {token}",
+            )
+
+    for token in (
+        "def append_embedding_record(",
+        ") -> EmbeddingRecord:",
+        "RETURNING id, tenant_id, chunk_id, model_config_id, vector_ref",
+        "row = cursor.fetchone()",
+        "persisted = _embedding_record_from_row(dict(row))",
+        "_validate_write_result(record, persisted)",
+        "PostgreSQL embedding record write did not return a record id.",
+        "PostgreSQL embedding record write did not return a tenant id.",
+        "PostgreSQL embedding record write did not return a chunk id.",
+        "PostgreSQL embedding record write did not return a model config.",
+        "PostgreSQL embedding record write did not return a vector ref.",
+        "PostgreSQL embedding record write returned another record.",
+        "PostgreSQL embedding record write returned another tenant.",
+        "PostgreSQL embedding record write returned another chunk.",
+        "PostgreSQL embedding record write returned another model config.",
+        "PostgreSQL embedding record write returned another vector ref.",
+    ):
+        if token not in embedding_persistence_source:
+            errors.append(
+                "backend/persistence/embedding_records.py must validate persisted "
+                f"PostgreSQL embedding write records: {token}",
             )
 
     return errors

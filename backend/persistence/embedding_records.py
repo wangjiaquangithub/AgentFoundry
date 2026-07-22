@@ -34,6 +34,36 @@ def _embedding_record_from_row(row: dict[str, Any]) -> EmbeddingRecord:
     )
 
 
+def _validate_write_result(
+    requested: EmbeddingRecord,
+    persisted: EmbeddingRecord,
+) -> None:
+    if not persisted.id:
+        raise ValueError("PostgreSQL embedding record write did not return a record id.")
+    if not persisted.tenant_id:
+        raise ValueError("PostgreSQL embedding record write did not return a tenant id.")
+    if not persisted.chunk_id:
+        raise ValueError("PostgreSQL embedding record write did not return a chunk id.")
+    if not persisted.model_config_id:
+        raise ValueError(
+            "PostgreSQL embedding record write did not return a model config.",
+        )
+    if not persisted.vector_ref:
+        raise ValueError("PostgreSQL embedding record write did not return a vector ref.")
+    if persisted.id != requested.id:
+        raise ValueError("PostgreSQL embedding record write returned another record.")
+    if persisted.tenant_id != requested.tenant_id:
+        raise ValueError("PostgreSQL embedding record write returned another tenant.")
+    if persisted.chunk_id != requested.chunk_id:
+        raise ValueError("PostgreSQL embedding record write returned another chunk.")
+    if persisted.model_config_id != requested.model_config_id:
+        raise ValueError(
+            "PostgreSQL embedding record write returned another model config.",
+        )
+    if persisted.vector_ref != requested.vector_ref:
+        raise ValueError("PostgreSQL embedding record write returned another vector ref.")
+
+
 class SQLiteEmbeddingRecordReadRepository:
     """Read tenant-scoped embedding records from SQLite."""
 
@@ -191,7 +221,9 @@ class PostgresEmbeddingRecordWriteRepository:
                 row = cursor.fetchone()
         if row is None:
             raise ValueError("Embedding record upsert did not return a row.")
-        return _embedding_record_from_row(dict(row))
+        persisted = _embedding_record_from_row(dict(row))
+        _validate_write_result(record, persisted)
+        return persisted
 
     def delete_embedding_records(
         self,
