@@ -354,6 +354,9 @@ class PlatformStatusService:
                 "driver_available": False,
                 "runtime_ready": False,
                 "operator_ready": False,
+                "production_system_of_record": False,
+                "local_compatibility_only": True,
+                "storage_boundary": "local_development_compatibility",
                 "checks": {
                     "configured": False,
                     "postgresql_backend": False,
@@ -361,6 +364,8 @@ class PlatformStatusService:
                     "driver_available": False,
                     "runtime_ready": False,
                     "production_mode": False,
+                    "production_system_of_record": False,
+                    "local_compatibility_only": True,
                 },
                 "message": "Database configuration status is not wired.",
             }
@@ -394,6 +399,19 @@ class PlatformStatusService:
             and runtime_ready
         )
         operator_ready = bool(snapshot.get("operator_ready", computed_operator_ready))
+        production_system_of_record = (
+            configured
+            and production_database_backend
+            and production_ready
+            and runtime_ready
+            and operator_ready
+        )
+        local_compatibility_only = not production_system_of_record
+        storage_boundary = (
+            "postgresql_production"
+            if production_system_of_record
+            else "local_development_compatibility"
+        )
 
         normalized = {
             "env_var": snapshot.get("env_var") or "AGENTFOUNDRY_DATABASE_URL",
@@ -408,6 +426,9 @@ class PlatformStatusService:
             "driver_available": driver_available,
             "runtime_ready": runtime_ready,
             "operator_ready": operator_ready,
+            "production_system_of_record": production_system_of_record,
+            "local_compatibility_only": local_compatibility_only,
+            "storage_boundary": storage_boundary,
             "checks": {
                 "configured": configured,
                 "postgresql_backend": postgresql_backend,
@@ -415,6 +436,8 @@ class PlatformStatusService:
                 "driver_available": driver_available,
                 "runtime_ready": runtime_ready,
                 "production_mode": production_mode,
+                "production_system_of_record": production_system_of_record,
+                "local_compatibility_only": local_compatibility_only,
             },
             "message": snapshot.get("message"),
         }

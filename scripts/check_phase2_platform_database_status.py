@@ -184,6 +184,8 @@ def main() -> int:
             "driver_available",
             "runtime_ready",
             "production_mode",
+            "production_system_of_record",
+            "local_compatibility_only",
         }
         missing_checks = expected_checks.difference(checks)
         if missing_checks:
@@ -218,6 +220,19 @@ def main() -> int:
                 raise AssertionError(
                     f"{label} should mark PostgreSQL backend check true: {database}",
                 )
+            if database.get("production_system_of_record") is not database.get("operator_ready"):
+                raise AssertionError(
+                    f"{label} production system of record should require operator readiness: {database}",
+                )
+            expected_boundary = (
+                "postgresql_production"
+                if database.get("operator_ready")
+                else "local_development_compatibility"
+            )
+            if database.get("storage_boundary") != expected_boundary:
+                raise AssertionError(
+                    f"{label} storage_boundary should be {expected_boundary}: {database}",
+                )
         elif database.get("driver_package") is not None or database.get("driver_available"):
             raise AssertionError(
                 f"{label} should not expose a production database driver: {database}",
@@ -230,6 +245,18 @@ def main() -> int:
             if checks.get("postgresql_backend") is not False:
                 raise AssertionError(
                     f"{label} should mark PostgreSQL backend check false: {database}",
+                )
+            if database.get("production_system_of_record") is not False:
+                raise AssertionError(
+                    f"{label} must not claim production system-of-record status: {database}",
+                )
+            if database.get("local_compatibility_only") is not True:
+                raise AssertionError(
+                    f"{label} should be marked local compatibility only: {database}",
+                )
+            if database.get("storage_boundary") != "local_development_compatibility":
+                raise AssertionError(
+                    f"{label} should expose local compatibility boundary: {database}",
                 )
         _assert_no_secret_leak(database)
 
