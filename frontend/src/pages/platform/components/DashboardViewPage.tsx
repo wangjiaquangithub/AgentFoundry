@@ -29,7 +29,7 @@ import type {
 } from '@/api/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 interface DashboardViewPageProps {
@@ -209,79 +209,59 @@ export function DashboardViewPage({
 				onPrimaryAction={handleNextStepPrimaryAction}
 			/>
 
-			<section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-				<Card size="sm" className="rounded-lg shadow-none">
-					<CardHeader className="grid-cols-[1fr_auto] items-center gap-3">
-						<CardTitle className="text-sm text-muted-foreground">
-							平台状态
-						</CardTitle>
-						<CheckCircle2
-							className={cn(
-								'size-4',
-								platformReady ? 'text-emerald-600' : 'text-amber-600',
-							)}
-						/>
-					</CardHeader>
-					<CardContent className="space-y-3">
-						<div className="text-lg font-semibold">
-							{platformReady ? '核心服务可用' : '存在需要处理的服务状态'}
-						</div>
-						<div className="flex flex-wrap gap-2">
-							<StateBadge
-								state={
-									platformLoading ? 'todo' : platformReady ? 'ready' : 'partial'
-								}
-								label={
-									platformLoading
-										? '加载中'
-										: platformReady
-											? '已连接'
-											: '部分可用'
-								}
+			<section className="rounded-md border bg-background">
+				<div className="grid divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-[1.15fr_1fr_1fr_1fr]">
+					<div className="grid gap-3 p-4">
+						<div className="flex items-center justify-between gap-3">
+							<div className="text-xs font-medium text-muted-foreground">平台状态</div>
+							<CheckCircle2
+								className={cn(
+									'size-4',
+									platformReady ? 'text-emerald-600' : 'text-amber-600',
+								)}
 							/>
 						</div>
-					</CardContent>
-				</Card>
-
-				<Card size="sm" className="rounded-lg shadow-none">
-					<CardHeader className="grid-cols-[1fr_auto] items-center gap-3">
-						<CardTitle className="text-sm text-muted-foreground">
-							运行概览
-						</CardTitle>
-						<Clock3 className="size-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent className="grid grid-cols-3 gap-3 text-center">
-						<div>
-							<div className="text-2xl font-semibold tabular-nums">
-								{workflowRunCount}
-							</div>
-							<div className="text-xs text-muted-foreground">总运行</div>
+						<div className="text-base font-semibold">
+							{platformReady ? '核心服务可用' : '存在需要处理的服务状态'}
 						</div>
-						<div>
-							<div className="text-2xl font-semibold tabular-nums">
-								{completedWorkflowRunCount}
-							</div>
-							<div className="text-xs text-muted-foreground">完成</div>
+						<StateBadge
+							state={platformLoading ? 'todo' : platformReady ? 'ready' : 'partial'}
+							label={
+								platformLoading ? '加载中' : platformReady ? '已连接' : '部分可用'
+							}
+						/>
+					</div>
+					<div className="grid gap-3 p-4">
+						<div className="flex items-center justify-between gap-3">
+							<div className="text-xs font-medium text-muted-foreground">运行概览</div>
+							<Clock3 className="size-4 text-muted-foreground" />
 						</div>
-						<div>
-							<div className="text-2xl font-semibold tabular-nums">
-								{failedWorkflowRunCount}
+						<div className="grid grid-cols-3 gap-2">
+							<div>
+								<div className="text-xl font-semibold tabular-nums">{workflowRunCount}</div>
+								<div className="text-xs text-muted-foreground">总运行</div>
 							</div>
-							<div className="text-xs text-muted-foreground">失败</div>
+							<div>
+								<div className="text-xl font-semibold tabular-nums">
+									{completedWorkflowRunCount}
+								</div>
+								<div className="text-xs text-muted-foreground">完成</div>
+							</div>
+							<div>
+								<div className="text-xl font-semibold tabular-nums">
+									{failedWorkflowRunCount}
+								</div>
+								<div className="text-xs text-muted-foreground">失败</div>
+							</div>
 						</div>
-					</CardContent>
-				</Card>
-
-				<Card size="sm" className="rounded-lg shadow-none">
-					<CardHeader className="grid-cols-[1fr_auto] items-center gap-3">
-						<CardTitle className="text-sm text-muted-foreground">
-							连接器
-						</CardTitle>
-						<PlugZap className="size-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent className="space-y-3">
+					</div>
+					<div className="grid gap-3 p-4">
+						<div className="flex items-center justify-between gap-3">
+							<div className="text-xs font-medium text-muted-foreground">连接器</div>
+							<PlugZap className="size-4 text-muted-foreground" />
+						</div>
 						<div className="flex items-baseline gap-2">
-							<span className="text-2xl font-semibold tabular-nums">
+							<span className="text-xl font-semibold tabular-nums">
 								{connectorConfigCount}
 							</span>
 							<span className="text-sm text-muted-foreground">个配置</span>
@@ -296,19 +276,14 @@ export function DashboardViewPage({
 										: '待启用配置'
 							}
 						/>
-					</CardContent>
-				</Card>
-
-				<Card size="sm" className="rounded-lg shadow-none">
-					<CardHeader className="grid-cols-[1fr_auto] items-center gap-3">
-						<CardTitle className="text-sm text-muted-foreground">
-							待办
-						</CardTitle>
-						<ListChecks className="size-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent className="space-y-3">
+					</div>
+					<div className="grid gap-3 p-4">
+						<div className="flex items-center justify-between gap-3">
+							<div className="text-xs font-medium text-muted-foreground">待办</div>
+							<ListChecks className="size-4 text-muted-foreground" />
+						</div>
 						<div className="flex items-baseline gap-2">
-							<span className="text-2xl font-semibold tabular-nums">
+							<span className="text-xl font-semibold tabular-nums">
 								{topOpsTasks.length + pendingApprovals.length}
 							</span>
 							<span className="text-sm text-muted-foreground">项需要关注</span>
@@ -317,8 +292,8 @@ export function DashboardViewPage({
 							<Badge variant="outline">{pendingApprovals.length} 个审批</Badge>
 							<Badge variant="outline">{topOpsTasks.length} 个运维任务</Badge>
 						</div>
-					</CardContent>
-				</Card>
+					</div>
+				</div>
 			</section>
 
 			<section className="grid gap-4 border-y py-4">
