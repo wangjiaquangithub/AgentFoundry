@@ -16,10 +16,17 @@ from backend.persistence.migrations import sqlite_path_from_database_url
 
 POSTGRES_DATABASE_SCHEMES = frozenset({"postgresql", "postgres"})
 DATABASE_URL_ENV_VAR = "AGENTFOUNDRY_DATABASE_URL"
+DEPLOYMENT_ENV_VAR = "AGENTFOUNDRY_ENV"
+PRODUCTION_ENV_VALUES = frozenset({"prod", "production"})
 
 
 def is_postgres_database_url(database_url: str) -> bool:
     return urlparse(database_url.strip()).scheme in POSTGRES_DATABASE_SCHEMES
+
+
+def is_production_environment(environ: Mapping[str, str] | None = None) -> bool:
+    source = os.environ if environ is None else environ
+    return source.get(DEPLOYMENT_ENV_VAR, "").strip().lower() in PRODUCTION_ENV_VALUES
 
 
 @dataclass(frozen=True)
@@ -27,6 +34,8 @@ class DatabaseConfigurationStatus:
     """Database configuration status that is safe to expose in health checks."""
 
     env_var: str
+    deployment_env_var: str
+    production_mode: bool
     configured: bool
     scheme: str | None
     backend: str
@@ -47,9 +56,12 @@ def inspect_configured_database_status(
 ) -> DatabaseConfigurationStatus:
     source = os.environ if environ is None else environ
     database_url = source.get(DATABASE_URL_ENV_VAR, "").strip()
+    production_mode = is_production_environment(source)
     if not database_url:
         return DatabaseConfigurationStatus(
             env_var=DATABASE_URL_ENV_VAR,
+            deployment_env_var=DEPLOYMENT_ENV_VAR,
+            production_mode=production_mode,
             configured=False,
             scheme=None,
             backend="unconfigured",
@@ -69,6 +81,8 @@ def inspect_configured_database_status(
         driver_available = is_postgres_driver_available()
         return DatabaseConfigurationStatus(
             env_var=DATABASE_URL_ENV_VAR,
+            deployment_env_var=DEPLOYMENT_ENV_VAR,
+            production_mode=production_mode,
             configured=True,
             scheme=scheme,
             backend="postgresql",
@@ -87,6 +101,8 @@ def inspect_configured_database_status(
     if scheme == "sqlite":
         return DatabaseConfigurationStatus(
             env_var=DATABASE_URL_ENV_VAR,
+            deployment_env_var=DEPLOYMENT_ENV_VAR,
+            production_mode=production_mode,
             configured=True,
             scheme=scheme,
             backend="sqlite",
@@ -100,6 +116,8 @@ def inspect_configured_database_status(
 
     return DatabaseConfigurationStatus(
         env_var=DATABASE_URL_ENV_VAR,
+        deployment_env_var=DEPLOYMENT_ENV_VAR,
+        production_mode=production_mode,
         configured=True,
         scheme=scheme,
         backend="unsupported",
@@ -188,9 +206,33 @@ def create_configured_postgres_database(
 ) -> PostgresDatabase | None:
     source = os.environ if environ is None else environ
     database_url = source.get(DATABASE_URL_ENV_VAR, "").strip()
+    require_postgres_database_for_production(source)
     if not is_postgres_database_url(database_url):
         return None
     return create_postgres_database(database_url)
+
+
+def require_postgres_database_for_production(
+    environ: Mapping[str, str] | None = None,
+) -> DatabaseConfigurationStatus:
+    status = inspect_configured_database_status(environ)
+    if not status.production_mode or status.production_ready:
+        return status
+
+    if not status.configured:
+        raise RuntimeError(
+            "AGENTFOUNDRY_ENV=production requires AGENTFOUNDRY_DATABASE_URL "
+            "to use postgresql:// or postgres://."
+        )
+    if status.backend == "sqlite":
+        raise RuntimeError(
+            "AGENTFOUNDRY_ENV=production cannot use sqlite://. Configure "
+            "AGENTFOUNDRY_DATABASE_URL with postgresql:// or postgres://."
+        )
+    raise RuntimeError(
+        "AGENTFOUNDRY_ENV=production requires PostgreSQL persistence. Configure "
+        "AGENTFOUNDRY_DATABASE_URL with postgresql:// or postgres://."
+    )
 
 
 def create_database(database_url: str) -> SQLiteDatabase | PostgresDatabase:

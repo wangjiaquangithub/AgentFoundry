@@ -37,6 +37,10 @@ CHECKS = (
         (sys.executable, "scripts/check_phase2_postgres_runtime_dependencies.py"),
     ),
     (
+        "PostgreSQL production mode guard",
+        (sys.executable, "scripts/check_phase2_postgres_production_mode_guard.py"),
+    ),
+    (
         "PostgreSQL seed migration toggle",
         (sys.executable, "scripts/check_phase2_postgres_seed_migration_toggle.py"),
     ),

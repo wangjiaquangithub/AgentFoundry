@@ -31,6 +31,8 @@ from backend.persistence.database import (
     inspect_configured_database_status,
     is_postgres_driver_available,
     is_postgres_database_url,
+    is_production_environment,
+    require_postgres_database_for_production,
 )
 from backend.persistence.document_chunks import (
     DocumentChunkRecord,
@@ -208,6 +210,8 @@ __all__ = [
     "inspect_configured_database_status",
     "is_postgres_driver_available",
     "is_postgres_database_url",
+    "is_production_environment",
+    "require_postgres_database_for_production",
     "PostgresWorkflowReadRepository",
     "SQLiteWorkflowReadRepository",
 ]
