@@ -5,6 +5,8 @@ from __future__ import annotations
 from typing import Callable
 
 from backend.persistence import (
+    PostgresAgentCatalogReadRepository,
+    PostgresAgentCatalogWriteRepository,
     PostgresAuditEventReadRepository,
     PostgresAuditEventWriteRepository,
     PostgresDatabase,
@@ -26,6 +28,7 @@ from backend.persistence import (
     PostgresWorkflowWriteRepository,
     create_configured_postgres_database,
 )
+from backend.repositories.agents import PostgresAgentCatalogWriteThroughRepository
 from backend.repositories.members import PostgresMemberReadThroughRepository
 from backend.repositories.workflows import PostgresWorkflowRunReadThroughRepository
 from backend.services.knowledge import (
@@ -121,6 +124,21 @@ def build_configured_postgres_member_repository() -> (
     return PostgresMemberReadThroughRepository(
         postgres_reader=PostgresTenancyReadRepository(database),
         postgres_writer=PostgresTenancyWriteRepository(database),
+    )
+
+
+def build_configured_postgres_agent_repository() -> (
+    PostgresAgentCatalogWriteThroughRepository | None
+):
+    """Build the agent catalog repository adapter when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresAgentCatalogWriteThroughRepository(
+        postgres_reader=PostgresAgentCatalogReadRepository(database),
+        postgres_writer=PostgresAgentCatalogWriteRepository(database),
     )
 
 

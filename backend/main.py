@@ -106,11 +106,8 @@ from platform_config import (
 from repositories.agents import (
     AgentRepository,
     AgentRepositoryProtocol,
-    PostgresAgentCatalogWriteThroughRepository,
 )
 from backend.persistence import (
-    PostgresAgentCatalogReadRepository,
-    PostgresAgentCatalogWriteRepository,
     PostgresAgentRunReadRepository,
     PostgresAgentRunWriteRepository,
     PostgresApprovalReadRepository,
@@ -180,6 +177,7 @@ from services.knowledge_ingestion import PlatformKnowledgeIngestionService
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
 from services.composition import (
+    build_configured_postgres_agent_repository,
     build_configured_postgres_audit_event_read_repository,
     build_configured_postgres_audit_event_write_repository,
     build_configured_postgres_knowledge_base_read_repository,
@@ -221,14 +219,7 @@ member_fallback_repository = MemberRepository(PLATFORM_MEMBERS_PATH)
 
 
 def _build_agent_repository() -> AgentRepositoryProtocol:
-    database = create_configured_postgres_database()
-    if database is None:
-        return agent_fallback_repository
-
-    return PostgresAgentCatalogWriteThroughRepository(
-        postgres_reader=PostgresAgentCatalogReadRepository(database),
-        postgres_writer=PostgresAgentCatalogWriteRepository(database),
-    )
+    return build_configured_postgres_agent_repository() or agent_fallback_repository
 
 
 def _build_agent_run_repository() -> AgentRunRepositoryProtocol:
