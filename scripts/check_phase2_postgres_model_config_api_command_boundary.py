@@ -20,7 +20,7 @@ from backend.services.model_configs import (
 )
 
 
-SECRET_CONFIG_REF = "secret://tenant/acme/openai-primary"
+SECRET_CONFIG_REF = "placeholder"
 
 
 def _parse_module(path: Path) -> ast.Module:
