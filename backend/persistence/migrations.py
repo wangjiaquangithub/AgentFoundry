@@ -16,8 +16,8 @@ from pathlib import Path
 from types import ModuleType
 from urllib.parse import unquote, urlparse
 
-
 MIGRATIONS_DIR = Path(__file__).with_name("migrations")
+POSTGRES_DATABASE_SCHEMES = {"postgresql", "postgres"}
 
 
 @dataclass(frozen=True)
@@ -57,6 +57,13 @@ def sqlite_path_from_database_url(database_url: str) -> Path:
     if not parsed.path:
         raise ValueError("SQLite database URL must include a path.")
     return Path(unquote(parsed.path))
+
+
+def postgres_database_url_has_name(database_url: str) -> bool:
+    parsed = urlparse(database_url.strip())
+    if parsed.scheme not in POSTGRES_DATABASE_SCHEMES:
+        return False
+    return bool(parsed.path.strip("/"))
 
 
 def _import_psycopg() -> ModuleType:
@@ -107,6 +114,9 @@ def _apply_sqlite_migrations(database_url: str) -> list[Migration]:
 
 
 def _apply_postgres_migrations(database_url: str) -> list[Migration]:
+    if not postgres_database_url_has_name(database_url):
+        raise ValueError("PostgreSQL database URLs must include an explicit database name.")
+
     psycopg = _import_psycopg()
 
     applied: list[Migration] = []
@@ -141,7 +151,7 @@ def apply_migrations(database_url: str) -> list[Migration]:
     parsed = urlparse(database_url)
     if parsed.scheme == "sqlite":
         return _apply_sqlite_migrations(database_url)
-    if parsed.scheme in {"postgresql", "postgres"}:
+    if parsed.scheme in POSTGRES_DATABASE_SCHEMES:
         return _apply_postgres_migrations(database_url)
     raise ValueError(
         "Unsupported database URL scheme. Use postgresql:// for production "

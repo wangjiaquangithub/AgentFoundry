@@ -14,6 +14,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 MIGRATION_RUNNER = ROOT / "backend" / "persistence" / "migrations.py"
 MIGRATION_SHELL = ROOT / "scripts" / "migrate_agentfoundry.sh"
 MIGRATIONS_DIR = ROOT / "backend" / "persistence" / "migrations"
@@ -82,6 +83,11 @@ def _test_checks_scheme(test: ast.AST, expected: set[str]) -> bool:
         for comparator in test.comparators:
             if isinstance(comparator, (ast.List, ast.Set, ast.Tuple)):
                 values.extend(_constant_string(element) for element in comparator.elts)
+            elif (
+                isinstance(comparator, ast.Name)
+                and comparator.id == "POSTGRES_DATABASE_SCHEMES"
+            ):
+                values.extend(["postgresql", "postgres"])
             else:
                 values.append(_constant_string(comparator))
         if any(value in expected for value in values):
@@ -115,6 +121,10 @@ def _check_runner_contract(source: str) -> list[str]:
         errors.append("migration runner does not recognize PostgreSQL URL schemes")
     if "TIMESTAMPTZ" not in source:
         errors.append("PostgreSQL schema_migrations table must use TIMESTAMPTZ")
+    if "postgres_database_url_has_name" not in source:
+        errors.append(
+            "migration runner must require an explicit PostgreSQL database name"
+        )
     if "sqlite:// for explicit local development compatibility" not in source:
         errors.append(
             "migration runner errors must label sqlite:// as explicit local development compatibility"
@@ -164,6 +174,34 @@ def _check_runner_contract(source: str) -> list[str]:
     ):
         errors.append("apply_migrations must keep sqlite:// as an explicit compatibility path")
 
+    return errors
+
+
+def _check_runtime_contract() -> list[str]:
+    from backend.persistence.migrations import apply_migrations
+
+    errors: list[str] = []
+    for database_url in (
+        "postgresql://agentfoundry:agentfoundry@localhost",
+        "postgres://agentfoundry:agentfoundry@localhost/",
+        "postgresql://",
+    ):
+        try:
+            apply_migrations(database_url)
+        except ValueError as exc:
+            if "explicit database name" not in str(exc):
+                errors.append(
+                    "PostgreSQL migration error should require an explicit database name"
+                )
+        except RuntimeError as exc:
+            errors.append(
+                "PostgreSQL migration URL validation must run before driver loading: "
+                + str(exc)
+            )
+        else:
+            errors.append(
+                f"PostgreSQL migrations accepted a URL without database name: {database_url}"
+            )
     return errors
 
 
@@ -231,6 +269,7 @@ def _check_sql_portability() -> list[str]:
 def main() -> int:
     errors = [
         *_check_runner_contract(_read(MIGRATION_RUNNER)),
+        *_check_runtime_contract(),
         *_check_shell_contract(_read(MIGRATION_SHELL)),
         *_check_migration_registry(),
         *_check_sql_portability(),

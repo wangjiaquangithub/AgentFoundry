@@ -54,6 +54,11 @@ def _test_checks_scheme(test: ast.AST, expected: set[str]) -> bool:
         for comparator in test.comparators:
             if isinstance(comparator, (ast.List, ast.Set, ast.Tuple)):
                 values.extend(_constant_string(element) for element in comparator.elts)
+            elif (
+                isinstance(comparator, ast.Name)
+                and comparator.id == "POSTGRES_DATABASE_SCHEMES"
+            ):
+                values.extend(["postgresql", "postgres"])
             else:
                 values.append(_constant_string(comparator))
         if any(value in expected for value in values):
