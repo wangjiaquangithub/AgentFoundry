@@ -103,34 +103,51 @@ def _check_factory_contract() -> list[str]:
     return errors
 
 
-def _check_main_not_wiring_ingestion_service() -> list[str]:
-    tree = _parse_module(MAIN_MODULE)
-    ingestion_builder = _function_node(tree, "_build_knowledge_ingestion_service")
-    if ingestion_builder is None:
-        return ["backend/main.py must define _build_knowledge_ingestion_service"]
+def _check_selector_contract() -> list[str]:
+    tree = _parse_module(FACTORY_MODULE)
+    ingestion_selector = _function_node(tree, "build_knowledge_ingestion_service")
+    if ingestion_selector is None:
+        return [
+            "backend/services/composition.py must define "
+            "build_knowledge_ingestion_service",
+        ]
 
     errors: list[str] = []
     if not _calls_name(
-        ingestion_builder,
+        ingestion_selector,
         "build_configured_postgres_knowledge_ingestion_service",
     ):
         errors.append(
-            "backend/main.py _build_knowledge_ingestion_service must delegate "
-            "to services.composition",
+            "build_knowledge_ingestion_service must delegate to the configured "
+            "PostgreSQL ingestion service",
+        )
+    return errors
+
+
+def _check_main_not_wiring_ingestion_service() -> list[str]:
+    tree = _parse_module(MAIN_MODULE)
+    source = MAIN_MODULE.read_text(encoding="utf-8")
+
+    errors: list[str] = []
+    if "build_knowledge_ingestion_service" not in source:
+        errors.append("backend/main.py must use build_knowledge_ingestion_service")
+    if _function_node(tree, "_build_knowledge_ingestion_service") is not None:
+        errors.append(
+            "backend/main.py must not reintroduce _build_knowledge_ingestion_service",
         )
 
     for name in (
         "create_configured_postgres_database",
+        "build_configured_postgres_knowledge_ingestion_service",
         "PostgresKnowledgeBaseReadRepository",
         "PostgresDocumentWriteRepository",
         "PostgresDocumentChunkWriteRepository",
         "PostgresDocumentChunkReadRepository",
         "PostgresEmbeddingRecordWriteRepository",
     ):
-        if _references_name(ingestion_builder, name):
+        if name in source:
             errors.append(
-                "backend/main.py _build_knowledge_ingestion_service must not "
-                f"directly wire {name}",
+                f"backend/main.py must not directly wire {name}",
             )
     return errors
 
@@ -138,6 +155,7 @@ def _check_main_not_wiring_ingestion_service() -> list[str]:
 def main() -> int:
     errors = [
         *_check_factory_contract(),
+        *_check_selector_contract(),
         *_check_main_not_wiring_ingestion_service(),
     ]
 

@@ -94,8 +94,8 @@ def main() -> int:
     )
     _assert_contains(
         main_source,
-        "_build_knowledge_ingestion_service",
-        "main ingestion service builder",
+        "build_knowledge_ingestion_service",
+        "main ingestion service selector",
     )
     _assert_contains(
         composition_source,

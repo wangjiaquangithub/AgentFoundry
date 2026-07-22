@@ -67,7 +67,7 @@ def main() -> int:
     )
     _assert_contains(
         main_source,
-        "_build_knowledge_document_chunk_write_repository",
+        "build_knowledge_document_chunk_write_repository",
         "main PostgreSQL chunk write repository builder",
     )
     _assert_contains(

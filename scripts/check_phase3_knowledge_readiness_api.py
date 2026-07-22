@@ -70,8 +70,8 @@ def main() -> int:
     )
     _assert_contains(
         main_source,
-        "_build_knowledge_document_readiness_service",
-        "main readiness service builder",
+        "build_knowledge_document_readiness_service",
+        "main readiness service selector",
     )
 
     for repository_name in (

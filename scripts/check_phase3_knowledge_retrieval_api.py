@@ -72,8 +72,8 @@ def main() -> int:
     )
     _assert_contains(
         main_source,
-        "_build_knowledge_retrieval_service",
-        "main retrieval service builder",
+        "build_knowledge_retrieval_service",
+        "main retrieval service selector",
     )
 
     for repository_name in (

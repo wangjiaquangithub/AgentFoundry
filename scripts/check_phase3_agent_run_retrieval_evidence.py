@@ -128,6 +128,7 @@ async def main() -> None:
     )
 
     assert knowledge_context["knowledge_hits"]
+    assert knowledge_context["knowledge_hits"][0]["retrieval_source"] == "production"
     assert len(retrieval_events.records) == 1
     assert retrieval_events.records[0].agent_run_id == run_identity["turn_id"]
     assert len(audit_events.records) == 1
@@ -185,6 +186,7 @@ async def main() -> None:
         execution_context=execution_context(fallback_identity),
     )
     assert fallback_context["retrieval_readiness"]["status"] == "degraded"
+    assert fallback_context["knowledge_hits"][0]["retrieval_source"] == "dev_fallback"
     assert fallback_context["retrieval_readiness"]["production_hit_count"] == 0
     assert fallback_context["retrieval_readiness"]["dev_fallback_hit_count"] == 1
     assert fallback_context["retrieval_readiness"]["dev_fallback_used"] is True

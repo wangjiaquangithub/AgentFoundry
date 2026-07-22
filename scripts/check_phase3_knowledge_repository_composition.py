@@ -40,28 +40,28 @@ REPOSITORY_FACTORIES = {
 }
 
 MAIN_BUILDERS = {
-    "_build_knowledge_base_read_repository": (
+    "build_knowledge_base_read_repository": (
         "build_configured_postgres_knowledge_base_read_repository",
     ),
-    "_build_knowledge_base_write_repository": (
+    "build_knowledge_base_write_repository": (
         "build_configured_postgres_knowledge_base_write_repository",
     ),
-    "_build_knowledge_document_read_repository": (
+    "build_knowledge_document_read_repository": (
         "build_configured_postgres_knowledge_document_read_repository",
     ),
-    "_build_knowledge_document_write_repository": (
+    "build_knowledge_document_write_repository": (
         "build_configured_postgres_knowledge_document_write_repository",
     ),
-    "_build_knowledge_document_chunk_read_repository": (
+    "build_knowledge_document_chunk_read_repository": (
         "build_configured_postgres_knowledge_document_chunk_read_repository",
     ),
-    "_build_knowledge_document_chunk_write_repository": (
+    "build_knowledge_document_chunk_write_repository": (
         "build_configured_postgres_knowledge_document_chunk_write_repository",
     ),
-    "_build_knowledge_embedding_record_read_repository": (
+    "build_knowledge_embedding_record_read_repository": (
         "build_configured_postgres_knowledge_embedding_record_read_repository",
     ),
-    "_build_knowledge_embedding_record_write_repository": (
+    "build_knowledge_embedding_record_write_repository": (
         "build_configured_postgres_knowledge_embedding_record_write_repository",
     ),
 }
@@ -94,6 +94,10 @@ def _references_name(node: ast.AST, name: str) -> bool:
     return any(
         isinstance(child, ast.Name) and child.id == name for child in ast.walk(node)
     )
+
+
+def _body_references_name(node: ast.FunctionDef, name: str) -> bool:
+    return any(_references_name(statement, name) for statement in node.body)
 
 
 def _calls_name(node: ast.AST, name: str) -> bool:
@@ -132,25 +136,44 @@ def _check_composition_factories() -> list[str]:
     return errors
 
 
-def _check_main_builders_delegate() -> list[str]:
+def _check_composition_selectors_delegate() -> list[str]:
     errors: list[str] = []
-    tree = _parse_module(MAIN_MODULE)
+    tree = _parse_module(FACTORY_MODULE)
 
     for builder_name, factory_names in MAIN_BUILDERS.items():
         builder = _function_node(tree, builder_name)
         if builder is None:
-            errors.append(f"backend/main.py must define {builder_name}")
+            errors.append(f"backend/services/composition.py must define {builder_name}")
             continue
 
         expected_factory = factory_names[0]
         if not _calls_name(builder, expected_factory):
-            errors.append(f"backend/main.py {builder_name} must delegate to {expected_factory}")
+            errors.append(
+                "backend/services/composition.py "
+                f"{builder_name} must delegate to {expected_factory}",
+            )
 
         for forbidden in FORBIDDEN_MAIN_DIRECT_WIRING:
-            if _references_name(builder, forbidden):
+            if _body_references_name(builder, forbidden):
                 errors.append(
-                    f"backend/main.py {builder_name} must not directly wire {forbidden}",
+                    "backend/services/composition.py "
+                    f"{builder_name} must not directly wire {forbidden}",
                 )
+
+    return errors
+
+
+def _check_main_imports_selectors() -> list[str]:
+    errors: list[str] = []
+    source = MAIN_MODULE.read_text(encoding="utf-8")
+
+    for builder_name in MAIN_BUILDERS:
+        if builder_name not in source:
+            errors.append(f"backend/main.py must use {builder_name}")
+
+    for forbidden in FORBIDDEN_MAIN_DIRECT_WIRING:
+        if forbidden in source:
+            errors.append(f"backend/main.py must not directly wire {forbidden}")
 
     return errors
 
@@ -158,12 +181,14 @@ def _check_main_builders_delegate() -> list[str]:
 def main() -> int:
     errors = [
         *_check_composition_factories(),
-        *_check_main_builders_delegate(),
+        *_check_composition_selectors_delegate(),
+        *_check_main_imports_selectors(),
     ]
 
     print("Phase 3 PostgreSQL knowledge repository composition gate")
     print("- factories: backend/services/composition.py")
-    print("- API dependency builders: backend/main.py")
+    print("- API dependency selectors: backend/services/composition.py")
+    print("- main dependency injection: backend/main.py")
     print("- production persistence: PostgreSQL repositories")
     print("- main direct repository wiring: blocked")
 

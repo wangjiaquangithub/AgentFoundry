@@ -399,23 +399,26 @@ def main() -> int:
 
     _assert_contains(
         main_source,
-        "build_configured_postgres_knowledge_retrieval_service(\n        now=now_iso,",
+        "build_knowledge_retrieval_service(now=now_iso)",
         "main knowledge retrieval time provider wiring",
     )
 
-    retrieval_builder = main_source.split(
-        "def _build_knowledge_retrieval_service", 1
-    )[1].split("def _build_knowledge_ingestion_service", 1)[0]
+    retrieval_router_wiring = main_source.split(
+        "create_knowledge_retrieval_router(", 1
+    )[1].split("create_knowledge_retrieval_events_router(", 1)[0]
     for forbidden in (
         "SQLite",
         "PLATFORM_DEV_KNOWLEDGE_PATH",
         "DevKnowledgeRepository",
         "PlatformDevKnowledgeService",
         "jsonl",
+        "build_configured_postgres_knowledge_retrieval_service",
+        "PostgresRetrievalEventWriteRepository",
+        "PostgresAuditEventWriteRepository",
     ):
-        if forbidden in retrieval_builder:
+        if forbidden in retrieval_router_wiring:
             _fail(
-                "knowledge retrieval persistence builder must not use "
+                "backend/main.py knowledge retrieval wiring must not use "
                 f"{forbidden!r}"
             )
 

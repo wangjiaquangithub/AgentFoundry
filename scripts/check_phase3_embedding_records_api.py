@@ -81,8 +81,8 @@ def main() -> int:
     for wiring in (
         "create_knowledge_embedding_records_router",
         "KnowledgeEmbeddingRecordsRouteDependencies",
-        "_build_knowledge_embedding_record_read_repository",
-        "_build_knowledge_embedding_record_write_repository",
+        "build_knowledge_embedding_record_read_repository",
+        "build_knowledge_embedding_record_write_repository",
     ):
         _assert_contains(main_source, wiring, "main PostgreSQL embedding wiring")
 

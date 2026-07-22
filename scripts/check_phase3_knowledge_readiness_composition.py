@@ -103,39 +103,57 @@ def _check_factory_contract() -> list[str]:
     return errors
 
 
-def _check_main_not_wiring_readiness_service() -> list[str]:
-    tree = _parse_module(MAIN_MODULE)
-    readiness_builder = _function_node(
+def _check_selector_contract() -> list[str]:
+    tree = _parse_module(FACTORY_MODULE)
+    readiness_selector = _function_node(
         tree,
-        "_build_knowledge_document_readiness_service",
+        "build_knowledge_document_readiness_service",
     )
-    if readiness_builder is None:
+    if readiness_selector is None:
         return [
-            "backend/main.py must define "
-            "_build_knowledge_document_readiness_service",
+            "backend/services/composition.py must define "
+            "build_knowledge_document_readiness_service",
         ]
 
     errors: list[str] = []
     if not _calls_name(
-        readiness_builder,
+        readiness_selector,
         "build_configured_postgres_knowledge_document_readiness_service",
     ):
         errors.append(
-            "backend/main.py _build_knowledge_document_readiness_service must "
-            "delegate to services.composition",
+            "build_knowledge_document_readiness_service must delegate to the "
+            "configured PostgreSQL readiness service",
+        )
+    return errors
+
+
+def _check_main_not_wiring_readiness_service() -> list[str]:
+    tree = _parse_module(MAIN_MODULE)
+    source = MAIN_MODULE.read_text(encoding="utf-8")
+
+    errors: list[str] = []
+    if "build_knowledge_document_readiness_service" not in source:
+        errors.append(
+            "backend/main.py must use build_knowledge_document_readiness_service",
+        )
+    if _function_node(tree, "_build_knowledge_document_readiness_service") is not None:
+        errors.append(
+            "backend/main.py must not reintroduce "
+            "_build_knowledge_document_readiness_service",
         )
 
     for name in (
+        "create_configured_postgres_database",
+        "build_configured_postgres_knowledge_document_readiness_service",
         "PostgresKnowledgeBaseReadRepository",
         "PostgresDocumentReadRepository",
         "PostgresDocumentChunkReadRepository",
         "PostgresEmbeddingRecordReadRepository",
         "PostgresModelConfigReadRepository",
     ):
-        if _references_name(readiness_builder, name):
+        if name in source:
             errors.append(
-                "backend/main.py _build_knowledge_document_readiness_service "
-                f"must not directly wire {name}",
+                f"backend/main.py must not directly wire {name}",
             )
     return errors
 
@@ -143,6 +161,7 @@ def _check_main_not_wiring_readiness_service() -> list[str]:
 def main() -> int:
     errors = [
         *_check_factory_contract(),
+        *_check_selector_contract(),
         *_check_main_not_wiring_readiness_service(),
     ]
 

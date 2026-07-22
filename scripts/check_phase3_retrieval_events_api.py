@@ -127,9 +127,14 @@ def main() -> int:
     )
     _assert_contains(
         main_source,
-        "build_configured_postgres_retrieval_event_read_repository()",
-        "main PostgreSQL retrieval event read repository delegation",
+        "build_retrieval_event_read_repository",
+        "main retrieval event read repository selector",
     )
+    if "build_configured_postgres_retrieval_event_read_repository()" in main_source:
+        _fail(
+            "main retrieval event read repository wiring must use the "
+            "composition selector, not the configured PostgreSQL builder",
+        )
 
     forbidden_api_terms = {
         "SQLiteRetrieval",

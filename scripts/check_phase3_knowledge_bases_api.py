@@ -83,8 +83,8 @@ def main() -> int:
     for wiring in (
         "create_knowledge_bases_router",
         "KnowledgeBasesRouteDependencies",
-        "_build_knowledge_base_read_repository",
-        "_build_knowledge_base_write_repository",
+        "build_knowledge_base_read_repository",
+        "build_knowledge_base_write_repository",
     ):
         _assert_contains(main_source, wiring, "main PostgreSQL knowledge base wiring")
 

@@ -119,7 +119,7 @@ def _check_main_not_wiring_response_service() -> list[str]:
     errors: list[str] = []
     if not _calls_name(
         assignment,
-        "build_configured_postgres_knowledge_response_service",
+        "build_knowledge_response_service",
     ):
         errors.append(
             "backend/main.py knowledge_response_service must delegate "

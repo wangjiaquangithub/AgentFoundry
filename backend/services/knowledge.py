@@ -798,6 +798,7 @@ class PlatformKnowledgeResponseService:
         metadata = getattr(chunk, "metadata", {}) if chunk is not None else {}
         return {
             "knowledge_base_id": knowledge_base_id,
+            "retrieval_source": "production",
             "score": float(getattr(hit, "score", 0.0) or 0.0),
             "document_id": str(getattr(hit, "document_id", "")),
             "source": str(getattr(chunk, "source", "") or ""),
@@ -879,14 +880,19 @@ class PlatformKnowledgeResponseService:
                 if key in seen:
                     continue
                 seen.add(key)
-                hits.append(hit)
+                normalized_hit = dict(hit)
+                normalized_hit["retrieval_source"] = "dev_fallback"
+                hits.append(normalized_hit)
 
         hits.sort(key=lambda item: item["score"], reverse=True)
         trimmed_hits = hits[:top_k]
         dev_fallback_hit_count = sum(
             1
             for hit in trimmed_hits
-            if bool((hit.get("metadata") or {}).get("dev_fallback"))
+            if (
+                hit.get("retrieval_source") == "dev_fallback"
+                or bool((hit.get("metadata") or {}).get("dev_fallback"))
+            )
         )
         knowledge_error = (
             "; ".join(errors) if errors and not production_hit_count else None

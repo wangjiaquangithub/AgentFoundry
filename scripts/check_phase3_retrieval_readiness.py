@@ -85,6 +85,7 @@ async def main() -> None:
         knowledge_base_ids=["kb_support"],
     )
     assert hits
+    assert hits[0]["retrieval_source"] == "dev_fallback"
     assert fallback["status"] == "degraded"
     assert fallback["production_retriever_available"] is False
     assert fallback["production_hit_count"] == 0
@@ -105,7 +106,7 @@ async def main() -> None:
     assert production_ready["production_hit_count"] == 0
     assert production_ready["dev_fallback_hit_count"] == 1
 
-    _, _, production_ready = await service.search_agent_knowledge_bases(
+    production_hits, _, production_ready = await service.search_agent_knowledge_bases(
         knowledge_base_service=ProductionKnowledge(),
         dev_knowledge_service=DevKnowledge(),
         dev_knowledge_provider="agentfoundry-dev-local",
@@ -115,6 +116,7 @@ async def main() -> None:
         knowledge_base_ids=["kb_support"],
         top_k=1,
     )
+    assert production_hits[0]["retrieval_source"] == "production"
     assert production_ready["status"] == "ready"
     assert production_ready["production_retriever_available"] is True
     assert production_ready["production_hit_count"] == 1

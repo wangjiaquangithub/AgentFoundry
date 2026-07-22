@@ -2015,7 +2015,10 @@ class PlatformAgentRunService:
         dev_fallback_hit_count = sum(
             1
             for hit in knowledge_hits
-            if bool((hit.get("metadata") or {}).get("dev_fallback"))
+            if (
+                hit.get("retrieval_source") == "dev_fallback"
+                or bool((hit.get("metadata") or {}).get("dev_fallback"))
+            )
         )
         production_knowledge_hit_count = len(knowledge_hits) - dev_fallback_hit_count
 
