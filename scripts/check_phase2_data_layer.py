@@ -2288,6 +2288,9 @@ def _check_postgres_service_audit_write_records() -> list[str]:
 def _check_postgres_members_wired() -> list[str]:
     errors: list[str] = []
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    composition_source = (SERVICES_DIR / "composition.py").read_text(
+        encoding="utf-8",
+    )
     member_repository_source = (REPOSITORIES_DIR / "members.py").read_text(
         encoding="utf-8",
     )
@@ -2295,16 +2298,21 @@ def _check_postgres_members_wired() -> list[str]:
         encoding="utf-8",
     )
     main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+    composition_tree = ast.parse(
+        composition_source,
+        filename=str(SERVICES_DIR / "composition.py"),
+    )
 
-    required_main_imports = [
+    required_composition_imports = [
         "PostgresMemberReadThroughRepository",
         "PostgresTenancyReadRepository",
         "PostgresTenancyWriteRepository",
     ]
-    for imported_name in required_main_imports:
-        if not _module_imports_name(main_tree, imported_name):
+    for imported_name in required_composition_imports:
+        if not _module_imports_name(composition_tree, imported_name):
             errors.append(
-                f"backend/main.py must import {imported_name} for member PostgreSQL wiring",
+                "backend/services/composition.py must import "
+                f"{imported_name} for member PostgreSQL wiring",
             )
 
     if not _module_defines_function(main_tree, "_build_member_repository"):
@@ -2315,18 +2323,39 @@ def _check_postgres_members_wired() -> list[str]:
         errors.append(
             "backend/main.py must build member_repository through the PostgreSQL selector",
         )
-    if "PostgresMemberReadThroughRepository(" not in main_source:
+    if not _module_defines_function(
+        composition_tree,
+        "build_configured_postgres_member_repository",
+    ):
         errors.append(
-            "backend/main.py must wrap PostgreSQL tenancy repositories with "
+            "backend/services/composition.py must define "
+            "build_configured_postgres_member_repository",
+        )
+    if "build_configured_postgres_member_repository()" not in main_source:
+        errors.append(
+            "backend/main.py must delegate PostgreSQL member repository "
+            "construction to services.composition",
+        )
+    if "PostgresMemberReadThroughRepository(" not in composition_source:
+        errors.append(
+            "backend/services/composition.py must wrap PostgreSQL tenancy repositories with "
             "PostgresMemberReadThroughRepository",
         )
-    if "postgres_reader=PostgresTenancyReadRepository(database)" not in main_source:
+    if (
+        "postgres_reader=PostgresTenancyReadRepository(database)"
+        not in composition_source
+    ):
         errors.append(
-            "backend/main.py must pass the PostgreSQL tenancy reader into the member read-through repository",
+            "backend/services/composition.py must pass the PostgreSQL tenancy "
+            "reader into the member read-through repository",
         )
-    if "postgres_writer=PostgresTenancyWriteRepository(database)" not in main_source:
+    if (
+        "postgres_writer=PostgresTenancyWriteRepository(database)"
+        not in composition_source
+    ):
         errors.append(
-            "backend/main.py must pass the PostgreSQL tenancy writer into the member read-through repository",
+            "backend/services/composition.py must pass the PostgreSQL tenancy "
+            "writer into the member read-through repository",
         )
     if "repository=member_repository" not in main_source:
         errors.append(

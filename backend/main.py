@@ -120,8 +120,6 @@ from backend.persistence import (
     PostgresModelConfigReadRepository,
     PostgresRuntimeReadRepository,
     PostgresRuntimeWriteRepository,
-    PostgresTenancyReadRepository,
-    PostgresTenancyWriteRepository,
     PostgresToolCallReadRepository,
     PostgresToolCallWriteRepository,
     PostgresToolGovernanceReadRepository,
@@ -147,7 +145,6 @@ from repositories.memories import PlatformMemoryRepository
 from repositories.members import (
     MemberRepository,
     MemberRepositoryProtocol,
-    PostgresMemberReadThroughRepository,
 )
 from repositories.workflows import (
     PostgresWorkflowRunReadThroughRepository,
@@ -200,6 +197,7 @@ from services.composition import (
     build_configured_postgres_knowledge_ingestion_service,
     build_configured_postgres_knowledge_response_service,
     build_configured_postgres_knowledge_retrieval_service,
+    build_configured_postgres_member_repository,
     build_configured_postgres_model_config_service,
     build_configured_postgres_retrieval_event_read_repository,
     build_configured_postgres_retrieval_event_write_repository,
@@ -353,14 +351,7 @@ def _build_retrieval_event_read_repository() -> Any | None:
 
 
 def _build_member_repository() -> MemberRepositoryProtocol:
-    database = create_configured_postgres_database()
-    if database is None:
-        return member_fallback_repository
-
-    return PostgresMemberReadThroughRepository(
-        postgres_reader=PostgresTenancyReadRepository(database),
-        postgres_writer=PostgresTenancyWriteRepository(database),
-    )
+    return build_configured_postgres_member_repository() or member_fallback_repository
 
 
 connector_config_repository = ConnectorConfigRepository(

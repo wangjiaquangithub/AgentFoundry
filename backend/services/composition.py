@@ -20,8 +20,11 @@ from backend.persistence import (
     PostgresModelConfigWriteRepository,
     PostgresRetrievalEventReadRepository,
     PostgresRetrievalEventWriteRepository,
+    PostgresTenancyReadRepository,
+    PostgresTenancyWriteRepository,
     create_configured_postgres_database,
 )
+from backend.repositories.members import PostgresMemberReadThroughRepository
 from backend.services.knowledge import (
     PlatformKnowledgeDocumentReadinessService,
     PlatformKnowledgeResponseService,
@@ -101,6 +104,21 @@ def build_configured_postgres_retrieval_event_write_repository() -> (
         return None
 
     return PostgresRetrievalEventWriteRepository(database)
+
+
+def build_configured_postgres_member_repository() -> (
+    PostgresMemberReadThroughRepository | None
+):
+    """Build the member repository adapter when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresMemberReadThroughRepository(
+        postgres_reader=PostgresTenancyReadRepository(database),
+        postgres_writer=PostgresTenancyWriteRepository(database),
+    )
 
 
 def build_configured_postgres_knowledge_base_read_repository() -> (
