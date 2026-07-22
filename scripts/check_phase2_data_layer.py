@@ -499,6 +499,10 @@ def _check_postgres_url_detection_boundary() -> list[str]:
     errors: list[str] = []
 
     database_tree = ast.parse(DATABASE_MODULE.read_text(encoding="utf-8"), filename=str(DATABASE_MODULE))
+    composition_tree = ast.parse(
+        COMPOSITION_MODULE.read_text(encoding="utf-8"),
+        filename=str(COMPOSITION_MODULE),
+    )
     main_tree = ast.parse(MAIN_MODULE.read_text(encoding="utf-8"), filename=str(MAIN_MODULE))
 
     if not _module_defines_function(database_tree, "is_postgres_database_url"):
@@ -521,10 +525,10 @@ def _check_postgres_url_detection_boundary() -> list[str]:
             "backend/main.py must not detect PostgreSQL URLs directly; use create_configured_postgres_database",
         )
 
-    if not _module_uses_name(main_tree, "create_configured_postgres_database"):
+    if not _module_uses_name(composition_tree, "create_configured_postgres_database"):
         errors.append(
-            "backend/main.py must use backend.persistence.create_configured_postgres_database "
-            "for PostgreSQL database selection",
+            "backend/services/composition.py must use "
+            "backend.persistence.create_configured_postgres_database for PostgreSQL database selection",
         )
 
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
@@ -800,16 +804,45 @@ def _check_postgres_read_tenant_boundary() -> list[str]:
 def _check_postgres_runtime_provider_reads_wired() -> list[str]:
     errors: list[str] = []
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    composition_source = COMPOSITION_MODULE.read_text(encoding="utf-8")
     platform_status_source = PLATFORM_STATUS_SERVICE_MODULE.read_text(encoding="utf-8")
     main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+    composition_tree = ast.parse(composition_source, filename=str(COMPOSITION_MODULE))
 
-    if not _module_imports_name(main_tree, "PostgresRuntimeReadRepository"):
+    if not _module_imports_name(composition_tree, "PostgresRuntimeReadRepository"):
         errors.append(
-            "backend/main.py must import PostgresRuntimeReadRepository for runtime provider reads",
+            "backend/services/composition.py must import PostgresRuntimeReadRepository "
+            "for runtime provider reads",
+        )
+    if not _module_defines_function(
+        composition_tree,
+        "build_configured_postgres_runtime_read_repository",
+    ):
+        errors.append(
+            "backend/services/composition.py must define "
+            "build_configured_postgres_runtime_read_repository for PostgreSQL runtime provider reads",
+        )
+    if "return PostgresRuntimeReadRepository(database)" not in composition_source:
+        errors.append(
+            "backend/services/composition.py must build PostgresRuntimeReadRepository "
+            "from the configured PostgreSQL database",
+        )
+    if not _module_imports_name(
+        main_tree,
+        "build_configured_postgres_runtime_read_repository",
+    ):
+        errors.append(
+            "backend/main.py must import build_configured_postgres_runtime_read_repository "
+            "from backend/services/composition.py",
         )
     if not _module_defines_function(main_tree, "_build_runtime_read_repository"):
         errors.append(
             "backend/main.py must define _build_runtime_read_repository for PostgreSQL runtime provider reads",
+        )
+    if "return build_configured_postgres_runtime_read_repository()" not in main_source:
+        errors.append(
+            "backend/main.py must delegate PostgreSQL runtime provider repository construction "
+            "to backend/services/composition.py",
         )
     if "runtime_provider_reader=" not in main_source:
         errors.append(
@@ -834,16 +867,45 @@ def _check_postgres_runtime_provider_reads_wired() -> list[str]:
 def _check_postgres_runtime_invocation_writes_wired() -> list[str]:
     errors: list[str] = []
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    composition_source = COMPOSITION_MODULE.read_text(encoding="utf-8")
     agent_run_source = (SERVICES_DIR / "agent_runs.py").read_text(encoding="utf-8")
     main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+    composition_tree = ast.parse(composition_source, filename=str(COMPOSITION_MODULE))
 
-    if not _module_imports_name(main_tree, "PostgresRuntimeWriteRepository"):
+    if not _module_imports_name(composition_tree, "PostgresRuntimeWriteRepository"):
         errors.append(
-            "backend/main.py must import PostgresRuntimeWriteRepository for runtime invocation writes",
+            "backend/services/composition.py must import PostgresRuntimeWriteRepository "
+            "for runtime invocation writes",
+        )
+    if not _module_defines_function(
+        composition_tree,
+        "build_configured_postgres_runtime_write_repository",
+    ):
+        errors.append(
+            "backend/services/composition.py must define "
+            "build_configured_postgres_runtime_write_repository for PostgreSQL runtime invocation writes",
+        )
+    if "return PostgresRuntimeWriteRepository(database)" not in composition_source:
+        errors.append(
+            "backend/services/composition.py must build PostgresRuntimeWriteRepository "
+            "from the configured PostgreSQL database",
+        )
+    if not _module_imports_name(
+        main_tree,
+        "build_configured_postgres_runtime_write_repository",
+    ):
+        errors.append(
+            "backend/main.py must import build_configured_postgres_runtime_write_repository "
+            "from backend/services/composition.py",
         )
     if not _module_defines_function(main_tree, "_build_runtime_write_repository"):
         errors.append(
             "backend/main.py must define _build_runtime_write_repository for PostgreSQL runtime invocation writes",
+        )
+    if "return build_configured_postgres_runtime_write_repository()" not in main_source:
+        errors.append(
+            "backend/main.py must delegate PostgreSQL runtime invocation repository construction "
+            "to backend/services/composition.py",
         )
     if "runtime_invocation_writer=" not in main_source:
         errors.append(

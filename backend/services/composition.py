@@ -28,6 +28,8 @@ from backend.persistence import (
     PostgresModelConfigWriteRepository,
     PostgresRetrievalEventReadRepository,
     PostgresRetrievalEventWriteRepository,
+    PostgresRuntimeReadRepository,
+    PostgresRuntimeWriteRepository,
     PostgresTenancyReadRepository,
     PostgresTenancyWriteRepository,
     PostgresToolCallReadRepository,
@@ -194,6 +196,30 @@ def build_configured_postgres_memory_item_write_repository() -> (
         return None
 
     return PostgresMemoryItemWriteRepository(database)
+
+
+def build_configured_postgres_runtime_read_repository() -> (
+    PostgresRuntimeReadRepository | None
+):
+    """Build the runtime read repository when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresRuntimeReadRepository(database)
+
+
+def build_configured_postgres_runtime_write_repository() -> (
+    PostgresRuntimeWriteRepository | None
+):
+    """Build the runtime write repository when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresRuntimeWriteRepository(database)
 
 
 def build_configured_postgres_member_repository() -> (
