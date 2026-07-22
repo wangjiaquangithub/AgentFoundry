@@ -29,6 +29,7 @@ from backend.persistence.database import (
     create_postgres_database,
     create_sqlite_database,
     inspect_configured_database_status,
+    is_postgres_driver_available,
     is_postgres_database_url,
 )
 from backend.persistence.document_chunks import (
@@ -205,6 +206,7 @@ __all__ = [
     "create_postgres_database",
     "create_sqlite_database",
     "inspect_configured_database_status",
+    "is_postgres_driver_available",
     "is_postgres_database_url",
     "PostgresWorkflowReadRepository",
     "SQLiteWorkflowReadRepository",

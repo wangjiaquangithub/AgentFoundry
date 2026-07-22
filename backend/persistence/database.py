@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import sqlite3
 from collections.abc import Iterator, Mapping
+from importlib.util import find_spec
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -30,7 +31,14 @@ class DatabaseConfigurationStatus:
     scheme: str | None
     backend: str
     production_ready: bool
+    driver_package: str | None
+    driver_available: bool
+    runtime_ready: bool
     message: str
+
+
+def is_postgres_driver_available() -> bool:
+    return find_spec("psycopg") is not None
 
 
 def inspect_configured_database_status(
@@ -45,6 +53,9 @@ def inspect_configured_database_status(
             scheme=None,
             backend="unconfigured",
             production_ready=False,
+            driver_package=None,
+            driver_available=False,
+            runtime_ready=False,
             message=(
                 "Set AGENTFOUNDRY_DATABASE_URL to postgresql:// for the "
                 "production data layer."
@@ -53,13 +64,21 @@ def inspect_configured_database_status(
 
     scheme = urlparse(database_url).scheme or None
     if is_postgres_database_url(database_url):
+        driver_available = is_postgres_driver_available()
         return DatabaseConfigurationStatus(
             env_var=DATABASE_URL_ENV_VAR,
             configured=True,
             scheme=scheme,
             backend="postgresql",
             production_ready=True,
-            message="Configured for PostgreSQL production persistence.",
+            driver_package="psycopg",
+            driver_available=driver_available,
+            runtime_ready=driver_available,
+            message=(
+                "Configured for PostgreSQL production persistence."
+                if driver_available
+                else "Configured for PostgreSQL, but the psycopg driver is not available."
+            ),
         )
 
     if scheme == "sqlite":
@@ -69,6 +88,9 @@ def inspect_configured_database_status(
             scheme=scheme,
             backend="sqlite",
             production_ready=False,
+            driver_package=None,
+            driver_available=False,
+            runtime_ready=False,
             message="sqlite:// is only for explicit local development compatibility.",
         )
 
@@ -78,6 +100,9 @@ def inspect_configured_database_status(
         scheme=scheme,
         backend="unsupported",
         production_ready=False,
+        driver_package=None,
+        driver_available=False,
+        runtime_ready=False,
         message=(
             "Unsupported database URL scheme. Use postgresql:// for production "
             "or sqlite:// for explicit local development compatibility."

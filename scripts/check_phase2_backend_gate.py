@@ -29,6 +29,10 @@ CHECKS = (
         (sys.executable, "scripts/check_phase2_postgres_config_status.py"),
     ),
     (
+        "PostgreSQL runtime dependencies",
+        (sys.executable, "scripts/check_phase2_postgres_runtime_dependencies.py"),
+    ),
+    (
         "platform database status",
         (sys.executable, "scripts/check_phase2_platform_database_status.py"),
     ),
