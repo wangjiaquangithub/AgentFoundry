@@ -77,6 +77,37 @@ type SelectedRun =
 
 type RunTypeFilter = 'all' | 'agent' | 'workflow';
 type RunStatusFilter = 'all' | PlatformOperationalStatus;
+type RunListItem =
+	| {
+			type: 'agent';
+			id: string;
+			title: string;
+			description: string;
+			timestamp: string;
+			startedAt: string;
+			finishedAt?: string;
+			duration: string;
+			status: PlatformOperationalStatus;
+			agentId?: string;
+			owner?: string;
+			scope?: string;
+			raw: MonitoringAgentTurn;
+	  }
+	| {
+			type: 'workflow';
+			id: string;
+			title: string;
+			description: string;
+			timestamp: string;
+			startedAt: string;
+			finishedAt?: string;
+			duration: string;
+			status: PlatformOperationalStatus;
+			agentId?: string;
+			owner?: string;
+			scope?: string;
+			raw: EnterpriseWorkflowRunHistoryItem;
+	  };
 
 const runStatuses: PlatformOperationalStatus[] = [
 	'pending',
@@ -99,6 +130,34 @@ function formatRunStatusCounts(
 	}));
 }
 
+function formatDuration(startedAt?: string, finishedAt?: string) {
+	if (!startedAt) {
+		return '-';
+	}
+
+	const start = new Date(startedAt).getTime();
+	const end = finishedAt ? new Date(finishedAt).getTime() : Date.now();
+
+	if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) {
+		return '-';
+	}
+
+	const seconds = Math.max(1, Math.round((end - start) / 1000));
+	if (seconds < 60) {
+		return `${seconds}s`;
+	}
+
+	const minutes = Math.floor(seconds / 60);
+	const remainingSeconds = seconds % 60;
+	if (minutes < 60) {
+		return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+	}
+
+	const hours = Math.floor(minutes / 60);
+	const remainingMinutes = minutes % 60;
+	return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+}
+
 export function RunsViewPage({
 	monitoringHealthState,
 	monitoringLoading,
@@ -117,16 +176,22 @@ export function RunsViewPage({
 	const [runStatusFilter, setRunStatusFilter] =
 		useState<RunStatusFilter>('all');
 	const [runKeywordFilter, setRunKeywordFilter] = useState('');
-	const runItems = useMemo(
-		() => [
+	const runItems = useMemo<RunListItem[]>(
+		() =>
+			[
 			...recentAgentTurns.map((turn) => ({
 				type: 'agent' as const,
 				id: turn.id,
 				title: turn.question,
 				description: turn.answer,
 				timestamp: turn.createdAt,
+				startedAt: turn.createdAt,
+				finishedAt: turn.createdAt,
+				duration: formatDuration(turn.createdAt, turn.createdAt),
 				status: 'success' as PlatformOperationalStatus,
 				agentId: turn.agentId,
+				owner: undefined,
+				scope: undefined,
 				raw: turn,
 			})),
 			...recentWorkflowRuns.map((run) => ({
@@ -135,14 +200,20 @@ export function RunsViewPage({
 				title: run.workflow_name,
 				description: run.summary || formatTimestamp(run.finished_at || run.started_at),
 				timestamp: run.finished_at || run.started_at,
+				startedAt: run.started_at,
+				finishedAt: run.finished_at,
+				duration: formatDuration(run.started_at, run.finished_at),
 				status: normalizePlatformStatus(run.status),
 				agentId: run.agent_id,
+				owner: run.user_id,
+				scope: run.tenant,
 				raw: run,
 			})),
-		].sort(
-			(a, b) =>
-				new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-		),
+		].sort((a, b) => {
+			const left = new Date(a.timestamp).getTime();
+			const right = new Date(b.timestamp).getTime();
+			return (Number.isFinite(right) ? right : 0) - (Number.isFinite(left) ? left : 0);
+		}),
 		[recentAgentTurns, recentWorkflowRuns],
 	);
 	const filteredRunItems = useMemo(() => {
@@ -154,7 +225,7 @@ export function RunsViewPage({
 				runStatusFilter === 'all' || item.status === runStatusFilter;
 			const matchesKeyword =
 				keyword.length === 0 ||
-				[item.title, item.description, item.agentId, item.id]
+				[item.title, item.description, item.agentId, item.owner, item.scope, item.id]
 					.filter(Boolean)
 					.some((value) => String(value).toLowerCase().includes(keyword));
 
@@ -203,8 +274,6 @@ export function RunsViewPage({
 			},
 		];
 	}, [runItems, t]);
-	const failedRunCount = operationalSummary[0]?.value || 0;
-	const runningRunCount = operationalSummary[1]?.value || 0;
 	const hasRunFilters =
 		runTypeFilter !== 'all' ||
 		runStatusFilter !== 'all' ||
@@ -331,153 +400,114 @@ export function RunsViewPage({
 					</div>
 				</div>
 
-				<div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_18rem]">
-					<div className="grid gap-3">
-						<div className="grid gap-2 md:grid-cols-3">
-							{operationalSummary.map((item) => {
-								const SummaryIcon = item.icon;
-								return (
-									<button
-										key={item.label}
-										type="button"
-										onClick={() => {
-											setRunStatusFilter(item.statusFilter);
-											if (item.id === 'coverage') {
-												setRunTypeFilter('all');
-											}
-										}}
-										className={cn(
-											'grid grid-cols-[1fr_auto] gap-3 rounded-md border px-3 py-2.5 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-											item.tone,
-										)}
-									>
-										<div className="min-w-0">
-											<div className="truncate text-xs font-medium text-muted-foreground">
-												{item.label}
-											</div>
-											<div className="mt-1 text-lg font-semibold tabular-nums">
-												{monitoringLoading ? '-' : item.value}
-											</div>
-											<div className="mt-0.5 truncate text-xs text-muted-foreground">
-												{item.helper}
-											</div>
+				<div className="grid gap-3">
+					<div className="grid gap-2 md:grid-cols-3">
+						{operationalSummary.map((item) => {
+							const SummaryIcon = item.icon;
+							return (
+								<button
+									key={item.label}
+									type="button"
+									onClick={() => {
+										setRunStatusFilter(item.statusFilter);
+										if (item.id === 'coverage') {
+											setRunTypeFilter('all');
+										}
+									}}
+									className={cn(
+										'grid grid-cols-[1fr_auto] gap-3 rounded-md border px-3 py-2.5 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+										item.tone,
+									)}
+								>
+									<div className="min-w-0">
+										<div className="truncate text-xs font-medium text-muted-foreground">
+											{item.label}
 										</div>
-										<SummaryIcon className="mt-0.5 size-4 text-muted-foreground" />
-									</button>
-								);
-							})}
-						</div>
-
-						<PlatformFilterBar
-							resultLabel={t('platform.ux.filters.results', {
-								count: filteredRunItems.length,
-							})}
-							clearLabel={t('platform.ux.filters.clear')}
-							onClear={resetRunFilters}
-							clearDisabled={!hasRunFilters}
-						>
-							<Select
-								value={runTypeFilter}
-								onValueChange={(value) =>
-									setRunTypeFilter(value as RunTypeFilter)
-								}
-							>
-								<SelectTrigger className="h-9 w-full">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">
-										{t('platform.monitoring.allTypes')}
-									</SelectItem>
-									<SelectItem value="agent">
-										{t('platform.monitoring.agentRunType')}
-									</SelectItem>
-									<SelectItem value="workflow">
-										{t('platform.monitoring.workflowRunType')}
-									</SelectItem>
-								</SelectContent>
-							</Select>
-							<Select
-								value={runStatusFilter}
-								onValueChange={(value) =>
-									setRunStatusFilter(value as RunStatusFilter)
-								}
-							>
-								<SelectTrigger className="h-9 w-full">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">
-										{t('platform.monitoring.allStatuses')}
-									</SelectItem>
-									{runStatuses.map((status) => (
-										<SelectItem key={status} value={status}>
-											{t(`platform.statuses.${status}`)}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							<Input
-								className="h-9 md:col-span-2 xl:col-span-4"
-								value={runKeywordFilter}
-								onChange={(event) => setRunKeywordFilter(event.target.value)}
-								placeholder={t('platform.monitoring.keywordPlaceholder')}
-							/>
-						</PlatformFilterBar>
+										<div className="mt-1 text-lg font-semibold tabular-nums">
+											{monitoringLoading ? '-' : item.value}
+										</div>
+										<div className="mt-0.5 truncate text-xs text-muted-foreground">
+											{item.helper}
+										</div>
+									</div>
+									<SummaryIcon className="mt-0.5 size-4 text-muted-foreground" />
+								</button>
+							);
+						})}
 					</div>
 
-					<aside className="hidden rounded-md border bg-background p-3 shadow-sm lg:block">
-						<div className="text-xs font-medium text-muted-foreground">
-							{t('platform.monitoring.monitoringFocus')}
-						</div>
-						<div className="mt-3 grid gap-2">
-							<button
-								type="button"
-								onClick={() => setRunStatusFilter('failed')}
-								className="grid grid-cols-[1fr_auto] gap-2 rounded-md border px-3 py-2 text-left transition-colors hover:bg-red-500/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-							>
-								<span className="text-sm font-medium">
-									{t('platform.monitoring.focusFailures')}
-								</span>
-								<span className="text-sm font-semibold tabular-nums">
-									{failedRunCount}
-								</span>
-								<span className="col-span-2 text-xs text-muted-foreground">
-									{t('platform.monitoring.focusFailuresHelper')}
-								</span>
-							</button>
-							<button
-								type="button"
-								onClick={() => setRunStatusFilter('running')}
-								className="grid grid-cols-[1fr_auto] gap-2 rounded-md border px-3 py-2 text-left transition-colors hover:bg-blue-500/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-							>
-								<span className="text-sm font-medium">
-									{t('platform.monitoring.focusRuntime')}
-								</span>
-								<span className="text-sm font-semibold tabular-nums">
-									{runningRunCount}
-								</span>
-								<span className="col-span-2 text-xs text-muted-foreground">
-									{t('platform.monitoring.focusRuntimeHelper')}
-								</span>
-							</button>
-							{monitoringError ? (
-								<div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-muted-foreground">
-									<div className="font-medium text-foreground">
-										{platformServiceUnavailableTitle}
-									</div>
-									<div className="mt-1">
-										{normalizePlatformErrorMessage(monitoringError)}
-									</div>
-								</div>
-							) : null}
-						</div>
-					</aside>
+					<PlatformFilterBar
+						resultLabel={t('platform.ux.filters.results', {
+							count: filteredRunItems.length,
+						})}
+						clearLabel={t('platform.ux.filters.clear')}
+						onClear={resetRunFilters}
+						clearDisabled={!hasRunFilters}
+					>
+						<Select
+							value={runTypeFilter}
+							onValueChange={(value) =>
+								setRunTypeFilter(value as RunTypeFilter)
+							}
+						>
+							<SelectTrigger className="h-9 w-full">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">
+									{t('platform.monitoring.allTypes')}
+								</SelectItem>
+								<SelectItem value="agent">
+									{t('platform.monitoring.agentRunType')}
+								</SelectItem>
+								<SelectItem value="workflow">
+									{t('platform.monitoring.workflowRunType')}
+								</SelectItem>
+							</SelectContent>
+						</Select>
+						<Select
+							value={runStatusFilter}
+							onValueChange={(value) =>
+								setRunStatusFilter(value as RunStatusFilter)
+							}
+						>
+							<SelectTrigger className="h-9 w-full">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">
+									{t('platform.monitoring.allStatuses')}
+								</SelectItem>
+								{runStatuses.map((status) => (
+									<SelectItem key={status} value={status}>
+										{t(`platform.statuses.${status}`)}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<Input
+							className="h-9 md:col-span-2 xl:col-span-4"
+							value={runKeywordFilter}
+							onChange={(event) => setRunKeywordFilter(event.target.value)}
+							placeholder={t('platform.monitoring.keywordPlaceholder')}
+						/>
+					</PlatformFilterBar>
 				</div>
+
+				{monitoringError && runItems.length > 0 ? (
+					<div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-muted-foreground">
+						<span className="font-medium text-foreground">
+							{platformServiceUnavailableTitle}
+						</span>
+						<span className="ml-2">
+							{normalizePlatformErrorMessage(monitoringError)}
+						</span>
+					</div>
+				) : null}
 
 				{isInitialLoading ? (
 					<div className="overflow-hidden rounded-md border bg-background">
-						<div className="hidden grid-cols-[7rem_minmax(0,1.8fr)_8rem_minmax(8rem,0.8fr)_10rem_4.5rem] gap-3 border-b bg-muted/35 px-3 py-2 lg:grid">
+						<div className="hidden grid-cols-[8rem_minmax(0,2fr)_minmax(8rem,0.8fr)_7rem_10rem_4.5rem] gap-3 border-b bg-muted/35 px-3 py-2 lg:grid">
 							<Skeleton className="h-4 w-14" />
 							<Skeleton className="h-4 w-28" />
 							<Skeleton className="h-4 w-16" />
@@ -489,7 +519,7 @@ export function RunsViewPage({
 							{[0, 1, 2, 3, 4].map((item) => (
 								<div
 									key={item}
-									className="grid gap-3 border-b px-3 py-3 last:border-b-0 lg:grid-cols-[7rem_minmax(0,1.8fr)_8rem_minmax(8rem,0.8fr)_10rem_4.5rem] lg:items-center"
+									className="grid gap-3 border-b px-3 py-3 last:border-b-0 lg:grid-cols-[8rem_minmax(0,2fr)_minmax(8rem,0.8fr)_7rem_10rem_4.5rem] lg:items-center"
 								>
 									<Skeleton className="h-7 w-24" />
 									<div className="grid gap-2">
@@ -531,12 +561,12 @@ export function RunsViewPage({
 					/>
 				) : (
 					<div className="overflow-hidden rounded-md border bg-background shadow-sm">
-						<div className="hidden grid-cols-[7rem_minmax(0,1.8fr)_8rem_minmax(8rem,0.8fr)_10rem_4.5rem] gap-3 border-b bg-muted/35 px-3 py-2 text-xs font-medium text-muted-foreground lg:grid">
-							<span>{t('platform.monitoring.type')}</span>
-							<span>{t('platform.monitoring.runObject')}</span>
+						<div className="hidden grid-cols-[8rem_minmax(0,2fr)_minmax(8rem,0.8fr)_7rem_10rem_4.5rem] gap-3 border-b bg-muted/35 px-3 py-2 text-xs font-medium text-muted-foreground lg:grid">
 							<span>{t('platform.monitoring.filterStatus')}</span>
+							<span>{t('platform.monitoring.runObject')}</span>
 							<span>{t('platform.monitoring.agent')}</span>
-							<span>{t('platform.monitoring.time')}</span>
+							<span>{t('platform.monitoring.duration')}</span>
+							<span>{t('platform.monitoring.updatedAt')}</span>
 							<span className="text-right">{t('platform.monitoring.actions')}</span>
 						</div>
 						<div>
@@ -556,7 +586,7 @@ export function RunsViewPage({
 											setSelectedRun({ type: item.type, id: item.id });
 										}}
 										className={cn(
-											'grid w-full gap-3 border-b border-l-2 border-l-transparent px-3 py-3 text-left text-xs transition-colors last:border-b-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:grid-cols-[7rem_minmax(0,1.8fr)_8rem_minmax(8rem,0.8fr)_10rem_4.5rem] lg:items-center',
+											'grid w-full gap-3 border-b border-l-2 border-l-transparent px-3 py-3 text-left text-xs transition-colors last:border-b-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:grid-cols-[8rem_minmax(0,2fr)_minmax(8rem,0.8fr)_7rem_10rem_4.5rem] lg:items-center',
 											isActive
 												? 'border-l-primary bg-primary/5 text-foreground'
 												: item.status === 'failed'
@@ -564,27 +594,27 @@ export function RunsViewPage({
 												: 'bg-background hover:bg-muted/50',
 										)}
 									>
-										<div className="flex min-w-0 items-center gap-2">
-											<div className="flex size-7 shrink-0 items-center justify-center rounded-md border bg-background">
-												<ItemIcon className="size-4 text-muted-foreground" />
-											</div>
-											<span className="truncate font-medium">
-												{item.type === 'agent'
-													? t('platform.monitoring.agentRunType')
-													: t('platform.monitoring.workflowRunType')}
-											</span>
-										</div>
-										<div className="min-w-0">
-											<div className="truncate font-medium">{item.title}</div>
-											<p className="mt-1 line-clamp-1 text-muted-foreground">
-												{item.description}
-											</p>
-										</div>
 										<div className="flex items-center justify-between gap-3 lg:block">
 											<span className="text-muted-foreground lg:hidden">
 												{t('platform.monitoring.filterStatus')}
 											</span>
 											<PlatformStatusBadge status={item.status} t={t} />
+										</div>
+										<div className="min-w-0">
+											<div className="flex min-w-0 items-center gap-2">
+												<div className="flex size-7 shrink-0 items-center justify-center rounded-md border bg-background">
+													<ItemIcon className="size-4 text-muted-foreground" />
+												</div>
+												<div className="min-w-0 truncate font-medium">
+													{item.title}
+												</div>
+											</div>
+											<p className="mt-1 line-clamp-1 pl-9 text-muted-foreground">
+												{item.type === 'agent'
+													? t('platform.monitoring.agentRunType')
+													: t('platform.monitoring.workflowRunType')}
+												{item.description ? ` · ${item.description}` : ''}
+											</p>
 										</div>
 										<div className="flex min-w-0 items-center justify-between gap-3 text-muted-foreground lg:block">
 											<span className="lg:hidden">
@@ -594,7 +624,13 @@ export function RunsViewPage({
 										</div>
 										<div className="flex items-center justify-between gap-3 tabular-nums text-muted-foreground lg:block">
 											<span className="lg:hidden">
-												{t('platform.monitoring.time')}
+												{t('platform.monitoring.duration')}
+											</span>
+											<span>{item.duration}</span>
+										</div>
+										<div className="flex items-center justify-between gap-3 tabular-nums text-muted-foreground lg:block">
+											<span className="lg:hidden">
+												{t('platform.monitoring.updatedAt')}
 											</span>
 											<span>{formatTimestamp(item.timestamp)}</span>
 										</div>
@@ -683,13 +719,49 @@ export function RunsViewPage({
 									</div>
 									<div className="border-b pb-3 md:border-b-0 md:border-r md:pr-3">
 										<div className="text-xs text-muted-foreground">
-											{t('platform.monitoring.time')}
+											{t('platform.monitoring.duration')}
+										</div>
+										<div className="mt-1 text-sm font-medium">
+											{activeRun.duration}
+										</div>
+									</div>
+									<div className="border-b pb-3 md:border-b-0">
+										<div className="text-xs text-muted-foreground">
+											{t('platform.monitoring.updatedAt')}
 										</div>
 										<div className="mt-1 text-sm font-medium">
 											{formatTimestamp(activeRun.timestamp)}
 										</div>
 									</div>
-									<div>
+									{activeWorkflowRun ? (
+										<>
+											<div className="border-b pb-3 md:border-b-0 md:border-r md:pr-3">
+												<div className="text-xs text-muted-foreground">
+													{t('platform.monitoring.workflowType')}
+												</div>
+												<div className="mt-1 truncate text-sm font-medium">
+													{activeWorkflowRun.workflow_type || '-'}
+												</div>
+											</div>
+											<div className="border-b pb-3 md:border-b-0">
+												<div className="text-xs text-muted-foreground">
+													{t('platform.monitoring.initiator')}
+												</div>
+												<div className="mt-1 truncate text-sm font-medium">
+													{activeWorkflowRun.user_id || '-'}
+												</div>
+											</div>
+											<div className="border-b pb-3 md:border-b-0 md:border-r md:pr-3">
+												<div className="text-xs text-muted-foreground">
+													{t('platform.monitoring.tenant')}
+												</div>
+												<div className="mt-1 truncate text-sm font-medium">
+													{activeWorkflowRun.tenant || '-'}
+												</div>
+											</div>
+										</>
+									) : null}
+									<div className="border-b pb-3 md:border-b-0">
 										<div className="text-xs text-muted-foreground">
 											{t('platform.monitoring.runId')}
 										</div>
