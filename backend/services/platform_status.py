@@ -1376,7 +1376,12 @@ class PlatformStatusService:
         tenant: str,
         limit: int = 50,
     ) -> list[Any]:
+        production_mode = self._is_production_database_mode()
         if self._retrieval_event_reader is None:
+            if production_mode:
+                raise RuntimeError(
+                    "PostgreSQL platform retrieval event reader is required in production mode."
+                )
             return []
 
         try:
@@ -1389,6 +1394,10 @@ class PlatformStatusService:
                 "Failed to read platform retrieval events from PostgreSQL: %s",
                 exc,
             )
+            if production_mode:
+                raise RuntimeError(
+                    "PostgreSQL platform retrieval event read failed in production mode."
+                ) from exc
             return []
 
     @staticmethod

@@ -59,6 +59,13 @@ CHECKS = (
         ),
     ),
     (
+        "PostgreSQL platform retrieval read authority",
+        (
+            sys.executable,
+            "scripts/check_phase2_postgres_platform_retrieval_read_authority.py",
+        ),
+    ),
+    (
         "PostgreSQL seed migration toggle",
         (sys.executable, "scripts/check_phase2_postgres_seed_migration_toggle.py"),
     ),
