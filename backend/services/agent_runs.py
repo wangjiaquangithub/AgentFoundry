@@ -2422,6 +2422,19 @@ class PlatformAgentRunService:
                     },
                 )
                 return
+            if not _runtime_invocation_context_matches_response_context(
+                request_summary,
+                context,
+            ):
+                logger.warning(
+                    "Skipped runtime invocation persistence because request "
+                    "context does not match response context.",
+                    extra={
+                        "agent_run_id": turn_id,
+                        "tenant_id": tenant,
+                    },
+                )
+                return
             request_metadata = request_summary.get("metadata")
             if not isinstance(request_metadata, dict):
                 request_metadata = {}
@@ -2815,3 +2828,16 @@ def _runtime_invocation_id_from_request_summary(
     if runtime_invocation_id is None:
         return None
     return str(runtime_invocation_id)
+
+
+def _runtime_invocation_context_matches_response_context(
+    request_summary: dict[str, Any],
+    response_context: dict[str, Any],
+) -> bool:
+    request_context = request_summary.get("context")
+    if not isinstance(request_context, dict):
+        return False
+    for key in ("tenant", "user_id", "session_id", "agent_id"):
+        if str(request_context.get(key)) != str(response_context.get(key)):
+            return False
+    return True

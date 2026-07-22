@@ -80,6 +80,13 @@ CHECKS = (
             "scripts/check_phase4_runtime_invocation_request_context_contract.py",
         ),
     ),
+    (
+        "runtime invocation context persistence guard",
+        (
+            sys.executable,
+            "scripts/check_phase4_runtime_invocation_context_persistence_guard.py",
+        ),
+    ),
 )
 
 
