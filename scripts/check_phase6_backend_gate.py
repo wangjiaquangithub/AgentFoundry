@@ -25,6 +25,10 @@ CHECKS = (
         [sys.executable, "scripts/check_phase6_readme_bootstrap.py"],
     ),
     (
+        "backend production gates CI workflow",
+        [sys.executable, "scripts/check_phase6_backend_ci_workflow.py"],
+    ),
+    (
         "runtime provider health",
         [sys.executable, "scripts/check_phase4_runtime_provider_health.py"],
     ),
