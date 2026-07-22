@@ -202,9 +202,9 @@ class PostgresAgentRunReadThroughRepository:
         if not record.get("tenant"):
             raise ValueError("PostgreSQL agent run writes require tenant context.")
 
-        persisted_record = self._postgres_writer.append_run(
-            _platform_record_to_postgres_run(record),
-        )
+        postgres_record = _platform_record_to_postgres_run(record)
+        persisted_record = self._postgres_writer.append_run(postgres_record)
+        _validate_write_result(postgres_record, persisted_record)
         return _postgres_run_to_platform_record(persisted_record)
 
     def delete(
@@ -278,6 +278,31 @@ def _platform_record_to_postgres_run(record: dict[str, Any]) -> AgentRunRecord:
         created_at=str(record["created_at"]),
         completed_at=_optional_record_value(record.get("completed_at")),
     )
+
+
+def _validate_write_result(
+    requested: AgentRunRecord,
+    persisted: AgentRunRecord,
+) -> None:
+    if not persisted.id:
+        raise ValueError("PostgreSQL agent run write did not return a run id.")
+    if not persisted.tenant_id:
+        raise ValueError("PostgreSQL agent run write did not return a tenant id.")
+    if not persisted.user_id:
+        raise ValueError("PostgreSQL agent run write did not return a user id.")
+    if persisted.id != requested.id:
+        raise ValueError("PostgreSQL agent run write returned another run.")
+    if persisted.tenant_id != requested.tenant_id:
+        raise ValueError("PostgreSQL agent run write returned another tenant.")
+    if requested.agent_id and persisted.agent_id != requested.agent_id:
+        raise ValueError("PostgreSQL agent run write returned another agent.")
+    if (
+        requested.agent_version_id
+        and persisted.agent_version_id != requested.agent_version_id
+    ):
+        raise ValueError("PostgreSQL agent run write returned another agent version.")
+    if persisted.user_id != requested.user_id:
+        raise ValueError("PostgreSQL agent run write returned another user.")
 
 
 def _optional_record_value(value: Any) -> str | None:

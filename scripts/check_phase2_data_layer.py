@@ -1288,6 +1288,7 @@ def _check_postgres_agent_runs_wired() -> list[str]:
         "list_runs",
         "get_run",
         "append_run",
+        "_validate_write_result",
         "_postgres_run_to_platform_record",
         "_platform_record_to_postgres_run",
     ]
@@ -1325,6 +1326,22 @@ def _check_postgres_agent_runs_wired() -> list[str]:
         if token not in agent_run_persistence_source:
             errors.append(
                 "backend/persistence/runs.py must return persisted PostgreSQL "
+                f"agent run write records: {token}",
+            )
+
+    for token in (
+        "PostgreSQL agent run write did not return a run id.",
+        "PostgreSQL agent run write did not return a tenant id.",
+        "PostgreSQL agent run write did not return a user id.",
+        "PostgreSQL agent run write returned another run.",
+        "PostgreSQL agent run write returned another tenant.",
+        "PostgreSQL agent run write returned another agent.",
+        "PostgreSQL agent run write returned another agent version.",
+        "PostgreSQL agent run write returned another user.",
+    ):
+        if token not in agent_run_repository_source:
+            errors.append(
+                "backend/repositories/agent_runs.py must validate PostgreSQL "
                 f"agent run write records: {token}",
             )
 
