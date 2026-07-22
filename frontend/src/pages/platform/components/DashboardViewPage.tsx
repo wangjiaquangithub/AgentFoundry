@@ -321,13 +321,10 @@ export function DashboardViewPage({
 				</Card>
 			</section>
 
-			<section className="grid gap-4 border-y py-5">
+			<section className="grid gap-4 border-y py-4">
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
 					<div className="min-w-0">
 						<h2 className="text-base font-semibold">运营与治理队列</h2>
-						<p className="mt-1 text-sm leading-6 text-muted-foreground">
-							首页优先呈现需要处理的审批、失败运行和配置缺口，模块入口收敛到左侧导航。
-						</p>
 					</div>
 					<Button
 						type="button"
@@ -440,9 +437,6 @@ export function DashboardViewPage({
 						<div className="flex items-center justify-between gap-3">
 							<div>
 								<h3 className="text-sm font-semibold">配置健康度</h3>
-								<p className="mt-1 text-xs leading-5 text-muted-foreground">
-									用于判断平台是否具备稳定运行、治理和扩展条件。
-								</p>
 							</div>
 							<StateBadge
 								state={platformReady ? 'ready' : 'partial'}
@@ -475,9 +469,6 @@ export function DashboardViewPage({
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
 					<div className="min-w-0">
 						<h2 className="text-base font-semibold">近期动态</h2>
-						<p className="text-sm leading-6 text-muted-foreground">
-							聚合待办、工作流运行和审计事件，用于判断下一步处理优先级。
-						</p>
 					</div>
 					<div className="flex flex-wrap gap-2">
 						<Button
@@ -533,19 +524,16 @@ export function DashboardViewPage({
 							</div>
 						) : (
 							<div className="px-4 py-8 text-sm text-muted-foreground">
-								暂无待办、工作流运行或审计事件。平台接入真实运行数据后，这里会形成统一活动流。
+								暂无待办、工作流运行或审计事件。
 							</div>
 						)}
 					</CardContent>
 				</Card>
 			</section>
 
-			<section className="flex flex-col gap-3 rounded-lg border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
+			<section className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
 				<div className="min-w-0">
 					<h2 className="text-base font-semibold">继续配置平台</h2>
-					<p className="mt-1 text-sm leading-6 text-muted-foreground">
-						模型、连接器、导入导出等系统级配置已经移到设置页，首页只保留入口和状态摘要。
-					</p>
 				</div>
 				<div className="flex flex-wrap gap-2">
 					<Button

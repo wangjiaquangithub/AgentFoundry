@@ -77,14 +77,14 @@ export function PlatformDashboardOverview({
 				}
 			/>
 
-			<section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+			<section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
 				<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 					{stats.map((stat) => (
 						<StatCard key={stat.label} {...stat} />
 					))}
 				</div>
 
-				<div className="grid gap-4 rounded-lg border bg-background p-4">
+				<div className="grid gap-3 rounded-md border bg-background p-4">
 					<div className="min-w-0">
 						<div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
 							<ListChecks className="size-4" />
@@ -95,7 +95,7 @@ export function PlatformDashboardOverview({
 							{labels.nextStepDescription}
 						</p>
 					</div>
-					<div className="flex flex-wrap gap-2">
+					<div className="flex flex-wrap gap-2 border-t pt-3">
 						{nextStepMode === 'publish' ? (
 							<Button
 								type="button"

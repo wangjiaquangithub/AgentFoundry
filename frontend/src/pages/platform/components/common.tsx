@@ -32,21 +32,29 @@ export type HealthState = 'ready' | 'partial' | 'todo' | 'blocked';
 type PlatformIcon = ComponentType<{ className?: string }>;
 
 const platformSections: Array<{
+	group: 'Build' | 'Operate' | 'Govern' | 'Configure';
 	label: string;
 	path: string;
 	icon: PlatformIcon;
 	end?: boolean;
 }> = [
-	{ label: '总览', path: '/platform', icon: LayoutDashboard, end: true },
-	{ label: 'Agent', path: '/platform/agents', icon: Bot },
-	{ label: '工具', path: '/platform/tools', icon: Wrench },
-	{ label: '连接器', path: '/platform/connectors', icon: PlugZap },
-	{ label: '工作流', path: '/platform/workflows', icon: GitBranch },
-	{ label: '审批', path: '/platform/approvals', icon: ShieldCheck },
-	{ label: '运行', path: '/platform/runs', icon: PlayCircle },
-	{ label: '租户', path: '/platform/tenants', icon: UsersRound },
-	{ label: '记忆', path: '/platform/memory', icon: Brain },
-	{ label: '设置', path: '/platform/settings', icon: Boxes },
+	{ group: 'Operate', label: '总览', path: '/platform', icon: LayoutDashboard, end: true },
+	{ group: 'Build', label: 'Agents', path: '/platform/agents', icon: Bot },
+	{ group: 'Build', label: 'Tools', path: '/platform/tools', icon: Wrench },
+	{ group: 'Build', label: 'Knowledge / Memory', path: '/platform/memory', icon: Brain },
+	{ group: 'Build', label: 'Workflows', path: '/platform/workflows', icon: GitBranch },
+	{ group: 'Operate', label: 'Runs', path: '/platform/runs', icon: PlayCircle },
+	{ group: 'Operate', label: 'Approvals', path: '/platform/approvals', icon: ShieldCheck },
+	{ group: 'Operate', label: 'Runtime Providers', path: '/platform/connectors', icon: PlugZap },
+	{ group: 'Govern', label: 'Members / Tenants', path: '/platform/tenants', icon: UsersRound },
+	{ group: 'Configure', label: 'Models / Settings', path: '/platform/settings', icon: Boxes },
+];
+
+const platformSectionGroups = [
+	{ label: 'Operate', items: platformSections.filter((item) => item.group === 'Operate') },
+	{ label: 'Build', items: platformSections.filter((item) => item.group === 'Build') },
+	{ label: 'Govern', items: platformSections.filter((item) => item.group === 'Govern') },
+	{ label: 'Configure', items: platformSections.filter((item) => item.group === 'Configure') },
 ];
 
 export interface PlatformPageShellProps {
@@ -56,17 +64,63 @@ export interface PlatformPageShellProps {
 
 export function PlatformPageShell({ children, className }: PlatformPageShellProps) {
 	return (
-		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-muted/15">
-			<div
-				className={cn(
-					'mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8',
-					className,
-				)}
-			>
-				<PlatformSectionNav />
-				{children}
+		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-muted/20">
+			<div className="mx-auto grid w-full max-w-[1480px] gap-0 lg:grid-cols-[220px_minmax(0,1fr)]">
+				<PlatformDesktopNav />
+				<div
+					className={cn(
+						'flex min-w-0 flex-col gap-5 px-4 py-4 sm:px-6 sm:py-5 lg:px-7',
+						className,
+					)}
+				>
+					<PlatformSectionNav />
+					{children}
+				</div>
 			</div>
 		</main>
+	);
+}
+
+function PlatformDesktopNav() {
+	return (
+		<aside className="sticky top-0 hidden h-screen min-h-0 border-r bg-background/80 px-3 py-4 lg:block">
+			<div className="mb-4 px-2">
+				<div className="text-sm font-semibold">AgentFoundry</div>
+				<p className="mt-1 text-xs leading-5 text-muted-foreground">
+					企业级 Agent 平台控制台
+				</p>
+			</div>
+			<nav aria-label="平台导航" className="space-y-4">
+				{platformSectionGroups.map((group) => (
+					<div key={group.label}>
+						<div className="mb-1 px-2 text-[11px] font-medium uppercase text-muted-foreground">
+							{group.label}
+						</div>
+						<div className="grid gap-0.5">
+							{group.items.map(({ label, path, icon: Icon, end }) => (
+								<NavLink
+									key={path}
+									to={path}
+									end={end}
+									className={({ isActive }) =>
+										cn(
+											'flex h-8 items-center gap-2 rounded-md px-2 text-sm transition-colors',
+											'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+											isActive
+												? 'bg-primary text-primary-foreground'
+												: 'text-muted-foreground hover:bg-muted hover:text-foreground',
+										)
+									}
+								>
+									<Icon className="size-4 shrink-0" />
+									<span className="min-w-0 truncate">{label}</span>
+								</NavLink>
+							))}
+						</div>
+					</div>
+				))}
+			</nav>
+		</aside>
 	);
 }
 
@@ -74,7 +128,7 @@ function PlatformSectionNav() {
 	return (
 		<nav
 			aria-label="平台模块"
-			className="sticky top-0 z-20 -mx-4 border-b bg-background/95 px-4 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/85 sm:-mx-5 sm:px-5 lg:hidden"
+			className="sticky top-0 z-20 -mx-4 border-b bg-background/95 px-4 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/85 sm:-mx-6 sm:px-6 lg:hidden"
 		>
 			<div className="flex items-center gap-2 overflow-x-auto">
 				{platformSections.map(({ label, path, icon: Icon, end }) => (
@@ -119,7 +173,7 @@ export function PlatformPageHeader({
 	aside,
 }: PlatformPageHeaderProps) {
 	return (
-		<section className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-start lg:justify-between">
+		<section className="flex flex-col gap-4 border-b pb-4 lg:flex-row lg:items-start lg:justify-between">
 			<div className="min-w-0">
 				<div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
 					<span className="grid size-7 place-items-center rounded-md border bg-background text-foreground">
@@ -127,7 +181,7 @@ export function PlatformPageHeader({
 					</span>
 					<span className="min-w-0 truncate">{eyebrow}</span>
 				</div>
-				<h1 className="text-2xl font-semibold tracking-normal text-foreground">
+				<h1 className="text-[1.35rem] font-semibold tracking-normal text-foreground sm:text-2xl">
 					{title}
 				</h1>
 				{description ? (
@@ -202,24 +256,24 @@ export interface StatCardProps {
 
 export function StatCard({ label, value, helper, icon: Icon, loading }: StatCardProps) {
 	return (
-		<Card size="sm" className="min-h-28 rounded-lg shadow-none">
-			<CardHeader className="grid-cols-[1fr_auto] gap-3">
+		<Card size="sm" className="min-h-24 rounded-md border-border/80 shadow-none">
+			<CardHeader className="grid-cols-[1fr_auto] gap-2 pb-2">
 				<div className="min-w-0">
-					<CardTitle className="truncate text-sm text-muted-foreground">
+					<CardTitle className="truncate text-xs font-medium uppercase text-muted-foreground">
 						{label}
 					</CardTitle>
 					{loading ? (
-						<Skeleton className="mt-3 h-8 w-16" />
+						<Skeleton className="mt-3 h-7 w-14" />
 					) : (
-						<div className="mt-2 text-3xl font-semibold tabular-nums">{value}</div>
+						<div className="mt-2 text-2xl font-semibold tabular-nums">{value}</div>
 					)}
 				</div>
-				<div className="flex size-9 items-center justify-center rounded-lg border bg-background">
+				<div className="flex size-8 items-center justify-center rounded-md border bg-muted/35">
 					<Icon className="size-4 text-muted-foreground" />
 				</div>
 			</CardHeader>
 			{helper ? (
-				<CardContent className="text-xs leading-5 text-muted-foreground">
+				<CardContent className="pt-0 text-xs leading-5 text-muted-foreground">
 					{helper}
 				</CardContent>
 			) : null}
