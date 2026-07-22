@@ -64,12 +64,12 @@ export interface PlatformPageShellProps {
 
 export function PlatformPageShell({ children, className }: PlatformPageShellProps) {
 	return (
-		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-muted/15">
-			<div className="mx-auto grid w-full max-w-[1440px] gap-0 lg:grid-cols-[220px_minmax(0,1fr)]">
+		<main className="h-full min-h-0 flex-1 overflow-y-auto bg-muted/20">
+			<div className="mx-auto grid w-full max-w-[1500px] gap-0 lg:grid-cols-[232px_minmax(0,1fr)]">
 				<PlatformDesktopNav />
 				<div
 					className={cn(
-						'flex min-w-0 flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5 lg:px-7',
+						'flex min-w-0 flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5 lg:px-8',
 						className,
 					)}
 				>
@@ -83,14 +83,14 @@ export function PlatformPageShell({ children, className }: PlatformPageShellProp
 
 function PlatformDesktopNav() {
 	return (
-		<aside className="sticky top-0 hidden h-screen min-h-0 border-r bg-background px-2.5 py-4 lg:block">
-			<div className="mb-4 px-2">
+		<aside className="sticky top-0 hidden h-screen min-h-0 border-r bg-background px-3 py-5 lg:block">
+			<div className="mb-5 border-b px-2 pb-4">
 				<div className="text-sm font-semibold">AgentFoundry</div>
 				<p className="mt-1 text-xs leading-5 text-muted-foreground">
 					企业级 Agent 平台控制台
 				</p>
 			</div>
-			<nav aria-label="平台导航" className="space-y-4">
+			<nav aria-label="平台导航" className="space-y-5">
 				{platformSectionGroups.map((group) => (
 					<div key={group.label}>
 						<div className="mb-1 px-2 text-[11px] font-medium uppercase text-muted-foreground">
@@ -104,11 +104,11 @@ function PlatformDesktopNav() {
 									end={end}
 									className={({ isActive }) =>
 										cn(
-											'flex h-8 items-center gap-2 rounded-md px-2 text-sm transition-colors',
+											'flex h-9 items-center gap-2 rounded-md px-2.5 text-sm transition-colors',
 											'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
 											isActive
-												? 'bg-muted text-foreground shadow-[inset_2px_0_0_hsl(var(--primary))]'
-												: 'text-muted-foreground hover:bg-muted hover:text-foreground',
+												? 'bg-muted text-foreground shadow-[inset_3px_0_0_hsl(var(--primary))]'
+												: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground',
 										)
 									}
 								>
@@ -173,7 +173,7 @@ export function PlatformPageHeader({
 	aside,
 }: PlatformPageHeaderProps) {
 	return (
-		<section className="flex flex-col gap-4 border-b pb-3 lg:flex-row lg:items-start lg:justify-between">
+		<section className="flex flex-col gap-4 border-b bg-background/60 px-0 pb-4 lg:flex-row lg:items-start lg:justify-between">
 			<div className="min-w-0">
 				<div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
 					<span className="grid size-7 place-items-center rounded-md border bg-background text-foreground">

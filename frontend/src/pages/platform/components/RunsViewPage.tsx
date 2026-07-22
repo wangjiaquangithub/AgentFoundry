@@ -372,9 +372,9 @@ export function RunsViewPage({
 				})}
 			</section>
 
-			<section className="grid min-h-[34rem] content-start">
+			<section className="overflow-hidden rounded-lg border bg-background shadow-sm">
 				<div className="grid min-w-0 content-start gap-3">
-					<div className="flex flex-col gap-3 border-b py-3 lg:flex-row lg:items-start lg:justify-between">
+					<div className="flex flex-col gap-3 border-b bg-background px-4 py-3 lg:flex-row lg:items-start lg:justify-between">
 						<div className="min-w-0">
 							<div className="flex items-center gap-2">
 								<h2 className="text-base font-semibold">
@@ -413,43 +413,44 @@ export function RunsViewPage({
 						</div>
 					</div>
 
-					<div className="overflow-hidden rounded-md border bg-background">
+					<div className="border-b bg-background">
 						<div className="grid border-b bg-muted/20 md:grid-cols-3">
-						{operationalSummary.map((item) => {
-							const SummaryIcon = item.icon;
-							return (
-								<button
-									key={item.label}
-									type="button"
-									onClick={() => {
-										setRunStatusFilter(item.statusFilter);
-										if (item.id === 'coverage') {
-											setRunTypeFilter('all');
-										}
-									}}
-									className={cn(
-										'grid grid-cols-[1fr_auto] gap-3 border-b px-3 py-2 text-left transition-colors last:border-b-0 hover:bg-background/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:border-b-0 md:border-r md:last:border-r-0',
-										item.tone,
-									)}
-								>
-									<div className="min-w-0">
-										<div className="truncate text-xs font-medium text-muted-foreground">
-											{item.label}
+							{operationalSummary.map((item) => {
+								const SummaryIcon = item.icon;
+								return (
+									<button
+										key={item.label}
+										type="button"
+										onClick={() => {
+											setRunStatusFilter(item.statusFilter);
+											if (item.id === 'coverage') {
+												setRunTypeFilter('all');
+											}
+										}}
+										className={cn(
+											'grid grid-cols-[1fr_auto] gap-3 border-b px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:border-b-0 md:border-r md:last:border-r-0',
+											item.tone,
+										)}
+									>
+										<div className="min-w-0">
+											<div className="truncate text-xs font-medium text-muted-foreground">
+												{item.label}
+											</div>
+											<div className="mt-1 text-lg font-semibold tabular-nums">
+												{monitoringLoading ? '-' : item.value}
+											</div>
+											<div className="mt-0.5 truncate text-xs text-muted-foreground">
+												{item.helper}
+											</div>
 										</div>
-										<div className="mt-1 text-lg font-semibold tabular-nums">
-											{monitoringLoading ? '-' : item.value}
-										</div>
-										<div className="mt-0.5 truncate text-xs text-muted-foreground">
-											{item.helper}
-										</div>
-									</div>
-									<SummaryIcon className="mt-0.5 size-4 text-muted-foreground" />
-								</button>
-							);
-						})}
+										<SummaryIcon className="mt-0.5 size-4 text-muted-foreground" />
+									</button>
+								);
+							})}
 						</div>
 
 						<PlatformFilterBar
+							className="border-y-0 bg-muted/10"
 							resultLabel={t('platform.ux.filters.results', {
 								count: filteredRunItems.length,
 							})}
@@ -507,6 +508,7 @@ export function RunsViewPage({
 						</PlatformFilterBar>
 					</div>
 
+					<div className="grid gap-3 px-3 pb-3">
 					{monitoringError && runItems.length > 0 ? (
 						<div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-muted-foreground">
 							<span className="font-medium text-foreground">
@@ -666,6 +668,7 @@ export function RunsViewPage({
 							</div>
 						</div>
 					)}
+					</div>
 				</div>
 			</section>
 
