@@ -16,6 +16,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 README = ROOT / "README.md"
+PRODUCTION_PLAN_DOC = ROOT / "docs" / "production-plan.md"
+PRODUCT_ROADMAP_DOC = ROOT / "docs" / "product-roadmap.md"
+ARCHITECTURE_DOC = ROOT / "docs" / "architecture.md"
+DATA_MODEL_DOC = ROOT / "docs" / "data-model.md"
 MIGRATIONS_DIR = ROOT / "backend" / "persistence" / "migrations"
 PERSISTENCE_DIR = ROOT / "backend" / "persistence"
 PERSISTENCE_INIT_MODULE = PERSISTENCE_DIR / "__init__.py"
@@ -27,6 +31,34 @@ SEED_MODULE = ROOT / "backend" / "persistence" / "seed.py"
 MIGRATE_SHELL = ROOT / "scripts" / "migrate_agentfoundry.sh"
 SEED_SHELL = ROOT / "scripts" / "seed_agentfoundry.sh"
 PLATFORM_STATUS_SERVICE_MODULE = SERVICES_DIR / "platform_status.py"
+
+PRODUCTION_DATA_LAYER_DOCS = {
+    README: {
+        "PostgreSQL",
+        "production",
+        "Local JSON/JSONL",
+    },
+    PRODUCTION_PLAN_DOC: {
+        "优先 PostgreSQL",
+        "本地 JSON/JSONL",
+        "开发或导入导出用途",
+    },
+    PRODUCT_ROADMAP_DOC: {
+        "Persistence Layer",
+        "JSONL 迁移",
+        "迁移到数据库",
+    },
+    ARCHITECTURE_DOC: {
+        "Development storage backed by local JSON and JSONL files",
+        "persistence/",
+        "migrations",
+    },
+    DATA_MODEL_DOC: {
+        "production data model target",
+        "not the production system of record",
+        "Phase 2 Migration Target",
+    },
+}
 
 AUDIT_EVENT_WRITER_SERVICE_MODULES = {
     "agents.py": "PlatformAgentService",
@@ -638,6 +670,48 @@ def _check_readme_does_not_promote_local_files_as_production_data_layer() -> lis
                 "README.md must not present local JSON/JSONL files as the production data layer: "
                 f"{pattern}",
             )
+
+    return errors
+
+
+def _check_production_data_layer_docs_contract() -> list[str]:
+    errors: list[str] = []
+    disallowed_patterns = [
+        r"sqlite[^.]{0,80}production (?:storage|data layer|database)",
+        r"json/jsonl[^.]{0,80}production (?:storage|data layer|database)",
+        r"jsonl[^.]{0,80}production (?:storage|data layer|database)",
+        r"production (?:storage|data layer|database)[^.]{0,80}sqlite",
+        r"production (?:storage|data layer|database)[^.]{0,80}json/jsonl",
+        r"production (?:storage|data layer|database)[^.]{0,80}jsonl",
+        r"local json(?:/jsonl)? files are production",
+        r"local jsonl files are production",
+        r"sqlite is the production",
+    ]
+
+    for path, required_tokens in sorted(PRODUCTION_DATA_LAYER_DOCS.items()):
+        source = path.read_text(encoding="utf-8")
+        normalized_source = " ".join(source.lower().split())
+        display_path = path.relative_to(ROOT)
+
+        for token in sorted(required_tokens):
+            if token not in source:
+                errors.append(
+                    "production data-layer docs must preserve the PostgreSQL-first contract: "
+                    f"{display_path}: {token}",
+                )
+
+        if "postgres" not in normalized_source:
+            errors.append(
+                "production data-layer docs must name PostgreSQL as the production database direction: "
+                f"{display_path}",
+            )
+
+        for pattern in disallowed_patterns:
+            if re.search(pattern, normalized_source):
+                errors.append(
+                    "production data-layer docs must not present SQLite or local files as production storage: "
+                    f"{display_path}: {pattern}",
+                )
 
     return errors
 
@@ -3163,6 +3237,7 @@ def main() -> int:
         *_check_postgres_migration_shell_entrypoint(),
         *_check_postgres_data_workflow_documented(),
         *_check_readme_does_not_promote_local_files_as_production_data_layer(),
+        *_check_production_data_layer_docs_contract(),
         *_check_postgres_write_transaction_boundary(),
         *_check_postgres_read_tenant_boundary(),
         *_check_postgres_runtime_provider_reads_wired(),
@@ -3223,6 +3298,7 @@ def main() -> int:
     print("- PostgreSQL migration shell entrypoint guarded: yes")
     print("- PostgreSQL data workflow documented: yes")
     print("- local JSON/JSONL production-data wording guarded: yes")
+    print("- production data-layer docs contract guarded: yes")
     print("- PostgreSQL write transaction boundary guarded: yes")
     print("- PostgreSQL read tenant boundary guarded: yes")
     print("- PostgreSQL runtime provider reads wired: yes")

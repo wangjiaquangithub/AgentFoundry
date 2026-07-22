@@ -241,7 +241,7 @@ Audit Layer
   负责工具调用、配置变更、审批、检索、运行事件记录
 ```
 
-短期可以继续使用本地 JSON 和 JSONL。中期需要迁移到数据库，至少要让 Agent、Run、Workflow、Tool、AuditEvent 有稳定存储。
+生产持久化目标是 PostgreSQL；本地 JSON/JSONL 和 SQLite 只作为开发、迁移或兼容路径。短期可以继续使用本地 JSON 和 JSONL。中期需要迁移到数据库，至少要让 Agent、Run、Workflow、Tool、AuditEvent 有稳定存储。
 
 ## 9. 前端实施路线
 

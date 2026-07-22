@@ -1,6 +1,6 @@
 # Data Model
 
-This document defines the production data model target for AgentFoundry. The current repository still uses local JSON and JSONL files for development storage; those files are implementation details, not the production system of record.
+This document defines the production data model target for AgentFoundry. PostgreSQL is the production relational database target for this model. The current repository still uses local JSON and JSONL files for development storage; those files are implementation details, not the production system of record.
 
 ## Core Principles
 
