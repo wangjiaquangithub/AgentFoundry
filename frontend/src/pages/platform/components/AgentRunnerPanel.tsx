@@ -1,6 +1,11 @@
 import { BotMessageSquare, Play, ShieldCheck } from 'lucide-react';
 import type { RefObject } from 'react';
 
+import {
+	AgentRunnerConversation,
+	type AgentRunnerConversationTurn,
+} from './AgentRunnerConversation';
+import { AgentRunnerResult } from './AgentRunnerResult';
 import type {
 	EnterpriseAgentRunResponse,
 	EnterpriseAgentToolCall,
@@ -19,11 +24,6 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import {
-	AgentRunnerConversation,
-	type AgentRunnerConversationTurn,
-} from './AgentRunnerConversation';
-import { AgentRunnerResult } from './AgentRunnerResult';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -330,6 +330,8 @@ export function AgentRunnerPanel({
 
 			<AgentRunnerResult
 				result={activeResult}
+				loading={running}
+				error={runError}
 				toolCalls={resultToolCalls}
 				toolCallBadgeText={resultToolCallBadgeText}
 				routingLabel={resultRoutingLabel}
