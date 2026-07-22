@@ -44,7 +44,7 @@ def _build_snapshot(database_config_status: Any) -> dict[str, Any]:
             recent=lambda limit=12: [],
             query=lambda **_kwargs: [],
         ),
-        audit_event_reader=None,
+        audit_event_reader=SimpleNamespace(list_audit_events=lambda **_kwargs: []),
         retrieval_event_reader=None,
         tool_policy=SimpleNamespace(
             mode="audit",

@@ -1297,6 +1297,7 @@ class PlatformStatusService:
         user_id: str | None = None,
         limit: int = 50,
     ) -> list[dict[str, Any]]:
+        production_mode = self._is_production_database_mode()
         if tenant and self._audit_event_reader is not None:
             try:
                 records = self._audit_event_reader.list_audit_events(
@@ -1310,6 +1311,15 @@ class PlatformStatusService:
                     "Failed to read platform audit events from PostgreSQL: %s",
                     exc,
                 )
+                if production_mode:
+                    raise RuntimeError(
+                        "PostgreSQL platform audit event read failed in production mode."
+                    ) from exc
+
+        if tenant and production_mode:
+            raise RuntimeError(
+                "PostgreSQL platform audit event reader is required in production mode."
+            )
 
         return self._audit_logger.query(tenant=tenant, user_id=user_id, limit=limit)
 
@@ -1319,6 +1329,7 @@ class PlatformStatusService:
         tenants: list[str],
         limit: int = 100,
     ) -> list[dict[str, Any]]:
+        production_mode = self._is_production_database_mode()
         if tenants and self._audit_event_reader is not None:
             try:
                 events: list[dict[str, Any]] = []
@@ -1343,8 +1354,21 @@ class PlatformStatusService:
                     "Failed to read recent platform audit events from PostgreSQL: %s",
                     exc,
                 )
+                if production_mode:
+                    raise RuntimeError(
+                        "PostgreSQL platform audit event read failed in production mode."
+                    ) from exc
+
+        if tenants and production_mode:
+            raise RuntimeError(
+                "PostgreSQL platform audit event reader is required in production mode."
+            )
 
         return self._audit_logger.recent(limit=limit)
+
+    def _is_production_database_mode(self) -> bool:
+        """Return whether this service is running under production data-layer mode."""
+        return bool(self._database_status_snapshot().get("production_mode"))
 
     def _query_retrieval_events(
         self,
