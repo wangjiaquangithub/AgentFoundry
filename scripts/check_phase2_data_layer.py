@@ -3145,6 +3145,12 @@ def _check_postgres_memory_policy_reads_guarded() -> list[str]:
                 "backend/persistence/memory_policies.py:"
                 f"PostgresMemoryPolicyReadRepository.{method_name}",
             )
+        if not _module_calls_name(method_node, "_validate_memory_policy_read_result"):
+            errors.append(
+                "PostgreSQL memory policy read method must validate returned tenant "
+                "and filter fields: backend/persistence/memory_policies.py:"
+                f"PostgresMemoryPolicyReadRepository.{method_name}",
+            )
         normalized_sql = " ".join(_normalized_sql_literals(method_node))
         if sql_token.lower() not in normalized_sql:
             errors.append(

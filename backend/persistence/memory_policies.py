@@ -50,6 +50,24 @@ def _read_roles_from_json(value: list[str] | str, policy_id: str) -> list[str]:
     return parsed
 
 
+def _validate_memory_policy_read_result(
+    record: MemoryPolicyRecord,
+    *,
+    tenant_id: str,
+    scope: str | None = None,
+    write_mode: str | None = None,
+    memory_policy_id: str | None = None,
+) -> None:
+    if record.tenant_id != tenant_id:
+        raise ValueError("PostgreSQL memory policy read returned another tenant.")
+    if scope is not None and record.scope != scope:
+        raise ValueError("PostgreSQL memory policy read returned another scope.")
+    if write_mode is not None and record.write_mode != write_mode:
+        raise ValueError("PostgreSQL memory policy read returned another write mode.")
+    if memory_policy_id is not None and record.id != memory_policy_id:
+        raise ValueError("PostgreSQL memory policy read returned another policy.")
+
+
 class SQLiteMemoryPolicyReadRepository:
     """Read tenant-scoped memory policies from SQLite."""
 
@@ -141,7 +159,15 @@ class PostgresMemoryPolicyReadRepository:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, tuple(parameters))
-                return [_memory_policy_from_row(dict(row)) for row in cursor.fetchall()]
+                records = [_memory_policy_from_row(dict(row)) for row in cursor.fetchall()]
+        for record in records:
+            _validate_memory_policy_read_result(
+                record,
+                tenant_id=tenant_id,
+                scope=scope,
+                write_mode=write_mode,
+            )
+        return records
 
     def get_memory_policy(
         self,
@@ -163,7 +189,13 @@ class PostgresMemoryPolicyReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return _memory_policy_from_row(dict(row))
+        record = _memory_policy_from_row(dict(row))
+        _validate_memory_policy_read_result(
+            record,
+            tenant_id=tenant_id,
+            memory_policy_id=memory_policy_id,
+        )
+        return record
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
