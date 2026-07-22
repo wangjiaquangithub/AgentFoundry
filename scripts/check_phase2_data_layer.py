@@ -23,6 +23,7 @@ SERVICES_DIR = ROOT / "backend" / "services"
 MAIN_MODULE = ROOT / "backend" / "main.py"
 DATABASE_MODULE = ROOT / "backend" / "persistence" / "database.py"
 SEED_MODULE = ROOT / "backend" / "persistence" / "seed.py"
+SEED_SHELL = ROOT / "scripts" / "seed_agentfoundry.sh"
 PLATFORM_STATUS_SERVICE_MODULE = SERVICES_DIR / "platform_status.py"
 
 AUDIT_EVENT_WRITER_SERVICE_MODULES = {
@@ -509,6 +510,7 @@ def _check_postgres_seed_path() -> list[str]:
     errors: list[str] = []
     seed_source = SEED_MODULE.read_text(encoding="utf-8")
     seed_tree = ast.parse(seed_source, filename=str(SEED_MODULE))
+    seed_shell = SEED_SHELL.read_text(encoding="utf-8")
 
     required_tokens = [
         "is_postgres_database_url",
@@ -524,6 +526,20 @@ def _check_postgres_seed_path() -> list[str]:
         if token not in seed_source:
             errors.append(
                 "backend/persistence/seed.py must support PostgreSQL seeding while keeping SQLite explicit: "
+                f"{token}",
+            )
+
+    required_shell_tokens = [
+        "postgresql://agentfoundry:agentfoundry@localhost:5432/agentfoundry",
+        'uv run --with "psycopg[binary]"',
+        "from backend.persistence.seed import main; main()",
+        "PostgreSQL is the production target",
+        "sqlite:// URLs are accepted only for",
+    ]
+    for token in required_shell_tokens:
+        if token not in seed_shell:
+            errors.append(
+                "scripts/seed_agentfoundry.sh must provide a PostgreSQL-first seed command: "
                 f"{token}",
             )
 
