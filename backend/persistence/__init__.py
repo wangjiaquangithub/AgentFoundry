@@ -1,6 +1,7 @@
 """Persistence helpers for AgentFoundry."""
 
 from backend.persistence.agents import (
+    AgentCatalogWriteResult,
     AgentRecord,
     AgentVersionRecord,
     PostgresAgentCatalogReadRepository,
@@ -120,6 +121,7 @@ from backend.persistence.workflows import (
 
 __all__ = [
     "AgentRecord",
+    "AgentCatalogWriteResult",
     "AgentRunRecord",
     "AgentVersionRecord",
     "ApprovalRecord",

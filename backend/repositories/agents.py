@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from backend.persistence.agents import (
+    AgentCatalogWriteResult,
     AgentRecord,
     AgentVersionRecord,
     PostgresAgentCatalogReadRepository,
@@ -130,15 +131,17 @@ class PostgresAgentCatalogWriteThroughRepository:
         return self._agent_catalog_item(record)
 
     def save_all(self, agents: list[dict[str, Any]]) -> None:
-        self._postgres_writer.save_agents(agents)
+        self._validate_write_results(self._postgres_writer.save_agents(agents))
 
     def save_tenant_agents(self, *, tenant: str, agents: list[dict[str, Any]]) -> None:
-        self._postgres_writer.save_agents(
-            [
-                agent
-                for agent in agents
-                if str(agent.get("tenant") or "").strip() == tenant
-            ],
+        self._validate_write_results(
+            self._postgres_writer.save_agents(
+                [
+                    agent
+                    for agent in agents
+                    if str(agent.get("tenant") or "").strip() == tenant
+                ],
+            ),
         )
 
     def _agent_catalog_item(self, record: AgentRecord) -> dict[str, Any]:
@@ -147,6 +150,24 @@ class PostgresAgentCatalogWriteThroughRepository:
             agent_id=record.id,
         )
         return _agent_catalog_item(record, version)
+
+    def _validate_write_results(
+        self,
+        results: list[AgentCatalogWriteResult],
+    ) -> None:
+        for result in results:
+            if not result.agent.id:
+                raise AgentRegistryError(
+                    "PostgreSQL agent catalog write did not return a persisted agent id.",
+                )
+            if not result.version.id:
+                raise AgentRegistryError(
+                    "PostgreSQL agent catalog write did not return a persisted version id.",
+                )
+            if result.agent.current_version_id != result.version.id:
+                raise AgentRegistryError(
+                    "PostgreSQL agent catalog write did not persist the current version id.",
+                )
 
 
 def _agent_catalog_item(

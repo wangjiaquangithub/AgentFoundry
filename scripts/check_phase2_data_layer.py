@@ -1170,8 +1170,13 @@ def _check_postgres_agent_catalog_wired() -> list[str]:
 
     required_write_through_tokens = [
         "class PostgresAgentCatalogWriteThroughRepository",
+        "AgentCatalogWriteResult",
         "PostgreSQL agent catalog list reads require tenant scope.",
         "PostgreSQL agent catalog reads require tenant scope.",
+        "_validate_write_results",
+        "PostgreSQL agent catalog write did not return a persisted agent id.",
+        "PostgreSQL agent catalog write did not return a persisted version id.",
+        "PostgreSQL agent catalog write did not persist the current version id.",
         "list_agents",
         "get_agent",
         "save_agents",
@@ -1185,15 +1190,22 @@ def _check_postgres_agent_catalog_wired() -> list[str]:
             )
 
     required_persistence_tokens = [
+        "class AgentCatalogWriteResult",
         "class PostgresAgentCatalogReadRepository",
         "class PostgresAgentCatalogWriteRepository",
         "def list_agents",
         "def get_agent",
         "def get_current_version",
         "def save_agents",
+        "list[AgentCatalogWriteResult]",
         "FROM agents",
         "INSERT INTO agents",
         "INSERT INTO agent_versions",
+        "RETURNING id, tenant_id, template_id",
+        "RETURNING id, tenant_id, agent_id, version",
+        "Agent catalog upsert did not return a row.",
+        "Agent version upsert did not return a row.",
+        "Agent current version update did not return a row.",
     ]
     for token in required_persistence_tokens:
         if token not in agent_persistence_source:

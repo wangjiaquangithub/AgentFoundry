@@ -45,6 +45,12 @@ class AgentVersionRecord:
     created_at: str
 
 
+@dataclass(frozen=True)
+class AgentCatalogWriteResult:
+    agent: AgentRecord
+    version: AgentVersionRecord
+
+
 def _agent_version_from_row(row: dict[str, Any]) -> AgentVersionRecord:
     return AgentVersionRecord(
         id=row["id"],
@@ -348,20 +354,28 @@ class PostgresAgentCatalogWriteRepository:
     def __init__(self, database: PostgresDatabase) -> None:
         self._database = database
 
-    def save_agents(self, agents: list[dict[str, Any]]) -> None:
+    def save_agents(self, agents: list[dict[str, Any]]) -> list[AgentCatalogWriteResult]:
+        results: list[AgentCatalogWriteResult] = []
         with self._database.transaction() as connection:
             with connection.cursor() as cursor:
                 for agent in agents:
                     if not isinstance(agent, dict):
                         continue
-                    self._save_agent(cursor, agent)
+                    result = self._save_agent(cursor, agent)
+                    if result is not None:
+                        results.append(result)
+        return results
 
-    def _save_agent(self, cursor: Any, agent: dict[str, Any]) -> None:
+    def _save_agent(
+        self,
+        cursor: Any,
+        agent: dict[str, Any],
+    ) -> AgentCatalogWriteResult | None:
         agent_id = _clean_string(agent.get("id"))
         tenant_id = _clean_string(agent.get("tenant"))
         owner_user_id = _clean_string(agent.get("created_by"))
         if not agent_id or not tenant_id or not owner_user_id:
-            return
+            return None
 
         created_at = _clean_string(agent.get("created_at")) or _clean_string(
             agent.get("updated_at"),
@@ -395,6 +409,9 @@ class PostgresAgentCatalogWriteRepository:
               allowed_roles = EXCLUDED.allowed_roles,
               capabilities = EXCLUDED.capabilities,
               updated_at = EXCLUDED.updated_at
+            RETURNING id, tenant_id, template_id, name, description, status,
+              owner_user_id, current_version_id, memory_enabled, workflow_enabled,
+              allowed_user_ids, allowed_roles, capabilities, created_at, updated_at
             """,
             (
                 agent_id,
@@ -414,6 +431,10 @@ class PostgresAgentCatalogWriteRepository:
                 updated_at or created_at,
             ),
         )
+        agent_row = cursor.fetchone()
+        if agent_row is None:
+            raise RuntimeError("Agent catalog upsert did not return a row.")
+
         cursor.execute(
             """
             INSERT INTO agent_versions (
@@ -429,6 +450,9 @@ class PostgresAgentCatalogWriteRepository:
               tool_ids = EXCLUDED.tool_ids,
               knowledge_base_ids = EXCLUDED.knowledge_base_ids,
               memory_policy_id = EXCLUDED.memory_policy_id
+            RETURNING id, tenant_id, agent_id, version, instructions,
+              model_config_id, runtime_provider, tool_ids, knowledge_base_ids,
+              memory_policy_id, created_by, created_at
             """,
             (
                 version_id,
@@ -444,11 +468,27 @@ class PostgresAgentCatalogWriteRepository:
                 created_at or updated_at,
             ),
         )
+        version_row = cursor.fetchone()
+        if version_row is None:
+            raise RuntimeError("Agent version upsert did not return a row.")
+
+        version_record = _agent_version_from_row(dict(version_row))
         cursor.execute(
             """
             UPDATE agents
             SET current_version_id = %s
             WHERE tenant_id = %s AND id = %s
+            RETURNING id, tenant_id, template_id, name, description, status,
+              owner_user_id, current_version_id, memory_enabled, workflow_enabled,
+              allowed_user_ids, allowed_roles, capabilities, created_at, updated_at
             """,
-            (version_id, tenant_id, agent_id),
+            (version_record.id, tenant_id, agent_id),
+        )
+        updated_agent_row = cursor.fetchone()
+        if updated_agent_row is None:
+            raise RuntimeError("Agent current version update did not return a row.")
+
+        return AgentCatalogWriteResult(
+            agent=_agent_from_row(dict(updated_agent_row)),
+            version=version_record,
         )
