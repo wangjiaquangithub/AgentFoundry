@@ -3771,6 +3771,12 @@ def _check_postgres_agent_run_reads_guarded() -> list[str]:
                     "agent runs: backend/persistence/runs.py:"
                     f"PostgresAgentRunReadRepository.{method_name}",
                 )
+        if not _module_calls_name(method_node, "_validate_agent_run_read_result"):
+            errors.append(
+                "PostgreSQL agent run read method must validate returned records "
+                "against requested tenant and filters: backend/persistence/runs.py:"
+                f"PostgresAgentRunReadRepository.{method_name}",
+            )
 
     return errors
 

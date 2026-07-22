@@ -71,6 +71,30 @@ def _validate_write_result(
         raise ValueError("PostgreSQL agent run write returned another completed time.")
 
 
+def _validate_agent_run_read_result(
+    record: AgentRunRecord,
+    *,
+    tenant_id: str,
+    run_id: str | None = None,
+    agent_id: str | None = None,
+    user_id: str | None = None,
+    session_id: str | None = None,
+    status: str | None = None,
+) -> None:
+    if record.tenant_id != tenant_id:
+        raise ValueError("PostgreSQL agent run read returned another tenant.")
+    if run_id is not None and record.id != run_id:
+        raise ValueError("PostgreSQL agent run read returned another run.")
+    if agent_id is not None and record.agent_id != agent_id:
+        raise ValueError("PostgreSQL agent run read returned another agent.")
+    if user_id is not None and record.user_id != user_id:
+        raise ValueError("PostgreSQL agent run read returned another user.")
+    if session_id is not None and record.session_id != session_id:
+        raise ValueError("PostgreSQL agent run read returned another session.")
+    if status is not None and record.status != status:
+        raise ValueError("PostgreSQL agent run read returned another status.")
+
+
 class SQLiteAgentRunReadRepository:
     """Read tenant-scoped agent run records from SQLite."""
 
@@ -176,7 +200,17 @@ class PostgresAgentRunReadRepository:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, tuple(parameters))
-                return [_run_from_row(dict(row)) for row in cursor.fetchall()]
+                records = [_run_from_row(dict(row)) for row in cursor.fetchall()]
+        for record in records:
+            _validate_agent_run_read_result(
+                record,
+                tenant_id=tenant_id,
+                agent_id=agent_id,
+                user_id=user_id,
+                session_id=session_id,
+                status=status,
+            )
+        return records
 
     def get_run(self, *, tenant_id: str, run_id: str) -> AgentRunRecord | None:
         with self._database.connect() as connection:
@@ -194,7 +228,9 @@ class PostgresAgentRunReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return _run_from_row(dict(row))
+        record = _run_from_row(dict(row))
+        _validate_agent_run_read_result(record, tenant_id=tenant_id, run_id=run_id)
+        return record
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
