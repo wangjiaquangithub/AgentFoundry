@@ -29,6 +29,48 @@ def _run_from_row(row: dict[str, Any]) -> AgentRunRecord:
     return AgentRunRecord(**row)
 
 
+def _validate_write_result(
+    requested: AgentRunRecord,
+    persisted: AgentRunRecord,
+) -> None:
+    if not persisted.id:
+        raise ValueError("PostgreSQL agent run write did not return a run id.")
+    if not persisted.tenant_id:
+        raise ValueError("PostgreSQL agent run write did not return a tenant id.")
+    if not persisted.user_id:
+        raise ValueError("PostgreSQL agent run write did not return a user id.")
+    if persisted.id != requested.id:
+        raise ValueError("PostgreSQL agent run write returned another run.")
+    if persisted.tenant_id != requested.tenant_id:
+        raise ValueError("PostgreSQL agent run write returned another tenant.")
+    if persisted.agent_id != requested.agent_id:
+        raise ValueError("PostgreSQL agent run write returned another agent.")
+    if persisted.agent_version_id != requested.agent_version_id:
+        raise ValueError("PostgreSQL agent run write returned another agent version.")
+    if persisted.user_id != requested.user_id:
+        raise ValueError("PostgreSQL agent run write returned another user.")
+    if persisted.session_id != requested.session_id:
+        raise ValueError("PostgreSQL agent run write returned another session.")
+    if persisted.status != requested.status:
+        raise ValueError("PostgreSQL agent run write returned another status.")
+    if persisted.question != requested.question:
+        raise ValueError("PostgreSQL agent run write returned another question.")
+    if persisted.answer != requested.answer:
+        raise ValueError("PostgreSQL agent run write returned another answer.")
+    if persisted.runtime_provider != requested.runtime_provider:
+        raise ValueError(
+            "PostgreSQL agent run write returned another runtime provider.",
+        )
+    if persisted.runtime_invocation_id != requested.runtime_invocation_id:
+        raise ValueError(
+            "PostgreSQL agent run write returned another runtime invocation.",
+        )
+    if persisted.created_at != requested.created_at:
+        raise ValueError("PostgreSQL agent run write returned another created time.")
+    if persisted.completed_at != requested.completed_at:
+        raise ValueError("PostgreSQL agent run write returned another completed time.")
+
+
 class SQLiteAgentRunReadRepository:
     """Read tenant-scoped agent run records from SQLite."""
 
@@ -215,7 +257,9 @@ class PostgresAgentRunWriteRepository:
                 row = cursor.fetchone()
         if row is None:
             raise ValueError("Agent run upsert did not return a row.")
-        return _run_from_row(dict(row))
+        persisted = _run_from_row(dict(row))
+        _validate_write_result(record, persisted)
+        return persisted
 
     def delete_runs(
         self,
