@@ -68,6 +68,32 @@ def _result_from_json(
         return value
 
 
+def _validate_write_result(
+    requested: ToolCallRecord,
+    persisted: ToolCallRecord,
+) -> None:
+    if persisted.id != requested.id:
+        raise ValueError("PostgreSQL tool call write returned another call.")
+    if persisted.tenant_id != requested.tenant_id:
+        raise ValueError("PostgreSQL tool call write returned another tenant.")
+    if persisted.agent_run_id != requested.agent_run_id:
+        raise ValueError("PostgreSQL tool call write returned another agent run.")
+    if persisted.tool_id != requested.tool_id:
+        raise ValueError("PostgreSQL tool call write returned another tool.")
+    if persisted.inputs != requested.inputs:
+        raise ValueError("PostgreSQL tool call write returned another inputs payload.")
+    if persisted.result != requested.result:
+        raise ValueError("PostgreSQL tool call write returned another result payload.")
+    if persisted.allowed != requested.allowed:
+        raise ValueError("PostgreSQL tool call write returned another allowed flag.")
+    if persisted.approval_id != requested.approval_id:
+        raise ValueError("PostgreSQL tool call write returned another approval.")
+    if persisted.created_at != requested.created_at:
+        raise ValueError("PostgreSQL tool call write returned another created time.")
+    if persisted.completed_at != requested.completed_at:
+        raise ValueError("PostgreSQL tool call write returned another completed time.")
+
+
 class SQLiteToolCallReadRepository:
     """Read tenant-scoped tool call records from SQLite."""
 
@@ -277,4 +303,6 @@ class PostgresToolCallWriteRepository:
                 row = cursor.fetchone()
         if row is None:
             raise ValueError("Tool call upsert did not return a row.")
-        return _tool_call_from_row(dict(row))
+        persisted = _tool_call_from_row(dict(row))
+        _validate_write_result(record, persisted)
+        return persisted

@@ -715,7 +715,18 @@ def _check_postgres_tool_calls_wired() -> list[str]:
         "RETURNING id, tenant_id, agent_run_id, tool_id, inputs, result",
         "row = cursor.fetchone()",
         "Tool call upsert did not return a row.",
-        "return _tool_call_from_row(dict(row))",
+        "_validate_write_result(record, persisted)",
+        "PostgreSQL tool call write returned another call.",
+        "PostgreSQL tool call write returned another tenant.",
+        "PostgreSQL tool call write returned another agent run.",
+        "PostgreSQL tool call write returned another tool.",
+        "PostgreSQL tool call write returned another inputs payload.",
+        "PostgreSQL tool call write returned another result payload.",
+        "PostgreSQL tool call write returned another allowed flag.",
+        "PostgreSQL tool call write returned another approval.",
+        "PostgreSQL tool call write returned another created time.",
+        "PostgreSQL tool call write returned another completed time.",
+        "return persisted",
     ):
         if token not in tool_call_persistence_source:
             errors.append(
