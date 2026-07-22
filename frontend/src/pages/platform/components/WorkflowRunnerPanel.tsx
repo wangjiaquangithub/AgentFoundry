@@ -117,8 +117,8 @@ export function WorkflowRunnerPanel({
 	};
 
 	return (
-		<section className="grid items-start gap-4 xl:grid-cols-[18rem_minmax(0,1fr)_22rem]">
-			<aside className="rounded-lg border bg-background xl:sticky xl:top-4">
+		<section className="grid items-start gap-4">
+			<section className="rounded-lg border bg-background">
 				<div className="flex items-center justify-between gap-3 border-b p-4">
 					<div className="flex items-center gap-2">
 						<Workflow className="size-4 text-muted-foreground" />
@@ -129,7 +129,7 @@ export function WorkflowRunnerPanel({
 					<Badge variant="outline">{workflowTemplates.length}</Badge>
 				</div>
 
-				<div className="grid gap-2 p-3">
+				<div className="grid gap-2 p-3 md:grid-cols-2 xl:grid-cols-3">
 					{workflowTemplatesLoading ? (
 						[0, 1, 2].map((item) => (
 							<Skeleton key={item} className="h-24 rounded-lg" />
@@ -215,7 +215,7 @@ export function WorkflowRunnerPanel({
 						})
 					)}
 				</div>
-			</aside>
+			</section>
 
 			<div className="grid gap-4">
 				<section className="rounded-lg border bg-background p-4">
@@ -383,7 +383,7 @@ export function WorkflowRunnerPanel({
 				</section>
 			</div>
 
-			<aside className="grid gap-4 xl:sticky xl:top-4">
+			<section className="grid gap-4 xl:grid-cols-2">
 				<section className="rounded-lg border bg-background p-4">
 					<div className="flex items-center gap-2 border-b pb-3">
 						<CheckCircle2 className="size-4 text-muted-foreground" />
@@ -541,7 +541,7 @@ export function WorkflowRunnerPanel({
 						</div>
 					)}
 				</section>
-			</aside>
+			</section>
 			<PlatformConfirmAction
 				open={Boolean(templatePendingDisable)}
 				onOpenChange={(open) => {
