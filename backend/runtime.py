@@ -11,6 +11,25 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 
+RUNTIME_PROVIDER_HEALTH_REQUIRED_FIELDS = frozenset(
+    {
+        "provider_id",
+        "provider",
+        "mode",
+        "status",
+        "ready",
+        "message",
+        "capabilities",
+        "checks",
+    },
+)
+RUNTIME_PROVIDER_HEALTH_REQUIRED_CHECKS = (
+    "adapter_configured",
+    "provider_invocation_wired",
+    "direct_agentscope_dependency",
+)
+
+
 @dataclass(frozen=True)
 class RuntimeCapability:
     """A provider-neutral runtime capability exposed to platform services."""
@@ -452,9 +471,69 @@ def describe_runtime_adapter(
     return runtime_adapter.describe(agent_metadata)
 
 
+def normalize_runtime_provider_health(
+    health: dict[str, Any],
+    adapter_metadata: dict[str, Any],
+) -> dict[str, Any]:
+    """Validate runtime provider health against the selected adapter contract."""
+    missing_fields = RUNTIME_PROVIDER_HEALTH_REQUIRED_FIELDS - health.keys()
+    if missing_fields:
+        raise ValueError(
+            f"Runtime provider health missing fields: {sorted(missing_fields)}",
+        )
+
+    expected_identity = {
+        "provider_id": adapter_metadata.get("id"),
+        "provider": adapter_metadata.get("provider"),
+        "mode": adapter_metadata.get("mode"),
+    }
+    for field, expected_value in expected_identity.items():
+        if health.get(field) != expected_value:
+            raise ValueError(
+                "Runtime provider health does not match adapter metadata: "
+                f"{field}={health.get(field)!r}, expected {expected_value!r}",
+            )
+
+    adapter_capabilities = _string_list(adapter_metadata.get("capabilities"))
+    health_capabilities = _string_list(health.get("capabilities"))
+    if health_capabilities != adapter_capabilities:
+        raise ValueError(
+            "Runtime provider health capabilities must match adapter capabilities.",
+        )
+
+    checks = health.get("checks")
+    if not isinstance(checks, dict):
+        raise ValueError("Runtime provider health checks must be an object.")
+    missing_checks = [
+        check
+        for check in RUNTIME_PROVIDER_HEALTH_REQUIRED_CHECKS
+        if check not in checks
+    ]
+    if missing_checks:
+        raise ValueError(
+            f"Runtime provider health missing checks: {missing_checks}",
+        )
+
+    return {
+        **health,
+        "capabilities": health_capabilities,
+        "checks": dict(checks),
+    }
+
+
+def _string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        raise ValueError("Runtime provider capabilities must be a list.")
+    return [str(item) for item in value]
+
+
 def describe_runtime_provider_health(
     agent_metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Return runtime provider health for platform operations snapshots."""
     runtime_adapter = get_runtime_adapter(agent_metadata)
-    return runtime_adapter.health(agent_metadata)
+    adapter_metadata = runtime_adapter.describe(agent_metadata)
+    return normalize_runtime_provider_health(
+        runtime_adapter.health(agent_metadata),
+        adapter_metadata,
+    )

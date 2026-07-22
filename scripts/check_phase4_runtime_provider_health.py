@@ -43,7 +43,12 @@ def _assert_no_direct_agentscope_import(path: Path) -> None:
             raise AssertionError(f"{path} imports AgentScope directly: {direct_imports}")
 
 
-def _assert_health_payload(payload: dict[str, Any], label: str) -> None:
+def _assert_health_payload(
+    payload: dict[str, Any],
+    label: str,
+    *,
+    adapter_payload: dict[str, Any] | None = None,
+) -> None:
     required_fields = {
         "provider_id",
         "provider",
@@ -72,10 +77,15 @@ def _assert_health_payload(payload: dict[str, Any], label: str) -> None:
             )
 
     capabilities = payload.get("capabilities")
-    if not isinstance(capabilities, list) or not EXPECTED_CAPABILITIES.issubset(
-        set(capabilities),
-    ):
+    if not isinstance(capabilities, list) or set(capabilities) != EXPECTED_CAPABILITIES:
         raise AssertionError(f"{label} capabilities mismatch: {payload}")
+    if (
+        adapter_payload is not None
+        and capabilities != adapter_payload.get("capabilities")
+    ):
+        raise AssertionError(
+            f"{label} capabilities must match adapter describe payload: {payload}",
+        )
 
     checks = payload.get("checks")
     if not isinstance(checks, dict):
@@ -100,12 +110,28 @@ def main() -> None:
     _assert_no_direct_agentscope_import(BACKEND_DIR / "runtime.py")
     _assert_no_direct_agentscope_import(BACKEND_DIR / "services" / "platform_status.py")
 
-    from runtime import describe_runtime_provider_health
+    from runtime import describe_runtime_adapter, describe_runtime_provider_health
+    from runtime import normalize_runtime_provider_health
+
+    adapter_payload = describe_runtime_adapter()
 
     _assert_health_payload(
         describe_runtime_provider_health(),
         "runtime provider health",
+        adapter_payload=adapter_payload,
     )
+    try:
+        normalize_runtime_provider_health(
+            {
+                **describe_runtime_provider_health(),
+                "capabilities": ["tenant_context"],
+            },
+            adapter_payload,
+        )
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("runtime health normalization must reject capability drift")
 
     from services.platform_status import PlatformStatusService
 
@@ -167,7 +193,11 @@ def main() -> None:
     runtime_provider = payload.get("runtime_provider")
     if not isinstance(runtime_provider, dict):
         raise AssertionError(f"platform status missing runtime_provider: {payload}")
-    _assert_health_payload(runtime_provider, "platform status runtime_provider")
+    _assert_health_payload(
+        runtime_provider,
+        "platform status runtime_provider",
+        adapter_payload=adapter_payload,
+    )
 
     print("Phase 4 runtime provider health contract passed.")
 
