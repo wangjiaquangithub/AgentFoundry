@@ -1284,6 +1284,32 @@ def _check_postgres_audit_events_wired() -> list[str]:
             errors.append(
                 f"backend/services/{filename} must call append_audit_event",
             )
+        if service_name == "PlatformKnowledgeResponseService":
+            composition_source = (SERVICES_DIR / "composition.py").read_text(
+                encoding="utf-8",
+            )
+            if "build_postgres_knowledge_response_service" not in composition_source:
+                errors.append(
+                    "backend/services/composition.py must define "
+                    "build_postgres_knowledge_response_service for PostgreSQL audit event wiring",
+                )
+            if (
+                "audit_event_writer=PostgresAuditEventWriteRepository(database)"
+                not in composition_source
+            ):
+                errors.append(
+                    "backend/services/composition.py must pass the PostgreSQL "
+                    "audit_event_writer into PlatformKnowledgeResponseService",
+                )
+            if (
+                "build_configured_postgres_knowledge_response_service(now=now_iso)"
+                not in main_source
+            ):
+                errors.append(
+                    "backend/main.py must delegate PlatformKnowledgeResponseService "
+                    "PostgreSQL audit event wiring to services.composition",
+                )
+            continue
         service_constructor = f"{service_name}("
         service_position = main_source.find(service_constructor)
         if service_position == -1:
@@ -1333,9 +1359,22 @@ def _check_postgres_retrieval_events_wired() -> list[str]:
         errors.append(
             "backend/main.py must pass the PostgreSQL retrieval_event_reader into PlatformStatusService",
         )
-    if "retrieval_event_writer=_build_retrieval_event_write_repository()" not in main_source:
+    composition_source = (SERVICES_DIR / "composition.py").read_text(encoding="utf-8")
+    if (
+        "retrieval_event_writer=PostgresRetrievalEventWriteRepository(database)"
+        not in composition_source
+    ):
         errors.append(
-            "backend/main.py must pass the PostgreSQL retrieval_event_writer into PlatformKnowledgeResponseService",
+            "backend/services/composition.py must pass the PostgreSQL "
+            "retrieval_event_writer into PlatformKnowledgeResponseService",
+        )
+    if (
+        "build_configured_postgres_knowledge_response_service(now=now_iso)"
+        not in main_source
+    ):
+        errors.append(
+            "backend/main.py must delegate PlatformKnowledgeResponseService "
+            "PostgreSQL retrieval event wiring to services.composition",
         )
     if "retrieval_event_reader" not in platform_status_source:
         errors.append(

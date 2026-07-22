@@ -200,6 +200,7 @@ from services.composition import (
     build_configured_postgres_knowledge_embedding_record_read_repository,
     build_configured_postgres_knowledge_embedding_record_write_repository,
     build_configured_postgres_knowledge_ingestion_service,
+    build_configured_postgres_knowledge_response_service,
     build_configured_postgres_knowledge_retrieval_service,
     build_configured_postgres_model_config_service,
 )
@@ -412,10 +413,9 @@ dev_knowledge_repository = DevKnowledgeRepository(PLATFORM_DEV_KNOWLEDGE_PATH)
 dev_knowledge_service = PlatformDevKnowledgeService(
     repository=dev_knowledge_repository,
 )
-knowledge_response_service = PlatformKnowledgeResponseService(
-    retrieval_event_writer=_build_retrieval_event_write_repository(),
-    audit_event_writer=_build_audit_event_write_repository(),
-    now=now_iso,
+knowledge_response_service = (
+    build_configured_postgres_knowledge_response_service(now=now_iso)
+    or PlatformKnowledgeResponseService(now=now_iso)
 )
 
 

@@ -22,6 +22,7 @@ from backend.persistence import (
 )
 from backend.services.knowledge import (
     PlatformKnowledgeDocumentReadinessService,
+    PlatformKnowledgeResponseService,
     PlatformKnowledgeRetrievalService,
 )
 from backend.services.knowledge_ingestion import PlatformKnowledgeIngestionService
@@ -236,3 +237,30 @@ def build_configured_postgres_knowledge_retrieval_service(
         return None
 
     return build_postgres_knowledge_retrieval_service(database, now=now)
+
+
+def build_postgres_knowledge_response_service(
+    database: PostgresDatabase,
+    *,
+    now: Callable[[], str] | None = None,
+) -> PlatformKnowledgeResponseService:
+    """Build the PostgreSQL-backed knowledge response service."""
+
+    return PlatformKnowledgeResponseService(
+        retrieval_event_writer=PostgresRetrievalEventWriteRepository(database),
+        audit_event_writer=PostgresAuditEventWriteRepository(database),
+        now=now,
+    )
+
+
+def build_configured_postgres_knowledge_response_service(
+    *,
+    now: Callable[[], str] | None = None,
+) -> PlatformKnowledgeResponseService | None:
+    """Build the knowledge response service when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return build_postgres_knowledge_response_service(database, now=now)
