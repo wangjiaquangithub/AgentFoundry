@@ -794,6 +794,58 @@ def _check_postgres_seed_path() -> list[str]:
             "backend/persistence/seed.py must apply migrations before PostgreSQL seeding",
         )
 
+    seed_dispatch = next(
+        (
+            node
+            for node in seed_tree.body
+            if isinstance(node, ast.FunctionDef) and node.name == "seed_development_data"
+        ),
+        None,
+    )
+    if seed_dispatch is None:
+        errors.append(
+            "backend/persistence/seed.py must expose seed_development_data for seed path selection",
+        )
+    else:
+        postgres_dispatch = next(
+            (
+                node
+                for node in seed_dispatch.body
+                if isinstance(node, ast.If)
+                and isinstance(node.test, ast.Call)
+                and isinstance(node.test.func, ast.Name)
+                and node.test.func.id == "is_postgres_database_url"
+            ),
+            None,
+        )
+        if postgres_dispatch is None:
+            errors.append(
+                "backend/persistence/seed.py:seed_development_data must branch on "
+                "is_postgres_database_url before SQLite compatibility",
+            )
+        elif not any(
+            isinstance(child, ast.Call)
+            and isinstance(child.func, ast.Name)
+            and child.func.id == "seed_postgres_development_data"
+            for child in ast.walk(postgres_dispatch)
+        ):
+            errors.append(
+                "backend/persistence/seed.py:seed_development_data must dispatch "
+                "PostgreSQL URLs to seed_postgres_development_data",
+            )
+
+        if not any(
+            isinstance(node, ast.Return)
+            and isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Name)
+            and node.value.func.id == "seed_sqlite_development_data"
+            for node in seed_dispatch.body
+        ):
+            errors.append(
+                "backend/persistence/seed.py:seed_development_data must keep SQLite "
+                "as the explicit local compatibility fallback",
+            )
+
     disallowed_tokens = [
         "only accepts explicit sqlite:// URLs",
         "intentionally limited to local SQLite compatibility",
