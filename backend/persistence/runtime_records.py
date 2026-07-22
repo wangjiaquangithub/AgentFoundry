@@ -194,7 +194,11 @@ def _redact_runtime_invocation_summary(value: Any) -> Any:
     if isinstance(value, dict):
         redacted: dict[str, Any] = {}
         for key, nested_value in value.items():
-            if key == "runtime_provider_config" and isinstance(nested_value, dict):
+            normalized_key = key.lower()
+            if (
+                normalized_key == "runtime_provider_config"
+                and isinstance(nested_value, dict)
+            ):
                 redacted[key] = {
                     config_key: "<configured>"
                     for config_key, config_value in nested_value.items()
@@ -217,7 +221,7 @@ def _redact_runtime_invocation_summary(value: Any) -> Any:
 
 
 def _sensitive_runtime_invocation_summary_key(key: str) -> bool:
-    return key in {
+    return key.lower() in {
         "access_token",
         "agentscope_runtime_auth_ref",
         "api_key",

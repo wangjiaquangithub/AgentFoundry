@@ -86,9 +86,14 @@ def _row() -> dict[str, Any]:
                 "agentscope_runtime_url": PROVIDER_URL,
                 "agentscope_runtime_auth_ref": SECRET_REF,
             },
+            "Runtime_Provider_Config": {
+                "Agentscope_Runtime_Url": PROVIDER_URL,
+                "Agentscope_Runtime_Auth_Ref": SECRET_REF,
+            },
             "config_ref": SECRET_REF,
+            "Config_Ref": SECRET_REF,
         },
-        "api_key": API_KEY,
+        "Api_Key": API_KEY,
         "question": "Check runtime invocation read redaction.",
     }
     response_summary = {
@@ -143,7 +148,14 @@ def _assert_record_is_redacted(record: Any) -> None:
         raise AssertionError(f"runtime provider config was not redacted: {record}")
     if request_metadata["config_ref"] != "<configured>":
         raise AssertionError(f"config_ref was not redacted: {record}")
-    if record.request_summary["api_key"] != "<configured>":
+    if request_metadata["Runtime_Provider_Config"] != {
+        "Agentscope_Runtime_Url": "<configured>",
+        "Agentscope_Runtime_Auth_Ref": "<configured>",
+    }:
+        raise AssertionError(f"mixed-case runtime config was not redacted: {record}")
+    if request_metadata["Config_Ref"] != "<configured>":
+        raise AssertionError(f"mixed-case config_ref was not redacted: {record}")
+    if record.request_summary["Api_Key"] != "<configured>":
         raise AssertionError(f"api_key was not redacted: {record}")
 
     response_summary = record.response_summary
