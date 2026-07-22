@@ -90,6 +90,48 @@ export function MonitoringSnapshotPanel({
 	onOpenGovernance,
 	labels,
 }: MonitoringSnapshotPanelProps) {
+	const activityItems = [
+		...recentAgentTurns.map((turn) => ({
+			id: `agent-${turn.id}`,
+			type: labels.recentAgentRuns,
+			title: turn.question,
+			description: turn.answer,
+			timestamp: turn.createdAt,
+			status: null as string | null,
+			statusClassName: '',
+			onClick: () => onSelectAgentTurn(turn),
+		})),
+		...recentWorkflowRuns.slice(0, 4).map((run) => ({
+			id: `workflow-${run.run_id}`,
+			type: labels.recentWorkflowRuns,
+			title: run.workflow_name,
+			description: run.summary || formatTimestamp(run.finished_at || run.started_at),
+			timestamp: run.finished_at || run.started_at,
+			status: labels.workflowStatus(workflowStatusLabelKey(run.status)),
+			statusClassName: workflowStatusClassName(run.status),
+			onClick: onRunWorkflow,
+		})),
+		...recentAuditEvents.slice(0, 4).map((event, index) => ({
+			id: `audit-${event.event_id ?? `${event.timestamp}-${index}`}`,
+			type: labels.recentAudit,
+			title: event.tool_name || event.event_type || labels.auditEvent,
+			description: `${event.user_id || '-'} · ${event.tenant || '-'}`,
+			timestamp: event.timestamp,
+			status: event.success === false ? labels.failure : labels.success,
+			statusClassName:
+				event.success === false
+					? ''
+					: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700',
+			onClick: onOpenGovernance,
+		})),
+	]
+		.sort(
+			(a, b) =>
+				new Date(b.timestamp || 0).getTime() -
+				new Date(a.timestamp || 0).getTime(),
+		)
+		.slice(0, 8);
+
 	return (
 		<section className="grid gap-4 rounded-lg border bg-background p-4">
 			<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -149,124 +191,52 @@ export function MonitoringSnapshotPanel({
 				})}
 			</div>
 
-			<div className="grid gap-3 lg:grid-cols-3">
-				<div className="grid gap-3 rounded-lg border bg-background p-3">
-					<div>
-						<h3 className="text-sm font-medium">{labels.recentAgentRuns}</h3>
-						<p className="mt-1 text-xs leading-5 text-muted-foreground">
-							{labels.recentAgentRunsHelper}
-						</p>
-					</div>
-					{recentAgentTurns.length === 0 ? (
-						<div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
-							{labels.emptyAgentRuns}
-						</div>
-					) : (
-						<div className="grid gap-2">
-							{recentAgentTurns.map((turn) => (
-								<button
-									key={turn.id}
-									type="button"
-									onClick={() => onSelectAgentTurn(turn)}
-									className="rounded-md border bg-background p-3 text-left text-xs transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-								>
-									<div className="flex items-center justify-between gap-2">
-										<span className="truncate font-medium">{turn.question}</span>
-										<span className="shrink-0 text-muted-foreground">
-											{formatTimestamp(turn.createdAt)}
-										</span>
-									</div>
-									<p className="mt-1 line-clamp-2 leading-5 text-muted-foreground">
-										{turn.answer}
-									</p>
-								</button>
-							))}
-						</div>
-					)}
+			<div className="rounded-lg border bg-background">
+				<div className="border-b px-4 py-3">
+					<h3 className="text-sm font-medium">{labels.recentAudit}</h3>
+					<p className="mt-1 text-xs leading-5 text-muted-foreground">
+						{labels.recentAgentRunsHelper} · {labels.recentWorkflowRunsHelper} ·{' '}
+						{labels.recentAuditHelper}
+					</p>
 				</div>
-
-				<div className="grid gap-3 rounded-lg border bg-background p-3">
-					<div>
-						<h3 className="text-sm font-medium">{labels.recentWorkflowRuns}</h3>
-						<p className="mt-1 text-xs leading-5 text-muted-foreground">
-							{labels.recentWorkflowRunsHelper}
-						</p>
+				{activityItems.length === 0 ? (
+					<div className="m-4 rounded-md border border-dashed bg-background p-4 text-sm text-muted-foreground">
+						{labels.emptyAgentRuns} / {labels.emptyWorkflowRuns} / {labels.emptyAudit}
 					</div>
-					{recentWorkflowRuns.length === 0 ? (
-						<div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
-							{labels.emptyWorkflowRuns}
-						</div>
-					) : (
-						<div className="grid gap-2">
-							{recentWorkflowRuns.slice(0, 3).map((run) => (
-								<button
-									key={run.run_id}
-									type="button"
-									onClick={onRunWorkflow}
-									className="rounded-md border bg-background p-3 text-left text-xs transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-								>
-									<div className="flex items-center justify-between gap-2">
-										<span className="truncate font-medium">{run.workflow_name}</span>
-										<Badge
-											variant="outline"
-											className={workflowStatusClassName(run.status)}
-										>
-											{labels.workflowStatus(workflowStatusLabelKey(run.status))}
+				) : (
+					<div className="divide-y">
+						{activityItems.map((item) => (
+							<button
+								key={item.id}
+								type="button"
+								onClick={item.onClick}
+								className="grid w-full gap-2 px-4 py-3 text-left transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:grid-cols-[7rem_minmax(0,1fr)_auto]"
+							>
+								<div className="flex items-center gap-2">
+									<Badge variant="outline" className="bg-background">
+										{item.type}
+									</Badge>
+								</div>
+								<div className="min-w-0">
+									<div className="truncate text-sm font-medium">{item.title}</div>
+									<p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+										{item.description}
+									</p>
+								</div>
+								<div className="flex items-center gap-2 sm:justify-end">
+									{item.status ? (
+										<Badge variant="outline" className={item.statusClassName}>
+											{item.status}
 										</Badge>
-									</div>
-									<p className="mt-1 line-clamp-2 leading-5 text-muted-foreground">
-										{run.summary || formatTimestamp(run.finished_at || run.started_at)}
-									</p>
-								</button>
-							))}
-						</div>
-					)}
-				</div>
-
-				<div className="grid gap-3 rounded-lg border bg-background p-3">
-					<div>
-						<h3 className="text-sm font-medium">{labels.recentAudit}</h3>
-						<p className="mt-1 text-xs leading-5 text-muted-foreground">
-							{labels.recentAuditHelper}
-						</p>
+									) : null}
+									<span className="shrink-0 text-xs text-muted-foreground">
+										{formatTimestamp(item.timestamp)}
+									</span>
+								</div>
+							</button>
+						))}
 					</div>
-					{recentAuditEvents.length === 0 ? (
-						<div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
-							{labels.emptyAudit}
-						</div>
-					) : (
-						<div className="grid gap-2">
-							{recentAuditEvents.slice(0, 3).map((event, index) => (
-								<button
-									key={event.event_id ?? `${event.timestamp}-${index}`}
-									type="button"
-									onClick={onOpenGovernance}
-									className="rounded-md border bg-background p-3 text-left text-xs transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-								>
-									<div className="flex items-center justify-between gap-2">
-										<span className="truncate font-medium">
-											{event.tool_name || event.event_type || labels.auditEvent}
-										</span>
-										<Badge
-											variant="outline"
-											className={
-												event.success === false
-													? ''
-													: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700'
-											}
-										>
-											{event.success === false ? labels.failure : labels.success}
-										</Badge>
-									</div>
-									<p className="mt-1 truncate text-muted-foreground">
-										{event.user_id || '-'} · {event.tenant || '-'} ·{' '}
-										{formatTimestamp(event.timestamp)}
-									</p>
-								</button>
-							))}
-						</div>
-					)}
-				</div>
+				)}
 			</div>
 		</section>
 	);

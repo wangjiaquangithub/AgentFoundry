@@ -66,46 +66,6 @@ interface DashboardViewPageProps {
 
 type NextStepMode = 'model' | 'publish' | 'configure' | 'governance' | 'run';
 
-function ActivityList({
-	title,
-	items,
-	emptyText,
-	renderItem,
-	action,
-	getKey,
-}: {
-	title: string;
-	items: readonly unknown[];
-	emptyText: string;
-	renderItem: (item: unknown, index: number) => ReactNode;
-	action: ReactNode;
-	getKey?: (item: unknown, index: number) => string | number;
-}) {
-	return (
-		<Card size="sm" className="rounded-md shadow-none">
-			<CardHeader className="grid-cols-[1fr_auto] items-center gap-3 border-b">
-				<CardTitle className="text-sm">{title}</CardTitle>
-				{action}
-			</CardHeader>
-			<CardContent className="p-0">
-				{items.length > 0 ? (
-					<div className="divide-y">
-						{items.slice(0, 4).map((item, index) => (
-							<div key={getKey?.(item, index) ?? index} className="px-4 py-3">
-								{renderItem(item, index)}
-							</div>
-						))}
-					</div>
-				) : (
-					<div className="p-4 text-sm text-muted-foreground">
-						{emptyText}
-					</div>
-				)}
-			</CardContent>
-		</Card>
-	);
-}
-
 function HealthRow({
 	label,
 	description,
@@ -179,6 +139,41 @@ export function DashboardViewPage({
 			: connectors
 				? 'partial'
 				: 'todo';
+	const activityItems = [
+		...topOpsTasks.map((task) => ({
+			id: task.task_id,
+			type: '待办',
+			title: task.title ?? task.code ?? '运维任务',
+			description: task.description ?? '需要在对应模块继续处理。',
+			badge: task.severity ?? 'todo',
+			time: '',
+			href: '/platform/runs',
+		})),
+		...(Array.isArray(recentWorkflowRuns) ? recentWorkflowRuns : []).map((run) => ({
+			id: run.run_id,
+			type: '工作流',
+			title: run.workflow_name ?? run.workflow_type ?? '工作流运行',
+			description: run.run_id ?? '无运行 ID',
+			badge: run.status ?? 'unknown',
+			time: run.started_at ?? run.finished_at ?? '',
+			href: '/platform/workflows',
+		})),
+		...(Array.isArray(recentAuditEvents) ? recentAuditEvents : []).map((event) => ({
+			id: event.event_id,
+			type: '审计',
+			title: String(event.event_type ?? '审计事件'),
+			description: String(event.user_id ?? event.tenant ?? '系统记录'),
+			badge: String(event.tenant ?? 'tenant'),
+			time: event.timestamp ?? '',
+			href: '/platform/tenants',
+		})),
+	]
+		.sort((left, right) => {
+			const leftTime = left.time ? new Date(left.time).getTime() : 0;
+			const rightTime = right.time ? new Date(right.time).getTime() : 0;
+			return rightTime - leftTime;
+		})
+		.slice(0, 8);
 
 	return (
 		<PlatformPageShell className="gap-5">
@@ -477,128 +472,72 @@ export function DashboardViewPage({
 			</section>
 
 			<section className="grid gap-4">
-				<div className="flex flex-col gap-1">
-					<h2 className="text-base font-semibold">近期动态</h2>
-					<p className="text-sm leading-6 text-muted-foreground">
-						聚合待办、工作流运行和审计事件，用于判断下一步处理优先级。
-					</p>
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+					<div className="min-w-0">
+						<h2 className="text-base font-semibold">近期动态</h2>
+						<p className="text-sm leading-6 text-muted-foreground">
+							聚合待办、工作流运行和审计事件，用于判断下一步处理优先级。
+						</p>
+					</div>
+					<div className="flex flex-wrap gap-2">
+						<Button
+							type="button"
+							size="sm"
+							variant="outline"
+							onClick={() => navigate('/platform/runs')}
+						>
+							运行监控
+						</Button>
+						<Button
+							type="button"
+							size="sm"
+							variant="ghost"
+							onClick={() => navigate('/platform/approvals')}
+						>
+							审批队列
+						</Button>
+					</div>
 				</div>
-				<div className="grid gap-4 xl:grid-cols-3">
-					<ActivityList
-						title="待处理事项"
-						items={topOpsTasks}
-						emptyText="暂无运维待办。"
-						getKey={(item, index) =>
-							(item as EnterprisePlatformOpsTask).task_id ?? index
-						}
-						action={
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={() => navigate('/platform/runs')}
-							>
-								查看运行
-							</Button>
-						}
-						renderItem={(item) => (
-							<div className="space-y-1">
-								<div className="flex items-center justify-between gap-3">
-									<div className="truncate text-sm font-medium">
-										{(item as EnterprisePlatformOpsTask).title ??
-											(item as EnterprisePlatformOpsTask).code ??
-											'运维任务'}
-									</div>
-									<Badge variant="outline">
-										{(item as EnterprisePlatformOpsTask).severity ?? 'todo'}
-									</Badge>
-								</div>
-								<p className="line-clamp-2 text-xs leading-5 text-muted-foreground">
-									{(item as EnterprisePlatformOpsTask).description ??
-										'需要在对应模块继续处理。'}
-								</p>
+				<Card size="sm" className="rounded-md shadow-none">
+					<CardContent className="p-0">
+						{activityItems.length > 0 ? (
+							<div className="divide-y">
+								{activityItems.map((item, index) => (
+									<button
+										key={item.id ?? `${item.type}-${index}`}
+										type="button"
+										className="grid w-full gap-2 px-4 py-3 text-left transition-colors hover:bg-muted/45 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center"
+										onClick={() => navigate(item.href)}
+									>
+										<Badge variant="secondary" className="w-fit">
+											{item.type}
+										</Badge>
+										<div className="min-w-0">
+											<div className="truncate text-sm font-medium">
+												{item.title}
+											</div>
+											<p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+												{item.description}
+											</p>
+										</div>
+										<div className="flex items-center gap-2 sm:justify-end">
+											<Badge variant="outline">{item.badge}</Badge>
+											{item.time ? (
+												<span className="text-xs text-muted-foreground">
+													{new Date(item.time).toLocaleString()}
+												</span>
+											) : null}
+										</div>
+									</button>
+								))}
+							</div>
+						) : (
+							<div className="px-4 py-8 text-sm text-muted-foreground">
+								暂无待办、工作流运行或审计事件。平台接入真实运行数据后，这里会形成统一活动流。
 							</div>
 						)}
-					/>
-
-					<ActivityList
-						title="最近工作流"
-						items={Array.isArray(recentWorkflowRuns) ? recentWorkflowRuns : []}
-						emptyText="暂无工作流运行记录。"
-						getKey={(item, index) =>
-							(item as EnterpriseWorkflowRunHistoryItem).run_id ?? index
-						}
-						action={
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={() => navigate('/platform/workflows')}
-							>
-								进入工作流
-							</Button>
-						}
-						renderItem={(item) => (
-							<div className="space-y-1">
-								<div className="flex items-center justify-between gap-3">
-									<div className="truncate text-sm font-medium">
-										{(item as EnterpriseWorkflowRunHistoryItem).workflow_name ??
-											(item as EnterpriseWorkflowRunHistoryItem).workflow_type ??
-											'工作流运行'}
-									</div>
-									<Badge variant="outline">
-										{(item as EnterpriseWorkflowRunHistoryItem).status ??
-											'unknown'}
-									</Badge>
-								</div>
-								<p className="truncate text-xs text-muted-foreground">
-									{(item as EnterpriseWorkflowRunHistoryItem).run_id ??
-										'无运行 ID'}
-								</p>
-							</div>
-						)}
-					/>
-
-					<ActivityList
-						title="最近审计"
-						items={Array.isArray(recentAuditEvents) ? recentAuditEvents : []}
-						emptyText="暂无审计事件。"
-						getKey={(item, index) =>
-							(item as EnterpriseAuditEvent).event_id ?? index
-						}
-						action={
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={() => navigate('/platform/tenants')}
-							>
-								成员治理
-							</Button>
-						}
-						renderItem={(item) => (
-							<div className="space-y-1">
-								<div className="flex items-center justify-between gap-3">
-									<div className="truncate text-sm font-medium">
-										{String(
-											(item as EnterpriseAuditEvent).event_type ?? '审计事件',
-										)}
-									</div>
-									<Badge variant="outline">
-										{String((item as EnterpriseAuditEvent).tenant ?? 'tenant')}
-									</Badge>
-								</div>
-								<p className="truncate text-xs text-muted-foreground">
-									{String(
-										(item as EnterpriseAuditEvent).user_id ??
-											(item as EnterpriseAuditEvent).timestamp ??
-											'系统记录',
-									)}
-								</p>
-							</div>
-						)}
-					/>
-				</div>
+					</CardContent>
+				</Card>
 			</section>
 
 			<section className="flex flex-col gap-3 rounded-lg border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">

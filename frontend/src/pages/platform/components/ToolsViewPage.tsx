@@ -1,11 +1,13 @@
 import {
 	Boxes,
 	CheckCircle2,
+	Play,
 	ShieldAlert,
 	Users,
 	Wrench,
 } from 'lucide-react';
 import type { Dispatch, RefObject, SetStateAction } from 'react';
+import { useState } from 'react';
 
 import {
 	PlatformConnectionCard,
@@ -21,6 +23,15 @@ import type {
 	EnterpriseToolDecision,
 	EnterpriseToolRunResponse,
 } from '@/api';
+import { Button } from '@/components/ui/button';
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetHeader,
+	SheetTitle,
+	SheetTrigger,
+} from '@/components/ui/sheet';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -97,6 +108,7 @@ export function ToolsViewPage({
 	onRunEnterpriseTool,
 	t,
 }: ToolsViewPageProps) {
+	const [runnerOpen, setRunnerOpen] = useState(false);
 	const allowedToolCount = availableToolItems.filter((tool) => tool.allowed).length;
 	const deniedToolCount = availableToolItems.length - allowedToolCount;
 	const boundToolCount = availableToolItems.filter(
@@ -114,6 +126,52 @@ export function ToolsViewPage({
 				eyebrow={t('platform.toolCatalog.title')}
 				title={t('platform.toolCatalog.title')}
 				description={t('platform.toolCatalog.description')}
+				actions={
+					<Sheet open={runnerOpen} onOpenChange={setRunnerOpen}>
+						<SheetTrigger asChild>
+							<Button type="button">
+								<Play className="size-4" />
+								{t('platform.toolRunner.openRunner')}
+							</Button>
+						</SheetTrigger>
+						<SheetContent className="flex w-full flex-col overflow-hidden sm:max-w-2xl">
+							<SheetHeader className="border-b pb-4 pr-12 text-left">
+								<SheetTitle>{t('platform.toolRunner.title')}</SheetTitle>
+								<SheetDescription>
+									{t('platform.toolRunner.description')}
+								</SheetDescription>
+							</SheetHeader>
+							<div className="min-h-0 flex-1 overflow-y-auto py-4">
+								<ToolRunnerPanel
+									sectionRef={toolRunnerRef}
+									selectedToolName={selectedToolName}
+									availableToolItems={availableToolItems}
+									toolCatalogLoading={toolCatalogLoading}
+									selectedToolConfig={selectedToolConfig}
+									selectedToolCatalogItem={selectedToolCatalogItem}
+									selectedToolInputValue={selectedToolInputValue}
+									selectedToolInputKey={selectedToolInputKey}
+									toolApprovalId={toolApprovalId}
+									selectedToolDecision={selectedToolDecision}
+									selectedToolAllowed={selectedToolAllowed}
+									selectedToolReason={selectedToolReason}
+									creatingRunApproval={creatingRunApproval}
+									platformError={platformError}
+									runningTool={runningTool}
+									toolRunError={toolRunError}
+									toolRunResult={toolRunResult}
+									onSelectedToolNameChange={onSelectedToolNameChange}
+									onToolRunErrorChange={onToolRunErrorChange}
+									onToolInputsChange={onToolInputsChange}
+									onToolApprovalIdChange={onToolApprovalIdChange}
+									onCreateRunApproval={onCreateRunApproval}
+									onRunEnterpriseTool={onRunEnterpriseTool}
+									t={t}
+								/>
+							</div>
+						</SheetContent>
+					</Sheet>
+				}
 				aside={
 					<PlatformConnectionCard
 						serverUrl={serverUrl}
@@ -161,48 +219,19 @@ export function ToolsViewPage({
 				/>
 			</section>
 
-			<section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(390px,0.72fr)] 2xl:grid-cols-[minmax(0,1.08fr)_minmax(440px,0.72fr)]">
-				<div className="min-w-0">
-					<ToolCatalogPanel
-						sectionRef={configManagementRef}
-						availableToolItems={availableToolItems}
-						publishedPlatformAgents={publishedPlatformAgents}
-						toolCatalogLoading={toolCatalogLoading}
-						toolCatalogError={toolCatalogError}
-						onRefetchToolCatalog={onRefetchToolCatalog}
-						t={t}
-					/>
-				</div>
-
-				<div className="min-w-0 xl:sticky xl:top-[4.75rem] xl:self-start">
-					<ToolRunnerPanel
-						sectionRef={toolRunnerRef}
-						selectedToolName={selectedToolName}
-						availableToolItems={availableToolItems}
-						toolCatalogLoading={toolCatalogLoading}
-						selectedToolConfig={selectedToolConfig}
-						selectedToolCatalogItem={selectedToolCatalogItem}
-						selectedToolInputValue={selectedToolInputValue}
-						selectedToolInputKey={selectedToolInputKey}
-						toolApprovalId={toolApprovalId}
-						selectedToolDecision={selectedToolDecision}
-						selectedToolAllowed={selectedToolAllowed}
-						selectedToolReason={selectedToolReason}
-						creatingRunApproval={creatingRunApproval}
-						platformError={platformError}
-						runningTool={runningTool}
-						toolRunError={toolRunError}
-						toolRunResult={toolRunResult}
-						onSelectedToolNameChange={onSelectedToolNameChange}
-						onToolRunErrorChange={onToolRunErrorChange}
-						onToolInputsChange={onToolInputsChange}
-						onToolApprovalIdChange={onToolApprovalIdChange}
-						onCreateRunApproval={onCreateRunApproval}
-						onRunEnterpriseTool={onRunEnterpriseTool}
-						t={t}
-					/>
-				</div>
-			</section>
+			<ToolCatalogPanel
+				sectionRef={configManagementRef}
+				availableToolItems={availableToolItems}
+				publishedPlatformAgents={publishedPlatformAgents}
+				toolCatalogLoading={toolCatalogLoading}
+				toolCatalogError={toolCatalogError}
+				onRefetchToolCatalog={onRefetchToolCatalog}
+				onRunTool={(toolName) => {
+					onSelectedToolNameChange(toolName);
+					setRunnerOpen(true);
+				}}
+				t={t}
+			/>
 		</PlatformPageShell>
 	);
 }

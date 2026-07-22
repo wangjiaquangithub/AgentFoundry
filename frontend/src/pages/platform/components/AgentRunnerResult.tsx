@@ -150,7 +150,7 @@ export function AgentRunnerResult({
 									{t('platform.agentRunner.viewAuditEvidence')}
 								</Button>
 							</div>
-							<div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+							<div className="grid gap-2 sm:grid-cols-2">
 								<div className="rounded-md border bg-background/60 p-2">
 									<div className="text-[11px] text-muted-foreground">
 										{t('platform.agentRunner.runId')}
@@ -595,32 +595,37 @@ export function AgentRunnerResult({
 										</p>
 									) : null}
 
-									<div className="grid gap-3 lg:grid-cols-3">
-										<div className="grid gap-2">
-											<div className="text-xs font-medium text-muted-foreground">
-												{t('platform.agentRunner.inputs')}
+									<details className="rounded-md border bg-muted/20">
+										<summary className="cursor-pointer px-3 py-2 text-xs font-medium text-muted-foreground">
+											{t('platform.agentRunner.toolCalls')}
+										</summary>
+										<div className="grid gap-3 border-t p-3">
+											<div className="grid gap-2">
+												<div className="text-xs font-medium text-muted-foreground">
+													{t('platform.agentRunner.inputs')}
+												</div>
+												<pre className="overflow-auto rounded-md bg-background p-3 font-mono text-xs leading-5">
+													{JSON.stringify(toolCall.inputs ?? {}, null, 2)}
+												</pre>
 											</div>
-											<pre className="overflow-auto rounded-md bg-background p-3 font-mono text-xs leading-5">
-												{JSON.stringify(toolCall.inputs ?? {}, null, 2)}
-											</pre>
-										</div>
-										<div className="grid gap-2">
-											<div className="text-xs font-medium text-muted-foreground">
-												{t('platform.agentRunner.decision')}
+											<div className="grid gap-2">
+												<div className="text-xs font-medium text-muted-foreground">
+													{t('platform.agentRunner.decision')}
+												</div>
+												<pre className="overflow-auto rounded-md bg-background p-3 font-mono text-xs leading-5">
+													{JSON.stringify(decisionPayload, null, 2)}
+												</pre>
 											</div>
-											<pre className="overflow-auto rounded-md bg-background p-3 font-mono text-xs leading-5">
-												{JSON.stringify(decisionPayload, null, 2)}
-											</pre>
-										</div>
-										<div className="grid gap-2">
-											<div className="text-xs font-medium text-muted-foreground">
-												{t('platform.agentRunner.result')}
+											<div className="grid gap-2">
+												<div className="text-xs font-medium text-muted-foreground">
+													{t('platform.agentRunner.result')}
+												</div>
+												<pre className="overflow-auto rounded-md bg-background p-3 font-mono text-xs leading-5">
+													{JSON.stringify(toolCall.result ?? {}, null, 2)}
+												</pre>
 											</div>
-											<pre className="overflow-auto rounded-md bg-background p-3 font-mono text-xs leading-5">
-												{JSON.stringify(toolCall.result ?? {}, null, 2)}
-											</pre>
 										</div>
-									</div>
+									</details>
 								</div>
 							);
 						})}

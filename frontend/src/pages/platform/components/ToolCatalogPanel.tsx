@@ -1,4 +1,4 @@
-import { Boxes, CheckCircle2, RefreshCcw, Search, XCircle } from 'lucide-react';
+import { Boxes, CheckCircle2, Play, RefreshCcw, Search, XCircle } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { RefObject } from 'react';
 
@@ -21,6 +21,7 @@ interface ToolCatalogPanelProps {
 	toolCatalogLoading: boolean;
 	toolCatalogError: string | null;
 	onRefetchToolCatalog: () => void | Promise<void>;
+	onRunTool?: (toolName: string) => void;
 	t: Translate;
 }
 
@@ -31,6 +32,7 @@ export function ToolCatalogPanel({
 	toolCatalogLoading,
 	toolCatalogError,
 	onRefetchToolCatalog,
+	onRunTool,
 	t,
 }: ToolCatalogPanelProps) {
 	const [query, setQuery] = useState('');
@@ -241,27 +243,43 @@ export function ToolCatalogPanel({
 										</div>
 									</div>
 
-									<div className="grid min-w-48 gap-2 text-xs">
-										<div className="grid grid-cols-[5.5rem_1fr] gap-2">
-											<span className="text-muted-foreground">
-												{t('platform.toolCatalog.inputKey')}
-											</span>
-											<span className="min-w-0 truncate font-mono">
-												{tool.input_key}
-											</span>
+									<div className="grid min-w-48 gap-3 text-xs">
+										<div className="grid gap-2">
+											<div className="grid grid-cols-[5.5rem_1fr] gap-2">
+												<span className="text-muted-foreground">
+													{t('platform.toolCatalog.inputKey')}
+												</span>
+												<span className="min-w-0 truncate font-mono">
+													{tool.input_key}
+												</span>
+											</div>
+											<div className="grid grid-cols-[5.5rem_1fr] gap-2">
+												<span className="text-muted-foreground">
+													{t('platform.toolCatalog.defaultInput')}
+												</span>
+												<span className="min-w-0 truncate font-mono">
+													{tool.default_input || '-'}
+												</span>
+											</div>
 										</div>
-										<div className="grid grid-cols-[5.5rem_1fr] gap-2">
-											<span className="text-muted-foreground">
-												{t('platform.toolCatalog.defaultInput')}
-											</span>
-											<span className="min-w-0 truncate font-mono">
-												{tool.default_input || '-'}
-											</span>
-										</div>
+										{onRunTool ? (
+											<Button
+												type="button"
+												size="sm"
+												variant={tool.allowed ? 'outline' : 'secondary'}
+												className="justify-self-start"
+												onClick={() => onRunTool(tool.name)}
+											>
+												<Play className="size-3.5" />
+												{tool.allowed
+													? t('platform.toolRunner.run')
+													: t('platform.toolRunner.requestApproval')}
+											</Button>
+										) : null}
 									</div>
 								</div>
 
-								<div className="grid gap-3 border-t pt-3 text-xs xl:grid-cols-[minmax(0,1fr)_minmax(260px,0.85fr)_minmax(220px,0.75fr)]">
+								<div className="grid gap-3 border-t pt-3 text-xs lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.72fr)]">
 									<div className="grid gap-2 sm:grid-cols-3">
 										{statItems.slice(0, 3).map((item) => (
 											<div key={item.label} className="min-w-0">
@@ -275,7 +293,7 @@ export function ToolCatalogPanel({
 											</div>
 										))}
 									</div>
-									<div className="grid gap-2">
+									<div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
 										<div className="grid grid-cols-[5.5rem_1fr] gap-2">
 											<span className="text-muted-foreground">
 												{t('platform.toolCatalog.avgDuration')}
@@ -293,7 +311,7 @@ export function ToolCatalogPanel({
 											</span>
 										</div>
 									</div>
-									<div className="min-w-0">
+									<div className="min-w-0 lg:col-span-2">
 										<span className="text-muted-foreground">
 											{t('platform.toolCatalog.configuredBy')}
 										</span>

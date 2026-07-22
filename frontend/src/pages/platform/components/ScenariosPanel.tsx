@@ -74,7 +74,7 @@ export function ScenariosPanel({
 			{error ? <PlatformNotice>{error}</PlatformNotice> : null}
 
 			{loading ? (
-				<div className="grid gap-3 md:grid-cols-3">
+				<div className="grid gap-3 md:grid-cols-2">
 					{[0, 1, 2].map((item) => (
 						<Skeleton key={item} className="h-48 rounded-lg" />
 					))}
@@ -84,7 +84,7 @@ export function ScenariosPanel({
 					{labels.empty}
 				</div>
 			) : (
-				<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+				<div className="grid gap-3 md:grid-cols-2">
 					{scenarios.map((scenario) => {
 						const statusLabel =
 							scenario.status === 'ready'

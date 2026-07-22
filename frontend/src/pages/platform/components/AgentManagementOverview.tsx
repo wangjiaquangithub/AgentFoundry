@@ -104,7 +104,7 @@ export function AgentManagementOverview({
 					</div>
 				))}
 			</div>
-			<div className="grid gap-3 2xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.45fr)]">
+			<div className="grid gap-3">
 				<Card size="sm" className="rounded-lg shadow-none">
 					<CardHeader className="grid-cols-[1fr_auto] gap-3">
 						<div className="min-w-0">
@@ -127,7 +127,7 @@ export function AgentManagementOverview({
 						</Button>
 					</CardHeader>
 					<CardContent>
-						<div className="grid gap-2 md:grid-cols-2 2xl:grid-cols-4">
+						<div className="grid gap-2 md:grid-cols-2">
 							{agentReleasePipeline.map((step) => {
 								const StepIcon = step.icon;
 								return (

@@ -34,7 +34,7 @@ export function CapabilitiesPanel({ capabilities, t }: CapabilitiesPanelProps) {
 					{t('platform.capabilities.description')}
 				</p>
 			</div>
-			<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+			<div className="grid gap-3 md:grid-cols-2">
 				{capabilities.map((capability) => {
 					const Icon = capability.icon;
 

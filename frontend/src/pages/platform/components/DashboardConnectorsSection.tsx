@@ -499,7 +499,7 @@ export function DashboardConnectorsSection({
 											</label>
 										</div>
 
-										<div className="grid gap-3 lg:grid-cols-3">
+										<div className="grid gap-3 lg:grid-cols-2">
 											<label className="grid gap-1 text-xs">
 												<span className="text-muted-foreground">
 													{t('platform.connectors.policyPath')}
@@ -668,14 +668,14 @@ export function DashboardConnectorsSection({
 																{check.message}
 															</p>
 															{check.preview ? (
-																<div className="grid gap-1">
-																	<span className="text-xs text-muted-foreground">
+																<details className="rounded-md border bg-muted/20">
+																	<summary className="cursor-pointer px-3 py-2 text-xs font-medium text-muted-foreground">
 																		{t('platform.connectors.preview')}
-																	</span>
-																	<pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-md bg-background p-3 font-mono text-xs">
+																	</summary>
+																	<pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words border-t bg-background p-3 font-mono text-xs">
 																		{check.preview}
 																	</pre>
-																</div>
+																</details>
 															) : null}
 														</div>
 													);
@@ -685,7 +685,7 @@ export function DashboardConnectorsSection({
 									</div>
 								</div>
 
-								<aside className="grid gap-4 self-start xl:sticky xl:top-4">
+								<aside className="grid gap-4 self-start">
 									<div className="grid gap-3 rounded-lg border bg-background/80 p-4 shadow-none">
 										<div className="flex items-start justify-between gap-3">
 											<div className="flex items-center gap-2">

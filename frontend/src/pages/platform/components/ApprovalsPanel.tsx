@@ -207,8 +207,8 @@ export function ApprovalsPanel({
 				: 'platform.approvals.confirmApprove';
 
 	return (
-		<section className="grid gap-4 xl:grid-cols-[minmax(340px,0.62fr)_minmax(0,1.38fr)] xl:items-start">
-			<div className="grid gap-4 rounded-lg border bg-background p-4 xl:sticky xl:top-20">
+		<section className="grid gap-4 2xl:grid-cols-[minmax(340px,0.48fr)_minmax(0,1fr)] 2xl:items-start">
+			<div className="grid gap-4 rounded-lg border bg-background p-4">
 				<div className="flex items-start gap-2">
 					<div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background">
 						<ShieldCheck className="size-4 text-muted-foreground" />

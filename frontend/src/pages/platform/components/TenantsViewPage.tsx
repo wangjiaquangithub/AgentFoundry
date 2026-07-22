@@ -195,8 +195,8 @@ export function TenantsViewPage({
 				})}
 			</section>
 
-			<section className="grid gap-4 xl:grid-cols-[minmax(320px,0.42fr)_minmax(0,1fr)] xl:items-start">
-				<div className="grid max-h-none content-start gap-4 border-y bg-background py-4 xl:sticky xl:top-20 xl:max-h-[calc(100vh-8rem)] xl:rounded-lg xl:border xl:p-4">
+			<section className="grid gap-4">
+				<div className="grid max-h-none content-start gap-4 border-y bg-background py-4 xl:rounded-lg xl:border xl:p-4">
 					<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 						<div>
 							<h2 className="text-sm font-semibold text-foreground">
@@ -380,7 +380,7 @@ export function TenantsViewPage({
 									})}
 								</div>
 
-								<div className="mt-4 grid gap-3 border-t pt-4 lg:grid-cols-3">
+								<div className="mt-4 grid gap-3 border-t pt-4 lg:grid-cols-2">
 									<div className="min-w-0">
 										<div className="text-xs font-medium text-muted-foreground">身份覆盖</div>
 										<div className="mt-2 text-sm font-semibold">
@@ -478,7 +478,7 @@ export function TenantsViewPage({
 									</div>
 								</div>
 
-								<aside className="rounded-lg border bg-background p-4 xl:sticky xl:top-20">
+								<aside className="rounded-lg border bg-background p-4">
 									<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 										<div className="min-w-0">
 											<h3 className="text-sm font-semibold">

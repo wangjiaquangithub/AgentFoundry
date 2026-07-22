@@ -555,7 +555,7 @@ export function TenantGovernancePanel({
 							</div>
 							<Badge variant="outline">{enterpriseIdentities.length}</Badge>
 						</div>
-						<div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+						<div className="grid gap-2 md:grid-cols-2">
 							{enterpriseIdentities.map((identity) => (
 								<div
 									key={identity.user_id}

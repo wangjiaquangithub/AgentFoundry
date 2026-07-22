@@ -1909,17 +1909,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					monitoringStats,
 					recentAgentTurns: monitoringActivitySummary.recentAgentTurns,
 					recentWorkflowRuns,
-					recentAuditEvents,
-					auditFilters,
-					auditLoading,
-					auditError,
-					auditEvents,
-					auditStats,
-					activePlatformAgents,
-					availableToolItems,
-					currentTenant: platformStatus?.current_user.tenant,
-					currentUserId: platformStatus?.current_user.user_id,
-					username,
 					onRefreshMonitoring: async () => {
 						await Promise.all([
 							refetchPlatform(),
@@ -1937,10 +1926,6 @@ export function PlatformPage({ view = 'dashboard' }: { view?: PlatformView }) {
 					},
 					onRunAgent: () => navigate('/platform/agents'),
 					onRunWorkflow: () => navigate('/platform/workflows'),
-					onOpenGovernance: () => navigate('/platform/approvals'),
-					onAuditFiltersChange: setAuditFilters,
-					onRefetchAuditEvents: refetchAuditEvents,
-					summarizeAuditObject: platformSummarizeAuditObject,
 					t,
 				})}
 			/>

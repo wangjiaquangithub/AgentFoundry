@@ -60,7 +60,7 @@ export function WorkbenchReadinessPanel({
 					</div>
 					<Badge variant="outline">{labels.readinessProgress}</Badge>
 				</div>
-				<div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+				<div className="grid gap-2 md:grid-cols-2">
 					{readinessItems.map((item) => {
 						const ItemIcon = item.icon;
 

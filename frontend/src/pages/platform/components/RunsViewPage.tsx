@@ -2,15 +2,12 @@ import {
 	Activity,
 	BotMessageSquare,
 	CheckCircle2,
-	FileSearch,
 	RefreshCcw,
-	ShieldCheck,
 	Workflow,
 } from 'lucide-react';
-import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import { useMemo, useState } from 'react';
 
 import { formatTimestamp } from '../platform-utils';
-import { AuditEventsPanel } from './AuditEventsPanel';
 import {
 	PlatformPageHeader,
 	PlatformPageShell,
@@ -26,12 +23,8 @@ import {
 	type PlatformOperationalStatus,
 } from './platform-status';
 import { PlatformEmptyState } from './PlatformEmptyState';
-import { PlatformFilterBar } from './PlatformFilterBar';
 import { PlatformStatusBadge } from './PlatformStatusBadge';
 import type {
-	EnterpriseAuditEvent,
-	EnterprisePublishedAgent,
-	EnterpriseToolCatalogItem,
 	EnterpriseWorkflowRunHistoryItem,
 } from '@/api';
 import { Badge } from '@/components/ui/badge';
@@ -56,45 +49,16 @@ import { cn } from '@/lib/utils';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
-interface AuditFilters {
-	tenant: string;
-	user_id: string;
-	agent_id: string;
-	tool_name: string;
-	success: string;
-	limit: string;
-}
-
-interface AuditStatItem {
-	label: string;
-	value: string | number;
-}
-
 interface RunsViewPageProps {
 	monitoringHealthState: HealthState;
 	monitoringLoading: boolean;
 	monitoringStats: MonitoringStat[];
 	recentAgentTurns: MonitoringAgentTurn[];
 	recentWorkflowRuns: EnterpriseWorkflowRunHistoryItem[];
-	recentAuditEvents: EnterpriseAuditEvent[];
-	auditFilters: AuditFilters;
-	auditLoading: boolean;
-	auditError: string | null;
-	auditEvents: EnterpriseAuditEvent[];
-	auditStats: AuditStatItem[];
-	activePlatformAgents: EnterprisePublishedAgent[];
-	availableToolItems: EnterpriseToolCatalogItem[];
-	currentTenant?: string;
-	currentUserId?: string;
-	username: string;
 	onRefreshMonitoring: () => void | Promise<void>;
 	onSelectAgentTurn: (turn: MonitoringAgentTurn) => void;
 	onRunAgent: () => void;
 	onRunWorkflow: () => void;
-	onOpenGovernance: () => void;
-	onAuditFiltersChange: Dispatch<SetStateAction<AuditFilters>>;
-	onRefetchAuditEvents: () => void | Promise<void>;
-	summarizeAuditObject: (value?: Record<string, unknown>) => string;
 	t: Translate;
 }
 
@@ -115,31 +79,27 @@ const runStatuses: PlatformOperationalStatus[] = [
 	'cancelled',
 ];
 
+function formatRunStatusCounts(
+	statusCounts: Record<string, number> | undefined,
+	t: Translate,
+) {
+	return Object.entries(statusCounts || {}).map(([status, count]) => ({
+		status: normalizePlatformStatus(status),
+		label: t(`platform.statuses.${normalizePlatformStatus(status)}`),
+		count,
+	}));
+}
+
 export function RunsViewPage({
 	monitoringHealthState,
 	monitoringLoading,
 	monitoringStats,
 	recentAgentTurns,
 	recentWorkflowRuns,
-	recentAuditEvents,
-	auditFilters,
-	auditLoading,
-	auditError,
-	auditEvents,
-	auditStats,
-	activePlatformAgents,
-	availableToolItems,
-	currentTenant,
-	currentUserId,
-	username,
 	onRefreshMonitoring,
 	onSelectAgentTurn,
 	onRunAgent,
 	onRunWorkflow,
-	onOpenGovernance,
-	onAuditFiltersChange,
-	onRefetchAuditEvents,
-	summarizeAuditObject,
 	t,
 }: RunsViewPageProps) {
 	const [selectedRun, setSelectedRun] = useState<SelectedRun | null>(null);
@@ -159,7 +119,7 @@ export function RunsViewPage({
 				agentId: turn.agentId,
 				raw: turn,
 			})),
-			...recentWorkflowRuns.slice(0, 8).map((run) => ({
+			...recentWorkflowRuns.map((run) => ({
 				type: 'workflow' as const,
 				id: run.run_id,
 				title: run.workflow_name,
@@ -241,28 +201,28 @@ export function RunsViewPage({
 				}
 			/>
 
-			<section className="grid gap-2 border-y py-3 md:grid-cols-2 xl:grid-cols-4">
+			<section className="grid gap-0 border-y md:grid-cols-2 xl:grid-cols-4">
 				{monitoringStats.map((stat) => {
 					const StatIcon = stat.icon;
 					return (
 						<div
 							key={stat.label}
-							className="grid min-h-20 grid-cols-[1fr_auto] gap-3 rounded-md border bg-background/80 p-3"
+							className="grid min-h-16 grid-cols-[1fr_auto] gap-3 border-b py-3 pr-4 last:border-b-0 md:odd:pr-5 md:even:border-l md:even:pl-5 xl:border-b-0 xl:border-l xl:first:border-l-0 xl:first:pl-0 xl:not(:first-child):pl-5"
 						>
 							<div className="min-w-0">
 								<div className="truncate text-xs font-medium text-muted-foreground">
 									{stat.label}
 								</div>
-								<div className="mt-2 text-2xl font-semibold tabular-nums">
+								<div className="mt-1 text-xl font-semibold tabular-nums">
 									{monitoringLoading ? '-' : stat.value}
 								</div>
 								{stat.helper ? (
-									<div className="mt-1 truncate text-xs text-muted-foreground">
+									<div className="mt-0.5 truncate text-xs text-muted-foreground">
 										{stat.helper}
 									</div>
 								) : null}
 							</div>
-							<div className="flex size-8 items-center justify-center rounded-md border bg-background">
+							<div className="flex size-7 items-center justify-center rounded-md border bg-background">
 								<StatIcon className="size-4 text-muted-foreground" />
 							</div>
 						</div>
@@ -270,329 +230,210 @@ export function RunsViewPage({
 				})}
 			</section>
 
-			<div className="grid gap-5">
-				<section className="border-b pb-5">
-					<div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-						<div className="min-w-0">
-							<div className="flex items-center gap-2">
-								<div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-background">
-									<Activity className="size-4 text-muted-foreground" />
-								</div>
-								<h2 className="text-base font-semibold">
-									{t('platform.monitoring.runCenter')}
-								</h2>
-							</div>
-							<p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-								{t('platform.monitoring.runCenterDescription')}
-							</p>
+			<section className="grid min-h-[34rem] content-start gap-3">
+				<div className="flex flex-col gap-3 border-b pb-3 lg:flex-row lg:items-end lg:justify-between">
+					<div className="min-w-0">
+						<div className="flex items-center gap-2">
+							<h2 className="text-base font-semibold">
+								{t('platform.monitoring.runRecords')}
+							</h2>
+							<Badge variant="secondary" className="shrink-0">
+								{filteredRunItems.length}
+							</Badge>
 						</div>
+						<p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
+							{t('platform.monitoring.runQueueDescription')}
+						</p>
+					</div>
 
-						<div className="grid gap-2 sm:grid-cols-3 xl:min-w-[34rem]">
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={onRunAgent}
-								className="justify-start"
+					<div className="flex flex-col gap-2 sm:flex-row lg:min-w-[18rem] lg:justify-end">
+						<Button
+							type="button"
+							size="sm"
+							variant="outline"
+							onClick={onRunAgent}
+							className="justify-start"
+						>
+							<BotMessageSquare className="size-4" />
+							{t('platform.monitoring.runAgent')}
+						</Button>
+						<Button
+							type="button"
+							size="sm"
+							variant="default"
+							onClick={onRunWorkflow}
+							className="justify-start"
+						>
+							<Workflow className="size-4" />
+							{t('platform.monitoring.runWorkflow')}
+						</Button>
+					</div>
+				</div>
+
+				<div className="grid gap-3 border-b pb-3">
+					<div className="flex flex-wrap items-center justify-between gap-2">
+						<div className="text-xs font-medium text-muted-foreground">
+							{t('platform.ux.filters.results', {
+								count: filteredRunItems.length,
+							})}
+						</div>
+						<Button
+							type="button"
+							size="sm"
+							variant="ghost"
+							onClick={() => {
+								setRunTypeFilter('all');
+								setRunStatusFilter('all');
+								setRunKeywordFilter('');
+							}}
+							disabled={!hasRunFilters}
+						>
+							{t('platform.ux.filters.clear')}
+						</Button>
+					</div>
+
+					<div className="grid gap-2 md:grid-cols-[10rem_10rem_minmax(14rem,1fr)]">
+						<div className="min-w-0">
+							<Select
+								value={runTypeFilter}
+								onValueChange={(value) =>
+									setRunTypeFilter(value as RunTypeFilter)
+								}
 							>
-								<BotMessageSquare className="size-4" />
-								{t('platform.monitoring.runAgent')}
-							</Button>
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={onRunWorkflow}
-								className="justify-start"
+								<SelectTrigger className="h-9 w-full">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="all">
+										{t('platform.monitoring.allTypes')}
+									</SelectItem>
+									<SelectItem value="agent">
+										{t('platform.monitoring.agentRunType')}
+									</SelectItem>
+									<SelectItem value="workflow">
+										{t('platform.monitoring.workflowRunType')}
+									</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+						<div className="min-w-0">
+							<Select
+								value={runStatusFilter}
+								onValueChange={(value) =>
+									setRunStatusFilter(value as RunStatusFilter)
+								}
 							>
-								<Workflow className="size-4" />
-								{t('platform.monitoring.runWorkflow')}
-							</Button>
-							<Button
-								type="button"
-								size="sm"
-								onClick={onOpenGovernance}
-								className="justify-start"
-							>
-								<ShieldCheck className="size-4" />
-								{t('platform.monitoring.openGovernance')}
-							</Button>
+								<SelectTrigger className="h-9 w-full">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="all">
+										{t('platform.monitoring.allStatuses')}
+									</SelectItem>
+									{runStatuses.map((status) => (
+										<SelectItem key={status} value={status}>
+											{t(`platform.statuses.${status}`)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+						<div className="min-w-0">
+							<Input
+								className="h-9"
+								value={runKeywordFilter}
+								onChange={(event) => setRunKeywordFilter(event.target.value)}
+								placeholder={t('platform.monitoring.keywordPlaceholder')}
+							/>
 						</div>
 					</div>
-				</section>
+				</div>
 
-				<section>
-					<section className="grid gap-4">
-						<div className="grid min-h-[30rem] content-start gap-3 rounded-lg border bg-background/80 p-4 shadow-none">
-							<div className="flex items-start justify-between gap-3">
-								<div className="min-w-0">
-									<h2 className="text-sm font-semibold">
-										{t('platform.monitoring.runQueue')}
-									</h2>
-									<p className="mt-1 text-xs leading-5 text-muted-foreground">
-										{t('platform.monitoring.runQueueDescription')}
-									</p>
-								</div>
-								<Badge variant="secondary" className="shrink-0">
-									{filteredRunItems.length}
-								</Badge>
-							</div>
-
-							<PlatformFilterBar
-								resultLabel={t('platform.ux.filters.results', {
-									count: filteredRunItems.length,
-								})}
-								clearLabel={t('platform.ux.filters.clear')}
-								clearDisabled={!hasRunFilters}
-								onClear={() => {
-									setRunTypeFilter('all');
-									setRunStatusFilter('all');
-									setRunKeywordFilter('');
-								}}
-							>
-								<div className="grid gap-1.5 xl:col-span-2">
-									<label className="text-xs font-medium text-muted-foreground">
-										{t('platform.monitoring.filterType')}
-									</label>
-									<Select
-										value={runTypeFilter}
-										onValueChange={(value) =>
-											setRunTypeFilter(value as RunTypeFilter)
-										}
-									>
-										<SelectTrigger className="w-full">
-											<SelectValue />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="all">
-												{t('platform.monitoring.allTypes')}
-											</SelectItem>
-											<SelectItem value="agent">
-												{t('platform.monitoring.agentRunType')}
-											</SelectItem>
-											<SelectItem value="workflow">
-												{t('platform.monitoring.workflowRunType')}
-											</SelectItem>
-										</SelectContent>
-									</Select>
-								</div>
-								<div className="grid gap-1.5 xl:col-span-2">
-									<label className="text-xs font-medium text-muted-foreground">
-										{t('platform.monitoring.filterStatus')}
-									</label>
-									<Select
-										value={runStatusFilter}
-										onValueChange={(value) =>
-											setRunStatusFilter(value as RunStatusFilter)
-										}
-									>
-										<SelectTrigger className="w-full">
-											<SelectValue />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="all">
-												{t('platform.monitoring.allStatuses')}
-											</SelectItem>
-											{runStatuses.map((status) => (
-												<SelectItem key={status} value={status}>
-													{t(`platform.statuses.${status}`)}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								</div>
-								<div className="grid gap-1.5 xl:col-span-2">
-									<label className="text-xs font-medium text-muted-foreground">
-										{t('platform.monitoring.filterKeyword')}
-									</label>
-									<Input
-										value={runKeywordFilter}
-										onChange={(event) => setRunKeywordFilter(event.target.value)}
-										placeholder={t('platform.monitoring.keywordPlaceholder')}
-									/>
-								</div>
-							</PlatformFilterBar>
-
-							{runItems.length === 0 ? (
-								<PlatformEmptyState
-									variant="noData"
-									title={t('platform.monitoring.noRunsTitle')}
-									description={t('platform.monitoring.noRunsDescription')}
-									className="min-h-72 rounded-md border border-dashed bg-background/80 p-6"
-								/>
-							) : filteredRunItems.length === 0 ? (
-								<PlatformEmptyState
-									variant="filtered"
-									title={t('platform.ux.empty.filteredTitle')}
-									description={t('platform.ux.empty.filteredDescription')}
-									actionLabel={t('platform.ux.filters.clear')}
-									onAction={() => {
-										setRunTypeFilter('all');
-										setRunStatusFilter('all');
-										setRunKeywordFilter('');
-									}}
-									className="min-h-72 rounded-md border border-dashed bg-background/80 p-6"
-								/>
-							) : (
-								<div className="grid max-h-[28rem] gap-2 overflow-y-auto pr-1">
-									{filteredRunItems.map((item) => {
-										const ItemIcon =
-											item.type === 'agent' ? BotMessageSquare : Workflow;
-										const isActive =
-											activeRun?.type === item.type && activeRun.id === item.id;
-										return (
-											<button
-												key={`${item.type}-${item.id}`}
-												type="button"
-												onClick={() => {
-													setSelectedRun({ type: item.type, id: item.id });
-												}}
-												className={cn(
-													'grid grid-cols-[auto_1fr] gap-3 rounded-md border p-3 text-left text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-													isActive
-														? 'border-primary/40 bg-primary/5 text-foreground'
-														: 'bg-background hover:border-primary/30 hover:bg-primary/5',
-												)}
-											>
-												<div
-													className={cn(
-														'flex size-8 items-center justify-center rounded-md border',
-														isActive
-															? 'border-primary/20 bg-background'
-															: 'bg-background',
-													)}
-												>
-													<ItemIcon
-														className={cn(
-															'size-4',
-															isActive
-																? 'text-primary'
-																: 'text-muted-foreground',
-														)}
-													/>
-												</div>
-												<div className="min-w-0">
-													<div className="flex items-center justify-between gap-2">
-														<span className="truncate font-medium">
-															{item.title}
-														</span>
-														<span
-															className={cn(
-																'shrink-0 tabular-nums',
-																isActive
-																	? 'text-muted-foreground'
-																	: 'text-muted-foreground',
-															)}
-														>
-															{formatTimestamp(item.timestamp)}
-														</span>
-													</div>
-													<p
-														className={cn(
-															'mt-1 line-clamp-2 leading-5',
-															isActive
-																? 'text-muted-foreground'
-																: 'text-muted-foreground',
-														)}
-													>
-														{item.description}
-													</p>
-												</div>
-											</button>
-										);
-									})}
-								</div>
-							)}
-						</div>
-
-							<section className="grid content-start gap-3 rounded-lg border bg-background/80 p-4 shadow-none">
-								<div className="flex items-start justify-between gap-3">
-									<div className="min-w-0">
-										<h2 className="text-sm font-semibold">
-											{t('platform.monitoring.recentAudit')}
-										</h2>
-										<p className="mt-1 text-xs leading-5 text-muted-foreground">
-											{t('platform.monitoring.recentAuditHelper')}
-										</p>
-									</div>
-									<Badge variant="secondary" className="shrink-0">
-										{recentAuditEvents.length}
-									</Badge>
-								</div>
-								{recentAuditEvents.length === 0 ? (
-									<div className="rounded-md border border-dashed bg-background/80 p-3 text-xs text-muted-foreground">
-										{t('platform.monitoring.emptyAudit')}
-									</div>
-								) : (
-									<div className="grid gap-2 md:grid-cols-2">
-										{recentAuditEvents.slice(0, 4).map((event, index) => (
-											<div
-												key={event.event_id ?? `${event.timestamp}-${index}`}
-												className="rounded-md border bg-background p-3 text-xs"
-											>
-												<div className="flex items-center justify-between gap-2">
-													<span className="truncate font-medium">
-														{event.tool_name ||
-															event.event_type ||
-															t('platform.monitoring.auditEvent')}
-													</span>
-													<Badge
-														variant="outline"
-														className={
-															event.success === false
-																? ''
-																: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700'
-														}
-													>
-														{event.success === false
-															? t('platform.monitoring.failure')
-															: t('platform.monitoring.success')}
-													</Badge>
-												</div>
-												<p className="mt-1 truncate text-muted-foreground">
-													{event.user_id || '-'} · {event.tenant || '-'} ·{' '}
-													{formatTimestamp(event.timestamp)}
-												</p>
-											</div>
-										))}
-									</div>
-								)}
-							</section>
-					</section>
-				</section>
-
-				<section>
-					<div className="mb-3 flex items-center gap-2">
-						<div className="flex size-8 items-center justify-center rounded-md border bg-background">
-							<FileSearch className="size-4 text-muted-foreground" />
+				{runItems.length === 0 ? (
+					<PlatformEmptyState
+						variant="noData"
+						title={t('platform.monitoring.noRunsTitle')}
+						description={t('platform.monitoring.noRunsDescription')}
+						className="min-h-80 rounded-md border border-dashed bg-background/80 p-6"
+					/>
+				) : filteredRunItems.length === 0 ? (
+					<PlatformEmptyState
+						variant="filtered"
+						title={t('platform.ux.empty.filteredTitle')}
+						description={t('platform.ux.empty.filteredDescription')}
+						actionLabel={t('platform.ux.filters.clear')}
+						onAction={() => {
+							setRunTypeFilter('all');
+							setRunStatusFilter('all');
+							setRunKeywordFilter('');
+						}}
+						className="min-h-80 rounded-md border border-dashed bg-background/80 p-6"
+					/>
+				) : (
+					<div className="overflow-hidden rounded-md border bg-background">
+						<div className="hidden grid-cols-[7rem_minmax(0,1.8fr)_8rem_minmax(8rem,0.8fr)_10rem_4.5rem] gap-3 border-b bg-muted/35 px-3 py-2 text-xs font-medium text-muted-foreground lg:grid">
+							<span>{t('platform.monitoring.type')}</span>
+							<span>{t('platform.monitoring.runObject')}</span>
+							<span>{t('platform.monitoring.filterStatus')}</span>
+							<span>{t('platform.monitoring.agent')}</span>
+							<span>{t('platform.monitoring.time')}</span>
+							<span className="text-right">{t('platform.monitoring.actions')}</span>
 						</div>
 						<div>
-							<h2 className="text-sm font-semibold">
-								{t('platform.monitoring.auditSearch')}
-							</h2>
-							<p className="text-xs text-muted-foreground">
-								{t('platform.monitoring.auditSearchDescription')}
-							</p>
+							{filteredRunItems.map((item) => {
+								const ItemIcon =
+									item.type === 'agent' ? BotMessageSquare : Workflow;
+								const isActive =
+									activeRun?.type === item.type && activeRun.id === item.id;
+								return (
+									<button
+										key={`${item.type}-${item.id}`}
+										type="button"
+										onClick={() => {
+											setSelectedRun({ type: item.type, id: item.id });
+										}}
+										className={cn(
+											'grid w-full gap-3 border-b px-3 py-3 text-left text-xs transition-colors last:border-b-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:grid-cols-[7rem_minmax(0,1.8fr)_8rem_minmax(8rem,0.8fr)_10rem_4.5rem] lg:items-center',
+											isActive
+												? 'bg-primary/5 text-foreground'
+												: 'bg-background hover:bg-muted/50',
+										)}
+									>
+										<div className="flex min-w-0 items-center gap-2">
+											<div className="flex size-7 shrink-0 items-center justify-center rounded-md border bg-background">
+												<ItemIcon className="size-4 text-muted-foreground" />
+											</div>
+											<span className="truncate font-medium">
+												{item.type === 'agent'
+													? t('platform.monitoring.agentRunType')
+													: t('platform.monitoring.workflowRunType')}
+											</span>
+										</div>
+										<div className="min-w-0">
+											<div className="truncate font-medium">{item.title}</div>
+											<p className="mt-1 line-clamp-1 text-muted-foreground">
+												{item.description}
+											</p>
+										</div>
+										<div>
+											<PlatformStatusBadge status={item.status} t={t} />
+										</div>
+										<div className="truncate text-muted-foreground">
+											{item.agentId || '-'}
+										</div>
+										<div className="tabular-nums text-muted-foreground">
+											{formatTimestamp(item.timestamp)}
+										</div>
+										<div className="text-right font-medium text-primary">
+											{t('platform.monitoring.inspect')}
+										</div>
+									</button>
+								);
+							})}
 						</div>
 					</div>
-					<AuditEventsPanel
-						auditFilters={auditFilters}
-						activePlatformAgents={activePlatformAgents}
-						availableToolItems={availableToolItems}
-						currentTenant={currentTenant}
-						currentUserId={currentUserId}
-						username={username}
-						auditLoading={auditLoading}
-						auditError={auditError}
-						auditEvents={auditEvents}
-						auditStats={auditStats}
-						onAuditFiltersChange={onAuditFiltersChange}
-						onRefetchAuditEvents={onRefetchAuditEvents}
-						summarizeAuditObject={summarizeAuditObject}
-						t={t}
-					/>
-				</section>
-			</div>
+				)}
+			</section>
 
 			<Sheet
 				open={Boolean(activeRun)}
@@ -647,7 +488,7 @@ export function RunsViewPage({
 									</div>
 								</div>
 
-								<div className="grid gap-3 md:grid-cols-3">
+								<div className="grid gap-3 md:grid-cols-2">
 									<div className="rounded-md border p-3">
 										<div className="text-xs text-muted-foreground">
 											{t('platform.monitoring.type')}
@@ -683,10 +524,10 @@ export function RunsViewPage({
 											{t('platform.monitoring.stepsStatus')}
 										</div>
 										<div className="flex flex-wrap gap-2">
-											{Object.entries(activeWorkflowRun.status_counts || {}).map(
-												([status, count]) => (
-													<Badge key={status} variant="secondary">
-														{status}: {count}
+											{formatRunStatusCounts(activeWorkflowRun.status_counts, t).map(
+												(item) => (
+													<Badge key={item.status} variant="secondary">
+														{item.label}: {item.count}
 													</Badge>
 												),
 											)}
@@ -700,15 +541,6 @@ export function RunsViewPage({
 					{activeRun ? (
 						<SheetFooter className="border-t bg-background">
 							<div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-								<Button
-									type="button"
-									size="sm"
-									variant="outline"
-									onClick={onOpenGovernance}
-								>
-									<ShieldCheck className="size-4" />
-									{t('platform.monitoring.governanceAudit')}
-								</Button>
 								{activeAgentTurn ? (
 									<Button
 										type="button"

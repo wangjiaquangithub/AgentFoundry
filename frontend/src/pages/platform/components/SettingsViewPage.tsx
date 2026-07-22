@@ -366,7 +366,7 @@ export function SettingsViewPage({
 				</section>
 
 				<section>
-					<section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
+					<section className="grid gap-4">
 						<div className="rounded-lg border bg-background/80 p-4 shadow-none">
 							<ConfigManagementPanel
 								platformConfigExport={platformConfigExport}
@@ -388,7 +388,7 @@ export function SettingsViewPage({
 								t={t}
 							/>
 						</div>
-						<aside className="grid content-start gap-3 xl:sticky xl:top-20">
+						<aside className="grid content-start gap-3">
 							<div className="rounded-lg border bg-background/80 p-4 shadow-none">
 								<h2 className="text-sm font-semibold">
 									{t('platform.settings.migration.title')}

@@ -1,5 +1,5 @@
 import { CheckCircle2, ListChecks, RefreshCcw, XCircle } from 'lucide-react';
-import type { Dispatch, SetStateAction } from 'react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 
 import { formatTimestamp } from '../platform-utils';
 import { PlatformEmptyState } from './PlatformEmptyState';
@@ -11,7 +11,6 @@ import type {
 	EnterpriseToolCatalogItem,
 } from '@/api';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
 	Select,
@@ -20,6 +19,13 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetHeader,
+	SheetTitle,
+} from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
@@ -76,6 +82,8 @@ export function AuditEventsPanel({
 	summarizeAuditObject,
 	t,
 }: AuditEventsPanelProps) {
+	const [selectedAuditEvent, setSelectedAuditEvent] =
+		useState<EnterpriseAuditEvent | null>(null);
 	const hasActiveAuditFilters = Boolean(
 		auditFilters.tenant ||
 			auditFilters.user_id ||
@@ -94,6 +102,27 @@ export function AuditEventsPanel({
 			limit: current.limit || '50',
 		}));
 	};
+	const getAuditEventKey = (event: EnterpriseAuditEvent, index: number) =>
+		event.event_id || `${event.timestamp}-${event.tool_name}-${index}`;
+	const getAuditEventStatus = (event: EnterpriseAuditEvent) => {
+		const label =
+			event.success === true
+				? t('platform.audit.success')
+				: event.success === false
+					? t('platform.audit.failure')
+					: t('platform.audit.unknown');
+		const status =
+			event.success === true
+				? 'success'
+				: event.success === false
+					? 'failed'
+					: 'pending';
+
+		return { label, status } as const;
+	};
+	const selectedAuditEventStatus = selectedAuditEvent
+		? getAuditEventStatus(selectedAuditEvent)
+		: null;
 
 	return (
 		<section className="flex flex-col gap-4 rounded-lg border bg-background p-4 shadow-none">
@@ -265,9 +294,21 @@ export function AuditEventsPanel({
 			</PlatformFilterBar>
 
 			{auditLoading ? (
-				<div className="grid gap-3 lg:grid-cols-2">
-					<Skeleton className="h-28 w-full" />
-					<Skeleton className="h-28 w-full" />
+				<div className="rounded-lg border">
+					{Array.from({ length: 5 }).map((_, index) => (
+						<div
+							key={index}
+							className="grid gap-3 border-b p-3 last:border-b-0 md:grid-cols-[7rem_1.5fr_1fr_1fr_7rem_9rem_5rem]"
+						>
+							<Skeleton className="h-5 w-20" />
+							<Skeleton className="h-5 w-full" />
+							<Skeleton className="h-5 w-24" />
+							<Skeleton className="h-5 w-24" />
+							<Skeleton className="h-5 w-16" />
+							<Skeleton className="h-5 w-28" />
+							<Skeleton className="h-5 w-14" />
+						</div>
+					))}
 				</div>
 			) : auditError ? (
 				<PlatformEmptyState
@@ -313,113 +354,198 @@ export function AuditEventsPanel({
 							</div>
 						))}
 					</div>
-					<div className="grid gap-3 lg:grid-cols-2">
+					<div className="overflow-hidden rounded-lg border">
+						<div className="hidden grid-cols-[7rem_1.5fr_1fr_1fr_7rem_9rem_5rem] gap-3 border-b bg-muted/35 px-3 py-2 text-xs font-medium text-muted-foreground md:grid">
+							<span>{t('platform.audit.status')}</span>
+							<span>{t('platform.audit.event')}</span>
+							<span>{t('platform.audit.actor')}</span>
+							<span>{t('platform.audit.resource')}</span>
+							<span>{t('platform.audit.duration')}</span>
+							<span>{t('platform.audit.time')}</span>
+							<span className="text-right">{t('platform.audit.inspect')}</span>
+						</div>
 						{auditEvents.map((event, index) => {
-							const inputsSummary = summarizeAuditObject(event.inputs);
-							const resultSummary = summarizeAuditObject(event.result);
-							const statusLabel =
-								event.success === true
-									? t('platform.audit.success')
-									: event.success === false
-										? t('platform.audit.failure')
-										: t('platform.audit.unknown');
-							const status = event.success === true
-								? 'success'
-								: event.success === false
-									? 'failed'
-									: 'pending';
+							const eventKey = getAuditEventKey(event, index);
+							const { label: statusLabel, status } =
+								getAuditEventStatus(event);
+							const isSelected =
+								selectedAuditEvent?.event_id &&
+								selectedAuditEvent.event_id === event.event_id;
 
 							return (
-								<Card
-									key={
-										event.event_id ||
-										`${event.timestamp}-${event.tool_name}-${index}`
-									}
-									size="sm"
-									className="rounded-lg shadow-none transition-colors hover:border-primary/30 hover:bg-primary/5"
+								<button
+									key={eventKey}
+									type="button"
+									onClick={() => setSelectedAuditEvent(event)}
+									className={cn(
+										'grid w-full gap-3 border-b p-3 text-left text-sm transition-colors last:border-b-0 hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:grid-cols-[7rem_1.5fr_1fr_1fr_7rem_9rem_5rem] md:items-center',
+										isSelected && 'bg-primary/5',
+									)}
 								>
-									<CardHeader className="grid-cols-[auto_1fr_auto] gap-3">
-										<div
-											className={cn(
-												'flex size-8 items-center justify-center rounded-lg border bg-background',
-												event.success === false && 'border-destructive/30',
-											)}
-										>
-											{event.success === false ? (
-												<XCircle className="size-4 text-destructive" />
-											) : (
-												<CheckCircle2 className="size-4 text-emerald-700" />
-											)}
-										</div>
-										<div className="min-w-0">
-											<CardTitle className="truncate font-mono text-sm">
-												{event.tool_name || t('platform.audit.unknownTool')}
-											</CardTitle>
-											<p className="mt-1 truncate text-xs text-muted-foreground">
-												{formatTimestamp(event.timestamp)}
-											</p>
-										</div>
+									<div>
 										<PlatformStatusBadge status={status} label={statusLabel} />
-									</CardHeader>
-									<CardContent className="grid gap-2 text-xs">
-										<div className="grid grid-cols-[7rem_1fr] gap-2">
-											<span className="text-muted-foreground">
-												{t('platform.audit.user')}
-											</span>
-											<span className="min-w-0 truncate font-mono">
-												{event.user_id || '-'} / {event.tenant || '-'}
-											</span>
-										</div>
-										<div className="grid grid-cols-[7rem_1fr] gap-2">
-											<span className="text-muted-foreground">
-												{t('platform.audit.connector')}
-											</span>
-											<span className="min-w-0 truncate font-mono">
-												{event.connector || '-'}
+									</div>
+									<div className="min-w-0">
+										<div className="flex min-w-0 items-center gap-2">
+											{event.success === false ? (
+												<XCircle className="size-4 shrink-0 text-destructive" />
+											) : (
+												<CheckCircle2 className="size-4 shrink-0 text-emerald-700" />
+											)}
+											<span className="truncate font-mono font-medium">
+												{event.event_type ||
+													event.tool_name ||
+													t('platform.audit.unknownTool')}
 											</span>
 										</div>
-										<div className="grid grid-cols-[7rem_1fr] gap-2">
-											<span className="text-muted-foreground">
-												{t('platform.audit.duration')}
-											</span>
-											<span className="font-mono">
-												{event.duration_ms ?? '-'} ms
-											</span>
+										<div className="mt-1 truncate text-xs text-muted-foreground md:hidden">
+											{formatTimestamp(event.timestamp)}
 										</div>
-										{inputsSummary ? (
-											<div className="grid grid-cols-[7rem_1fr] gap-2">
-												<span className="text-muted-foreground">
-													{t('platform.audit.inputs')}
-												</span>
-												<span className="min-w-0 break-words font-mono">
-													{inputsSummary}
-												</span>
-											</div>
-										) : null}
-										{resultSummary ? (
-											<div className="grid grid-cols-[7rem_1fr] gap-2">
-												<span className="text-muted-foreground">
-													{t('platform.audit.result')}
-												</span>
-												<span className="min-w-0 break-words font-mono">
-													{resultSummary}
-												</span>
-											</div>
-										) : null}
-										{event.error ? (
-											<div className="grid grid-cols-[7rem_1fr] gap-2 text-destructive">
-												<span>{t('common.error')}</span>
-												<span className="min-w-0 break-words">
-													{event.error['message'] ||
-														t('platform.audit.eventErrorFallback')}
-												</span>
-											</div>
-										) : null}
-									</CardContent>
-								</Card>
+									</div>
+									<div className="min-w-0 truncate font-mono text-xs text-muted-foreground">
+										<span className="md:hidden">
+											{t('platform.audit.actor')}:
+										</span>
+										{event.user_id || '-'}
+									</div>
+									<div className="min-w-0 truncate font-mono text-xs text-muted-foreground">
+										<span className="md:hidden">
+											{t('platform.audit.resource')}:
+										</span>
+										{event.connector || event.tool_name || event.agent_id || '-'}
+									</div>
+									<div className="font-mono text-xs text-muted-foreground">
+										{event.duration_ms ?? '-'} ms
+									</div>
+									<div className="hidden truncate font-mono text-xs text-muted-foreground md:block">
+										{formatTimestamp(event.timestamp)}
+									</div>
+									<div className="text-right text-xs font-medium text-primary">
+										{t('platform.audit.inspect')}
+									</div>
+								</button>
 							);
 						})}
 					</div>
+					<Sheet
+						open={Boolean(selectedAuditEvent)}
+						onOpenChange={(open) => {
+							if (!open) {
+								setSelectedAuditEvent(null);
+							}
+						}}
+					>
+						<SheetContent className="flex w-full flex-col overflow-hidden sm:max-w-xl">
+							{selectedAuditEvent ? (
+								<>
+									<SheetHeader className="border-b pb-4 text-left">
+										<SheetTitle className="flex items-center gap-2">
+											{selectedAuditEvent.success === false ? (
+												<XCircle className="size-5 text-destructive" />
+											) : (
+												<CheckCircle2 className="size-5 text-emerald-700" />
+											)}
+											<span className="min-w-0 truncate font-mono">
+												{selectedAuditEvent.event_type ||
+													selectedAuditEvent.tool_name ||
+													t('platform.audit.unknownTool')}
+											</span>
+										</SheetTitle>
+										<SheetDescription>
+											{t('platform.audit.eventDetailDescription')}
+										</SheetDescription>
+									</SheetHeader>
+									<div className="min-h-0 flex-1 overflow-y-auto py-4">
+										<div className="grid gap-3 text-sm">
+											<div className="flex items-center justify-between gap-3">
+												<span className="text-muted-foreground">
+													{t('platform.audit.status')}
+												</span>
+												{selectedAuditEventStatus ? (
+													<PlatformStatusBadge
+														status={selectedAuditEventStatus.status}
+														label={selectedAuditEventStatus.label}
+													/>
+												) : null}
+											</div>
+											{[
+												[
+													t('platform.audit.actor'),
+													selectedAuditEvent.user_id || '-',
+												],
+												[
+													t('platform.audit.tenant'),
+													selectedAuditEvent.tenant || '-',
+												],
+												[
+													t('platform.audit.agent'),
+													selectedAuditEvent.agent_id || '-',
+												],
+												[
+													t('platform.audit.tool'),
+													selectedAuditEvent.tool_name || '-',
+												],
+												[
+													t('platform.audit.connector'),
+													selectedAuditEvent.connector || '-',
+												],
+												[
+													t('platform.audit.duration'),
+													`${selectedAuditEvent.duration_ms ?? '-'} ms`,
+												],
+												[
+													t('platform.audit.time'),
+													formatTimestamp(selectedAuditEvent.timestamp),
+												],
+											].map(([label, value]) => (
+												<div
+													key={label}
+													className="grid grid-cols-[7rem_1fr] gap-3"
+												>
+													<span className="text-muted-foreground">{label}</span>
+													<span className="min-w-0 break-words font-mono">
+														{value}
+													</span>
+												</div>
+											))}
+										</div>
+
+										<div className="mt-5 grid gap-3">
+											<details className="rounded-md border bg-muted/20">
+												<summary className="cursor-pointer px-3 py-2 text-xs font-medium text-muted-foreground">
+													{t('platform.audit.inputs')}
+												</summary>
+												<pre className="max-h-52 overflow-auto border-t bg-background p-3 text-xs">
+													{summarizeAuditObject(selectedAuditEvent.inputs) ||
+														t('platform.audit.noInputs')}
+												</pre>
+											</details>
+											<details className="rounded-md border bg-muted/20">
+												<summary className="cursor-pointer px-3 py-2 text-xs font-medium text-muted-foreground">
+													{t('platform.audit.result')}
+												</summary>
+												<pre className="max-h-52 overflow-auto border-t bg-background p-3 text-xs">
+													{summarizeAuditObject(selectedAuditEvent.result) ||
+														t('platform.audit.noResult')}
+												</pre>
+											</details>
+											{selectedAuditEvent.error ? (
+												<div className="grid gap-2">
+													<div className="text-xs font-medium text-destructive">
+														{t('common.error')}
+													</div>
+													<div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+														{selectedAuditEvent.error.message ||
+															t('platform.audit.eventErrorFallback')}
+													</div>
+												</div>
+											) : null}
+										</div>
+									</div>
+								</>
+							) : null}
+						</SheetContent>
+					</Sheet>
 				</>
 			)}
 		</section>

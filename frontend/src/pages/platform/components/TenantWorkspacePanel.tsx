@@ -138,7 +138,7 @@ export function TenantWorkspacePanel({
 					{labels.emptyTenants}
 				</div>
 			) : (
-				<div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+				<div className="grid gap-3 lg:grid-cols-2">
 					{tenantOverviewItems.map((tenantItem) => (
 						<div
 							key={tenantItem.tenant}

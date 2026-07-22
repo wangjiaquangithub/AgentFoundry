@@ -1,5 +1,6 @@
-import { CheckCircle2, Code2, ListChecks, Play, XCircle } from 'lucide-react';
+import { CheckCircle2, Code2, Eye, ListChecks, Play, XCircle } from 'lucide-react';
 import type { Dispatch, RefObject, SetStateAction } from 'react';
+import { useState } from 'react';
 
 import type {
 	EnterpriseToolCatalogItem,
@@ -16,6 +17,14 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetHeader,
+	SheetTitle,
+	SheetTrigger,
+} from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -79,8 +88,13 @@ export function ToolRunnerPanel({
 	onRunEnterpriseTool,
 	t,
 }: ToolRunnerPanelProps) {
+	const [resultDetailOpen, setResultDetailOpen] = useState(false);
 	const selectedToolLabel =
 		selectedToolCatalogItem?.name || selectedToolName || t('platform.toolRunner.selectTool');
+	const resultEntries = toolRunResult?.result
+		? Object.entries(toolRunResult.result).slice(0, 4)
+		: [];
+	const resultJson = toolRunResult ? JSON.stringify(toolRunResult, null, 2) : '';
 
 	return (
 		<section
@@ -124,8 +138,8 @@ export function ToolRunnerPanel({
 				</div>
 			</div>
 
-			<div className="grid gap-0 2xl:grid-cols-[minmax(320px,0.78fr)_minmax(0,1fr)]">
-				<div className="grid gap-4 border-b p-4 2xl:border-b-0 2xl:border-r">
+			<div className="grid gap-4 p-4 xl:grid-cols-[minmax(340px,0.62fr)_minmax(0,1fr)]">
+				<div className="grid content-start gap-4">
 					<div className="rounded-lg border bg-background/80 p-3">
 						<div className="text-xs font-medium text-muted-foreground">
 							{t('platform.toolRunner.selectTool')}
@@ -245,8 +259,8 @@ export function ToolRunnerPanel({
 					) : null}
 				</div>
 
-				<div className="bg-background/80 p-4">
-					<div className="mb-3 flex items-center justify-between gap-3">
+				<div className="grid content-start gap-3 rounded-lg border bg-muted/20 p-4">
+					<div className="flex items-center justify-between gap-3">
 						<div className="flex min-w-0 items-center gap-2">
 							<Code2 className="size-4 shrink-0 text-muted-foreground" />
 							<h3 className="truncate text-sm font-semibold">
@@ -260,11 +274,95 @@ export function ToolRunnerPanel({
 						) : null}
 					</div>
 					{toolRunResult ? (
-						<pre className="max-h-[34rem] min-h-[22rem] overflow-auto rounded-lg border bg-background p-4 text-xs leading-5">
-							{JSON.stringify(toolRunResult, null, 2)}
-						</pre>
+						<>
+							<div className="grid gap-2 rounded-lg border bg-background p-3 text-sm">
+								<div className="flex items-center justify-between gap-3">
+									<span className="text-muted-foreground">
+										{t('platform.toolRunner.resultSummary')}
+									</span>
+									<Badge
+										variant={toolRunResult.allowed ? 'outline' : 'destructive'}
+										className={cn(
+											toolRunResult.allowed &&
+												'border-emerald-500/30 bg-emerald-500/10 text-emerald-700',
+										)}
+									>
+										{toolRunResult.allowed
+											? t('platform.policy.allowed')
+											: t('platform.policy.denied')}
+									</Badge>
+								</div>
+								<div className="grid gap-2 sm:grid-cols-2">
+									<div className="min-w-0">
+										<div className="text-xs text-muted-foreground">
+											{t('platform.toolRunner.selectTool')}
+										</div>
+										<div className="truncate font-mono font-medium">
+											{toolRunResult.tool_name}
+										</div>
+									</div>
+									<div className="min-w-0">
+										<div className="text-xs text-muted-foreground">
+											{t('platform.toolRunner.approvalId')}
+										</div>
+										<div className="truncate font-mono font-medium">
+											{toolRunResult.approval_id || '-'}
+										</div>
+									</div>
+								</div>
+							</div>
+							<div className="rounded-lg border bg-background">
+								<div className="border-b px-3 py-2 text-xs font-medium text-muted-foreground">
+									{t('platform.toolRunner.resultPreview')}
+								</div>
+								{resultEntries.length > 0 ? (
+									<div className="divide-y text-sm">
+										{resultEntries.map(([key, value]) => (
+											<div
+												key={key}
+												className="grid gap-1 px-3 py-2 sm:grid-cols-[10rem_minmax(0,1fr)]"
+											>
+												<span className="truncate font-mono text-xs text-muted-foreground">
+													{key}
+												</span>
+												<span className="truncate font-mono text-xs">
+													{typeof value === 'string'
+														? value
+														: JSON.stringify(value)}
+												</span>
+											</div>
+										))}
+									</div>
+								) : (
+									<div className="px-3 py-6 text-sm text-muted-foreground">
+										{t('platform.toolRunner.noResultYet')}
+									</div>
+								)}
+							</div>
+							<Sheet open={resultDetailOpen} onOpenChange={setResultDetailOpen}>
+								<SheetTrigger asChild>
+									<Button type="button" variant="outline" className="justify-self-start">
+										<Eye className="size-4" />
+										{t('platform.toolRunner.viewResultDetail')}
+									</Button>
+								</SheetTrigger>
+								<SheetContent className="w-full sm:max-w-xl">
+									<SheetHeader className="border-b pr-12">
+										<SheetTitle>{t('platform.toolRunner.resultDetail')}</SheetTitle>
+										<SheetDescription>
+											{selectedToolLabel}
+										</SheetDescription>
+									</SheetHeader>
+									<div className="min-h-0 flex-1 overflow-auto p-4">
+										<pre className="rounded-lg border bg-background p-4 text-xs leading-5">
+											{resultJson}
+										</pre>
+									</div>
+								</SheetContent>
+							</Sheet>
+						</>
 					) : (
-						<div className="flex min-h-[22rem] items-center rounded-lg border border-dashed bg-background p-6 text-sm text-muted-foreground">
+						<div className="flex min-h-40 items-center rounded-lg border border-dashed bg-background p-6 text-sm text-muted-foreground">
 							{t('platform.toolRunner.emptyResult')}
 						</div>
 					)}

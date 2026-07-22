@@ -56,7 +56,7 @@ export function LaunchpadPanel({
 					<ArrowRight className="size-4" />
 				</Button>
 			</div>
-			<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+			<div className="grid gap-3 md:grid-cols-2">
 				{steps.map((step) => {
 					const Icon = step.icon;
 

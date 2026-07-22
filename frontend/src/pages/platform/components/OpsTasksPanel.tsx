@@ -79,7 +79,7 @@ export function OpsTasksPanel({
 			{error ? <PlatformNotice>{error}</PlatformNotice> : null}
 
 			{loading ? (
-				<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+				<div className="grid gap-3 md:grid-cols-2">
 					{[0, 1, 2].map((item) => (
 						<Skeleton key={item} className="h-36 rounded-lg" />
 					))}
@@ -89,7 +89,7 @@ export function OpsTasksPanel({
 					{labels.empty}
 				</div>
 			) : (
-				<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+				<div className="grid gap-3 md:grid-cols-2">
 					{tasks.map((task) => {
 						const taskState: HealthState =
 							task.severity === 'error'

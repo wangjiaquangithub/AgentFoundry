@@ -95,7 +95,7 @@ export function ConfigManagementPanel({
 				</div>
 			) : null}
 
-			<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+			<div className="grid gap-3 md:grid-cols-2">
 				{platformConfigLoading
 					? Array.from({ length: 6 }).map((_, index) => (
 							<Skeleton key={index} className="h-24 rounded-lg" />

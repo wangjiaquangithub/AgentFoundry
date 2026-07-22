@@ -117,8 +117,8 @@ export function WorkflowRunnerPanel({
 	};
 
 	return (
-		<section className="grid items-start gap-4 xl:grid-cols-[20rem_minmax(0,1fr)_24rem]">
-			<aside className="rounded-lg border bg-background xl:sticky xl:top-20">
+		<section className="grid items-start gap-4 2xl:grid-cols-[22rem_minmax(0,1fr)]">
+			<aside className="rounded-lg border bg-background">
 				<div className="flex items-center justify-between gap-3 border-b p-4">
 					<div className="flex items-center gap-2">
 						<Workflow className="size-4 text-muted-foreground" />
@@ -268,7 +268,7 @@ export function WorkflowRunnerPanel({
 							</div>
 						) : null}
 
-						<div className="grid gap-3 md:grid-cols-3">
+						<div className="grid gap-3 md:grid-cols-2">
 							{Object.entries(workflowInputs).map(([key, value]) => {
 								const labelKey = workflowInputLabelKeys[key];
 
@@ -383,7 +383,7 @@ export function WorkflowRunnerPanel({
 				</section>
 			</div>
 
-			<aside className="grid gap-4 xl:sticky xl:top-20">
+			<aside className="grid gap-4 2xl:col-span-2">
 				<section className="rounded-lg border bg-background p-4">
 					<div className="flex items-center gap-2 border-b pb-3">
 						<CheckCircle2 className="size-4 text-muted-foreground" />
@@ -441,9 +441,14 @@ export function WorkflowRunnerPanel({
 												<span className="font-medium">{step.title}</span>
 											</div>
 											{step.result ? (
-												<pre className="mt-3 max-h-36 overflow-auto rounded-md border bg-background p-3 text-xs leading-5">
-													{JSON.stringify(step.result, null, 2)}
-												</pre>
+												<details className="mt-3 rounded-md border bg-muted/20">
+													<summary className="cursor-pointer px-3 py-2 text-xs font-medium text-muted-foreground">
+														{t('platform.workflowRunner.summary')}
+													</summary>
+													<pre className="max-h-36 overflow-auto border-t bg-background p-3 text-xs leading-5">
+														{JSON.stringify(step.result, null, 2)}
+													</pre>
+												</details>
 											) : null}
 										</div>
 									);
@@ -454,9 +459,14 @@ export function WorkflowRunnerPanel({
 								<div className="text-xs font-medium text-muted-foreground">
 									{t('platform.workflowRunner.toolCalls')}
 								</div>
-								<pre className="max-h-44 overflow-auto rounded-lg border bg-background p-3 text-xs leading-5">
-									{JSON.stringify(workflowRunResult.tool_calls, null, 2)}
-								</pre>
+								<details className="rounded-lg border bg-muted/20">
+									<summary className="cursor-pointer px-3 py-2 text-xs font-medium text-muted-foreground">
+										{t('platform.workflowRunner.toolCalls')}
+									</summary>
+									<pre className="max-h-44 overflow-auto border-t bg-background p-3 text-xs leading-5">
+										{JSON.stringify(workflowRunResult.tool_calls, null, 2)}
+									</pre>
+								</details>
 							</div>
 						</div>
 					) : (

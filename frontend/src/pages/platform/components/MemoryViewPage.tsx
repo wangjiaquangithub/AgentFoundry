@@ -181,7 +181,7 @@ export function MemoryViewPage({
 			</section>
 
 			<div className="grid gap-5">
-					<section className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,0.58fr)_minmax(360px,0.42fr)] xl:items-start">
+					<section className="grid min-w-0 gap-4">
 						<div className="grid min-w-0 gap-4 rounded-lg border bg-background/80 p-4">
 							<div>
 								<div className="flex flex-wrap items-center gap-2">
@@ -343,7 +343,7 @@ export function MemoryViewPage({
 							)}
 						</div>
 
-						<aside className="grid gap-4 rounded-lg border bg-background/80 p-4 xl:sticky xl:top-20">
+						<aside className="grid gap-4 rounded-lg border bg-background/80 p-4">
 								<div className="flex items-start justify-between gap-3">
 									<div>
 										<h2 className="text-sm font-semibold">

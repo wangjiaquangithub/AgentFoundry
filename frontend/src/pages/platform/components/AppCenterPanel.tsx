@@ -155,7 +155,7 @@ export function AppCenterPanel({
 				</div>
 			</div>
 
-			<div className="grid gap-3 lg:grid-cols-3">
+			<div className="grid gap-3 lg:grid-cols-2">
 				<div className="grid content-start gap-3 rounded-lg border bg-background p-3">
 					<div className="flex items-center justify-between gap-3">
 						<h3 className="text-sm font-medium">{labels.templates}</h3>
