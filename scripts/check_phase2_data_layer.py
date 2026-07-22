@@ -1581,7 +1581,6 @@ def _check_postgres_tool_policy_wired() -> list[str]:
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
     composition_path = SERVICES_DIR / "composition.py"
     composition_source = composition_path.read_text(encoding="utf-8")
-    tool_service_source = (SERVICES_DIR / "tools.py").read_text(encoding="utf-8")
     tool_policy_source = (REPOSITORIES_DIR / "tool_policy.py").read_text(
         encoding="utf-8",
     )
@@ -1645,35 +1644,46 @@ def _check_postgres_tool_policy_wired() -> list[str]:
         errors.append(
             "backend/services/composition.py must delegate PostgreSQL tool governance writes to the configured repository builder",
         )
-    if "tool_governance_reader=build_tool_governance_read_repository()" not in main_source:
+    if not _module_defines_function(
+        composition_tree,
+        "build_configured_postgres_tool_policy_repository",
+    ):
         errors.append(
-            "backend/main.py must pass the PostgreSQL tool_governance_reader into PlatformToolPolicyService",
+            "backend/services/composition.py must define "
+            "build_configured_postgres_tool_policy_repository for tool policy writes",
         )
-    if "tool_governance_writer=build_tool_governance_write_repository()" not in main_source:
+    if not _module_defines_function(
+        composition_tree,
+        "build_tool_policy_repository_selector",
+    ):
         errors.append(
-            "backend/main.py must pass the PostgreSQL tool_governance_writer into PlatformToolPolicyService",
+            "backend/services/composition.py must define "
+            "build_tool_policy_repository_selector for tool policy write selection",
+        )
+    if "PostgresToolPolicyWriteThroughRepository(" not in composition_source:
+        errors.append(
+            "backend/services/composition.py must construct the PostgreSQL tool policy write-through adapter",
+        )
+    if "postgres_reader=PostgresToolGovernanceReadRepository(database)" not in composition_source:
+        errors.append(
+            "backend/services/composition.py must pass the PostgreSQL tool governance reader into the tool policy adapter",
+        )
+    if "postgres_writer=PostgresToolGovernanceWriteRepository(database)" not in composition_source:
+        errors.append(
+            "backend/services/composition.py must pass the PostgreSQL tool governance writer into the tool policy adapter",
+        )
+    if "approval_required_tools=approval_required_tools" not in composition_source:
+        errors.append(
+            "backend/services/composition.py must pass approval-required tools into the tool policy adapter",
+        )
+    if "tool_policy_repository_selector=build_tool_policy_repository_selector(" not in main_source:
+        errors.append(
+            "backend/main.py must inject build_tool_policy_repository_selector into PlatformToolPolicyService",
         )
     if "now=now_iso" not in main_source:
         errors.append(
             "backend/main.py must pass a clock into PlatformToolPolicyService for PostgreSQL tool policy writes",
         )
-
-    required_service_tokens = [
-        "PostgresToolPolicyWriteThroughRepository",
-        "_tool_governance_reader",
-        "_tool_governance_writer",
-        "Tool governance PostgreSQL writer requires a reader.",
-        "Tool governance PostgreSQL writer requires a clock.",
-        "postgres_reader=self._tool_governance_reader",
-        "postgres_writer=self._tool_governance_writer",
-        "approval_required_tools=self._approval_required_tools",
-    ]
-    for token in required_service_tokens:
-        if token not in tool_service_source:
-            errors.append(
-                "backend/services/tools.py must route tool policy persistence through PostgreSQL: "
-                f"{token}",
-            )
 
     required_write_through_tokens = [
         "class PostgresToolPolicyWriteThroughRepository",
@@ -1798,13 +1808,17 @@ def _check_postgres_memory_item_writes_wired() -> list[str]:
         errors.append(
             "backend/services/composition.py must delegate PostgreSQL memory item writes to the configured repository builder",
         )
-    if "memory_item_reader=build_memory_item_read_repository()" not in main_source:
+    if "build_platform_memory_repository(" not in main_source:
         errors.append(
-            "backend/main.py must pass the PostgreSQL memory_item_reader into PlatformMemoryRepository",
+            "backend/main.py must build PlatformMemoryRepository through service composition",
         )
-    if "memory_item_writer=build_memory_item_write_repository()" not in main_source:
+    if "memory_item_reader=build_memory_item_read_repository()" not in composition_source:
         errors.append(
-            "backend/main.py must pass the PostgreSQL memory_item_writer into PlatformMemoryRepository",
+            "backend/services/composition.py must pass the PostgreSQL memory_item_reader into PlatformMemoryRepository",
+        )
+    if "memory_item_writer=build_memory_item_write_repository()" not in composition_source:
+        errors.append(
+            "backend/services/composition.py must pass the PostgreSQL memory_item_writer into PlatformMemoryRepository",
         )
     if "memory_item_reader" not in memory_source:
         errors.append(
@@ -2288,7 +2302,7 @@ def _check_postgres_workflow_runs_wired() -> list[str]:
         "RETURNING id, tenant_id, workflow_template_id, user_id",
         "row = cursor.fetchone()",
         "Workflow run upsert did not return a row.",
-        "_validate_write_result(record, persisted)",
+        "_validate_workflow_run_write_result(record, persisted)",
         "PostgreSQL workflow run write did not return a run id.",
         "PostgreSQL workflow run write did not return a tenant id.",
         "PostgreSQL workflow run write did not return a workflow template id.",
