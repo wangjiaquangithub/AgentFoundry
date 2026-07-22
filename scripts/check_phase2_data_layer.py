@@ -3204,6 +3204,12 @@ def _check_postgres_model_config_reads_guarded() -> list[str]:
                 "backend/persistence/model_configs.py:"
                 f"PostgresModelConfigReadRepository.{method_name}",
             )
+        if not _module_calls_name(method_node, "_validate_model_config_read_result"):
+            errors.append(
+                "PostgreSQL model config read method must validate returned tenant "
+                "and filter fields: backend/persistence/model_configs.py:"
+                f"PostgresModelConfigReadRepository.{method_name}",
+            )
         normalized_sql = " ".join(_normalized_sql_literals(method_node))
         for sql_token in sql_tokens:
             if sql_token.lower() not in normalized_sql:

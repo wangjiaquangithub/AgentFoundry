@@ -80,6 +80,24 @@ def _validate_write_result(
         raise ValueError("PostgreSQL model config write returned another updated time.")
 
 
+def _validate_model_config_read_result(
+    record: ModelConfigRecord,
+    *,
+    tenant_id: str,
+    purpose: str | None = None,
+    status: str | None = None,
+    model_config_id: str | None = None,
+) -> None:
+    if record.tenant_id != tenant_id:
+        raise ValueError("PostgreSQL model config read returned another tenant.")
+    if purpose is not None and record.purpose != purpose:
+        raise ValueError("PostgreSQL model config read returned another purpose.")
+    if status is not None and record.status != status:
+        raise ValueError("PostgreSQL model config read returned another status.")
+    if model_config_id is not None and record.id != model_config_id:
+        raise ValueError("PostgreSQL model config read returned another config.")
+
+
 class SQLiteModelConfigReadRepository:
     """Read tenant-scoped model configs from SQLite."""
 
@@ -230,7 +248,15 @@ class PostgresModelConfigReadRepository:
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, tuple(parameters))
-                return [_model_config_from_row(dict(row)) for row in cursor.fetchall()]
+                records = [_model_config_from_row(dict(row)) for row in cursor.fetchall()]
+        for record in records:
+            _validate_model_config_read_result(
+                record,
+                tenant_id=tenant_id,
+                purpose=purpose,
+                status=status,
+            )
+        return records
 
     def get_model_config(
         self,
@@ -253,7 +279,13 @@ class PostgresModelConfigReadRepository:
                 row = cursor.fetchone()
         if row is None:
             return None
-        return _model_config_from_row(dict(row))
+        record = _model_config_from_row(dict(row))
+        _validate_model_config_read_result(
+            record,
+            tenant_id=tenant_id,
+            model_config_id=model_config_id,
+        )
+        return record
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
