@@ -66,6 +66,10 @@ def _validate_write_result(
         )
     if persisted.query != requested.query:
         raise ValueError("PostgreSQL retrieval event write returned another query.")
+    if persisted.hits != requested.hits:
+        raise ValueError("PostgreSQL retrieval event write returned another hits payload.")
+    if persisted.created_at != requested.created_at:
+        raise ValueError("PostgreSQL retrieval event write returned another created time.")
 
 
 class SQLiteRetrievalEventReadRepository:

@@ -1045,6 +1045,8 @@ def _check_postgres_retrieval_event_write_records() -> list[str]:
         "PostgreSQL retrieval event write returned another agent run.",
         "PostgreSQL retrieval event write returned another knowledge base.",
         "PostgreSQL retrieval event write returned another query.",
+        "PostgreSQL retrieval event write returned another hits payload.",
+        "PostgreSQL retrieval event write returned another created time.",
     ):
         if token not in retrieval_event_source:
             errors.append(
