@@ -1395,6 +1395,24 @@ def _check_postgres_approval_requests_wired() -> list[str]:
         errors.append(
             "backend/repositories/approvals.py must update approval status through PostgreSQL",
         )
+    for token in (
+        "_validate_write_result(postgres_record, persisted_record)",
+        "PostgreSQL approval write did not return an approval id.",
+        "PostgreSQL approval write did not return a tenant id.",
+        "PostgreSQL approval write did not return a request type.",
+        "PostgreSQL approval write did not return a target type.",
+        "PostgreSQL approval write did not return a target id.",
+        "PostgreSQL approval write returned another approval.",
+        "PostgreSQL approval write returned another tenant.",
+        "PostgreSQL approval write returned another request type.",
+        "PostgreSQL approval write returned another target type.",
+        "PostgreSQL approval write returned another target.",
+    ):
+        if token not in approval_repository_source:
+            errors.append(
+                "backend/repositories/approvals.py must validate persisted "
+                f"PostgreSQL approval write records: {token}",
+            )
     if "ApprovalRequestRepositoryProtocol" not in approval_service_source:
         errors.append(
             "backend/services/approvals.py must depend on ApprovalRequestRepositoryProtocol",

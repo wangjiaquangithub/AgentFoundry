@@ -230,9 +230,9 @@ class PostgresApprovalReadThroughRepository:
         if not record.get("tenant"):
             raise ValueError("PostgreSQL approval writes require tenant context.")
 
-        persisted_record = self._postgres_writer.append_approval(
-            _platform_record_to_postgres_approval(record),
-        )
+        postgres_record = _platform_record_to_postgres_approval(record)
+        persisted_record = self._postgres_writer.append_approval(postgres_record)
+        _validate_write_result(postgres_record, persisted_record)
         return _postgres_approval_to_platform_record(persisted_record)
 
     def update_status(
@@ -292,6 +292,32 @@ def _postgres_approval_to_platform_record(record: ApprovalRecord) -> dict[str, A
         "decision_note": payload.get("decision_note"),
         "source": "postgres",
     }
+
+
+def _validate_write_result(
+    requested: ApprovalRecord,
+    persisted: ApprovalRecord,
+) -> None:
+    if not persisted.id:
+        raise ValueError("PostgreSQL approval write did not return an approval id.")
+    if not persisted.tenant_id:
+        raise ValueError("PostgreSQL approval write did not return a tenant id.")
+    if not persisted.request_type:
+        raise ValueError("PostgreSQL approval write did not return a request type.")
+    if not persisted.target_type:
+        raise ValueError("PostgreSQL approval write did not return a target type.")
+    if not persisted.target_id:
+        raise ValueError("PostgreSQL approval write did not return a target id.")
+    if persisted.id != requested.id:
+        raise ValueError("PostgreSQL approval write returned another approval.")
+    if persisted.tenant_id != requested.tenant_id:
+        raise ValueError("PostgreSQL approval write returned another tenant.")
+    if persisted.request_type != requested.request_type:
+        raise ValueError("PostgreSQL approval write returned another request type.")
+    if persisted.target_type != requested.target_type:
+        raise ValueError("PostgreSQL approval write returned another target type.")
+    if persisted.target_id != requested.target_id:
+        raise ValueError("PostgreSQL approval write returned another target.")
 
 
 def _platform_record_to_postgres_approval(record: dict[str, Any]) -> ApprovalRecord:
