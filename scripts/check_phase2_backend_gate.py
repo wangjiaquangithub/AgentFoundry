@@ -56,6 +56,13 @@ CHECKS = (
         ),
     ),
     (
+        "PostgreSQL model config write exposure",
+        (
+            sys.executable,
+            "scripts/check_phase2_postgres_model_config_write_exposure.py",
+        ),
+    ),
+    (
         "PostgreSQL index contract",
         (sys.executable, "scripts/check_phase2_postgres_index_contract.py"),
     ),
