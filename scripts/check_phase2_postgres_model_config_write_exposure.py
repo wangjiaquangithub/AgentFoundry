@@ -16,9 +16,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PERSISTENCE_MODULE = ROOT / "backend" / "persistence" / "model_configs.py"
 SERVICE_MODULE = ROOT / "backend" / "services" / "model_configs.py"
+COMPOSITION_MODULE = ROOT / "backend" / "services" / "composition.py"
 BACKEND_DIR = ROOT / "backend"
 
-ALLOWED_MODEL_CONFIG_WRITE_EXPOSURE = {SERVICE_MODULE}
+ALLOWED_MODEL_CONFIG_WRITE_EXPOSURE = {SERVICE_MODULE, COMPOSITION_MODULE}
 
 
 def _parse_module(path: Path) -> ast.Module:
@@ -134,6 +135,7 @@ def main() -> int:
     print("- repository: PostgresModelConfigWriteRepository.upsert_model_config")
     print(f"- wired outside persistence: {'yes' if exposed else 'no'}")
     print("- approved service boundary: backend/services/model_configs.py")
+    print("- approved composition boundary: backend/services/composition.py")
 
     if errors:
         print("\nErrors:")
