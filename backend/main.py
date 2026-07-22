@@ -161,19 +161,19 @@ from services.composition import (
     build_approval_request_repository,
     build_audit_event_read_repository,
     build_audit_event_write_repository,
-    build_configured_postgres_knowledge_base_read_repository,
-    build_configured_postgres_knowledge_base_write_repository,
-    build_configured_postgres_knowledge_document_chunk_read_repository,
-    build_configured_postgres_knowledge_document_chunk_write_repository,
-    build_configured_postgres_knowledge_document_read_repository,
     build_configured_postgres_knowledge_document_readiness_service,
-    build_configured_postgres_knowledge_document_write_repository,
-    build_configured_postgres_knowledge_embedding_record_read_repository,
-    build_configured_postgres_knowledge_embedding_record_write_repository,
     build_configured_postgres_knowledge_ingestion_service,
     build_configured_postgres_knowledge_response_service,
     build_configured_postgres_knowledge_retrieval_service,
     build_configured_postgres_model_config_service,
+    build_knowledge_base_read_repository,
+    build_knowledge_base_write_repository,
+    build_knowledge_document_chunk_read_repository,
+    build_knowledge_document_chunk_write_repository,
+    build_knowledge_document_read_repository,
+    build_knowledge_document_write_repository,
+    build_knowledge_embedding_record_read_repository,
+    build_knowledge_embedding_record_write_repository,
     build_memory_item_read_repository,
     build_memory_item_write_repository,
     build_member_repository,
@@ -237,38 +237,6 @@ def _build_knowledge_document_readiness_service() -> (
     PlatformKnowledgeDocumentReadinessService | None
 ):
     return build_configured_postgres_knowledge_document_readiness_service()
-
-
-def _build_knowledge_base_read_repository() -> Any | None:
-    return build_configured_postgres_knowledge_base_read_repository()
-
-
-def _build_knowledge_base_write_repository() -> Any | None:
-    return build_configured_postgres_knowledge_base_write_repository()
-
-
-def _build_knowledge_document_read_repository() -> Any | None:
-    return build_configured_postgres_knowledge_document_read_repository()
-
-
-def _build_knowledge_document_write_repository() -> Any | None:
-    return build_configured_postgres_knowledge_document_write_repository()
-
-
-def _build_knowledge_document_chunk_read_repository() -> Any | None:
-    return build_configured_postgres_knowledge_document_chunk_read_repository()
-
-
-def _build_knowledge_document_chunk_write_repository() -> Any | None:
-    return build_configured_postgres_knowledge_document_chunk_write_repository()
-
-
-def _build_knowledge_embedding_record_read_repository() -> Any | None:
-    return build_configured_postgres_knowledge_embedding_record_read_repository()
-
-
-def _build_knowledge_embedding_record_write_repository() -> Any | None:
-    return build_configured_postgres_knowledge_embedding_record_write_repository()
 
 
 def _build_knowledge_retrieval_service() -> (
@@ -750,8 +718,8 @@ app.include_router(
 app.include_router(
     create_knowledge_bases_router(
         KnowledgeBasesRouteDependencies(
-            knowledge_base_read_repository=_build_knowledge_base_read_repository,
-            knowledge_base_write_repository=_build_knowledge_base_write_repository,
+            knowledge_base_read_repository=build_knowledge_base_read_repository,
+            knowledge_base_write_repository=build_knowledge_base_write_repository,
             tenant_hint_from_user_id=tenant_hint_from_user_id,
             now=now_iso,
         )
@@ -761,11 +729,11 @@ app.include_router(
 app.include_router(
     create_knowledge_documents_router(
         KnowledgeDocumentsRouteDependencies(
-            document_repository=_build_knowledge_document_read_repository,
-            document_write_repository=_build_knowledge_document_write_repository,
-            document_chunk_repository=_build_knowledge_document_chunk_read_repository,
+            document_repository=build_knowledge_document_read_repository,
+            document_write_repository=build_knowledge_document_write_repository,
+            document_chunk_repository=build_knowledge_document_chunk_read_repository,
             document_chunk_write_repository=(
-                _build_knowledge_document_chunk_write_repository
+                build_knowledge_document_chunk_write_repository
             ),
             tenant_hint_from_user_id=tenant_hint_from_user_id,
             now=now_iso,
@@ -777,10 +745,10 @@ app.include_router(
     create_knowledge_embedding_records_router(
         KnowledgeEmbeddingRecordsRouteDependencies(
             embedding_record_read_repository=(
-                _build_knowledge_embedding_record_read_repository
+                build_knowledge_embedding_record_read_repository
             ),
             embedding_record_write_repository=(
-                _build_knowledge_embedding_record_write_repository
+                build_knowledge_embedding_record_write_repository
             ),
             tenant_hint_from_user_id=tenant_hint_from_user_id,
             now=now_iso,

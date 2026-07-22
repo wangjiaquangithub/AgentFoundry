@@ -2300,6 +2300,62 @@ def _check_postgres_knowledge_readiness_wired() -> list[str]:
             "PostgreSQL knowledge readiness",
         )
 
+    knowledge_repository_selectors = [
+        "build_knowledge_base_read_repository",
+        "build_knowledge_base_write_repository",
+        "build_knowledge_document_read_repository",
+        "build_knowledge_document_write_repository",
+        "build_knowledge_document_chunk_read_repository",
+        "build_knowledge_document_chunk_write_repository",
+        "build_knowledge_embedding_record_read_repository",
+        "build_knowledge_embedding_record_write_repository",
+    ]
+    for selector_name in knowledge_repository_selectors:
+        if not _module_defines_function(composition_tree, selector_name):
+            errors.append(
+                "backend/services/composition.py must define "
+                f"{selector_name} as a production knowledge repository selector",
+            )
+        if not _module_imports_name(main_tree, selector_name):
+            errors.append(
+                "backend/main.py must import the composition selector "
+                f"{selector_name}",
+            )
+
+    local_knowledge_repository_builders = [
+        "_build_knowledge_base_read_repository",
+        "_build_knowledge_base_write_repository",
+        "_build_knowledge_document_read_repository",
+        "_build_knowledge_document_write_repository",
+        "_build_knowledge_document_chunk_read_repository",
+        "_build_knowledge_document_chunk_write_repository",
+        "_build_knowledge_embedding_record_read_repository",
+        "_build_knowledge_embedding_record_write_repository",
+    ]
+    for builder_name in local_knowledge_repository_builders:
+        if _module_defines_function(main_tree, builder_name):
+            errors.append(
+                "backend/main.py must not define local knowledge repository "
+                f"selector {builder_name}; use backend/services/composition.py",
+            )
+
+    required_main_repository_wiring = [
+        "knowledge_base_read_repository=build_knowledge_base_read_repository",
+        "knowledge_base_write_repository=build_knowledge_base_write_repository",
+        "document_repository=build_knowledge_document_read_repository",
+        "document_write_repository=build_knowledge_document_write_repository",
+        "document_chunk_repository=build_knowledge_document_chunk_read_repository",
+        "build_knowledge_document_chunk_write_repository",
+        "build_knowledge_embedding_record_read_repository",
+        "build_knowledge_embedding_record_write_repository",
+    ]
+    for wiring in required_main_repository_wiring:
+        if wiring not in main_source:
+            errors.append(
+                "backend/main.py must wire knowledge routes through "
+                f"composition selector: {wiring}",
+            )
+
     required_constructor_wiring = [
         "knowledge_base_repository=PostgresKnowledgeBaseReadRepository(database)",
         "document_repository=PostgresDocumentReadRepository(database)",

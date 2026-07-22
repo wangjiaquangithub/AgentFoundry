@@ -534,6 +534,70 @@ def build_configured_postgres_knowledge_embedding_record_write_repository() -> (
     return PostgresEmbeddingRecordWriteRepository(database)
 
 
+def build_knowledge_base_read_repository() -> (
+    PostgresKnowledgeBaseReadRepository | None
+):
+    """Select the configured production knowledge base read repository."""
+
+    return build_configured_postgres_knowledge_base_read_repository()
+
+
+def build_knowledge_base_write_repository() -> (
+    PostgresKnowledgeBaseWriteRepository | None
+):
+    """Select the configured production knowledge base write repository."""
+
+    return build_configured_postgres_knowledge_base_write_repository()
+
+
+def build_knowledge_document_read_repository() -> (
+    PostgresDocumentReadRepository | None
+):
+    """Select the configured production knowledge document read repository."""
+
+    return build_configured_postgres_knowledge_document_read_repository()
+
+
+def build_knowledge_document_write_repository() -> (
+    PostgresDocumentWriteRepository | None
+):
+    """Select the configured production knowledge document write repository."""
+
+    return build_configured_postgres_knowledge_document_write_repository()
+
+
+def build_knowledge_document_chunk_read_repository() -> (
+    PostgresDocumentChunkReadRepository | None
+):
+    """Select the configured production document chunk read repository."""
+
+    return build_configured_postgres_knowledge_document_chunk_read_repository()
+
+
+def build_knowledge_document_chunk_write_repository() -> (
+    PostgresDocumentChunkWriteRepository | None
+):
+    """Select the configured production document chunk write repository."""
+
+    return build_configured_postgres_knowledge_document_chunk_write_repository()
+
+
+def build_knowledge_embedding_record_read_repository() -> (
+    PostgresEmbeddingRecordReadRepository | None
+):
+    """Select the configured production embedding record read repository."""
+
+    return build_configured_postgres_knowledge_embedding_record_read_repository()
+
+
+def build_knowledge_embedding_record_write_repository() -> (
+    PostgresEmbeddingRecordWriteRepository | None
+):
+    """Select the configured production embedding record write repository."""
+
+    return build_configured_postgres_knowledge_embedding_record_write_repository()
+
+
 def build_postgres_knowledge_document_readiness_service(
     database: PostgresDatabase,
 ) -> PlatformKnowledgeDocumentReadinessService:
