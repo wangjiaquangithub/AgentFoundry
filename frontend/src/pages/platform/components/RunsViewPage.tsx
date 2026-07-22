@@ -1,10 +1,12 @@
 import {
 	Activity,
 	BotMessageSquare,
+	ChevronRight,
 	CheckCircle2,
 	CircleAlert,
 	Clock3,
 	RefreshCcw,
+	Timer,
 	Workflow,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -240,9 +242,6 @@ export function RunsViewPage({
 	const operationalSummary = useMemo(() => {
 		const failed = runItems.filter((item) => item.status === 'failed').length;
 		const running = runItems.filter((item) => item.status === 'running').length;
-		const workflows = runItems.filter((item) => item.type === 'workflow').length;
-		const agents = runItems.filter((item) => item.type === 'agent').length;
-
 		return [
 			{
 				id: 'failed',
@@ -269,9 +268,9 @@ export function RunsViewPage({
 						: 'border-border bg-background text-foreground',
 			},
 			{
-				id: 'coverage',
+				id: 'total',
 				label: t('platform.monitoring.summaryCoverage'),
-				value: `${agents}/${workflows}`,
+				value: runItems.length,
 				helper: t('platform.monitoring.summaryCoverageHelper'),
 				icon: Activity,
 				statusFilter: 'all' as const,
@@ -368,8 +367,8 @@ export function RunsViewPage({
 			</section>
 
 			<section className="overflow-hidden border bg-background">
-				<div className="grid min-w-0 content-start gap-3">
-					<div className="flex flex-col gap-3 border-b bg-background px-4 py-4 lg:flex-row lg:items-start lg:justify-between">
+				<div className="flex flex-col gap-0">
+					<div className="flex flex-col gap-3 border-b bg-background px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
 						<div className="min-w-0">
 							<div className="flex items-center gap-2">
 								<h2 className="text-base font-semibold">
@@ -408,8 +407,8 @@ export function RunsViewPage({
 						</div>
 					</div>
 
-					<div className="border-b bg-background">
-						<div className="grid bg-muted/15 md:grid-cols-3">
+					<div className="border-b bg-muted/10">
+						<div className="grid divide-y md:grid-cols-3 md:divide-x md:divide-y-0">
 							{operationalSummary.map((item) => {
 								const SummaryIcon = item.icon;
 								return (
@@ -418,12 +417,12 @@ export function RunsViewPage({
 										type="button"
 										onClick={() => {
 											setRunStatusFilter(item.statusFilter);
-											if (item.id === 'coverage') {
+											if (item.id === 'total') {
 												setRunTypeFilter('all');
 											}
 										}}
 										className={cn(
-											'grid grid-cols-[1fr_auto] gap-3 border-b px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-background/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:border-b-0 md:border-r md:last:border-r-0',
+											'grid grid-cols-[1fr_auto] gap-3 px-4 py-3 text-left transition-colors hover:bg-background/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 											item.tone,
 										)}
 									>
@@ -503,9 +502,9 @@ export function RunsViewPage({
 						</PlatformFilterBar>
 					</div>
 
-					<div className="grid gap-3 px-3 pb-3">
+					<div className="px-3 py-3">
 						{monitoringError && runItems.length > 0 ? (
-							<div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-muted-foreground">
+							<div className="mb-3 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-muted-foreground">
 								<span className="font-medium text-foreground">
 									{platformServiceUnavailableTitle}
 								</span>
@@ -516,33 +515,33 @@ export function RunsViewPage({
 						) : null}
 
 						{isInitialLoading ? (
-							<div className="overflow-hidden rounded-md border bg-background">
-							<div className="hidden grid-cols-[8rem_minmax(0,2fr)_minmax(8rem,0.8fr)_7rem_10rem_4.5rem] gap-3 border-b bg-muted/35 px-3 py-2 lg:grid">
-								<Skeleton className="h-4 w-14" />
-								<Skeleton className="h-4 w-28" />
-								<Skeleton className="h-4 w-16" />
-								<Skeleton className="h-4 w-20" />
-								<Skeleton className="h-4 w-16" />
-								<Skeleton className="ml-auto h-4 w-10" />
-							</div>
-							<div>
-								{[0, 1, 2, 3, 4].map((item) => (
-									<div
-										key={item}
-										className="grid gap-3 border-b px-3 py-3 last:border-b-0 lg:grid-cols-[8rem_minmax(0,2fr)_minmax(8rem,0.8fr)_7rem_10rem_4.5rem] lg:items-center"
-									>
-										<Skeleton className="h-7 w-24" />
-										<div className="grid gap-2">
-											<Skeleton className="h-4 w-3/4" />
-											<Skeleton className="h-3 w-1/2" />
+							<div className="overflow-hidden border bg-background">
+								<div className="hidden grid-cols-[8rem_minmax(0,2.4fr)_minmax(8rem,0.8fr)_7rem_10rem_2.5rem] gap-3 border-b bg-muted/30 px-4 py-2 lg:grid">
+									<Skeleton className="h-4 w-14" />
+									<Skeleton className="h-4 w-28" />
+									<Skeleton className="h-4 w-16" />
+									<Skeleton className="h-4 w-20" />
+									<Skeleton className="h-4 w-16" />
+									<Skeleton className="ml-auto h-4 w-4" />
+								</div>
+								<div>
+									{[0, 1, 2, 3, 4].map((item) => (
+										<div
+											key={item}
+											className="grid gap-3 border-b px-4 py-3 last:border-b-0 lg:grid-cols-[8rem_minmax(0,2.4fr)_minmax(8rem,0.8fr)_7rem_10rem_2.5rem] lg:items-center"
+										>
+											<Skeleton className="h-7 w-24" />
+											<div className="grid gap-2">
+												<Skeleton className="h-4 w-3/4" />
+												<Skeleton className="h-3 w-1/2" />
+											</div>
+											<Skeleton className="h-6 w-20" />
+											<Skeleton className="h-4 w-24" />
+											<Skeleton className="h-4 w-28" />
+											<Skeleton className="ml-auto h-4 w-4" />
 										</div>
-										<Skeleton className="h-6 w-20" />
-										<Skeleton className="h-4 w-24" />
-										<Skeleton className="h-4 w-28" />
-										<Skeleton className="ml-auto h-4 w-10" />
-									</div>
-								))}
-							</div>
+									))}
+								</div>
 							</div>
 						) : hasInitialError ? (
 							<PlatformEmptyState
@@ -570,97 +569,90 @@ export function RunsViewPage({
 								className="min-h-80 rounded-md border border-dashed bg-background/80 p-6"
 							/>
 						) : (
-							<div className="overflow-hidden rounded-md border bg-background">
-								<div className="hidden grid-cols-[7.5rem_minmax(0,2.4fr)_minmax(8rem,0.8fr)_7rem_10rem_5rem] gap-3 border-b bg-muted/35 px-3 py-2 text-xs font-medium text-muted-foreground lg:grid">
-								<span>{t('platform.monitoring.filterStatus')}</span>
-								<span>{t('platform.monitoring.runObject')}</span>
-								<span>{t('platform.monitoring.agent')}</span>
-								<span>{t('platform.monitoring.duration')}</span>
-								<span>{t('platform.monitoring.updatedAt')}</span>
-								<span className="text-right">
-									{t('platform.monitoring.actions')}
-								</span>
+							<div className="overflow-hidden border bg-background">
+								<div className="hidden grid-cols-[8rem_minmax(0,2.4fr)_minmax(8rem,0.8fr)_7rem_10rem_2.5rem] gap-3 border-b bg-muted/30 px-4 py-2 text-xs font-medium text-muted-foreground lg:grid">
+									<span>{t('platform.monitoring.filterStatus')}</span>
+									<span>{t('platform.monitoring.runObject')}</span>
+									<span>{t('platform.monitoring.agent')}</span>
+									<span>{t('platform.monitoring.duration')}</span>
+									<span>{t('platform.monitoring.updatedAt')}</span>
+									<span className="sr-only">
+										{t('platform.monitoring.actions')}
+									</span>
 								</div>
 								<div>
-								{filteredRunItems.map((item) => {
-									const ItemIcon =
-										item.type === 'agent' ? BotMessageSquare : Workflow;
-									const isActive =
-										activeRun?.type === item.type && activeRun.id === item.id;
-									return (
-										<button
-											key={`${item.type}-${item.id}`}
-											type="button"
-											aria-label={t('platform.monitoring.inspectRun', {
-												name: item.title,
-											})}
-											aria-current={isActive ? 'true' : undefined}
-											onClick={() => {
-												setSelectedRun({ type: item.type, id: item.id });
-											}}
-											className={cn(
-												'grid w-full gap-3 border-b border-l-2 border-l-transparent px-3 py-3 text-left text-xs transition-colors last:border-b-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:grid-cols-[7.5rem_minmax(0,2.4fr)_minmax(8rem,0.8fr)_7rem_10rem_5rem] lg:items-center',
-												isActive
-													? 'border-l-primary bg-primary/6 text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.14)]'
-													: item.status === 'failed'
-														? 'border-l-red-500 bg-background hover:bg-red-500/5'
-														: 'bg-background hover:bg-muted/50',
-											)}
-										>
-											<div className="flex items-center justify-between gap-3 lg:block">
-											<span className="text-muted-foreground lg:hidden">
-												{t('platform.monitoring.filterStatus')}
-											</span>
-											<PlatformStatusBadge status={item.status} t={t} />
-											</div>
-											<div className="min-w-0">
-											<div className="flex min-w-0 items-center gap-2">
-												<div className="flex size-7 shrink-0 items-center justify-center rounded-md border bg-muted/25">
-													<ItemIcon className="size-4 text-muted-foreground" />
+									{filteredRunItems.map((item) => {
+										const ItemIcon =
+											item.type === 'agent' ? BotMessageSquare : Workflow;
+										const isActive =
+											activeRun?.type === item.type && activeRun.id === item.id;
+										return (
+											<button
+												key={`${item.type}-${item.id}`}
+												type="button"
+												aria-label={t('platform.monitoring.inspectRun', {
+													name: item.title,
+												})}
+												aria-current={isActive ? 'true' : undefined}
+												onClick={() => {
+													setSelectedRun({ type: item.type, id: item.id });
+												}}
+												className={cn(
+													'grid w-full gap-3 border-b border-l-2 border-l-transparent px-4 py-3 text-left text-xs transition-colors last:border-b-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:grid-cols-[8rem_minmax(0,2.4fr)_minmax(8rem,0.8fr)_7rem_10rem_2.5rem] lg:items-center',
+													isActive
+														? 'border-l-primary bg-primary/5 text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.14)]'
+														: item.status === 'failed'
+															? 'border-l-red-500 bg-background hover:bg-red-500/5'
+															: 'bg-background hover:bg-muted/50',
+												)}
+											>
+												<div className="flex items-center justify-between gap-3 lg:block">
+													<PlatformStatusBadge status={item.status} t={t} />
+													<ChevronRight className="size-4 text-muted-foreground lg:hidden" />
 												</div>
-												<div className="min-w-0 truncate font-medium">
-													{item.title}
+												<div className="min-w-0">
+													<div className="flex min-w-0 items-center gap-2">
+														<div className="flex size-7 shrink-0 items-center justify-center rounded-md border bg-muted/25">
+															<ItemIcon className="size-4 text-muted-foreground" />
+														</div>
+														<div className="min-w-0 truncate font-medium">
+															{item.title}
+														</div>
+													</div>
+													<p className="mt-1 line-clamp-1 pl-9 text-muted-foreground">
+														{item.type === 'agent'
+															? t('platform.monitoring.agentRunType')
+															: t('platform.monitoring.workflowRunType')}
+														{item.description ? ` · ${item.description}` : ''}
+													</p>
+													<div className="mt-2 flex flex-wrap gap-1.5 pl-9 lg:hidden">
+														<Badge variant="outline" className="h-5 text-[11px]">
+															{item.agentId || '-'}
+														</Badge>
+														<Badge variant="outline" className="h-5 text-[11px]">
+															<Timer className="mr-1 size-3" />
+															{item.duration}
+														</Badge>
+														<Badge variant="outline" className="h-5 text-[11px]">
+															{formatTimestamp(item.timestamp)}
+														</Badge>
+													</div>
 												</div>
-											</div>
-											<p className="mt-1 line-clamp-1 pl-9 text-muted-foreground">
-												{item.type === 'agent'
-													? t('platform.monitoring.agentRunType')
-													: t('platform.monitoring.workflowRunType')}
-												{item.description ? ` · ${item.description}` : ''}
-											</p>
-											<div className="mt-2 flex flex-wrap gap-1.5 pl-9 lg:hidden">
-												<Badge variant="outline" className="h-5 text-[11px]">
+												<div className="hidden min-w-0 truncate text-muted-foreground lg:block">
 													{item.agentId || '-'}
-												</Badge>
-												<Badge variant="outline" className="h-5 text-[11px]">
+												</div>
+												<div className="hidden tabular-nums text-muted-foreground lg:block">
 													{item.duration}
-												</Badge>
-											</div>
-											</div>
-											<div className="flex min-w-0 items-center justify-between gap-3 text-muted-foreground lg:block">
-											<span className="lg:hidden">
-												{t('platform.monitoring.agent')}
-											</span>
-											<span className="truncate">{item.agentId || '-'}</span>
-											</div>
-											<div className="flex items-center justify-between gap-3 tabular-nums text-muted-foreground lg:block">
-											<span className="lg:hidden">
-												{t('platform.monitoring.duration')}
-											</span>
-											<span>{item.duration}</span>
-											</div>
-											<div className="flex items-center justify-between gap-3 tabular-nums text-muted-foreground lg:block">
-											<span className="lg:hidden">
-												{t('platform.monitoring.updatedAt')}
-											</span>
-											<span>{formatTimestamp(item.timestamp)}</span>
-											</div>
-											<div className="hidden text-right font-medium text-primary lg:block">
-											{t('platform.monitoring.inspect')}
-											</div>
-										</button>
-									);
-								})}
+												</div>
+												<div className="hidden tabular-nums text-muted-foreground lg:block">
+													{formatTimestamp(item.timestamp)}
+												</div>
+												<div className="hidden justify-end lg:flex">
+													<ChevronRight className="size-4 text-muted-foreground" />
+												</div>
+											</button>
+										);
+									})}
 								</div>
 							</div>
 						)}
