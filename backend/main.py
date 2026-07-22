@@ -113,8 +113,6 @@ from backend.persistence import (
     PostgresModelConfigReadRepository,
     PostgresRuntimeReadRepository,
     PostgresRuntimeWriteRepository,
-    PostgresToolCallReadRepository,
-    PostgresToolCallWriteRepository,
     PostgresToolGovernanceReadRepository,
     PostgresToolGovernanceWriteRepository,
     create_configured_postgres_database,
@@ -192,6 +190,8 @@ from services.composition import (
     build_configured_postgres_model_config_service,
     build_configured_postgres_retrieval_event_read_repository,
     build_configured_postgres_retrieval_event_write_repository,
+    build_configured_postgres_tool_call_read_repository,
+    build_configured_postgres_tool_call_write_repository,
     build_configured_postgres_workflow_run_repository,
 )
 from services.platform_status import PlatformStatusService
@@ -236,20 +236,12 @@ def _build_approval_request_repository() -> ApprovalRequestRepositoryProtocol:
 approval_request_repository = _build_approval_request_repository()
 
 
-def _build_tool_call_write_repository() -> PostgresToolCallWriteRepository | None:
-    database = create_configured_postgres_database()
-    if database is None:
-        return None
-
-    return PostgresToolCallWriteRepository(database)
+def _build_tool_call_write_repository() -> Any | None:
+    return build_configured_postgres_tool_call_write_repository()
 
 
-def _build_tool_call_read_repository() -> PostgresToolCallReadRepository | None:
-    database = create_configured_postgres_database()
-    if database is None:
-        return None
-
-    return PostgresToolCallReadRepository(database)
+def _build_tool_call_read_repository() -> Any | None:
+    return build_configured_postgres_tool_call_read_repository()
 
 
 def _build_tool_governance_read_repository() -> (

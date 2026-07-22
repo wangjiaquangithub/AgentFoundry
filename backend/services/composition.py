@@ -28,6 +28,8 @@ from backend.persistence import (
     PostgresRetrievalEventWriteRepository,
     PostgresTenancyReadRepository,
     PostgresTenancyWriteRepository,
+    PostgresToolCallReadRepository,
+    PostgresToolCallWriteRepository,
     PostgresWorkflowReadRepository,
     PostgresWorkflowWriteRepository,
     create_configured_postgres_database,
@@ -116,6 +118,30 @@ def build_configured_postgres_retrieval_event_write_repository() -> (
         return None
 
     return PostgresRetrievalEventWriteRepository(database)
+
+
+def build_configured_postgres_tool_call_read_repository() -> (
+    PostgresToolCallReadRepository | None
+):
+    """Build the tool call read repository when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresToolCallReadRepository(database)
+
+
+def build_configured_postgres_tool_call_write_repository() -> (
+    PostgresToolCallWriteRepository | None
+):
+    """Build the tool call write repository when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return PostgresToolCallWriteRepository(database)
 
 
 def build_configured_postgres_member_repository() -> (

@@ -896,16 +896,37 @@ def _check_postgres_runtime_invocation_writes_wired() -> list[str]:
 def _check_postgres_tool_calls_wired() -> list[str]:
     errors: list[str] = []
     main_source = MAIN_MODULE.read_text(encoding="utf-8")
+    composition_path = SERVICES_DIR / "composition.py"
+    composition_source = composition_path.read_text(encoding="utf-8")
     agent_run_source = (SERVICES_DIR / "agent_runs.py").read_text(encoding="utf-8")
     main_tree = ast.parse(main_source, filename=str(MAIN_MODULE))
+    composition_tree = ast.parse(composition_source, filename=str(composition_path))
 
-    if not _module_imports_name(main_tree, "PostgresToolCallReadRepository"):
+    if not _module_imports_name(composition_tree, "PostgresToolCallReadRepository"):
         errors.append(
-            "backend/main.py must import PostgresToolCallReadRepository for tool call reads",
+            "backend/services/composition.py must import "
+            "PostgresToolCallReadRepository for tool call reads",
         )
-    if not _module_imports_name(main_tree, "PostgresToolCallWriteRepository"):
+    if not _module_imports_name(composition_tree, "PostgresToolCallWriteRepository"):
         errors.append(
-            "backend/main.py must import PostgresToolCallWriteRepository for tool call writes",
+            "backend/services/composition.py must import "
+            "PostgresToolCallWriteRepository for tool call writes",
+        )
+    if not _module_defines_function(
+        composition_tree,
+        "build_configured_postgres_tool_call_read_repository",
+    ):
+        errors.append(
+            "backend/services/composition.py must define "
+            "build_configured_postgres_tool_call_read_repository",
+        )
+    if not _module_defines_function(
+        composition_tree,
+        "build_configured_postgres_tool_call_write_repository",
+    ):
+        errors.append(
+            "backend/services/composition.py must define "
+            "build_configured_postgres_tool_call_write_repository",
         )
     if not _module_defines_function(main_tree, "_build_tool_call_read_repository"):
         errors.append(
@@ -914,6 +935,16 @@ def _check_postgres_tool_calls_wired() -> list[str]:
     if not _module_defines_function(main_tree, "_build_tool_call_write_repository"):
         errors.append(
             "backend/main.py must define _build_tool_call_write_repository for PostgreSQL tool call writes",
+        )
+    if "build_configured_postgres_tool_call_read_repository()" not in main_source:
+        errors.append(
+            "backend/main.py must delegate PostgreSQL tool call reads to "
+            "backend/services/composition.py",
+        )
+    if "build_configured_postgres_tool_call_write_repository()" not in main_source:
+        errors.append(
+            "backend/main.py must delegate PostgreSQL tool call writes to "
+            "backend/services/composition.py",
         )
     if "tool_call_reader=_build_tool_call_read_repository()" not in main_source:
         errors.append(
