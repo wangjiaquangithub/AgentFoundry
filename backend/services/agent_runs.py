@@ -1990,6 +1990,13 @@ class PlatformAgentRunService:
         if approval_ids:
             audit_filter["approval_ids"] = approval_ids
 
+        dev_fallback_hit_count = sum(
+            1
+            for hit in knowledge_hits
+            if bool((hit.get("metadata") or {}).get("dev_fallback"))
+        )
+        production_knowledge_hit_count = len(knowledge_hits) - dev_fallback_hit_count
+
         return {
             "run_id": turn_id,
             "turn_id": turn_id,
@@ -2004,6 +2011,9 @@ class PlatformAgentRunService:
             "approval_required_count": len(approval_required_calls),
             "approval_ids": approval_ids,
             "knowledge_hit_count": len(knowledge_hits),
+            "production_knowledge_hit_count": production_knowledge_hit_count,
+            "dev_fallback_knowledge_hit_count": dev_fallback_hit_count,
+            "dev_fallback_knowledge_used": dev_fallback_hit_count > 0,
             "memory_hit_count": len(memory_hits),
             "memory_saved": memory_saved,
             "audit_filter": audit_filter,

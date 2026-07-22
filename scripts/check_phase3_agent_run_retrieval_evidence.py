@@ -74,6 +74,25 @@ class DevKnowledge:
         return []
 
 
+class DevFallbackKnowledge:
+    def search(self, **_: Any) -> list[dict[str, Any]]:
+        return [
+            {
+                "knowledge_base_id": "kb_support",
+                "score": 0.75,
+                "document_id": "dev-doc-1",
+                "source": "local fixture",
+                "chunk_index": 0,
+                "total_chunks": 1,
+                "snippet": "dev fallback evidence",
+                "metadata": {
+                    "provider": "agentfoundry-dev-local",
+                    "dev_fallback": True,
+                },
+            },
+        ]
+
+
 def execution_context(run_identity: dict[str, str]) -> dict[str, Any]:
     return {
         "tenant": "acme",
@@ -130,6 +149,10 @@ async def main() -> None:
     assert trace["turn_id"] == run_identity["turn_id"]
     assert trace["created_at"] == run_identity["created_at"]
     assert trace["evidence"]["turn_id"] == run_identity["turn_id"]
+    assert trace["evidence"]["knowledge_hit_count"] == 1
+    assert trace["evidence"]["production_knowledge_hit_count"] == 1
+    assert trace["evidence"]["dev_fallback_knowledge_hit_count"] == 0
+    assert trace["evidence"]["dev_fallback_knowledge_used"] is False
 
     routed_trace = run_service.build_routed_response_trace(
         primary_call={"tenant": "acme", "user_id": "acme:alice"},
@@ -145,6 +168,42 @@ async def main() -> None:
     )
     assert routed_trace["turn_id"] == run_identity["turn_id"]
     assert routed_trace["evidence"]["turn_id"] == run_identity["turn_id"]
+    assert routed_trace["evidence"]["production_knowledge_hit_count"] == 1
+    assert routed_trace["evidence"]["dev_fallback_knowledge_hit_count"] == 0
+
+    fallback_identity = {
+        "turn_id": "run_retrieval_dev_fallback_check",
+        "created_at": "2026-01-01T00:01:00+00:00",
+    }
+    fallback_context = await run_service.prepare_knowledge_context_from_execution_context(
+        build_agent_run_payload=knowledge_service.build_agent_run_payload,
+        search_agent_knowledge_bases=knowledge_service.search_agent_knowledge_bases,
+        knowledge_base_service=None,
+        dev_knowledge_service=DevFallbackKnowledge(),
+        dev_knowledge_provider="agentfoundry-dev-local",
+        knowledge_document_readiness_service=None,
+        execution_context=execution_context(fallback_identity),
+    )
+    assert fallback_context["retrieval_readiness"]["status"] == "degraded"
+    assert fallback_context["retrieval_readiness"]["production_hit_count"] == 0
+    assert fallback_context["retrieval_readiness"]["dev_fallback_hit_count"] == 1
+    assert fallback_context["retrieval_readiness"]["dev_fallback_used"] is True
+
+    fallback_trace = run_service.build_unrouted_response_trace(
+        tenant="acme",
+        user_id="acme:alice",
+        agent_id="agent_support",
+        session_id="session_support",
+        knowledge_hits=fallback_context["knowledge_hits"],
+        memory_hits=[],
+        memory_saved=False,
+        run_identity=fallback_identity,
+    )
+    assert fallback_trace["evidence"]["turn_id"] == fallback_identity["turn_id"]
+    assert fallback_trace["evidence"]["knowledge_hit_count"] == 1
+    assert fallback_trace["evidence"]["production_knowledge_hit_count"] == 0
+    assert fallback_trace["evidence"]["dev_fallback_knowledge_hit_count"] == 1
+    assert fallback_trace["evidence"]["dev_fallback_knowledge_used"] is True
 
 
 if __name__ == "__main__":
