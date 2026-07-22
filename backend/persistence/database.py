@@ -260,7 +260,25 @@ def require_postgres_database_for_production(
     )
 
 
-def create_database(database_url: str) -> SQLiteDatabase | PostgresDatabase:
+def _environment_with_database_url(
+    database_url: str,
+    environ: Mapping[str, str] | None,
+) -> dict[str, str]:
+    source = os.environ if environ is None else environ
+    configured = dict(source)
+    configured[DATABASE_URL_ENV_VAR] = database_url
+    return configured
+
+
+def create_database(
+    database_url: str,
+    environ: Mapping[str, str] | None = None,
+) -> SQLiteDatabase | PostgresDatabase:
+    if is_production_environment(environ):
+        require_postgres_database_for_production(
+            _environment_with_database_url(database_url, environ)
+        )
+
     parsed = urlparse(database_url)
     if is_postgres_database_url(database_url):
         return create_postgres_database(database_url)
