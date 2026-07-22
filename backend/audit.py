@@ -178,6 +178,10 @@ class ToolAuditLogger:
                 success=success,
                 limit=normalized_limit,
             )
+        if tenant and self._production_mode:
+            raise RuntimeError(
+                "PostgreSQL tool audit reader is required in production mode."
+            )
 
         return self._query_jsonl(
             tenant=tenant,
@@ -209,6 +213,10 @@ class ToolAuditLogger:
                 limit=read_limit,
             )
         except Exception as exc:
+            if self._production_mode:
+                raise RuntimeError(
+                    "PostgreSQL tool audit read failed in production mode."
+                ) from exc
             LOGGER.warning(
                 "Failed to read enterprise audit events from PostgreSQL: %s",
                 exc,
