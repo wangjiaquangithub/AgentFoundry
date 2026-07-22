@@ -670,6 +670,8 @@
 			"agent": "Agent",
 			"time": "Time",
 			"duration": "Duration",
+			"startedAt": "Started",
+			"finishedAt": "Finished",
 			"updatedAt": "Updated",
 			"workflowType": "Workflow type",
 			"initiator": "Initiator",
