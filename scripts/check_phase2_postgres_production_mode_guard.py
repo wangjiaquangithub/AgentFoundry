@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -64,24 +65,37 @@ def _check_production_guard_contract() -> list[str]:
     if local_sqlite_status.operator_ready:
         errors.append("development SQLite compatibility must not be operator ready")
 
-    postgres_status = require_postgres_database_for_production(
-        {
-            "AGENTFOUNDRY_ENV": "production",
-            "AGENTFOUNDRY_DATABASE_URL": POSTGRES_URL,
-        }
-    )
+    with patch("backend.persistence.database.is_postgres_driver_available", return_value=True):
+        postgres_status = require_postgres_database_for_production(
+            {
+                "AGENTFOUNDRY_ENV": "production",
+                "AGENTFOUNDRY_DATABASE_URL": POSTGRES_URL,
+            }
+        )
     if not postgres_status.production_mode or not postgres_status.production_ready:
         errors.append("production PostgreSQL URL must pass the production guard")
     if postgres_status.operator_ready is not postgres_status.runtime_ready:
         errors.append("production PostgreSQL operator readiness must follow runtime readiness")
-    configured = create_configured_postgres_database(
-        {
-            "AGENTFOUNDRY_ENV": "production",
-            "AGENTFOUNDRY_DATABASE_URL": POSTGRES_URL,
-        }
-    )
+    with patch("backend.persistence.database.is_postgres_driver_available", return_value=True):
+        configured = create_configured_postgres_database(
+            {
+                "AGENTFOUNDRY_ENV": "production",
+                "AGENTFOUNDRY_DATABASE_URL": POSTGRES_URL,
+            }
+        )
     if not isinstance(configured, PostgresDatabase):
         errors.append("production PostgreSQL config must create a PostgresDatabase")
+
+    with patch("backend.persistence.database.is_postgres_driver_available", return_value=False):
+        errors.extend(
+            _expect_runtime_error(
+                {
+                    "AGENTFOUNDRY_ENV": "production",
+                    "AGENTFOUNDRY_DATABASE_URL": POSTGRES_URL,
+                },
+                ("AGENTFOUNDRY_ENV=production", "runtime readiness", "psycopg"),
+            )
+        )
 
     errors.extend(
         _expect_runtime_error(

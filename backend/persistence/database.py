@@ -221,7 +221,7 @@ def require_postgres_database_for_production(
     environ: Mapping[str, str] | None = None,
 ) -> DatabaseConfigurationStatus:
     status = inspect_configured_database_status(environ)
-    if not status.production_mode or status.production_ready:
+    if not status.production_mode:
         return status
 
     if not status.configured:
@@ -234,6 +234,13 @@ def require_postgres_database_for_production(
             "AGENTFOUNDRY_ENV=production cannot use sqlite://. Configure "
             "AGENTFOUNDRY_DATABASE_URL with postgresql:// or postgres://."
         )
+    if status.production_ready and not status.operator_ready:
+        raise RuntimeError(
+            "AGENTFOUNDRY_ENV=production requires PostgreSQL runtime readiness. "
+            "Install psycopg before using postgresql:// or postgres:// persistence URLs."
+        )
+    if status.production_ready:
+        return status
     raise RuntimeError(
         "AGENTFOUNDRY_ENV=production requires PostgreSQL persistence. Configure "
         "AGENTFOUNDRY_DATABASE_URL with postgresql:// or postgres://."
