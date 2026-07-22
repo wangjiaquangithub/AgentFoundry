@@ -93,6 +93,13 @@ CHECKS = (
         ),
     ),
     (
+        "knowledge API production storage guard",
+        (
+            sys.executable,
+            "scripts/check_phase3_knowledge_api_production_storage_guard.py",
+        ),
+    ),
+    (
         "agent run retrieval evidence",
         (sys.executable, "scripts/check_phase3_agent_run_retrieval_evidence.py"),
     ),
