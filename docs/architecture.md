@@ -1,39 +1,55 @@
 # Architecture
 
+For the detailed product positioning, responsibility matrix,
+session/account boundary, integration contract, and deployment models, see
+[`agentscope-agentfoundry-boundary.md`](agentscope-agentfoundry-boundary.md).
+
 AgentFoundry is an independent enterprise Agent platform. It is not a frontend shell for AgentScope and it should not copy AgentScope code into this repository.
 
-AgentScope is one replaceable runtime provider behind AgentFoundry's backend runtime adapter. The platform owns tenants, users, agents, tool governance, knowledge metadata, long-term memory policy, audit, approvals, run history, and console APIs.
+AgentScope 2.0 is AgentFoundry's core and preferred Agent runtime platform, not merely a narrow reasoning SDK. It provides both an in-process Agent Framework and an embeddable or standalone FastAPI Application Service covering Agent, Chat, Session, Credential, Model, Knowledge Base, Schedule, Workspace, permissions, middleware, and distributed runtime facilities.
+
+AgentFoundry or its integrated enterprise IAM owns enterprise identity facts, tenant/organization membership, enterprise RBAC policy, Agent product publishing, asset governance, approvals, unified run evidence, audit, and console APIs. AgentScope provides runtime Agent/session state and resource/tool enforcement capabilities. The runtime adapter preserves deployment and version boundaries; it must not be used to recreate AgentScope capabilities behind a provider-neutral facade.
+
+This responsibility model describes the intended boundary, not a claim that every AgentScope capability is already wired into the current Foundry adapter. The native adapter currently connects Agent execution, weather tools, session lifecycle, runtime events, and enterprise projections. Memory, Knowledge/RAG, Workflow, Schedule, Team, and Workspace/Sandbox requests are rejected as unconnected capabilities. Existing Agents and enterprise workflows can still run through explicitly labelled Foundry compatibility paths.
 
 ```text
 Platform Console
   -> AgentFoundry Backend API
     -> Platform Services
       -> Runtime Adapter
-        -> AgentScope or another Agent runtime provider
-          -> Model, tool, memory, RAG, and workflow execution
+        -> AgentScope Framework or AgentScope Application Service
+          -> currently connected: agent, session, model, tool, permission, event
+          -> available in AgentScope but not yet connected here: memory, RAG,
+             workspace, schedule, team, and distributed execution
     -> Persistence, audit, policy, and integration providers
 ```
 
 ## Product Boundary
 
-AgentFoundry owns the enterprise control plane:
+AgentFoundry owns the enterprise product control plane and governance facts:
 
-- Tenant and workspace isolation
+- Enterprise tenant, organization, role, and membership lifecycle
 - User, role, and membership management
 - Agent catalog, versioning, publishing, and run history
 - Tool catalog, permissions, approvals, and execution evidence
-- Knowledge base metadata, document lifecycle, retrieval logs, and grounding evidence
+- Enterprise knowledge asset metadata, visibility, retention, and grounding evidence
 - Long-term memory policy, retention, and user/session scoping
-- Workflow templates, workflow runs, triggers, and human approvals
+- Product workflow templates, triggers, policy, and human approvals
 - Runtime provider configuration, observability, audit, and compliance controls
 
-Runtime providers own execution internals:
+AgentScope provides the target Agent application runtime and execution capabilities:
 
 - Model invocation
 - Agent reasoning loops
-- Provider-specific tool calling
-- Provider-specific memory and RAG primitives
-- Provider-specific distributed execution
+- Tool calling, middleware, events, and execution-point permissions
+- Runtime Agent, Chat, Session, history, and AgentState
+- Runtime Credential and Model construction
+- Knowledge Base ingestion/retrieval and RAG execution
+- Workspace/Sandbox, Schedule, Team/SubAgent, and distributed execution
+
+Responsibilities that cross the boundary are split by governance versus execution: Foundry governs enterprise credentials while Scope constructs runtime credentials; Foundry governs knowledge assets while Scope runs ingestion and retrieval; Foundry governs schedule policy while Scope runs scheduled work; Foundry stores unified enterprise run/audit records while Scope emits runtime events and traces.
+
+Only the connected subset is active in this repository today. The remaining bullets define ownership for later adapter work; they do not authorize implicit fallback or imply that the current adapter already invokes those AgentScope services.
 
 The backend adapter converts AgentFoundry requests into provider-specific runtime calls and converts runtime results back into platform records.
 
@@ -92,11 +108,11 @@ The current `main.py` can remain as the compatibility entrypoint while productio
 
 ## Runtime Adapter
 
-The runtime adapter is the only layer that should know how AgentFoundry talks to AgentScope.
+The runtime adapter is the only layer that should know how AgentFoundry talks to AgentScope, whether AgentScope is embedded in-process or deployed as an Application Service.
 
 ```text
 AgentFoundry agent run request
-  -> tenant, user, policy, knowledge, memory, approval context
+  -> tenant, user, policy, approval, and explicitly supported resource context
   -> RuntimeInvocationRequest
   -> AgentScopeRuntimeAdapter.invoke()
   -> RuntimeInvocationResult
@@ -109,7 +125,10 @@ Adapter rules:
 - Platform services never depend on AgentScope internals.
 - Runtime results must include provider identity, execution mode, capabilities, evidence, and raw provider references when available.
 - AgentScope upgrades should affect the adapter/provider package, not the console routes or platform data model.
-- Additional providers can be added later, for example a remote AgentScope service, LangGraph, or an internal runtime.
+- AgentScope Application Service APIs should be reused for Agent, Chat, Session, Knowledge Base, Schedule, and Workspace lifecycle when service mode is selected.
+- Provider abstraction is a compatibility boundary, not a reason to reduce AgentScope to one `invoke` call or build a parallel runtime.
+- Additional providers may be supported later without weakening AgentScope's status as the core and preferred runtime platform.
+- Capability negotiation is strict: a requested native capability must be connected by the selected provider or the run fails before invocation. It does not fall through to `foundry_compatibility`.
 
 ## Persistence
 

@@ -4,7 +4,9 @@ AgentFoundry is an enterprise Agent platform for building, running, governing, a
 
 The repository is currently a runnable product prototype moving toward a production-grade SaaS platform. It is not a production system yet.
 
-AgentFoundry is not a single chatbot and is not a frontend shell for AgentScope. It is the control plane for enterprise Agent operations: create Agents, bind tools and knowledge, run them under policy, route human approvals, capture evidence, write memory, and keep audit records.
+AgentFoundry is not a single chatbot and is not a frontend shell for AgentScope. It is the enterprise product control plane and governance layer for Agent operations: create and publish Agent products, govern tools and knowledge assets, apply enterprise identity and policy, route human approvals, and maintain unified run evidence and audit records.
+
+AgentScope 2.0 is AgentFoundry's core and preferred Agent runtime platform, not merely a narrow reasoning SDK. It provides both an in-process Agent Framework and an embeddable or standalone Agent Application Service, including Agent, Chat, Session, Credential, Model, Knowledge Base, Schedule, Workspace, Permission, Middleware, and distributed execution capabilities.
 
 Target users:
 
@@ -24,7 +26,11 @@ Configure models and runtime providers
   -> Persist run history, memory, retrieval records, and audit events
 ```
 
-AgentFoundry is an independent product repository. It owns the platform console, backend APIs, tenant-aware tools, workflows, approval gates, audit views, knowledge assistant flow, memory operations, and runtime adapter boundary. AgentScope is a replaceable Agent runtime provider behind the backend adapter, not the AgentFoundry backend itself.
+AgentFoundry is an independent product repository. It owns the platform console and APIs, enterprise identity and organization integration, Agent product publishing, asset governance, approval policy, unified run evidence, and enterprise audit views. AgentScope provides the preferred runtime capabilities for Agent/session state, tool and resource permission enforcement, workspace isolation, knowledge retrieval, scheduling, and team execution.
+
+The current native Foundry adapter connects explicit runtime selection, Agent execution, weather-tool execution, session lifecycle, runtime events, and enterprise run/audit projections. Memory, Knowledge/RAG, Workflow, Schedule, Team, and Workspace/Sandbox are capability boundaries but are not yet connected to the native adapter; requesting one fails explicitly instead of silently using an unrelated provider. Existing Agents may still use the explicitly labelled `foundry_compatibility` path, and enterprise workflow execution remains a compatibility path during migration.
+
+The runtime adapter preserves version, type, and deployment boundaries between the two projects. It supports either an embedded AgentScope runtime or a separately deployed AgentScope Application Service, but it must not recreate AgentScope capabilities behind a provider-neutral facade. See [`docs/agentscope-agentfoundry-boundary.md`](docs/agentscope-agentfoundry-boundary.md) for the detailed responsibility and data-ownership model.
 
 ## Repository Layout
 
@@ -38,12 +44,12 @@ agentfoundry/
 
 ## Prerequisites
 
-Local development expects:
+The current local development scripts expect:
 
 - `uv` for running the Python backend.
 - `pnpm` for running the Vite frontend.
 - Redis, or Docker so the start script can launch Redis automatically.
-- A local AgentScope checkout next to this repository, or `AGENTSCOPE_DIR` pointing to one.
+- A local AgentScope checkout next to this repository, or `AGENTSCOPE_DIR` pointing to one. This is a development-script requirement, not a production deployment requirement.
 
 Expected local stack:
 
@@ -53,7 +59,9 @@ agentfoundry-stack/
   agentfoundry/   This repository
 ```
 
-The local scripts currently run the backend through the AgentScope Python environment. AgentScope is still a runtime dependency behind AgentFoundry's adapter boundary; it is not the AgentFoundry backend and should not own AgentFoundry's platform data model or API contracts.
+The local scripts currently run the backend through the AgentScope Python environment. Production deployment does not require an AgentScope source checkout: it can install a pinned AgentScope package or call a separately deployed AgentScope Application Service.
+
+AgentScope is the core Agent runtime platform, while AgentFoundry remains the enterprise-facing product control plane. AgentScope should own and execute its runtime models and services; it should not own AgentFoundry's enterprise organization master data, product catalog, unified audit model, or external platform API contracts.
 
 ## Start Locally
 
@@ -136,7 +144,7 @@ Development behavior:
 
 - Local JSON/JSONL files are used for development storage and smoke-test data.
 - The enterprise knowledge assistant can answer from the local fallback knowledge base.
-- Runtime behavior can use local/mock provider paths while the stable AgentScope adapter is being built.
+- Existing Agents can use the explicitly labelled `foundry_compatibility` path during migration; native AgentScope requests never silently fall back to it.
 
 Production work still needs:
 
@@ -211,7 +219,7 @@ Still required for production:
 - Complete backend API/service/repository separation.
 - Production database, migrations, transactions, and tenant-scoped constraints.
 - Real knowledge ingestion, chunking, embedding, retrieval, and retrieval logs.
-- Stable AgentScope runtime adapter integration behind provider-neutral contracts.
+- Complete AgentScope Framework/Application Service integration through a stable adapter, reusing AgentScope Session, Chat, Credential, Knowledge Base, Schedule, Workspace, Permission, and event capabilities where applicable.
 - Authentication, authorization, immutable audit, secret handling, deployment, and observability.
 - Continued `/platform/*` page work so each route behaves like an enterprise SaaS workspace.
 
@@ -229,6 +237,8 @@ Stage 1.1: Extract backend request schemas from backend/main.py into a schemas m
 
 Related docs:
 
+- `docs/agentscope-agentfoundry-boundary.md`
+- `docs/agentscope-integration-correction-plan.md`
 - `docs/production-plan.md`
 - `docs/product-roadmap.md`
 - `docs/architecture.md`
