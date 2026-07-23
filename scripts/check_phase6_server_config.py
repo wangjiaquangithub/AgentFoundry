@@ -39,6 +39,7 @@ def check_behavior() -> list[str]:
             ),
             "HOST": "127.0.0.1",
             "PORT": "9000",
+            "AGENTFOUNDRY_IDENTITY_PROXY_SECRET": "x" * 32,
         }
     )
     if production.reload or not production.production_mode:
@@ -78,6 +79,23 @@ def check_behavior() -> list[str]:
         ),
         ({"UVICORN_RELOAD": "sometimes"}, "invalid reload boolean"),
         ({"PORT": "70000"}, "invalid port"),
+        (
+            {
+                "AGENTFOUNDRY_ENV": "production",
+                "UVICORN_RELOAD": "0",
+                "CORS_ALLOW_ORIGINS": "https://console.example.com",
+            },
+            "production missing identity proxy secret",
+        ),
+        (
+            {
+                "AGENTFOUNDRY_ENV": "production",
+                "UVICORN_RELOAD": "0",
+                "CORS_ALLOW_ORIGINS": "https://console.example.com",
+                "AGENTFOUNDRY_IDENTITY_PROXY_SECRET": "x" * 31,
+            },
+            "production short identity proxy secret",
+        ),
     )
     for environ, label in rejected_cases:
         try:
@@ -129,6 +147,7 @@ def check_documentation_and_gate() -> list[str]:
     for phrase in (
         "UVICORN_RELOAD=0",
         "CORS_ALLOW_ORIGINS=https://console.example.com",
+        "AGENTFOUNDRY_IDENTITY_PROXY_SECRET=",
         "Production mode rejects reload, wildcard CORS, and an empty CORS allowlist.",
     ):
         if phrase not in env_text:
@@ -137,6 +156,7 @@ def check_documentation_and_gate() -> list[str]:
         "生产环境必须设为 `0`",
         "生产环境必须显式列出 origin",
         "AGENTFOUNDRY_ENV=production",
+        "AGENTFOUNDRY_IDENTITY_PROXY_SECRET",
     ):
         if phrase not in readme:
             errors.append(f"backend/README.md is missing {phrase!r}")

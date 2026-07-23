@@ -52,6 +52,7 @@ from api.platform_admin import (
     create_platform_admin_router,
 )
 from api.health import create_health_router
+from api.request_authentication import RequestIdentityAuthenticationMiddleware
 from api.request_logging import StructuredRequestLoggingMiddleware
 from api.tools import ToolAuditRouteDependencies, create_tool_audit_router
 from api.workflows import (
@@ -583,6 +584,11 @@ app = create_app(
             allow_origins=list(server_config.cors_allow_origins),
             allow_methods=["*"],
             allow_headers=["*"],
+        ),
+        Middleware(
+            RequestIdentityAuthenticationMiddleware,
+            production_mode=server_config.production_mode,
+            shared_secret=server_config.identity_proxy_secret,
         ),
     ],
     title="AgentScope Enterprise Knowledge Assistant",

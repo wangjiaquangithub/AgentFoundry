@@ -25,6 +25,10 @@ CHECKS = (
         [sys.executable, "scripts/check_phase6_request_logging.py"],
     ),
     (
+        "production request identity authentication",
+        [sys.executable, "scripts/check_phase6_request_authentication.py"],
+    ),
+    (
         "backend logging configuration",
         [sys.executable, "scripts/check_phase6_logging_config.py"],
     ),

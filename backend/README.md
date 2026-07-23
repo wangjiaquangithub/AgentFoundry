@@ -204,7 +204,7 @@ tail -f /Users/wangjiaquan/project/agentscope/examples/enterprise_knowledge_assi
 2. Agent 管理：把 `企业知识助手` 做成可配置模板，支持复制出客服助手、数据分析助手等。
 3. 默认开发配置：让本地演示自动带上 API endpoint、默认用户和示例问题。
 4. 真实系统接入：把 `fixtures/tenant_data.local.json` 换成企业 HTTP API、工单系统、数据库或 BI。
-5. 权限生产化：把 `X-User-ID` 替换成真实登录态，并按租户、部门、角色生成工具授权策略。
+5. 权限生产化：把可信代理认证继续扩展到真实登录态，并按租户、部门、角色生成工具授权策略。
 
 ## 接真实企业系统
 
@@ -381,6 +381,7 @@ ENTERPRISE_TOOL_POLICY_MODE=strict
 | `PORT` | `8000` | Uvicorn port |
 | `UVICORN_RELOAD` | `1` | 是否开启 reload；生产环境必须设为 `0` |
 | `CORS_ALLOW_ORIGINS` | `*` | 逗号分隔的 CORS origin；生产环境必须显式列出 origin，禁止空值和 `*` |
+| `AGENTFOUNDRY_IDENTITY_PROXY_SECRET` | 空 | 可信入口代理身份签名密钥；生产环境必填且至少 32 字符 |
 
 开发环境保留热重载和宽松 CORS 默认值。生产部署必须覆盖这两个值；服务会在
 应用装配阶段拒绝不安全配置：
@@ -389,7 +390,28 @@ ENTERPRISE_TOOL_POLICY_MODE=strict
 AGENTFOUNDRY_ENV=production
 UVICORN_RELOAD=0
 CORS_ALLOW_ORIGINS=https://console.example.com,https://admin.example.com
+AGENTFOUNDRY_IDENTITY_PROXY_SECRET=<从密钥管理系统注入的随机值>
 ```
+
+### 请求身份认证边界
+
+开发环境继续兼容直接传入 `X-User-ID` 和 `X-Tenant-ID`。生产环境不再无条件
+信任这两个头：可信入口代理必须同时传入
+`X-AgentFoundry-Identity-Timestamp` 和
+`X-AgentFoundry-Identity-Signature`。签名是以下 UTF-8 文本使用
+`AGENTFOUNDRY_IDENTITY_PROXY_SECRET` 计算的 HMAC-SHA256 十六进制值：
+
+```text
+v1
+<Unix 秒级时间戳>
+<X-User-ID>
+<X-Tenant-ID 或空字符串>
+```
+
+身份断言仅在前后 5 分钟内有效；签名缺失、过期或不匹配均返回 HTTP 401。
+`GET /health` 和 `GET /ready` 不要求身份，供编排平台探测。该边界用于可信
+代理到 AgentFoundry 的内部跳转，尚不替代面向用户的 OAuth/OIDC 登录、会话
+撤销和平台 RBAC。
 
 ### 健康探针
 
@@ -400,7 +422,7 @@ CORS_ALLOW_ORIGINS=https://console.example.com,https://admin.example.com
 
 ## 从 MVP 到生产
 
-- 认证：把 `X-User-ID` 换成真实登录态，并把租户、部门、角色、数据权限写进 claims 或后端权限服务。
+- 认证：在现有可信代理签名边界上接入 OAuth/OIDC 登录与会话管理，并把租户、部门、角色、数据权限写进 claims 或后端权限服务。
 - 工具：继续按当前 connector 抽象扩展数据库、工单、CRM、BI、代码执行沙箱等真实工具。
 - 权限与审计：当前只读工具已有本地授权策略和 JSONL 审计作为开发兼容路径；生产环境需要通过 PostgreSQL 审计事件、IAM/RBAC、写操作审批流、trace id 和错误码形成可追踪记录。
 - RAG：本地 Qdrant 适合开发；生产建议使用远程 Qdrant 或托管向量库，并把 blob store 换成 S3/OSS/内部对象存储。

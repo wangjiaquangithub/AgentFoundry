@@ -71,11 +71,18 @@ class StructuredRequestLoggingMiddleware(BaseHTTPMiddleware):
             "duration_ms": duration_ms,
         }
 
-        tenant = request.headers.get("X-Tenant-ID")
+        identity_state = getattr(request, "state", None)
+        identity_source = getattr(identity_state, "identity_source", None)
+        if identity_source is None:
+            tenant = request.headers.get("X-Tenant-ID")
+            user = request.headers.get("X-User-ID")
+        else:
+            tenant = getattr(identity_state, "authenticated_tenant_id", None)
+            user = getattr(identity_state, "authenticated_user_id", None)
+
         if tenant:
             record["tenant"] = tenant
 
-        user = request.headers.get("X-User-ID")
         if user:
             record["user"] = user
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 
@@ -26,6 +26,7 @@ class ServerConfig:
     port: int
     reload: bool
     cors_allow_origins: tuple[str, ...]
+    identity_proxy_secret: str | None = field(repr=False)
 
     @property
     def production_mode(self) -> bool:
@@ -76,6 +77,10 @@ def resolve_server_config(environ: Mapping[str, Any] | None = None) -> ServerCon
             default="1",
         ),
         cors_allow_origins=_parse_cors_origins(source.get("CORS_ALLOW_ORIGINS")),
+        identity_proxy_secret=(
+            str(source.get("AGENTFOUNDRY_IDENTITY_PROXY_SECRET") or "").strip()
+            or None
+        ),
     )
 
     if not config.production_mode:
@@ -88,5 +93,10 @@ def resolve_server_config(environ: Mapping[str, Any] | None = None) -> ServerCon
         raise ServerConfigurationError(
             "CORS_ALLOW_ORIGINS must list explicit origins in production; "
             "wildcard and empty values are not allowed"
+        )
+    if not config.identity_proxy_secret or len(config.identity_proxy_secret) < 32:
+        raise ServerConfigurationError(
+            "AGENTFOUNDRY_IDENTITY_PROXY_SECRET must contain at least 32 characters "
+            "in production"
         )
     return config

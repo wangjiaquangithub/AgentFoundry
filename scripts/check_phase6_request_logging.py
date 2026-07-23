@@ -42,6 +42,7 @@ def _request(
     tenant: str | None = None,
     user: str | None = None,
     request_id: str | None = None,
+    state: Any | None = None,
 ) -> Any:
     headers = {}
     if tenant is not None:
@@ -54,6 +55,7 @@ def _request(
         method="POST",
         url=SimpleNamespace(path="/platform/agents/run"),
         headers=headers,
+        state=state or SimpleNamespace(),
     )
 
 
@@ -93,6 +95,46 @@ def check_optional_context() -> list[str]:
     unexpected = sorted({"tenant", "user", "error"}.intersection(record))
     if unexpected:
         return [f"request record includes absent optional fields: {unexpected}"]
+    return []
+
+
+def check_authenticated_identity_context() -> list[str]:
+    authenticated = StructuredRequestLoggingMiddleware._build_record(
+        _request(
+            tenant="forged-tenant",
+            user="forged:user",
+            state=SimpleNamespace(
+                identity_source="trusted_proxy_hmac",
+                authenticated_tenant_id="acme",
+                authenticated_user_id="acme:alice",
+            ),
+        ),
+        SimpleNamespace(status_code=200),
+        1.0,
+        None,
+        request_id="req-authenticated",
+    )
+    if authenticated.get("tenant") != "acme" or authenticated.get("user") != "acme:alice":
+        return [f"request log must prefer authenticated identity state: {authenticated!r}"]
+
+    rejected = StructuredRequestLoggingMiddleware._build_record(
+        _request(
+            tenant="forged-tenant",
+            user="forged:user",
+            state=SimpleNamespace(
+                identity_source="rejected",
+                authenticated_tenant_id=None,
+                authenticated_user_id=None,
+            ),
+        ),
+        SimpleNamespace(status_code=401),
+        1.0,
+        None,
+        request_id="req-rejected",
+    )
+    leaked = sorted({"tenant", "user"}.intersection(rejected))
+    if leaked:
+        return [f"rejected request log leaked untrusted identity headers: {rejected!r}"]
     return []
 
 
@@ -184,6 +226,7 @@ def main() -> int:
     errors: list[str] = []
     errors.extend(check_success_record())
     errors.extend(check_optional_context())
+    errors.extend(check_authenticated_identity_context())
     errors.extend(check_request_id_resolution())
     errors.extend(check_error_record())
     errors.extend(check_dispatch_propagates_request_id())
