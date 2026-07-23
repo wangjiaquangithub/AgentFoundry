@@ -108,7 +108,7 @@ class PlatformApprovalService:
         actor: str | None,
     ) -> dict[str, str]:
         requested_by = actor
-        user_id = payload.user_id or requested_by or "acme:alice"
+        user_id = requested_by or payload.user_id or "acme:alice"
         return {
             "user_id": user_id,
             "requested_by": requested_by or user_id,
