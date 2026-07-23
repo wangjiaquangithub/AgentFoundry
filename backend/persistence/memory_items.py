@@ -184,6 +184,16 @@ def _validate_memory_item_write_created_at(
         raise ValueError(f"Memory item {record.id} write rejected a future created time.")
 
 
+def _validate_memory_item_write_identity(record: MemoryItemRecord) -> None:
+    for field_name, value in (
+        ("id", record.id),
+        ("tenant id", record.tenant_id),
+        ("user id", record.user_id),
+    ):
+        if not value.strip():
+            raise ValueError(f"Memory item write requires a non-blank {field_name}.")
+
+
 def _validate_memory_item_read_created_at(
     record: MemoryItemRecord,
     *,
@@ -404,6 +414,7 @@ class PostgresMemoryItemWriteRepository:
 
     def append_memory_item(self, record: MemoryItemRecord) -> MemoryItemRecord:
         as_of = datetime.now(timezone.utc)
+        _validate_memory_item_write_identity(record)
         _validate_memory_item_write_created_at(record, as_of=as_of)
         _validate_memory_item_write_expiry(
             record,
