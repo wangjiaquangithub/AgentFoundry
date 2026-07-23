@@ -21,6 +21,10 @@ CHECKS = (
         [sys.executable, "scripts/check_phase6_audit_event_immutability.py"],
     ),
     (
+        "structured request logging",
+        [sys.executable, "scripts/check_phase6_request_logging.py"],
+    ),
+    (
         "secret hygiene",
         [sys.executable, "scripts/check_phase6_secret_hygiene.py"],
     ),
