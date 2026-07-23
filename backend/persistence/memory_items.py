@@ -130,6 +130,16 @@ def _validate_memory_item_read_content(record: MemoryItemRecord) -> None:
         raise ValueError("Memory item read requires non-blank string content.")
 
 
+def _validate_memory_item_read_request_identity(
+    field_name: str,
+    value: Any,
+) -> None:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(
+            f"Memory item read requires a non-blank request {field_name}."
+        )
+
+
 def _validate_memory_item_read_count(
     records: list[MemoryItemRecord],
     *,
@@ -281,6 +291,7 @@ class SQLiteMemoryItemReadRepository:
         source_run_id: str | None = None,
         limit: int = 50,
     ) -> list[MemoryItemRecord]:
+        _validate_memory_item_read_request_identity("tenant id", tenant_id)
         as_of = datetime.now(timezone.utc)
         result_limit = self._clamp_limit(limit)
         query = """
@@ -332,6 +343,8 @@ class SQLiteMemoryItemReadRepository:
         tenant_id: str,
         memory_item_id: str,
     ) -> MemoryItemRecord | None:
+        _validate_memory_item_read_request_identity("tenant id", tenant_id)
+        _validate_memory_item_read_request_identity("item id", memory_item_id)
         as_of = datetime.now(timezone.utc)
         with self._database.connect() as connection:
             row = connection.execute(
@@ -381,6 +394,7 @@ class PostgresMemoryItemReadRepository:
         source_run_id: str | None = None,
         limit: int = 50,
     ) -> list[MemoryItemRecord]:
+        _validate_memory_item_read_request_identity("tenant id", tenant_id)
         as_of = datetime.now(timezone.utc)
         result_limit = self._clamp_limit(limit)
         query = """
@@ -433,6 +447,8 @@ class PostgresMemoryItemReadRepository:
         tenant_id: str,
         memory_item_id: str,
     ) -> MemoryItemRecord | None:
+        _validate_memory_item_read_request_identity("tenant id", tenant_id)
+        _validate_memory_item_read_request_identity("item id", memory_item_id)
         as_of = datetime.now(timezone.utc)
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
