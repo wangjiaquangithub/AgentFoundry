@@ -6,6 +6,7 @@ from typing import Any, Callable, Mapping, NoReturn
 
 from fastapi import APIRouter, HTTPException, Request
 
+from api.request_identity import get_request_identity
 from api.schemas import (
     EnterpriseConnectorConfigSaveRequest,
     EnterpriseConnectorTestRequest,
@@ -110,9 +111,10 @@ def create_platform_admin_router(
     async def enterprise_platform_status(request: Request) -> dict[str, Any]:
         """Return enterprise platform state for the frontend console."""
         status_service = deps.status_service()
+        identity = get_request_identity(request)
         try:
             context = status_service.status_request_context(
-                user_id=request.headers.get("X-User-ID"),
+                user_id=identity.user_id,
             )
         except PlatformConnectorConfigServiceError as exc:
             _raise_service_error(exc)
@@ -131,10 +133,11 @@ def create_platform_admin_router(
     @router.get("/enterprise/platform/connectors")
     async def enterprise_platform_connectors(request: Request) -> dict[str, Any]:
         """Return enterprise data source connector readiness and tenant scope."""
+        identity = get_request_identity(request)
         try:
             connector_config_service = deps.connector_config_service()
             return connector_config_service.platform_connectors_response(
-                user_id=request.headers.get("X-User-ID"),
+                user_id=identity.user_id,
                 connector_name=deps.connector_name,
                 env=deps.env,
                 identity_metadata=deps.identity_metadata,
@@ -146,9 +149,10 @@ def create_platform_admin_router(
     async def enterprise_platform_governance(request: Request) -> dict[str, Any]:
         """Return tenant, identity, approval, and audit governance state."""
         status_service = deps.status_service()
+        identity = get_request_identity(request)
         try:
             return status_service.governance_request_payload(
-                user_id=request.headers.get("X-User-ID"),
+                user_id=identity.user_id,
             )
         except PlatformConnectorConfigServiceError as exc:
             _raise_service_error(exc)
@@ -156,9 +160,10 @@ def create_platform_admin_router(
     @router.get("/enterprise/platform/members")
     async def enterprise_platform_members(request: Request) -> dict[str, Any]:
         """Return the editable enterprise member registry."""
+        identity = get_request_identity(request)
         try:
             return deps.member_service().registry_response_payload(
-                user_id=request.headers.get("X-User-ID"),
+                user_id=identity.user_id,
                 request_context=lambda user_id: deps.status_service().status_request_context(
                     user_id=user_id,
                 ),
@@ -175,10 +180,11 @@ def create_platform_admin_router(
         request: Request,
     ) -> dict[str, Any]:
         """Create or replace one enterprise platform member."""
+        identity = get_request_identity(request)
         try:
             return deps.member_service().create_member_response_payload(
                 payload=payload.model_dump(),
-                actor=request.headers.get("X-User-ID"),
+                actor=identity.user_id,
                 identity_metadata=deps.identity_metadata,
                 registry_path=deps.members_path,
             )
@@ -192,11 +198,12 @@ def create_platform_admin_router(
         request: Request,
     ) -> dict[str, Any]:
         """Update one enterprise platform member."""
+        identity = get_request_identity(request)
         try:
             return deps.member_service().update_member_response_payload(
                 user_id=user_id,
                 payload=payload.model_dump(exclude_unset=True),
-                actor=request.headers.get("X-User-ID"),
+                actor=identity.user_id,
                 identity_metadata=deps.identity_metadata,
                 registry_path=deps.members_path,
             )
@@ -209,10 +216,11 @@ def create_platform_admin_router(
         request: Request,
     ) -> dict[str, Any]:
         """Soft-delete one enterprise platform member by marking it inactive."""
+        identity = get_request_identity(request)
         try:
             return deps.member_service().deactivate_member_response_payload(
                 user_id=user_id,
-                actor=request.headers.get("X-User-ID"),
+                actor=identity.user_id,
                 identity_metadata=deps.identity_metadata,
                 registry_path=deps.members_path,
             )
@@ -226,11 +234,12 @@ def create_platform_admin_router(
         tenant: str | None = None,
     ) -> dict[str, Any]:
         """Return editable enterprise tool authorization policy state."""
+        identity = get_request_identity(request)
         try:
             return deps.tool_policy_service().policy_request_payload(
                 authorization_policy=deps.get_tool_authorization_policy(),
                 query_user_id=user_id,
-                header_user_id=request.headers.get("X-User-ID"),
+                header_user_id=identity.user_id,
                 tenant=tenant,
             )
         except PlatformToolPolicyServiceError as exc:
@@ -242,13 +251,14 @@ def create_platform_admin_router(
         payload: EnterpriseToolPolicyUpdateRequest,
     ) -> dict[str, Any]:
         """Persist one tenant user's enterprise tool authorization policy."""
+        identity = get_request_identity(request)
         try:
             (
                 authorization_policy,
                 response_payload,
             ) = deps.tool_policy_service().update_user_policy_request_payload(
                 payload.model_dump(),
-                actor_user_id=request.headers.get("X-User-ID"),
+                actor_user_id=identity.user_id,
             )
         except PlatformToolPolicyServiceError as exc:
             _raise_service_error(exc)
@@ -270,10 +280,11 @@ def create_platform_admin_router(
         request: Request,
     ) -> dict[str, Any]:
         """Persist a tenant-scoped connector configuration."""
+        identity = get_request_identity(request)
         try:
             return deps.connector_config_service().save_config_payload(
                 payload,
-                user_id=request.headers.get("X-User-ID"),
+                user_id=identity.user_id,
             )
         except PlatformConnectorConfigServiceError as exc:
             _raise_service_error(exc)
@@ -291,8 +302,9 @@ def create_platform_admin_router(
     @router.get("/enterprise/platform/config/export")
     async def export_enterprise_platform_config(request: Request) -> dict[str, Any]:
         """Export portable platform configuration without runtime data or secrets."""
+        identity = get_request_identity(request)
         return export_platform_config(
-            actor_user_id=request.headers.get("X-User-ID"),
+            actor_user_id=identity.user_id,
         )
 
     @router.post("/enterprise/platform/config/import")
@@ -301,9 +313,10 @@ def create_platform_admin_router(
         request: Request,
     ) -> dict[str, Any]:
         """Import portable platform configuration by merging or replacing sections."""
+        identity = get_request_identity(request)
         connector_config_service = deps.connector_config_service()
         actor = connector_config_service.import_actor(
-            request.headers.get("X-User-ID"),
+            identity.user_id,
         )
         try:
             mode, incoming = connector_config_service.normalize_config_import_request(

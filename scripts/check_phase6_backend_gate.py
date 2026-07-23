@@ -29,6 +29,10 @@ CHECKS = (
         [sys.executable, "scripts/check_phase6_request_authentication.py"],
     ),
     (
+        "canonical request identity consumption",
+        [sys.executable, "scripts/check_phase6_request_identity_consumption.py"],
+    ),
+    (
         "backend logging configuration",
         [sys.executable, "scripts/check_phase6_logging_config.py"],
     ),

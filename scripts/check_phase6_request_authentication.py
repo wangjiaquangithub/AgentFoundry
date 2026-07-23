@@ -45,7 +45,7 @@ from api.request_authentication import (  # noqa: E402
 )
 
 
-SECRET = "phase6-request-identity-secret-value"
+SECRET = "replace-with-local-secret"
 NOW = 1_800_000_000
 
 
