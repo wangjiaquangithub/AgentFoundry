@@ -17,6 +17,7 @@ AGENTS_MODULE = BACKEND_DIR / "api" / "agents.py"
 TOOLS_MODULE = BACKEND_DIR / "api" / "tools.py"
 MODEL_CONFIGS_MODULE = BACKEND_DIR / "api" / "model_configs.py"
 KNOWLEDGE_MODULE = BACKEND_DIR / "api" / "knowledge.py"
+WORKFLOWS_MODULE = BACKEND_DIR / "api" / "workflows.py"
 PHASE6_GATE = ROOT / "scripts" / "check_phase6_backend_gate.py"
 
 if str(BACKEND_DIR) not in sys.path:
@@ -152,6 +153,20 @@ def check_knowledge_consumption() -> list[str]:
     return errors
 
 
+def check_workflows_consumption() -> list[str]:
+    source = WORKFLOWS_MODULE.read_text(encoding="utf-8")
+    errors: list[str] = []
+    if "from api.request_identity import get_request_identity" not in source:
+        errors.append("workflows.py must import the canonical identity accessor")
+    if 'request.headers.get("X-User-ID")' in source or "request.headers" in source:
+        errors.append("workflows.py must not consume raw request identity headers")
+    if source.count("get_request_identity(request)") != 7:
+        errors.append(
+            "workflows.py must resolve canonical identity for all 7 identity-aware routes"
+        )
+    return errors
+
+
 def check_gate_wiring() -> list[str]:
     gate = PHASE6_GATE.read_text(encoding="utf-8")
     if "scripts/check_phase6_request_identity_consumption.py" not in gate:
@@ -167,6 +182,7 @@ def main() -> int:
         + check_tools_consumption()
         + check_model_configs_consumption()
         + check_knowledge_consumption()
+        + check_workflows_consumption()
         + check_gate_wiring()
     )
     if errors:

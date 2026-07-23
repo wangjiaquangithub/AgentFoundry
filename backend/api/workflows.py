@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Request
 
+from api.request_identity import get_request_identity
 from api.schemas import (
     EnterpriseApprovalCreateRequest,
     EnterpriseApprovalDecisionRequest,
@@ -163,10 +164,11 @@ def create_workflow_governance_router(
     @router.get("/enterprise/platform/ops/tasks")
     async def enterprise_platform_ops_tasks(request: Request) -> dict[str, Any]:
         """List open operator tasks for the current enterprise platform tenant."""
+        identity = get_request_identity(request)
         status_service = deps.status_service()
         try:
             request_context = status_service.status_request_context(
-                user_id=request.headers.get("X-User-ID"),
+                user_id=identity.user_id,
             )
         except PlatformConnectorConfigServiceError as exc:
             _raise_service_error(exc)
@@ -182,12 +184,13 @@ def create_workflow_governance_router(
         request: Request,
     ) -> dict[str, Any]:
         """Resolve deterministic platform operations tasks from the console."""
+        identity = get_request_identity(request)
         status_service = deps.status_service()
         try:
             resolve_context = status_service.resolve_ops_task_context(
                 task_code=task_code,
-                actor=request.headers.get("X-User-ID"),
-                user_id=request.headers.get("X-User-ID"),
+                actor=identity.user_id,
+                user_id=identity.user_id,
             )
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -227,10 +230,11 @@ def create_workflow_governance_router(
         request: Request,
     ) -> dict[str, Any]:
         """Update mutable workflow template metadata from the platform console."""
+        identity = get_request_identity(request)
         workflow_service = deps.workflow_template_service()
         update_context = workflow_service.update_template_context(
             workflow_type=workflow_type,
-            actor=request.headers.get("X-User-ID"),
+            actor=identity.user_id,
         )
         try:
             workflow, workflows = workflow_service.update_template(
@@ -292,10 +296,11 @@ def create_workflow_governance_router(
         request: Request,
     ) -> dict[str, Any]:
         """Create a pending approval request for a high-risk platform action."""
+        identity = get_request_identity(request)
         approval_service = deps.approval_service()
         create_context = approval_service.build_create_request_context(
             payload=payload,
-            actor=request.headers.get("X-User-ID"),
+            actor=identity.user_id,
         )
         try:
             runtime = deps.connector_config_service().enterprise_runtime_context(
@@ -338,10 +343,11 @@ def create_workflow_governance_router(
         request: Request,
     ) -> dict[str, Any]:
         """Approve a pending platform governance request."""
+        identity = get_request_identity(request)
         approval_service = deps.approval_service()
         decision_payload = approval_service.build_decision_payload(
             payload=payload,
-            actor=request.headers.get("X-User-ID"),
+            actor=identity.user_id,
         )
         tenant = _runtime_tenant_for_user(deps, decision_payload["decided_by"])
         try:
@@ -362,10 +368,11 @@ def create_workflow_governance_router(
         request: Request,
     ) -> dict[str, Any]:
         """Reject a pending platform governance request."""
+        identity = get_request_identity(request)
         approval_service = deps.approval_service()
         decision_payload = approval_service.build_decision_payload(
             payload=payload,
-            actor=request.headers.get("X-User-ID"),
+            actor=identity.user_id,
         )
         tenant = _runtime_tenant_for_user(deps, decision_payload["decided_by"])
         try:
@@ -385,10 +392,11 @@ def create_workflow_governance_router(
         request: Request,
     ) -> dict[str, Any]:
         """Run a predefined enterprise automation workflow from the platform."""
+        identity = get_request_identity(request)
         workflow_run_service = deps.workflow_run_service()
         run_request = workflow_run_service.build_run_request_payload(
             payload=payload,
-            actor=request.headers.get("X-User-ID"),
+            actor=identity.user_id,
         )
         user_id = run_request["user_id"]
         requested_agent_id = run_request["requested_agent_id"]
