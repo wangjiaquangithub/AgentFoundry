@@ -401,10 +401,6 @@ class PlatformApprovalService:
             "workflow_type": _optional_filter(
                 str(approval.get("workflow_type") or "")
             ),
-            "reason": _optional_filter(str(approval.get("reason") or "")),
-            "decision_note": _optional_filter(
-                str(approval.get("decision_note") or "")
-            ),
             "input_keys": sorted(
                 str(key)
                 for key in (approval.get("inputs") or {})
