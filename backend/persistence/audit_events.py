@@ -74,6 +74,8 @@ def _validate_write_result(
         raise ValueError("PostgreSQL audit event write returned another target.")
     if persisted.payload != requested.payload:
         raise ValueError("PostgreSQL audit event write returned another payload.")
+    if persisted.created_at != requested.created_at:
+        raise ValueError("PostgreSQL audit event write returned another creation time.")
 
 
 def _validate_audit_event_read_result(

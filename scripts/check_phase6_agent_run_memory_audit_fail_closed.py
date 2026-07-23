@@ -191,7 +191,7 @@ def check_route_composition_and_gate() -> list[str]:
         errors.append(
             "memory reads plus routed and unrouted Agent runs must map audit failures"
         )
-    if "audit_event_writer=build_audit_event_write_repository()" not in main_source:
+    if "audit_event_writer=audit_event_write_repository" not in main_source:
         errors.append("production memory composition must inject the audit writer")
     if "check_phase6_agent_run_memory_audit_fail_closed.py" not in gate_source:
         errors.append("Phase 6 backend gate must run the memory audit fail-closed check")

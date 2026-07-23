@@ -180,7 +180,7 @@ def check_composition_and_gate() -> list[str]:
         service_start,
     )
     service_source = main_source[service_start:service_end]
-    if "audit_event_writer=build_audit_event_write_repository()" not in service_source:
+    if "audit_event_writer=audit_event_write_repository" not in service_source:
         errors.append("backend composition must inject the production audit writer")
     if "scripts/check_phase6_agent_run_audit.py" not in gate_source:
         errors.append("Phase 6 backend gate must run the agent run audit check")

@@ -198,7 +198,7 @@ def check_route_composition_and_gate() -> list[str]:
         composition_start,
     )
     composition_source = main_source[composition_start:composition_end]
-    if "audit_event_writer=build_audit_event_write_repository()" not in composition_source:
+    if "audit_event_writer=audit_event_write_repository" not in composition_source:
         errors.append("production connector service must inject the audit event writer")
     if "check_phase6_connector_config_import_actor_audit.py" not in gate_source:
         errors.append("Phase 6 backend gate must run the connector config import audit check")

@@ -547,6 +547,13 @@ CHECKS = (
         [sys.executable, "scripts/check_phase6_audit_event_immutability.py"],
     ),
     (
+        "local audit event persistence",
+        [
+            sys.executable,
+            "scripts/check_phase6_local_audit_event_repository.py",
+        ],
+    ),
+    (
         "structured request logging",
         [sys.executable, "scripts/check_phase6_request_logging.py"],
     ),
