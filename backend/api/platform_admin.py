@@ -284,12 +284,20 @@ def create_platform_admin_router(
     ) -> dict[str, Any]:
         """Persist one tenant user's enterprise tool authorization policy."""
         identity = get_request_identity(request)
+        tenant_id = _request_tenant(
+            identity_user_id=identity.user_id,
+            identity_tenant_id=identity.tenant_id,
+            tenant=payload.tenant,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
+        update_payload = payload.model_dump()
+        update_payload["tenant"] = tenant_id
         try:
             (
                 authorization_policy,
                 response_payload,
             ) = deps.tool_policy_service().update_user_policy_request_payload(
-                payload.model_dump(),
+                update_payload,
                 actor_user_id=identity.user_id,
             )
         except PlatformToolPolicyServiceError as exc:
