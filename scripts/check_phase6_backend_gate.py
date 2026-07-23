@@ -59,6 +59,13 @@ CHECKS = (
         ],
     ),
     (
+        "workflow runtime lookup request tenant",
+        [
+            sys.executable,
+            "scripts/check_phase6_workflow_runtime_lookup_request_tenant.py",
+        ],
+    ),
+    (
         "agent execution request tenant",
         [
             sys.executable,

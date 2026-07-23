@@ -125,8 +125,16 @@ def _runtime_tenant_for_user(
     request: Request,
     user_id: str,
 ) -> str:
+    request_tenant = _request_tenant(
+        request=request,
+        tenant=None,
+        tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+    )
     try:
-        runtime = deps.connector_config_service().enterprise_runtime_context(user_id)
+        runtime = deps.connector_config_service().enterprise_runtime_context(
+            user_id,
+            tenant=request_tenant,
+        )
     except PlatformConnectorConfigServiceError as exc:
         _raise_service_error(exc)
     runtime_selection = deps.status_service().runtime_selection(runtime)
