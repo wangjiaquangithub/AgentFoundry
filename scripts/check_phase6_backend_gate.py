@@ -213,6 +213,13 @@ CHECKS = (
         ],
     ),
     (
+        "memory-item read limit fail closed",
+        [
+            sys.executable,
+            "scripts/check_phase6_memory_item_read_limit_fail_closed.py",
+        ],
+    ),
+    (
         "agent-run memory audit fail closed",
         [
             sys.executable,

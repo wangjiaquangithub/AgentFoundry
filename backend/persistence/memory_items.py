@@ -101,6 +101,15 @@ def _validate_memory_item_read_result(
         raise ValueError("Memory item read returned another item.")
 
 
+def _validate_memory_item_read_count(
+    records: list[MemoryItemRecord],
+    *,
+    limit: int,
+) -> None:
+    if len(records) > limit:
+        raise ValueError("Memory item read returned more items than requested.")
+
+
 def _validate_memory_item_not_expired(
     record: MemoryItemRecord,
     *,
@@ -200,6 +209,7 @@ class SQLiteMemoryItemReadRepository:
         limit: int = 50,
     ) -> list[MemoryItemRecord]:
         as_of = datetime.now(timezone.utc)
+        result_limit = self._clamp_limit(limit)
         query = """
             SELECT id, tenant_id, user_id, agent_id, session_id, content,
               source_run_id, metadata, expires_at, created_at
@@ -221,11 +231,12 @@ class SQLiteMemoryItemReadRepository:
             query += " AND source_run_id = ?"
             parameters.append(source_run_id)
         query += " ORDER BY created_at DESC, id DESC LIMIT ?"
-        parameters.append(self._clamp_limit(limit))
+        parameters.append(result_limit)
 
         with self._database.connect() as connection:
             rows = connection.execute(query, parameters).fetchall()
         records = [_memory_item_from_row(dict(row)) for row in rows]
+        _validate_memory_item_read_count(records, limit=result_limit)
         for record in records:
             _validate_memory_item_read_result(
                 record,
@@ -293,6 +304,7 @@ class PostgresMemoryItemReadRepository:
         limit: int = 50,
     ) -> list[MemoryItemRecord]:
         as_of = datetime.now(timezone.utc)
+        result_limit = self._clamp_limit(limit)
         query = """
             SELECT id, tenant_id, user_id, agent_id, session_id, content,
               source_run_id, metadata, expires_at, created_at
@@ -314,12 +326,13 @@ class PostgresMemoryItemReadRepository:
             query += " AND source_run_id = %s"
             parameters.append(source_run_id)
         query += " ORDER BY created_at DESC, id DESC LIMIT %s"
-        parameters.append(self._clamp_limit(limit))
+        parameters.append(result_limit)
 
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query, tuple(parameters))
                 records = [_memory_item_from_row(dict(row)) for row in cursor.fetchall()]
+        _validate_memory_item_read_count(records, limit=result_limit)
         for record in records:
             _validate_memory_item_read_result(
                 record,
