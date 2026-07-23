@@ -251,10 +251,14 @@ class PlatformConnectorConfigService:
             "updated_by": str(config.get("updated_by") or ""),
         }
 
-    def redacted_configs(self) -> list[dict[str, Any]]:
+    def redacted_configs(self, *, tenant: str | None = None) -> list[dict[str, Any]]:
+        configs = self.list_configs()
+        if tenant is not None:
+            config = configs.get(tenant)
+            return [self.redact_config(config)] if config is not None else []
         return [
             self.redact_config(config)
-            for _tenant, config in sorted(self.list_configs().items())
+            for _tenant, config in sorted(configs.items())
         ]
 
     def export_configs_payload(self) -> list[dict[str, Any]]:
@@ -352,8 +356,8 @@ class PlatformConnectorConfigService:
             "config": exported_config,
         }
 
-    def list_configs_response(self) -> dict[str, Any]:
-        return {"saved_configs": self.redacted_configs()}
+    def list_configs_response(self, *, tenant: str) -> dict[str, Any]:
+        return {"saved_configs": self.redacted_configs(tenant=tenant)}
 
     @staticmethod
     def runtime_metadata(runtime: dict[str, Any]) -> dict[str, Any]:

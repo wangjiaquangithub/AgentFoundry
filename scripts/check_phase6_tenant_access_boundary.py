@@ -470,6 +470,60 @@ def assert_tool_policy_update_uses_request_tenant() -> None:
         )
 
 
+def assert_connector_config_query_uses_request_tenant() -> None:
+    api_source = (BACKEND_DIR / "api" / "platform_admin.py").read_text(
+        encoding="utf-8",
+    )
+    query_route = api_source[api_source.index(
+        '@router.get("/enterprise/platform/connectors/configs")'
+    ):api_source.index('@router.post("/enterprise/platform/connectors/configs")')]
+    required_route_fragments = (
+        "request: Request",
+        "identity = get_request_identity(request)",
+        "tenant_id = _request_tenant(",
+        "identity_user_id=identity.user_id",
+        "identity_tenant_id=identity.tenant_id",
+        "tenant=None",
+        "tenant_hint_from_user_id=deps.tenant_hint_from_user_id",
+        "list_configs_response(\n                tenant=tenant_id,",
+    )
+    missing_route_fragments = [
+        fragment for fragment in required_route_fragments if fragment not in query_route
+    ]
+    if missing_route_fragments:
+        raise AssertionError(
+            "Connector config query tenant boundary is incomplete: "
+            + ", ".join(missing_route_fragments),
+        )
+    if query_route.count("_request_tenant(") != 1:
+        raise AssertionError(
+            "Connector config query must resolve the canonical request tenant.",
+        )
+
+    service_source = (BACKEND_DIR / "services" / "connectors.py").read_text(
+        encoding="utf-8",
+    )
+    response_method = service_source[service_source.index(
+        "def list_configs_response("
+    ):service_source.index("@staticmethod", service_source.index(
+        "def list_configs_response("
+    ))]
+    required_service_fragments = (
+        "*, tenant: str",
+        "self.redacted_configs(tenant=tenant)",
+    )
+    missing_service_fragments = [
+        fragment
+        for fragment in required_service_fragments
+        if fragment not in response_method
+    ]
+    if missing_service_fragments:
+        raise AssertionError(
+            "Connector config service query scope is incomplete: "
+            + ", ".join(missing_service_fragments),
+        )
+
+
 def main() -> None:
     assert_agent_list_is_tenant_scoped()
     assert_cross_tenant_runtime_access_is_denied()
@@ -482,6 +536,7 @@ def main() -> None:
     assert_approval_history_uses_request_tenant()
     assert_tool_policy_query_uses_request_tenant()
     assert_tool_policy_update_uses_request_tenant()
+    assert_connector_config_query_uses_request_tenant()
     print("Phase 6 tenant access boundary contract passed.")
 
 

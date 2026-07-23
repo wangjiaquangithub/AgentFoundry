@@ -341,10 +341,21 @@ def create_platform_admin_router(
         return response_payload
 
     @router.get("/enterprise/platform/connectors/configs")
-    async def enterprise_platform_connector_configs() -> dict[str, Any]:
+    async def enterprise_platform_connector_configs(
+        request: Request,
+    ) -> dict[str, Any]:
         """Return tenant connector configurations without exposing secrets."""
+        identity = get_request_identity(request)
+        tenant_id = _request_tenant(
+            identity_user_id=identity.user_id,
+            identity_tenant_id=identity.tenant_id,
+            tenant=None,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         try:
-            return deps.connector_config_service().list_configs_response()
+            return deps.connector_config_service().list_configs_response(
+                tenant=tenant_id,
+            )
         except PlatformConnectorConfigServiceError as exc:
             _raise_service_error(exc)
 
