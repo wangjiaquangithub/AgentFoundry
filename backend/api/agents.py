@@ -5,6 +5,7 @@ from typing import Any, Awaitable, Callable, NoReturn
 
 from fastapi import APIRouter, HTTPException, Request
 
+from api.request_identity import get_request_identity
 from api.schemas import EnterpriseAgentPublishRequest, EnterpriseAgentUpdateRequest
 from services.agents import PlatformAgentService, PlatformAgentServiceError
 
@@ -38,8 +39,9 @@ def create_agent_catalog_router(
     @router.get("/enterprise/platform/agents")
     async def enterprise_platform_agents(request: Request) -> dict[str, Any]:
         """Return platform agent templates and published tenant instances."""
+        identity = get_request_identity(request)
         return deps.agent_service().registry_response_for_user(
-            request.headers.get("X-User-ID"),
+            identity.user_id,
         )
 
     @router.post("/enterprise/platform/agents/publish")
@@ -48,10 +50,11 @@ def create_agent_catalog_router(
         request: Request,
     ) -> dict[str, Any]:
         """Publish one business template as a tenant-scoped platform agent."""
+        identity = get_request_identity(request)
         agent_service = deps.agent_service()
         publish_request = agent_service.publish_request_payload(
             payload,
-            header_user_id=request.headers.get("X-User-ID"),
+            header_user_id=identity.user_id,
         )
         user_id = publish_request["user_id"]
         await validate_agent_resources(
@@ -71,12 +74,13 @@ def create_agent_catalog_router(
         request: Request,
     ) -> dict[str, Any]:
         """Update a tenant-scoped platform agent instance."""
+        identity = get_request_identity(request)
         agent_service = deps.agent_service()
         try:
             update_request = agent_service.update_request_payload(
                 agent_id,
                 payload,
-                header_user_id=request.headers.get("X-User-ID"),
+                header_user_id=identity.user_id,
             )
         except PlatformAgentServiceError as exc:
             _raise_service_error(exc)
@@ -101,11 +105,12 @@ def create_agent_catalog_router(
         request: Request,
     ) -> dict[str, Any]:
         """Archive a platform agent while keeping its registry record."""
+        identity = get_request_identity(request)
         agent_service = deps.agent_service()
         try:
             return agent_service.archive_agent_response_payload(
                 agent_id,
-                user_id=request.headers.get("X-User-ID"),
+                user_id=identity.user_id,
             )
         except PlatformAgentServiceError as exc:
             _raise_service_error(exc)

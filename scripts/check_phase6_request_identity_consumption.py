@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate canonical request identity consumption in platform admin routes."""
+"""Validate canonical request identity consumption in migrated API domains."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BACKEND_DIR = ROOT / "backend"
 IDENTITY_MODULE = BACKEND_DIR / "api" / "request_identity.py"
 PLATFORM_ADMIN_MODULE = BACKEND_DIR / "api" / "platform_admin.py"
+AGENTS_MODULE = BACKEND_DIR / "api" / "agents.py"
 PHASE6_GATE = ROOT / "scripts" / "check_phase6_backend_gate.py"
 
 if str(BACKEND_DIR) not in sys.path:
@@ -92,6 +93,20 @@ def check_platform_admin_consumption() -> list[str]:
     return errors
 
 
+def check_agents_consumption() -> list[str]:
+    source = AGENTS_MODULE.read_text(encoding="utf-8")
+    errors: list[str] = []
+    if "from api.request_identity import get_request_identity" not in source:
+        errors.append("agents.py must import the canonical identity accessor")
+    if 'request.headers.get("X-User-ID")' in source or "request.headers" in source:
+        errors.append("agents.py must not consume raw request identity headers")
+    if source.count("get_request_identity(request)") != 4:
+        errors.append(
+            "agents.py must resolve canonical identity for all 4 identity-aware routes"
+        )
+    return errors
+
+
 def check_gate_wiring() -> list[str]:
     gate = PHASE6_GATE.read_text(encoding="utf-8")
     if "scripts/check_phase6_request_identity_consumption.py" not in gate:
@@ -103,6 +118,7 @@ def main() -> int:
     errors = (
         check_accessor_contract()
         + check_platform_admin_consumption()
+        + check_agents_consumption()
         + check_gate_wiring()
     )
     if errors:
