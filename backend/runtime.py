@@ -9,6 +9,7 @@ it is not an alternative reasoning, tool-routing, memory or RAG runtime.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from hashlib import sha256
 from typing import Any, Mapping, Protocol
 
 
@@ -196,6 +197,32 @@ class RuntimeCapability:
             "id": self.id,
             "name": self.name,
             "description": self.description,
+        }
+
+
+@dataclass(frozen=True)
+class RuntimeResourceBinding:
+    """Auditable Foundry-to-provider runtime resource capability binding."""
+
+    resource_type: str
+    adapter_id: str
+    supported: bool
+    requested: bool
+    foundry_resource_ids: tuple[str, ...]
+    scope_resource_ids: tuple[str, ...]
+    status: str
+    message: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "resource_type": self.resource_type,
+            "adapter_id": self.adapter_id,
+            "supported": self.supported,
+            "requested": self.requested,
+            "foundry_resource_ids": list(self.foundry_resource_ids),
+            "scope_resource_ids": list(self.scope_resource_ids),
+            "status": self.status,
+            "message": self.message,
         }
 
 
@@ -559,6 +586,19 @@ class AgentScopeRuntimeAdapter:
         runtime_adapter = self.describe(
             _runtime_agent_metadata_from_request(request),
         )
+        resource_bindings = _agentscope_runtime_resource_bindings(request)
+        unsupported = [
+            binding
+            for binding in resource_bindings
+            if binding.requested and not binding.supported
+        ]
+        if unsupported:
+            return _build_agentscope_unsupported_resources_result(
+                request=request,
+                runtime_adapter=runtime_adapter,
+                resource_bindings=resource_bindings,
+                unsupported=unsupported,
+            )
         if self.provider_client is not None:
             return await _invoke_agentscope_provider_client(
                 provider_client=self.provider_client,
@@ -595,8 +635,9 @@ AGENTSCOPE_PLATFORM_ADAPTER = AgentScopeRuntimeAdapter(
             id="agentscope_runtime",
             name="AgentScope Runtime",
             description=(
-                "AgentScope owns inference, Agent state, tool execution, runtime "
-                "memory, knowledge retrieval and provider events."
+                "AgentScope owns inference, conversation session state, tool "
+                "execution and provider events. Foundry long-term memory and "
+                "knowledge bindings require explicit adapters."
             ),
         ),
         RuntimeCapability(
@@ -609,6 +650,127 @@ AGENTSCOPE_PLATFORM_ADAPTER = AgentScopeRuntimeAdapter(
         ),
     ),
 )
+
+
+def _stable_scope_resource_id(
+    resource_type: str,
+    request: RuntimeInvocationRequest,
+    foundry_resource_id: str,
+) -> str:
+    metadata = request.metadata or {}
+    version_id = str(metadata.get("agent_version_id") or "unversioned")
+    identity = "\x1f".join(
+        (
+            request.context.tenant,
+            request.context.agent_id,
+            request.context.user_id,
+            version_id,
+            foundry_resource_id,
+        ),
+    )
+    digest = sha256(identity.encode("utf-8")).hexdigest()[:24]
+    return f"agentscope-{resource_type}-{digest}"
+
+
+def _agentscope_runtime_resource_bindings(
+    request: RuntimeInvocationRequest,
+) -> tuple[RuntimeResourceBinding, ...]:
+    session_foundry_id = request.context.session_id
+    knowledge_ids = tuple(sorted(set(request.knowledge_base_ids)))
+    memory_ids = ("foundry-long-term-memory",) if request.memory_enabled else ()
+    return (
+        RuntimeResourceBinding(
+            resource_type="session_memory",
+            adapter_id="agentscope-conversation-session-v1",
+            supported=True,
+            requested=True,
+            foundry_resource_ids=(session_foundry_id,),
+            scope_resource_ids=(
+                _stable_scope_resource_id(
+                    "session-memory",
+                    request,
+                    session_foundry_id,
+                ),
+            ),
+            status="bound",
+            message="AgentScope owns conversation state for this runtime session.",
+        ),
+        RuntimeResourceBinding(
+            resource_type="long_term_memory",
+            adapter_id="foundry-memory-to-agentscope-unavailable",
+            supported=False,
+            requested=request.memory_enabled,
+            foundry_resource_ids=memory_ids,
+            scope_resource_ids=tuple(
+                _stable_scope_resource_id("long-term-memory", request, item)
+                for item in memory_ids
+            ),
+            status="unsupported" if request.memory_enabled else "not_requested",
+            message=(
+                "Foundry long-term Memory is not connected to the current "
+                "AgentScope native runtime adapter."
+            ),
+        ),
+        RuntimeResourceBinding(
+            resource_type="knowledge_rag",
+            adapter_id="foundry-knowledge-to-agentscope-unavailable",
+            supported=False,
+            requested=bool(knowledge_ids),
+            foundry_resource_ids=knowledge_ids,
+            scope_resource_ids=tuple(
+                _stable_scope_resource_id("knowledge-rag", request, item)
+                for item in knowledge_ids
+            ),
+            status="unsupported" if knowledge_ids else "not_requested",
+            message=(
+                "Foundry Knowledge/RAG resources are not connected to the "
+                "current AgentScope native runtime adapter."
+            ),
+        ),
+    )
+
+
+def _runtime_resource_binding_payloads(
+    request: RuntimeInvocationRequest,
+) -> list[dict[str, Any]]:
+    return [
+        binding.to_dict()
+        for binding in _agentscope_runtime_resource_bindings(request)
+    ]
+
+
+def _build_agentscope_unsupported_resources_result(
+    *,
+    request: RuntimeInvocationRequest,
+    runtime_adapter: dict[str, Any],
+    resource_bindings: tuple[RuntimeResourceBinding, ...],
+    unsupported: list[RuntimeResourceBinding],
+) -> RuntimeInvocationResult:
+    unsupported_types = ", ".join(binding.resource_type for binding in unsupported)
+    error = (
+        "AgentScope native invocation cannot use unsupported Foundry runtime "
+        f"resource bindings: {unsupported_types}."
+    )
+    binding_payloads = [binding.to_dict() for binding in resource_bindings]
+    evidence = _runtime_invocation_evidence_from_request(request)
+    evidence["runtime_resources"] = binding_payloads
+    payload = build_runtime_invocation_error_result_payload(
+        error=error,
+        evidence=evidence,
+        runtime_adapter=runtime_adapter,
+        runtime_invocation_id=(request.metadata or {}).get("runtime_invocation_id"),
+        raw={
+            "runtime_bridge": {
+                "type": "agentscope_runtime_resource_unsupported",
+                "provider_invocation_wired": True,
+                "adapter_id": runtime_adapter["id"],
+            },
+            "runtime_resources": binding_payloads,
+            "request": _runtime_invocation_request_audit_payload(request),
+        },
+    )
+    normalized = normalize_runtime_invocation_result(payload, runtime_adapter)
+    return RuntimeInvocationResult(**normalized)
 
 
 def _build_agentscope_pending_invocation_result(
@@ -882,9 +1044,11 @@ def build_agentscope_provider_native_invocation_envelope(
         "provider": runtime_adapter["provider"],
         "mode": runtime_adapter["mode"],
         "request": request.to_dict(),
+        "runtime_resources": _runtime_resource_binding_payloads(request),
         "audit": {
             "provider_native_invocation": config_gate,
             "request": _runtime_invocation_request_audit_payload(request),
+            "runtime_resources": _runtime_resource_binding_payloads(request),
         },
     }
     if not native_in_process:
@@ -1064,9 +1228,10 @@ def _normalize_agentscope_provider_client_response(
     runtime_adapter: dict[str, Any],
 ) -> dict[str, Any]:
     status = str(provider_response.get("status") or "completed").strip()
-    evidence = provider_response.get("evidence")
-    if not isinstance(evidence, dict):
-        evidence = _runtime_invocation_evidence_from_request(request)
+    evidence = _runtime_invocation_evidence_from_request(request)
+    provider_evidence = provider_response.get("evidence")
+    if isinstance(provider_evidence, dict):
+        evidence.update(provider_evidence)
 
     provider_raw = provider_response.get("raw")
     native_in_process = bool(
@@ -1387,6 +1552,7 @@ def _runtime_invocation_evidence_from_request(
         "session_id": request.context.session_id,
         "agent_id": request.context.agent_id,
         "agent_name": request.context.agent_name,
+        "runtime_resources": _runtime_resource_binding_payloads(request),
     }
 
 

@@ -11,8 +11,10 @@ from runtime import (
     AGENTSCOPE_NATIVE_EXECUTION_MODE,
     FOUNDRY_COMPATIBILITY_EXECUTION_MODE,
     FoundryCompatibilityRuntimeAdapter,
+    RuntimeContext,
     RuntimeGateway,
     RuntimeGatewayError,
+    RuntimeInvocationRequest,
     resolve_runtime_execution_selection,
 )
 from backend.persistence.database import create_sqlite_database
@@ -143,6 +145,102 @@ class RuntimeExecutionSelectionTest(unittest.TestCase):
                 repository.get(tenant_id="tenant-1", foundry_version_id="version-1"),
                 record,
             )
+
+
+class _RecordingAgentScopeProvider:
+    native_in_process = True
+
+    def __init__(self) -> None:
+        self.envelopes = []
+
+    async def invoke(self, envelope):
+        self.envelopes.append(envelope)
+        return {
+            "status": "completed",
+            "answer": "ok",
+            "evidence": {"provider": "agentscope"},
+        }
+
+
+class RuntimeResourceBindingTest(unittest.IsolatedAsyncioTestCase):
+    @staticmethod
+    def request(*, memory_enabled=False, knowledge_base_ids=()):
+        return RuntimeInvocationRequest(
+            context=RuntimeContext(
+                tenant="acme",
+                user_id="alice",
+                session_id="session-1",
+                agent_id="agent-1",
+            ),
+            question="hello",
+            memory_enabled=memory_enabled,
+            knowledge_base_ids=tuple(knowledge_base_ids),
+            metadata={"agent_version_id": "version-1"},
+        )
+
+    async def test_plain_native_request_reaches_agentscope_with_session_binding(self):
+        provider = _RecordingAgentScopeProvider()
+        adapter = replace(AGENTSCOPE_PLATFORM_ADAPTER, provider_client=provider)
+
+        result = await adapter.invoke(self.request())
+
+        self.assertEqual(result.status, "completed")
+        self.assertEqual(len(provider.envelopes), 1)
+        bindings = provider.envelopes[0]["runtime_resources"]
+        session = next(item for item in bindings if item["resource_type"] == "session_memory")
+        self.assertTrue(session["supported"])
+        self.assertEqual(session["status"], "bound")
+        self.assertEqual(result.evidence["runtime_resources"], bindings)
+
+    async def test_memory_request_fails_before_provider_invocation(self):
+        provider = _RecordingAgentScopeProvider()
+        adapter = replace(AGENTSCOPE_PLATFORM_ADAPTER, provider_client=provider)
+
+        result = await adapter.invoke(self.request(memory_enabled=True))
+
+        self.assertEqual(result.status, "failed")
+        self.assertEqual(provider.envelopes, [])
+        self.assertIn("long_term_memory", result.error)
+        memory = next(
+            item
+            for item in result.evidence["runtime_resources"]
+            if item["resource_type"] == "long_term_memory"
+        )
+        self.assertFalse(memory["supported"])
+        self.assertTrue(memory["requested"])
+        self.assertEqual(memory, result.raw["runtime_resources"][1])
+
+    async def test_knowledge_mapping_is_stable_and_preserves_foundry_ids(self):
+        first_provider = _RecordingAgentScopeProvider()
+        second_provider = _RecordingAgentScopeProvider()
+        first_adapter = replace(
+            AGENTSCOPE_PLATFORM_ADAPTER,
+            provider_client=first_provider,
+        )
+        second_adapter = replace(
+            AGENTSCOPE_PLATFORM_ADAPTER,
+            provider_client=second_provider,
+        )
+        request = self.request(knowledge_base_ids=("kb-2", "kb-1"))
+
+        first = await first_adapter.invoke(request)
+        second = await second_adapter.invoke(request)
+
+        self.assertEqual(first.status, "failed")
+        self.assertEqual(first_provider.envelopes, [])
+        knowledge = next(
+            item
+            for item in first.evidence["runtime_resources"]
+            if item["resource_type"] == "knowledge_rag"
+        )
+        repeated = next(
+            item
+            for item in second.evidence["runtime_resources"]
+            if item["resource_type"] == "knowledge_rag"
+        )
+        self.assertEqual(knowledge["foundry_resource_ids"], ["kb-1", "kb-2"])
+        self.assertEqual(knowledge["scope_resource_ids"], repeated["scope_resource_ids"])
+        self.assertFalse(knowledge["supported"])
 
 
 class UnifiedAgentExecutionEntryTest(unittest.TestCase):

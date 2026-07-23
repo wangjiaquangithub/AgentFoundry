@@ -273,6 +273,7 @@ class AgentScopeNativeInvocationClient:
             "evidence": {
                 "runtime": "agentscope",
                 "provider_run_id": provider_run_id,
+                "runtime_resources": list(envelope.get("runtime_resources") or []),
                 "application_id": (
                     application_session.application_id
                     if "application_session" in locals()
