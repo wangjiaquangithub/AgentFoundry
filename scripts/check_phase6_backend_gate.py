@@ -45,6 +45,13 @@ CHECKS = (
         ],
     ),
     (
+        "platform Agent publish authenticated actor audit",
+        [
+            sys.executable,
+            "scripts/check_phase6_agent_publish_actor_audit.py",
+        ],
+    ),
+    (
         "model config request tenant",
         [
             sys.executable,
