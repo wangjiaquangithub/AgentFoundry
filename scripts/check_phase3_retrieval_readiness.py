@@ -59,8 +59,21 @@ class ProductionKnowledge:
         ]
 
 
+class EvidenceWriter:
+    def append_retrieval_event(self, record: Any) -> Any:
+        return record
+
+    def append_audit_event(self, record: Any) -> Any:
+        return record
+
+
 async def main() -> None:
-    service = PlatformKnowledgeResponseService()
+    evidence_writer = EvidenceWriter()
+    service = PlatformKnowledgeResponseService(
+        retrieval_event_writer=evidence_writer,
+        audit_event_writer=evidence_writer,
+        now=lambda: "2026-01-01T00:00:00+00:00",
+    )
 
     _, _, no_binding = await service.search_agent_knowledge_bases(
         knowledge_base_service=None,

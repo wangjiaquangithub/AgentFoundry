@@ -48,8 +48,9 @@ class AuditEvents:
     def __init__(self) -> None:
         self.records: list[Any] = []
 
-    def append_audit_event(self, record: Any) -> None:
+    def append_audit_event(self, record: Any) -> Any:
         self.records.append(record)
+        return record
 
 
 class ProductionKnowledge:

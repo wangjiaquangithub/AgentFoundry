@@ -26,6 +26,7 @@ from services.enterprise_router import PlatformEnterpriseRouterService
 from services.knowledge import (
     PlatformKnowledgeDocumentReadinessService,
     PlatformKnowledgeResponseService,
+    PlatformKnowledgeRetrievalServiceError,
 )
 from services.memories import PlatformMemoryService
 from services.tools import PlatformToolPolicyService
@@ -178,28 +179,33 @@ def create_agent_runtime_router(
         memory_context_view = agent_run_service.memory_context_view(memory_context)
         memory_payload = memory_context_view["memory_payload"]
         memory_hits = memory_context_view["memory_hits"]
-        knowledge_context = (
-            await agent_run_service.prepare_knowledge_context_from_execution_context(
-                search_agent_knowledge_bases=(
-                    deps.knowledge_response_service.search_agent_knowledge_bases
-                ),
-                build_agent_run_payload=(
-                    deps.knowledge_response_service.build_agent_run_payload
-                ),
-                knowledge_base_service=getattr(
-                    request.app.state,
-                    "knowledge_base_service",
-                    None,
-                ),
-                dev_knowledge_service=deps.dev_knowledge_service,
-                dev_knowledge_provider=deps.dev_knowledge_provider,
-                knowledge_document_readiness_service=(
-                    deps.knowledge_document_readiness_service
-                ),
-                allow_dev_knowledge_fallback=not is_production_environment(deps.env),
-                execution_context=execution_context,
+        try:
+            knowledge_context = (
+                await agent_run_service.prepare_knowledge_context_from_execution_context(
+                    search_agent_knowledge_bases=(
+                        deps.knowledge_response_service.search_agent_knowledge_bases
+                    ),
+                    build_agent_run_payload=(
+                        deps.knowledge_response_service.build_agent_run_payload
+                    ),
+                    knowledge_base_service=getattr(
+                        request.app.state,
+                        "knowledge_base_service",
+                        None,
+                    ),
+                    dev_knowledge_service=deps.dev_knowledge_service,
+                    dev_knowledge_provider=deps.dev_knowledge_provider,
+                    knowledge_document_readiness_service=(
+                        deps.knowledge_document_readiness_service
+                    ),
+                    allow_dev_knowledge_fallback=not is_production_environment(
+                        deps.env
+                    ),
+                    execution_context=execution_context,
+                )
             )
-        )
+        except PlatformKnowledgeRetrievalServiceError as exc:
+            _raise_service_error(exc)
         knowledge_context_view = agent_run_service.knowledge_context_view(
             knowledge_context,
         )

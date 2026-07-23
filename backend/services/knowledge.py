@@ -1023,7 +1023,10 @@ class PlatformKnowledgeResponseService:
         agent_run_id: str | None = None,
     ) -> None:
         if self._retrieval_event_writer is None or self._now is None:
-            return
+            raise PlatformKnowledgeRetrievalServiceError(
+                500,
+                "Agent-run knowledge retrieval event persistence is not configured.",
+            )
 
         event_id = uuid4().hex
         created_at = self._now()
@@ -1040,16 +1043,23 @@ class PlatformKnowledgeResponseService:
                     created_at=created_at,
                 ),
             )
-        except Exception:
-            return
+        except Exception as exc:
+            raise PlatformKnowledgeRetrievalServiceError(500, str(exc)) from exc
+
+        persisted_event_id = str(getattr(persisted_event, "id", "") or "").strip()
+        if not persisted_event_id:
+            raise PlatformKnowledgeRetrievalServiceError(
+                500,
+                "PostgreSQL agent-run retrieval event write did not return a persisted id.",
+            )
         self._append_retrieval_audit_event(
-            event_id=persisted_event.id,
+            event_id=persisted_event_id,
             tenant=tenant,
             user_id=user_id,
             knowledge_base_id=knowledge_base_id,
             question=question,
             hits=safe_hits,
-            created_at=persisted_event.created_at,
+            created_at=created_at,
             agent_run_id=agent_run_id,
         )
 
@@ -1066,7 +1076,10 @@ class PlatformKnowledgeResponseService:
         agent_run_id: str | None = None,
     ) -> None:
         if self._audit_event_writer is None:
-            return
+            raise PlatformKnowledgeRetrievalServiceError(
+                500,
+                "Agent-run knowledge retrieval audit persistence is not configured.",
+            )
 
         try:
             payload = {
@@ -1102,10 +1115,14 @@ class PlatformKnowledgeResponseService:
                     created_at=created_at,
                 ),
             )
-            if not persisted_audit_event.id:
-                return
-        except Exception:
-            return
+        except Exception as exc:
+            raise PlatformKnowledgeRetrievalServiceError(500, str(exc)) from exc
+
+        if not str(getattr(persisted_audit_event, "id", "") or "").strip():
+            raise PlatformKnowledgeRetrievalServiceError(
+                500,
+                "PostgreSQL agent-run audit event write did not return a persisted id.",
+            )
 
     def build_agent_run_payload(
         self,

@@ -105,6 +105,14 @@ class DevKnowledge:
         ]
 
 
+class EvidenceWriter:
+    def append_retrieval_event(self, record: Any) -> Any:
+        return record
+
+    def append_audit_event(self, record: Any) -> Any:
+        return record
+
+
 def execution_context() -> dict[str, Any]:
     return {
         "tenant": "acme",
@@ -120,7 +128,12 @@ def execution_context() -> dict[str, Any]:
 
 async def main() -> None:
     run_service = PlatformAgentRunService(repository=Runs())
-    knowledge_service = PlatformKnowledgeResponseService()
+    evidence_writer = EvidenceWriter()
+    knowledge_service = PlatformKnowledgeResponseService(
+        retrieval_event_writer=evidence_writer,
+        audit_event_writer=evidence_writer,
+        now=lambda: "2026-01-01T00:00:00+00:00",
+    )
 
     blocked_readiness = Readiness(
         {
