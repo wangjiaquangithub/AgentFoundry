@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate fail-closed lifetime ordering for memory-item writes."""
+"""Validate fail-closed future created-time handling for memory-item writes."""
 
 from __future__ import annotations
 
@@ -23,12 +23,7 @@ from backend.persistence.memory_items import (  # noqa: E402
 )
 
 
-def memory_record(
-    *,
-    item_id: str,
-    created_at: str,
-    expires_at: str,
-) -> MemoryItemRecord:
+def memory_record(*, item_id: str, created_at: str) -> MemoryItemRecord:
     return MemoryItemRecord(
         id=item_id,
         tenant_id="acme",
@@ -38,7 +33,7 @@ def memory_record(
         content=item_id,
         source_run_id="run-1",
         metadata={"kind": "preference"},
-        expires_at=expires_at,
+        expires_at=None,
         created_at=created_at,
     )
 
@@ -99,83 +94,45 @@ class FakePostgresDatabase:
         return FakeConnection(self._cursor)
 
 
-def check_valid_lifetime_writes() -> list[str]:
+def check_past_created_at_writes() -> list[str]:
     errors: list[str] = []
-    created_at = datetime.now(timezone.utc) - timedelta(hours=1)
-    utc_expiry = created_at + timedelta(days=1)
+    past = datetime.now(timezone.utc) - timedelta(seconds=1)
     offset = timezone(timedelta(hours=8))
-    for label, created_at, expires_at in (
-        (
-            "utc",
-            created_at.isoformat(),
-            utc_expiry.isoformat(),
-        ),
-        (
-            "offset",
-            created_at.astimezone(offset).isoformat(),
-            utc_expiry.astimezone(offset).isoformat(),
-        ),
-        (
-            "cross-offset",
-            created_at.astimezone(offset).isoformat(),
-            utc_expiry.isoformat(),
-        ),
+    for label, created_at in (
+        ("utc-past", past.isoformat()),
+        ("offset-past", past.astimezone(offset).isoformat()),
     ):
-        record = memory_record(
-            item_id=label,
-            created_at=created_at,
-            expires_at=expires_at,
-        )
+        record = memory_record(item_id=label, created_at=created_at)
         database = FakePostgresDatabase(memory_row(record))
         persisted = PostgresMemoryItemWriteRepository(database).append_memory_item(
             record
         )
         if persisted != record:
-            errors.append(f"PostgreSQL write must preserve {label} lifetime")
+            errors.append(f"PostgreSQL write must preserve {label} created time")
         if database.transaction_calls != 1:
-            errors.append(f"PostgreSQL write must persist {label} lifetime")
+            errors.append(f"PostgreSQL write must persist {label} created time")
     return errors
 
 
-def check_invalid_lifetime_fails_before_write() -> list[str]:
+def check_future_created_at_fails_before_write() -> list[str]:
     errors: list[str] = []
-    created_at = datetime.now(timezone.utc) - timedelta(hours=1)
+    future = datetime.now(timezone.utc) + timedelta(days=1)
     offset = timezone(timedelta(hours=8))
-    alternate_offset = timezone(timedelta(hours=1))
-    for label, created_at, expires_at in (
-        (
-            "equal",
-            created_at.isoformat(),
-            created_at.astimezone(offset).isoformat(),
-        ),
-        (
-            "expiry-before-created",
-            created_at.isoformat(),
-            (created_at - timedelta(seconds=1)).isoformat(),
-        ),
-        (
-            "cross-offset-expiry-before-created",
-            created_at.astimezone(offset).isoformat(),
-            (created_at - timedelta(seconds=1))
-            .astimezone(alternate_offset)
-            .isoformat(),
-        ),
+    for label, created_at in (
+        ("utc-future", future.isoformat()),
+        ("offset-future", future.astimezone(offset).isoformat()),
     ):
-        record = memory_record(
-            item_id=label,
-            created_at=created_at,
-            expires_at=expires_at,
-        )
+        record = memory_record(item_id=label, created_at=created_at)
         database = FakePostgresDatabase(memory_row(record))
         try:
             PostgresMemoryItemWriteRepository(database).append_memory_item(record)
         except ValueError:
             pass
         else:
-            errors.append(f"PostgreSQL write must reject {label} lifetime")
+            errors.append(f"PostgreSQL write must reject {label} created time")
         if database.transaction_calls != 0:
             errors.append(
-                f"PostgreSQL write must reject {label} lifetime before a transaction"
+                f"PostgreSQL write must reject {label} created time before a transaction"
             )
     return errors
 
@@ -184,24 +141,32 @@ def check_source_and_gate() -> list[str]:
     source = MEMORY_ITEMS.read_text(encoding="utf-8")
     gate_source = PHASE6_GATE.read_text(encoding="utf-8")
     errors: list[str] = []
-    if "if expires_at <= created_at:" not in source:
-        errors.append("memory-item writes must validate lifetime ordering")
-    if "check_phase6_memory_item_write_lifetime_fail_closed.py" not in gate_source:
-        errors.append("Phase 6 backend gate must run the write lifetime check")
+    if "if created_at > as_of:" not in source:
+        errors.append("memory-item writes must reject future created times")
+    if "_validate_memory_item_write_created_at(record, as_of=as_of)" not in source:
+        errors.append("memory-item writes must use their captured validation time")
+    if (
+        "check_phase6_memory_item_write_future_created_at_fail_closed.py"
+        not in gate_source
+    ):
+        errors.append("Phase 6 backend gate must run the future created-time check")
     return errors
 
 
 def main() -> int:
     errors = [
-        *check_valid_lifetime_writes(),
-        *check_invalid_lifetime_fails_before_write(),
+        *check_past_created_at_writes(),
+        *check_future_created_at_fails_before_write(),
         *check_source_and_gate(),
     ]
     if errors:
         for error in errors:
-            print(f"[phase6-memory-item-write-lifetime] {error}", file=sys.stderr)
+            print(
+                f"[phase6-memory-item-write-future-created-at] {error}",
+                file=sys.stderr,
+            )
         return 1
-    print("[phase6-memory-item-write-lifetime] passed")
+    print("[phase6-memory-item-write-future-created-at] passed")
     return 0
 
 

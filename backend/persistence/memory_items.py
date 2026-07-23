@@ -149,7 +149,11 @@ def _validate_memory_item_write_expiry(
         raise ValueError(f"Memory item {record.id} write rejected an expired item.")
 
 
-def _validate_memory_item_write_created_at(record: MemoryItemRecord) -> None:
+def _validate_memory_item_write_created_at(
+    record: MemoryItemRecord,
+    *,
+    as_of: datetime,
+) -> None:
     try:
         created_at = datetime.fromisoformat(record.created_at)
     except ValueError as exc:
@@ -158,6 +162,8 @@ def _validate_memory_item_write_created_at(record: MemoryItemRecord) -> None:
         ) from exc
     if created_at.utcoffset() is None:
         raise ValueError(f"Memory item {record.id} has a timezone-naive created time.")
+    if created_at > as_of:
+        raise ValueError(f"Memory item {record.id} write rejected a future created time.")
 
 
 def _validate_memory_item_read_created_at(record: MemoryItemRecord) -> None:
@@ -354,10 +360,11 @@ class PostgresMemoryItemWriteRepository:
         self._database = database
 
     def append_memory_item(self, record: MemoryItemRecord) -> MemoryItemRecord:
-        _validate_memory_item_write_created_at(record)
+        as_of = datetime.now(timezone.utc)
+        _validate_memory_item_write_created_at(record, as_of=as_of)
         _validate_memory_item_write_expiry(
             record,
-            as_of=datetime.now(timezone.utc),
+            as_of=as_of,
         )
         with self._database.transaction() as connection:
             with connection.cursor() as cursor:

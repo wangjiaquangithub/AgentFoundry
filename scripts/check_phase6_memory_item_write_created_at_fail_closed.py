@@ -139,7 +139,7 @@ def check_source_and_gate() -> list[str]:
     source = MEMORY_ITEMS.read_text(encoding="utf-8")
     gate_source = PHASE6_GATE.read_text(encoding="utf-8")
     errors: list[str] = []
-    validation_call = "_validate_memory_item_write_created_at(record)"
+    validation_call = "_validate_memory_item_write_created_at(record, as_of=as_of)"
     transaction_call = "with self._database.transaction() as connection:"
     append_source = source.split("def append_memory_item(", maxsplit=1)[1]
     if validation_call not in append_source:

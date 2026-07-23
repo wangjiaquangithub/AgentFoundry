@@ -171,6 +171,13 @@ CHECKS = (
         ],
     ),
     (
+        "memory-item write future created time fail closed",
+        [
+            sys.executable,
+            "scripts/check_phase6_memory_item_write_future_created_at_fail_closed.py",
+        ],
+    ),
+    (
         "memory-item write lifetime fail closed",
         [
             sys.executable,
