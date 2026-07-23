@@ -373,6 +373,36 @@ def assert_approval_history_uses_request_tenant() -> None:
         )
 
 
+def assert_tool_policy_query_uses_request_tenant() -> None:
+    source = (BACKEND_DIR / "api" / "platform_admin.py").read_text(
+        encoding="utf-8",
+    )
+    required_fragments = (
+        'identity_tenant = (identity_tenant_id or "").strip()',
+        "request_tenant = identity_tenant or hinted_tenant",
+        "explicit_tenant and explicit_tenant != request_tenant",
+        "tenant does not match request identity tenant boundary",
+        "tenant_hint_from_user_id=deps.tenant_hint_from_user_id",
+        "tenant=tenant_id",
+    )
+    missing_fragments = [
+        fragment for fragment in required_fragments if fragment not in source
+    ]
+    if missing_fragments:
+        raise AssertionError(
+            "Tool policy query tenant boundary is incomplete: "
+            + ", ".join(missing_fragments),
+        )
+
+    policy_route = source[source.index(
+        '@router.get("/enterprise/platform/policies/tools")'
+    ):source.index('@router.patch("/enterprise/platform/policies/tools")')]
+    if policy_route.count("_request_tenant(") != 1:
+        raise AssertionError(
+            "Tool policy query must resolve the canonical request tenant.",
+        )
+
+
 def main() -> None:
     assert_agent_list_is_tenant_scoped()
     assert_cross_tenant_runtime_access_is_denied()
@@ -383,6 +413,7 @@ def main() -> None:
     assert_tool_audit_history_uses_request_tenant()
     assert_workflow_run_history_uses_request_tenant()
     assert_approval_history_uses_request_tenant()
+    assert_tool_policy_query_uses_request_tenant()
     print("Phase 6 tenant access boundary contract passed.")
 
 

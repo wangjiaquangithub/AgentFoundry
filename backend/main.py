@@ -672,6 +672,7 @@ app.include_router(
             get_tool_authorization_policy=_get_tool_authorization_policy,
             set_tool_authorization_policy=_set_tool_authorization_policy,
             build_tool_authorization_policy=_build_tool_authorization_policy,
+            tenant_hint_from_user_id=tenant_hint_from_user_id,
         )
     )
 )

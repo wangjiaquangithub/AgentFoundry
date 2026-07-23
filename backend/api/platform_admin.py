@@ -56,6 +56,32 @@ class PlatformAdminRouteDependencies:
     get_tool_authorization_policy: Callable[[], Any]
     set_tool_authorization_policy: Callable[[Any], None]
     build_tool_authorization_policy: Callable[[], Any]
+    tenant_hint_from_user_id: Callable[[str], str | None]
+
+
+def _request_tenant(
+    *,
+    identity_user_id: str | None,
+    identity_tenant_id: str | None,
+    tenant: str | None,
+    tenant_hint_from_user_id: Callable[[str], str | None],
+) -> str:
+    identity_tenant = (identity_tenant_id or "").strip()
+    hinted_tenant = tenant_hint_from_user_id(identity_user_id or "")
+    request_tenant = identity_tenant or hinted_tenant
+    if not request_tenant:
+        raise HTTPException(
+            status_code=400,
+            detail="request identity does not resolve to a tenant.",
+        )
+
+    explicit_tenant = (tenant or "").strip()
+    if explicit_tenant and explicit_tenant != request_tenant:
+        raise HTTPException(
+            status_code=403,
+            detail="tenant does not match request identity tenant boundary.",
+        )
+    return request_tenant
 
 
 def create_platform_admin_router(
@@ -235,12 +261,18 @@ def create_platform_admin_router(
     ) -> dict[str, Any]:
         """Return editable enterprise tool authorization policy state."""
         identity = get_request_identity(request)
+        tenant_id = _request_tenant(
+            identity_user_id=identity.user_id,
+            identity_tenant_id=identity.tenant_id,
+            tenant=tenant,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         try:
             return deps.tool_policy_service().policy_request_payload(
                 authorization_policy=deps.get_tool_authorization_policy(),
                 query_user_id=user_id,
                 header_user_id=identity.user_id,
-                tenant=tenant,
+                tenant=tenant_id,
             )
         except PlatformToolPolicyServiceError as exc:
             _raise_service_error(exc)
