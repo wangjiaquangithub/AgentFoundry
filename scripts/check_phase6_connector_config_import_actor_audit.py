@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate authenticated actor audit evidence for connector config saves."""
+"""Validate authenticated actor audit evidence for connector config imports."""
 
 from __future__ import annotations
 
@@ -21,7 +21,6 @@ if str(ROOT) not in sys.path:
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-from backend.api.schemas import EnterpriseConnectorConfigSaveRequest  # noqa: E402
 from backend.connectors import MockEnterpriseConnector  # noqa: E402
 from backend.repositories.connectors import ConnectorConfigRepository  # noqa: E402
 from backend.services.connectors import (  # noqa: E402
@@ -55,44 +54,50 @@ def build_service(
     )
 
 
-def save_payload() -> EnterpriseConnectorConfigSaveRequest:
-    return EnterpriseConnectorConfigSaveRequest(
-        tenant="acme",
-        base_url="https://enterprise.example.test/api/",
-        token=SECRET_FIXTURE,
-        policy_path="/policies/search",
-        ticket_path="/tickets/{ticket_id}",
-        metrics_path="/departments/{department}/metrics",
-        timeout_seconds=12,
-        enabled=True,
-    )
+def import_payload() -> list[dict]:
+    return [
+        {
+            "tenant": "acme",
+            "base_url": "https://enterprise.example.test/api/",
+            "token": SECRET_FIXTURE,
+            "policy_path": "/policies/search",
+            "ticket_path": "/tickets/{ticket_id}",
+            "metrics_path": "/departments/{department}/metrics",
+            "timeout_seconds": 12,
+            "enabled": True,
+        },
+    ]
 
 
-def check_save_audit_contract(config_path: Path) -> list[str]:
+def check_import_audit_contract(config_path: Path) -> list[str]:
     audit_writer = AuditEventWriter()
     service = build_service(config_path, audit_writer=audit_writer)
-    response = service.save_config_payload(
-        save_payload(),
-        user_id="acme:admin",
+    service.import_configs_payload(
+        import_payload(),
+        actor="acme:admin",
+        mode="merge",
         tenant="acme",
     )
 
     errors: list[str] = []
-    config = response.get("config", {})
-    if config.get("tenant") != "acme" or config.get("updated_by") != "acme:admin":
-        errors.append("connector config response must bind the tenant and request actor")
-    if config.get("token_configured") is not True:
-        errors.append("connector config response must expose only token configuration state")
-    if "token" in config or SECRET_FIXTURE in repr(response):
-        errors.append("connector config response must not expose the connector token")
+    persisted = service.list_configs().get("acme", {})
+    if persisted.get("updated_by") != "acme:admin":
+        errors.append("connector config import must persist the authenticated actor")
+    if persisted.get("token") != SECRET_FIXTURE:
+        errors.append("connector config import must persist the imported secret")
+    redacted = service.redacted_configs(tenant="acme")
+    if len(redacted) != 1 or redacted[0].get("token_configured") is not True:
+        errors.append("redacted imported config must expose token configuration state")
+    if SECRET_FIXTURE in repr(redacted):
+        errors.append("redacted imported config must not expose the connector token")
     if len(audit_writer.records) != 1:
-        return errors + ["connector config save must append exactly one audit event"]
+        return errors + ["connector config import must append exactly one audit event"]
 
     event = audit_writer.records[0]
     expected_fields = {
         "tenant_id": "acme",
         "actor_user_id": "acme:admin",
-        "event_type": "connector_config.saved",
+        "event_type": "connector_config.imported",
         "target_type": "connector_config",
         "target_id": "acme",
         "created_at": "2026-07-23T00:00:00+00:00",
@@ -103,6 +108,7 @@ def check_save_audit_contract(config_path: Path) -> list[str]:
 
     expected_payload = {
         "schema_version": 1,
+        "mode": "merge",
         "tenant": "acme",
         "base_url": "https://enterprise.example.test/api",
         "policy_path": "/policies/search",
@@ -113,7 +119,7 @@ def check_save_audit_contract(config_path: Path) -> list[str]:
         "token_configured": True,
     }
     if event.payload != expected_payload:
-        errors.append("audit payload must contain only redacted connector save evidence")
+        errors.append("audit payload must contain only redacted connector import evidence")
     if "token" in event.payload or SECRET_FIXTURE in repr(event.payload):
         errors.append("audit payload must not expose the connector token")
     return errors
@@ -126,9 +132,10 @@ def check_audit_fail_closed(config_path: Path) -> list[str]:
         audit_writer=AuditEventWriter(failure=RuntimeError("audit unavailable")),
     )
     try:
-        failing_service.save_config_payload(
-            save_payload(),
-            user_id="acme:admin",
+        failing_service.import_configs_payload(
+            import_payload(),
+            actor="acme:admin",
+            mode="replace",
             tenant="acme",
         )
     except PlatformConnectorConfigServiceError as exc:
@@ -145,9 +152,10 @@ def check_audit_fail_closed(config_path: Path) -> list[str]:
 
     blank_id_writer.append_audit_event = append_without_id
     try:
-        build_service(config_path, audit_writer=blank_id_writer).save_config_payload(
-            save_payload(),
-            user_id="acme:admin",
+        build_service(config_path, audit_writer=blank_id_writer).import_configs_payload(
+            import_payload(),
+            actor="acme:admin",
+            mode="replace",
             tenant="acme",
         )
     except PlatformConnectorConfigServiceError as exc:
@@ -164,24 +172,25 @@ def check_route_composition_and_gate() -> list[str]:
     gate_source = PHASE6_GATE.read_text(encoding="utf-8")
     errors: list[str] = []
 
-    route_start = api_source.index(
-        '    @router.post("/enterprise/platform/connectors/configs")'
-    )
-    route_end = api_source.index(
-        '    @router.post("/enterprise/platform/connectors/test")',
-        route_start,
-    )
+    route_start = api_source.index('    @router.post("/enterprise/platform/config/import")')
+    route_end = api_source.index("    return router", route_start)
     route_source = api_source[route_start:route_end]
     identity_start = route_source.index("identity = get_request_identity(request)")
-    save_start = route_source.index(
-        "deps.connector_config_service().save_config_payload("
+    actor_start = route_source.index(
+        "actor = connector_config_service.import_actor(\n"
+        "            identity.user_id,"
     )
-    save_end = route_source.index("\n            )", save_start)
-    save_call = route_source[save_start:save_end]
-    if identity_start > save_start:
-        errors.append("connector config save must resolve identity before mutation")
-    if "user_id=identity.user_id," not in save_call:
-        errors.append("connector config save must receive the authenticated request actor")
+    import_start = route_source.index(
+        "deps.connector_config_service().import_configs_payload("
+    )
+    import_end = route_source.index("\n                )", import_start)
+    import_call = route_source[import_start:import_end]
+    if identity_start > actor_start or actor_start > import_start:
+        errors.append("connector config import must resolve identity before mutation")
+    if "actor=actor," not in import_call:
+        errors.append("connector config import must receive the authenticated request actor")
+    if "tenant=tenant_id," not in import_call:
+        errors.append("connector config import must receive the authenticated request tenant")
 
     composition_start = main_source.index("def _platform_connector_config_service()")
     composition_end = main_source.index(
@@ -191,22 +200,22 @@ def check_route_composition_and_gate() -> list[str]:
     composition_source = main_source[composition_start:composition_end]
     if "audit_event_writer=build_audit_event_write_repository()" not in composition_source:
         errors.append("production connector service must inject the audit event writer")
-    if "check_phase6_connector_config_save_actor_audit.py" not in gate_source:
-        errors.append("Phase 6 backend gate must run the connector config save audit check")
+    if "check_phase6_connector_config_import_actor_audit.py" not in gate_source:
+        errors.append("Phase 6 backend gate must run the connector config import audit check")
     return errors
 
 
 def main() -> int:
     with TemporaryDirectory() as temporary_directory:
         temporary_path = Path(temporary_directory)
-        errors = check_save_audit_contract(temporary_path / "connector-configs.json")
+        errors = check_import_audit_contract(temporary_path / "connector-configs.json")
         errors += check_audit_fail_closed(temporary_path / "failed-configs.json")
         errors += check_route_composition_and_gate()
     if errors:
         for error in errors:
-            print(f"[phase6-connector-config-save-actor-audit] {error}", file=sys.stderr)
+            print(f"[phase6-connector-config-import-actor-audit] {error}", file=sys.stderr)
         return 1
-    print("[phase6-connector-config-save-actor-audit] passed")
+    print("[phase6-connector-config-import-actor-audit] passed")
     return 0
 
 
