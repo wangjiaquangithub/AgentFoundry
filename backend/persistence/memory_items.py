@@ -140,6 +140,19 @@ def _validate_memory_item_read_request_identity(
         )
 
 
+def _validate_memory_item_read_optional_request_identity(
+    field_name: str,
+    value: Any,
+) -> None:
+    if value is not None and (
+        not isinstance(value, str) or not value.strip()
+    ):
+        raise ValueError(
+            "Memory item read requires a non-blank request "
+            f"{field_name} when present."
+        )
+
+
 def _validate_memory_item_read_count(
     records: list[MemoryItemRecord],
     *,
@@ -292,6 +305,13 @@ class SQLiteMemoryItemReadRepository:
         limit: int = 50,
     ) -> list[MemoryItemRecord]:
         _validate_memory_item_read_request_identity("tenant id", tenant_id)
+        for field_name, value in (
+            ("user id", user_id),
+            ("agent id", agent_id),
+            ("session id", session_id),
+            ("source run id", source_run_id),
+        ):
+            _validate_memory_item_read_optional_request_identity(field_name, value)
         as_of = datetime.now(timezone.utc)
         result_limit = self._clamp_limit(limit)
         query = """
@@ -395,6 +415,13 @@ class PostgresMemoryItemReadRepository:
         limit: int = 50,
     ) -> list[MemoryItemRecord]:
         _validate_memory_item_read_request_identity("tenant id", tenant_id)
+        for field_name, value in (
+            ("user id", user_id),
+            ("agent id", agent_id),
+            ("session id", session_id),
+            ("source run id", source_run_id),
+        ):
+            _validate_memory_item_read_optional_request_identity(field_name, value)
         as_of = datetime.now(timezone.utc)
         result_limit = self._clamp_limit(limit)
         query = """

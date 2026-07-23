@@ -262,6 +262,13 @@ CHECKS = (
         ],
     ),
     (
+        "memory-item read request optional identity fail closed",
+        [
+            sys.executable,
+            "scripts/check_phase6_memory_item_read_request_optional_identity_fail_closed.py",
+        ],
+    ),
+    (
         "memory-item read required identity fail closed",
         [
             sys.executable,
