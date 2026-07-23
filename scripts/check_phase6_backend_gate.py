@@ -57,6 +57,10 @@ CHECKS = (
         [sys.executable, "scripts/check_phase6_approval_audit.py"],
     ),
     (
+        "model config mutation audit contract",
+        [sys.executable, "scripts/check_phase6_model_config_audit.py"],
+    ),
+    (
         "README bootstrap",
         [sys.executable, "scripts/check_phase6_readme_bootstrap.py"],
     ),
