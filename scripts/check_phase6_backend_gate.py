@@ -174,6 +174,13 @@ CHECKS = (
         ],
     ),
     (
+        "connector config save authenticated actor audit",
+        [
+            sys.executable,
+            "scripts/check_phase6_connector_config_save_actor_audit.py",
+        ],
+    ),
+    (
         "backend logging configuration",
         [sys.executable, "scripts/check_phase6_logging_config.py"],
     ),
