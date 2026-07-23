@@ -112,6 +112,17 @@ def _validate_memory_item_read_identity(record: MemoryItemRecord) -> None:
     ):
         if not isinstance(value, str) or not value.strip():
             raise ValueError(f"Memory item read requires a non-blank {field_name}.")
+    for field_name, value in (
+        ("agent id", record.agent_id),
+        ("session id", record.session_id),
+        ("source run id", record.source_run_id),
+    ):
+        if value is not None and (
+            not isinstance(value, str) or not value.strip()
+        ):
+            raise ValueError(
+                f"Memory item read requires a non-blank {field_name} when present."
+            )
 
 
 def _validate_memory_item_read_count(

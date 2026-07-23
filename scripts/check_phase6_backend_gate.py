@@ -241,6 +241,13 @@ CHECKS = (
         ],
     ),
     (
+        "memory-item read optional identity type fail closed",
+        [
+            sys.executable,
+            "scripts/check_phase6_memory_item_read_optional_identity_type_fail_closed.py",
+        ],
+    ),
+    (
         "memory-item write tenant conflict fail closed",
         [
             sys.executable,
