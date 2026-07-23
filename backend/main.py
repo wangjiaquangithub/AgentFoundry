@@ -106,6 +106,7 @@ from platform_config import (
     now_iso,
     safe_path_part,
 )
+from logging_config import configure_backend_logging
 from repositories.agents import (
     AgentRepository,
 )
@@ -191,6 +192,7 @@ from services.workflows import (
 )
 
 load_local_env()
+configure_backend_logging()
 
 agent_fallback_repository = AgentRepository(PLATFORM_AGENTS_PATH)
 agent_run_fallback_repository = AgentRunRepository(PLATFORM_AGENT_RUNS_PATH)

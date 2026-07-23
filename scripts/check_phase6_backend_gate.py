@@ -25,6 +25,10 @@ CHECKS = (
         [sys.executable, "scripts/check_phase6_request_logging.py"],
     ),
     (
+        "backend logging configuration",
+        [sys.executable, "scripts/check_phase6_logging_config.py"],
+    ),
+    (
         "correlated API error responses",
         [sys.executable, "scripts/check_phase6_error_handling.py"],
     ),
