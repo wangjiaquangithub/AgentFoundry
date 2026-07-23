@@ -117,11 +117,30 @@ class PlatformMemberService:
     ) -> list[dict[str, Any]]:
         return _merge_by_key(existing, imported, "user_id")
 
-    def import_members_payload(self, value: Any, *, actor: str, mode: str) -> None:
+    def import_members_payload(
+        self,
+        value: Any,
+        *,
+        actor: str,
+        mode: str,
+        tenant: str,
+    ) -> None:
         imported_members = self.normalize_import_members(value, actor=actor)
+        if any(member["tenant"] != tenant for member in imported_members):
+            raise PlatformMemberServiceError(
+                403,
+                "Imported members must belong to the request tenant.",
+            )
         existing_members = self.list_members(include_inactive=True)
         members = (
-            imported_members
+            [
+                *[
+                    member
+                    for member in existing_members
+                    if member["tenant"] != tenant
+                ],
+                *imported_members,
+            ]
             if mode == "replace"
             else self.merge_import_members(
                 existing_members,

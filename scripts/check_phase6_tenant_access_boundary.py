@@ -716,6 +716,117 @@ def assert_platform_config_export_uses_request_tenant() -> None:
         )
 
 
+def assert_platform_config_import_uses_request_tenant() -> None:
+    api_source = (BACKEND_DIR / "api" / "platform_admin.py").read_text(
+        encoding="utf-8",
+    )
+    import_route = api_source[api_source.index(
+        '@router.post("/enterprise/platform/config/import")'
+    ):api_source.index("return router", api_source.index(
+        '@router.post("/enterprise/platform/config/import")'
+    ))]
+    required_route_fragments = (
+        "identity = get_request_identity(request)",
+        "tenant_id = _request_tenant(",
+        "identity_user_id=identity.user_id",
+        "identity_tenant_id=identity.tenant_id",
+        "tenant=None",
+        "tenant_hint_from_user_id=deps.tenant_hint_from_user_id",
+        "import_members_payload(",
+        "import_configs_payload(",
+        "tenant=tenant_id",
+        "export_platform_config(\n            actor_user_id=actor,\n            tenant=tenant_id,",
+    )
+    missing_route_fragments = [
+        fragment for fragment in required_route_fragments if fragment not in import_route
+    ]
+    if missing_route_fragments:
+        raise AssertionError(
+            "Platform config import tenant boundary is incomplete: "
+            + ", ".join(missing_route_fragments),
+        )
+    if import_route.count("_request_tenant(") != 1:
+        raise AssertionError(
+            "Platform config import must resolve the canonical request tenant.",
+        )
+    if import_route.count("tenant=tenant_id") != 3:
+        raise AssertionError(
+            "Platform config import must scope tenant-owned writes and response export.",
+        )
+
+    member_source = (BACKEND_DIR / "services" / "members.py").read_text(
+        encoding="utf-8",
+    )
+    member_import = member_source[member_source.index(
+        "def import_members_payload("
+    ):member_source.index(
+        "def list_members(",
+        member_source.index("def import_members_payload("),
+    )]
+    required_member_fragments = (
+        "tenant: str",
+        'member["tenant"] != tenant',
+        "Imported members must belong to the request tenant.",
+        "if mode == \"replace\"",
+    )
+    missing_member_fragments = [
+        fragment for fragment in required_member_fragments
+        if fragment not in member_import
+    ]
+    if missing_member_fragments:
+        raise AssertionError(
+            "Member config import tenant scope is incomplete: "
+            + ", ".join(missing_member_fragments),
+        )
+
+    connector_source = (BACKEND_DIR / "services" / "connectors.py").read_text(
+        encoding="utf-8",
+    )
+    normalize_configs = connector_source[connector_source.index(
+        "def normalize_import_configs("
+    ):connector_source.index(
+        "def import_configs_payload(",
+        connector_source.index("def normalize_import_configs("),
+    )]
+    required_normalize_fragments = (
+        "tenant: str | None = None",
+        "config_tenant != tenant",
+        "Imported connector configs must belong to the request tenant.",
+        "existing_configs.get(config_tenant)",
+    )
+    missing_normalize_fragments = [
+        fragment for fragment in required_normalize_fragments
+        if fragment not in normalize_configs
+    ]
+    if missing_normalize_fragments:
+        raise AssertionError(
+            "Connector config normalization tenant scope is incomplete: "
+            + ", ".join(missing_normalize_fragments),
+        )
+
+    connector_import = connector_source[connector_source.index(
+        "def import_configs_payload("
+    ):connector_source.index(
+        "def test_connector(",
+        connector_source.index("def import_configs_payload("),
+    )]
+    required_import_fragments = (
+        "tenant: str",
+        "tenant=tenant",
+        "if config_tenant != tenant",
+        "if mode == \"replace\"",
+    )
+    missing_import_fragments = [
+        fragment for fragment in required_import_fragments
+        if fragment not in connector_import
+    ]
+    if missing_import_fragments:
+        raise AssertionError(
+            "Connector config import tenant scope is incomplete: "
+            + ", ".join(missing_import_fragments),
+        )
+
+
 def main() -> None:
     assert_agent_list_is_tenant_scoped()
     assert_cross_tenant_runtime_access_is_denied()
@@ -732,6 +843,7 @@ def main() -> None:
     assert_connector_config_update_uses_request_tenant()
     assert_connector_test_uses_request_tenant()
     assert_platform_config_export_uses_request_tenant()
+    assert_platform_config_import_uses_request_tenant()
     print("Phase 6 tenant access boundary contract passed.")
 
 

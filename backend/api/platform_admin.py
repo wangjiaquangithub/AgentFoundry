@@ -433,6 +433,12 @@ def create_platform_admin_router(
     ) -> dict[str, Any]:
         """Import portable platform configuration by merging or replacing sections."""
         identity = get_request_identity(request)
+        tenant_id = _request_tenant(
+            identity_user_id=identity.user_id,
+            identity_tenant_id=identity.tenant_id,
+            tenant=None,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         connector_config_service = deps.connector_config_service()
         actor = connector_config_service.import_actor(
             identity.user_id,
@@ -450,6 +456,7 @@ def create_platform_admin_router(
                     incoming.get("members"),
                     actor=actor,
                     mode=mode,
+                    tenant=tenant_id,
                 )
             except PlatformMemberServiceError as exc:
                 _raise_service_error(exc)
@@ -460,6 +467,7 @@ def create_platform_admin_router(
                     incoming.get("connector_configs"),
                     actor=actor,
                     mode=mode,
+                    tenant=tenant_id,
                 )
             except PlatformConnectorConfigServiceError as exc:
                 _raise_service_error(exc)
@@ -496,7 +504,10 @@ def create_platform_admin_router(
                 deps.build_tool_authorization_policy(),
             )
 
-        exported = export_platform_config(actor_user_id=actor)
+        exported = export_platform_config(
+            actor_user_id=actor,
+            tenant=tenant_id,
+        )
         return deps.connector_config_service().import_config_response(
             mode=mode,
             exported_config=exported,

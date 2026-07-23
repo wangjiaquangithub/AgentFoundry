@@ -599,6 +599,7 @@ class PlatformConnectorConfigService:
         *,
         existing_configs: dict[str, dict[str, Any]],
         actor: str,
+        tenant: str | None = None,
     ) -> list[dict[str, Any]]:
         if value is None:
             return []
@@ -618,17 +619,22 @@ class PlatformConnectorConfigService:
 
         configs: list[dict[str, Any]] = []
         for raw in raw_configs:
-            tenant = str(raw.get("tenant") or "").strip()
+            config_tenant = str(raw.get("tenant") or tenant or "").strip()
+            if tenant is not None and config_tenant != tenant:
+                raise PlatformConnectorConfigServiceError(
+                    403,
+                    "Imported connector configs must belong to the request tenant.",
+                )
             base_url = str(raw.get("base_url") or "").strip().rstrip("/")
-            if not tenant or not base_url:
+            if not config_tenant or not base_url:
                 continue
-            existing = existing_configs.get(tenant) or {}
+            existing = existing_configs.get(config_tenant) or {}
             token = str(raw.get("token") or "").strip() or str(
                 existing.get("token") or "",
             ).strip()
             configs.append(
                 {
-                    "tenant": tenant,
+                    "tenant": config_tenant,
                     "base_url": base_url,
                     "token": token or None,
                     "policy_path": str(
@@ -648,15 +654,30 @@ class PlatformConnectorConfigService:
             )
         return configs
 
-    def import_configs_payload(self, value: Any, *, actor: str, mode: str) -> None:
+    def import_configs_payload(
+        self,
+        value: Any,
+        *,
+        actor: str,
+        mode: str,
+        tenant: str,
+    ) -> None:
         existing_configs = self.list_configs()
         imported_configs = self.normalize_import_configs(
             value,
             existing_configs=existing_configs,
             actor=actor,
+            tenant=tenant,
         )
         if mode == "replace":
-            configs = {config["tenant"]: config for config in imported_configs}
+            configs = {
+                **{
+                    config_tenant: config
+                    for config_tenant, config in existing_configs.items()
+                    if config_tenant != tenant
+                },
+                **{config["tenant"]: config for config in imported_configs},
+            }
         else:
             configs = {
                 **existing_configs,
