@@ -139,6 +139,17 @@ def _validate_memory_item_write_expiry(
         raise ValueError(f"Memory item {record.id} write rejected an expired item.")
 
 
+def _validate_memory_item_write_created_at(record: MemoryItemRecord) -> None:
+    try:
+        created_at = datetime.fromisoformat(record.created_at)
+    except ValueError as exc:
+        raise ValueError(
+            f"Memory item {record.id} has an invalid created time."
+        ) from exc
+    if created_at.utcoffset() is None:
+        raise ValueError(f"Memory item {record.id} has a timezone-naive created time.")
+
+
 class SQLiteMemoryItemReadRepository:
     """Read tenant-scoped memory items from SQLite."""
 
@@ -318,6 +329,7 @@ class PostgresMemoryItemWriteRepository:
         self._database = database
 
     def append_memory_item(self, record: MemoryItemRecord) -> MemoryItemRecord:
+        _validate_memory_item_write_created_at(record)
         _validate_memory_item_write_expiry(
             record,
             as_of=datetime.now(timezone.utc),
