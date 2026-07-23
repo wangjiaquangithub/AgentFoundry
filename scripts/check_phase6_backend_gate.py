@@ -25,6 +25,10 @@ CHECKS = (
         [sys.executable, "scripts/check_phase6_request_logging.py"],
     ),
     (
+        "correlated API error responses",
+        [sys.executable, "scripts/check_phase6_error_handling.py"],
+    ),
+    (
         "secret hygiene",
         [sys.executable, "scripts/check_phase6_secret_hygiene.py"],
     ),

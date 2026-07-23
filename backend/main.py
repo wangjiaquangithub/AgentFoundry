@@ -26,6 +26,7 @@ from api.agent_runtime import (
     create_agent_runtime_router,
 )
 from api.agents import AgentCatalogRouteDependencies, create_agent_catalog_router
+from api.error_handling import register_error_handlers
 from api.knowledge import (
     KnowledgeBasesRouteDependencies,
     KnowledgeDocumentsRouteDependencies,
@@ -581,6 +582,7 @@ app = create_app(
     ],
     title="AgentScope Enterprise Knowledge Assistant",
 )
+register_error_handlers(app)
 
 
 def _platform_workflow_template_service() -> PlatformWorkflowTemplateService:
