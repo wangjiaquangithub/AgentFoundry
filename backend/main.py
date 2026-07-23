@@ -51,6 +51,7 @@ from api.platform_admin import (
     create_platform_admin_router,
 )
 from api.health import create_health_router
+from api.request_logging import StructuredRequestLoggingMiddleware
 from api.tools import ToolAuditRouteDependencies, create_tool_audit_router
 from api.workflows import (
     WorkflowGovernanceRouteDependencies,
@@ -568,6 +569,9 @@ app = create_app(
     extra_agent_middlewares=build_enterprise_middlewares,
     custom_subagent_templates=ENTERPRISE_SUBAGENT_TEMPLATES,
     extra_middlewares=[
+        Middleware(
+            StructuredRequestLoggingMiddleware,
+        ),
         Middleware(
             CORSMiddleware,
             allow_origins=os.getenv("CORS_ALLOW_ORIGINS", "*").split(","),
