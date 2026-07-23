@@ -248,6 +248,13 @@ CHECKS = (
         ],
     ),
     (
+        "memory-item read metadata value fail closed",
+        [
+            sys.executable,
+            "scripts/check_phase6_memory_item_read_metadata_value_fail_closed.py",
+        ],
+    ),
+    (
         "memory-item read content type fail closed",
         [
             sys.executable,

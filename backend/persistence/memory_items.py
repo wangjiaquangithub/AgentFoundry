@@ -51,6 +51,10 @@ def _metadata_from_json(value: dict[str, Any] | str, item_id: str) -> dict[str, 
         raise ValueError(f"Memory item {item_id} has invalid metadata JSON.") from exc
     if not isinstance(parsed, dict):
         raise ValueError(f"Memory item {item_id} has invalid metadata JSON.")
+    try:
+        json.dumps(parsed, ensure_ascii=False, allow_nan=False)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Memory item {item_id} has invalid metadata JSON.") from exc
     return parsed
 
 
