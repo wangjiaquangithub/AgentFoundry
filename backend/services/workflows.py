@@ -488,7 +488,7 @@ class PlatformWorkflowRunService:
         payload: Any,
         actor: str | None,
     ) -> dict[str, Any]:
-        user_id = payload.user_id or actor or "acme:alice"
+        user_id = actor or payload.user_id or "acme:alice"
         requested_agent_id = _optional_filter(payload.agent_id) or ""
         return {
             "user_id": user_id,

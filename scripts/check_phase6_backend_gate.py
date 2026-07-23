@@ -101,6 +101,13 @@ CHECKS = (
         ],
     ),
     (
+        "workflow run authenticated actor identity",
+        [
+            sys.executable,
+            "scripts/check_phase6_workflow_run_actor_identity.py",
+        ],
+    ),
+    (
         "workflow tool execution request tenant",
         [
             sys.executable,
