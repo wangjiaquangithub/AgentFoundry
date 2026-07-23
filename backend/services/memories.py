@@ -433,20 +433,35 @@ class PlatformMemoryService:
         record: dict[str, Any],
         max_records: int,
     ) -> dict[str, Any]:
-        self._repository.append_capped(
-            tenant=tenant,
-            user_id=user_id,
-            agent_id=agent_id,
-            record=record,
-            max_records=max_records,
-        )
+        try:
+            persisted_record = self._repository.append_capped(
+                tenant=tenant,
+                user_id=user_id,
+                agent_id=agent_id,
+                record=record,
+                max_records=max_records,
+            )
+        except Exception as exc:
+            raise PlatformMemoryServiceError(
+                500,
+                "Agent-run memory persistence is unavailable",
+            ) from exc
+        if (
+            not isinstance(persisted_record, dict)
+            or str(persisted_record.get("id") or "").strip()
+            != str(record.get("id") or "").strip()
+        ):
+            raise PlatformMemoryServiceError(
+                500,
+                "Agent-run memory persistence is unavailable",
+            )
         self._append_memory_audit_event(
             tenant=tenant,
             user_id=user_id,
             agent_id=agent_id,
             record=record,
         )
-        return record
+        return persisted_record
 
     def _append_memory_audit_event(
         self,

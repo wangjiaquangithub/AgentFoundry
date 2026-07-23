@@ -143,6 +143,13 @@ CHECKS = (
         ],
     ),
     (
+        "agent-run memory persistence fail closed",
+        [
+            sys.executable,
+            "scripts/check_phase6_agent_run_memory_persistence_fail_closed.py",
+        ],
+    ),
+    (
         "tool request tenant",
         [
             sys.executable,

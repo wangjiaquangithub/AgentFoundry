@@ -30,8 +30,10 @@ class MemoryRepository:
     def __init__(self) -> None:
         self.records: list[dict[str, Any]] = []
 
-    def append_capped(self, **kwargs: Any) -> None:
-        self.records.append(dict(kwargs["record"]))
+    def append_capped(self, **kwargs: Any) -> dict[str, Any]:
+        record = dict(kwargs["record"])
+        self.records.append(record)
+        return record
 
 
 class AuditWriter:

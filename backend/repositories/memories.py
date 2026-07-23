@@ -120,9 +120,9 @@ class PlatformMemoryRepository:
         agent_id: str,
         record: dict[str, Any],
         max_records: int,
-    ) -> None:
+    ) -> dict[str, Any]:
         if tenant and self._memory_item_writer is not None:
-            self._memory_item_writer.append_memory_item(
+            persisted = self._memory_item_writer.append_memory_item(
                 _platform_record_to_memory_item(
                     tenant=tenant,
                     user_id=user_id,
@@ -130,7 +130,7 @@ class PlatformMemoryRepository:
                     record=record,
                 ),
             )
-            return
+            return _platform_memory_from_memory_item(persisted)
 
         path = self.path_for(
             tenant=tenant,
@@ -149,6 +149,7 @@ class PlatformMemoryRepository:
             "\n".join(json.dumps(item, ensure_ascii=False) for item in records) + "\n",
             encoding="utf-8",
         )
+        return dict(record)
 
 
 class MemoryItemReadRepository(Protocol):
