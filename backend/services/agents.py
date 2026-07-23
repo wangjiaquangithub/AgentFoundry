@@ -90,6 +90,17 @@ class PlatformAgentService:
     def request_tenant(self, user_id: str | None) -> str:
         return self._tenant_for_user(self.resolve_request_user_id(user_id))
 
+    def resolve_catalog_tenant(
+        self,
+        *,
+        tenant: str | None,
+        user_id: str | None,
+    ) -> str:
+        request_tenant = (tenant or "").strip() or self.request_tenant(user_id)
+        if not request_tenant:
+            raise PlatformAgentServiceError(400, "Agent tenant is required.")
+        return request_tenant
+
     def list_agents_for_user(self, user_id: str | None) -> list[dict[str, Any]]:
         return self.list_agents(tenant=self.request_tenant(user_id))
 
@@ -111,10 +122,14 @@ class PlatformAgentService:
         payload: Any,
         *,
         header_user_id: str | None = None,
+        tenant: str | None = None,
     ) -> dict[str, Any]:
         user_id = self.resolve_request_user_id(header_user_id)
-        user_tenant = self._tenant_for_user(user_id)
-        existing_agent = self.get_agent(agent_id, tenant=user_tenant)
+        request_tenant = self.resolve_catalog_tenant(
+            tenant=tenant,
+            user_id=user_id,
+        )
+        existing_agent = self.get_agent(agent_id, tenant=request_tenant)
         return {
             "user_id": user_id,
             "resource_inputs": self.resource_validation_inputs(
@@ -652,6 +667,8 @@ class PlatformAgentService:
         self,
         payload: Any,
         user_id: str,
+        *,
+        tenant: str | None = None,
     ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         template = self.get_template(payload.template_id)
         template_tools = list(template["tools"])
@@ -659,12 +676,15 @@ class PlatformAgentService:
         self.validate_tools(template, selected_tools)
 
         now = datetime.now(timezone.utc).isoformat()
-        tenant = self.normalize_tenant(payload.tenant, user_id)
-        user_tenant = self._tenant_for_user(user_id)
-        if tenant != user_tenant:
+        request_tenant = self.resolve_catalog_tenant(
+            tenant=tenant,
+            user_id=user_id,
+        )
+        agent_tenant = str(payload.tenant or "").strip() or request_tenant
+        if agent_tenant != request_tenant:
             raise PlatformAgentServiceError(
                 403,
-                "Agent tenant must match the request user tenant.",
+                "Agent tenant must match the request identity tenant.",
             )
         name = (payload.name or "").strip() or str(template["name"])
         description = (payload.description or "").strip() or str(
@@ -675,7 +695,7 @@ class PlatformAgentService:
         allowed_user_ids = self.normalize_access_values(payload.allowed_user_ids)
         allowed_roles = self.normalize_access_values(payload.allowed_roles)
         self.validate_access_scope(
-            tenant=tenant,
+            tenant=agent_tenant,
             allowed_user_ids=allowed_user_ids,
             allowed_roles=allowed_roles,
         )
@@ -684,7 +704,7 @@ class PlatformAgentService:
             "template_id": template["id"],
             "name": name,
             "description": description,
-            "tenant": tenant,
+            "tenant": agent_tenant,
             "tools": list(selected_tools),
             "knowledge_base_ids": knowledge_base_ids,
             "model_config_id": model_config_id,
@@ -699,9 +719,9 @@ class PlatformAgentService:
             "updated_at": now,
         }
 
-        agents = self.list_agents(tenant=tenant)
+        agents = self.list_agents(tenant=request_tenant)
         agents.append(agent)
-        self.save_tenant_agents(tenant=tenant, agents=agents)
+        self.save_tenant_agents(tenant=request_tenant, agents=agents)
         self._append_platform_agent_audit_event(
             agent=agent,
             actor=user_id,
@@ -713,8 +733,10 @@ class PlatformAgentService:
         self,
         payload: Any,
         user_id: str,
+        *,
+        tenant: str | None = None,
     ) -> dict[str, Any]:
-        agent, agents = self.create_agent(payload, user_id)
+        agent, agents = self.create_agent(payload, user_id, tenant=tenant)
         return self.mutation_response(agent, agents)
 
     def update_agent(
@@ -722,9 +744,14 @@ class PlatformAgentService:
         agent_id: str,
         payload: Any,
         user_id: str,
+        *,
+        tenant: str | None = None,
     ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-        tenant = self._tenant_for_user(user_id)
-        agents = self.list_agents(tenant=tenant)
+        request_tenant = self.resolve_catalog_tenant(
+            tenant=tenant,
+            user_id=user_id,
+        )
+        agents = self.list_agents(tenant=request_tenant)
         agent_index = next(
             (
                 index
@@ -751,11 +778,11 @@ class PlatformAgentService:
                 template["description"],
             )
         if "tenant" in changes:
-            updated_tenant = self.normalize_tenant(payload.tenant, user_id)
-            if updated_tenant != tenant:
+            updated_tenant = str(payload.tenant or "").strip() or request_tenant
+            if updated_tenant != request_tenant:
                 raise PlatformAgentServiceError(
                     403,
-                    "Agent tenant must match the request user tenant.",
+                    "Agent tenant must match the request identity tenant.",
                 )
             agent["tenant"] = updated_tenant
         if "tools" in changes:
@@ -797,7 +824,7 @@ class PlatformAgentService:
         agent["capabilities"] = list(template["capabilities"])
         agent["updated_at"] = datetime.now(timezone.utc).isoformat()
         agents[agent_index] = agent
-        self.save_tenant_agents(tenant=tenant, agents=agents)
+        self.save_tenant_agents(tenant=request_tenant, agents=agents)
         event_type = (
             "platform_agent.archived"
             if previous_status != "archived" and agent.get("status") == "archived"
@@ -816,8 +843,15 @@ class PlatformAgentService:
         agent_id: str,
         payload: Any,
         user_id: str,
+        *,
+        tenant: str | None = None,
     ) -> dict[str, Any]:
-        agent, agents = self.update_agent(agent_id, payload, user_id)
+        agent, agents = self.update_agent(
+            agent_id,
+            payload,
+            user_id,
+            tenant=tenant,
+        )
         return self.mutation_response(agent, agents)
 
     def archive_agent(
@@ -825,10 +859,14 @@ class PlatformAgentService:
         agent_id: str,
         *,
         user_id: str | None = None,
+        tenant: str | None = None,
     ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         actor = self.resolve_request_user_id(user_id)
-        tenant = self._tenant_for_user(actor)
-        agents = self.list_agents(tenant=tenant)
+        request_tenant = self.resolve_catalog_tenant(
+            tenant=tenant,
+            user_id=actor,
+        )
+        agents = self.list_agents(tenant=request_tenant)
         agent_index = next(
             (
                 index
@@ -854,7 +892,7 @@ class PlatformAgentService:
         agent["capabilities"] = list(template["capabilities"])
         agent["updated_at"] = datetime.now(timezone.utc).isoformat()
         agents[agent_index] = agent
-        self.save_tenant_agents(tenant=tenant, agents=agents)
+        self.save_tenant_agents(tenant=request_tenant, agents=agents)
         self._append_platform_agent_audit_event(
             agent=agent,
             actor=actor,
@@ -867,8 +905,13 @@ class PlatformAgentService:
         agent_id: str,
         *,
         user_id: str | None = None,
+        tenant: str | None = None,
     ) -> dict[str, Any]:
-        agent, agents = self.archive_agent(agent_id, user_id=user_id)
+        agent, agents = self.archive_agent(
+            agent_id,
+            user_id=user_id,
+            tenant=tenant,
+        )
         return self.mutation_response(agent, agents)
 
     def get_template(self, template_id: str) -> dict[str, Any]:

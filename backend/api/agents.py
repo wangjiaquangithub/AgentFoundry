@@ -18,6 +18,32 @@ def _raise_service_error(exc: PlatformAgentServiceError) -> NoReturn:
 class AgentCatalogRouteDependencies:
     agent_service: Callable[[], PlatformAgentService]
     validate_agent_resources: Callable[..., Awaitable[None]]
+    tenant_hint_from_user_id: Callable[[str], str | None]
+
+
+def _request_tenant(
+    *,
+    identity_user_id: str | None,
+    identity_tenant_id: str | None,
+    tenant: str | None,
+    tenant_hint_from_user_id: Callable[[str], str | None],
+) -> str:
+    identity_tenant = (identity_tenant_id or "").strip()
+    hinted_tenant = tenant_hint_from_user_id(identity_user_id or "")
+    request_tenant = identity_tenant or hinted_tenant
+    if not request_tenant:
+        raise HTTPException(
+            status_code=400,
+            detail="request identity does not resolve to a tenant.",
+        )
+
+    explicit_tenant = (tenant or "").strip()
+    if explicit_tenant and explicit_tenant != request_tenant:
+        raise HTTPException(
+            status_code=403,
+            detail="tenant does not match request identity tenant boundary.",
+        )
+    return request_tenant
 
 
 def create_agent_catalog_router(
@@ -40,9 +66,13 @@ def create_agent_catalog_router(
     async def enterprise_platform_agents(request: Request) -> dict[str, Any]:
         """Return platform agent templates and published tenant instances."""
         identity = get_request_identity(request)
-        return deps.agent_service().registry_response_for_user(
-            identity.user_id,
+        tenant = _request_tenant(
+            identity_user_id=identity.user_id,
+            identity_tenant_id=identity.tenant_id,
+            tenant=None,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
         )
+        return deps.agent_service().registry_response(tenant=tenant)
 
     @router.post("/enterprise/platform/agents/publish")
     async def publish_enterprise_platform_agent(
@@ -51,6 +81,12 @@ def create_agent_catalog_router(
     ) -> dict[str, Any]:
         """Publish one business template as a tenant-scoped platform agent."""
         identity = get_request_identity(request)
+        tenant = _request_tenant(
+            identity_user_id=identity.user_id,
+            identity_tenant_id=identity.tenant_id,
+            tenant=payload.tenant,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         agent_service = deps.agent_service()
         publish_request = agent_service.publish_request_payload(
             payload,
@@ -63,7 +99,11 @@ def create_agent_catalog_router(
             publish_request["resource_inputs"],
         )
         try:
-            return agent_service.publish_agent_response_payload(payload, user_id)
+            return agent_service.publish_agent_response_payload(
+                payload,
+                user_id,
+                tenant=tenant,
+            )
         except PlatformAgentServiceError as exc:
             _raise_service_error(exc)
 
@@ -75,12 +115,19 @@ def create_agent_catalog_router(
     ) -> dict[str, Any]:
         """Update a tenant-scoped platform agent instance."""
         identity = get_request_identity(request)
+        tenant = _request_tenant(
+            identity_user_id=identity.user_id,
+            identity_tenant_id=identity.tenant_id,
+            tenant=payload.tenant,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         agent_service = deps.agent_service()
         try:
             update_request = agent_service.update_request_payload(
                 agent_id,
                 payload,
                 header_user_id=identity.user_id,
+                tenant=tenant,
             )
         except PlatformAgentServiceError as exc:
             _raise_service_error(exc)
@@ -95,6 +142,7 @@ def create_agent_catalog_router(
                 agent_id,
                 payload,
                 user_id,
+                tenant=tenant,
             )
         except PlatformAgentServiceError as exc:
             _raise_service_error(exc)
@@ -106,11 +154,18 @@ def create_agent_catalog_router(
     ) -> dict[str, Any]:
         """Archive a platform agent while keeping its registry record."""
         identity = get_request_identity(request)
+        tenant = _request_tenant(
+            identity_user_id=identity.user_id,
+            identity_tenant_id=identity.tenant_id,
+            tenant=None,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         agent_service = deps.agent_service()
         try:
             return agent_service.archive_agent_response_payload(
                 agent_id,
                 user_id=identity.user_id,
+                tenant=tenant,
             )
         except PlatformAgentServiceError as exc:
             _raise_service_error(exc)

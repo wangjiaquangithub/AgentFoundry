@@ -685,6 +685,7 @@ app.include_router(
         AgentCatalogRouteDependencies(
             agent_service=_platform_agent_service,
             validate_agent_resources=_platform_access_helpers.validate_agent_resources,
+            tenant_hint_from_user_id=tenant_hint_from_user_id,
         )
     )
 )

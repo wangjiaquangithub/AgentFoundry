@@ -17,6 +17,13 @@ CHECKS = (
         [sys.executable, "scripts/check_phase6_tenant_access_boundary.py"],
     ),
     (
+        "agent catalog request tenant",
+        [
+            sys.executable,
+            "scripts/check_phase6_agent_catalog_request_tenant.py",
+        ],
+    ),
+    (
         "audit event immutability",
         [sys.executable, "scripts/check_phase6_audit_event_immutability.py"],
     ),
