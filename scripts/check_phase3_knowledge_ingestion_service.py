@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from backend.persistence import DocumentChunkRecord, DocumentRecord
+from backend.persistence import AuditEventRecord, DocumentChunkRecord, DocumentRecord
 from backend.services.knowledge_ingestion import (
     KnowledgeIngestionRequest,
     PlatformKnowledgeIngestionService,
@@ -86,18 +86,29 @@ class Embeddings:
         return 1
 
 
+class AuditEvents:
+    def __init__(self) -> None:
+        self.records: list[AuditEventRecord] = []
+
+    def append_audit_event(self, record: AuditEventRecord) -> AuditEventRecord:
+        self.records.append(record)
+        return record
+
+
 def build_service(
     *,
     knowledge_bases: dict[tuple[str, str], KnowledgeBase] | None = None,
     documents: Documents | None = None,
     chunks: Chunks | None = None,
     embeddings: Embeddings | None = None,
+    audit_events: AuditEvents | None = None,
 ) -> PlatformKnowledgeIngestionService:
     chunk_repository = chunks or Chunks()
     return PlatformKnowledgeIngestionService(
         knowledge_base_repository=KnowledgeBases(knowledge_bases or {}),
         document_repository=documents or Documents(),
         document_chunk_repository=chunk_repository,
+        audit_event_writer=audit_events or AuditEvents(),
         document_chunk_read_repository=chunk_repository,
         embedding_record_repository=embeddings,
         now=lambda: "2026-07-22T00:00:00+00:00",
@@ -129,6 +140,7 @@ def main() -> None:
             title="Support handbook",
             text="Reset passwords from the admin console.\n\n"
             "Escalate billing disputes to finance operations.",
+            actor_user_id="acme:admin",
             source_type="markdown",
             source_uri="s3://agentfoundry-docs/support.md",
         )
@@ -150,6 +162,7 @@ def main() -> None:
             title="Support handbook",
             text="Reset passwords from the admin console.\n\n"
             "Escalate billing disputes to finance operations.",
+            actor_user_id="acme:admin",
         )
     )
     assert second.document_id == result.document_id
@@ -163,6 +176,7 @@ def main() -> None:
             knowledge_base_id="kb_support",
             title="Long handbook",
             text="A" * 500,
+            actor_user_id="acme:admin",
         )
     )
     assert long_result.chunk_count == 3
@@ -179,6 +193,7 @@ def main() -> None:
                 knowledge_base_id="kb_missing",
                 title="Missing",
                 text="Body",
+                actor_user_id="acme:admin",
             )
         )
     except ValueError as exc:
@@ -193,6 +208,7 @@ def main() -> None:
                 knowledge_base_id="kb_support",
                 title="",
                 text="Body",
+                actor_user_id="acme:admin",
             )
         )
     except ValueError as exc:

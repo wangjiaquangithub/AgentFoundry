@@ -112,6 +112,11 @@ def main() -> int:
         "PostgresEmbeddingRecordWriteRepository",
         "composition embedding cleanup repository wiring",
     )
+    _assert_contains(
+        composition_source,
+        "PostgresAuditEventWriteRepository",
+        "composition audit event write repository wiring",
+    )
 
     forbidden_api_terms = {
         "SQLiteDocument",

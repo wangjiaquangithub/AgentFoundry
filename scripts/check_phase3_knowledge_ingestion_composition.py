@@ -66,6 +66,7 @@ def _check_factory_contract() -> list[str]:
             "PostgresDocumentChunkWriteRepository",
             "PostgresDocumentChunkReadRepository",
             "PostgresEmbeddingRecordWriteRepository",
+            "PostgresAuditEventWriteRepository",
         ):
             if not _references_name(build_service, name):
                 errors.append(
@@ -144,6 +145,7 @@ def _check_main_not_wiring_ingestion_service() -> list[str]:
         "PostgresDocumentChunkWriteRepository",
         "PostgresDocumentChunkReadRepository",
         "PostgresEmbeddingRecordWriteRepository",
+        "PostgresAuditEventWriteRepository",
     ):
         if name in source:
             errors.append(

@@ -50,6 +50,7 @@ from services.knowledge_embedding_records import (
 from services.knowledge_ingestion import (
     KnowledgeIngestionRequest,
     PlatformKnowledgeIngestionService,
+    PlatformKnowledgeIngestionServiceError,
 )
 
 
@@ -274,6 +275,8 @@ def create_knowledge_ingestion_router(
             request=request,
             tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
         )
+        identity = get_request_identity(request)
+        actor_user_id = identity.user_id or "system"
         try:
             result = service.ingest_text(
                 KnowledgeIngestionRequest(
@@ -281,12 +284,18 @@ def create_knowledge_ingestion_router(
                     knowledge_base_id=payload.knowledge_base_id,
                     title=payload.title,
                     text=payload.text,
+                    actor_user_id=actor_user_id,
                     source_type=payload.source_type,
                     source_uri=payload.source_uri,
                     object_ref=payload.object_ref,
                     document_id=payload.document_id,
                 )
             )
+        except PlatformKnowledgeIngestionServiceError as exc:
+            raise HTTPException(
+                status_code=exc.status_code,
+                detail=exc.detail,
+            ) from exc
         except ValueError as exc:
             _raise_ingestion_error(exc)
 

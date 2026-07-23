@@ -6,8 +6,18 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from hashlib import sha256
 from typing import Any, Callable, Protocol
+from uuid import uuid4
 
-from backend.persistence import DocumentChunkRecord, DocumentRecord
+from backend.persistence import AuditEventRecord, DocumentChunkRecord, DocumentRecord
+
+
+class PlatformKnowledgeIngestionServiceError(Exception):
+    """Raised when knowledge ingestion infrastructure cannot complete safely."""
+
+    def __init__(self, status_code: int, detail: Any) -> None:
+        super().__init__(str(detail))
+        self.status_code = status_code
+        self.detail = detail
 
 
 class KnowledgeBaseReadRepository(Protocol):
@@ -55,12 +65,18 @@ class EmbeddingRecordDeleteRepository(Protocol):
         ...
 
 
+class AuditEventWriteRepository(Protocol):
+    def append_audit_event(self, record: AuditEventRecord) -> AuditEventRecord:
+        ...
+
+
 @dataclass(frozen=True)
 class KnowledgeIngestionRequest:
     tenant_id: str
     knowledge_base_id: str
     title: str
     text: str
+    actor_user_id: str
     source_type: str = "text"
     source_uri: str | None = None
     object_ref: str | None = None
@@ -112,6 +128,7 @@ class PlatformKnowledgeIngestionService:
         knowledge_base_repository: KnowledgeBaseReadRepository,
         document_repository: DocumentWriteRepository,
         document_chunk_repository: DocumentChunkWriteRepository,
+        audit_event_writer: AuditEventWriteRepository,
         document_chunk_read_repository: DocumentChunkReadRepository | None = None,
         embedding_record_repository: EmbeddingRecordDeleteRepository | None = None,
         now: Callable[[], str] = _utc_now,
@@ -120,6 +137,7 @@ class PlatformKnowledgeIngestionService:
         self._knowledge_base_repository = knowledge_base_repository
         self._document_repository = document_repository
         self._document_chunk_repository = document_chunk_repository
+        self._audit_event_writer = audit_event_writer
         self._document_chunk_read_repository = document_chunk_read_repository
         self._embedding_record_repository = embedding_record_repository
         self._now = now
@@ -133,11 +151,17 @@ class PlatformKnowledgeIngestionService:
         )
         title = _require_text(request.title, "title")
         text = _require_text(request.text, "text")
+        actor_user_id = _require_text(request.actor_user_id, "actor_user_id")
 
-        knowledge_base = self._knowledge_base_repository.get_knowledge_base(
-            tenant_id=tenant_id,
-            knowledge_base_id=knowledge_base_id,
-        )
+        try:
+            knowledge_base = self._knowledge_base_repository.get_knowledge_base(
+                tenant_id=tenant_id,
+                knowledge_base_id=knowledge_base_id,
+            )
+        except ValueError:
+            raise
+        except Exception as exc:
+            raise PlatformKnowledgeIngestionServiceError(500, str(exc)) from exc
         if knowledge_base is None:
             raise ValueError("Knowledge base was not found for this tenant.")
 
@@ -155,40 +179,78 @@ class PlatformKnowledgeIngestionService:
             document_id=document_id,
             text=text,
         )
-        self._replace_existing_chunks(tenant_id=tenant_id, document_id=document_id)
-        persisted_document = self._document_repository.upsert_document(
-            DocumentRecord(
-                id=document_id,
-                tenant_id=tenant_id,
-                knowledge_base_id=knowledge_base_id,
-                title=title,
-                source_type=_require_text(request.source_type, "source_type"),
-                source_uri=request.source_uri,
-                object_ref=request.object_ref,
-                status="ready",
-                created_at=now,
-                updated_at=now,
-            ),
-        )
-        persisted_chunks: list[DocumentChunkRecord] = []
-        for chunk in chunks:
-            persisted_chunks.append(
-                self._document_chunk_repository.append_document_chunk(
-                    DocumentChunkRecord(
-                        id=chunk.id,
-                        tenant_id=tenant_id,
-                        document_id=persisted_document.id,
-                        chunk_index=chunk.index,
-                        content=chunk.content,
-                        metadata=chunk.metadata,
-                        created_at=now,
-                    ),
+        try:
+            self._replace_existing_chunks(tenant_id=tenant_id, document_id=document_id)
+            persisted_document = self._document_repository.upsert_document(
+                DocumentRecord(
+                    id=document_id,
+                    tenant_id=tenant_id,
+                    knowledge_base_id=knowledge_base_id,
+                    title=title,
+                    source_type=_require_text(request.source_type, "source_type"),
+                    source_uri=request.source_uri,
+                    object_ref=request.object_ref,
+                    status="ready",
+                    created_at=now,
+                    updated_at=now,
                 ),
             )
+            persisted_chunks: list[DocumentChunkRecord] = []
+            for chunk in chunks:
+                persisted_chunks.append(
+                    self._document_chunk_repository.append_document_chunk(
+                        DocumentChunkRecord(
+                            id=chunk.id,
+                            tenant_id=tenant_id,
+                            document_id=persisted_document.id,
+                            chunk_index=chunk.index,
+                            content=chunk.content,
+                            metadata=chunk.metadata,
+                            created_at=now,
+                        ),
+                    ),
+                )
+        except ValueError:
+            raise
+        except Exception as exc:
+            raise PlatformKnowledgeIngestionServiceError(500, str(exc)) from exc
 
         embedding_model_config_id = str(
             getattr(knowledge_base, "embedding_model_config_id", "") or ""
         ).strip() or None
+        try:
+            persisted_audit_event = self._audit_event_writer.append_audit_event(
+                AuditEventRecord(
+                    id=str(uuid4()),
+                    tenant_id=tenant_id,
+                    actor_user_id=actor_user_id,
+                    event_type="knowledge_document.ingested",
+                    target_type="knowledge_document",
+                    target_id=persisted_document.id,
+                    payload={
+                        "schema_version": 1,
+                        "tenant_id": tenant_id,
+                        "knowledge_base_id": knowledge_base_id,
+                        "document_id": persisted_document.id,
+                        "status": "ready",
+                        "chunk_count": len(persisted_chunks),
+                        "embedding_model_config_id": embedding_model_config_id,
+                        "embedding_required": True,
+                        "source_type": persisted_document.source_type,
+                        "has_source_uri": bool(persisted_document.source_uri),
+                        "has_object_ref": bool(persisted_document.object_ref),
+                    },
+                    created_at=now,
+                ),
+            )
+        except Exception as exc:
+            raise PlatformKnowledgeIngestionServiceError(500, str(exc)) from exc
+
+        if not str(persisted_audit_event.id or "").strip():
+            raise PlatformKnowledgeIngestionServiceError(
+                500,
+                "PostgreSQL audit event write did not return a persisted id.",
+            )
         guidance = (
             "Document chunks are persisted; create embedding records with a real "
             "provider before production retrieval is ready."

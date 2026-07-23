@@ -906,6 +906,7 @@ def build_postgres_knowledge_ingestion_service(
         knowledge_base_repository=PostgresKnowledgeBaseReadRepository(database),
         document_repository=PostgresDocumentWriteRepository(database),
         document_chunk_repository=PostgresDocumentChunkWriteRepository(database),
+        audit_event_writer=PostgresAuditEventWriteRepository(database),
         document_chunk_read_repository=PostgresDocumentChunkReadRepository(database),
         embedding_record_repository=PostgresEmbeddingRecordWriteRepository(database),
         **kwargs,
