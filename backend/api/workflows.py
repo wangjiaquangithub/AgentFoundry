@@ -122,13 +122,19 @@ def _enterprise_platform_scenarios(
 
 def _runtime_tenant_for_user(
     deps: WorkflowGovernanceRouteDependencies,
+    request: Request,
     user_id: str,
 ) -> str:
     try:
         runtime = deps.connector_config_service().enterprise_runtime_context(user_id)
     except PlatformConnectorConfigServiceError as exc:
         _raise_service_error(exc)
-    return deps.status_service().runtime_selection(runtime)["tenant"]
+    runtime_selection = deps.status_service().runtime_selection(runtime)
+    return _request_tenant(
+        request=request,
+        tenant=runtime_selection["tenant"],
+        tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+    )
 
 
 def _workflow_step(
@@ -282,7 +288,11 @@ def create_workflow_governance_router(
         except PlatformConnectorConfigServiceError as exc:
             _raise_service_error(exc)
         runtime_selection = status_service.runtime_selection(runtime)
-        tenant = runtime_selection["tenant"]
+        tenant = _request_tenant(
+            request=request,
+            tenant=runtime_selection["tenant"],
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         identities = deps.identity_metadata(resolve_context["user_id"], tenant)
         return status_service.resolved_disabled_workflows_payload(
             task_code=resolve_context["task_code"],
@@ -404,9 +414,14 @@ def create_workflow_governance_router(
         except PlatformConnectorConfigServiceError as exc:
             _raise_service_error(exc)
         runtime_selection = deps.status_service().runtime_selection(runtime)
+        tenant = _request_tenant(
+            request=request,
+            tenant=runtime_selection["tenant"],
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         request_payload = approval_service.build_create_request_payload(
             payload=payload,
-            tenant=runtime_selection["tenant"],
+            tenant=tenant,
             user_id=create_context["user_id"],
             requested_by=create_context["requested_by"],
         )
@@ -421,7 +436,7 @@ def create_workflow_governance_router(
             try:
                 deps.workflow_template_service().get_template(
                     workflow_type,
-                    tenant=runtime_selection["tenant"],
+                    tenant=tenant,
                     actor=identity.user_id,
                 )
             except PlatformWorkflowTemplateServiceError as exc:
@@ -448,7 +463,11 @@ def create_workflow_governance_router(
             payload=payload,
             actor=identity.user_id,
         )
-        tenant = _runtime_tenant_for_user(deps, decision_payload["decided_by"])
+        tenant = _runtime_tenant_for_user(
+            deps,
+            request,
+            decision_payload["decided_by"],
+        )
         try:
             approval = approval_service.update_status(
                 approval_id=approval_id,
@@ -473,7 +492,11 @@ def create_workflow_governance_router(
             payload=payload,
             actor=identity.user_id,
         )
-        tenant = _runtime_tenant_for_user(deps, decision_payload["decided_by"])
+        tenant = _runtime_tenant_for_user(
+            deps,
+            request,
+            decision_payload["decided_by"],
+        )
         try:
             approval = approval_service.update_status(
                 approval_id=approval_id,
@@ -521,7 +544,11 @@ def create_workflow_governance_router(
             _raise_service_error(exc)
         status_service = deps.status_service()
         runtime_selection = status_service.runtime_selection(runtime)
-        tenant = runtime_selection["tenant"]
+        tenant = _request_tenant(
+            request=request,
+            tenant=runtime_selection["tenant"],
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         workflow_type = run_request["workflow_type"]
         try:
             workflow_template = (
