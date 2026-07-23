@@ -192,6 +192,13 @@ CHECKS = (
         ],
     ),
     (
+        "memory-item write result transaction fail closed",
+        [
+            sys.executable,
+            "scripts/check_phase6_memory_item_write_result_transaction_fail_closed.py",
+        ],
+    ),
+    (
         "memory-item read created time fail closed",
         [
             sys.executable,

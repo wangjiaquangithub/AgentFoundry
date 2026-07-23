@@ -448,8 +448,8 @@ class PostgresMemoryItemWriteRepository:
                     ),
                 )
                 row = cursor.fetchone()
-        if row is None:
-            raise ValueError("Memory item upsert did not return a row.")
-        persisted = _memory_item_from_row(dict(row))
-        _validate_write_result(record, persisted)
+                if row is None:
+                    raise ValueError("Memory item upsert did not return a row.")
+                persisted = _memory_item_from_row(dict(row))
+                _validate_write_result(record, persisted)
         return persisted
