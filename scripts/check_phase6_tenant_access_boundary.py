@@ -397,9 +397,47 @@ def assert_tool_policy_query_uses_request_tenant() -> None:
     policy_route = source[source.index(
         '@router.get("/enterprise/platform/policies/tools")'
     ):source.index('@router.patch("/enterprise/platform/policies/tools")')]
+    route_fragments = (
+        "query_user_id = _request_user_id(",
+        "identity_user_id=identity.user_id",
+        "tenant=tenant_id",
+        "user_id=user_id",
+        "query_user_id=query_user_id",
+    )
+    missing_route_fragments = [
+        fragment for fragment in route_fragments if fragment not in policy_route
+    ]
+    if missing_route_fragments:
+        raise AssertionError(
+            "Tool policy query user boundary is incomplete: "
+            + ", ".join(missing_route_fragments),
+        )
     if policy_route.count("_request_tenant(") != 1:
         raise AssertionError(
             "Tool policy query must resolve the canonical request tenant.",
+        )
+    if policy_route.count("_request_user_id(") != 1:
+        raise AssertionError(
+            "Tool policy query must resolve a tenant-scoped request user.",
+        )
+
+    helper_source = source[source.index("def _request_user_id("):source.index(
+        "def create_platform_admin_router("
+    )]
+    helper_fragments = (
+        "user_tenant = tenant_hint_from_user_id(request_user_id)",
+        "requested user does not resolve to a tenant",
+        "user_tenant != tenant",
+        "status_code=403",
+        "requested user does not match request identity tenant boundary",
+    )
+    missing_helper_fragments = [
+        fragment for fragment in helper_fragments if fragment not in helper_source
+    ]
+    if missing_helper_fragments:
+        raise AssertionError(
+            "Tool policy request user tenant validation is incomplete: "
+            + ", ".join(missing_helper_fragments),
         )
 
 

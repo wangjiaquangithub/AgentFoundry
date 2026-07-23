@@ -84,6 +84,34 @@ def _request_tenant(
     return request_tenant
 
 
+def _request_user_id(
+    *,
+    identity_user_id: str | None,
+    tenant: str,
+    user_id: str | None,
+    tenant_hint_from_user_id: Callable[[str], str | None],
+) -> str:
+    request_user_id = (user_id or identity_user_id or "").strip()
+    if not request_user_id:
+        raise HTTPException(
+            status_code=400,
+            detail="request identity does not resolve to a user.",
+        )
+
+    user_tenant = tenant_hint_from_user_id(request_user_id)
+    if not user_tenant:
+        raise HTTPException(
+            status_code=400,
+            detail="requested user does not resolve to a tenant.",
+        )
+    if user_tenant != tenant:
+        raise HTTPException(
+            status_code=403,
+            detail="requested user does not match request identity tenant boundary.",
+        )
+    return request_user_id
+
+
 def create_platform_admin_router(
     deps: PlatformAdminRouteDependencies,
 ) -> APIRouter:
@@ -267,10 +295,16 @@ def create_platform_admin_router(
             tenant=tenant,
             tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
         )
+        query_user_id = _request_user_id(
+            identity_user_id=identity.user_id,
+            tenant=tenant_id,
+            user_id=user_id,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         try:
             return deps.tool_policy_service().policy_request_payload(
                 authorization_policy=deps.get_tool_authorization_policy(),
-                query_user_id=user_id,
+                query_user_id=query_user_id,
                 header_user_id=identity.user_id,
                 tenant=tenant_id,
             )
