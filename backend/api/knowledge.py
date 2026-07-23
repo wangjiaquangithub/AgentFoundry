@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Request
 
+from api.request_identity import get_request_identity
 from api.schemas import (
     EnterpriseKnowledgeBaseDetailRequest,
     EnterpriseKnowledgeBaseUpsertRequest,
@@ -97,7 +98,7 @@ def _resolve_tenant(
     tenant_hint_from_user_id: Callable[[str], str | None],
 ) -> str:
     explicit_tenant = (tenant or "").strip()
-    user_id = request.headers.get("X-User-ID") or ""
+    user_id = get_request_identity(request).user_id or ""
     hinted_tenant = tenant_hint_from_user_id(user_id)
     if explicit_tenant and hinted_tenant and explicit_tenant != hinted_tenant:
         raise HTTPException(
@@ -601,7 +602,7 @@ def create_knowledge_retrieval_router(
                 tenant_id=tenant_id,
                 knowledge_base_ids=payload.knowledge_base_ids,
                 query=payload.query,
-                user_id=request.headers.get("X-User-ID") or None,
+                user_id=get_request_identity(request).user_id,
                 limit=payload.limit,
             ),
         }
