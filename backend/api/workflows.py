@@ -302,6 +302,7 @@ def create_workflow_governance_router(
 
     @router.get("/enterprise/platform/approvals")
     async def list_enterprise_approval_requests(
+        request: Request,
         status: str | None = None,
         tenant: str | None = None,
         user_id: str | None = None,
@@ -310,9 +311,14 @@ def create_workflow_governance_router(
     ) -> dict[str, Any]:
         """List recent platform governance approval requests."""
         approval_service = deps.approval_service()
+        tenant_id = _request_tenant(
+            request=request,
+            tenant=tenant,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         list_context = approval_service.list_requests_request_payload(
             status=status,
-            tenant=tenant,
+            tenant=tenant_id,
             user_id=user_id,
             agent_id=agent_id,
             limit=limit,

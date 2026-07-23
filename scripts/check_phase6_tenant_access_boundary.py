@@ -348,6 +348,31 @@ def assert_workflow_run_history_uses_request_tenant() -> None:
         )
 
 
+def assert_approval_history_uses_request_tenant() -> None:
+    source = (BACKEND_DIR / "api" / "workflows.py").read_text(encoding="utf-8")
+    approval_route = source[source.index(
+        '@router.get("/enterprise/platform/approvals")'
+    ):source.index('@router.post("/enterprise/platform/approvals")')]
+    required_fragments = (
+        "request: Request",
+        "tenant_id = _request_tenant(",
+        "tenant_hint_from_user_id=deps.tenant_hint_from_user_id",
+        "tenant=tenant_id",
+    )
+    missing_fragments = [
+        fragment for fragment in required_fragments if fragment not in approval_route
+    ]
+    if missing_fragments:
+        raise AssertionError(
+            "Approval history tenant boundary is incomplete: "
+            + ", ".join(missing_fragments),
+        )
+    if approval_route.count("_request_tenant(") != 1:
+        raise AssertionError(
+            "Approval history must resolve the canonical request tenant.",
+        )
+
+
 def main() -> None:
     assert_agent_list_is_tenant_scoped()
     assert_cross_tenant_runtime_access_is_denied()
@@ -357,6 +382,7 @@ def main() -> None:
     assert_agent_run_history_uses_request_tenant()
     assert_tool_audit_history_uses_request_tenant()
     assert_workflow_run_history_uses_request_tenant()
+    assert_approval_history_uses_request_tenant()
     print("Phase 6 tenant access boundary contract passed.")
 
 
