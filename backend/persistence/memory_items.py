@@ -51,6 +51,24 @@ def _metadata_from_json(value: dict[str, Any] | str, item_id: str) -> dict[str, 
         raise ValueError(f"Memory item {item_id} has invalid metadata JSON.") from exc
     if not isinstance(parsed, dict):
         raise ValueError(f"Memory item {item_id} has invalid metadata JSON.")
+    pending_values: list[Any] = [parsed]
+    visited_containers: set[int] = set()
+    while pending_values:
+        current_value = pending_values.pop()
+        if not isinstance(current_value, (dict, list, tuple)):
+            continue
+        container_id = id(current_value)
+        if container_id in visited_containers:
+            continue
+        visited_containers.add(container_id)
+        if isinstance(current_value, dict):
+            if any(not isinstance(key, str) for key in current_value):
+                raise ValueError(
+                    f"Memory item {item_id} has invalid metadata JSON."
+                )
+            pending_values.extend(current_value.values())
+        else:
+            pending_values.extend(current_value)
     try:
         json.dumps(parsed, ensure_ascii=False, allow_nan=False)
     except (TypeError, ValueError) as exc:
