@@ -50,6 +50,7 @@ from api.platform_admin import (
     PlatformAdminRouteDependencies,
     create_platform_admin_router,
 )
+from api.health import create_health_router
 from api.tools import ToolAuditRouteDependencies, create_tool_audit_router
 from api.workflows import (
     WorkflowGovernanceRouteDependencies,
@@ -838,6 +839,8 @@ app.include_router(
     )
 )
 
+
+app.include_router(create_health_router())
 
 if __name__ == "__main__":
     uvicorn.run(
