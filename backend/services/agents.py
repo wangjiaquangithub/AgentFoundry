@@ -612,6 +612,7 @@ class PlatformAgentService:
                 agent.get("agent_version_id") or agent.get("current_version_id")
             ),
             "agent_name": agent.get("name"),
+            "instructions": agent.get("instructions") or agent.get("description"),
             "template_id": agent.get("template_id"),
             "configured_tenant": agent.get("tenant"),
             "configured_tools": list(agent.get("tools") or []),

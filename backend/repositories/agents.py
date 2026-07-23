@@ -181,6 +181,7 @@ def _agent_catalog_item(
         "template_id": record.template_id,
         "name": record.name,
         "description": record.description,
+        "instructions": version.instructions if version is not None else None,
         "tenant": record.tenant_id,
         "tools": list(version.tool_ids) if version is not None else [],
         "knowledge_base_ids": (

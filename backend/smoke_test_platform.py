@@ -44,12 +44,9 @@ RISK_AGENT_TOOLS = [
     "enterprise_summarize_department_metrics",
 ]
 EXPECTED_RUNTIME_CAPABILITIES = {
-    "tenant_context",
-    "tool_routing",
-    "approval_gate",
-    "knowledge_retrieval",
-    "long_term_memory",
-    "run_evidence",
+    "foundry_governance",
+    "agentscope_runtime",
+    "migration_compatibility",
 }
 
 
@@ -250,6 +247,10 @@ def _ensure_smoke_agent(client: TestClient) -> str:
         if (
             agent.get("template_id") == "enterprise_knowledge_assistant"
             and agent.get("status") == "published"
+            and agent.get("execution_mode") == "agentscope_native"
+            and agent.get("runtime_provider") == "agentscope"
+            and agent.get("memory_enabled") is not True
+            and not (agent.get("knowledge_base_ids") or [])
             and set(SAFE_AGENT_TOOLS).issubset(set(agent.get("tools") or []))
         ):
             print(f"PASS reuse published enterprise agent: {agent['id']}")
@@ -265,9 +266,13 @@ def _ensure_smoke_agent(client: TestClient) -> str:
                 "description": "Smoke-test published instance for platform verification.",
                 "tenant": "acme",
                 "tools": SAFE_AGENT_TOOLS,
-                "memory_enabled": True,
+                # AgentScope owns native Session/history. Foundry long-term Memory
+                # is intentionally not bound until the adapter supports it.
+                "memory_enabled": False,
                 "workflow_enabled": True,
                 "allowed_user_ids": [USER_ID],
+                "execution_mode": "agentscope_native",
+                "runtime_provider": "agentscope",
             },
         ),
         "publish enterprise knowledge assistant",
@@ -287,6 +292,10 @@ def _ensure_risk_smoke_agent(client: TestClient) -> str:
         if (
             agent.get("template_id") == "enterprise_knowledge_assistant"
             and agent.get("status") == "published"
+            and agent.get("execution_mode") == "agentscope_native"
+            and agent.get("runtime_provider") == "agentscope"
+            and agent.get("memory_enabled") is not True
+            and not (agent.get("knowledge_base_ids") or [])
             and set(RISK_AGENT_TOOLS).issubset(set(agent.get("tools") or []))
         ):
             print(f"PASS reuse risk-capable enterprise agent: {agent['id']}")
@@ -302,9 +311,11 @@ def _ensure_risk_smoke_agent(client: TestClient) -> str:
                 "description": "Smoke-test instance for approval-gated platform actions.",
                 "tenant": "acme",
                 "tools": RISK_AGENT_TOOLS,
-                "memory_enabled": True,
+                "memory_enabled": False,
                 "workflow_enabled": True,
                 "allowed_user_ids": [USER_ID],
+                "execution_mode": "agentscope_native",
+                "runtime_provider": "agentscope",
             },
         ),
         "publish risk-capable enterprise knowledge assistant",
@@ -687,7 +698,14 @@ def main() -> None:
     runtime_invocation_result = (
         agent_run_detail.get("runtime_invocation_result") or {}
     )
-    if runtime_invocation_result.get("provider_run_id") != agent_turn_id:
+    provider_run_id = runtime_invocation_result.get("provider_run_id")
+    provider_raw = runtime_invocation_result.get("raw") or {}
+    runtime_boundary_result = provider_raw.get("runtime_boundary_result") or {}
+    provider_evidence = runtime_boundary_result.get("evidence") or {}
+    if (
+        not str(provider_run_id or "").startswith("agentscope-")
+        or provider_evidence.get("provider_run_id") != provider_run_id
+    ):
         raise AssertionError(
             "get enterprise agent run detail failed: "
             f"runtime provider_run_id mismatch: {agent_run_detail}",
@@ -1085,7 +1103,7 @@ def main() -> None:
     listed_runtime_result = (
         listed_agent_run.get("runtime_invocation_result") or {}
     )
-    if listed_runtime_result.get("provider_run_id") != agent_turn_id:
+    if listed_runtime_result.get("provider_run_id") != provider_run_id:
         raise AssertionError(
             "list agent runs failed: "
             f"runtime provider_run_id mismatch: {listed_agent_run}",

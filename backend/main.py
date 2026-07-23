@@ -358,6 +358,10 @@ enterprise_tool_runtime = EnterpriseToolRuntimeFactory(
     audit_logger=tool_audit_logger,
     authorization_policy=_get_tool_authorization_policy,
     tool_names=ENTERPRISE_TOOL_NAMES,
+    approval_required_tools=APPROVAL_REQUIRED_TOOLS,
+    approval_validator=lambda **kwargs: (
+        _platform_approval_service().require_approval(**kwargs)
+    ),
 )
 
 agentscope_native_client = AgentScopeNativeInvocationClient(

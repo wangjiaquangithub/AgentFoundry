@@ -49,7 +49,7 @@ The current local development scripts expect:
 - `uv` for running the Python backend.
 - `pnpm` for running the Vite frontend.
 - Redis, or Docker so the start script can launch Redis automatically.
-- A local AgentScope checkout next to this repository, or `AGENTSCOPE_DIR` pointing to one. This is a development-script requirement, not a production deployment requirement.
+- A pinned AgentScope Python package installed in the backend environment, or a local AgentScope checkout selected with `AGENTSCOPE_DIR` for framework development.
 
 Expected local stack:
 
@@ -59,7 +59,7 @@ agentfoundry-stack/
   agentfoundry/   This repository
 ```
 
-The local scripts currently run the backend through the AgentScope Python environment. Production deployment does not require an AgentScope source checkout: it can install a pinned AgentScope package or call a separately deployed AgentScope Application Service.
+The scripts automatically use a sibling AgentScope checkout when present, or `AGENTSCOPE_DIR` when explicitly set. Otherwise they use the AgentScope package installed in `PYTHON_BIN` (default `python3`). Production deployment does not require an AgentScope source checkout and may instead call a separately deployed AgentScope Application Service.
 
 AgentScope is the core Agent runtime platform, while AgentFoundry remains the enterprise-facing product control plane. AgentScope should own and execute its runtime models and services; it should not own AgentFoundry's enterprise organization master data, product catalog, unified audit model, or external platform API contracts.
 
@@ -196,10 +196,16 @@ Run the platform smoke test when validating the end-to-end local loop:
 ./scripts/smoke_agentfoundry.sh
 ```
 
-The scripts default to `../agentscope` as the AgentScope checkout. Override it when needed:
+For AgentScope framework development, select a source checkout explicitly (a sibling `../agentscope` checkout is also detected automatically):
 
 ```bash
 AGENTSCOPE_DIR=/path/to/agentscope ./scripts/start_agentfoundry.sh
+```
+
+For package-based deployment, omit `AGENTSCOPE_DIR` and optionally select the interpreter:
+
+```bash
+PYTHON_BIN=/opt/agentfoundry/venv/bin/python ./scripts/start_agentfoundry.sh
 ```
 
 ## Current Status

@@ -8,10 +8,10 @@ AgentFoundry 的总目标是成为一个生产级企业 Agent 平台，负责企
 
 生产级在这里不是指“页面看起来完整”，而是至少满足以下条件：
 
-- 有清晰的平台边界：AgentFoundry 管理企业控制面，AgentScope 或其他 runtime 执行 Agent。
+- 有清晰的平台边界：AgentFoundry 管理企业控制面，AgentScope 2.0 作为核心和首选运行平台执行 Agent。
 - 有稳定的核心模型：Tenant、User、Agent、Tool、Workflow、Run、KnowledgeBase、Memory、Audit、ModelConfig 等对象关系明确。
 - 有可维护的后端分层：API、Service、Repository、Runtime Adapter、Policy、Audit、Integration 分层逐步形成。
-- 有可替换的运行时：AgentScope 通过 Runtime Adapter 被后端调用，前端和业务服务不直接依赖 AgentScope。
+- 有稳定的运行边界：AgentScope 通过 Runtime Adapter 被后端调用，前端和业务服务不直接依赖 AgentScope 具体数据类型或部署方式。
 - 有生产数据层：核心数据进入数据库和迁移体系，本地 JSON/JSONL 只保留为开发或导入导出用途。
 - 有企业治理能力：权限、审批、审计、工具策略、租户隔离、配置管理、运行记录可追踪。
 - 有真实可用的控制台：`/platform/*` 每个页面都是清晰的 SaaS 工作区，不是所有能力堆在一个长页面里。
@@ -22,7 +22,7 @@ AgentFoundry 的总目标是成为一个生产级企业 Agent 平台，负责企
 
 ```text
 AgentFoundry = 企业 Agent 控制面 + 平台后端 + SaaS 控制台
-AgentScope = 可替换的 Agent 运行时之一
+AgentScope 2.0 = 核心和首选 Agent Framework / Application Service
 ```
 
 ## 2. 当前状态判断
@@ -43,7 +43,7 @@ AgentScope = 可替换的 Agent 运行时之一
 - 请求/响应 schema、service、repository 和 API route 还没有完全分层。
 - 生产数据库、迁移、事务、索引和租户级数据约束还没有建立。
 - 知识库还没有完整的文档上传、切片、embedding、向量检索、rerank 和检索日志链路。
-- AgentScope 目前应被视为 runtime adapter 的目标方向，不是平台后端本身。
+- AgentScope 是核心运行平台，但不是 AgentFoundry 的企业控制面或业务数据层。
 - 前端部分页面仍需要继续从“卡片堆叠”整理成企业控制台工作区。
 - 认证、授权、审计不可篡改、部署、可观测性和后台任务还没有达到生产要求。
 
@@ -60,7 +60,7 @@ AgentFoundry 自己负责：
 - 模型配置、runtime 配置、平台设置和健康状态。
 - 企业 SaaS 控制台和平台 API。
 
-AgentScope 或其他 runtime 负责：
+AgentScope 负责：
 
 - Agent 推理循环。
 - 模型调用。
@@ -75,7 +75,7 @@ Frontend Console
   -> AgentFoundry Backend API
     -> Platform Services
       -> Runtime Adapter
-        -> AgentScope or another runtime provider
+        -> AgentScope Framework / Application Service
 ```
 
 禁止形成以下耦合：
@@ -383,4 +383,3 @@ Observability and audit sinks
 - 企业知识助手是第一个核心 Agent 闭环。
 - `/platform/*` 是企业 SaaS 控制台，不是营销页，也不是单页 demo。
 - 规划和执行分开；执行必须小块、可验收、可提交。
-

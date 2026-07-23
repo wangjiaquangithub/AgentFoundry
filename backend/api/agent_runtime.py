@@ -175,6 +175,12 @@ def create_agent_runtime_router(
                 ),
                 execution_context=execution_context,
                 runtime_boundary_result=runtime_boundary_result,
+                platform_approval_service=deps.approval_service,
+                raise_platform_approval_service_error=_raise_service_error,
+                decision_with_routing_context=(
+                    deps.enterprise_router_service.decision_with_routing_context
+                ),
+                requested_by=identity.user_id,
             )
         # Everything below is the isolated legacy compatibility executor. Native
         # AgentScope Agents have already returned from the Runtime Gateway above.

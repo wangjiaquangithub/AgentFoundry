@@ -2,7 +2,6 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-AGENTSCOPE_DIR="${AGENTSCOPE_DIR:-$(cd "$ROOT_DIR/../agentscope" && pwd)}"
 BACKEND_PORT="${BACKEND_PORT:-8000}"
 FRONTEND_PORT="${FRONTEND_PORT:-5176}"
 REDIS_HOST="${REDIS_HOST:-127.0.0.1}"
@@ -76,12 +75,6 @@ if ! command_exists nc; then
 	exit 1
 fi
 
-if [ ! -f "$AGENTSCOPE_DIR/pyproject.toml" ]; then
-	log "AgentScope runtime not found at $AGENTSCOPE_DIR"
-	log "Set AGENTSCOPE_DIR to a local AgentScope checkout."
-	exit 1
-fi
-
 if ! port_open "$REDIS_HOST" "$REDIS_PORT"; then
 	if command_exists redis-server; then
 		log "starting local Redis on $REDIS_HOST:$REDIS_PORT"
@@ -113,11 +106,6 @@ else
 	log "using existing Redis at $REDIS_HOST:$REDIS_PORT"
 fi
 
-if ! command_exists uv; then
-	log "missing uv; install uv before starting the AgentScope backend."
-	exit 1
-fi
-
 if ! command_exists pnpm; then
 	log "missing pnpm; install pnpm before starting the Web UI."
 	exit 1
@@ -141,9 +129,7 @@ export PYTHONPATH="$ROOT_DIR/backend${PYTHONPATH:+:$PYTHONPATH}"
 if ! port_open 127.0.0.1 "$PORT"; then
 	log "starting AgentFoundry backend on http://127.0.0.1:$PORT"
 	(
-		cd "$AGENTSCOPE_DIR"
-		uv run --extra service --extra storage --extra rag \
-			python "$ROOT_DIR/backend/main.py"
+		exec "$ROOT_DIR/scripts/run_with_agentscope.sh" "$ROOT_DIR/backend/main.py"
 	) >/tmp/agentscope-enterprise-backend.log 2>&1 &
 	PIDS+=("$!")
 	wait_for_port 127.0.0.1 "$PORT" "Backend"

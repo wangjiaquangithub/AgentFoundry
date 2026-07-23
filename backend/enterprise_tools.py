@@ -2,6 +2,7 @@
 """Enterprise tool runtime factories and authorization wrappers."""
 from __future__ import annotations
 
+from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -49,6 +50,46 @@ ENTERPRISE_TOOL_CATALOG = {
 }
 
 
+@dataclass(frozen=True)
+class EnterpriseToolInvocationContext:
+    """Request-scoped context used by AgentScope permission checks."""
+
+    approval_id: str | None
+    agent_id: str
+    tool_call_records: list[dict[str, Any]]
+
+
+_ENTERPRISE_TOOL_INVOCATION: ContextVar[
+    EnterpriseToolInvocationContext | None
+] = ContextVar("enterprise_tool_invocation", default=None)
+
+
+def start_enterprise_tool_invocation(
+    *,
+    approval_id: str | None,
+    agent_id: str,
+    tool_call_records: list[dict[str, Any]],
+) -> Any:
+    """Bind approval and evidence state for one AgentScope invocation."""
+    return _ENTERPRISE_TOOL_INVOCATION.set(
+        EnterpriseToolInvocationContext(
+            approval_id=approval_id,
+            agent_id=agent_id,
+            tool_call_records=tool_call_records,
+        ),
+    )
+
+
+def finish_enterprise_tool_invocation(token: Any) -> None:
+    """Restore the previous AgentScope invocation context."""
+    _ENTERPRISE_TOOL_INVOCATION.reset(token)
+
+
+def current_enterprise_tool_invocation() -> EnterpriseToolInvocationContext | None:
+    """Return the invocation context while AgentScope is executing a tool."""
+    return _ENTERPRISE_TOOL_INVOCATION.get()
+
+
 class EnterpriseToolRuntimeError(ValueError):
     """Raised when an enterprise tool invocation cannot be completed."""
 
@@ -67,12 +108,16 @@ class ReadOnlyEnterpriseTool(FunctionTool):
         tenant: str,
         user_id: str,
         authorization_policy: ToolAuthorizationPolicy,
+        approval_required_tools: set[str],
+        approval_validator: Callable[..., str],
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
         self._tenant = tenant
         self._user_id = user_id
         self._authorization_policy = authorization_policy
+        self._approval_required_tools = approval_required_tools
+        self._approval_validator = approval_validator
 
     async def check_read_only(
         self,
@@ -104,6 +149,74 @@ class ReadOnlyEnterpriseTool(FunctionTool):
                 decision_reason=decision.reason,
             )
 
+        invocation = _ENTERPRISE_TOOL_INVOCATION.get()
+        if self.name in self._approval_required_tools:
+            approval_id = invocation.approval_id if invocation is not None else None
+            agent_id = invocation.agent_id if invocation is not None else ""
+            try:
+                self._approval_validator(
+                    approval_id=approval_id,
+                    request_type="tool_run",
+                    target_key="tool_name",
+                    target_value=self.name,
+                    tenant=self._tenant,
+                    user_id=self._user_id,
+                    agent_id=agent_id,
+                    inputs=dict(_tool_input),
+                )
+            except Exception as exc:
+                status_code = getattr(exc, "status_code", None)
+                detail = getattr(exc, "detail", None)
+                if (
+                    status_code != 403
+                    or not isinstance(detail, dict)
+                    or not detail.get("approval_required")
+                ):
+                    raise
+                if invocation is not None:
+                    invocation.tool_call_records.append(
+                        {
+                            "tool_name": self.name,
+                            "inputs": dict(_tool_input),
+                            "allowed": False,
+                            "approval_required": True,
+                            "approval_detail": dict(detail),
+                            "connector": getattr(
+                                self,
+                                "_agentfoundry_connector",
+                                None,
+                            ),
+                            "connector_source": getattr(
+                                self,
+                                "_agentfoundry_connector_source",
+                                None,
+                            ),
+                            "routing_source": "agentscope",
+                            "routing_reason": (
+                                "AgentScope denied the governed tool at the "
+                                "permission enforcement point because a matching "
+                                "approval was not available."
+                            ),
+                            "decision": {
+                                "allowed": False,
+                                "reason": str(
+                                    detail.get(
+                                        "message",
+                                        "该工具需要审批后才能运行。",
+                                    ),
+                                ),
+                                "approval_required": True,
+                            },
+                        },
+                    )
+                return PermissionDecision(
+                    behavior=PermissionBehavior.DENY,
+                    message=str(
+                        detail.get("message", "该工具需要审批后才能运行。"),
+                    ),
+                    decision_reason="approval_required",
+                )
+
         return PermissionDecision(
             behavior=PermissionBehavior.ALLOW,
             message=(
@@ -123,6 +236,8 @@ class EnterpriseToolRuntimeFactory:
     audit_logger: ToolAuditLogger
     authorization_policy: Callable[[], ToolAuthorizationPolicy]
     tool_names: list[str]
+    approval_required_tools: set[str]
+    approval_validator: Callable[..., str]
 
     async def build_tools(
         self,
@@ -222,7 +337,7 @@ class EnterpriseToolRuntimeFactory:
             )
 
         authorization_policy = self.authorization_policy()
-        return [
+        tools = [
             ReadOnlyEnterpriseTool(
                 lookup_policy,
                 name="enterprise_lookup_policy",
@@ -233,6 +348,8 @@ class EnterpriseToolRuntimeFactory:
                 tenant=tenant,
                 user_id=user_id,
                 authorization_policy=authorization_policy,
+                approval_required_tools=self.approval_required_tools,
+                approval_validator=self.approval_validator,
             ),
             ReadOnlyEnterpriseTool(
                 get_ticket_status,
@@ -242,6 +359,8 @@ class EnterpriseToolRuntimeFactory:
                 tenant=tenant,
                 user_id=user_id,
                 authorization_policy=authorization_policy,
+                approval_required_tools=self.approval_required_tools,
+                approval_validator=self.approval_validator,
             ),
             ReadOnlyEnterpriseTool(
                 summarize_department_metrics,
@@ -253,6 +372,8 @@ class EnterpriseToolRuntimeFactory:
                 tenant=tenant,
                 user_id=user_id,
                 authorization_policy=authorization_policy,
+                approval_required_tools=self.approval_required_tools,
+                approval_validator=self.approval_validator,
             ),
             ReadOnlyEnterpriseTool(
                 get_weather_forecast,
@@ -262,8 +383,20 @@ class EnterpriseToolRuntimeFactory:
                 tenant=tenant,
                 user_id=user_id,
                 authorization_policy=authorization_policy,
+                approval_required_tools=self.approval_required_tools,
+                approval_validator=self.approval_validator,
             ),
         ]
+        for tool in tools:
+            if tool.name == "enterprise_get_weather_forecast":
+                tool._agentfoundry_connector = "Open-Meteo"
+                tool._agentfoundry_connector_source = "public_read_only_api"
+            else:
+                tool._agentfoundry_connector = connector_label
+                tool._agentfoundry_connector_source = runtime_selection[
+                    "connector_source"
+                ]
+        return tools
 
     def run_authorized_tool(
         self,

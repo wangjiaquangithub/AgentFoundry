@@ -392,6 +392,7 @@ class PlatformAgentRunService:
             session_id=runner_context["runner_session_id"],
             agent_id=runner_context["runner_agent_id"],
             agent_name=agent_metadata.get("agent_name"),
+            instructions=agent_metadata.get("instructions"),
             question=question,
             tools=sorted(runner_context["configured_tools"]),
             knowledge_base_ids=knowledge_base_ids,
@@ -400,6 +401,7 @@ class PlatformAgentRunService:
                 "source": "enterprise_agent_run",
                 "runtime_invocation_id": runtime_invocation_id,
                 "agent_version_id": agent_metadata.get("agent_version_id"),
+                "approval_id": run_request.get("approval_id"),
                 **runtime_execution,
             },
         )
@@ -529,9 +531,16 @@ class PlatformAgentRunService:
                 "Native runtime finalization requires agentscope_native mode.",
             )
         if runtime_boundary_result.get("status") != "completed":
+            provider_error = runtime_boundary_result.get("error")
+            safe_error = ""
+            if isinstance(provider_error, str):
+                safe_error = " ".join(provider_error.split())[:500]
             raise PlatformAgentRunServiceError(
                 502,
-                "AgentScope runtime did not complete successfully.",
+                (
+                    "AgentScope runtime did not complete successfully"
+                    + (f": {safe_error}" if safe_error else ".")
+                ),
             )
         answer = runtime_boundary_result.get("answer")
         if not isinstance(answer, str) or not answer.strip():
@@ -1084,6 +1093,13 @@ class PlatformAgentRunService:
         build_runtime_invocation_result_payload: Callable[..., dict[str, Any]],
         execution_context: dict[str, Any],
         runtime_boundary_result: dict[str, Any],
+        platform_approval_service: Callable[[], Any],
+        raise_platform_approval_service_error: Callable[
+            [PlatformApprovalServiceError],
+            Any,
+        ],
+        decision_with_routing_context: Callable[..., dict[str, Any]],
+        requested_by: str,
         answer: str | None = None,
         tool_calls: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
@@ -1094,6 +1110,73 @@ class PlatformAgentRunService:
         )
         answer = validated["answer"]
         tool_calls = validated["tool_calls"]
+        projected_tool_calls: list[dict[str, Any]] = []
+        for evidence in tool_calls:
+            detail = evidence.get("approval_detail")
+            if not (
+                evidence.get("approval_required") is True
+                and evidence.get("allowed") is False
+                and isinstance(detail, dict)
+            ):
+                projected_tool_calls.append(evidence)
+                continue
+
+            tool_name = str(evidence.get("tool_name") or "").strip()
+            inputs = evidence.get("inputs")
+            if not tool_name or not isinstance(inputs, dict):
+                raise PlatformAgentRunServiceError(
+                    502,
+                    "AgentScope approval evidence is malformed.",
+                )
+            route_context_view = {
+                "tool_name": tool_name,
+                "inputs": dict(inputs),
+                "reason": str(
+                    evidence.get("routing_reason")
+                    or "AgentScope selected a governed tool requiring approval."
+                ),
+                "source": str(evidence.get("routing_source") or "agentscope"),
+            }
+            approval = self.create_pending_tool_approval_request_or_raise_from_context(
+                platform_approval_service=platform_approval_service,
+                raise_platform_approval_service_error=(
+                    raise_platform_approval_service_error
+                ),
+                detail=detail,
+                execution_context=execution_context,
+                route_context_view=route_context_view,
+                requested_by=requested_by,
+            )
+            self.record_created_pending_approval_routed_tool_call_from_context(
+                tool_calls=projected_tool_calls,
+                decision_with_routing_context=decision_with_routing_context,
+                detail=detail,
+                approval=approval,
+                tool_name=tool_name,
+                inputs=dict(inputs),
+                tenant=str(execution_context["tenant"]),
+                user_id=str(
+                    execution_context["response_record_context"]["user_id"]
+                ),
+                connector=str(
+                    evidence.get("connector")
+                    or execution_context["connector_label"]
+                ),
+                connector_source=str(
+                    evidence.get("connector_source")
+                    or execution_context["connector_source"]
+                ),
+                routing_source=route_context_view["source"],
+                routing_reason=route_context_view["reason"],
+                routing_mode="provider-native",
+                routing_error=None,
+            )
+            answer = (
+                f"该工具需要审批，已自动创建审批请求 {approval['approval_id']}。"
+                "请到审批中心批准后再运行。"
+            )
+
+        tool_calls = projected_tool_calls
         if tool_calls:
             return self.finalize_routed_response_from_context(
                 build_runtime_invocation_result_payload=(
