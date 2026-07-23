@@ -28,7 +28,7 @@ from services.knowledge import (
     PlatformKnowledgeResponseService,
     PlatformKnowledgeRetrievalServiceError,
 )
-from services.memories import PlatformMemoryService
+from services.memories import PlatformMemoryService, PlatformMemoryServiceError
 from services.tools import PlatformToolPolicyService
 
 
@@ -236,28 +236,33 @@ def create_agent_runtime_router(
                 routing_mode=routing_mode,
                 routing_error=routing_error,
             )
-            response = agent_run_service.finalize_unrouted_run_from_context(
-                build_runtime_invocation_result_payload=(
-                    deps.build_runtime_invocation_result_payload
-                ),
-                append_agent_turn_if_enabled=(
-                    deps.memory_service.append_agent_turn_if_enabled
-                ),
-                execution_context=execution_context,
-                memory_context=memory_context,
-                routing_mode=routing_mode,
-                routing_source=routing_source,
-                routing_error=routing_error,
-                knowledge_hits=knowledge_hits,
-                memory_hits=memory_hits,
-                format_knowledge_answer=deps.knowledge_response_service.format_answer,
-                format_memory_answer=deps.memory_service.format_answer,
-                knowledge_payload=knowledge_payload,
-                memory_payload=memory_payload,
-                max_records=deps.memory_max_records,
-                decision=decision,
-                runtime_boundary_result=runtime_boundary_result,
-            )
+            try:
+                response = agent_run_service.finalize_unrouted_run_from_context(
+                    build_runtime_invocation_result_payload=(
+                        deps.build_runtime_invocation_result_payload
+                    ),
+                    append_agent_turn_if_enabled=(
+                        deps.memory_service.append_agent_turn_if_enabled
+                    ),
+                    execution_context=execution_context,
+                    memory_context=memory_context,
+                    routing_mode=routing_mode,
+                    routing_source=routing_source,
+                    routing_error=routing_error,
+                    knowledge_hits=knowledge_hits,
+                    memory_hits=memory_hits,
+                    format_knowledge_answer=(
+                        deps.knowledge_response_service.format_answer
+                    ),
+                    format_memory_answer=deps.memory_service.format_answer,
+                    knowledge_payload=knowledge_payload,
+                    memory_payload=memory_payload,
+                    max_records=deps.memory_max_records,
+                    decision=decision,
+                    runtime_boundary_result=runtime_boundary_result,
+                )
+            except PlatformMemoryServiceError as exc:
+                _raise_service_error(exc)
             return response
 
         tool_calls = agent_run_service.process_routed_routes(
@@ -282,26 +287,33 @@ def create_agent_runtime_router(
             routing_mode=routing_mode,
             routing_error=routing_error,
         )
-        response = agent_run_service.finalize_routed_run_from_context(
-            build_runtime_invocation_result_payload=(
-                deps.build_runtime_invocation_result_payload
-            ),
-            append_agent_turn_if_enabled=deps.memory_service.append_agent_turn_if_enabled,
-            execution_context=execution_context,
-            memory_context=memory_context,
-            routing_mode=routing_mode,
-            routing_source=routing_source,
-            routing_error=routing_error,
-            tool_calls=tool_calls,
-            knowledge_hits=knowledge_hits,
-            memory_hits=memory_hits,
-            format_knowledge_answer=deps.knowledge_response_service.format_answer,
-            format_memory_answer=deps.memory_service.format_answer,
-            knowledge_payload=knowledge_payload,
-            memory_payload=memory_payload,
-            max_records=deps.memory_max_records,
-            runtime_boundary_result=runtime_boundary_result,
-        )
+        try:
+            response = agent_run_service.finalize_routed_run_from_context(
+                build_runtime_invocation_result_payload=(
+                    deps.build_runtime_invocation_result_payload
+                ),
+                append_agent_turn_if_enabled=(
+                    deps.memory_service.append_agent_turn_if_enabled
+                ),
+                execution_context=execution_context,
+                memory_context=memory_context,
+                routing_mode=routing_mode,
+                routing_source=routing_source,
+                routing_error=routing_error,
+                tool_calls=tool_calls,
+                knowledge_hits=knowledge_hits,
+                memory_hits=memory_hits,
+                format_knowledge_answer=(
+                    deps.knowledge_response_service.format_answer
+                ),
+                format_memory_answer=deps.memory_service.format_answer,
+                knowledge_payload=knowledge_payload,
+                memory_payload=memory_payload,
+                max_records=deps.memory_max_records,
+                runtime_boundary_result=runtime_boundary_result,
+            )
+        except PlatformMemoryServiceError as exc:
+            _raise_service_error(exc)
         return response
 
     @router.get("/enterprise/platform/agent/runs")

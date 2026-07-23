@@ -15,6 +15,13 @@ class AuditEventWriter(Protocol):
         ...
 
 
+class PlatformMemoryServiceError(RuntimeError):
+    def __init__(self, status_code: int, detail: str) -> None:
+        self.status_code = status_code
+        self.detail = detail
+        super().__init__(detail)
+
+
 def _truncate_text(value: str, limit: int = 300) -> str:
     text = re.sub(r"\s+", " ", value).strip()
     if len(text) <= limit:
@@ -450,7 +457,10 @@ class PlatformMemoryService:
         record: dict[str, Any],
     ) -> None:
         if self._audit_event_writer is None:
-            return
+            raise PlatformMemoryServiceError(
+                500,
+                "Agent-run memory audit persistence is unavailable",
+            )
 
         created_at = str(record.get("created_at") or "").strip()
         if not created_at:
@@ -490,10 +500,16 @@ class PlatformMemoryService:
                     created_at=created_at,
                 ),
             )
-            if not persisted_audit_event.id:
-                return
-        except Exception:
-            return
+        except Exception as exc:
+            raise PlatformMemoryServiceError(
+                500,
+                "Agent-run memory audit persistence is unavailable",
+            ) from exc
+        if not persisted_audit_event.id:
+            raise PlatformMemoryServiceError(
+                500,
+                "Agent-run memory audit persistence is unavailable",
+            )
 
     def append_agent_turn_memory(
         self,
