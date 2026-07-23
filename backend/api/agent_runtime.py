@@ -115,10 +115,18 @@ def create_agent_runtime_router(
             approval_id=payload.approval_id,
         )
         user_id = run_request["user_id"]
+        request_tenant = _request_tenant(
+            request=request,
+            tenant=None,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         runtime = agent_run_service.resolve_runtime_context(
             user_id=user_id,
-            load_runtime_context=(
-                deps.connector_config_service().enterprise_runtime_context
+            load_runtime_context=lambda runtime_user_id: (
+                deps.connector_config_service().enterprise_runtime_context(
+                    runtime_user_id,
+                    tenant=request_tenant,
+                )
             ),
             runtime_context_error_type=PlatformConnectorConfigServiceError,
             raise_runtime_context_error=_raise_service_error,

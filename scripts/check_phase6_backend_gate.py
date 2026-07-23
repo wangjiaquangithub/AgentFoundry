@@ -59,6 +59,13 @@ CHECKS = (
         ],
     ),
     (
+        "agent runtime lookup request tenant",
+        [
+            sys.executable,
+            "scripts/check_phase6_agent_runtime_lookup_request_tenant.py",
+        ],
+    ),
+    (
         "audit event immutability",
         [sys.executable, "scripts/check_phase6_audit_event_immutability.py"],
     ),

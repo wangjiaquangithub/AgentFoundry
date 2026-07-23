@@ -100,7 +100,9 @@ def assert_execution_route_validates_runtime_tenant() -> None:
         source.index('@router.get("/enterprise/platform/agent/runs")')
     ]
 
-    assert execution_route.count("_request_tenant(") == 1
+    assert execution_route.count("_request_tenant(") == 2
+    assert "request_tenant = _request_tenant(" in execution_route
+    assert "tenant=None," in execution_route
     assert "tenant=agent_run_service.runtime_tenant(runtime)," in execution_route
     assert "tenant_hint_from_user_id=deps.tenant_hint_from_user_id," in execution_route
     assert "scripts/check_phase6_agent_execution_request_tenant.py" in gate_source
