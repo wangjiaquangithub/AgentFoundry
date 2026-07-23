@@ -105,6 +105,13 @@ CHECKS = (
         ],
     ),
     (
+        "workflow template update authenticated actor audit",
+        [
+            sys.executable,
+            "scripts/check_phase6_workflow_template_update_actor_audit.py",
+        ],
+    ),
+    (
         "workflow runtime lookup request tenant",
         [
             sys.executable,
