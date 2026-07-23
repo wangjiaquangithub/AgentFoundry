@@ -369,18 +369,26 @@ class PlatformMemoryService:
         max_records: int,
         limit: int,
     ) -> dict[str, Any]:
-        memory_hits = (
-            self.search_memories(
-                tenant=tenant,
-                user_id=user_id,
-                agent_id=agent_id,
-                question=question,
-                max_records=max_records,
-                limit=limit,
+        try:
+            memory_hits = (
+                self.search_memories(
+                    tenant=tenant,
+                    user_id=user_id,
+                    agent_id=agent_id,
+                    question=question,
+                    max_records=max_records,
+                    limit=limit,
+                )
+                if enabled
+                else []
             )
-            if enabled
-            else []
-        )
+        except PlatformMemoryServiceError:
+            raise
+        except Exception as exc:
+            raise PlatformMemoryServiceError(
+                500,
+                "Agent-run memory retrieval is unavailable",
+            ) from exc
         if enabled:
             self._append_memory_read_audit_event(
                 tenant=tenant,

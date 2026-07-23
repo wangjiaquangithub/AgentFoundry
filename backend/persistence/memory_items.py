@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any
 
 from backend.persistence.database import PostgresDatabase, SQLiteDatabase
@@ -100,6 +101,25 @@ def _validate_memory_item_read_result(
         raise ValueError("PostgreSQL memory item read returned another item.")
 
 
+def _validate_memory_item_not_expired(
+    record: MemoryItemRecord,
+    *,
+    as_of: datetime,
+) -> None:
+    if record.expires_at is None:
+        return
+    try:
+        expires_at = datetime.fromisoformat(record.expires_at)
+    except ValueError as exc:
+        raise ValueError(
+            f"Memory item {record.id} has an invalid expiry time."
+        ) from exc
+    if expires_at.tzinfo is None:
+        raise ValueError(f"Memory item {record.id} has a timezone-naive expiry time.")
+    if expires_at <= as_of:
+        raise ValueError(f"Memory item {record.id} read returned an expired item.")
+
+
 class SQLiteMemoryItemReadRepository:
     """Read tenant-scoped memory items from SQLite."""
 
@@ -116,13 +136,15 @@ class SQLiteMemoryItemReadRepository:
         source_run_id: str | None = None,
         limit: int = 50,
     ) -> list[MemoryItemRecord]:
+        as_of = datetime.now(timezone.utc)
         query = """
             SELECT id, tenant_id, user_id, agent_id, session_id, content,
               source_run_id, metadata, expires_at, created_at
             FROM memory_items
             WHERE tenant_id = ?
+              AND (expires_at IS NULL OR expires_at > ?)
         """
-        parameters: list[Any] = [tenant_id]
+        parameters: list[Any] = [tenant_id, as_of.isoformat()]
         if user_id is not None:
             query += " AND user_id = ?"
             parameters.append(user_id)
@@ -140,7 +162,10 @@ class SQLiteMemoryItemReadRepository:
 
         with self._database.connect() as connection:
             rows = connection.execute(query, parameters).fetchall()
-        return [_memory_item_from_row(dict(row)) for row in rows]
+        records = [_memory_item_from_row(dict(row)) for row in rows]
+        for record in records:
+            _validate_memory_item_not_expired(record, as_of=as_of)
+        return records
 
     def get_memory_item(
         self,
@@ -182,13 +207,15 @@ class PostgresMemoryItemReadRepository:
         source_run_id: str | None = None,
         limit: int = 50,
     ) -> list[MemoryItemRecord]:
+        as_of = datetime.now(timezone.utc)
         query = """
             SELECT id, tenant_id, user_id, agent_id, session_id, content,
               source_run_id, metadata, expires_at, created_at
             FROM memory_items
             WHERE tenant_id = %s
+              AND (expires_at IS NULL OR expires_at > %s)
         """
-        parameters: list[Any] = [tenant_id]
+        parameters: list[Any] = [tenant_id, as_of.isoformat()]
         if user_id is not None:
             query += " AND user_id = %s"
             parameters.append(user_id)
@@ -217,6 +244,7 @@ class PostgresMemoryItemReadRepository:
                 session_id=session_id,
                 source_run_id=source_run_id,
             )
+            _validate_memory_item_not_expired(record, as_of=as_of)
         return records
 
     def get_memory_item(
