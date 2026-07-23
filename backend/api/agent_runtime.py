@@ -5,6 +5,7 @@ from typing import Any, Awaitable, Callable, Mapping, NoReturn
 
 from fastapi import APIRouter, HTTPException, Request
 
+from api.request_identity import get_request_identity
 from api.schemas import EnterpriseAgentRunRequest
 from persistence.database import is_production_environment
 from services.agent_runs import (
@@ -77,11 +78,12 @@ def create_agent_runtime_router(
     ) -> dict[str, Any]:
         """Route a business question through a published enterprise agent."""
 
+        identity = get_request_identity(request)
         agent_run_service = deps.agent_run_service()
         run_request = agent_run_service.run_request_payload(
             question=payload.question,
             payload_user_id=payload.user_id,
-            header_user_id=request.headers.get("X-User-ID"),
+            header_user_id=identity.user_id,
             agent_id=payload.agent_id,
             session_id=payload.session_id,
             approval_id=payload.approval_id,
@@ -231,7 +233,7 @@ def create_agent_runtime_router(
             format_tool_result_answer=(
                 deps.tool_policy_service().format_tool_result_answer
             ),
-            headers=request.headers,
+            requested_by=identity.user_id,
             routing_mode=routing_mode,
             routing_error=routing_error,
         )

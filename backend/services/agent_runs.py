@@ -1313,7 +1313,7 @@ class PlatformAgentRunService:
         ],
         run_authorized_enterprise_tool: Callable[..., dict[str, Any]],
         format_tool_result_answer: Callable[..., str],
-        headers: Any,
+        requested_by: str,
         routing_mode: str,
         routing_error: str | None,
     ) -> list[dict[str, Any]]:
@@ -1362,7 +1362,7 @@ class PlatformAgentRunService:
                     decision_with_routing_context=decision_with_routing_context,
                     execution_context=execution_context,
                     route_context_view=route_context_view,
-                    headers=headers,
+                    requested_by=requested_by,
                     routing_mode=routing_mode,
                     routing_error=routing_error,
                 )
@@ -1670,9 +1670,6 @@ class PlatformAgentRunService:
             },
         }
 
-    def resolve_requested_by(self, *, headers: Any, user_id: str) -> str:
-        return str(headers.get("X-User-ID") or user_id)
-
     @staticmethod
     def approval_exception_detail(exc: Any) -> dict[str, Any]:
         return exc.detail if isinstance(exc.detail, dict) else {}
@@ -1743,7 +1740,7 @@ class PlatformAgentRunService:
         agent_id: str,
         tool_name: str,
         inputs: dict[str, Any],
-        headers: Any,
+        requested_by: str,
     ) -> dict[str, Any]:
         return create_request(
             **self.build_approval_request_payload(
@@ -1753,10 +1750,7 @@ class PlatformAgentRunService:
                 agent_id=agent_id,
                 tool_name=tool_name,
                 inputs=inputs,
-                requested_by=self.resolve_requested_by(
-                    headers=headers,
-                    user_id=user_id,
-                ),
+                requested_by=requested_by,
             ),
         )
 
@@ -1771,7 +1765,7 @@ class PlatformAgentRunService:
         detail: dict[str, Any],
         execution_context: dict[str, Any],
         route_context_view: dict[str, Any],
-        headers: Any,
+        requested_by: str,
     ) -> dict[str, Any]:
         try:
             execution_context_view = self.execution_context_view(execution_context)
@@ -1786,7 +1780,7 @@ class PlatformAgentRunService:
                 agent_id=execution_context_view["runner_agent_id"],
                 tool_name=route_context_view["tool_name"],
                 inputs=route_context_view["inputs"],
-                headers=headers,
+                requested_by=requested_by,
             )
         except PlatformApprovalServiceError as exc:
             raise_platform_approval_service_error(exc)
@@ -1805,7 +1799,7 @@ class PlatformAgentRunService:
         decision_with_routing_context: Callable[..., dict[str, Any]],
         execution_context: dict[str, Any],
         route_context_view: dict[str, Any],
-        headers: Any,
+        requested_by: str,
         routing_mode: str,
         routing_error: str | None,
     ) -> None:
@@ -1820,7 +1814,7 @@ class PlatformAgentRunService:
             detail=detail,
             execution_context=execution_context,
             route_context_view=route_context_view,
-            headers=headers,
+            requested_by=requested_by,
         )
         self.record_created_pending_approval_routed_tool_call_from_context(
             tool_calls=tool_calls,
