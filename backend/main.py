@@ -32,6 +32,7 @@ from api.enterprise_identity import (
     EnterpriseIdentityRouteDependencies,
     create_enterprise_identity_router,
 )
+from api.authorization import AuthorizationRouteDependencies, create_authorization_router
 from api.knowledge import (
     KnowledgeBasesRouteDependencies,
     KnowledgeDocumentsRouteDependencies,
@@ -159,6 +160,7 @@ from services.connectors import (
 from services.dev_knowledge import PlatformDevKnowledgeService
 from services.enterprise_router import PlatformEnterpriseRouterService
 from services.enterprise_identity import build_enterprise_identity_service
+from services.authorization import build_authorization_service
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
 from services.composition import (
@@ -751,6 +753,12 @@ app.include_router(
 app.include_router(
     create_enterprise_identity_router(
         EnterpriseIdentityRouteDependencies(service=build_enterprise_identity_service)
+    )
+)
+
+app.include_router(
+    create_authorization_router(
+        AuthorizationRouteDependencies(service=build_authorization_service)
     )
 )
 
