@@ -261,8 +261,8 @@ class PlatformConnectorConfigService:
             for _tenant, config in sorted(configs.items())
         ]
 
-    def export_configs_payload(self) -> list[dict[str, Any]]:
-        return self.redacted_configs()
+    def export_configs_payload(self, *, tenant: str | None = None) -> list[dict[str, Any]]:
+        return self.redacted_configs(tenant=tenant)
 
     def export_config_counts(self, config: dict[str, Any]) -> dict[str, int]:
         tool_policy = config.get("tool_policy") if isinstance(config, dict) else {}

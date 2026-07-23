@@ -637,6 +637,85 @@ def assert_connector_test_uses_request_tenant() -> None:
         )
 
 
+def assert_platform_config_export_uses_request_tenant() -> None:
+    api_source = (BACKEND_DIR / "api" / "platform_admin.py").read_text(
+        encoding="utf-8",
+    )
+    export_route = api_source[api_source.index(
+        '@router.get("/enterprise/platform/config/export")'
+    ):api_source.index('@router.post("/enterprise/platform/config/import")')]
+    required_route_fragments = (
+        "identity = get_request_identity(request)",
+        "tenant_id = _request_tenant(",
+        "identity_user_id=identity.user_id",
+        "identity_tenant_id=identity.tenant_id",
+        "tenant=None",
+        "tenant_hint_from_user_id=deps.tenant_hint_from_user_id",
+        "actor_user_id=identity.user_id",
+        "tenant=tenant_id",
+    )
+    missing_route_fragments = [
+        fragment for fragment in required_route_fragments if fragment not in export_route
+    ]
+    if missing_route_fragments:
+        raise AssertionError(
+            "Platform config export tenant boundary is incomplete: "
+            + ", ".join(missing_route_fragments),
+        )
+    if export_route.count("_request_tenant(") != 1:
+        raise AssertionError(
+            "Platform config export must resolve the canonical request tenant.",
+        )
+
+    export_helper = api_source[api_source.index(
+        "def export_platform_config("
+    ):api_source.index(
+        '@router.get("/enterprise/platform/status")',
+        api_source.index("def export_platform_config("),
+    )]
+    required_helper_fragments = (
+        "tenant: str | None = None",
+        "export_configs_payload(\n                tenant=tenant,",
+        "list_members(\n                include_inactive=True,\n                tenant=tenant,",
+    )
+    missing_helper_fragments = [
+        fragment for fragment in required_helper_fragments if fragment not in export_helper
+    ]
+    if missing_helper_fragments:
+        raise AssertionError(
+            "Platform config export helper scope is incomplete: "
+            + ", ".join(missing_helper_fragments),
+        )
+
+    connector_source = (BACKEND_DIR / "services" / "connectors.py").read_text(
+        encoding="utf-8",
+    )
+    export_method = connector_source[connector_source.index(
+        "def export_configs_payload("
+    ):connector_source.index(
+        "def export_config_counts(",
+        connector_source.index("def export_configs_payload("),
+    )]
+    if "self.redacted_configs(tenant=tenant)" not in export_method:
+        raise AssertionError(
+            "Connector config export must filter by the canonical tenant.",
+        )
+
+    member_source = (BACKEND_DIR / "services" / "members.py").read_text(
+        encoding="utf-8",
+    )
+    list_method = member_source[member_source.index(
+        "def list_members("
+    ):member_source.index(
+        "def get_member_by_user(",
+        member_source.index("def list_members("),
+    )]
+    if 'member["tenant"] == tenant' not in list_method:
+        raise AssertionError(
+            "Member export scope must support canonical tenant filtering.",
+        )
+
+
 def main() -> None:
     assert_agent_list_is_tenant_scoped()
     assert_cross_tenant_runtime_access_is_denied()
@@ -652,6 +731,7 @@ def main() -> None:
     assert_connector_config_query_uses_request_tenant()
     assert_connector_config_update_uses_request_tenant()
     assert_connector_test_uses_request_tenant()
+    assert_platform_config_export_uses_request_tenant()
     print("Phase 6 tenant access boundary contract passed.")
 
 

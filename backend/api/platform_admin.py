@@ -117,10 +117,16 @@ def create_platform_admin_router(
 ) -> APIRouter:
     router = APIRouter()
 
-    def export_platform_config(*, actor_user_id: str | None = None) -> dict[str, Any]:
+    def export_platform_config(
+        *,
+        actor_user_id: str | None = None,
+        tenant: str | None = None,
+    ) -> dict[str, Any]:
         try:
             connector_config_service = deps.connector_config_service()
-            connector_configs = connector_config_service.export_configs_payload()
+            connector_configs = connector_config_service.export_configs_payload(
+                tenant=tenant,
+            )
         except PlatformConnectorConfigServiceError as exc:
             _raise_service_error(exc)
         try:
@@ -137,7 +143,10 @@ def create_platform_admin_router(
         except PlatformToolPolicyServiceError as exc:
             _raise_service_error(exc)
         try:
-            members = deps.member_service().list_members(include_inactive=True)
+            members = deps.member_service().list_members(
+                include_inactive=True,
+                tenant=tenant,
+            )
         except PlatformMemberServiceError as exc:
             _raise_service_error(exc)
 
@@ -406,8 +415,15 @@ def create_platform_admin_router(
     async def export_enterprise_platform_config(request: Request) -> dict[str, Any]:
         """Export portable platform configuration without runtime data or secrets."""
         identity = get_request_identity(request)
+        tenant_id = _request_tenant(
+            identity_user_id=identity.user_id,
+            identity_tenant_id=identity.tenant_id,
+            tenant=None,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         return export_platform_config(
             actor_user_id=identity.user_id,
+            tenant=tenant_id,
         )
 
     @router.post("/enterprise/platform/config/import")

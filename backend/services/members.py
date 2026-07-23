@@ -137,8 +137,15 @@ class PlatformMemberService:
                 extra_payload={"mode": mode},
             )
 
-    def list_members(self, *, include_inactive: bool = True) -> list[dict[str, Any]]:
+    def list_members(
+        self,
+        *,
+        include_inactive: bool = True,
+        tenant: str | None = None,
+    ) -> list[dict[str, Any]]:
         members = self._normalized_members()
+        if tenant is not None:
+            members = [member for member in members if member["tenant"] == tenant]
         if not include_inactive:
             members = [member for member in members if member["status"] == "active"]
         members.sort(key=lambda item: (item["tenant"], item["user_id"]))
