@@ -192,6 +192,13 @@ CHECKS = (
         ],
     ),
     (
+        "memory-item write metadata serialization fail closed",
+        [
+            sys.executable,
+            "scripts/check_phase6_memory_item_write_metadata_serialization_fail_closed.py",
+        ],
+    ),
+    (
         "memory-item write tenant conflict fail closed",
         [
             sys.executable,
