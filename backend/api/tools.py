@@ -5,6 +5,7 @@ from typing import Any, Callable, NoReturn
 
 from fastapi import APIRouter, HTTPException, Request
 
+from api.request_identity import get_request_identity
 from api.schemas import EnterpriseToolRunRequest
 from audit import ToolAuditLogger
 from permissions import ToolAuthorizationPolicy
@@ -45,10 +46,11 @@ def create_tool_audit_router(deps: ToolAuditRouteDependencies) -> APIRouter:
         user_id: str | None = None,
     ) -> dict[str, Any]:
         """Return tool catalog metadata, authorization, bindings, and stats."""
+        identity = get_request_identity(request)
         tool_policy_service = deps.tool_policy_service()
         catalog_request = tool_policy_service.catalog_request_payload(
             query_user_id=user_id,
-            header_user_id=request.headers.get("X-User-ID"),
+            header_user_id=identity.user_id,
             agent_id=agent_id,
         )
         resolved_user_id = catalog_request["user_id"]
@@ -151,12 +153,13 @@ def create_tool_audit_router(deps: ToolAuditRouteDependencies) -> APIRouter:
         request: Request,
     ) -> dict[str, Any]:
         """Run one tenant-aware enterprise tool from the platform console."""
+        identity = get_request_identity(request)
         tool_policy_service = deps.tool_policy_service()
         run_request = tool_policy_service.run_request_payload(
             tool_name=payload.tool_name,
             inputs=payload.inputs,
             payload_user_id=payload.user_id,
-            header_user_id=request.headers.get("X-User-ID"),
+            header_user_id=identity.user_id,
             agent_id=payload.agent_id,
             approval_id=payload.approval_id,
         )
