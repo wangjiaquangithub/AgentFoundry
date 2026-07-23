@@ -116,6 +116,11 @@ def _validate_memory_item_not_expired(
         ) from exc
     if expires_at.tzinfo is None:
         raise ValueError(f"Memory item {record.id} has a timezone-naive expiry time.")
+    created_at = datetime.fromisoformat(record.created_at)
+    if expires_at <= created_at:
+        raise ValueError(
+            f"Memory item {record.id} expiry time must be after its created time."
+        )
     if expires_at <= as_of:
         raise ValueError(f"Memory item {record.id} read returned an expired item.")
 
