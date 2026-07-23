@@ -51,6 +51,8 @@ def ensure_weather_agent(client: TestClient) -> str:
             agent.get("template_id") == "weather_forecast_assistant"
             and agent.get("status") == "published"
             and agent.get("tools") == [WEATHER_TOOL]
+            and agent.get("execution_mode") == "agentscope_native"
+            and agent.get("runtime_provider") == "agentscope"
             and USER_ID in (agent.get("allowed_user_ids") or [])
         ):
             agent_id = str(agent["id"])
@@ -67,6 +69,8 @@ def ensure_weather_agent(client: TestClient) -> str:
                 "description": "真实 Open-Meteo 天气业务验收 Agent。",
                 "tenant": "acme",
                 "tools": [WEATHER_TOOL],
+                "execution_mode": "agentscope_native",
+                "runtime_provider": "agentscope",
                 "memory_enabled": False,
                 "workflow_enabled": False,
                 "allowed_user_ids": [USER_ID],
