@@ -160,6 +160,13 @@ CHECKS = (
         [sys.executable, "scripts/check_phase6_request_identity_consumption.py"],
     ),
     (
+        "tool policy import authenticated actor audit",
+        [
+            sys.executable,
+            "scripts/check_phase6_tool_policy_import_actor_audit.py",
+        ],
+    ),
+    (
         "backend logging configuration",
         [sys.executable, "scripts/check_phase6_logging_config.py"],
     ),

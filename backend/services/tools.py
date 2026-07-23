@@ -119,6 +119,7 @@ class PlatformToolPolicyService:
         self,
         value: Any,
         *,
+        actor: str,
         mode: str,
         tenant: str,
     ) -> None:
@@ -173,6 +174,58 @@ class PlatformToolPolicyService:
             )
         policy["tenants"] = next_tenants
         self.save_policy(policy)
+        self._append_policy_import_audit_event(
+            actor=actor,
+            mode=mode,
+            tenant=tenant,
+            tenant_policy_present=imported_tenant_policy is not None,
+        )
+
+    def _append_policy_import_audit_event(
+        self,
+        *,
+        actor: str,
+        mode: str,
+        tenant: str,
+        tenant_policy_present: bool,
+    ) -> None:
+        if self._audit_event_writer is None:
+            return
+        if self._now is None:
+            raise PlatformToolPolicyServiceError(
+                500,
+                "Tool policy audit PostgreSQL writer requires a clock.",
+            )
+
+        normalized_tenant = tenant.strip()
+        normalized_actor = actor.strip()
+        try:
+            persisted_audit_event = self._audit_event_writer.append_audit_event(
+                AuditEventRecord(
+                    id=str(uuid4()),
+                    tenant_id=normalized_tenant,
+                    actor_user_id=normalized_actor,
+                    event_type="tool_policy.imported",
+                    target_type="tool_policy_tenant",
+                    target_id=normalized_tenant,
+                    payload={
+                        "schema_version": 1,
+                        "tenant": normalized_tenant,
+                        "mode": mode,
+                        "tenant_policy_present": tenant_policy_present,
+                    },
+                    created_at=self._now(),
+                ),
+            )
+            if not persisted_audit_event.id:
+                raise PlatformToolPolicyServiceError(
+                    500,
+                    "PostgreSQL audit event write did not return a persisted id.",
+                )
+        except ValueError:
+            raise
+        except Exception as exc:
+            raise PlatformToolPolicyServiceError(500, str(exc)) from exc
 
     def build_authorization_policy(self) -> ToolAuthorizationPolicy:
         return ToolAuthorizationPolicy(

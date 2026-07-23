@@ -553,6 +553,7 @@ def create_platform_admin_router(
             try:
                 deps.tool_policy_service().import_policy_payload(
                     incoming.get("tool_policy"),
+                    actor=actor,
                     mode=mode,
                     tenant=tenant_id,
                 )
