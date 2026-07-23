@@ -19,6 +19,7 @@ from backend.persistence.database import create_sqlite_database
 from backend.persistence.migrations import apply_migrations
 from backend.persistence.runtime_bindings import RuntimeBindingRecord, RuntimeBindingRepository
 from services.agents import PlatformAgentService, PlatformAgentServiceError
+from services.agent_runs import PlatformAgentRunService, PlatformAgentRunServiceError
 
 
 class RuntimeExecutionSelectionTest(unittest.TestCase):
@@ -141,6 +142,92 @@ class RuntimeExecutionSelectionTest(unittest.TestCase):
             self.assertEqual(
                 repository.get(tenant_id="tenant-1", foundry_version_id="version-1"),
                 record,
+            )
+
+
+class UnifiedAgentExecutionEntryTest(unittest.TestCase):
+    def test_ordinary_native_agent_uses_agentscope_runtime_path(self) -> None:
+        context = {
+            "runtime_execution": {
+                "execution_mode": "agentscope_native",
+                "runtime_provider": "agentscope",
+            },
+        }
+
+        self.assertEqual(
+            PlatformAgentRunService.execution_path(context),
+            "agentscope_runtime",
+        )
+
+    def test_native_tool_agent_result_comes_from_provider_evidence(self) -> None:
+        context = {
+            "runtime_execution": {
+                "execution_mode": "agentscope_native",
+                "runtime_provider": "agentscope",
+                "scope_provider_id": "provider-1",
+                "scope_runtime_id": "runtime-1",
+            },
+        }
+        provider_tool_call = {
+            "tool_name": "weather_lookup",
+            "status": "completed",
+        }
+
+        result = PlatformAgentRunService.extract_completed_native_runtime_result(
+            execution_context=context,
+            runtime_boundary_result={
+                "status": "completed",
+                "answer": "上海明天多云。",
+                "evidence": {
+                    "scope_provider_id": "provider-1",
+                    "scope_runtime_id": "runtime-1",
+                },
+                "raw": {"provider_response": {"tool_calls": [provider_tool_call]}},
+            },
+        )
+
+        self.assertEqual(result["answer"], "上海明天多云。")
+        self.assertEqual(result["tool_calls"], [provider_tool_call])
+
+    def test_failed_native_agent_does_not_fall_back_to_local_execution(self) -> None:
+        context = {
+            "runtime_execution": {
+                "execution_mode": "agentscope_native",
+                "runtime_provider": "agentscope",
+            },
+        }
+
+        with self.assertRaisesRegex(
+            PlatformAgentRunServiceError,
+            "did not complete successfully",
+        ):
+            PlatformAgentRunService.extract_completed_native_runtime_result(
+                execution_context=context,
+                runtime_boundary_result={
+                    "status": "failed",
+                    "error": "provider unavailable",
+                },
+            )
+
+    def test_legacy_agent_uses_only_explicit_compatibility_path(self) -> None:
+        selection = resolve_runtime_execution_selection(
+            {"template_id": "weather_forecast_assistant"},
+        )
+        context = {"runtime_execution": selection.to_dict()}
+
+        self.assertEqual(
+            PlatformAgentRunService.execution_path(context),
+            "foundry_compatibility",
+        )
+        self.assertTrue(selection.fallback_reason)
+
+    def test_unknown_execution_mode_has_no_implicit_path(self) -> None:
+        with self.assertRaisesRegex(
+            PlatformAgentRunServiceError,
+            "Unsupported runtime execution mode",
+        ):
+            PlatformAgentRunService.execution_path(
+                {"runtime_execution": {"execution_mode": "template_selected"}},
             )
 
 

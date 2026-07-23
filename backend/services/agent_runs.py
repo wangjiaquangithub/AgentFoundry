@@ -476,6 +476,25 @@ class PlatformAgentRunService:
         )
 
     @staticmethod
+    def execution_path(execution_context: dict[str, Any]) -> str:
+        """Select the sole post-gateway execution path from explicit metadata."""
+        selection = execution_context.get("runtime_execution")
+        if not isinstance(selection, dict):
+            raise PlatformAgentRunServiceError(
+                500,
+                "Agent runtime execution selection is missing.",
+            )
+        execution_mode = selection.get("execution_mode")
+        if execution_mode == AGENTSCOPE_NATIVE_EXECUTION_MODE:
+            return "agentscope_runtime"
+        if execution_mode == FOUNDRY_COMPATIBILITY_EXECUTION_MODE:
+            return "foundry_compatibility"
+        raise PlatformAgentRunServiceError(
+            500,
+            "Unsupported runtime execution mode.",
+        )
+
+    @staticmethod
     def execution_context_view(execution_context: dict[str, Any]) -> dict[str, Any]:
         return {
             "agent_metadata": execution_context["agent_metadata"],

@@ -167,10 +167,8 @@ def create_agent_runtime_router(
                 execution_context=execution_context,
             )
         )
-        execution_mode = execution_context_view["runtime_execution"][
-            "execution_mode"
-        ]
-        if execution_mode == "agentscope_native":
+        execution_path = agent_run_service.execution_path(execution_context)
+        if execution_path == "agentscope_runtime":
             return agent_run_service.finalize_native_runtime_run_from_context(
                 build_runtime_invocation_result_payload=(
                     deps.build_runtime_invocation_result_payload
@@ -178,11 +176,8 @@ def create_agent_runtime_router(
                 execution_context=execution_context,
                 runtime_boundary_result=runtime_boundary_result,
             )
-        if execution_mode != "foundry_compatibility":
-            raise PlatformAgentRunServiceError(
-                500,
-                "Unsupported runtime execution mode.",
-            )
+        # Everything below is the isolated legacy compatibility executor. Native
+        # AgentScope Agents have already returned from the Runtime Gateway above.
         try:
             memory_context = (
                 agent_run_service.prepare_memory_context_from_execution_context(
