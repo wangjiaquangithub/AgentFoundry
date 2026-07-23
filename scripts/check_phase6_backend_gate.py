@@ -199,6 +199,13 @@ CHECKS = (
         ],
     ),
     (
+        "approval decision authenticated actor identity",
+        [
+            sys.executable,
+            "scripts/check_phase6_approval_decision_actor_identity.py",
+        ],
+    ),
+    (
         "model config mutation audit contract",
         [sys.executable, "scripts/check_phase6_model_config_audit.py"],
     ),

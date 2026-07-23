@@ -147,8 +147,8 @@ class PlatformApprovalService:
         actor: str | None,
     ) -> dict[str, Any]:
         return {
-            "decided_by": _optional_filter(payload.decided_by)
-            or actor
+            "decided_by": actor
+            or _optional_filter(payload.decided_by)
             or "platform-admin",
             "decision_note": payload.decision_note,
         }
