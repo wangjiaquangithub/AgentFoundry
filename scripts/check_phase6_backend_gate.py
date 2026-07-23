@@ -206,6 +206,13 @@ CHECKS = (
         ],
     ),
     (
+        "memory-item read required identity fail closed",
+        [
+            sys.executable,
+            "scripts/check_phase6_memory_item_read_required_identity_fail_closed.py",
+        ],
+    ),
+    (
         "memory-item write tenant conflict fail closed",
         [
             sys.executable,
