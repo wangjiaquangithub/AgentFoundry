@@ -264,12 +264,42 @@ def assert_knowledge_api_rejects_tenant_mismatch() -> None:
         )
 
 
+def assert_agent_run_history_uses_request_tenant() -> None:
+    source = (BACKEND_DIR / "api" / "agent_runtime.py").read_text(
+        encoding="utf-8",
+    )
+    required_fragments = (
+        "identity_tenant = (identity.tenant_id or \"\").strip()",
+        "request_tenant = identity_tenant or hinted_tenant",
+        "explicit_tenant and explicit_tenant != request_tenant",
+        "tenant does not match request identity tenant boundary",
+        "tenant=tenant_id",
+    )
+    missing_fragments = [
+        fragment for fragment in required_fragments if fragment not in source
+    ]
+    if missing_fragments:
+        raise AssertionError(
+            "Agent run history tenant boundary is incomplete: "
+            + ", ".join(missing_fragments),
+        )
+
+    history_routes = source[source.index(
+        '@router.get("/enterprise/platform/agent/runs")'
+    ):]
+    if history_routes.count("_request_tenant(") != 3:
+        raise AssertionError(
+            "All three Agent run history routes must resolve the request tenant.",
+        )
+
+
 def main() -> None:
     assert_agent_list_is_tenant_scoped()
     assert_cross_tenant_runtime_access_is_denied()
     assert_access_scope_rejects_other_tenant_users()
     assert_pg_agent_catalog_requires_tenant_scope()
     assert_knowledge_api_rejects_tenant_mismatch()
+    assert_agent_run_history_uses_request_tenant()
     print("Phase 6 tenant access boundary contract passed.")
 
 

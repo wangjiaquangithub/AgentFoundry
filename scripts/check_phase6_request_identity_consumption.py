@@ -175,9 +175,9 @@ def check_agent_runtime_consumption() -> list[str]:
         errors.append("agent_runtime.py must import the canonical identity accessor")
     if 'request.headers.get("X-User-ID")' in source or "request.headers" in source:
         errors.append("agent_runtime.py must not consume raw request identity headers")
-    if source.count("get_request_identity(request)") != 1:
+    if source.count("get_request_identity(request)") != 2:
         errors.append(
-            "agent_runtime.py must resolve canonical identity once for the run route"
+            "agent_runtime.py must resolve canonical identity for execution and history routes"
         )
     if "requested_by=identity.user_id" not in source:
         errors.append(

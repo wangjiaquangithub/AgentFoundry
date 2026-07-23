@@ -827,6 +827,7 @@ app.include_router(
             build_runtime_invocation_result_payload=(
                 build_adapter_backed_local_invocation_result_payload
             ),
+            tenant_hint_from_user_id=tenant_hint_from_user_id,
         )
     )
 )

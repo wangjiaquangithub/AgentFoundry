@@ -64,6 +64,32 @@ class AgentRuntimeRouteDependencies:
     build_runtime_invocation_request_payload: Callable[..., dict[str, Any]]
     invoke_runtime_adapter_from_payload: Callable[..., Awaitable[dict[str, Any]]]
     build_runtime_invocation_result_payload: Callable[..., dict[str, Any]]
+    tenant_hint_from_user_id: Callable[[str], str | None]
+
+
+def _request_tenant(
+    *,
+    request: Request,
+    tenant: str | None,
+    tenant_hint_from_user_id: Callable[[str], str | None],
+) -> str:
+    identity = get_request_identity(request)
+    identity_tenant = (identity.tenant_id or "").strip()
+    hinted_tenant = tenant_hint_from_user_id(identity.user_id or "")
+    request_tenant = identity_tenant or hinted_tenant
+    if not request_tenant:
+        raise HTTPException(
+            status_code=400,
+            detail="request identity does not resolve to a tenant.",
+        )
+
+    explicit_tenant = (tenant or "").strip()
+    if explicit_tenant and explicit_tenant != request_tenant:
+        raise HTTPException(
+            status_code=403,
+            detail="tenant does not match request identity tenant boundary.",
+        )
+    return request_tenant
 
 
 def create_agent_runtime_router(
@@ -261,6 +287,7 @@ def create_agent_runtime_router(
 
     @router.get("/enterprise/platform/agent/runs")
     async def list_enterprise_agent_runs(
+        request: Request,
         agent_id: str | None = None,
         tenant: str | None = None,
         user_id: str | None = None,
@@ -269,10 +296,15 @@ def create_agent_runtime_router(
     ) -> dict[str, Any]:
         """List recent enterprise agent question-answer turns."""
         agent_run_service = deps.agent_run_service()
+        tenant_id = _request_tenant(
+            request=request,
+            tenant=tenant,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         list_context = agent_run_service.list_runs_request_payload(
             limit=limit,
             agent_id=agent_id,
-            tenant=tenant,
+            tenant=tenant_id,
             user_id=user_id,
             session_id=session_id,
         )
@@ -281,16 +313,23 @@ def create_agent_runtime_router(
     @router.get("/enterprise/platform/agent/runs/{turn_id}")
     async def get_enterprise_agent_run(
         turn_id: str,
+        request: Request,
         tenant: str | None = None,
     ) -> dict[str, Any]:
         """Get a single enterprise agent question-answer turn by run ID."""
+        tenant_id = _request_tenant(
+            request=request,
+            tenant=tenant,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         try:
-            return deps.agent_run_service().get_run(turn_id, tenant=tenant)
+            return deps.agent_run_service().get_run(turn_id, tenant=tenant_id)
         except PlatformAgentRunServiceError as exc:
             _raise_service_error(exc)
 
     @router.delete("/enterprise/platform/agent/runs")
     async def clear_enterprise_agent_runs(
+        request: Request,
         agent_id: str | None = None,
         tenant: str | None = None,
         user_id: str | None = None,
@@ -298,9 +337,14 @@ def create_agent_runtime_router(
     ) -> dict[str, Any]:
         """Clear matching enterprise agent question-answer turns."""
         agent_run_service = deps.agent_run_service()
+        tenant_id = _request_tenant(
+            request=request,
+            tenant=tenant,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         clear_context = agent_run_service.clear_runs_request_payload(
             agent_id=agent_id,
-            tenant=tenant,
+            tenant=tenant_id,
             user_id=user_id,
             session_id=session_id,
         )
