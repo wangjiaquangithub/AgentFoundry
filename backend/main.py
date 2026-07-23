@@ -787,6 +787,7 @@ app.include_router(
             ),
             require_platform_approval=_require_platform_approval,
             run_authorized_enterprise_tool=_run_authorized_enterprise_tool,
+            tenant_hint_from_user_id=tenant_hint_from_user_id,
         )
     )
 )

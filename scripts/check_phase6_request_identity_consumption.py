@@ -119,9 +119,9 @@ def check_tools_consumption() -> list[str]:
         errors.append("tools.py must import the canonical identity accessor")
     if 'request.headers.get("X-User-ID")' in source or "request.headers" in source:
         errors.append("tools.py must not consume raw request identity headers")
-    if source.count("get_request_identity(request)") != 2:
+    if source.count("get_request_identity(request)") != 3:
         errors.append(
-            "tools.py must resolve canonical identity for both identity-aware routes"
+            "tools.py must resolve canonical identity for all 3 identity-aware routes"
         )
     return errors
 

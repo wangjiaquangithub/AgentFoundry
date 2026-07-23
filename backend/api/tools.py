@@ -34,6 +34,32 @@ class ToolAuditRouteDependencies:
     published_agent_tool_scope_for_user: Callable[[str, str], tuple[Any, set[str]]]
     require_platform_approval: Callable[..., str]
     run_authorized_enterprise_tool: Callable[..., dict[str, Any]]
+    tenant_hint_from_user_id: Callable[[str], str | None]
+
+
+def _request_tenant(
+    *,
+    request: Request,
+    tenant: str | None,
+    tenant_hint_from_user_id: Callable[[str], str | None],
+) -> str:
+    identity = get_request_identity(request)
+    identity_tenant = (identity.tenant_id or "").strip()
+    hinted_tenant = tenant_hint_from_user_id(identity.user_id or "")
+    request_tenant = identity_tenant or hinted_tenant
+    if not request_tenant:
+        raise HTTPException(
+            status_code=400,
+            detail="request identity does not resolve to a tenant.",
+        )
+
+    explicit_tenant = (tenant or "").strip()
+    if explicit_tenant and explicit_tenant != request_tenant:
+        raise HTTPException(
+            status_code=403,
+            detail="tenant does not match request identity tenant boundary.",
+        )
+    return request_tenant
 
 
 def create_tool_audit_router(deps: ToolAuditRouteDependencies) -> APIRouter:
@@ -118,6 +144,7 @@ def create_tool_audit_router(deps: ToolAuditRouteDependencies) -> APIRouter:
 
     @router.get("/enterprise/platform/audit")
     async def enterprise_platform_audit(
+        request: Request,
         tenant: str | None = None,
         user_id: str | None = None,
         agent_id: str | None = None,
@@ -126,9 +153,14 @@ def create_tool_audit_router(deps: ToolAuditRouteDependencies) -> APIRouter:
         limit: int = 50,
     ) -> dict[str, Any]:
         """Return filtered enterprise tool audit events."""
+        tenant_id = _request_tenant(
+            request=request,
+            tenant=tenant,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         normalized_limit = max(1, min(limit, 200))
         events = deps.audit_logger.query(
-            tenant=tenant,
+            tenant=tenant_id,
             user_id=user_id,
             agent_id=agent_id,
             tool_name=tool_name,
@@ -138,7 +170,7 @@ def create_tool_audit_router(deps: ToolAuditRouteDependencies) -> APIRouter:
         return deps.tool_policy_service().audit_log_response(
             events=events,
             filters={
-                "tenant": tenant,
+                "tenant": tenant_id,
                 "user_id": user_id,
                 "agent_id": agent_id,
                 "tool_name": tool_name,
