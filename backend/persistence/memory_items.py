@@ -273,6 +273,10 @@ def _validate_memory_item_write_content(record: MemoryItemRecord) -> None:
 
 
 def _serialize_memory_item_metadata(record: MemoryItemRecord) -> str:
+    if not isinstance(record.metadata, dict):
+        raise ValueError(
+            f"Memory item {record.id} write requires metadata to be a JSON object."
+        )
     try:
         return json.dumps(record.metadata, ensure_ascii=False, allow_nan=False)
     except (TypeError, ValueError) as exc:
