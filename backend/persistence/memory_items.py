@@ -166,7 +166,11 @@ def _validate_memory_item_write_created_at(
         raise ValueError(f"Memory item {record.id} write rejected a future created time.")
 
 
-def _validate_memory_item_read_created_at(record: MemoryItemRecord) -> None:
+def _validate_memory_item_read_created_at(
+    record: MemoryItemRecord,
+    *,
+    as_of: datetime,
+) -> None:
     try:
         created_at = datetime.fromisoformat(record.created_at)
     except ValueError as exc:
@@ -175,6 +179,8 @@ def _validate_memory_item_read_created_at(record: MemoryItemRecord) -> None:
         ) from exc
     if created_at.utcoffset() is None:
         raise ValueError(f"Memory item {record.id} has a timezone-naive created time.")
+    if created_at > as_of:
+        raise ValueError(f"Memory item {record.id} read returned a future created time.")
 
 
 class SQLiteMemoryItemReadRepository:
@@ -221,7 +227,7 @@ class SQLiteMemoryItemReadRepository:
             rows = connection.execute(query, parameters).fetchall()
         records = [_memory_item_from_row(dict(row)) for row in rows]
         for record in records:
-            _validate_memory_item_read_created_at(record)
+            _validate_memory_item_read_created_at(record, as_of=as_of)
             _validate_memory_item_not_expired(record, as_of=as_of)
         return records
 
@@ -246,7 +252,7 @@ class SQLiteMemoryItemReadRepository:
         if row is None:
             return None
         record = _memory_item_from_row(dict(row))
-        _validate_memory_item_read_created_at(record)
+        _validate_memory_item_read_created_at(record, as_of=as_of)
         _validate_memory_item_not_expired(
             record,
             as_of=as_of,
@@ -310,7 +316,7 @@ class PostgresMemoryItemReadRepository:
                 session_id=session_id,
                 source_run_id=source_run_id,
             )
-            _validate_memory_item_read_created_at(record)
+            _validate_memory_item_read_created_at(record, as_of=as_of)
             _validate_memory_item_not_expired(record, as_of=as_of)
         return records
 
@@ -342,7 +348,7 @@ class PostgresMemoryItemReadRepository:
             tenant_id=tenant_id,
             memory_item_id=memory_item_id,
         )
-        _validate_memory_item_read_created_at(record)
+        _validate_memory_item_read_created_at(record, as_of=as_of)
         _validate_memory_item_not_expired(
             record,
             as_of=as_of,

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Validate fail-closed created-time handling for memory-item reads."""
+"""Validate fail-closed future created-time handling for memory-item reads."""
 
 from __future__ import annotations
 
 import sys
 import tempfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,14 +25,14 @@ from backend.persistence.memory_items import (  # noqa: E402
 )
 
 
-def memory_row(*, item_id: str, created_at: str) -> dict[str, Any]:
+def memory_row(*, created_at: str) -> dict[str, Any]:
     return {
-        "id": item_id,
+        "id": "item-1",
         "tenant_id": "acme",
         "user_id": "acme:alice",
         "agent_id": "agent-support",
         "session_id": "session-1",
-        "content": item_id,
+        "content": "item-1",
         "source_run_id": "run-1",
         "metadata": {},
         "expires_at": None,
@@ -39,12 +40,13 @@ def memory_row(*, item_id: str, created_at: str) -> dict[str, Any]:
     }
 
 
-def create_sqlite_database(created_at: str) -> tuple[tempfile.TemporaryDirectory[str], SQLiteDatabase]:
+def create_sqlite_database(
+    row: dict[str, Any],
+) -> tuple[tempfile.TemporaryDirectory[str], SQLiteDatabase]:
     temp_dir = tempfile.TemporaryDirectory()
     database = SQLiteDatabase(
         database_url=f"sqlite:///{Path(temp_dir.name) / 'memory.db'}"
     )
-    row = memory_row(item_id="item-1", created_at=created_at)
     with database.connect() as connection:
         connection.execute(
             """
@@ -127,80 +129,77 @@ class FakePostgresDatabase:
         return FakeConnection(self._row)
 
 
-def read_all_paths(created_at: str) -> None:
-    temp_dir, sqlite_database = create_sqlite_database(created_at)
-    try:
-        sqlite_repository = SQLiteMemoryItemReadRepository(sqlite_database)
-        sqlite_repository.list_memory_items(tenant_id="acme")
-        sqlite_repository.get_memory_item(
-            tenant_id="acme",
-            memory_item_id="item-1",
-        )
-    finally:
-        temp_dir.cleanup()
-
+def read_operations(
+    created_at: str,
+) -> tuple[tempfile.TemporaryDirectory[str], list[tuple[str, Callable[[], Any]]]]:
+    row = memory_row(created_at=created_at)
+    temp_dir, sqlite_database = create_sqlite_database(row)
+    sqlite_repository = SQLiteMemoryItemReadRepository(sqlite_database)
     postgres_repository = PostgresMemoryItemReadRepository(
-        FakePostgresDatabase(memory_row(item_id="item-1", created_at=created_at))
+        FakePostgresDatabase(row)
     )
-    postgres_repository.list_memory_items(tenant_id="acme")
-    postgres_repository.get_memory_item(
-        tenant_id="acme",
-        memory_item_id="item-1",
-    )
+    return temp_dir, [
+        ("SQLite list", lambda: sqlite_repository.list_memory_items(tenant_id="acme")),
+        (
+            "SQLite get",
+            lambda: sqlite_repository.get_memory_item(
+                tenant_id="acme", memory_item_id="item-1"
+            ),
+        ),
+        (
+            "PostgreSQL list",
+            lambda: postgres_repository.list_memory_items(tenant_id="acme"),
+        ),
+        (
+            "PostgreSQL get",
+            lambda: postgres_repository.get_memory_item(
+                tenant_id="acme", memory_item_id="item-1"
+            ),
+        ),
+    ]
 
 
-def check_timezone_aware_created_at_reads() -> list[str]:
+def check_past_created_at_reads() -> list[str]:
     errors: list[str] = []
+    past = datetime.now(timezone.utc) - timedelta(seconds=1)
+    offset = timezone(timedelta(hours=8))
     for label, created_at in (
-        ("UTC", "2026-07-23T00:00:00+00:00"),
-        ("offset", "2026-07-23T08:00:00+08:00"),
+        ("UTC past", past.isoformat()),
+        ("offset past", past.astimezone(offset).isoformat()),
     ):
+        temp_dir, operations = read_operations(created_at)
         try:
-            read_all_paths(created_at)
-        except ValueError:
-            errors.append(f"memory-item reads must accept {label} created times")
+            for operation_label, operation in operations:
+                try:
+                    result = operation()
+                except ValueError:
+                    errors.append(f"{operation_label} must accept {label} created time")
+                    continue
+                if result is None or result == []:
+                    errors.append(f"{operation_label} must return {label} created time")
+        finally:
+            temp_dir.cleanup()
     return errors
 
 
-def check_invalid_created_at_reads_fail_closed() -> list[str]:
+def check_future_created_at_reads_fail_closed() -> list[str]:
     errors: list[str] = []
+    future = datetime.now(timezone.utc) + timedelta(days=1)
+    offset = timezone(timedelta(hours=8))
     for label, created_at in (
-        ("malformed", "not-a-timestamp"),
-        ("timezone-naive", "2026-07-23T00:00:00"),
+        ("UTC future", future.isoformat()),
+        ("offset future", future.astimezone(offset).isoformat()),
     ):
-        temp_dir, sqlite_database = create_sqlite_database(created_at)
+        temp_dir, operations = read_operations(created_at)
         try:
-            sqlite_repository = SQLiteMemoryItemReadRepository(sqlite_database)
-            for operation in (
-                lambda: sqlite_repository.list_memory_items(tenant_id="acme"),
-                lambda: sqlite_repository.get_memory_item(
-                    tenant_id="acme", memory_item_id="item-1"
-                ),
-            ):
+            for operation_label, operation in operations:
                 try:
                     operation()
                 except ValueError:
                     continue
-                errors.append(f"SQLite reads must reject {label} created times")
+                errors.append(f"{operation_label} must reject {label} created time")
         finally:
             temp_dir.cleanup()
-
-        postgres_repository = PostgresMemoryItemReadRepository(
-            FakePostgresDatabase(
-                memory_row(item_id="item-1", created_at=created_at)
-            )
-        )
-        for operation in (
-            lambda: postgres_repository.list_memory_items(tenant_id="acme"),
-            lambda: postgres_repository.get_memory_item(
-                tenant_id="acme", memory_item_id="item-1"
-            ),
-        ):
-            try:
-                operation()
-            except ValueError:
-                continue
-            errors.append(f"PostgreSQL reads must reject {label} created times")
     return errors
 
 
@@ -208,24 +207,32 @@ def check_source_and_gate() -> list[str]:
     source = MEMORY_ITEMS.read_text(encoding="utf-8")
     gate_source = PHASE6_GATE.read_text(encoding="utf-8")
     errors: list[str] = []
+    if "if created_at > as_of:" not in source:
+        errors.append("memory-item reads must reject future created times")
     if source.count("_validate_memory_item_read_created_at(record, as_of=as_of)") != 4:
-        errors.append("all memory-item read paths must validate created time")
-    if "check_phase6_memory_item_read_created_at_fail_closed.py" not in gate_source:
-        errors.append("Phase 6 backend gate must run the created-time read check")
+        errors.append("all memory-item read paths must use their captured read time")
+    if (
+        "check_phase6_memory_item_read_future_created_at_fail_closed.py"
+        not in gate_source
+    ):
+        errors.append("Phase 6 backend gate must run the future created-time read check")
     return errors
 
 
 def main() -> int:
     errors = [
-        *check_timezone_aware_created_at_reads(),
-        *check_invalid_created_at_reads_fail_closed(),
+        *check_past_created_at_reads(),
+        *check_future_created_at_reads_fail_closed(),
         *check_source_and_gate(),
     ]
     if errors:
         for error in errors:
-            print(f"[phase6-memory-item-read-created-at] {error}", file=sys.stderr)
+            print(
+                f"[phase6-memory-item-read-future-created-at] {error}",
+                file=sys.stderr,
+            )
         return 1
-    print("[phase6-memory-item-read-created-at] passed")
+    print("[phase6-memory-item-read-future-created-at] passed")
     return 0
 
 

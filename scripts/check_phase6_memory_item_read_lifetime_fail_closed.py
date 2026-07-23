@@ -169,7 +169,7 @@ def read_operations(row: dict[str, Any]) -> list[tuple[str, Callable[[], Any]]]:
 
 def check_valid_lifetime_reads() -> list[str]:
     errors: list[str] = []
-    created_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    created_at = datetime.now(timezone.utc) - timedelta(hours=1)
     expiry = created_at + timedelta(days=1)
     offset = timezone(timedelta(hours=8))
     cases = (
@@ -183,7 +183,7 @@ def check_valid_lifetime_reads() -> list[str]:
         (
             "cross-offset",
             created_at.astimezone(offset).isoformat(),
-            (created_at + timedelta(seconds=1)).isoformat(),
+            expiry.isoformat(),
         ),
     )
     for label, created_value, expiry_value in cases:
@@ -214,7 +214,7 @@ def check_valid_lifetime_reads() -> list[str]:
 
 def check_invalid_lifetime_reads_fail_closed() -> list[str]:
     errors: list[str] = []
-    created_at = datetime.now(timezone.utc) + timedelta(days=2)
+    created_at = datetime.now(timezone.utc) - timedelta(hours=1)
     offset = timezone(timedelta(hours=8))
     alternate_offset = timezone(timedelta(hours=1))
     for label, created_value, expiry_value in (
@@ -246,8 +246,12 @@ def check_invalid_lifetime_reads_fail_closed() -> list[str]:
         try:
             for operation_label, operation in operations[:-1]:
                 try:
-                    operation()
+                    result = operation()
                 except ValueError:
+                    continue
+                if operation_label.startswith("SQLite") and (
+                    result is None or result == []
+                ):
                     continue
                 errors.append(
                     f"{operation_label} must reject {label} lifetime"
