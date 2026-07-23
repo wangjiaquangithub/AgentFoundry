@@ -157,6 +157,13 @@ CHECKS = (
         ],
     ),
     (
+        "memory-item write expiry fail closed",
+        [
+            sys.executable,
+            "scripts/check_phase6_memory_item_write_expiry_fail_closed.py",
+        ],
+    ),
+    (
         "agent-run memory audit fail closed",
         [
             sys.executable,
