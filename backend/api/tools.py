@@ -81,9 +81,15 @@ def create_tool_audit_router(deps: ToolAuditRouteDependencies) -> APIRouter:
         )
         resolved_user_id = catalog_request["user_id"]
         requested_agent_id = catalog_request["agent_id"]
+        request_tenant = _request_tenant(
+            request=request,
+            tenant=None,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         try:
             runtime = deps.connector_config_service().enterprise_runtime_context(
-                resolved_user_id
+                resolved_user_id,
+                tenant=request_tenant,
             )
         except PlatformConnectorConfigServiceError as exc:
             _raise_service_error(exc)
@@ -204,8 +210,16 @@ def create_tool_audit_router(deps: ToolAuditRouteDependencies) -> APIRouter:
         requested_inputs = run_request["inputs"]
         requested_agent_id = run_request["agent_id"]
         requested_approval_id = run_request["approval_id"]
+        request_tenant = _request_tenant(
+            request=request,
+            tenant=None,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         try:
-            runtime = deps.connector_config_service().enterprise_runtime_context(user_id)
+            runtime = deps.connector_config_service().enterprise_runtime_context(
+                user_id,
+                tenant=request_tenant,
+            )
         except PlatformConnectorConfigServiceError as exc:
             _raise_service_error(exc)
         runtime_selection = tool_policy_service.runtime_selection(runtime)
@@ -223,7 +237,8 @@ def create_tool_audit_router(deps: ToolAuditRouteDependencies) -> APIRouter:
             if requested_tool_name not in configured_tools:
                 try:
                     runtime = deps.connector_config_service().enterprise_runtime_context(
-                        user_id
+                        user_id,
+                        tenant=request_tenant,
                     )
                 except PlatformConnectorConfigServiceError as exc:
                     _raise_service_error(exc)

@@ -45,6 +45,13 @@ CHECKS = (
         ],
     ),
     (
+        "tool runtime lookup request tenant",
+        [
+            sys.executable,
+            "scripts/check_phase6_tool_runtime_lookup_request_tenant.py",
+        ],
+    ),
+    (
         "workflow request tenant",
         [
             sys.executable,
