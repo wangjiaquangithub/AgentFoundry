@@ -266,10 +266,11 @@ def assert_pg_agent_catalog_requires_tenant_scope() -> None:
 def assert_knowledge_api_rejects_tenant_mismatch() -> None:
     source = (BACKEND_DIR / "api" / "knowledge.py").read_text(encoding="utf-8")
     required_fragments = (
-        "explicit_tenant and hinted_tenant",
-        "explicit_tenant != hinted_tenant",
+        "identity_tenant = (identity.tenant_id or \"\").strip()",
+        "request_tenant = identity_tenant or hinted_tenant",
+        "explicit_tenant and explicit_tenant != request_tenant",
         "status_code=403",
-        "tenant does not match X-User-ID tenant boundary",
+        "tenant does not match request identity tenant boundary",
     )
     missing_fragments = [
         fragment for fragment in required_fragments if fragment not in source

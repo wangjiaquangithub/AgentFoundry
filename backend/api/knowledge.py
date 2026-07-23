@@ -97,22 +97,23 @@ def _resolve_tenant(
     request: Request,
     tenant_hint_from_user_id: Callable[[str], str | None],
 ) -> str:
-    explicit_tenant = (tenant or "").strip()
-    user_id = get_request_identity(request).user_id or ""
-    hinted_tenant = tenant_hint_from_user_id(user_id)
-    if explicit_tenant and hinted_tenant and explicit_tenant != hinted_tenant:
-        raise HTTPException(
-            status_code=403,
-            detail="tenant does not match X-User-ID tenant boundary.",
-        )
-
-    tenant_id = explicit_tenant or hinted_tenant
-    if not tenant_id:
+    identity = get_request_identity(request)
+    identity_tenant = (identity.tenant_id or "").strip()
+    hinted_tenant = tenant_hint_from_user_id(identity.user_id or "")
+    request_tenant = identity_tenant or hinted_tenant
+    if not request_tenant:
         raise HTTPException(
             status_code=400,
-            detail="tenant is required when X-User-ID does not imply a tenant.",
+            detail="request identity does not resolve to a tenant.",
         )
-    return tenant_id
+
+    explicit_tenant = (tenant or "").strip()
+    if explicit_tenant and explicit_tenant != request_tenant:
+        raise HTTPException(
+            status_code=403,
+            detail="tenant does not match request identity tenant boundary.",
+        )
+    return request_tenant
 
 
 def _document_payload(document: Any) -> dict[str, Any]:
