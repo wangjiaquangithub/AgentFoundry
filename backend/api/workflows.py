@@ -53,7 +53,33 @@ class WorkflowGovernanceRouteDependencies:
     published_agent_tool_scope_for_user: Callable[[str, str], tuple[Any, set[str]]]
     require_platform_approval: Callable[..., str]
     run_authorized_enterprise_tool: Callable[..., dict[str, Any]]
+    tenant_hint_from_user_id: Callable[[str], str | None]
     now: Callable[[], str]
+
+
+def _request_tenant(
+    *,
+    request: Request,
+    tenant: str | None,
+    tenant_hint_from_user_id: Callable[[str], str | None],
+) -> str:
+    identity = get_request_identity(request)
+    identity_tenant = (identity.tenant_id or "").strip()
+    hinted_tenant = tenant_hint_from_user_id(identity.user_id or "")
+    request_tenant = identity_tenant or hinted_tenant
+    if not request_tenant:
+        raise HTTPException(
+            status_code=400,
+            detail="request identity does not resolve to a tenant.",
+        )
+
+    explicit_tenant = (tenant or "").strip()
+    if explicit_tenant and explicit_tenant != request_tenant:
+        raise HTTPException(
+            status_code=403,
+            detail="tenant does not match request identity tenant boundary.",
+        )
+    return request_tenant
 
 
 def _enterprise_platform_scenarios(
@@ -251,6 +277,7 @@ def create_workflow_governance_router(
 
     @router.get("/enterprise/platform/workflows/runs")
     async def list_enterprise_workflow_runs(
+        request: Request,
         workflow_type: str | None = None,
         agent_id: str | None = None,
         tenant: str | None = None,
@@ -259,10 +286,15 @@ def create_workflow_governance_router(
     ) -> dict[str, Any]:
         """List recent platform workflow runs for review and audit."""
         workflow_run_service = deps.workflow_run_service()
+        tenant_id = _request_tenant(
+            request=request,
+            tenant=tenant,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         list_context = workflow_run_service.list_runs_request_payload(
             workflow_type=workflow_type,
             agent_id=agent_id,
-            tenant=tenant,
+            tenant=tenant_id,
             user_id=user_id,
             limit=limit,
         )
