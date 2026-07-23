@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Request
 
+from api.request_identity import get_request_identity
 from api.schemas import (
     EnterpriseModelConfigDetailRequest,
     EnterpriseModelConfigsRequest,
@@ -27,12 +28,11 @@ class ModelConfigRouteDependencies:
 def _resolve_tenant(
     *,
     tenant: str | None,
-    request: Request,
+    user_id: str | None,
     tenant_hint_from_user_id: Callable[[str], str | None],
 ) -> str:
     explicit_tenant = (tenant or "").strip()
-    user_id = request.headers.get("X-User-ID") or ""
-    hinted_tenant = tenant_hint_from_user_id(user_id)
+    hinted_tenant = tenant_hint_from_user_id(user_id or "")
     if explicit_tenant and hinted_tenant and explicit_tenant != hinted_tenant:
         raise HTTPException(
             status_code=403,
@@ -66,9 +66,10 @@ def create_model_config_router(
                 detail="Production model configuration reads require PostgreSQL.",
             )
 
+        identity = get_request_identity(request)
         tenant_id = _resolve_tenant(
             tenant=payload.tenant,
-            request=request,
+            user_id=identity.user_id,
             tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
         )
         try:
@@ -101,9 +102,10 @@ def create_model_config_router(
                 detail="Production model configuration reads require PostgreSQL.",
             )
 
+        identity = get_request_identity(request)
         tenant_id = _resolve_tenant(
             tenant=payload.tenant,
-            request=request,
+            user_id=identity.user_id,
             tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
         )
         try:
@@ -138,12 +140,13 @@ def create_model_config_router(
                 ),
             )
 
+        identity = get_request_identity(request)
         tenant_id = _resolve_tenant(
             tenant=payload.tenant,
-            request=request,
+            user_id=identity.user_id,
             tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
         )
-        actor_user_id = request.headers.get("X-User-ID") or "system"
+        actor_user_id = identity.user_id or "system"
         try:
             model_config = service.upsert_model_config_from_api(
                 ModelConfigApiCommandInput(
