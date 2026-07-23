@@ -174,6 +174,13 @@ CHECKS = (
         ],
     ),
     (
+        "platform member import authenticated actor audit",
+        [
+            sys.executable,
+            "scripts/check_phase6_member_import_actor_audit.py",
+        ],
+    ),
+    (
         "connector config save authenticated actor audit",
         [
             sys.executable,
