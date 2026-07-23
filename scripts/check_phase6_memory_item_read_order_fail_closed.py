@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate fail-closed result limits for memory-item list reads."""
+"""Validate fail-closed ordering for memory-item list reads."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from backend.persistence.memory_items import (  # noqa: E402
 )
 
 
-def memory_row(item_id: str) -> dict[str, Any]:
+def memory_row(item_id: str, created_at: str) -> dict[str, Any]:
     return {
         "id": item_id,
         "tenant_id": "acme",
@@ -32,7 +32,7 @@ def memory_row(item_id: str) -> dict[str, Any]:
         "source_run_id": "run-1",
         "metadata": {},
         "expires_at": None,
-        "created_at": "2026-07-23T00:00:00+00:00",
+        "created_at": created_at,
     }
 
 
@@ -125,44 +125,50 @@ def repository_factories() -> tuple[
     )
 
 
-def check_excess_results_fail_closed() -> list[str]:
+def check_created_time_order_fail_closed() -> list[str]:
     errors: list[str] = []
-    rows = [memory_row("item-1"), memory_row("item-2")]
+    rows = [
+        memory_row("item-old", "2026-07-22T00:00:00+00:00"),
+        memory_row("item-new", "2026-07-23T00:00:00+00:00"),
+    ]
     for backend, repository_factory in repository_factories():
-        repository = repository_factory(rows)
         try:
-            repository.list_memory_items(tenant_id="acme", limit=1)
+            repository_factory(rows).list_memory_items(tenant_id="acme")
         except ValueError:
             continue
-        errors.append(f"{backend} list must reject results above the requested limit")
+        errors.append(f"{backend} list must reject ascending creation times")
     return errors
 
 
-def check_results_at_limit_accepted() -> list[str]:
+def check_id_tiebreaker_fail_closed() -> list[str]:
     errors: list[str] = []
-    rows = [memory_row("item-2"), memory_row("item-1")]
+    created_at = "2026-07-23T00:00:00+00:00"
+    rows = [memory_row("item-a", created_at), memory_row("item-b", created_at)]
     for backend, repository_factory in repository_factories():
-        repository = repository_factory(rows)
         try:
-            records = repository.list_memory_items(tenant_id="acme", limit=2)
+            repository_factory(rows).list_memory_items(tenant_id="acme")
         except ValueError:
-            errors.append(f"{backend} list must accept results at the requested limit")
             continue
-        if len(records) != 2:
-            errors.append(f"{backend} list must return all results at the limit")
+        errors.append(f"{backend} list must reject an ascending ID tiebreaker")
     return errors
 
 
-def check_clamped_minimum_enforced() -> list[str]:
+def check_descending_order_accepted() -> list[str]:
     errors: list[str] = []
-    rows = [memory_row("item-1"), memory_row("item-2")]
+    tied_at = "2026-07-22T00:00:00+00:00"
+    rows = [
+        memory_row("item-new", "2026-07-23T00:00:00+00:00"),
+        memory_row("item-b", tied_at),
+        memory_row("item-a", tied_at),
+    ]
     for backend, repository_factory in repository_factories():
-        repository = repository_factory(rows)
         try:
-            repository.list_memory_items(tenant_id="acme", limit=0)
+            records = repository_factory(rows).list_memory_items(tenant_id="acme")
         except ValueError:
+            errors.append(f"{backend} list must accept descending result order")
             continue
-        errors.append(f"{backend} list must enforce the clamped minimum limit")
+        if [record.id for record in records] != ["item-new", "item-b", "item-a"]:
+            errors.append(f"{backend} list must preserve descending result order")
     return errors
 
 
@@ -170,27 +176,27 @@ def check_source_and_gate() -> list[str]:
     source = MEMORY_ITEMS.read_text(encoding="utf-8")
     gate_source = PHASE6_GATE.read_text(encoding="utf-8")
     errors: list[str] = []
-    if source.count("_validate_memory_item_read_count(records, limit=result_limit)") != 2:
-        errors.append("both memory-item list paths must validate result count")
-    if source.count("parameters.append(result_limit)") != 2:
-        errors.append("both list queries must use the validated result limit")
-    if "check_phase6_memory_item_read_limit_fail_closed.py" not in gate_source:
-        errors.append("Phase 6 backend gate must run the memory-item limit check")
+    if source.count("_validate_memory_item_read_order(records)") != 2:
+        errors.append("both memory-item list paths must validate result order")
+    if "current_key >= previous_key" not in source:
+        errors.append("memory-item result ordering must be strict")
+    if "check_phase6_memory_item_read_order_fail_closed.py" not in gate_source:
+        errors.append("Phase 6 backend gate must run the memory-item order check")
     return errors
 
 
 def main() -> int:
     errors = [
-        *check_excess_results_fail_closed(),
-        *check_results_at_limit_accepted(),
-        *check_clamped_minimum_enforced(),
+        *check_created_time_order_fail_closed(),
+        *check_id_tiebreaker_fail_closed(),
+        *check_descending_order_accepted(),
         *check_source_and_gate(),
     ]
     if errors:
         for error in errors:
-            print(f"[phase6-memory-item-read-limit] {error}", file=sys.stderr)
+            print(f"[phase6-memory-item-read-order] {error}", file=sys.stderr)
         return 1
-    print("[phase6-memory-item-read-limit] passed")
+    print("[phase6-memory-item-read-order] passed")
     return 0
 
 

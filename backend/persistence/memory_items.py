@@ -110,6 +110,15 @@ def _validate_memory_item_read_count(
         raise ValueError("Memory item read returned more items than requested.")
 
 
+def _validate_memory_item_read_order(records: list[MemoryItemRecord]) -> None:
+    previous_key: tuple[datetime, str] | None = None
+    for record in records:
+        current_key = (datetime.fromisoformat(record.created_at), record.id)
+        if previous_key is not None and current_key >= previous_key:
+            raise ValueError("Memory item read returned items out of order.")
+        previous_key = current_key
+
+
 def _validate_memory_item_not_expired(
     record: MemoryItemRecord,
     *,
@@ -248,6 +257,7 @@ class SQLiteMemoryItemReadRepository:
             )
             _validate_memory_item_read_created_at(record, as_of=as_of)
             _validate_memory_item_not_expired(record, as_of=as_of)
+        _validate_memory_item_read_order(records)
         return records
 
     def get_memory_item(
@@ -344,6 +354,7 @@ class PostgresMemoryItemReadRepository:
             )
             _validate_memory_item_read_created_at(record, as_of=as_of)
             _validate_memory_item_not_expired(record, as_of=as_of)
+        _validate_memory_item_read_order(records)
         return records
 
     def get_memory_item(
