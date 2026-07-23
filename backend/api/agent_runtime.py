@@ -349,6 +349,7 @@ def create_agent_runtime_router(
         session_id: str | None = None,
     ) -> dict[str, Any]:
         """Clear matching enterprise agent question-answer turns."""
+        identity = get_request_identity(request)
         agent_run_service = deps.agent_run_service()
         tenant_id = _request_tenant(
             request=request,
@@ -362,7 +363,10 @@ def create_agent_runtime_router(
             session_id=session_id,
         )
         try:
-            return agent_run_service.clear_runs(**clear_context)
+            return agent_run_service.clear_runs(
+                actor_user_id=identity.user_id or "",
+                **clear_context,
+            )
         except PlatformAgentRunServiceError as exc:
             _raise_service_error(exc)
 

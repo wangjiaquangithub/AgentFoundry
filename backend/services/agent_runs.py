@@ -62,11 +62,13 @@ class PlatformAgentRunService:
             RuntimeInvocationWriteRepositoryProtocol | None
         ) = None,
         audit_event_writer: AuditEventWriteRepositoryProtocol | None = None,
+        now: Callable[[], str] | None = None,
     ) -> None:
         self._repository = repository
         self._tool_call_writer = tool_call_writer
         self._runtime_invocation_writer = runtime_invocation_writer
         self._audit_event_writer = audit_event_writer
+        self._now = now or _utc_now_iso
 
     def list_runs(
         self,
@@ -2802,14 +2804,28 @@ class PlatformAgentRunService:
     def clear_runs(
         self,
         *,
+        actor_user_id: str,
         agent_id: str | None = None,
         tenant: str | None = None,
         user_id: str | None = None,
         session_id: str | None = None,
     ) -> dict[str, Any]:
+        normalized_actor = _optional_filter(actor_user_id)
+        normalized_tenant = _optional_filter(tenant)
+        if not normalized_actor:
+            raise PlatformAgentRunServiceError(
+                400,
+                "Agent run clear actor is required.",
+            )
+        if self._audit_event_writer is not None and not normalized_tenant:
+            raise PlatformAgentRunServiceError(
+                400,
+                "Agent run clear tenant is required for audit evidence.",
+            )
+
         filters = {
             "agent_id": _optional_filter(agent_id),
-            "tenant": _optional_filter(tenant),
+            "tenant": normalized_tenant,
             "user_id": _optional_filter(user_id),
             "session_id": _optional_filter(session_id),
         }
@@ -2819,7 +2835,58 @@ class PlatformAgentRunService:
                 "At least one agent run filter is required.",
             )
 
-        return {"deleted_count": self._repository.delete(**filters)}
+        deleted_count = self._repository.delete(**filters)
+        self.append_cleared_audit_event(
+            actor_user_id=normalized_actor,
+            filters=filters,
+            deleted_count=deleted_count,
+        )
+        return {"deleted_count": deleted_count}
+
+    def append_cleared_audit_event(
+        self,
+        *,
+        actor_user_id: str,
+        filters: dict[str, str | None],
+        deleted_count: int,
+    ) -> None:
+        """Append non-sensitive audit evidence for an Agent run clear command."""
+        if self._audit_event_writer is None:
+            return
+
+        tenant = str(filters.get("tenant") or "")
+        payload = {
+            "schema_version": 1,
+            "tenant": tenant,
+            "filters": {
+                key: value
+                for key, value in filters.items()
+                if key != "tenant" and value is not None
+            },
+            "deleted_count": deleted_count,
+        }
+        try:
+            persisted_audit_event = self._audit_event_writer.append_audit_event(
+                AuditEventRecord(
+                    id=str(uuid4()),
+                    tenant_id=tenant,
+                    actor_user_id=actor_user_id,
+                    event_type="agent_run.cleared",
+                    target_type="agent_run_collection",
+                    target_id=tenant,
+                    payload=payload,
+                    created_at=self._now(),
+                ),
+            )
+            if not persisted_audit_event.id:
+                raise PlatformAgentRunServiceError(
+                    500,
+                    "PostgreSQL audit event write did not return a persisted id.",
+                )
+        except PlatformAgentRunServiceError:
+            raise
+        except Exception as exc:
+            raise PlatformAgentRunServiceError(500, str(exc)) from exc
 
     def clear_runs_request_payload(
         self,
@@ -2840,6 +2907,10 @@ class PlatformAgentRunService:
 def _optional_filter(value: str | None) -> str | None:
     normalized = (value or "").strip()
     return normalized or None
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 def _optional_string(value: Any) -> str | None:

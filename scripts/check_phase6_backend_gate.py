@@ -195,6 +195,10 @@ CHECKS = (
         [sys.executable, "scripts/check_phase6_agent_run_audit.py"],
     ),
     (
+        "Agent run clear authenticated actor audit",
+        [sys.executable, "scripts/check_phase6_agent_run_clear_actor_audit.py"],
+    ),
+    (
         "approval mutation audit contract",
         [sys.executable, "scripts/check_phase6_approval_audit.py"],
     ),

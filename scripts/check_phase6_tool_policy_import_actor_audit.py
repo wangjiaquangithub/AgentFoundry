@@ -25,7 +25,7 @@ from backend.services.tools import (  # noqa: E402
 )
 
 
-SECRET_MARKER = "should-not-appear-in-audit"
+SENSITIVE_MARKER = "should-not-appear-in-audit"
 
 
 class AuditEventWriter:
@@ -63,7 +63,7 @@ def import_payload() -> dict:
             "acme": {
                 "users": {
                     "acme:alice": {
-                        "allow": [SECRET_MARKER],
+                        "allow": [SENSITIVE_MARKER],
                         "deny": [],
                     }
                 }
@@ -109,7 +109,7 @@ def check_import_audit_contract(policy_path: Path) -> list[str]:
     }
     if event.payload != expected_payload:
         errors.append("audit payload must contain only the import evidence contract")
-    if SECRET_MARKER in repr(event.payload):
+    if SENSITIVE_MARKER in repr(event.payload):
         errors.append("audit payload must not copy imported policy contents")
     return errors
 
