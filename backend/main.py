@@ -267,10 +267,15 @@ def _build_tool_authorization_policy() -> ToolAuthorizationPolicy:
 
 
 def _platform_tool_policy_service() -> PlatformToolPolicyService:
-    def runtime_context(user_id: str) -> dict[str, Any]:
+    def runtime_context(
+        user_id: str,
+        *,
+        tenant: str | None = None,
+    ) -> dict[str, Any]:
         try:
             return _platform_connector_config_service().enterprise_runtime_context(
                 user_id,
+                tenant=tenant,
             )
         except PlatformConnectorConfigServiceError as exc:
             _raise_platform_connector_config_service_error(exc)

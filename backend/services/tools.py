@@ -59,7 +59,7 @@ class PlatformToolPolicyService:
         default_policy: dict[str, Any],
         policy_mode: Callable[[], str],
         enterprise_tool_names: list[str],
-        runtime_context: Callable[[str], dict[str, Any]],
+        runtime_context: Callable[..., dict[str, Any]],
         identity_metadata: Callable[[str, str], list[dict[str, Any]]],
         tool_governance_reader: ToolGovernanceReadRepository | None = None,
         tool_governance_writer: ToolPolicyWriteRepository | None = None,
@@ -616,7 +616,11 @@ class PlatformToolPolicyService:
         tenant: str | None = None,
     ) -> dict[str, Any]:
         resolved_user_id = user_id or "acme:alice"
-        runtime = self._runtime_context(resolved_user_id)
+        runtime = (
+            self._runtime_context(resolved_user_id, tenant=tenant)
+            if tenant is not None
+            else self._runtime_context(resolved_user_id)
+        )
         resolved_tenant = tenant or self.runtime_tenant(runtime)
         identities = self._identity_metadata(resolved_user_id, resolved_tenant)
         return {
