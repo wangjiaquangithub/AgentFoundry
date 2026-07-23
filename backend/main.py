@@ -107,6 +107,7 @@ from platform_config import (
     safe_path_part,
 )
 from logging_config import configure_backend_logging
+from server_config import resolve_server_config
 from repositories.agents import (
     AgentRepository,
 )
@@ -193,6 +194,7 @@ from services.workflows import (
 
 load_local_env()
 configure_backend_logging()
+server_config = resolve_server_config()
 
 agent_fallback_repository = AgentRepository(PLATFORM_AGENTS_PATH)
 agent_run_fallback_repository = AgentRunRepository(PLATFORM_AGENT_RUNS_PATH)
@@ -577,7 +579,7 @@ app = create_app(
         ),
         Middleware(
             CORSMiddleware,
-            allow_origins=os.getenv("CORS_ALLOW_ORIGINS", "*").split(","),
+            allow_origins=list(server_config.cors_allow_origins),
             allow_methods=["*"],
             allow_headers=["*"],
         ),
@@ -853,7 +855,7 @@ app.include_router(create_health_router())
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",
-        host=os.getenv("HOST", "0.0.0.0"),
-        port=int(os.getenv("PORT", "8000")),
-        reload=os.getenv("UVICORN_RELOAD", "1") != "0",
+        host=server_config.host,
+        port=server_config.port,
+        reload=server_config.reload,
     )

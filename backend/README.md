@@ -379,8 +379,17 @@ ENTERPRISE_TOOL_POLICY_MODE=strict
 | `ENTERPRISE_AGENT_ROUTER_TIMEOUT_SECONDS` | `8` | 模型路由超时时间 |
 | `HOST` | `0.0.0.0` | Uvicorn host |
 | `PORT` | `8000` | Uvicorn port |
-| `UVICORN_RELOAD` | `1` | 是否开启 reload |
-| `CORS_ALLOW_ORIGINS` | `*` | 逗号分隔的 CORS origin |
+| `UVICORN_RELOAD` | `1` | 是否开启 reload；生产环境必须设为 `0` |
+| `CORS_ALLOW_ORIGINS` | `*` | 逗号分隔的 CORS origin；生产环境必须显式列出 origin，禁止空值和 `*` |
+
+开发环境保留热重载和宽松 CORS 默认值。生产部署必须覆盖这两个值；服务会在
+应用装配阶段拒绝不安全配置：
+
+```bash
+AGENTFOUNDRY_ENV=production
+UVICORN_RELOAD=0
+CORS_ALLOW_ORIGINS=https://console.example.com,https://admin.example.com
+```
 
 ## 从 MVP 到生产
 

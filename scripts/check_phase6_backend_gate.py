@@ -41,6 +41,10 @@ CHECKS = (
         [sys.executable, "scripts/check_phase6_deployment_env_contract.py"],
     ),
     (
+        "production-safe server configuration",
+        [sys.executable, "scripts/check_phase6_server_config.py"],
+    ),
+    (
         "README bootstrap",
         [sys.executable, "scripts/check_phase6_readme_bootstrap.py"],
     ),
