@@ -199,6 +199,13 @@ CHECKS = (
         ],
     ),
     (
+        "memory-item read metadata fail closed",
+        [
+            sys.executable,
+            "scripts/check_phase6_memory_item_read_metadata_fail_closed.py",
+        ],
+    ),
+    (
         "memory-item write tenant conflict fail closed",
         [
             sys.executable,

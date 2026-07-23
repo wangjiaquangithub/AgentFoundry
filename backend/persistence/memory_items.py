@@ -45,7 +45,10 @@ def _memory_item_from_row(row: dict[str, Any]) -> MemoryItemRecord:
 
 
 def _metadata_from_json(value: dict[str, Any] | str, item_id: str) -> dict[str, Any]:
-    parsed = value if isinstance(value, dict) else json.loads(value)
+    try:
+        parsed = value if isinstance(value, dict) else json.loads(value)
+    except (json.JSONDecodeError, TypeError) as exc:
+        raise ValueError(f"Memory item {item_id} has invalid metadata JSON.") from exc
     if not isinstance(parsed, dict):
         raise ValueError(f"Memory item {item_id} has invalid metadata JSON.")
     return parsed
