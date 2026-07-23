@@ -363,6 +363,8 @@ class PlatformMemoryService:
         tenant: str,
         user_id: str,
         agent_id: str,
+        session_id: str,
+        agent_run_id: str,
         question: str,
         max_records: int,
         limit: int,
@@ -379,6 +381,15 @@ class PlatformMemoryService:
             if enabled
             else []
         )
+        if enabled:
+            self._append_memory_read_audit_event(
+                tenant=tenant,
+                user_id=user_id,
+                agent_id=agent_id,
+                session_id=session_id,
+                agent_run_id=agent_run_id,
+                memory_hits=memory_hits,
+            )
         return {
             "memory_enabled": enabled,
             "memory_hits": memory_hits,
@@ -388,6 +399,58 @@ class PlatformMemoryService:
                 "agent_id": agent_id,
             },
         }
+
+    def _append_memory_read_audit_event(
+        self,
+        *,
+        tenant: str,
+        user_id: str,
+        agent_id: str,
+        session_id: str,
+        agent_run_id: str,
+        memory_hits: list[dict[str, Any]],
+    ) -> None:
+        if self._audit_event_writer is None:
+            raise PlatformMemoryServiceError(
+                500,
+                "Agent-run memory read audit persistence is unavailable",
+            )
+
+        memory_item_ids = _dedupe_strings(
+            [str(hit.get("id") or "") for hit in memory_hits],
+        )
+        try:
+            persisted_audit_event = self._audit_event_writer.append_audit_event(
+                AuditEventRecord(
+                    id=str(uuid4()),
+                    tenant_id=tenant,
+                    actor_user_id=user_id,
+                    event_type="memory_item.retrieved",
+                    target_type="agent_run",
+                    target_id=agent_run_id,
+                    payload={
+                        "schema_version": 1,
+                        "tenant": tenant,
+                        "user_id": user_id,
+                        "agent_id": agent_id,
+                        "session_id": session_id,
+                        "agent_run_id": agent_run_id,
+                        "hit_count": len(memory_hits),
+                        "memory_item_ids": memory_item_ids,
+                    },
+                    created_at=datetime.now(timezone.utc).isoformat(),
+                ),
+            )
+        except Exception as exc:
+            raise PlatformMemoryServiceError(
+                500,
+                "Agent-run memory read audit persistence is unavailable",
+            ) from exc
+        if not str(getattr(persisted_audit_event, "id", "") or "").strip():
+            raise PlatformMemoryServiceError(
+                500,
+                "Agent-run memory read audit persistence is unavailable",
+            )
 
     def agent_run_state(
         self,

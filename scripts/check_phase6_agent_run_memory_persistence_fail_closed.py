@@ -143,8 +143,10 @@ def check_composition_and_gate() -> list[str]:
     repository_source = MEMORY_REPOSITORY.read_text(encoding="utf-8")
     gate_source = PHASE6_GATE.read_text(encoding="utf-8")
     errors: list[str] = []
-    if api_source.count("except PlatformMemoryServiceError as exc:") != 2:
-        errors.append("routed and unrouted Agent runs must map memory failures")
+    if api_source.count("except PlatformMemoryServiceError as exc:") != 3:
+        errors.append(
+            "memory reads plus routed and unrouted Agent runs must map memory failures"
+        )
     if "return _platform_memory_from_memory_item(persisted)" not in repository_source:
         errors.append("production memory repository must return persisted evidence")
     if "check_phase6_agent_run_memory_persistence_fail_closed.py" not in gate_source:

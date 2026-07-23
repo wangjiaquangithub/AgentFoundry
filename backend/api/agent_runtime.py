@@ -167,15 +167,18 @@ def create_agent_runtime_router(
                 execution_context=execution_context,
             )
         )
-        memory_context = (
-            agent_run_service.prepare_memory_context_from_execution_context(
-                build_agent_run_context=deps.memory_service.build_agent_run_context,
-                agent_run_state=deps.memory_service.agent_run_state,
-                execution_context=execution_context,
-                max_records=deps.memory_max_records,
-                limit=deps.memory_search_limit,
+        try:
+            memory_context = (
+                agent_run_service.prepare_memory_context_from_execution_context(
+                    build_agent_run_context=deps.memory_service.build_agent_run_context,
+                    agent_run_state=deps.memory_service.agent_run_state,
+                    execution_context=execution_context,
+                    max_records=deps.memory_max_records,
+                    limit=deps.memory_search_limit,
+                )
             )
-        )
+        except PlatformMemoryServiceError as exc:
+            _raise_service_error(exc)
         memory_context_view = agent_run_service.memory_context_view(memory_context)
         memory_payload = memory_context_view["memory_payload"]
         memory_hits = memory_context_view["memory_hits"]

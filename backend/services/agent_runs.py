@@ -533,6 +533,8 @@ class PlatformAgentRunService:
             tenant=str(execution_context["tenant"]),
             user_id=str(response_record_context["user_id"]),
             agent_id=str(execution_context["runner_agent_id"]),
+            session_id=str(execution_context["runner_session_id"]),
+            agent_run_id=str(execution_context["run_identity"]["turn_id"]),
             question=str(execution_context["question"]),
             max_records=max_records,
             limit=limit,

@@ -136,6 +136,13 @@ CHECKS = (
         ],
     ),
     (
+        "agent-run memory read audit fail closed",
+        [
+            sys.executable,
+            "scripts/check_phase6_agent_run_memory_read_audit_fail_closed.py",
+        ],
+    ),
+    (
         "agent-run memory audit fail closed",
         [
             sys.executable,

@@ -187,8 +187,10 @@ def check_route_composition_and_gate() -> list[str]:
         not in api_source
     ):
         errors.append("Agent runtime route must import the memory service error")
-    if api_source.count("except PlatformMemoryServiceError as exc:") != 2:
-        errors.append("routed and unrouted Agent runs must map memory audit failures")
+    if api_source.count("except PlatformMemoryServiceError as exc:") != 3:
+        errors.append(
+            "memory reads plus routed and unrouted Agent runs must map audit failures"
+        )
     if "audit_event_writer=build_audit_event_write_repository()" not in main_source:
         errors.append("production memory composition must inject the audit writer")
     if "check_phase6_agent_run_memory_audit_fail_closed.py" not in gate_source:
