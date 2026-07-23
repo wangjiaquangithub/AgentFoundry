@@ -88,7 +88,11 @@ def create_tool_audit_router(deps: ToolAuditRouteDependencies) -> APIRouter:
         except PlatformConnectorConfigServiceError as exc:
             _raise_service_error(exc)
         runtime_selection = tool_policy_service.runtime_selection(runtime)
-        tenant = runtime_selection["tenant"]
+        tenant = _request_tenant(
+            request=request,
+            tenant=runtime_selection["tenant"],
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         try:
             published_agents = deps.agent_service().list_published_agents(
                 tenant=tenant,
@@ -205,7 +209,11 @@ def create_tool_audit_router(deps: ToolAuditRouteDependencies) -> APIRouter:
         except PlatformConnectorConfigServiceError as exc:
             _raise_service_error(exc)
         runtime_selection = tool_policy_service.runtime_selection(runtime)
-        tenant = runtime_selection["tenant"]
+        tenant = _request_tenant(
+            request=request,
+            tenant=runtime_selection["tenant"],
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         runner_agent_id = tool_policy_service.tool_run_agent_id(requested_agent_id)
         if requested_agent_id:
             _, configured_tools = deps.published_agent_tool_scope_for_user(
@@ -220,6 +228,11 @@ def create_tool_audit_router(deps: ToolAuditRouteDependencies) -> APIRouter:
                 except PlatformConnectorConfigServiceError as exc:
                     _raise_service_error(exc)
                 runtime_selection = tool_policy_service.runtime_selection(runtime)
+                tenant = _request_tenant(
+                    request=request,
+                    tenant=runtime_selection["tenant"],
+                    tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+                )
                 decision = deps.agent_service().tool_denial_payload(requested_tool_name)
                 return tool_policy_service.agent_tool_denial_response(
                     tool_name=requested_tool_name,
