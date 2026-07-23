@@ -131,13 +131,12 @@ from repositories.workflows import (
 )
 from runtime import (
     AGENTSCOPE_PLATFORM_ADAPTER,
-    AGENTSCOPE_NATIVE_EXECUTION_MODE,
+    FoundryCompatibilityRuntimeAdapter,
+    RuntimeGateway,
     build_runtime_invocation_result_payload,
     build_runtime_invocation_request_payload,
-    describe_runtime_adapter,
     describe_runtime_provider_health,
     invoke_runtime_adapter_from_payload,
-    resolve_runtime_execution_selection,
 )
 from agentscope_runtime_provider import AgentScopeNativeInvocationClient
 from services.approvals import (
@@ -364,18 +363,21 @@ enterprise_tool_runtime = EnterpriseToolRuntimeFactory(
 agentscope_native_client = AgentScopeNativeInvocationClient(
     enterprise_tool_runtime=enterprise_tool_runtime,
 )
+runtime_gateway = RuntimeGateway(
+    {
+        "agentscope": replace(
+            AGENTSCOPE_PLATFORM_ADAPTER,
+            provider_client=agentscope_native_client,
+        ),
+        "local-dev-runtime": FoundryCompatibilityRuntimeAdapter(),
+    },
+)
 
 
 def _describe_runtime_adapter_for_agent(
     agent_metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    selection = resolve_runtime_execution_selection(agent_metadata)
-    if selection.execution_mode != AGENTSCOPE_NATIVE_EXECUTION_MODE:
-        return describe_runtime_adapter(agent_metadata)
-    return replace(
-        AGENTSCOPE_PLATFORM_ADAPTER,
-        provider_client=agentscope_native_client,
-    ).describe(agent_metadata)
+    return runtime_gateway.describe(agent_metadata)
 
 
 async def _invoke_agentscope_native_runtime_from_payload(
@@ -383,19 +385,10 @@ async def _invoke_agentscope_native_runtime_from_payload(
     *,
     agent_metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    selection = resolve_runtime_execution_selection(agent_metadata)
-    if selection.execution_mode != AGENTSCOPE_NATIVE_EXECUTION_MODE:
-        return await invoke_runtime_adapter_from_payload(
-            payload,
-            agent_metadata=agent_metadata,
-        )
     return await invoke_runtime_adapter_from_payload(
         payload,
         agent_metadata=agent_metadata,
-        runtime_adapter=replace(
-            AGENTSCOPE_PLATFORM_ADAPTER,
-            provider_client=agentscope_native_client,
-        ),
+        runtime_adapter=runtime_gateway.adapter_for(agent_metadata),
     )
 
 def _platform_status_service() -> PlatformStatusService:

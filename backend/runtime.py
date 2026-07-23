@@ -127,7 +127,8 @@ def resolve_runtime_execution_selection(
                 binding.get("scope_runtime_id"),
             ),
             fallback_reason=(
-                "Agent is explicitly configured for the legacy Foundry execution path."
+                _optional_clean_string(metadata.get("fallback_reason"))
+                or "Agent is explicitly configured for the legacy Foundry execution path."
                 if execution_mode == FOUNDRY_COMPATIBILITY_EXECUTION_MODE
                 else None
             ),
@@ -169,13 +170,8 @@ def resolve_runtime_execution_selection(
                 )
                 or "Legacy Agent explicitly uses the Foundry compatibility path.",
             )
-        return RuntimeExecutionSelection(
-            execution_mode=FOUNDRY_COMPATIBILITY_EXECUTION_MODE,
-            runtime_provider=runtime_provider or "local-dev-runtime",
-            fallback_reason=(
-                "Published Agent version has an unknown runtime binding and "
-                "requires migration before AgentScope-native execution."
-            ),
+        raise ValueError(
+            f"Unsupported runtime execution mode in binding: {mode!r}.",
         )
     return RuntimeExecutionSelection(
         execution_mode=FOUNDRY_COMPATIBILITY_EXECUTION_MODE,
@@ -369,6 +365,99 @@ class RuntimeAdapter(Protocol):
     ) -> RuntimeInvocationResult:
         """Run an Agent through the provider."""
         ...
+
+
+class RuntimeGatewayError(ValueError):
+    """Raised when an immutable runtime binding cannot be routed safely."""
+
+
+@dataclass(frozen=True)
+class FoundryCompatibilityRuntimeAdapter:
+    """Explicit marker adapter for the isolated legacy execution path."""
+
+    id: str = "foundry-compatibility-adapter"
+    name: str = "Foundry Compatibility Adapter"
+    provider: str = "local-dev-runtime"
+    mode: str = "compatibility"
+    description: str = "Explicit migration-only Foundry execution compatibility path."
+    capabilities: tuple[RuntimeCapability, ...] = ()
+
+    def describe(self, agent_metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+        selection = resolve_runtime_execution_selection(agent_metadata)
+        return {
+            "id": self.id,
+            "name": self.name,
+            "provider": self.provider,
+            "mode": self.mode,
+            "description": self.description,
+            "capabilities": [],
+            "capability_details": [],
+            "fallback_reason": selection.fallback_reason,
+        }
+
+    def health(self, agent_metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+        return RuntimeProviderHealth(
+            provider_id=self.id,
+            provider=self.provider,
+            mode=self.mode,
+            status="compatibility",
+            ready=True,
+            message="Legacy Foundry execution is explicitly selected for migration compatibility.",
+            capabilities=(),
+            checks={key: key == "adapter_configured" for key in RUNTIME_PROVIDER_HEALTH_REQUIRED_CHECKS},
+        ).to_dict()
+
+    async def invoke(self, request: RuntimeInvocationRequest) -> RuntimeInvocationResult:
+        return RuntimeInvocationResult(
+            answer="",
+            status="pending",
+            evidence={"execution_mode": FOUNDRY_COMPATIBILITY_EXECUTION_MODE},
+            provider_id=self.id,
+            provider=self.provider,
+            mode=self.mode,
+            raw={"compatibility_execution_deferred": True},
+        )
+
+
+class RuntimeGateway:
+    """Provider-neutral, strict registry for runtime lifecycle operations."""
+
+    def __init__(self, adapters: Mapping[str, RuntimeAdapter]) -> None:
+        self._adapters = dict(adapters)
+
+    def adapter_for(self, agent_metadata: Mapping[str, Any] | None) -> RuntimeAdapter:
+        selection = resolve_runtime_execution_selection(agent_metadata)
+        adapter = self._adapters.get(selection.runtime_provider)
+        if adapter is None:
+            raise RuntimeGatewayError(
+                f"Runtime provider {selection.runtime_provider!r} is not registered.",
+            )
+        if (
+            selection.execution_mode == AGENTSCOPE_NATIVE_EXECUTION_MODE
+            and adapter.provider != "agentscope"
+        ):
+            raise RuntimeGatewayError(
+                "agentscope_native requires a registered AgentScope provider.",
+            )
+        if (
+            selection.execution_mode == FOUNDRY_COMPATIBILITY_EXECUTION_MODE
+            and adapter.provider != "local-dev-runtime"
+        ):
+            raise RuntimeGatewayError(
+                "foundry_compatibility requires the explicit compatibility provider.",
+            )
+        return adapter
+
+    def describe(self, agent_metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+        return self.adapter_for(agent_metadata).describe(agent_metadata)
+
+    async def invoke(
+        self,
+        request: RuntimeInvocationRequest,
+        *,
+        agent_metadata: dict[str, Any] | None = None,
+    ) -> RuntimeInvocationResult:
+        return await self.adapter_for(agent_metadata).invoke(request)
 
 
 class RuntimeProviderInvocationClient(Protocol):
