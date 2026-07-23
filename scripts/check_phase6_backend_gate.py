@@ -59,6 +59,13 @@ CHECKS = (
         ],
     ),
     (
+        "platform Agent archive authenticated actor audit",
+        [
+            sys.executable,
+            "scripts/check_phase6_agent_archive_actor_audit.py",
+        ],
+    ),
+    (
         "model config request tenant",
         [
             sys.executable,
