@@ -126,6 +126,10 @@ CHECKS = (
         ],
     ),
     (
+        "agent run authenticated actor identity",
+        [sys.executable, "scripts/check_phase6_agent_run_actor_identity.py"],
+    ),
+    (
         "agent runtime lookup request tenant",
         [
             sys.executable,

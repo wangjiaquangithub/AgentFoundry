@@ -125,7 +125,7 @@ class PlatformAgentRunService:
         payload_user_id: str | None = None,
         header_user_id: str | None = None,
     ) -> str:
-        return payload_user_id or header_user_id or "acme:alice"
+        return header_user_id or payload_user_id or "acme:alice"
 
     def run_request_payload(
         self,
