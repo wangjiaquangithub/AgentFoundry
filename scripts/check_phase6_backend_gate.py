@@ -61,6 +61,10 @@ CHECKS = (
         [sys.executable, "scripts/check_phase6_model_config_audit.py"],
     ),
     (
+        "tool call audit contract",
+        [sys.executable, "scripts/check_phase6_tool_call_audit.py"],
+    ),
+    (
         "README bootstrap",
         [sys.executable, "scripts/check_phase6_readme_bootstrap.py"],
     ),

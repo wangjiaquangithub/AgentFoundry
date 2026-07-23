@@ -136,10 +136,7 @@ class ToolAuditLogger:
                     **base_event,
                     "duration_ms": _duration_ms(started),
                     "success": False,
-                    "error": {
-                        "type": type(exc).__name__,
-                        "message": _truncate(str(exc)),
-                    },
+                    "error": _summarize_error(exc),
                 },
             )
             raise
@@ -455,6 +452,11 @@ def _summarize_result(result: Any) -> dict[str, Any]:
             metadata[metadata_key] = len(value)
 
     return metadata
+
+
+def _summarize_error(error: Exception) -> dict[str, str]:
+    """Return failure evidence without persisting exception message secrets."""
+    return {"type": type(error).__name__}
 
 
 def _summarize_value(value: Any) -> Any:

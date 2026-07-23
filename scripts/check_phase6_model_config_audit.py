@@ -22,7 +22,7 @@ from backend.services.model_configs import (  # noqa: E402
 )
 
 
-SECRET_CONFIG_REF = "vault://acme/openai/production-api-key"
+CONFIG_REF_FIXTURE = "vault://acme/openai/production-api-key"
 
 
 class ModelConfigWriter:
@@ -55,7 +55,7 @@ def command() -> ModelConfigWriteCommand:
         model="gpt-4.1",
         purpose="chat",
         status="active",
-        config_ref=SECRET_CONFIG_REF,
+        config_ref=CONFIG_REF_FIXTURE,
         actor_user_id="acme:admin",
     )
 
@@ -113,7 +113,7 @@ def check_mutation_audit_event() -> list[str]:
     }
     if event.payload != expected_payload:
         errors.append("audit payload must contain only the model config evidence contract")
-    if "config_ref" in event.payload or SECRET_CONFIG_REF in repr(event.payload):
+    if "config_ref" in event.payload or CONFIG_REF_FIXTURE in repr(event.payload):
         errors.append("audit payload must not expose the config_ref secret reference")
     return errors
 
