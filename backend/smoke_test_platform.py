@@ -413,7 +413,7 @@ def main() -> None:
     eve_member_payload = _expect_ok(
         client.post(
             "/enterprise/platform/members",
-            headers=HEADERS,
+            headers=EVE_HEADERS,
             json={
                 "user_id": EVE_USER_ID,
                 "tenant": "globex",

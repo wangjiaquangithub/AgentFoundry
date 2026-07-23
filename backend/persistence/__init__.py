@@ -10,6 +10,7 @@ from backend.persistence.agents import (
 )
 from backend.persistence.audit_events import (
     AuditEventRecord,
+    JsonlAuditEventRepository,
     PostgresAuditEventReadRepository,
     PostgresAuditEventWriteRepository,
     SQLiteAuditEventReadRepository,
@@ -138,6 +139,7 @@ __all__ = [
     "DatabaseConfigurationStatus",
     "EmbeddingRecord",
     "KnowledgeBaseRecord",
+    "JsonlAuditEventRepository",
     "MembershipRecord",
     "MemoryItemRecord",
     "MemoryPolicyRecord",

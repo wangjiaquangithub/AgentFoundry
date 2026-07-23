@@ -8,7 +8,9 @@ compatibility path during the data-layer migration.
 from __future__ import annotations
 
 import json
+import threading
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from backend.persistence.database import PostgresDatabase, SQLiteDatabase
@@ -96,6 +98,123 @@ def _validate_audit_event_read_result(
         raise ValueError("PostgreSQL audit event read returned another target type.")
     if target_id is not None and record.target_id != target_id:
         raise ValueError("PostgreSQL audit event read returned another target.")
+
+
+class JsonlAuditEventRepository:
+    """Persist audit events locally when PostgreSQL is not configured."""
+
+    def __init__(self, path: Path) -> None:
+        self._path = path
+        self._lock = threading.RLock()
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+
+    def append_audit_event(self, record: AuditEventRecord) -> AuditEventRecord:
+        with self._lock:
+            existing = self._get_by_id(record.id)
+            if existing is not None:
+                _validate_write_result(record, existing)
+                return existing
+            with self._path.open("a", encoding="utf-8") as stream:
+                stream.write(
+                    json.dumps(
+                        self._record_to_dict(record),
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    )
+                    + "\n"
+                )
+        return record
+
+    def list_audit_events(
+        self,
+        *,
+        tenant_id: str,
+        event_type: str | None = None,
+        actor_user_id: str | None = None,
+        target_type: str | None = None,
+        target_id: str | None = None,
+        limit: int = 50,
+    ) -> list[AuditEventRecord]:
+        with self._lock:
+            records = [
+                record
+                for record in self._read_records()
+                if record.tenant_id == tenant_id
+                and (event_type is None or record.event_type == event_type)
+                and (
+                    actor_user_id is None
+                    or record.actor_user_id == actor_user_id
+                )
+                and (target_type is None or record.target_type == target_type)
+                and (target_id is None or record.target_id == target_id)
+            ]
+        records.sort(key=lambda record: (record.created_at, record.id), reverse=True)
+        return records[: self._clamp_limit(limit)]
+
+    def get_audit_event(
+        self,
+        *,
+        tenant_id: str,
+        audit_event_id: str,
+    ) -> AuditEventRecord | None:
+        with self._lock:
+            record = self._get_by_id(audit_event_id)
+        if record is None or record.tenant_id != tenant_id:
+            return None
+        return record
+
+    def list_for_target(
+        self,
+        *,
+        tenant_id: str,
+        target_type: str,
+        target_id: str,
+        limit: int = 50,
+    ) -> list[AuditEventRecord]:
+        return self.list_audit_events(
+            tenant_id=tenant_id,
+            target_type=target_type,
+            target_id=target_id,
+            limit=limit,
+        )
+
+    def _get_by_id(self, event_id: str) -> AuditEventRecord | None:
+        for record in self._read_records():
+            if record.id == event_id:
+                return record
+        return None
+
+    def _read_records(self) -> list[AuditEventRecord]:
+        if not self._path.exists():
+            return []
+        records: list[AuditEventRecord] = []
+        with self._path.open("r", encoding="utf-8") as stream:
+            for line_number, line in enumerate(stream, start=1):
+                if not line.strip():
+                    continue
+                try:
+                    value = json.loads(line)
+                    records.append(_audit_event_from_row(value))
+                except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+                    raise ValueError(
+                        f"Invalid audit event JSONL at line {line_number}."
+                    ) from exc
+        return records
+
+    def _record_to_dict(self, record: AuditEventRecord) -> dict[str, Any]:
+        return {
+            "id": record.id,
+            "tenant_id": record.tenant_id,
+            "actor_user_id": record.actor_user_id,
+            "event_type": record.event_type,
+            "target_type": record.target_type,
+            "target_id": record.target_id,
+            "payload": record.payload,
+            "created_at": record.created_at,
+        }
+
+    def _clamp_limit(self, limit: int) -> int:
+        return min(max(limit, 1), 100)
 
 
 class SQLiteAuditEventReadRepository:
