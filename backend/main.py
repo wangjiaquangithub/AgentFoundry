@@ -144,6 +144,8 @@ from runtime import (
     invoke_runtime_adapter_from_payload,
 )
 from agentscope_runtime_provider import AgentScopeNativeInvocationClient
+from persistence.database import create_database
+from persistence.runtime_lifecycle import RuntimeLifecycleStore
 from services.approvals import (
     PlatformApprovalService,
     PlatformApprovalServiceError,
@@ -161,6 +163,7 @@ from services.dev_knowledge import PlatformDevKnowledgeService
 from services.enterprise_router import PlatformEnterpriseRouterService
 from services.enterprise_identity import build_enterprise_identity_service
 from services.authorization import build_authorization_service
+from services.execution_context import build_execution_context_service
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
 from services.composition import (
@@ -915,6 +918,14 @@ app.include_router(
                 build_runtime_invocation_result_payload
             ),
             tenant_hint_from_user_id=tenant_hint_from_user_id,
+            execution_context_service=build_execution_context_service(),
+            runtime_lifecycle_store=(
+                RuntimeLifecycleStore(
+                    create_database(os.environ["AGENTFOUNDRY_DATABASE_URL"])
+                )
+                if os.environ.get("AGENTFOUNDRY_DATABASE_URL", "").strip()
+                else None
+            ),
         )
     )
 )

@@ -2,12 +2,14 @@
 
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Mapping, NoReturn
+from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Request
 
 from api.request_identity import get_request_identity
 from api.schemas import EnterpriseAgentRunRequest
 from persistence.database import is_production_environment
+from persistence.runtime_lifecycle import RuntimeLifecycleStore
 from services.agent_runs import (
     PlatformAgentRunService,
     PlatformAgentRunServiceError,
@@ -28,6 +30,7 @@ from services.knowledge import (
     PlatformKnowledgeResponseService,
     PlatformKnowledgeRetrievalServiceError,
 )
+from services.execution_context import ExecutionContextError, ExecutionContextService
 from services.memories import PlatformMemoryService, PlatformMemoryServiceError
 from services.tools import PlatformToolPolicyService
 
@@ -66,6 +69,8 @@ class AgentRuntimeRouteDependencies:
     invoke_runtime_adapter_from_payload: Callable[..., Awaitable[dict[str, Any]]]
     build_runtime_invocation_result_payload: Callable[..., dict[str, Any]]
     tenant_hint_from_user_id: Callable[[str], str | None]
+    execution_context_service: ExecutionContextService | None = None
+    runtime_lifecycle_store: RuntimeLifecycleStore | None = None
 
 
 def _request_tenant(
@@ -159,29 +164,129 @@ def create_agent_runtime_router(
             execution_context
         )
         question = execution_context_view["question"]
-        runtime_boundary_result = (
-            await agent_run_service.invoke_runtime_adapter_from_execution_context(
-                invoke_runtime_adapter_from_payload=(
-                    deps.invoke_runtime_adapter_from_payload
-                ),
-                execution_context=execution_context,
-            )
-        )
         execution_path = agent_run_service.execution_path(execution_context)
-        if execution_path == "agentscope_runtime":
-            return agent_run_service.finalize_native_runtime_run_from_context(
-                build_runtime_invocation_result_payload=(
-                    deps.build_runtime_invocation_result_payload
-                ),
-                execution_context=execution_context,
-                runtime_boundary_result=runtime_boundary_result,
-                platform_approval_service=deps.approval_service,
-                raise_platform_approval_service_error=_raise_service_error,
-                decision_with_routing_context=(
-                    deps.enterprise_router_service.decision_with_routing_context
-                ),
-                requested_by=identity.user_id,
+        lifecycle_execution: dict[str, Any] | None = None
+        if execution_path == "agentscope_runtime" and deps.execution_context_service:
+            request_id = str(
+                getattr(request.state, "request_id", "") or uuid4().hex
             )
+            try:
+                trusted_context = deps.execution_context_service.build(
+                    request_id=request_id,
+                    tenant_id=request_tenant,
+                    subject_id=str(identity.user_id or ""),
+                    agent_id=str(execution_context_view["runner_agent_id"]),
+                    authentication_method=identity.source,
+                )
+            except ExecutionContextError as exc:
+                _raise_service_error(exc)
+            trusted_payload = trusted_context.to_dict()
+            runtime_request = execution_context["runtime_invocation_request"]
+            runtime_metadata = runtime_request.setdefault("metadata", {})
+            context_metadata = runtime_request.setdefault("context", {}).setdefault(
+                "metadata", {}
+            )
+            session_id = str(execution_context_view["runner_session_id"])
+            business_run_id = str(
+                runtime_metadata.get("business_run_id") or f"run_{uuid4().hex}"
+            )
+            runtime_execution_id = f"exec_{uuid4().hex}"
+            lifecycle_metadata = {
+                "request_id": request_id,
+                "business_run_id": business_run_id,
+                "session_id": session_id,
+                "runtime_execution_id": runtime_execution_id,
+                "authorization_decision_id": (
+                    trusted_context.authorization_decision_id
+                ),
+                "trusted_execution_context": trusted_payload,
+            }
+            runtime_metadata.update(lifecycle_metadata)
+            context_metadata.update(lifecycle_metadata)
+            execution_context["trusted_execution_context"] = trusted_payload
+            if deps.runtime_lifecycle_store:
+                try:
+                    deps.runtime_lifecycle_store.create_session(
+                        tenant_id=request_tenant,
+                        subject_id=str(identity.user_id or ""),
+                        agent_id=str(execution_context_view["runner_agent_id"]),
+                        session_id=session_id,
+                        metadata={"created_from_request_id": request_id},
+                    )
+                    lifecycle_execution = deps.runtime_lifecycle_store.create_execution(
+                        tenant_id=request_tenant,
+                        session_id=session_id,
+                        business_run_id=business_run_id,
+                        execution_id=runtime_execution_id,
+                        context=trusted_payload,
+                    )
+                    deps.runtime_lifecycle_store.update_execution(
+                        request_tenant, runtime_execution_id, "running"
+                    )
+                except (KeyError, ValueError) as exc:
+                    raise HTTPException(status_code=409, detail=str(exc)) from exc
+        try:
+            runtime_boundary_result = (
+                await agent_run_service.invoke_runtime_adapter_from_execution_context(
+                    invoke_runtime_adapter_from_payload=(
+                        deps.invoke_runtime_adapter_from_payload
+                    ),
+                    execution_context=execution_context,
+                )
+            )
+        except Exception:
+            if lifecycle_execution and deps.runtime_lifecycle_store:
+                deps.runtime_lifecycle_store.update_execution(
+                    request_tenant,
+                    str(lifecycle_execution["id"]),
+                    "failed",
+                    error_code="RUNTIME_PROVIDER_ERROR",
+                )
+            raise
+        if execution_path == "agentscope_runtime":
+            try:
+                response = agent_run_service.finalize_native_runtime_run_from_context(
+                    build_runtime_invocation_result_payload=(
+                        deps.build_runtime_invocation_result_payload
+                    ),
+                    execution_context=execution_context,
+                    runtime_boundary_result=runtime_boundary_result,
+                    platform_approval_service=deps.approval_service,
+                    raise_platform_approval_service_error=_raise_service_error,
+                    decision_with_routing_context=(
+                        deps.enterprise_router_service.decision_with_routing_context
+                    ),
+                    requested_by=str(identity.user_id or ""),
+                )
+            except Exception:
+                if lifecycle_execution and deps.runtime_lifecycle_store:
+                    deps.runtime_lifecycle_store.update_execution(
+                        request_tenant,
+                        str(lifecycle_execution["id"]),
+                        "failed",
+                        error_code="RUNTIME_RESULT_ERROR",
+                    )
+                raise
+            if lifecycle_execution and deps.runtime_lifecycle_store:
+                tool_calls = response.get("tool_calls", [])
+                waiting = any(
+                    isinstance(call, dict)
+                    and call.get("approval_id")
+                    and call.get("allowed") is False
+                    for call in tool_calls
+                )
+                final_state = "waiting_approval" if waiting else "succeeded"
+                deps.runtime_lifecycle_store.update_execution(
+                    request_tenant, str(lifecycle_execution["id"]), final_state
+                )
+                response["business_run_id"] = lifecycle_execution["business_run_id"]
+                response["runtime_execution_id"] = lifecycle_execution["id"]
+                response["authorization_decision_id"] = (
+                    execution_context["trusted_execution_context"][
+                        "authorization_decision_id"
+                    ]
+                )
+            return response
         # Everything below is the isolated legacy compatibility executor. Native
         # AgentScope Agents have already returned from the Runtime Gateway above.
         try:
