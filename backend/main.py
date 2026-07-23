@@ -164,7 +164,7 @@ from services.composition import (
     build_knowledge_document_chunk_write_repository,
     build_knowledge_document_readiness_service,
     build_knowledge_document_read_repository,
-    build_knowledge_document_write_repository,
+    build_knowledge_document_service,
     build_knowledge_embedding_record_read_repository,
     build_knowledge_embedding_record_service,
     build_knowledge_ingestion_service,
@@ -736,7 +736,7 @@ app.include_router(
     create_knowledge_documents_router(
         KnowledgeDocumentsRouteDependencies(
             document_repository=build_knowledge_document_read_repository,
-            document_write_repository=build_knowledge_document_write_repository,
+            document_service=lambda: build_knowledge_document_service(now=now_iso),
             document_chunk_repository=build_knowledge_document_chunk_read_repository,
             document_chunk_write_repository=(
                 build_knowledge_document_chunk_write_repository

@@ -77,6 +77,7 @@ from backend.services.knowledge import (
     PlatformKnowledgeRetrievalService,
 )
 from backend.services.knowledge_bases import PlatformKnowledgeBaseService
+from backend.services.knowledge_documents import PlatformKnowledgeDocumentService
 from backend.services.knowledge_embedding_records import (
     PlatformKnowledgeEmbeddingRecordService,
 )
@@ -624,6 +625,33 @@ def build_configured_postgres_knowledge_document_write_repository() -> (
     return PostgresDocumentWriteRepository(database)
 
 
+def build_postgres_knowledge_document_service(
+    database: PostgresDatabase,
+    *,
+    now: Callable[[], str] | None = None,
+) -> PlatformKnowledgeDocumentService:
+    """Build the PostgreSQL-backed knowledge document mutation service."""
+
+    return PlatformKnowledgeDocumentService(
+        document_writer=PostgresDocumentWriteRepository(database),
+        audit_event_writer=PostgresAuditEventWriteRepository(database),
+        now=now,
+    )
+
+
+def build_configured_postgres_knowledge_document_service(
+    *,
+    now: Callable[[], str] | None = None,
+) -> PlatformKnowledgeDocumentService | None:
+    """Build the knowledge document mutation service when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return build_postgres_knowledge_document_service(database, now=now)
+
+
 def build_configured_postgres_knowledge_document_chunk_read_repository() -> (
     PostgresDocumentChunkReadRepository | None
 ):
@@ -738,6 +766,15 @@ def build_knowledge_document_write_repository() -> (
     """Select the configured production knowledge document write repository."""
 
     return build_configured_postgres_knowledge_document_write_repository()
+
+
+def build_knowledge_document_service(
+    *,
+    now: Callable[[], str] | None = None,
+) -> PlatformKnowledgeDocumentService | None:
+    """Select the configured production knowledge document mutation service."""
+
+    return build_configured_postgres_knowledge_document_service(now=now)
 
 
 def build_knowledge_document_chunk_read_repository() -> (

@@ -101,6 +101,13 @@ CHECKS = (
         ],
     ),
     (
+        "knowledge document upsert authenticated actor audit",
+        [
+            sys.executable,
+            "scripts/check_phase6_knowledge_document_actor_audit.py",
+        ],
+    ),
+    (
         "tool request tenant",
         [
             sys.executable,

@@ -24,7 +24,6 @@ from api.schemas import (
     EnterpriseKnowledgeRetrievalEventsRequest,
 )
 from backend.persistence.document_chunks import DocumentChunkRecord
-from backend.persistence.documents import DocumentRecord
 from services.knowledge import (
     PlatformKnowledgeDocumentReadinessService,
     PlatformKnowledgeRetrievalService,
@@ -33,6 +32,11 @@ from services.knowledge_bases import (
     KnowledgeBaseApiCommandInput,
     PlatformKnowledgeBaseService,
     PlatformKnowledgeBaseServiceError,
+)
+from services.knowledge_documents import (
+    KnowledgeDocumentApiCommandInput,
+    PlatformKnowledgeDocumentService,
+    PlatformKnowledgeDocumentServiceError,
 )
 from services.knowledge_embedding_records import (
     EmbeddingRecordApiCommandInput,
@@ -71,7 +75,7 @@ class KnowledgeBasesRouteDependencies:
 @dataclass(frozen=True)
 class KnowledgeDocumentsRouteDependencies:
     document_repository: Callable[[], Any | None]
-    document_write_repository: Callable[[], Any | None]
+    document_service: Callable[[], PlatformKnowledgeDocumentService | None]
     document_chunk_repository: Callable[[], Any | None]
     document_chunk_write_repository: Callable[[], Any | None]
     tenant_hint_from_user_id: Callable[[str], str | None]
@@ -764,8 +768,8 @@ def create_knowledge_documents_router(
         request: Request,
     ) -> dict[str, Any]:
         """Persist one tenant knowledge document metadata record to PostgreSQL."""
-        document_repository = deps.document_write_repository()
-        if document_repository is None:
+        service = deps.document_service()
+        if service is None:
             raise HTTPException(
                 status_code=503,
                 detail=(
@@ -780,21 +784,24 @@ def create_knowledge_documents_router(
             request=request,
             tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
         )
-        now = deps.now()
-        document = DocumentRecord(
-            id=payload.document_id or f"doc-{uuid4()}",
-            tenant_id=tenant_id,
-            knowledge_base_id=payload.knowledge_base_id,
-            title=payload.title,
-            source_type=payload.source_type,
-            source_uri=payload.source_uri,
-            object_ref=payload.object_ref,
-            status=payload.status,
-            created_at=now,
-            updated_at=now,
-        )
+        identity = get_request_identity(request)
+        actor_user_id = identity.user_id or "system"
         try:
-            persisted_document = document_repository.upsert_document(document)
+            persisted_document = service.upsert_document_from_api(
+                KnowledgeDocumentApiCommandInput(
+                    id=payload.document_id or f"doc-{uuid4()}",
+                    tenant_id=tenant_id,
+                    knowledge_base_id=payload.knowledge_base_id,
+                    title=payload.title,
+                    source_type=payload.source_type,
+                    source_uri=payload.source_uri,
+                    object_ref=payload.object_ref,
+                    status=payload.status,
+                    actor_user_id=actor_user_id,
+                )
+            )
+        except PlatformKnowledgeDocumentServiceError as exc:
+            raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
