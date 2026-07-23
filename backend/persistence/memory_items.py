@@ -88,17 +88,17 @@ def _validate_memory_item_read_result(
     memory_item_id: str | None = None,
 ) -> None:
     if record.tenant_id != tenant_id:
-        raise ValueError("PostgreSQL memory item read returned another tenant.")
+        raise ValueError("Memory item read returned another tenant.")
     if user_id is not None and record.user_id != user_id:
-        raise ValueError("PostgreSQL memory item read returned another user.")
+        raise ValueError("Memory item read returned another user.")
     if agent_id is not None and record.agent_id != agent_id:
-        raise ValueError("PostgreSQL memory item read returned another agent.")
+        raise ValueError("Memory item read returned another agent.")
     if session_id is not None and record.session_id != session_id:
-        raise ValueError("PostgreSQL memory item read returned another session.")
+        raise ValueError("Memory item read returned another session.")
     if source_run_id is not None and record.source_run_id != source_run_id:
-        raise ValueError("PostgreSQL memory item read returned another source run.")
+        raise ValueError("Memory item read returned another source run.")
     if memory_item_id is not None and record.id != memory_item_id:
-        raise ValueError("PostgreSQL memory item read returned another item.")
+        raise ValueError("Memory item read returned another item.")
 
 
 def _validate_memory_item_not_expired(
@@ -227,6 +227,14 @@ class SQLiteMemoryItemReadRepository:
             rows = connection.execute(query, parameters).fetchall()
         records = [_memory_item_from_row(dict(row)) for row in rows]
         for record in records:
+            _validate_memory_item_read_result(
+                record,
+                tenant_id=tenant_id,
+                user_id=user_id,
+                agent_id=agent_id,
+                session_id=session_id,
+                source_run_id=source_run_id,
+            )
             _validate_memory_item_read_created_at(record, as_of=as_of)
             _validate_memory_item_not_expired(record, as_of=as_of)
         return records
@@ -252,6 +260,11 @@ class SQLiteMemoryItemReadRepository:
         if row is None:
             return None
         record = _memory_item_from_row(dict(row))
+        _validate_memory_item_read_result(
+            record,
+            tenant_id=tenant_id,
+            memory_item_id=memory_item_id,
+        )
         _validate_memory_item_read_created_at(record, as_of=as_of)
         _validate_memory_item_not_expired(
             record,
