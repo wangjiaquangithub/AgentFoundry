@@ -665,6 +665,29 @@ class PlatformWorkflowRunService:
             "connector": connector,
             "connector_source": connector_source,
             "approval_id": approval_id,
+            "execution_mode": "foundry_compatibility",
+            "runtime_provider": "enterprise-workflow-compatibility",
+            "execution_owner": "agentfoundry",
+            "fallback_reason": (
+                "The current AgentScope native invocation adapter does not connect "
+                "Workflow execution; enterprise governance automation remains on "
+                "the explicit Foundry compatibility path."
+            ),
+            "runtime_capabilities": [
+                {
+                    "capability": "workflow",
+                    "adapter_id": "foundry-enterprise-workflow-compatibility-v1",
+                    "provider_available": True,
+                    "connected": False,
+                    "requested": True,
+                    "execution_owner": "agentfoundry",
+                    "status": "foundry_compatibility",
+                    "message": (
+                        "AgentFoundry executes this governed enterprise workflow; "
+                        "it is not represented as AgentScope-native execution."
+                    ),
+                },
+            ],
             "inputs": inputs,
             "summary": self.summary(workflow_name, steps),
             "steps": steps,

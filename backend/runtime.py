@@ -227,6 +227,32 @@ class RuntimeResourceBinding:
 
 
 @dataclass(frozen=True)
+class RuntimeExecutionCapabilityBinding:
+    """Auditable connection state for a provider execution capability."""
+
+    capability: str
+    adapter_id: str
+    provider_available: bool
+    connected: bool
+    requested: bool
+    execution_owner: str
+    status: str
+    message: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "capability": self.capability,
+            "adapter_id": self.adapter_id,
+            "provider_available": self.provider_available,
+            "connected": self.connected,
+            "requested": self.requested,
+            "execution_owner": self.execution_owner,
+            "status": self.status,
+            "message": self.message,
+        }
+
+
+@dataclass(frozen=True)
 class RuntimeContext:
     """Tenant and user context supplied by AgentFoundry."""
 
@@ -587,6 +613,19 @@ class AgentScopeRuntimeAdapter:
             _runtime_agent_metadata_from_request(request),
         )
         resource_bindings = _agentscope_runtime_resource_bindings(request)
+        capability_bindings = _agentscope_runtime_capability_bindings(request)
+        unsupported_capabilities = [
+            binding
+            for binding in capability_bindings
+            if binding.requested and not binding.connected
+        ]
+        if unsupported_capabilities:
+            return _build_agentscope_unsupported_capabilities_result(
+                request=request,
+                runtime_adapter=runtime_adapter,
+                capability_bindings=capability_bindings,
+                unsupported=unsupported_capabilities,
+            )
         unsupported = [
             binding
             for binding in resource_bindings
@@ -737,6 +776,90 @@ def _runtime_resource_binding_payloads(
         binding.to_dict()
         for binding in _agentscope_runtime_resource_bindings(request)
     ]
+
+
+AGENTSCOPE_EXECUTION_CAPABILITIES = (
+    "workflow",
+    "schedule",
+    "team",
+    "workspace",
+    "sandbox",
+)
+
+
+def _requested_runtime_capabilities(
+    request: RuntimeInvocationRequest,
+) -> frozenset[str]:
+    metadata = request.metadata or {}
+    requested = metadata.get("runtime_capabilities", ())
+    if not isinstance(requested, (list, tuple, set, frozenset)):
+        return frozenset()
+    return frozenset(str(item).strip() for item in requested if str(item).strip())
+
+
+def _agentscope_runtime_capability_bindings(
+    request: RuntimeInvocationRequest,
+) -> tuple[RuntimeExecutionCapabilityBinding, ...]:
+    requested = _requested_runtime_capabilities(request)
+    return tuple(
+        RuntimeExecutionCapabilityBinding(
+            capability=capability,
+            adapter_id=f"agentscope-{capability}-adapter-unavailable",
+            provider_available=True,
+            connected=False,
+            requested=capability in requested,
+            execution_owner="agentscope",
+            status="unconnected" if capability in requested else "not_requested",
+            message=(
+                f"AgentScope provides {capability} capability APIs, but the current "
+                "AgentFoundry native invocation adapter does not connect them."
+            ),
+        )
+        for capability in AGENTSCOPE_EXECUTION_CAPABILITIES
+    )
+
+
+def _runtime_capability_binding_payloads(
+    request: RuntimeInvocationRequest,
+) -> list[dict[str, Any]]:
+    return [
+        binding.to_dict()
+        for binding in _agentscope_runtime_capability_bindings(request)
+    ]
+
+
+def _build_agentscope_unsupported_capabilities_result(
+    *,
+    request: RuntimeInvocationRequest,
+    runtime_adapter: dict[str, Any],
+    capability_bindings: tuple[RuntimeExecutionCapabilityBinding, ...],
+    unsupported: list[RuntimeExecutionCapabilityBinding],
+) -> RuntimeInvocationResult:
+    unsupported_names = ", ".join(binding.capability for binding in unsupported)
+    error = (
+        "AgentScope native invocation cannot use unconnected runtime "
+        f"capabilities: {unsupported_names}."
+    )
+    binding_payloads = [binding.to_dict() for binding in capability_bindings]
+    evidence = _runtime_invocation_evidence_from_request(request)
+    evidence["runtime_capabilities"] = binding_payloads
+    payload = build_runtime_invocation_error_result_payload(
+        error=error,
+        evidence=evidence,
+        runtime_adapter=runtime_adapter,
+        runtime_invocation_id=(request.metadata or {}).get("runtime_invocation_id"),
+        raw={
+            "runtime_bridge": {
+                "type": "agentscope_runtime_capability_unconnected",
+                "provider_invocation_wired": True,
+                "adapter_id": runtime_adapter["id"],
+            },
+            "runtime_capabilities": binding_payloads,
+            "request": _runtime_invocation_request_audit_payload(request),
+        },
+    )
+    normalized = normalize_runtime_invocation_result(payload, runtime_adapter)
+    return RuntimeInvocationResult(**normalized)
 
 
 def _build_agentscope_unsupported_resources_result(
@@ -1045,10 +1168,12 @@ def build_agentscope_provider_native_invocation_envelope(
         "mode": runtime_adapter["mode"],
         "request": request.to_dict(),
         "runtime_resources": _runtime_resource_binding_payloads(request),
+        "runtime_capabilities": _runtime_capability_binding_payloads(request),
         "audit": {
             "provider_native_invocation": config_gate,
             "request": _runtime_invocation_request_audit_payload(request),
             "runtime_resources": _runtime_resource_binding_payloads(request),
+            "runtime_capabilities": _runtime_capability_binding_payloads(request),
         },
     }
     if not native_in_process:
@@ -1553,6 +1678,7 @@ def _runtime_invocation_evidence_from_request(
         "agent_id": request.context.agent_id,
         "agent_name": request.context.agent_name,
         "runtime_resources": _runtime_resource_binding_payloads(request),
+        "runtime_capabilities": _runtime_capability_binding_payloads(request),
     }
 
 

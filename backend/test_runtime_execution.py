@@ -22,6 +22,7 @@ from backend.persistence.migrations import apply_migrations
 from backend.persistence.runtime_bindings import RuntimeBindingRecord, RuntimeBindingRepository
 from services.agents import PlatformAgentService, PlatformAgentServiceError
 from services.agent_runs import PlatformAgentRunService, PlatformAgentRunServiceError
+from services.workflows import PlatformWorkflowRunService
 
 
 class RuntimeExecutionSelectionTest(unittest.TestCase):
@@ -241,6 +242,93 @@ class RuntimeResourceBindingTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(knowledge["foundry_resource_ids"], ["kb-1", "kb-2"])
         self.assertEqual(knowledge["scope_resource_ids"], repeated["scope_resource_ids"])
         self.assertFalse(knowledge["supported"])
+
+    async def test_unconnected_execution_capability_fails_before_provider(self):
+        provider = _RecordingAgentScopeProvider()
+        adapter = replace(AGENTSCOPE_PLATFORM_ADAPTER, provider_client=provider)
+        request = replace(
+            self.request(),
+            metadata={
+                "agent_version_id": "version-1",
+                "runtime_capabilities": ["workflow"],
+            },
+        )
+
+        result = await adapter.invoke(request)
+
+        self.assertEqual(result.status, "failed")
+        self.assertEqual(provider.envelopes, [])
+        self.assertIn("workflow", result.error)
+        workflow = next(
+            item
+            for item in result.evidence["runtime_capabilities"]
+            if item["capability"] == "workflow"
+        )
+        self.assertTrue(workflow["provider_available"])
+        self.assertFalse(workflow["connected"])
+        self.assertTrue(workflow["requested"])
+        self.assertEqual(workflow["execution_owner"], "agentscope")
+        self.assertEqual(workflow["status"], "unconnected")
+        self.assertEqual(workflow, result.raw["runtime_capabilities"][0])
+
+    async def test_capability_boundary_is_explicit_for_all_stage_six_areas(self):
+        provider = _RecordingAgentScopeProvider()
+        adapter = replace(AGENTSCOPE_PLATFORM_ADAPTER, provider_client=provider)
+
+        result = await adapter.invoke(self.request())
+
+        bindings = result.evidence["runtime_capabilities"]
+        self.assertEqual(
+            [item["capability"] for item in bindings],
+            ["workflow", "schedule", "team", "workspace", "sandbox"],
+        )
+        self.assertTrue(all(item["provider_available"] for item in bindings))
+        self.assertTrue(all(not item["connected"] for item in bindings))
+        self.assertTrue(all(item["status"] == "not_requested" for item in bindings))
+        self.assertEqual(len(provider.envelopes), 1)
+        self.assertEqual(provider.envelopes[0]["runtime_capabilities"], bindings)
+
+
+class _UnusedWorkflowRunRepository:
+    def append(self, record):
+        return record
+
+    def list(self, **filters):
+        return []
+
+
+class WorkflowExecutionCapabilityBoundaryTest(unittest.TestCase):
+    def test_enterprise_workflow_is_explicit_foundry_compatibility_execution(self):
+        service = PlatformWorkflowRunService(repository=_UnusedWorkflowRunRepository())
+
+        record = service.build_run_record(
+            run_id="run-1",
+            workflow_type="employee_onboarding",
+            workflow_name="Employee onboarding",
+            started_at="2026-07-23T00:00:00Z",
+            finished_at="2026-07-23T00:00:01Z",
+            tenant="acme",
+            user_id="acme:alice",
+            agent_id="platform-workflow",
+            connector="mock",
+            connector_source="test",
+            approval_id=None,
+            inputs={},
+            steps=[],
+            tool_calls=[],
+            session_id="platform-workflow:employee_onboarding:run-1",
+        )
+
+        self.assertEqual(record["execution_mode"], "foundry_compatibility")
+        self.assertEqual(
+            record["runtime_provider"],
+            "enterprise-workflow-compatibility",
+        )
+        self.assertEqual(record["execution_owner"], "agentfoundry")
+        capability = record["runtime_capabilities"][0]
+        self.assertEqual(capability["capability"], "workflow")
+        self.assertFalse(capability["connected"])
+        self.assertEqual(capability["status"], "foundry_compatibility")
 
 
 class UnifiedAgentExecutionEntryTest(unittest.TestCase):
