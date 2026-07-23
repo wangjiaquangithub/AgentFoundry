@@ -87,7 +87,14 @@ def assert_persisted_run(
     agent_id: str,
     run: dict[str, Any],
     expected_city: str,
+    expected_days: int,
+    expected_start_day: int,
+    expected_ok: bool,
 ) -> None:
+    if run.get("routing_mode") != "provider-native":
+        raise AssertionError(f"run did not use provider-native routing: {run}")
+    if run.get("routing_source") != "agentscope":
+        raise AssertionError(f"run did not originate from AgentScope: {run}")
     turn_id = run.get("turn_id")
     if not turn_id:
         raise AssertionError(f"agent run missing turn_id: {run}")
@@ -99,8 +106,17 @@ def assert_persisted_run(
         raise AssertionError(f"weather tool was not executed: {call}")
     if call.get("inputs", {}).get("city") != expected_city:
         raise AssertionError(f"weather city input mismatch: {call}")
+    if call.get("inputs", {}).get("days") != expected_days:
+        raise AssertionError(f"weather days input mismatch: {call}")
+    if call.get("inputs", {}).get("start_day") != expected_start_day:
+        raise AssertionError(f"weather start_day input mismatch: {call}")
     if call.get("connector") != "Open-Meteo":
         raise AssertionError(f"weather connector mismatch: {call}")
+    result = call.get("result") or {}
+    if result.get("ok") is not expected_ok:
+        raise AssertionError(f"weather tool result status mismatch: {call}")
+    if result.get("source") != "Open-Meteo":
+        raise AssertionError(f"weather tool result source mismatch: {call}")
 
     detail = expect_ok(
         client.get(
@@ -112,14 +128,29 @@ def assert_persisted_run(
     if detail.get("turn_id") != turn_id:
         raise AssertionError(f"persisted run ID mismatch: {detail}")
     detail_response = detail.get("response") or {}
+    if detail_response.get("routing_mode") != "provider-native":
+        raise AssertionError(f"persisted run routing mode mismatch: {detail}")
+    if detail_response.get("routing_source") != "agentscope":
+        raise AssertionError(f"persisted run routing source mismatch: {detail}")
     persisted_calls = detail_response.get("tool_calls") or []
     if not any(call.get("tool_name") == WEATHER_TOOL for call in persisted_calls):
         raise AssertionError(f"persisted run missing weather tool call: {detail}")
     evidence = detail.get("evidence") or {}
-    if evidence.get("tool_call_count", 0) < 1:
+    if evidence.get("tool_call_count") != 1:
         raise AssertionError(f"persisted run missing tool evidence: {detail}")
     if not detail.get("runtime_invocation_id"):
         raise AssertionError(f"persisted run missing runtime invocation: {detail}")
+    invocation_result = detail.get("runtime_invocation_result") or {}
+    boundary_result = (
+        invocation_result.get("raw", {}).get("runtime_boundary_result", {})
+    )
+    runtime_bridge = boundary_result.get("raw", {}).get("runtime_bridge", {})
+    if runtime_bridge.get("type") != "agentscope_native_in_process":
+        raise AssertionError(f"persisted invocation did not use AgentScope: {detail}")
+    if boundary_result.get("evidence", {}).get("runtime") != "agentscope":
+        raise AssertionError(f"AgentScope runtime evidence missing: {detail}")
+    if not boundary_result.get("provider_run_id"):
+        raise AssertionError(f"AgentScope provider run ID missing: {detail}")
     if detail.get("agent_id") != agent_id:
         raise AssertionError(f"persisted run agent mismatch: {detail}")
 
@@ -150,7 +181,7 @@ def run_success_case(
     answer = str(run.get("answer") or "")
     if WEATHER_TOOL in answer:
         raise AssertionError(f"{question} answer exposed internal tool name: {answer}")
-    for marker in ("Open-Meteo", "最高", "最低", "降雨概率", "风速", "建议"):
+    for marker in ("最高", "最低", "降雨概率", "风速", "建议"):
         if marker not in answer:
             raise AssertionError(f"{question} answer missing {marker}: {answer}")
     if expected_city not in answer:
@@ -183,6 +214,9 @@ def run_success_case(
         agent_id=agent_id,
         run=run,
         expected_city=expected_city,
+        expected_days=expected_days,
+        expected_start_day=expected_start_day,
+        expected_ok=True,
     )
     print(f"PASS {question}: {len(forecasts)} day(s), turn_id={run['turn_id']}")
     return run
@@ -211,10 +245,16 @@ def run_missing_city_case(
     )
     answer = str(run.get("answer") or "")
     result = run.get("result") or {}
-    if result.get("ok") is not False or "没有找到城市" not in answer:
+    error = str(result.get("error") or "")
+    if result.get("ok") is not False or "没有找到城市" not in error:
         raise AssertionError(f"nonexistent city error mismatch: {run}")
+    if not all(marker in answer for marker in ("抱歉", "无法", "城市")):
+        raise AssertionError(f"nonexistent city answer was not friendly: {run}")
+    if result.get("forecasts"):
+        raise AssertionError(f"nonexistent city returned forecasts: {run}")
     if result.get("forecasts") or any(
-        marker in answer for marker in ("最高 ", "最低 ", "降雨概率 ", "最大风速 ")
+        marker in answer
+        for marker in ("最高温度：", "最低温度：", "降雨概率：", "风速：", "℃", "°C")
     ):
         raise AssertionError(f"nonexistent city fabricated weather: {run}")
     assert_persisted_run(
@@ -222,6 +262,9 @@ def run_missing_city_case(
         agent_id=agent_id,
         run=run,
         expected_city=city,
+        expected_days=1,
+        expected_start_day=0,
+        expected_ok=False,
     )
     print(f"PASS nonexistent city: friendly error, turn_id={run['turn_id']}")
     return run

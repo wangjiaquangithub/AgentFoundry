@@ -980,6 +980,69 @@ class PlatformAgentRunService:
             ),
         )
 
+    def finalize_native_runtime_run_from_context(
+        self,
+        *,
+        build_runtime_invocation_result_payload: Callable[..., dict[str, Any]],
+        execution_context: dict[str, Any],
+        runtime_boundary_result: dict[str, Any],
+        answer: str,
+        tool_calls: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Persist an AgentScope result without entering local routing."""
+        if tool_calls:
+            return self.finalize_routed_response_from_context(
+                build_runtime_invocation_result_payload=(
+                    build_runtime_invocation_result_payload
+                ),
+                routed_summary_context=self.build_routed_summary_context(
+                    tool_calls=tool_calls,
+                ),
+                execution_context=execution_context,
+                answer=answer,
+                routing_mode="provider-native",
+                routing_source="agentscope",
+                routing_error=None,
+                tool_calls=tool_calls,
+                knowledge_hits=[],
+                memory_hits=[],
+                knowledge_payload={},
+                memory_payload={},
+                memory_saved=False,
+                runtime_boundary_result=runtime_boundary_result,
+            )
+
+        status = str(runtime_boundary_result.get("status") or "failed")
+        error = str(
+            runtime_boundary_result.get("error")
+            or "AgentScope did not complete a governed tool call."
+        )
+        return self.finalize_unrouted_response_from_context(
+            build_runtime_invocation_result_payload=(
+                build_runtime_invocation_result_payload
+            ),
+            execution_context=execution_context,
+            answer=answer,
+            routing_mode="provider-native",
+            routing_source="agentscope",
+            routing_error=error if status == "failed" else None,
+            knowledge_hits=[],
+            memory_hits=[],
+            knowledge_payload={},
+            memory_payload={},
+            memory_saved=False,
+            decision={
+                "routed": False,
+                "routing_reason": (
+                    "AgentScope provider-native execution failed."
+                    if status == "failed"
+                    else "AgentScope completed without selecting a governed tool."
+                ),
+                "error": error,
+            },
+            runtime_boundary_result=runtime_boundary_result,
+        )
+
     def finalize_routed_run_from_context(
         self,
         *,

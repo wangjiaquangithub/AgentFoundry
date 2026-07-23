@@ -8,6 +8,7 @@ and custom sub-agent templates.
 import json
 import os
 import sys
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, NoReturn
 
@@ -129,12 +130,14 @@ from repositories.workflows import (
     WorkflowTemplateRepository,
 )
 from runtime import (
-    build_adapter_backed_local_invocation_result_payload,
+    AGENTSCOPE_PLATFORM_ADAPTER,
+    build_runtime_invocation_result_payload,
     build_runtime_invocation_request_payload,
     describe_runtime_adapter,
     describe_runtime_provider_health,
     invoke_runtime_adapter_from_payload,
 )
+from agentscope_runtime_provider import AgentScopeNativeInvocationClient
 from services.approvals import (
     PlatformApprovalService,
     PlatformApprovalServiceError,
@@ -355,6 +358,50 @@ enterprise_tool_runtime = EnterpriseToolRuntimeFactory(
     authorization_policy=_get_tool_authorization_policy,
     tool_names=ENTERPRISE_TOOL_NAMES,
 )
+
+agentscope_native_client = AgentScopeNativeInvocationClient(
+    enterprise_tool_runtime=enterprise_tool_runtime,
+)
+
+
+def _uses_agentscope_native_runtime(
+    agent_metadata: dict[str, Any] | None,
+) -> bool:
+    return (
+        isinstance(agent_metadata, dict)
+        and agent_metadata.get("template_id") == "weather_forecast_assistant"
+    )
+
+
+def _describe_runtime_adapter_for_agent(
+    agent_metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if not _uses_agentscope_native_runtime(agent_metadata):
+        return describe_runtime_adapter(agent_metadata)
+    return replace(
+        AGENTSCOPE_PLATFORM_ADAPTER,
+        provider_client=agentscope_native_client,
+    ).describe(agent_metadata)
+
+
+async def _invoke_agentscope_native_runtime_from_payload(
+    payload: dict[str, Any],
+    *,
+    agent_metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if not _uses_agentscope_native_runtime(agent_metadata):
+        return await invoke_runtime_adapter_from_payload(
+            payload,
+            agent_metadata=agent_metadata,
+        )
+    return await invoke_runtime_adapter_from_payload(
+        payload,
+        agent_metadata=agent_metadata,
+        runtime_adapter=replace(
+            AGENTSCOPE_PLATFORM_ADAPTER,
+            provider_client=agentscope_native_client,
+        ),
+    )
 
 def _platform_status_service() -> PlatformStatusService:
     """Build the service object that composes platform console status payloads."""
@@ -846,13 +893,15 @@ app.include_router(
             require_platform_approval=_require_platform_approval,
             run_authorized_enterprise_tool=_run_authorized_enterprise_tool,
             safe_path_part=safe_path_part,
-            describe_runtime_adapter=describe_runtime_adapter,
+            describe_runtime_adapter=_describe_runtime_adapter_for_agent,
             build_runtime_invocation_request_payload=(
                 build_runtime_invocation_request_payload
             ),
-            invoke_runtime_adapter_from_payload=invoke_runtime_adapter_from_payload,
+            invoke_runtime_adapter_from_payload=(
+                _invoke_agentscope_native_runtime_from_payload
+            ),
             build_runtime_invocation_result_payload=(
-                build_adapter_backed_local_invocation_result_payload
+                build_runtime_invocation_result_payload
             ),
             tenant_hint_from_user_id=tenant_hint_from_user_id,
         )

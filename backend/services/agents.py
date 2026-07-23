@@ -609,6 +609,7 @@ class PlatformAgentService:
         return {
             "agent_id": agent.get("id"),
             "agent_name": agent.get("name"),
+            "template_id": agent.get("template_id"),
             "configured_tenant": agent.get("tenant"),
             "configured_tools": list(agent.get("tools") or []),
             "knowledge_base_ids": list(agent.get("knowledge_base_ids") or []),

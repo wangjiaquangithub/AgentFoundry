@@ -260,8 +260,13 @@ class AgentScopeRuntimeAdapter:
 
     def describe(self, agent_metadata: dict[str, Any] | None = None) -> dict[str, Any]:
         """Return provider metadata suitable for API responses."""
-        config_gate = describe_provider_native_invocation_config_gate(
-            agent_metadata,
+        native_in_process = bool(
+            getattr(self.provider_client, "native_in_process", False),
+        )
+        config_gate = (
+            _native_in_process_config_gate()
+            if native_in_process
+            else describe_provider_native_invocation_config_gate(agent_metadata)
         )
         metadata = agent_metadata or {}
         return {
@@ -281,8 +286,13 @@ class AgentScopeRuntimeAdapter:
 
     def health(self, agent_metadata: dict[str, Any] | None = None) -> dict[str, Any]:
         """Return conservative runtime provider health for platform operations."""
-        config_gate = describe_provider_native_invocation_config_gate(
-            agent_metadata,
+        native_in_process = bool(
+            getattr(self.provider_client, "native_in_process", False),
+        )
+        config_gate = (
+            _native_in_process_config_gate()
+            if native_in_process
+            else describe_provider_native_invocation_config_gate(agent_metadata)
         )
         provider_invocation_wired = self.provider_client is not None
         ready = config_gate["ready"] and provider_invocation_wired
@@ -312,7 +322,7 @@ class AgentScopeRuntimeAdapter:
                 "local_service_completion_wired": True,
                 "provider_native_config_ready": config_gate["ready"],
                 "provider_invocation_wired": provider_invocation_wired,
-                "direct_agentscope_dependency": False,
+                "direct_agentscope_dependency": native_in_process,
             },
         ).to_dict()
 
@@ -445,7 +455,8 @@ async def _invoke_agentscope_provider_client(
 ) -> RuntimeInvocationResult:
     """Invoke an injected AgentScope provider client and normalize the result."""
     config_gate = runtime_adapter["provider_native_invocation"]
-    if not config_gate["ready"]:
+    native_in_process = bool(getattr(provider_client, "native_in_process", False))
+    if not native_in_process and not config_gate["ready"]:
         error = (
             "AgentScope provider invocation requires configured runtime URL "
             "and auth reference before provider-native execution can run."
@@ -487,6 +498,7 @@ async def _invoke_agentscope_provider_client(
     envelope = build_agentscope_provider_native_invocation_envelope(
         request=request,
         runtime_adapter=runtime_adapter,
+        native_in_process=native_in_process,
     )
     provider_response = await provider_client.invoke(envelope)
     if not isinstance(provider_response, Mapping):
@@ -635,6 +647,7 @@ def build_agentscope_provider_native_invocation_envelope(
     *,
     request: RuntimeInvocationRequest,
     runtime_adapter: dict[str, Any],
+    native_in_process: bool = False,
 ) -> dict[str, Any]:
     """Build the platform-owned envelope for provider-native AgentScope calls."""
     agent_metadata = _runtime_agent_metadata_from_request(request)
@@ -642,26 +655,30 @@ def build_agentscope_provider_native_invocation_envelope(
     if not isinstance(config, Mapping):
         config = {}
 
-    config_gate = describe_provider_native_invocation_config_gate(agent_metadata)
+    config_gate = (
+        _native_in_process_config_gate()
+        if native_in_process
+        else describe_provider_native_invocation_config_gate(agent_metadata)
+    )
     if not config_gate["ready"]:
         raise ValueError(
             "AgentScope provider-native invocation requires runtime URL and auth reference.",
         )
 
-    runtime_url = str(config["agentscope_runtime_url"]).strip()
-    auth_ref = str(config["agentscope_runtime_auth_ref"]).strip()
-    return {
+    envelope = {
         "provider_id": runtime_adapter["id"],
         "provider": runtime_adapter["provider"],
         "mode": runtime_adapter["mode"],
-        "endpoint": runtime_url,
-        "auth_ref": auth_ref,
         "request": request.to_dict(),
         "audit": {
             "provider_native_invocation": config_gate,
             "request": _runtime_invocation_request_audit_payload(request),
         },
     }
+    if not native_in_process:
+        envelope["endpoint"] = str(config["agentscope_runtime_url"]).strip()
+        envelope["auth_ref"] = str(config["agentscope_runtime_auth_ref"]).strip()
+    return envelope
 
 
 async def invoke_runtime_adapter_from_payload(
@@ -840,9 +857,16 @@ def _normalize_agentscope_provider_client_response(
         evidence = _runtime_invocation_evidence_from_request(request)
 
     provider_raw = provider_response.get("raw")
+    native_in_process = bool(
+        runtime_adapter.get("provider_native_invocation", {}).get("native_in_process"),
+    )
     raw_payload = {
         "runtime_bridge": {
-            "type": "agentscope_provider_native_invocation",
+            "type": (
+                "agentscope_native_in_process"
+                if native_in_process
+                else "agentscope_provider_native_invocation"
+            ),
             "provider_invocation_wired": True,
             "provider_native_invocation": runtime_adapter["provider_native_invocation"],
             "adapter_id": runtime_adapter["id"],
@@ -885,6 +909,19 @@ def _normalize_agentscope_provider_client_response(
         error=_optional_provider_text(provider_response.get("error")),
         **common,
     )
+
+
+def _native_in_process_config_gate() -> dict[str, Any]:
+    """Describe an injected native client that needs no URL or auth reference."""
+    return {
+        "id": "agentscope_native_in_process",
+        "required_keys": [],
+        "configured_keys": [],
+        "missing_keys": [],
+        "ready": True,
+        "native_in_process": True,
+        "message": "Native in-process AgentScope invocation is ready.",
+    }
 
 
 def build_runtime_provider_invocation_client(
