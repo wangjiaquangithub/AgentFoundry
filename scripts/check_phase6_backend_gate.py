@@ -171,6 +171,13 @@ CHECKS = (
         ],
     ),
     (
+        "memory-item read created time fail closed",
+        [
+            sys.executable,
+            "scripts/check_phase6_memory_item_read_created_at_fail_closed.py",
+        ],
+    ),
+    (
         "agent-run memory audit fail closed",
         [
             sys.executable,
