@@ -203,7 +203,7 @@ def _validate_memory_item_write_identity(record: MemoryItemRecord) -> None:
         ("tenant id", record.tenant_id),
         ("user id", record.user_id),
     ):
-        if not value.strip():
+        if not isinstance(value, str) or not value.strip():
             raise ValueError(f"Memory item write requires a non-blank {field_name}.")
 
 
