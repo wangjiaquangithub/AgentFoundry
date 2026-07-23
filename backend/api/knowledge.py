@@ -23,7 +23,6 @@ from api.schemas import (
     EnterpriseKnowledgeRetrievalEventDetailRequest,
     EnterpriseKnowledgeRetrievalEventsRequest,
 )
-from backend.persistence.document_chunks import DocumentChunkRecord
 from services.knowledge import (
     PlatformKnowledgeDocumentReadinessService,
     PlatformKnowledgeRetrievalService,
@@ -37,6 +36,11 @@ from services.knowledge_documents import (
     KnowledgeDocumentApiCommandInput,
     PlatformKnowledgeDocumentService,
     PlatformKnowledgeDocumentServiceError,
+)
+from services.knowledge_document_chunks import (
+    KnowledgeDocumentChunkApiCommandInput,
+    PlatformKnowledgeDocumentChunkService,
+    PlatformKnowledgeDocumentChunkServiceError,
 )
 from services.knowledge_embedding_records import (
     EmbeddingRecordApiCommandInput,
@@ -77,9 +81,8 @@ class KnowledgeDocumentsRouteDependencies:
     document_repository: Callable[[], Any | None]
     document_service: Callable[[], PlatformKnowledgeDocumentService | None]
     document_chunk_repository: Callable[[], Any | None]
-    document_chunk_write_repository: Callable[[], Any | None]
+    document_chunk_service: Callable[[], PlatformKnowledgeDocumentChunkService | None]
     tenant_hint_from_user_id: Callable[[str], str | None]
-    now: Callable[[], str]
 
 
 @dataclass(frozen=True)
@@ -816,8 +819,8 @@ def create_knowledge_documents_router(
         request: Request,
     ) -> dict[str, Any]:
         """Persist one tenant knowledge document chunk record to PostgreSQL."""
-        chunk_repository = deps.document_chunk_write_repository()
-        if chunk_repository is None:
+        service = deps.document_chunk_service()
+        if service is None:
             raise HTTPException(
                 status_code=503,
                 detail=(
@@ -832,17 +835,22 @@ def create_knowledge_documents_router(
             request=request,
             tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
         )
-        chunk = DocumentChunkRecord(
-            id=payload.chunk_id or f"chunk-{uuid4()}",
-            tenant_id=tenant_id,
-            document_id=payload.document_id,
-            chunk_index=payload.chunk_index,
-            content=payload.content,
-            metadata=payload.metadata,
-            created_at=deps.now(),
-        )
+        identity = get_request_identity(request)
+        actor_user_id = identity.user_id or "system"
         try:
-            persisted_chunk = chunk_repository.append_document_chunk(chunk)
+            persisted_chunk = service.upsert_document_chunk_from_api(
+                KnowledgeDocumentChunkApiCommandInput(
+                    id=payload.chunk_id or f"chunk-{uuid4()}",
+                    tenant_id=tenant_id,
+                    document_id=payload.document_id,
+                    chunk_index=payload.chunk_index,
+                    content=payload.content,
+                    metadata=payload.metadata,
+                    actor_user_id=actor_user_id,
+                )
+            )
+        except PlatformKnowledgeDocumentChunkServiceError as exc:
+            raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

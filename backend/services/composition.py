@@ -78,6 +78,9 @@ from backend.services.knowledge import (
 )
 from backend.services.knowledge_bases import PlatformKnowledgeBaseService
 from backend.services.knowledge_documents import PlatformKnowledgeDocumentService
+from backend.services.knowledge_document_chunks import (
+    PlatformKnowledgeDocumentChunkService,
+)
 from backend.services.knowledge_embedding_records import (
     PlatformKnowledgeEmbeddingRecordService,
 )
@@ -676,6 +679,33 @@ def build_configured_postgres_knowledge_document_chunk_write_repository() -> (
     return PostgresDocumentChunkWriteRepository(database)
 
 
+def build_postgres_knowledge_document_chunk_service(
+    database: PostgresDatabase,
+    *,
+    now: Callable[[], str] | None = None,
+) -> PlatformKnowledgeDocumentChunkService:
+    """Build the PostgreSQL-backed knowledge document chunk mutation service."""
+
+    return PlatformKnowledgeDocumentChunkService(
+        document_chunk_writer=PostgresDocumentChunkWriteRepository(database),
+        audit_event_writer=PostgresAuditEventWriteRepository(database),
+        now=now,
+    )
+
+
+def build_configured_postgres_knowledge_document_chunk_service(
+    *,
+    now: Callable[[], str] | None = None,
+) -> PlatformKnowledgeDocumentChunkService | None:
+    """Build the document chunk mutation service when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return build_postgres_knowledge_document_chunk_service(database, now=now)
+
+
 def build_configured_postgres_knowledge_embedding_record_read_repository() -> (
     PostgresEmbeddingRecordReadRepository | None
 ):
@@ -791,6 +821,15 @@ def build_knowledge_document_chunk_write_repository() -> (
     """Select the configured production document chunk write repository."""
 
     return build_configured_postgres_knowledge_document_chunk_write_repository()
+
+
+def build_knowledge_document_chunk_service(
+    *,
+    now: Callable[[], str] | None = None,
+) -> PlatformKnowledgeDocumentChunkService | None:
+    """Select the configured production document chunk mutation service."""
+
+    return build_configured_postgres_knowledge_document_chunk_service(now=now)
 
 
 def build_knowledge_embedding_record_read_repository() -> (
