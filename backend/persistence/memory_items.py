@@ -125,6 +125,11 @@ def _validate_memory_item_read_identity(record: MemoryItemRecord) -> None:
             )
 
 
+def _validate_memory_item_read_content(record: MemoryItemRecord) -> None:
+    if not isinstance(record.content, str) or not record.content.strip():
+        raise ValueError("Memory item read requires non-blank string content.")
+
+
 def _validate_memory_item_read_count(
     records: list[MemoryItemRecord],
     *,
@@ -307,6 +312,7 @@ class SQLiteMemoryItemReadRepository:
         _validate_memory_item_read_count(records, limit=result_limit)
         for record in records:
             _validate_memory_item_read_identity(record)
+            _validate_memory_item_read_content(record)
             _validate_memory_item_read_result(
                 record,
                 tenant_id=tenant_id,
@@ -342,6 +348,7 @@ class SQLiteMemoryItemReadRepository:
             return None
         record = _memory_item_from_row(dict(row))
         _validate_memory_item_read_identity(record)
+        _validate_memory_item_read_content(record)
         _validate_memory_item_read_result(
             record,
             tenant_id=tenant_id,
@@ -406,6 +413,7 @@ class PostgresMemoryItemReadRepository:
         _validate_memory_item_read_count(records, limit=result_limit)
         for record in records:
             _validate_memory_item_read_identity(record)
+            _validate_memory_item_read_content(record)
             _validate_memory_item_read_result(
                 record,
                 tenant_id=tenant_id,
@@ -443,6 +451,7 @@ class PostgresMemoryItemReadRepository:
             return None
         record = _memory_item_from_row(dict(row))
         _validate_memory_item_read_identity(record)
+        _validate_memory_item_read_content(record)
         _validate_memory_item_read_result(
             record,
             tenant_id=tenant_id,
