@@ -276,6 +276,7 @@ def create_tool_audit_router(deps: ToolAuditRouteDependencies) -> APIRouter:
         response = tool_policy_service.run_platform_tool_from_context(
             run_authorized_enterprise_tool=deps.run_authorized_enterprise_tool,
             user_id=user_id,
+            tenant=tenant,
             tool_name=requested_tool_name,
             inputs=requested_inputs,
             agent_id=runner_agent_id,

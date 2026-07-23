@@ -504,6 +504,7 @@ class PlatformToolPolicyService:
         *,
         run_authorized_enterprise_tool: Callable[..., dict[str, Any]],
         user_id: str,
+        tenant: str,
         tool_name: str,
         inputs: dict[str, Any],
         agent_id: str,
@@ -511,6 +512,7 @@ class PlatformToolPolicyService:
     ) -> dict[str, Any]:
         return run_authorized_enterprise_tool(
             user_id=user_id,
+            tenant=tenant,
             tool_name=tool_name,
             inputs=inputs,
             agent_id=agent_id,

@@ -324,9 +324,16 @@ def _set_tool_authorization_policy(policy: ToolAuthorizationPolicy) -> None:
     tool_authorization_policy = policy
 
 
-def _enterprise_runtime_context(user_id: str) -> dict[str, Any]:
+def _enterprise_runtime_context(
+    user_id: str,
+    *,
+    tenant: str | None = None,
+) -> dict[str, Any]:
     try:
-        return _platform_connector_config_service().enterprise_runtime_context(user_id)
+        return _platform_connector_config_service().enterprise_runtime_context(
+            user_id,
+            tenant=tenant,
+        )
     except PlatformConnectorConfigServiceError as exc:
         _raise_platform_connector_config_service_error(exc)
 
@@ -549,6 +556,7 @@ _platform_access_helpers = PlatformAccessHelpers(
 def _run_authorized_enterprise_tool(
     *,
     user_id: str,
+    tenant: str | None = None,
     tool_name: str,
     inputs: dict[str, Any],
     agent_id: str,
@@ -558,6 +566,7 @@ def _run_authorized_enterprise_tool(
     try:
         return enterprise_tool_runtime.run_authorized_tool(
             user_id=user_id,
+            tenant=tenant,
             tool_name=tool_name,
             inputs=inputs,
             agent_id=agent_id,

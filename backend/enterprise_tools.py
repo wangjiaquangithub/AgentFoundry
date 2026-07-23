@@ -112,7 +112,7 @@ class ReadOnlyEnterpriseTool(FunctionTool):
 class EnterpriseToolRuntimeFactory:
     """Build and execute tenant-aware enterprise tools."""
 
-    runtime_context: Callable[[str], dict[str, Any]]
+    runtime_context: Callable[..., dict[str, Any]]
     tool_policy_service: Callable[[], PlatformToolPolicyService]
     audit_logger: ToolAuditLogger
     authorization_policy: Callable[[], ToolAuthorizationPolicy]
@@ -225,13 +225,18 @@ class EnterpriseToolRuntimeFactory:
         self,
         *,
         user_id: str,
+        tenant: str | None = None,
         tool_name: str,
         inputs: dict[str, Any],
         agent_id: str,
         session_id: str,
         fail_on_denied: bool = True,
     ) -> dict[str, Any]:
-        runtime = self.runtime_context(user_id)
+        runtime = (
+            self.runtime_context(user_id, tenant=tenant)
+            if tenant is not None
+            else self.runtime_context(user_id)
+        )
         tool_policy_service = self.tool_policy_service()
         runtime_selection = tool_policy_service.runtime_selection(runtime)
         tenant = runtime_selection["tenant"]

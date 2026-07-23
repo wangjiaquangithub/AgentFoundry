@@ -59,6 +59,13 @@ CHECKS = (
         ],
     ),
     (
+        "enterprise tool execution request tenant",
+        [
+            sys.executable,
+            "scripts/check_phase6_enterprise_tool_execution_request_tenant.py",
+        ],
+    ),
+    (
         "workflow request tenant",
         [
             sys.executable,
