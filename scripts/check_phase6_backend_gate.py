@@ -94,6 +94,13 @@ CHECKS = (
         ],
     ),
     (
+        "knowledge embedding record upsert authenticated actor audit",
+        [
+            sys.executable,
+            "scripts/check_phase6_knowledge_embedding_record_actor_audit.py",
+        ],
+    ),
+    (
         "tool request tenant",
         [
             sys.executable,

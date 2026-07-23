@@ -147,9 +147,9 @@ def check_knowledge_consumption() -> list[str]:
         errors.append("knowledge.py must import the canonical identity accessor")
     if 'request.headers.get("X-User-ID")' in source or "request.headers" in source:
         errors.append("knowledge.py must not consume raw request identity headers")
-    if source.count("get_request_identity(request)") != 3:
+    if source.count("get_request_identity(request)") != 4:
         errors.append(
-            "knowledge.py must resolve canonical identity at all 3 identity consumption points"
+            "knowledge.py must resolve canonical identity at all 4 identity consumption points"
         )
     return errors
 

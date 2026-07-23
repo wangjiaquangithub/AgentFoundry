@@ -25,7 +25,6 @@ from api.schemas import (
 )
 from backend.persistence.document_chunks import DocumentChunkRecord
 from backend.persistence.documents import DocumentRecord
-from backend.persistence.embedding_records import EmbeddingRecord
 from services.knowledge import (
     PlatformKnowledgeDocumentReadinessService,
     PlatformKnowledgeRetrievalService,
@@ -34,6 +33,11 @@ from services.knowledge_bases import (
     KnowledgeBaseApiCommandInput,
     PlatformKnowledgeBaseService,
     PlatformKnowledgeBaseServiceError,
+)
+from services.knowledge_embedding_records import (
+    EmbeddingRecordApiCommandInput,
+    PlatformKnowledgeEmbeddingRecordService,
+    PlatformKnowledgeEmbeddingRecordServiceError,
 )
 from services.knowledge_ingestion import (
     KnowledgeIngestionRequest,
@@ -89,9 +93,11 @@ class KnowledgeRetrievalEventsRouteDependencies:
 @dataclass(frozen=True)
 class KnowledgeEmbeddingRecordsRouteDependencies:
     embedding_record_read_repository: Callable[[], Any | None]
-    embedding_record_write_repository: Callable[[], Any | None]
+    embedding_record_service: Callable[
+        [],
+        PlatformKnowledgeEmbeddingRecordService | None,
+    ]
     tenant_hint_from_user_id: Callable[[str], str | None]
-    now: Callable[[], str]
 
 
 def _resolve_tenant(
@@ -460,8 +466,8 @@ def create_knowledge_embedding_records_router(
         request: Request,
     ) -> dict[str, Any]:
         """Persist one tenant embedding record to PostgreSQL."""
-        repository = deps.embedding_record_write_repository()
-        if repository is None:
+        service = deps.embedding_record_service()
+        if service is None:
             raise HTTPException(
                 status_code=503,
                 detail=(
@@ -476,16 +482,21 @@ def create_knowledge_embedding_records_router(
             request=request,
             tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
         )
-        record = EmbeddingRecord(
-            id=payload.embedding_record_id or f"emb-{uuid4()}",
-            tenant_id=tenant_id,
-            chunk_id=payload.chunk_id,
-            model_config_id=payload.model_config_id,
-            vector_ref=payload.vector_ref,
-            created_at=deps.now(),
-        )
+        identity = get_request_identity(request)
+        actor_user_id = identity.user_id or "system"
         try:
-            persisted_record = repository.append_embedding_record(record)
+            persisted_record = service.upsert_embedding_record_from_api(
+                EmbeddingRecordApiCommandInput(
+                    id=payload.embedding_record_id or f"emb-{uuid4()}",
+                    tenant_id=tenant_id,
+                    chunk_id=payload.chunk_id,
+                    model_config_id=payload.model_config_id,
+                    vector_ref=payload.vector_ref,
+                    actor_user_id=actor_user_id,
+                )
+            )
+        except PlatformKnowledgeEmbeddingRecordServiceError as exc:
+            raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return {

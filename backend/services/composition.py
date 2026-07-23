@@ -77,6 +77,9 @@ from backend.services.knowledge import (
     PlatformKnowledgeRetrievalService,
 )
 from backend.services.knowledge_bases import PlatformKnowledgeBaseService
+from backend.services.knowledge_embedding_records import (
+    PlatformKnowledgeEmbeddingRecordService,
+)
 from backend.services.knowledge_ingestion import PlatformKnowledgeIngestionService
 from backend.services.model_configs import PlatformModelConfigService
 
@@ -669,6 +672,33 @@ def build_configured_postgres_knowledge_embedding_record_write_repository() -> (
     return PostgresEmbeddingRecordWriteRepository(database)
 
 
+def build_postgres_knowledge_embedding_record_service(
+    database: PostgresDatabase,
+    *,
+    now: Callable[[], str] | None = None,
+) -> PlatformKnowledgeEmbeddingRecordService:
+    """Build the PostgreSQL-backed embedding record mutation service."""
+
+    return PlatformKnowledgeEmbeddingRecordService(
+        embedding_record_writer=PostgresEmbeddingRecordWriteRepository(database),
+        audit_event_writer=PostgresAuditEventWriteRepository(database),
+        now=now,
+    )
+
+
+def build_configured_postgres_knowledge_embedding_record_service(
+    *,
+    now: Callable[[], str] | None = None,
+) -> PlatformKnowledgeEmbeddingRecordService | None:
+    """Build the embedding record mutation service when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return build_postgres_knowledge_embedding_record_service(database, now=now)
+
+
 def build_knowledge_base_read_repository() -> (
     PostgresKnowledgeBaseReadRepository | None
 ):
@@ -740,6 +770,15 @@ def build_knowledge_embedding_record_write_repository() -> (
     """Select the configured production embedding record write repository."""
 
     return build_configured_postgres_knowledge_embedding_record_write_repository()
+
+
+def build_knowledge_embedding_record_service(
+    *,
+    now: Callable[[], str] | None = None,
+) -> PlatformKnowledgeEmbeddingRecordService | None:
+    """Select the configured production embedding record mutation service."""
+
+    return build_configured_postgres_knowledge_embedding_record_service(now=now)
 
 
 def build_postgres_knowledge_document_readiness_service(

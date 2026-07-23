@@ -166,7 +166,7 @@ from services.composition import (
     build_knowledge_document_read_repository,
     build_knowledge_document_write_repository,
     build_knowledge_embedding_record_read_repository,
-    build_knowledge_embedding_record_write_repository,
+    build_knowledge_embedding_record_service,
     build_knowledge_ingestion_service,
     build_knowledge_response_service,
     build_knowledge_retrieval_service,
@@ -753,11 +753,10 @@ app.include_router(
             embedding_record_read_repository=(
                 build_knowledge_embedding_record_read_repository
             ),
-            embedding_record_write_repository=(
-                build_knowledge_embedding_record_write_repository
+            embedding_record_service=lambda: build_knowledge_embedding_record_service(
+                now=now_iso
             ),
             tenant_hint_from_user_id=tenant_hint_from_user_id,
-            now=now_iso,
         )
     )
 )
