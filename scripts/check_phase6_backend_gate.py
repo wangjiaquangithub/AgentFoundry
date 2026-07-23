@@ -24,6 +24,13 @@ CHECKS = (
         ],
     ),
     (
+        "platform config export request tenant",
+        [
+            sys.executable,
+            "scripts/check_phase6_platform_config_export_request_tenant.py",
+        ],
+    ),
+    (
         "model config request tenant",
         [
             sys.executable,

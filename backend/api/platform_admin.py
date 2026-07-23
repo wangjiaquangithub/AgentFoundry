@@ -130,7 +130,7 @@ def create_platform_admin_router(
         except PlatformConnectorConfigServiceError as exc:
             _raise_service_error(exc)
         try:
-            agents = deps.agent_service().list_agents_for_user(actor_user_id)
+            agents = deps.agent_service().list_agents(tenant=tenant)
         except PlatformAgentServiceError as exc:
             _raise_service_error(exc)
         try:
