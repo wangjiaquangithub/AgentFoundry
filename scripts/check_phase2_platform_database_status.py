@@ -21,7 +21,7 @@ def _build_snapshot(database_config_status: Any) -> dict[str, Any]:
     service = PlatformStatusService(
         list_approval_records=lambda **_kwargs: [],
         load_workflow_runs=lambda **_kwargs: [],
-        load_workflow_templates=lambda: [],
+        load_workflow_templates=lambda **_kwargs: [],
         load_agents=lambda: [],
         load_memories=lambda **_kwargs: [],
         runtime_context=lambda _user_id: {

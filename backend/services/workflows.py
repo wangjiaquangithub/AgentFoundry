@@ -45,13 +45,11 @@ class PlatformWorkflowTemplateService:
         *,
         repository: WorkflowTemplateRepositoryProtocol,
         audit_event_writer: AuditEventWriteRepository | None = None,
-        tenant_id: str = "acme",
         system_actor_user_id: str = "acme:alice",
         now: Callable[[], str] | None = None,
     ) -> None:
         self._repository = repository
         self._audit_event_writer = audit_event_writer
-        self._tenant_id = tenant_id
         self._system_actor_user_id = system_actor_user_id
         self._now = now or _utc_now_iso
 
@@ -147,8 +145,18 @@ class PlatformWorkflowTemplateService:
             },
         ]
 
-    def save_templates(self, workflows: list[dict[str, Any]]) -> None:
-        self._repository.save_all(workflows)
+    def save_templates(
+        self,
+        workflows: list[dict[str, Any]],
+        *,
+        tenant: str,
+        actor: str | None = None,
+    ) -> None:
+        self._repository.save_all(
+            workflows,
+            tenant=tenant,
+            created_by=self._normalize_actor(actor, tenant=tenant),
+        )
 
     def normalize_import_templates(self, value: Any) -> list[dict[str, Any]]:
         if value is None:
@@ -176,37 +184,49 @@ class PlatformWorkflowTemplateService:
         value: Any,
         *,
         mode: str,
+        tenant: str,
         actor: str | None = None,
     ) -> None:
         imported_workflows = self.normalize_import_templates(value)
         workflows = imported_workflows
         if mode != "replace":
             workflows = self.merge_import_templates(
-                self.list_templates(),
+                self.list_templates(tenant=tenant, actor=actor),
                 imported_workflows,
             )
-        self.save_templates(workflows)
+        self.save_templates(workflows, tenant=tenant, actor=actor)
         for workflow in imported_workflows:
             self._append_workflow_template_audit_event(
                 workflow=workflow,
-                actor=self._normalize_actor(actor),
+                actor=self._normalize_actor(actor, tenant=tenant),
+                tenant=tenant,
                 event_type="workflow_template.imported",
                 extra_payload={"mode": mode},
             )
 
-    def list_templates(self) -> list[dict[str, Any]]:
-        if not self._repository.exists():
+    def list_templates(
+        self,
+        *,
+        tenant: str,
+        actor: str | None = None,
+    ) -> list[dict[str, Any]]:
+        if not self._repository.exists(tenant=tenant):
             workflows = self.default_templates()
-            self.save_templates(workflows)
+            self.save_templates(workflows, tenant=tenant, actor=actor)
             return workflows
 
         try:
-            return self._repository.list()
+            return self._repository.list(tenant=tenant)
         except WorkflowTemplateRegistryError as exc:
             raise PlatformWorkflowTemplateServiceError(500, str(exc)) from exc
 
-    def list_templates_response(self) -> dict[str, Any]:
-        return {"workflows": self.list_templates()}
+    def list_templates_response(
+        self,
+        *,
+        tenant: str,
+        actor: str | None = None,
+    ) -> dict[str, Any]:
+        return {"workflows": self.list_templates(tenant=tenant, actor=actor)}
 
     @staticmethod
     def update_template_response(
@@ -216,8 +236,14 @@ class PlatformWorkflowTemplateService:
     ) -> dict[str, Any]:
         return {"workflow": workflow, "workflows": workflows}
 
-    def get_template(self, workflow_type: str) -> dict[str, Any]:
-        for workflow in self.list_templates():
+    def get_template(
+        self,
+        workflow_type: str,
+        *,
+        tenant: str,
+        actor: str | None = None,
+    ) -> dict[str, Any]:
+        for workflow in self.list_templates(tenant=tenant, actor=actor):
             if str(workflow.get("workflow_type", "")).strip() == workflow_type:
                 return workflow
 
@@ -226,8 +252,14 @@ class PlatformWorkflowTemplateService:
             f"Unknown enterprise workflow: {workflow_type}",
         )
 
-    def get_enabled_template(self, workflow_type: str) -> dict[str, Any]:
-        workflow = self.get_template(workflow_type)
+    def get_enabled_template(
+        self,
+        workflow_type: str,
+        *,
+        tenant: str,
+        actor: str | None = None,
+    ) -> dict[str, Any]:
+        workflow = self.get_template(workflow_type, tenant=tenant, actor=actor)
         if workflow.get("enabled") is False:
             raise PlatformWorkflowTemplateServiceError(
                 400,
@@ -240,10 +272,11 @@ class PlatformWorkflowTemplateService:
         *,
         workflow_type: str,
         actor: str | None,
+        tenant: str,
     ) -> dict[str, str]:
         return {
             "workflow_type": workflow_type.strip(),
-            "actor": self._normalize_actor(actor),
+            "actor": self._normalize_actor(actor, tenant=tenant),
         }
 
     def update_template(
@@ -252,8 +285,9 @@ class PlatformWorkflowTemplateService:
         workflow_type: str,
         payload: Any,
         actor: str,
+        tenant: str,
     ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-        workflows = self.list_templates()
+        workflows = self.list_templates(tenant=tenant, actor=actor)
         workflow_index = next(
             (
                 index
@@ -287,10 +321,11 @@ class PlatformWorkflowTemplateService:
         workflow["updated_at"] = self._now()
         workflow["updated_by"] = actor
         workflows[workflow_index] = workflow
-        self.save_templates(workflows)
+        self.save_templates(workflows, tenant=tenant, actor=actor)
         self._append_workflow_template_audit_event(
             workflow=workflow,
             actor=actor,
+            tenant=tenant,
             event_type="workflow_template.updated",
         )
         return workflow, workflows
@@ -299,8 +334,9 @@ class PlatformWorkflowTemplateService:
         self,
         *,
         actor: str,
+        tenant: str,
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-        workflows = self.list_templates()
+        workflows = self.list_templates(tenant=tenant, actor=actor)
         enabled_workflows: list[dict[str, Any]] = []
         changed = False
         now = self._now()
@@ -315,11 +351,12 @@ class PlatformWorkflowTemplateService:
                 changed = True
 
         if changed:
-            self.save_templates(workflows)
+            self.save_templates(workflows, tenant=tenant, actor=actor)
             for workflow in enabled_workflows:
                 self._append_workflow_template_audit_event(
                     workflow=workflow,
                     actor=actor,
+                    tenant=tenant,
                     event_type="workflow_template.enabled",
                 )
 
@@ -330,6 +367,7 @@ class PlatformWorkflowTemplateService:
         *,
         workflow: dict[str, Any],
         actor: str,
+        tenant: str,
         event_type: str,
         extra_payload: dict[str, Any] | None = None,
     ) -> None:
@@ -361,8 +399,8 @@ class PlatformWorkflowTemplateService:
             persisted_audit_event = self._audit_event_writer.append_audit_event(
                 AuditEventRecord(
                     id=str(uuid4()),
-                    tenant_id=self._tenant_id,
-                    actor_user_id=self._normalize_actor(actor),
+                    tenant_id=tenant,
+                    actor_user_id=self._normalize_actor(actor, tenant=tenant),
                     event_type=event_type,
                     target_type="workflow_template",
                     target_id=workflow_type,
@@ -380,11 +418,9 @@ class PlatformWorkflowTemplateService:
         except Exception as exc:
             raise PlatformWorkflowTemplateServiceError(500, str(exc)) from exc
 
-    def _normalize_actor(self, actor: str | None) -> str:
-        return (
-            str(actor or self._system_actor_user_id).strip()
-            or self._system_actor_user_id
-        )
+    def _normalize_actor(self, actor: str | None, *, tenant: str) -> str:
+        fallback = self._system_actor_user_id if tenant == "acme" else f"{tenant}:system"
+        return str(actor or fallback).strip() or fallback
 
 
 class PlatformWorkflowRunService:

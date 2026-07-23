@@ -161,9 +161,9 @@ def check_workflows_consumption() -> list[str]:
         errors.append("workflows.py must import the canonical identity accessor")
     if 'request.headers.get("X-User-ID")' in source or "request.headers" in source:
         errors.append("workflows.py must not consume raw request identity headers")
-    if source.count("get_request_identity(request)") != 8:
+    if source.count("get_request_identity(request)") != 10:
         errors.append(
-            "workflows.py must preserve all 8 canonical identity consumption points"
+            "workflows.py must preserve all 10 canonical identity consumption points"
         )
     return errors
 

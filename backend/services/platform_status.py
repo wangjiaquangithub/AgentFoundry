@@ -65,7 +65,7 @@ class PlatformStatusService:
         *,
         list_approval_records: Callable[..., list[dict[str, Any]]],
         load_workflow_runs: Callable[..., list[dict[str, Any]]],
-        load_workflow_templates: Callable[[], list[dict[str, Any]]],
+        load_workflow_templates: Callable[..., list[dict[str, Any]]],
         load_agents: Callable[[], list[dict[str, Any]]],
         load_memories: Callable[..., list[dict[str, Any]]],
         runtime_context: Callable[..., dict[str, Any]],
@@ -196,7 +196,10 @@ class PlatformStatusService:
             tenant=tenant,
             user_id=user_id,
         )
-        workflow_templates = self._load_workflow_templates()
+        workflow_templates = self._load_workflow_templates(
+            tenant=tenant,
+            actor=user_id,
+        )
         enabled_workflows = [
             workflow
             for workflow in workflow_templates
@@ -791,7 +794,10 @@ class PlatformStatusService:
             )
             if run.get("agent_id") in memory_enabled_ids
         )
-        workflow_templates = self._load_workflow_templates()
+        workflow_templates = self._load_workflow_templates(
+            tenant=tenant,
+            actor=user_id,
+        )
         enabled_workflows = [
             workflow
             for workflow in workflow_templates
@@ -1065,7 +1071,10 @@ class PlatformStatusService:
                 },
             )
 
-        workflow_templates = self._load_workflow_templates()
+        workflow_templates = self._load_workflow_templates(
+            tenant=tenant,
+            actor=user_id,
+        )
         disabled_workflows = [
             workflow
             for workflow in workflow_templates

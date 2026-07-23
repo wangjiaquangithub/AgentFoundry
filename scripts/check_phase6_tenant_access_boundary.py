@@ -792,7 +792,7 @@ def assert_platform_config_import_uses_request_tenant() -> None:
         raise AssertionError(
             "Platform config import must resolve the canonical request tenant.",
         )
-    if import_route.count("tenant=tenant_id") != 4:
+    if import_route.count("tenant=tenant_id") != 5:
         raise AssertionError(
             "Platform config import must scope tenant-owned writes and response export.",
         )
@@ -1187,7 +1187,7 @@ def assert_platform_status_and_governance_are_tenant_scoped() -> None:
     service = PlatformStatusService(
         list_approval_records=list_approval_records,
         load_workflow_runs=lambda **_kwargs: [],
-        load_workflow_templates=lambda: [],
+        load_workflow_templates=lambda **_kwargs: [],
         load_agents=lambda: [],
         load_memories=lambda **_kwargs: [],
         runtime_context=runtime_context,

@@ -19,16 +19,24 @@ from backend.services.workflows import PlatformWorkflowTemplateService
 
 class MemoryWorkflowTemplateRepository:
     def __init__(self) -> None:
-        self.saved: list[dict[str, Any]] = []
+        self.saved: dict[str, list[dict[str, Any]]] = {}
+        self.created_by: dict[str, str] = {}
 
-    def exists(self) -> bool:
-        return bool(self.saved)
+    def exists(self, *, tenant: str) -> bool:
+        return bool(self.saved.get(tenant))
 
-    def list(self) -> list[dict[str, Any]]:
-        return list(self.saved)
+    def list(self, *, tenant: str) -> list[dict[str, Any]]:
+        return [dict(workflow) for workflow in self.saved.get(tenant, [])]
 
-    def save_all(self, workflows: list[dict[str, Any]]) -> None:
-        self.saved = [dict(workflow) for workflow in workflows]
+    def save_all(
+        self,
+        workflows: list[dict[str, Any]],
+        *,
+        tenant: str,
+        created_by: str,
+    ) -> None:
+        self.saved[tenant] = [dict(workflow) for workflow in workflows]
+        self.created_by[tenant] = created_by
 
 
 class MemoryAuditEventWriter:
@@ -58,13 +66,18 @@ def _template() -> dict[str, Any]:
 
 def main() -> None:
     audit_writer = MemoryAuditEventWriter()
+    repository = MemoryWorkflowTemplateRepository()
     service = PlatformWorkflowTemplateService(
-        repository=MemoryWorkflowTemplateRepository(),
+        repository=repository,
         audit_event_writer=audit_writer,
         now=lambda: "2026-07-22T00:00:00+00:00",
     )
 
-    service.import_templates_payload([_template()], mode="replace")
+    service.import_templates_payload(
+        [_template()],
+        mode="replace",
+        tenant="acme",
+    )
 
     _require(len(audit_writer.events) == 1, "Expected one import audit event.")
     default_event = audit_writer.events[0]
@@ -78,14 +91,35 @@ def main() -> None:
     )
 
     service.import_templates_payload(
-        [_template()],
-        mode="merge",
-        actor="acme:bob",
+        [{**_template(), "name": "Globex Daily Ops Brief"}],
+        mode="replace",
+        tenant="globex",
+        actor="globex:bob",
     )
     explicit_actor_event = audit_writer.events[-1]
     _require(
-        explicit_actor_event.actor_user_id == "acme:bob",
+        explicit_actor_event.tenant_id == "globex",
+        "Workflow template import audit must use the request tenant.",
+    )
+    _require(
+        explicit_actor_event.actor_user_id == "globex:bob",
         "Workflow template import audit must preserve an explicit actor.",
+    )
+    _require(
+        repository.created_by == {
+            "acme": "acme:alice",
+            "globex": "globex:bob",
+        },
+        "Workflow template writes must preserve tenant-specific actors.",
+    )
+    _require(
+        service.list_templates(tenant="acme")[0]["name"] == "Daily Ops Brief",
+        "Acme workflow templates must not be overwritten by another tenant.",
+    )
+    _require(
+        service.list_templates(tenant="globex", actor="globex:bob")[0]["name"]
+        == "Globex Daily Ops Brief",
+        "Globex workflow templates must remain isolated from Acme.",
     )
 
     print("phase2 workflow template audit tenant alignment ok")

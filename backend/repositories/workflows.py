@@ -22,10 +22,10 @@ class WorkflowTemplateRepository:
     def __init__(self, path: Path) -> None:
         self._path = path
 
-    def exists(self) -> bool:
-        return self._path.exists()
+    def exists(self, *, tenant: str) -> bool:
+        return bool(self.list(tenant=tenant))
 
-    def list(self) -> list[dict[str, Any]]:
+    def list(self, *, tenant: str) -> list[dict[str, Any]]:
         if not self._path.exists():
             return []
 
@@ -41,12 +41,48 @@ class WorkflowTemplateRepository:
                 "Platform workflow registry must be a JSON array.",
             )
 
-        return [workflow for workflow in workflows if isinstance(workflow, dict)]
+        records = [workflow for workflow in workflows if isinstance(workflow, dict)]
+        tenant_records = [
+            workflow for workflow in records if workflow.get("tenant") == tenant
+        ]
+        selected = tenant_records or [
+            workflow for workflow in records if not workflow.get("tenant")
+        ]
+        return [
+            {key: value for key, value in workflow.items() if key != "tenant"}
+            for workflow in selected
+        ]
 
-    def save_all(self, workflows: list[dict[str, Any]]) -> None:
+    def save_all(
+        self,
+        workflows: list[dict[str, Any]],
+        *,
+        tenant: str,
+        created_by: str,
+    ) -> None:
+        del created_by
+        existing: list[dict[str, Any]] = []
+        if self._path.exists():
+            try:
+                value = json.loads(self._path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError as exc:
+                raise WorkflowTemplateRegistryError(
+                    "Platform workflow registry is not valid JSON.",
+                ) from exc
+            if not isinstance(value, list):
+                raise WorkflowTemplateRegistryError(
+                    "Platform workflow registry must be a JSON array.",
+                )
+            existing = [item for item in value if isinstance(item, dict)]
+        preserved = [item for item in existing if item.get("tenant") != tenant]
+        tenant_workflows = [
+            {**workflow, "tenant": tenant}
+            for workflow in workflows
+            if workflow.get("workflow_type")
+        ]
         self._path.parent.mkdir(parents=True, exist_ok=True)
         self._path.write_text(
-            json.dumps(workflows, ensure_ascii=False, indent=2),
+            json.dumps([*preserved, *tenant_workflows], ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
 
@@ -54,13 +90,19 @@ class WorkflowTemplateRepository:
 class WorkflowTemplateRepositoryProtocol(Protocol):
     """Repository contract used by the platform workflow template service."""
 
-    def exists(self) -> bool:
+    def exists(self, *, tenant: str) -> bool:
         ...
 
-    def list(self) -> list[dict[str, Any]]:
+    def list(self, *, tenant: str) -> list[dict[str, Any]]:
         ...
 
-    def save_all(self, workflows: list[dict[str, Any]]) -> None:
+    def save_all(
+        self,
+        workflows: list[dict[str, Any]],
+        *,
+        tenant: str,
+        created_by: str,
+    ) -> None:
         ...
 
 
@@ -201,43 +243,45 @@ class PostgresWorkflowTemplateReadThroughRepository:
         *,
         postgres_reader: PostgresWorkflowReadRepository,
         postgres_writer: PostgresWorkflowWriteRepository,
-        tenant_id: str = "acme",
-        created_by: str = "acme:alice",
     ) -> None:
         self._postgres_reader = postgres_reader
         self._postgres_writer = postgres_writer
-        self._tenant_id = tenant_id
-        self._created_by = created_by
 
-    def exists(self) -> bool:
+    def exists(self, *, tenant: str) -> bool:
         return bool(
             self._postgres_reader.list_templates(
-                tenant_id=self._tenant_id,
+                tenant_id=tenant,
                 limit=1,
             ),
         )
 
-    def list(self) -> list[dict[str, Any]]:
+    def list(self, *, tenant: str) -> list[dict[str, Any]]:
         return [
             _postgres_template_to_platform_record(record)
             for record in self._postgres_reader.list_templates(
-                tenant_id=self._tenant_id,
+                tenant_id=tenant,
                 limit=100,
             )
         ]
 
-    def save_all(self, workflows: list[dict[str, Any]]) -> None:
+    def save_all(
+        self,
+        workflows: list[dict[str, Any]],
+        *,
+        tenant: str,
+        created_by: str,
+    ) -> None:
         records = [
             _platform_template_to_postgres_record(
                 workflow,
-                tenant_id=self._tenant_id,
-                created_by=self._created_by,
+                tenant_id=tenant,
+                created_by=created_by,
             )
             for workflow in workflows
             if workflow.get("workflow_type")
         ]
         self._postgres_writer.replace_templates(
-            tenant_id=self._tenant_id,
+            tenant_id=tenant,
             records=records,
         )
 

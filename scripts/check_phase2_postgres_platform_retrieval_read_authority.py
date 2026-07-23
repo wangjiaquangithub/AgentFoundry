@@ -42,7 +42,7 @@ def _service(
     return PlatformStatusService(
         list_approval_records=lambda **_: [],
         load_workflow_runs=lambda **_: [],
-        load_workflow_templates=lambda: [],
+        load_workflow_templates=lambda **_kwargs: [],
         load_agents=lambda: [],
         load_memories=lambda **_: [],
         runtime_context=lambda _: {

@@ -35,16 +35,20 @@ def _service(
     production_mode: bool,
     audit_event_reader: Any | None = None,
 ) -> PlatformStatusService:
+    def query_jsonl_audit_events(**kwargs: Any) -> list[dict[str, str]]:
+        source = "jsonl_query" if "user_id" in kwargs else "jsonl_recent"
+        return [{"source": source}]
+
     audit_logger = SimpleNamespace(
         path=ROOT / "backend" / "data" / "audit.jsonl",
         enabled=True,
-        query=lambda **_: [{"source": "jsonl_query"}],
+        query=query_jsonl_audit_events,
         recent=lambda **_: [{"source": "jsonl_recent"}],
     )
     return PlatformStatusService(
         list_approval_records=lambda **_: [],
         load_workflow_runs=lambda **_: [],
-        load_workflow_templates=lambda: [],
+        load_workflow_templates=lambda **_kwargs: [],
         load_agents=lambda: [],
         load_memories=lambda **_: [],
         runtime_context=lambda _: {

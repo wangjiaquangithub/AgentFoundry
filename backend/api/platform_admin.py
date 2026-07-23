@@ -134,7 +134,10 @@ def create_platform_admin_router(
         except PlatformAgentServiceError as exc:
             _raise_service_error(exc)
         try:
-            workflow_templates = deps.workflow_template_service().list_templates()
+            workflow_templates = deps.workflow_template_service().list_templates(
+                tenant=tenant,
+                actor=actor_user_id,
+            )
         except PlatformWorkflowTemplateServiceError as exc:
             _raise_service_error(exc)
 
@@ -540,6 +543,7 @@ def create_platform_admin_router(
                     incoming.get("workflow_templates"),
                     mode=mode,
                     actor=actor,
+                    tenant=tenant_id,
                 )
             except PlatformWorkflowTemplateServiceError as exc:
                 _raise_service_error(exc)
