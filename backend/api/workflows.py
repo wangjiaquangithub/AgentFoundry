@@ -50,7 +50,7 @@ class WorkflowGovernanceRouteDependencies:
     agent_service: Callable[[], PlatformAgentService]
     tool_policy_service: Callable[[], PlatformToolPolicyService]
     identity_metadata: Callable[[str, str], list[dict[str, Any]]]
-    published_agent_tool_scope_for_user: Callable[[str, str], tuple[Any, set[str]]]
+    published_agent_tool_scope_for_user: Callable[..., tuple[Any, set[str]]]
     require_platform_approval: Callable[..., str]
     run_authorized_enterprise_tool: Callable[..., dict[str, Any]]
     tenant_hint_from_user_id: Callable[[str], str | None]
@@ -543,6 +543,7 @@ def create_workflow_governance_router(
             _, configured_tools = deps.published_agent_tool_scope_for_user(
                 requested_agent_id,
                 user_id,
+                tenant=request_tenant,
             )
 
         try:

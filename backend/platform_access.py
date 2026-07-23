@@ -49,11 +49,14 @@ class PlatformAccessHelpers:
         self,
         agent_id: str,
         user_id: str,
+        *,
+        tenant: str | None = None,
     ) -> tuple[dict[str, Any], set[str]]:
         try:
             return self._agent_service().published_tool_scope_access_context(
                 agent_id,
                 user_id=user_id,
+                tenant=tenant,
             )
         except PlatformMemberServiceError as exc:
             self._raise_member_error(exc)

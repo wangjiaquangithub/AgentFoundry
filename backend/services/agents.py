@@ -282,6 +282,7 @@ class PlatformAgentService:
             user_id=user_id,
             member=member,
             role=role,
+            tenant=tenant,
         )
         return agent, configured_tools
 
@@ -290,13 +291,15 @@ class PlatformAgentService:
         agent_id: str,
         *,
         user_id: str,
+        tenant: str | None = None,
     ) -> tuple[dict[str, Any], set[str]]:
+        request_tenant = (tenant or "").strip() or self._tenant_for_user(user_id)
         return self.published_tool_scope_for_user(
             agent_id,
             user_id=user_id,
             member=self._member_for_user(user_id),
             role=self._role_for_user(user_id),
-            tenant=self._tenant_for_user(user_id),
+            tenant=request_tenant,
         )
 
     def template_metadata(self) -> list[dict[str, Any]]:
@@ -332,9 +335,10 @@ class PlatformAgentService:
         user_id: str,
         member: dict[str, Any] | None,
         role: str,
+        tenant: str | None = None,
     ) -> None:
         agent_tenant = str(agent.get("tenant") or "").strip()
-        runtime_tenant = self._tenant_for_user(user_id)
+        runtime_tenant = (tenant or "").strip() or self._tenant_for_user(user_id)
         if agent_tenant and runtime_tenant != agent_tenant:
             raise PlatformAgentServiceError(
                 403,
