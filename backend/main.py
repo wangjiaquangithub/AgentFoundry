@@ -131,11 +131,13 @@ from repositories.workflows import (
 )
 from runtime import (
     AGENTSCOPE_PLATFORM_ADAPTER,
+    AGENTSCOPE_NATIVE_EXECUTION_MODE,
     build_runtime_invocation_result_payload,
     build_runtime_invocation_request_payload,
     describe_runtime_adapter,
     describe_runtime_provider_health,
     invoke_runtime_adapter_from_payload,
+    resolve_runtime_execution_selection,
 )
 from agentscope_runtime_provider import AgentScopeNativeInvocationClient
 from services.approvals import (
@@ -364,19 +366,11 @@ agentscope_native_client = AgentScopeNativeInvocationClient(
 )
 
 
-def _uses_agentscope_native_runtime(
-    agent_metadata: dict[str, Any] | None,
-) -> bool:
-    return (
-        isinstance(agent_metadata, dict)
-        and agent_metadata.get("template_id") == "weather_forecast_assistant"
-    )
-
-
 def _describe_runtime_adapter_for_agent(
     agent_metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    if not _uses_agentscope_native_runtime(agent_metadata):
+    selection = resolve_runtime_execution_selection(agent_metadata)
+    if selection.execution_mode != AGENTSCOPE_NATIVE_EXECUTION_MODE:
         return describe_runtime_adapter(agent_metadata)
     return replace(
         AGENTSCOPE_PLATFORM_ADAPTER,
@@ -389,7 +383,8 @@ async def _invoke_agentscope_native_runtime_from_payload(
     *,
     agent_metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    if not _uses_agentscope_native_runtime(agent_metadata):
+    selection = resolve_runtime_execution_selection(agent_metadata)
+    if selection.execution_mode != AGENTSCOPE_NATIVE_EXECUTION_MODE:
         return await invoke_runtime_adapter_from_payload(
             payload,
             agent_metadata=agent_metadata,

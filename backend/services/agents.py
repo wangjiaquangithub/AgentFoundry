@@ -608,12 +608,18 @@ class PlatformAgentService:
         access = self.agent_access(agent)
         return {
             "agent_id": agent.get("id"),
+            "agent_version_id": (
+                agent.get("agent_version_id") or agent.get("current_version_id")
+            ),
             "agent_name": agent.get("name"),
             "template_id": agent.get("template_id"),
             "configured_tenant": agent.get("tenant"),
             "configured_tools": list(agent.get("tools") or []),
             "knowledge_base_ids": list(agent.get("knowledge_base_ids") or []),
             "model_config_id": agent.get("model_config_id"),
+            "execution_mode": agent.get("execution_mode"),
+            "runtime_provider": agent.get("runtime_provider"),
+            "runtime_binding": agent.get("runtime_binding"),
             "memory_enabled": bool(agent.get("memory_enabled", False)),
             "workflow_enabled": bool(agent.get("workflow_enabled", False)),
             "allowed_user_ids": access["allowed_user_ids"],
@@ -696,6 +702,10 @@ class PlatformAgentService:
             template["description"],
         )
         model_config_id = (payload.model_config_id or "").strip() or None
+        execution_mode, runtime_provider = self.validate_runtime_execution_config(
+            execution_mode=payload.execution_mode,
+            runtime_provider=payload.runtime_provider,
+        )
         knowledge_base_ids = self.normalize_resource_ids(payload.knowledge_base_ids)
         allowed_user_ids = self.normalize_access_values(payload.allowed_user_ids)
         allowed_roles = self.normalize_access_values(payload.allowed_roles)
@@ -713,6 +723,8 @@ class PlatformAgentService:
             "tools": list(selected_tools),
             "knowledge_base_ids": knowledge_base_ids,
             "model_config_id": model_config_id,
+            "execution_mode": execution_mode,
+            "runtime_provider": runtime_provider,
             "memory_enabled": payload.memory_enabled,
             "workflow_enabled": payload.workflow_enabled,
             "allowed_user_ids": allowed_user_ids,
@@ -800,6 +812,21 @@ class PlatformAgentService:
             )
         if "model_config_id" in changes:
             agent["model_config_id"] = (payload.model_config_id or "").strip() or None
+        if "execution_mode" in changes or "runtime_provider" in changes:
+            execution_mode, runtime_provider = self.validate_runtime_execution_config(
+                execution_mode=(
+                    payload.execution_mode
+                    if "execution_mode" in changes
+                    else agent.get("execution_mode", "foundry_compatibility")
+                ),
+                runtime_provider=(
+                    payload.runtime_provider
+                    if "runtime_provider" in changes
+                    else agent.get("runtime_provider", "local-dev-runtime")
+                ),
+            )
+            agent["execution_mode"] = execution_mode
+            agent["runtime_provider"] = runtime_provider
         if "memory_enabled" in changes:
             agent["memory_enabled"] = bool(payload.memory_enabled)
         if "workflow_enabled" in changes:
@@ -953,6 +980,31 @@ class PlatformAgentService:
                     "unsupported_tools": unsupported_tools,
                 },
             )
+
+    @staticmethod
+    def validate_runtime_execution_config(
+        *,
+        execution_mode: Any,
+        runtime_provider: Any,
+    ) -> tuple[str, str]:
+        mode = str(execution_mode or "").strip()
+        provider = str(runtime_provider or "").strip()
+        supported_modes = {"foundry_compatibility", "agentscope_native"}
+        if mode not in supported_modes:
+            raise PlatformAgentServiceError(
+                400,
+                {
+                    "message": "Unsupported Agent execution mode.",
+                    "execution_mode": mode,
+                    "supported_execution_modes": sorted(supported_modes),
+                },
+            )
+        if not provider:
+            raise PlatformAgentServiceError(
+                400,
+                "Agent runtime_provider is required.",
+            )
+        return mode, provider
 
     def normalize_tenant(self, value: Any, user_id: str) -> str:
         tenant = str(value or "").strip() or self._tenant_for_user(user_id)

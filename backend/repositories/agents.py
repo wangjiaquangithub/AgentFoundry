@@ -176,6 +176,8 @@ def _agent_catalog_item(
 ) -> dict[str, Any]:
     return {
         "id": record.id,
+        "current_version_id": record.current_version_id,
+        "agent_version_id": version.id if version is not None else None,
         "template_id": record.template_id,
         "name": record.name,
         "description": record.description,
@@ -188,6 +190,10 @@ def _agent_catalog_item(
         "runtime_provider": (
             version.runtime_provider if version is not None else "local-dev-runtime"
         ),
+        "execution_mode": "foundry_compatibility",
+        # Added to the immutable version schema in the publication migration.
+        # Legacy PostgreSQL rows intentionally have no implicit native binding.
+        "runtime_binding": None,
         "memory_enabled": record.memory_enabled,
         "workflow_enabled": record.workflow_enabled,
         "allowed_user_ids": list(record.allowed_user_ids),

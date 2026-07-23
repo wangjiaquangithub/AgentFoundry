@@ -65,6 +65,8 @@ class EnterpriseAgentPublishRequest(BaseModel):
     tools: list[str] | None = None
     knowledge_base_ids: list[str] | None = None
     model_config_id: str | None = None
+    execution_mode: str = "foundry_compatibility"
+    runtime_provider: str = "local-dev-runtime"
     memory_enabled: bool = False
     workflow_enabled: bool = False
     allowed_user_ids: list[str] | None = None
@@ -78,6 +80,8 @@ class EnterpriseAgentUpdateRequest(BaseModel):
     tools: list[str] | None = None
     knowledge_base_ids: list[str] | None = None
     model_config_id: str | None = None
+    execution_mode: str | None = None
+    runtime_provider: str | None = None
     memory_enabled: bool | None = None
     workflow_enabled: bool | None = None
     allowed_user_ids: list[str] | None = None

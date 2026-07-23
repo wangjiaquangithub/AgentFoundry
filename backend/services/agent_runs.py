@@ -11,6 +11,11 @@ from backend.persistence import (
     ToolCallRecord,
 )
 from repositories.agent_runs import AgentRunRepositoryProtocol
+from runtime import (
+    AGENTSCOPE_NATIVE_EXECUTION_MODE,
+    FOUNDRY_COMPATIBILITY_EXECUTION_MODE,
+    resolve_runtime_execution_selection,
+)
 from services.approvals import PlatformApprovalServiceError
 
 
@@ -175,9 +180,13 @@ class PlatformAgentRunService:
             load_published_agent=load_published_agent,
         )
         agent_metadata = build_run_metadata(agent)
+        runtime_execution = resolve_runtime_execution_selection(
+            agent_metadata,
+        ).to_dict()
         return {
             "agent": agent,
             "agent_metadata": agent_metadata,
+            "runtime_execution": runtime_execution,
             "runtime_adapter": self.runtime_adapter_payload_from_metadata(
                 describe_runtime_adapter=describe_runtime_adapter,
                 agent_metadata=agent_metadata,
@@ -189,6 +198,7 @@ class PlatformAgentRunService:
         return {
             "agent": agent_context["agent"],
             "agent_metadata": agent_context["agent_metadata"],
+            "runtime_execution": agent_context["runtime_execution"],
             "runtime_adapter": agent_context["runtime_adapter"],
         }
 
@@ -327,6 +337,8 @@ class PlatformAgentRunService:
         user_id: str,
         question: str,
         runtime_adapter: dict[str, Any],
+        runtime_execution: dict[str, Any],
+        agent_version_id: str | None,
         runtime_invocation_request: dict[str, Any] | None = None,
         runtime_invocation_id: str | None = None,
     ) -> dict[str, Any]:
@@ -338,6 +350,8 @@ class PlatformAgentRunService:
             "user_id": runtime_context["user_id"],
             "question": question,
             "runtime_adapter": runtime_adapter,
+            "runtime_execution": dict(runtime_execution),
+            "agent_version_id": agent_version_id,
         }
         if runtime_invocation_request is not None:
             context["runtime_invocation_request"] = runtime_invocation_request
@@ -353,6 +367,7 @@ class PlatformAgentRunService:
         agent_metadata: dict[str, Any],
         runtime: dict[str, Any],
         runtime_adapter: dict[str, Any],
+        runtime_execution: dict[str, Any],
         build_runtime_invocation_request_payload: Callable[..., dict[str, Any]],
         default_tool_names: set[str],
         safe_path_part: Callable[[str], str],
@@ -384,6 +399,8 @@ class PlatformAgentRunService:
             metadata={
                 "source": "enterprise_agent_run",
                 "runtime_invocation_id": runtime_invocation_id,
+                "agent_version_id": agent_metadata.get("agent_version_id"),
+                **runtime_execution,
             },
         )
         response_record_context = self.build_response_record_context(
@@ -395,12 +412,15 @@ class PlatformAgentRunService:
             user_id=run_request["user_id"],
             question=question,
             runtime_adapter=runtime_adapter,
+            runtime_execution=runtime_execution,
+            agent_version_id=agent_metadata.get("agent_version_id"),
             runtime_invocation_request=runtime_invocation_request,
             runtime_invocation_id=runtime_invocation_id,
         )
         return {
             "agent_metadata": agent_metadata,
             "runtime_adapter": runtime_adapter,
+            "runtime_execution": dict(runtime_execution),
             "runtime_identity": runtime_identity,
             "tenant": tenant,
             "connector_label": runtime_identity["connector"],
@@ -433,6 +453,7 @@ class PlatformAgentRunService:
             agent_metadata=agent_context_view["agent_metadata"],
             runtime=runtime,
             runtime_adapter=agent_context_view["runtime_adapter"],
+            runtime_execution=agent_context_view["runtime_execution"],
             build_runtime_invocation_request_payload=(
                 build_runtime_invocation_request_payload
             ),
@@ -459,6 +480,7 @@ class PlatformAgentRunService:
         return {
             "agent_metadata": execution_context["agent_metadata"],
             "runtime_adapter": execution_context["runtime_adapter"],
+            "runtime_execution": execution_context["runtime_execution"],
             "tenant": execution_context["tenant"],
             "connector_label": execution_context["connector_label"],
             "connector_source": execution_context["connector_source"],
@@ -468,6 +490,63 @@ class PlatformAgentRunService:
             "runner_session_id": execution_context["runner_session_id"],
             "run_identity": execution_context["run_identity"],
             "response_record_context": execution_context["response_record_context"],
+        }
+
+    @staticmethod
+    def extract_completed_native_runtime_result(
+        *,
+        execution_context: dict[str, Any],
+        runtime_boundary_result: dict[str, Any],
+    ) -> dict[str, Any]:
+        selection = execution_context.get("runtime_execution")
+        if not isinstance(selection, dict):
+            raise PlatformAgentRunServiceError(
+                500,
+                "AgentScope-native execution selection is missing.",
+            )
+        if selection.get("execution_mode") != AGENTSCOPE_NATIVE_EXECUTION_MODE:
+            raise PlatformAgentRunServiceError(
+                500,
+                "Native runtime finalization requires agentscope_native mode.",
+            )
+        if runtime_boundary_result.get("status") != "completed":
+            raise PlatformAgentRunServiceError(
+                502,
+                "AgentScope runtime did not complete successfully.",
+            )
+        answer = runtime_boundary_result.get("answer")
+        if not isinstance(answer, str) or not answer.strip():
+            raise PlatformAgentRunServiceError(
+                502,
+                "AgentScope runtime completed without a business answer.",
+            )
+        evidence = runtime_boundary_result.get("evidence")
+        if not isinstance(evidence, dict):
+            raise PlatformAgentRunServiceError(
+                502,
+                "AgentScope runtime result is missing execution evidence.",
+            )
+        for field in ("scope_provider_id", "scope_runtime_id"):
+            if evidence.get(field) != selection.get(field):
+                raise PlatformAgentRunServiceError(
+                    502,
+                    f"AgentScope runtime evidence does not match bound {field}.",
+                )
+        raw = runtime_boundary_result.get("raw")
+        provider_response = raw.get("provider_response") if isinstance(raw, dict) else None
+        tool_calls = (
+            provider_response.get("tool_calls")
+            if isinstance(provider_response, dict)
+            else []
+        )
+        if not isinstance(tool_calls, list):
+            raise PlatformAgentRunServiceError(
+                502,
+                "AgentScope runtime tool-call evidence is malformed.",
+            )
+        return {
+            "answer": answer.strip(),
+            "tool_calls": [call for call in tool_calls if isinstance(call, dict)],
         }
 
     def resolve_runner_context(
@@ -986,10 +1065,16 @@ class PlatformAgentRunService:
         build_runtime_invocation_result_payload: Callable[..., dict[str, Any]],
         execution_context: dict[str, Any],
         runtime_boundary_result: dict[str, Any],
-        answer: str,
-        tool_calls: list[dict[str, Any]],
+        answer: str | None = None,
+        tool_calls: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """Persist an AgentScope result without entering local routing."""
+        validated = self.extract_completed_native_runtime_result(
+            execution_context=execution_context,
+            runtime_boundary_result=runtime_boundary_result,
+        )
+        answer = validated["answer"]
+        tool_calls = validated["tool_calls"]
         if tool_calls:
             return self.finalize_routed_response_from_context(
                 build_runtime_invocation_result_payload=(
@@ -1012,11 +1097,6 @@ class PlatformAgentRunService:
                 runtime_boundary_result=runtime_boundary_result,
             )
 
-        status = str(runtime_boundary_result.get("status") or "failed")
-        error = str(
-            runtime_boundary_result.get("error")
-            or "AgentScope did not complete a governed tool call."
-        )
         return self.finalize_unrouted_response_from_context(
             build_runtime_invocation_result_payload=(
                 build_runtime_invocation_result_payload
@@ -1025,7 +1105,7 @@ class PlatformAgentRunService:
             answer=answer,
             routing_mode="provider-native",
             routing_source="agentscope",
-            routing_error=error if status == "failed" else None,
+            routing_error=None,
             knowledge_hits=[],
             memory_hits=[],
             knowledge_payload={},
@@ -1034,11 +1114,9 @@ class PlatformAgentRunService:
             decision={
                 "routed": False,
                 "routing_reason": (
-                    "AgentScope provider-native execution failed."
-                    if status == "failed"
-                    else "AgentScope completed without selecting a governed tool."
+                    "AgentScope completed without selecting a governed tool."
                 ),
-                "error": error,
+                "error": None,
             },
             runtime_boundary_result=runtime_boundary_result,
         )
@@ -2320,6 +2398,8 @@ class PlatformAgentRunService:
         answer: str,
         created_at: str,
         runtime_adapter: dict[str, Any],
+        runtime_execution: dict[str, Any],
+        agent_version_id: str | None,
         evidence: dict[str, Any],
         response: dict[str, Any],
         runtime_invocation_id: str | None = None,
@@ -2336,6 +2416,8 @@ class PlatformAgentRunService:
             "answer": answer,
             "created_at": created_at,
             "runtime_adapter": runtime_adapter,
+            "agent_version_id": agent_version_id,
+            **runtime_execution,
             "evidence": evidence,
             "response": response,
         }
@@ -2358,6 +2440,8 @@ class PlatformAgentRunService:
         answer: str,
         created_at: str,
         runtime_adapter: dict[str, Any],
+        runtime_execution: dict[str, Any],
+        agent_version_id: str | None,
         evidence: dict[str, Any],
         response: dict[str, Any],
         runtime_invocation_id: str | None = None,
@@ -2374,6 +2458,8 @@ class PlatformAgentRunService:
             answer=answer,
             created_at=created_at,
             runtime_adapter=runtime_adapter,
+            runtime_execution=runtime_execution,
+            agent_version_id=agent_version_id,
             evidence=evidence,
             response=response,
             runtime_invocation_id=runtime_invocation_id,
@@ -2393,6 +2479,8 @@ class PlatformAgentRunService:
         question: str,
         answer: str,
         runtime_adapter: dict[str, Any],
+        runtime_execution: dict[str, Any],
+        agent_version_id: str | None,
         response: dict[str, Any],
         runtime_invocation_id: str | None = None,
         runtime_invocation_result: dict[str, Any] | None = None,
@@ -2408,6 +2496,8 @@ class PlatformAgentRunService:
             answer=answer,
             created_at=str(response_trace["created_at"]),
             runtime_adapter=runtime_adapter,
+            runtime_execution=runtime_execution,
+            agent_version_id=agent_version_id,
             evidence=dict(response_trace["evidence"]),
             response=response,
             runtime_invocation_id=runtime_invocation_id,
@@ -2433,6 +2523,8 @@ class PlatformAgentRunService:
             question=str(context["question"]),
             answer=answer,
             runtime_adapter=dict(context["runtime_adapter"]),
+            runtime_execution=dict(context["runtime_execution"]),
+            agent_version_id=context.get("agent_version_id"),
             response=response,
             runtime_invocation_id=context.get("runtime_invocation_id"),
             runtime_invocation_result=runtime_invocation_result,

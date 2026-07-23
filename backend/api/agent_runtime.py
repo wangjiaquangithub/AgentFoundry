@@ -167,32 +167,21 @@ def create_agent_runtime_router(
                 execution_context=execution_context,
             )
         )
-        runtime_raw = runtime_boundary_result.get("raw")
-        runtime_bridge = (
-            runtime_raw.get("runtime_bridge")
-            if isinstance(runtime_raw, dict)
-            else None
-        )
-        if (
-            isinstance(runtime_bridge, dict)
-            and runtime_bridge.get("type") == "agentscope_native_in_process"
-        ):
-            provider_response = runtime_raw.get("provider_response")
-            tool_calls = (
-                provider_response.get("tool_calls")
-                if isinstance(provider_response, dict)
-                else []
-            )
-            if not isinstance(tool_calls, list):
-                tool_calls = []
+        execution_mode = execution_context_view["runtime_execution"][
+            "execution_mode"
+        ]
+        if execution_mode == "agentscope_native":
             return agent_run_service.finalize_native_runtime_run_from_context(
                 build_runtime_invocation_result_payload=(
                     deps.build_runtime_invocation_result_payload
                 ),
                 execution_context=execution_context,
                 runtime_boundary_result=runtime_boundary_result,
-                answer=str(runtime_boundary_result.get("answer") or ""),
-                tool_calls=[call for call in tool_calls if isinstance(call, dict)],
+            )
+        if execution_mode != "foundry_compatibility":
+            raise PlatformAgentRunServiceError(
+                500,
+                "Unsupported runtime execution mode.",
             )
         try:
             memory_context = (

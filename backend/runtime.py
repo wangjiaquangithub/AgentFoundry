@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Runtime adapter boundary for AgentFoundry platform runs.
+"""Governance mapping boundary between AgentFoundry and AgentScope runtime.
 
-The platform should depend on this module instead of directly depending on a
-specific Agent runtime implementation. AgentScope is the first provider behind
-this boundary, not the platform itself.
+AgentFoundry owns enterprise governance and the durable business projection of
+runtime evidence. AgentScope owns Agent execution. The adapter maps published
+versions, trusted identity, authorization and events between those boundaries;
+it is not an alternative reasoning, tool-routing, memory or RAG runtime.
 """
 from __future__ import annotations
 
@@ -49,6 +50,141 @@ RUNTIME_INVOCATION_RESULT_STATUSES = frozenset(
     {"pending", "running", "completed", "failed", "error", "cancelled"},
 )
 RUNTIME_INVOCATION_FAILURE_STATUSES = frozenset({"failed", "error", "cancelled"})
+AGENTSCOPE_NATIVE_EXECUTION_MODE = "agentscope_native"
+FOUNDRY_COMPATIBILITY_EXECUTION_MODE = "foundry_compatibility"
+RUNTIME_EXECUTION_MODES = frozenset(
+    {AGENTSCOPE_NATIVE_EXECUTION_MODE, FOUNDRY_COMPATIBILITY_EXECUTION_MODE},
+)
+
+
+def _optional_clean_string(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    cleaned = value.strip()
+    return cleaned or None
+
+
+@dataclass(frozen=True)
+class RuntimeExecutionSelection:
+    """Immutable execution decision resolved from a published version binding."""
+
+    execution_mode: str
+    runtime_provider: str
+    scope_provider_id: str | None = None
+    scope_runtime_id: str | None = None
+    fallback_reason: str | None = None
+
+    def __post_init__(self) -> None:
+        mode = _optional_clean_string(self.execution_mode)
+        runtime_provider = _optional_clean_string(self.runtime_provider)
+        provider_id = _optional_clean_string(self.scope_provider_id)
+        runtime_id = _optional_clean_string(self.scope_runtime_id)
+        fallback_reason = _optional_clean_string(self.fallback_reason)
+        if mode not in RUNTIME_EXECUTION_MODES:
+            raise ValueError(f"Unsupported runtime execution mode: {mode!r}.")
+        if not runtime_provider:
+            raise ValueError("Runtime execution requires an explicit runtime provider.")
+        if mode == AGENTSCOPE_NATIVE_EXECUTION_MODE:
+            if fallback_reason:
+                raise ValueError("agentscope_native cannot record a fallback reason.")
+        elif not fallback_reason:
+            raise ValueError(
+                "foundry_compatibility requires an explicit fallback reason.",
+            )
+        object.__setattr__(self, "execution_mode", mode)
+        object.__setattr__(self, "runtime_provider", runtime_provider)
+        object.__setattr__(self, "scope_provider_id", provider_id)
+        object.__setattr__(self, "scope_runtime_id", runtime_id)
+        object.__setattr__(self, "fallback_reason", fallback_reason)
+
+    def to_dict(self) -> dict[str, str | None]:
+        return {
+            "execution_mode": self.execution_mode,
+            "runtime_provider": self.runtime_provider,
+            "scope_provider_id": self.scope_provider_id,
+            "scope_runtime_id": self.scope_runtime_id,
+            "fallback_reason": self.fallback_reason,
+        }
+
+
+def resolve_runtime_execution_selection(
+    agent_metadata: Mapping[str, Any] | None,
+) -> RuntimeExecutionSelection:
+    """Resolve runtime choice only from an explicit published-version binding."""
+    metadata = agent_metadata if isinstance(agent_metadata, Mapping) else {}
+    execution_mode = _optional_clean_string(metadata.get("execution_mode"))
+    runtime_provider = _optional_clean_string(metadata.get("runtime_provider"))
+    binding = metadata.get("runtime_binding")
+    binding = binding if isinstance(binding, Mapping) else {}
+    if execution_mode:
+        return RuntimeExecutionSelection(
+            execution_mode=execution_mode,
+            runtime_provider=runtime_provider or "local-dev-runtime",
+            scope_provider_id=_optional_clean_string(
+                binding.get("scope_provider_id"),
+            ),
+            scope_runtime_id=_optional_clean_string(
+                binding.get("scope_runtime_id"),
+            ),
+            fallback_reason=(
+                "Agent is explicitly configured for the legacy Foundry execution path."
+                if execution_mode == FOUNDRY_COMPATIBILITY_EXECUTION_MODE
+                else None
+            ),
+        )
+
+    if binding:
+        mode = _optional_clean_string(binding.get("execution_mode"))
+        if mode == AGENTSCOPE_NATIVE_EXECUTION_MODE:
+            return RuntimeExecutionSelection(
+                execution_mode=mode,
+                runtime_provider=(
+                    runtime_provider
+                    or _optional_clean_string(binding.get("runtime_provider"))
+                    or "agentscope"
+                ),
+                scope_provider_id=_optional_clean_string(
+                    binding.get("scope_provider_id"),
+                ),
+                scope_runtime_id=_optional_clean_string(
+                    binding.get("scope_runtime_id"),
+                ),
+            )
+        if mode == FOUNDRY_COMPATIBILITY_EXECUTION_MODE:
+            return RuntimeExecutionSelection(
+                execution_mode=mode,
+                runtime_provider=(
+                    runtime_provider
+                    or _optional_clean_string(binding.get("runtime_provider"))
+                    or "local-dev-runtime"
+                ),
+                scope_provider_id=_optional_clean_string(
+                    binding.get("scope_provider_id"),
+                ),
+                scope_runtime_id=_optional_clean_string(
+                    binding.get("scope_runtime_id"),
+                ),
+                fallback_reason=_optional_clean_string(
+                    binding.get("fallback_reason"),
+                )
+                or "Legacy Agent explicitly uses the Foundry compatibility path.",
+            )
+        return RuntimeExecutionSelection(
+            execution_mode=FOUNDRY_COMPATIBILITY_EXECUTION_MODE,
+            runtime_provider=runtime_provider or "local-dev-runtime",
+            fallback_reason=(
+                "Published Agent version has an unknown runtime binding and "
+                "requires migration before AgentScope-native execution."
+            ),
+        )
+    return RuntimeExecutionSelection(
+        execution_mode=FOUNDRY_COMPATIBILITY_EXECUTION_MODE,
+        runtime_provider=runtime_provider or "local-dev-runtime",
+        fallback_reason=(
+            "Published Agent version has no immutable AgentScope runtime binding; "
+            "the explicit migration compatibility provider is required."
+        ),
+    )
 
 
 @dataclass(frozen=True)
@@ -248,7 +384,7 @@ class RuntimeProviderInvocationClient(Protocol):
 
 @dataclass(frozen=True)
 class AgentScopeRuntimeAdapter:
-    """AgentScope provider metadata and future invocation boundary."""
+    """Map Foundry governance context to the AgentScope execution runtime."""
 
     id: str
     name: str
@@ -305,9 +441,9 @@ class AgentScopeRuntimeAdapter:
         else:
             status = "degraded"
             message = (
-                "Runtime adapter boundary is configured and the AgentFoundry "
-                "local service completion path is available; provider-native "
-                "AgentScope invocation remains pending."
+                "AgentScope invocation is not ready. Native runs must fail "
+                "explicitly; only Agents bound to the named migration "
+                "compatibility provider may use the legacy Foundry path."
             )
         return RuntimeProviderHealth(
             provider_id=self.id,
@@ -330,13 +466,7 @@ class AgentScopeRuntimeAdapter:
         self,
         request: RuntimeInvocationRequest,
     ) -> RuntimeInvocationResult:
-        """Return a provider-neutral pending failure until invocation is wired.
-
-        Current platform run behavior still lives in main.py. This method is the
-        production boundary that will receive that logic during runtime
-        extraction, so callers should receive an auditable platform result
-        instead of a provider-specific exception.
-        """
+        """Invoke AgentScope or return an explicit provider-unavailable failure."""
         runtime_adapter = self.describe(
             _runtime_agent_metadata_from_request(request),
         )
@@ -360,39 +490,33 @@ AGENTSCOPE_PLATFORM_ADAPTER = AgentScopeRuntimeAdapter(
     provider="agentscope",
     mode="local-service",
     description=(
-        "AgentFoundry owns tenant, governance, memory, knowledge, and audit APIs; "
-        "AgentScope is treated as the replaceable agent runtime boundary."
+        "AgentFoundry maps enterprise versions, identity, authorization and audit "
+        "projections to AgentScope, the execution source of truth for Agents."
     ),
     capabilities=(
         RuntimeCapability(
-            id="tenant_context",
-            name="Tenant Context",
-            description="Carries tenant, user, session, and agent identity into runtime calls.",
+            id="foundry_governance",
+            name="Foundry Governance Mapping",
+            description=(
+                "Maps immutable versions, deployments, trusted identity and "
+                "enterprise authorization into runtime calls."
+            ),
         ),
         RuntimeCapability(
-            id="tool_routing",
-            name="Tool Routing",
-            description="Supports governed tool selection and execution evidence.",
+            id="agentscope_runtime",
+            name="AgentScope Runtime",
+            description=(
+                "AgentScope owns inference, Agent state, tool execution, runtime "
+                "memory, knowledge retrieval and provider events."
+            ),
         ),
         RuntimeCapability(
-            id="approval_gate",
-            name="Approval Gate",
-            description="Allows platform policy to pause sensitive actions for human approval.",
-        ),
-        RuntimeCapability(
-            id="knowledge_retrieval",
-            name="Knowledge Retrieval",
-            description="Accepts scoped knowledge base context and retrieval evidence.",
-        ),
-        RuntimeCapability(
-            id="long_term_memory",
-            name="Long-Term Memory",
-            description="Accepts platform-controlled memory scope and persistence decisions.",
-        ),
-        RuntimeCapability(
-            id="run_evidence",
-            name="Run Evidence",
-            description="Returns traceable runtime metadata for audit and operations.",
+            id="migration_compatibility",
+            name="Migration Compatibility",
+            description=(
+                "Legacy Foundry execution is isolated, explicitly selected and "
+                "recorded with a mandatory fallback reason until retired."
+            ),
         ),
     ),
 )
@@ -406,9 +530,8 @@ def _build_agentscope_pending_invocation_result(
 ) -> RuntimeInvocationResult:
     """Build the default pending result while provider invocation is unwired."""
     error = (
-        "AgentScope provider invocation is pending adapter wiring; "
-        "current platform runs still execute through the AgentFoundry local "
-        "service path."
+        "AgentScope provider invocation is not wired. An agentscope_native run "
+        "cannot fall back to the Foundry compatibility execution path."
     )
     raw = {
         "runtime_bridge": {
