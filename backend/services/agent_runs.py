@@ -1924,6 +1924,7 @@ class PlatformAgentRunService:
         execution_context_view = self.execution_context_view(execution_context)
         response_record_context = execution_context_view["response_record_context"]
         tool_response = run_authorized_enterprise_tool(
+            tenant=execution_context_view["tenant"],
             user_id=response_record_context["user_id"],
             tool_name=route_context_view["tool_name"],
             inputs=route_context_view["inputs"],
