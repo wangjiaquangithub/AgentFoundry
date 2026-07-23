@@ -533,6 +533,7 @@ def create_platform_admin_router(
                     incoming.get("agents"),
                     actor=actor,
                     mode=mode,
+                    tenant=tenant_id,
                 )
             except PlatformAgentServiceError as exc:
                 _raise_service_error(exc)

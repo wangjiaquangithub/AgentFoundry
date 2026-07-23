@@ -143,10 +143,10 @@ class PlatformAgentService:
         value: Any,
         *,
         mode: str,
+        tenant: str,
         actor: str | None = None,
     ) -> None:
         user_id = self.resolve_request_user_id(actor)
-        tenant = self._tenant_for_user(user_id)
         imported_agents = self.normalize_import_agents(value, tenant=tenant)
         agents = (
             imported_agents

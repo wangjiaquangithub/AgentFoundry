@@ -793,7 +793,7 @@ def assert_platform_config_import_uses_request_tenant() -> None:
         raise AssertionError(
             "Platform config import must resolve the canonical request tenant.",
         )
-    if import_route.count("tenant=tenant_id") != 5:
+    if import_route.count("tenant=tenant_id") != 6:
         raise AssertionError(
             "Platform config import must scope tenant-owned writes and response export.",
         )
