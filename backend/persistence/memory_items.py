@@ -173,6 +173,7 @@ class SQLiteMemoryItemReadRepository:
         tenant_id: str,
         memory_item_id: str,
     ) -> MemoryItemRecord | None:
+        as_of = datetime.now(timezone.utc)
         with self._database.connect() as connection:
             row = connection.execute(
                 """
@@ -180,12 +181,18 @@ class SQLiteMemoryItemReadRepository:
                   source_run_id, metadata, expires_at, created_at
                 FROM memory_items
                 WHERE tenant_id = ? AND id = ?
+                  AND (expires_at IS NULL OR expires_at > ?)
                 """,
-                (tenant_id, memory_item_id),
+                (tenant_id, memory_item_id, as_of.isoformat()),
             ).fetchone()
         if row is None:
             return None
-        return _memory_item_from_row(dict(row))
+        record = _memory_item_from_row(dict(row))
+        _validate_memory_item_not_expired(
+            record,
+            as_of=as_of,
+        )
+        return record
 
     def _clamp_limit(self, limit: int) -> int:
         return min(max(limit, 1), 100)
@@ -253,6 +260,7 @@ class PostgresMemoryItemReadRepository:
         tenant_id: str,
         memory_item_id: str,
     ) -> MemoryItemRecord | None:
+        as_of = datetime.now(timezone.utc)
         with self._database.connect() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
@@ -261,8 +269,9 @@ class PostgresMemoryItemReadRepository:
                       content, source_run_id, metadata, expires_at, created_at
                     FROM memory_items
                     WHERE tenant_id = %s AND id = %s
+                      AND (expires_at IS NULL OR expires_at > %s)
                     """,
-                    (tenant_id, memory_item_id),
+                    (tenant_id, memory_item_id, as_of.isoformat()),
                 )
                 row = cursor.fetchone()
         if row is None:
@@ -272,6 +281,10 @@ class PostgresMemoryItemReadRepository:
             record,
             tenant_id=tenant_id,
             memory_item_id=memory_item_id,
+        )
+        _validate_memory_item_not_expired(
+            record,
+            as_of=as_of,
         )
         return record
 
