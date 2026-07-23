@@ -366,10 +366,17 @@ def create_platform_admin_router(
     ) -> dict[str, Any]:
         """Persist a tenant-scoped connector configuration."""
         identity = get_request_identity(request)
+        tenant_id = _request_tenant(
+            identity_user_id=identity.user_id,
+            identity_tenant_id=identity.tenant_id,
+            tenant=payload.tenant,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         try:
             return deps.connector_config_service().save_config_payload(
                 payload,
                 user_id=identity.user_id,
+                tenant=tenant_id,
             )
         except PlatformConnectorConfigServiceError as exc:
             _raise_service_error(exc)

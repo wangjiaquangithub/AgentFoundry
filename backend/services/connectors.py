@@ -535,6 +535,7 @@ class PlatformConnectorConfigService:
         payload: Any,
         *,
         user_id: str,
+        tenant: str,
         existing_config: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         base_url = payload.base_url.strip().rstrip("/")
@@ -544,7 +545,6 @@ class PlatformConnectorConfigService:
                 "Enterprise API URL is required.",
             )
 
-        tenant = payload.tenant.strip() or self.configured_tenant_for_user(user_id)
         token = payload.token.strip() if payload.token and payload.token.strip() else None
         if token is None and existing_config is not None:
             saved_token = str(existing_config.get("token") or "").strip()
@@ -571,15 +571,14 @@ class PlatformConnectorConfigService:
         payload: Any,
         *,
         user_id: str | None,
+        tenant: str,
     ) -> dict[str, Any]:
         resolved_user_id = self.resolve_request_user_id(user_id)
         configs = self.list_configs()
-        tenant = payload.tenant.strip() or self.configured_tenant_for_user(
-            resolved_user_id,
-        )
         config = self.normalize_config_payload(
             payload,
             user_id=resolved_user_id,
+            tenant=tenant,
             existing_config=configs.get(tenant),
         )
         configs[config["tenant"]] = config
@@ -591,7 +590,7 @@ class PlatformConnectorConfigService:
         )
         return {
             "config": self.redact_config(config),
-            "saved_configs": self.redacted_configs(),
+            "saved_configs": self.redacted_configs(tenant=tenant),
         }
 
     def normalize_import_configs(
