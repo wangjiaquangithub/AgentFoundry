@@ -22,7 +22,7 @@ REQUIRED_VALUES = {
     "UVICORN_RELOAD": "1",
     "CORS_ALLOW_ORIGINS": "*",
 }
-REQUIRED_EMPTY_SECRETS = {
+REQUIRED_EMPTY_ENV_VARS = {
     "ENTERPRISE_AGENT_ROUTER_API_KEY",
     "ENTERPRISE_API_TOKEN",
     "QDRANT_API_KEY",
@@ -61,7 +61,7 @@ def main() -> int:
                 f"backend/.env.example must define {name}={expected}; got {actual!r}"
             )
 
-    for name in sorted(REQUIRED_EMPTY_SECRETS):
+    for name in sorted(REQUIRED_EMPTY_ENV_VARS):
         actual = values.get(name)
         if actual is None:
             failures.append(f"backend/.env.example is missing {name}")
