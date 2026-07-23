@@ -37,6 +37,10 @@ CHECKS = (
         [sys.executable, "scripts/check_phase6_secret_hygiene.py"],
     ),
     (
+        "deployment environment contract",
+        [sys.executable, "scripts/check_phase6_deployment_env_contract.py"],
+    ),
+    (
         "README bootstrap",
         [sys.executable, "scripts/check_phase6_readme_bootstrap.py"],
     ),

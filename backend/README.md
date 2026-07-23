@@ -350,6 +350,9 @@ ENTERPRISE_TOOL_POLICY_MODE=strict
 
 | 环境变量 | 默认值 | 作用 |
 | --- | --- | --- |
+| `AGENTFOUNDRY_ENV` | `development` | 部署模式；设为 `production` 时强制使用运行时可用的 PostgreSQL |
+| `AGENTFOUNDRY_DATABASE_URL` | 本地 PostgreSQL URL | 生产事实数据层连接；SQLite 仅限本地开发兼容 |
+| `AGENTFOUNDRY_LOG_LEVEL` | `INFO` | 后端日志级别，支持 `DEBUG/INFO/WARNING/ERROR/CRITICAL` |
 | `REDIS_HOST` | `localhost` | Redis host |
 | `REDIS_PORT` | `6379` | Redis port |
 | `REDIS_DB` | `0` | Redis db |
