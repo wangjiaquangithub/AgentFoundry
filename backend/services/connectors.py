@@ -671,7 +671,7 @@ class PlatformConnectorConfigService:
                 extra_payload={"mode": mode},
             )
 
-    def test_connector(self, payload: Any) -> dict[str, Any]:
+    def test_connector(self, payload: Any, *, tenant: str) -> dict[str, Any]:
         base_url = payload.base_url.strip().rstrip("/")
         if not base_url:
             raise PlatformConnectorConfigServiceError(
@@ -679,7 +679,7 @@ class PlatformConnectorConfigService:
                 "Enterprise API URL is required.",
             )
 
-        saved_config = self.list_configs().get(payload.tenant.strip())
+        saved_config = self.list_configs().get(tenant)
         token = payload.token.strip() if payload.token and payload.token.strip() else None
         if token is None and saved_config is not None:
             saved_token = str(saved_config.get("token") or "").strip()
@@ -698,18 +698,18 @@ class PlatformConnectorConfigService:
             (
                 "policy",
                 "Policy lookup",
-                lambda: connector.lookup_policy(payload.tenant, payload.policy_keyword),
+                lambda: connector.lookup_policy(tenant, payload.policy_keyword),
             ),
             (
                 "ticket",
                 "Ticket lookup",
-                lambda: connector.get_ticket_status(payload.tenant, payload.ticket_id),
+                lambda: connector.get_ticket_status(tenant, payload.ticket_id),
             ),
             (
                 "metrics",
                 "Department metrics",
                 lambda: connector.summarize_department_metrics(
-                    payload.tenant,
+                    tenant,
                     payload.department,
                 ),
             ),

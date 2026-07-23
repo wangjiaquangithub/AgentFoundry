@@ -384,10 +384,21 @@ def create_platform_admin_router(
     @router.post("/enterprise/platform/connectors/test")
     async def test_enterprise_platform_connector(
         payload: EnterpriseConnectorTestRequest,
+        request: Request,
     ) -> dict[str, Any]:
         """Validate an enterprise HTTP connector against core business endpoints."""
+        identity = get_request_identity(request)
+        tenant_id = _request_tenant(
+            identity_user_id=identity.user_id,
+            identity_tenant_id=identity.tenant_id,
+            tenant=payload.tenant,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         try:
-            return deps.connector_config_service().test_connector(payload)
+            return deps.connector_config_service().test_connector(
+                payload,
+                tenant=tenant_id,
+            )
         except PlatformConnectorConfigServiceError as exc:
             _raise_service_error(exc)
 

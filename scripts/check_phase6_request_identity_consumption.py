@@ -91,9 +91,9 @@ def check_platform_admin_consumption() -> list[str]:
         errors.append("platform_admin.py must import the canonical identity accessor")
     if 'request.headers.get("X-User-ID")' in source or "request.headers" in source:
         errors.append("platform_admin.py must not consume raw request identity headers")
-    if source.count("get_request_identity(request)") != 13:
+    if source.count("get_request_identity(request)") != 14:
         errors.append(
-            "platform_admin.py must resolve canonical identity for all 13 identity-aware routes"
+            "platform_admin.py must resolve canonical identity for all 14 identity-aware routes"
         )
     return errors
 

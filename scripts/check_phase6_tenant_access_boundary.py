@@ -578,6 +578,65 @@ def assert_connector_config_update_uses_request_tenant() -> None:
         )
 
 
+def assert_connector_test_uses_request_tenant() -> None:
+    api_source = (BACKEND_DIR / "api" / "platform_admin.py").read_text(
+        encoding="utf-8",
+    )
+    test_route = api_source[api_source.index(
+        '@router.post("/enterprise/platform/connectors/test")'
+    ):api_source.index('@router.get("/enterprise/platform/config/export")')]
+    required_route_fragments = (
+        "identity = get_request_identity(request)",
+        "tenant_id = _request_tenant(",
+        "identity_user_id=identity.user_id",
+        "identity_tenant_id=identity.tenant_id",
+        "tenant=payload.tenant",
+        "tenant_hint_from_user_id=deps.tenant_hint_from_user_id",
+        "tenant=tenant_id",
+    )
+    missing_route_fragments = [
+        fragment for fragment in required_route_fragments if fragment not in test_route
+    ]
+    if missing_route_fragments:
+        raise AssertionError(
+            "Connector test tenant boundary is incomplete: "
+            + ", ".join(missing_route_fragments),
+        )
+    if test_route.count("_request_tenant(") != 1:
+        raise AssertionError(
+            "Connector test must resolve the canonical request tenant.",
+        )
+
+    service_source = (BACKEND_DIR / "services" / "connectors.py").read_text(
+        encoding="utf-8",
+    )
+    test_method = service_source[service_source.index(
+        "def test_connector("
+    ):service_source.index(
+        "def _append_connector_config_audit_event(",
+        service_source.index("def test_connector("),
+    )]
+    required_service_fragments = (
+        "*, tenant: str",
+        "self.list_configs().get(tenant)",
+        "connector.lookup_policy(tenant,",
+        "connector.get_ticket_status(tenant,",
+        "connector.summarize_department_metrics(\n                    tenant,",
+    )
+    missing_service_fragments = [
+        fragment for fragment in required_service_fragments if fragment not in test_method
+    ]
+    if missing_service_fragments:
+        raise AssertionError(
+            "Connector test service scope is incomplete: "
+            + ", ".join(missing_service_fragments),
+        )
+    if "payload.tenant" in test_method:
+        raise AssertionError(
+            "Connector test service must not trust the payload tenant.",
+        )
+
+
 def main() -> None:
     assert_agent_list_is_tenant_scoped()
     assert_cross_tenant_runtime_access_is_denied()
@@ -592,6 +651,7 @@ def main() -> None:
     assert_tool_policy_update_uses_request_tenant()
     assert_connector_config_query_uses_request_tenant()
     assert_connector_config_update_uses_request_tenant()
+    assert_connector_test_uses_request_tenant()
     print("Phase 6 tenant access boundary contract passed.")
 
 
