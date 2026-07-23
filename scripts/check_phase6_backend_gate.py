@@ -122,6 +122,13 @@ CHECKS = (
         ],
     ),
     (
+        "knowledge retrieval evidence fail closed",
+        [
+            sys.executable,
+            "scripts/check_phase6_knowledge_retrieval_evidence_fail_closed.py",
+        ],
+    ),
+    (
         "tool request tenant",
         [
             sys.executable,

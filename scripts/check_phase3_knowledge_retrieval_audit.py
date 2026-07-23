@@ -538,7 +538,7 @@ def main() -> int:
 
     _assert_contains(
         api_source,
-        'user_id=request.headers.get("X-User-ID") or None',
+        "user_id=get_request_identity(request).user_id",
         "knowledge retrieval actor propagation",
     )
 

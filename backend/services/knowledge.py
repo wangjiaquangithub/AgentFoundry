@@ -8,6 +8,15 @@ from uuid import uuid4
 from backend.persistence import AuditEventRecord, RetrievalEventRecord
 
 
+class PlatformKnowledgeRetrievalServiceError(Exception):
+    """Raised when knowledge retrieval evidence cannot be persisted safely."""
+
+    def __init__(self, status_code: int, detail: Any) -> None:
+        super().__init__(str(detail))
+        self.status_code = status_code
+        self.detail = detail
+
+
 class AuditEventWriter(Protocol):
     def append_audit_event(self, record: AuditEventRecord) -> AuditEventRecord:
         ...
@@ -394,7 +403,10 @@ class PlatformKnowledgeRetrievalService:
         payload: dict[str, Any],
     ) -> None:
         if self._retrieval_event_writer is None or self._now is None:
-            return
+            raise PlatformKnowledgeRetrievalServiceError(
+                500,
+                "Knowledge retrieval event persistence is not configured.",
+            )
 
         event_id = uuid4().hex
         created_at = self._now()
@@ -412,11 +424,18 @@ class PlatformKnowledgeRetrievalService:
                     created_at=created_at,
                 ),
             )
-        except Exception:
-            return
+        except Exception as exc:
+            raise PlatformKnowledgeRetrievalServiceError(500, str(exc)) from exc
+
+        persisted_event_id = str(getattr(persisted_event, "id", "") or "").strip()
+        if not persisted_event_id:
+            raise PlatformKnowledgeRetrievalServiceError(
+                500,
+                "PostgreSQL retrieval event write did not return a persisted id.",
+            )
 
         self._append_retrieval_audit_event(
-            event_id=persisted_event.id,
+            event_id=persisted_event_id,
             tenant_id=tenant_id,
             user_id=user_id,
             agent_run_id=agent_run_id,
@@ -439,7 +458,10 @@ class PlatformKnowledgeRetrievalService:
         created_at: str,
     ) -> None:
         if self._audit_event_writer is None:
-            return
+            raise PlatformKnowledgeRetrievalServiceError(
+                500,
+                "Knowledge retrieval audit persistence is not configured.",
+            )
 
         try:
             audit_payload: dict[str, Any] = {
@@ -483,10 +505,14 @@ class PlatformKnowledgeRetrievalService:
                     created_at=created_at,
                 ),
             )
-            if not persisted_audit_event.id:
-                return
-        except Exception:
-            return
+        except Exception as exc:
+            raise PlatformKnowledgeRetrievalServiceError(500, str(exc)) from exc
+
+        if not str(getattr(persisted_audit_event, "id", "") or "").strip():
+            raise PlatformKnowledgeRetrievalServiceError(
+                500,
+                "PostgreSQL audit event write did not return a persisted id.",
+            )
 
     def _primary_knowledge_base_id(self, payload: dict[str, Any]) -> str | None:
         for key in ("ready_knowledge_base_ids", "bound_knowledge_base_ids"):

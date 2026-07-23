@@ -26,6 +26,7 @@ from api.schemas import (
 from services.knowledge import (
     PlatformKnowledgeDocumentReadinessService,
     PlatformKnowledgeRetrievalService,
+    PlatformKnowledgeRetrievalServiceError,
 )
 from services.knowledge_bases import (
     KnowledgeBaseApiCommandInput,
@@ -630,15 +631,23 @@ def create_knowledge_retrieval_router(
             request=request,
             tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
         )
-        return {
-            "tenant": tenant_id,
-            "knowledge_retrieval": service.retrieve(
+        try:
+            knowledge_retrieval = service.retrieve(
                 tenant_id=tenant_id,
                 knowledge_base_ids=payload.knowledge_base_ids,
                 query=payload.query,
                 user_id=get_request_identity(request).user_id,
                 limit=payload.limit,
-            ),
+            )
+        except PlatformKnowledgeRetrievalServiceError as exc:
+            raise HTTPException(
+                status_code=exc.status_code,
+                detail=exc.detail,
+            ) from exc
+
+        return {
+            "tenant": tenant_id,
+            "knowledge_retrieval": knowledge_retrieval,
         }
 
     return router
