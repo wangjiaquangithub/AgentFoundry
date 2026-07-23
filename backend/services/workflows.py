@@ -761,6 +761,7 @@ class PlatformWorkflowRunService:
         self,
         *,
         run_authorized_enterprise_tool: Callable[..., dict[str, Any]],
+        tenant: str,
         user_id: str,
         tool_name: str,
         inputs: dict[str, Any],
@@ -768,6 +769,7 @@ class PlatformWorkflowRunService:
         session_id: str,
     ) -> dict[str, Any]:
         return run_authorized_enterprise_tool(
+            tenant=tenant,
             user_id=user_id,
             tool_name=tool_name,
             inputs=inputs,

@@ -80,6 +80,13 @@ CHECKS = (
         ],
     ),
     (
+        "workflow tool execution request tenant",
+        [
+            sys.executable,
+            "scripts/check_phase6_workflow_tool_execution_request_tenant.py",
+        ],
+    ),
+    (
         "agent execution request tenant",
         [
             sys.executable,

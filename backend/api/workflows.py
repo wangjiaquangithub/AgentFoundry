@@ -148,6 +148,7 @@ def _runtime_tenant_for_user(
 def _workflow_step(
     deps: WorkflowGovernanceRouteDependencies,
     *,
+    tenant: str,
     user_id: str,
     agent_id: str,
     session_id: str,
@@ -160,6 +161,7 @@ def _workflow_step(
         workflow_run_service = deps.workflow_run_service()
         tool_response = workflow_run_service.run_step_tool_from_context(
             run_authorized_enterprise_tool=deps.run_authorized_enterprise_tool,
+            tenant=tenant,
             user_id=user_id,
             tool_name=tool_name,
             inputs=inputs,
@@ -629,6 +631,7 @@ def create_workflow_governance_router(
             else:
                 step_result = _workflow_step(
                     deps,
+                    tenant=tenant,
                     user_id=user_id,
                     agent_id=agent_id,
                     session_id=session_id,
