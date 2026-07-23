@@ -199,6 +199,13 @@ CHECKS = (
         ],
     ),
     (
+        "memory-item write agent conflict fail closed",
+        [
+            sys.executable,
+            "scripts/check_phase6_memory_item_write_agent_conflict_fail_closed.py",
+        ],
+    ),
+    (
         "memory-item write result transaction fail closed",
         [
             sys.executable,
