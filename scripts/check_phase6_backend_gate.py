@@ -164,6 +164,13 @@ CHECKS = (
         ],
     ),
     (
+        "memory-item write expiry type fail closed",
+        [
+            sys.executable,
+            "scripts/check_phase6_memory_item_write_expiry_type_fail_closed.py",
+        ],
+    ),
+    (
         "memory-item write created time fail closed",
         [
             sys.executable,
