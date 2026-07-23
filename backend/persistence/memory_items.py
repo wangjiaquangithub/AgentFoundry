@@ -229,6 +229,11 @@ def _validate_memory_item_write_identity(record: MemoryItemRecord) -> None:
             )
 
 
+def _validate_memory_item_write_content(record: MemoryItemRecord) -> None:
+    if not isinstance(record.content, str) or not record.content.strip():
+        raise ValueError("Memory item write requires non-blank string content.")
+
+
 def _serialize_memory_item_metadata(record: MemoryItemRecord) -> str:
     try:
         return json.dumps(record.metadata, ensure_ascii=False, allow_nan=False)
@@ -463,6 +468,7 @@ class PostgresMemoryItemWriteRepository:
     def append_memory_item(self, record: MemoryItemRecord) -> MemoryItemRecord:
         as_of = datetime.now(timezone.utc)
         _validate_memory_item_write_identity(record)
+        _validate_memory_item_write_content(record)
         serialized_metadata = _serialize_memory_item_metadata(record)
         _validate_memory_item_write_created_at(record, as_of=as_of)
         _validate_memory_item_write_expiry(
