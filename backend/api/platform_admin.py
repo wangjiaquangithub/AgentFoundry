@@ -226,9 +226,16 @@ def create_platform_admin_router(
     async def enterprise_platform_members(request: Request) -> dict[str, Any]:
         """Return the editable enterprise member registry."""
         identity = get_request_identity(request)
+        tenant_id = _request_tenant(
+            identity_user_id=identity.user_id,
+            identity_tenant_id=identity.tenant_id,
+            tenant=None,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         try:
             return deps.member_service().registry_response_payload(
                 user_id=identity.user_id,
+                tenant=tenant_id,
                 request_context=lambda user_id: deps.status_service().status_request_context(
                     user_id=user_id,
                 ),
@@ -246,10 +253,17 @@ def create_platform_admin_router(
     ) -> dict[str, Any]:
         """Create or replace one enterprise platform member."""
         identity = get_request_identity(request)
+        tenant_id = _request_tenant(
+            identity_user_id=identity.user_id,
+            identity_tenant_id=identity.tenant_id,
+            tenant=None,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         try:
             return deps.member_service().create_member_response_payload(
                 payload=payload.model_dump(),
                 actor=identity.user_id,
+                tenant=tenant_id,
                 identity_metadata=deps.identity_metadata,
                 registry_path=deps.members_path,
             )
@@ -264,11 +278,18 @@ def create_platform_admin_router(
     ) -> dict[str, Any]:
         """Update one enterprise platform member."""
         identity = get_request_identity(request)
+        tenant_id = _request_tenant(
+            identity_user_id=identity.user_id,
+            identity_tenant_id=identity.tenant_id,
+            tenant=None,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         try:
             return deps.member_service().update_member_response_payload(
                 user_id=user_id,
                 payload=payload.model_dump(exclude_unset=True),
                 actor=identity.user_id,
+                tenant=tenant_id,
                 identity_metadata=deps.identity_metadata,
                 registry_path=deps.members_path,
             )
@@ -282,10 +303,17 @@ def create_platform_admin_router(
     ) -> dict[str, Any]:
         """Soft-delete one enterprise platform member by marking it inactive."""
         identity = get_request_identity(request)
+        tenant_id = _request_tenant(
+            identity_user_id=identity.user_id,
+            identity_tenant_id=identity.tenant_id,
+            tenant=None,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         try:
             return deps.member_service().deactivate_member_response_payload(
                 user_id=user_id,
                 actor=identity.user_id,
+                tenant=tenant_id,
                 identity_metadata=deps.identity_metadata,
                 registry_path=deps.members_path,
             )

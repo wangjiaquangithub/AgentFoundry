@@ -21,6 +21,7 @@ from repositories.agents import (  # noqa: E402
     PostgresAgentCatalogWriteThroughRepository,
 )
 from services.agents import PlatformAgentService, PlatformAgentServiceError  # noqa: E402
+from services.members import PlatformMemberService, PlatformMemberServiceError  # noqa: E402
 
 
 IDENTITIES = [
@@ -87,6 +88,21 @@ class Agents:
             if str(record.get("tenant") or "").strip() != tenant
         ]
         self._records = [*retained_agents, *[dict(agent) for agent in agents]]
+
+
+class Members:
+    def __init__(self, records: list[dict[str, Any]]) -> None:
+        self._config = {"members": [dict(record) for record in records]}
+
+    def load_config(self) -> dict[str, Any]:
+        return {
+            "members": [dict(record) for record in self._config["members"]],
+        }
+
+    def save_config(self, config: dict[str, Any]) -> None:
+        self._config = {
+            "members": [dict(record) for record in config.get("members", [])],
+        }
 
 
 def build_agent(agent_id: str, tenant: str, **overrides: Any) -> dict[str, Any]:
@@ -882,6 +898,183 @@ def assert_platform_config_import_uses_request_tenant() -> None:
         )
 
 
+def assert_platform_member_operations_use_request_tenant() -> None:
+    repository = Members(
+        [
+            {
+                "user_id": "acme:alice",
+                "tenant": "acme",
+                "display_name": "Alice",
+                "role": "admin",
+                "status": "active",
+            },
+            {
+                "user_id": "globex:bob",
+                "tenant": "globex",
+                "display_name": "Globex Bob",
+                "role": "admin",
+                "status": "active",
+            },
+        ],
+    )
+    service = PlatformMemberService(
+        repository=repository,
+        tenant_hint_from_user_id=tenant_for_user,
+        now=lambda: "2026-07-23T00:00:00+00:00",
+    )
+    registry = service.registry_response_payload(
+        user_id="acme:alice",
+        tenant="acme",
+        request_context=lambda _user_id: {"identities": IDENTITIES},
+        registry_path="members.json",
+    )
+    if {member["tenant"] for member in registry["members"]} != {"acme"}:
+        raise AssertionError("Member registry response leaked another tenant.")
+    if {identity["tenant"] for identity in registry["identities"]} != {"acme"}:
+        raise AssertionError("Member identity response leaked another tenant.")
+
+    created = service.create_member_response_payload(
+        payload={"user_id": "acme:charlie", "role": "member"},
+        actor="acme:alice",
+        tenant="acme",
+        identity_metadata=identity_metadata,
+        registry_path="members.json",
+    )
+    if {member["tenant"] for member in created["members"]} != {"acme"}:
+        raise AssertionError("Member create response leaked another tenant.")
+    if service.get_member_by_user("globex:bob") is None:
+        raise AssertionError("Tenant-scoped member create removed another tenant.")
+
+    cross_tenant_creates = (
+        {"user_id": "globex:mallory", "tenant": "acme"},
+        {"user_id": "acme:mallory", "tenant": "globex"},
+    )
+    for payload in cross_tenant_creates:
+        try:
+            service.create_member_response_payload(
+                payload=payload,
+                actor="acme:alice",
+                tenant="acme",
+                identity_metadata=identity_metadata,
+                registry_path="members.json",
+            )
+        except PlatformMemberServiceError as exc:
+            if exc.status_code != 403:
+                raise AssertionError("Cross-tenant member create returned the wrong status.")
+        else:
+            raise AssertionError("Cross-tenant member create was allowed.")
+
+    try:
+        service.update_member_response_payload(
+            user_id="globex:bob",
+            payload={"display_name": "Compromised"},
+            actor="acme:alice",
+            tenant="acme",
+            identity_metadata=identity_metadata,
+            registry_path="members.json",
+        )
+    except PlatformMemberServiceError as exc:
+        if exc.status_code != 404:
+            raise AssertionError("Cross-tenant member update returned the wrong status.")
+    else:
+        raise AssertionError("Cross-tenant member update was allowed.")
+
+    try:
+        service.deactivate_member_response_payload(
+            user_id="globex:bob",
+            actor="acme:alice",
+            tenant="acme",
+            identity_metadata=identity_metadata,
+            registry_path="members.json",
+        )
+    except PlatformMemberServiceError as exc:
+        if exc.status_code != 404:
+            raise AssertionError("Cross-tenant member deactivation returned the wrong status.")
+    else:
+        raise AssertionError("Cross-tenant member deactivation was allowed.")
+
+    updated = service.update_member_response_payload(
+        user_id="acme:charlie",
+        payload={"display_name": "Charlie"},
+        actor="acme:alice",
+        tenant="acme",
+        identity_metadata=identity_metadata,
+        registry_path="members.json",
+    )
+    if updated["member"]["tenant"] != "acme":
+        raise AssertionError("Member update changed the request tenant.")
+    deactivated = service.deactivate_member_response_payload(
+        user_id="acme:charlie",
+        actor="acme:alice",
+        tenant="acme",
+        identity_metadata=identity_metadata,
+        registry_path="members.json",
+    )
+    if deactivated["member"]["status"] != "inactive":
+        raise AssertionError("Tenant-scoped member deactivation was not persisted.")
+    globex_member = service.get_member_by_user("globex:bob")
+    if globex_member is None or globex_member["display_name"] != "Globex Bob":
+        raise AssertionError("Member mutations changed another tenant's data.")
+
+    api_source = (BACKEND_DIR / "api" / "platform_admin.py").read_text(
+        encoding="utf-8",
+    )
+    route_bounds = (
+        (
+            '@router.get("/enterprise/platform/members")',
+            '@router.post("/enterprise/platform/members")',
+        ),
+        (
+            '@router.post("/enterprise/platform/members")',
+            '@router.patch("/enterprise/platform/members/{user_id:path}")',
+        ),
+        (
+            '@router.patch("/enterprise/platform/members/{user_id:path}")',
+            '@router.delete("/enterprise/platform/members/{user_id:path}")',
+        ),
+        (
+            '@router.delete("/enterprise/platform/members/{user_id:path}")',
+            '@router.get("/enterprise/platform/policies/tools")',
+        ),
+    )
+    for start, end in route_bounds:
+        route = api_source[api_source.index(start):api_source.index(end)]
+        required_fragments = (
+            "identity = get_request_identity(request)",
+            "tenant_id = _request_tenant(",
+            "identity_user_id=identity.user_id",
+            "identity_tenant_id=identity.tenant_id",
+            "tenant_hint_from_user_id=deps.tenant_hint_from_user_id",
+            "tenant=tenant_id",
+        )
+        missing_fragments = [
+            fragment for fragment in required_fragments if fragment not in route
+        ]
+        if missing_fragments or route.count("_request_tenant(") != 1:
+            raise AssertionError(
+                f"Platform member route tenant boundary is incomplete for {start}: "
+                + ", ".join(missing_fragments),
+            )
+
+    member_source = (BACKEND_DIR / "services" / "members.py").read_text(
+        encoding="utf-8",
+    )
+    required_service_fragments = (
+        'self.list_members(include_inactive=True, tenant=tenant)',
+        '"Member must belong to the request tenant."',
+        '"Member was not found for this tenant."',
+    )
+    missing_service_fragments = [
+        fragment for fragment in required_service_fragments
+        if fragment not in member_source
+    ]
+    if missing_service_fragments:
+        raise AssertionError(
+            "Platform member service tenant boundary is incomplete: "
+            + ", ".join(missing_service_fragments),
+        )
+
+
 def main() -> None:
     assert_agent_list_is_tenant_scoped()
     assert_cross_tenant_runtime_access_is_denied()
@@ -899,6 +1092,7 @@ def main() -> None:
     assert_connector_test_uses_request_tenant()
     assert_platform_config_export_uses_request_tenant()
     assert_platform_config_import_uses_request_tenant()
+    assert_platform_member_operations_use_request_tenant()
     print("Phase 6 tenant access boundary contract passed.")
 
 

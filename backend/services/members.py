@@ -269,13 +269,19 @@ class PlatformMemberService:
     def registry_payload(
         self,
         *,
+        tenant: str,
         identities: list[dict[str, Any]],
         registry_path: Any,
     ) -> dict[str, Any]:
+        tenant_identities = [
+            identity
+            for identity in identities
+            if str(identity.get("tenant") or "").strip() == tenant
+        ]
         return {
-            "members": self.list_members(include_inactive=True),
-            "identities": identities,
-            "roles": self.roles(identities),
+            "members": self.list_members(include_inactive=True, tenant=tenant),
+            "identities": tenant_identities,
+            "roles": self.roles(tenant_identities),
             "path": str(registry_path),
         }
 
@@ -283,11 +289,13 @@ class PlatformMemberService:
         self,
         *,
         user_id: str | None,
+        tenant: str,
         request_context: Callable[[str | None], dict[str, Any]],
         registry_path: Any,
     ) -> dict[str, Any]:
         context = request_context(user_id)
         return self.registry_payload(
+            tenant=tenant,
             identities=context["identities"],
             registry_path=registry_path,
         )
@@ -328,11 +336,16 @@ class PlatformMemberService:
         *,
         payload: dict[str, Any],
         actor: str | None,
+        tenant: str,
         identity_metadata: Callable[[str, str], list[dict[str, Any]]],
         registry_path: Any,
     ) -> dict[str, Any]:
         resolved_actor = self.resolve_mutation_actor(actor)
-        member, members = self.upsert_member(payload, actor=resolved_actor)
+        member, members = self.upsert_member(
+            payload,
+            actor=resolved_actor,
+            tenant=tenant,
+        )
         return self.mutation_response_payload(
             actor=resolved_actor,
             member=member,
@@ -347,6 +360,7 @@ class PlatformMemberService:
         user_id: str,
         payload: dict[str, Any],
         actor: str | None,
+        tenant: str,
         identity_metadata: Callable[[str, str], list[dict[str, Any]]],
         registry_path: Any,
     ) -> dict[str, Any]:
@@ -355,6 +369,7 @@ class PlatformMemberService:
             user_id,
             payload,
             actor=resolved_actor,
+            tenant=tenant,
         )
         return self.mutation_response_payload(
             actor=resolved_actor,
@@ -369,11 +384,16 @@ class PlatformMemberService:
         *,
         user_id: str,
         actor: str | None,
+        tenant: str,
         identity_metadata: Callable[[str, str], list[dict[str, Any]]],
         registry_path: Any,
     ) -> dict[str, Any]:
         resolved_actor = self.resolve_mutation_actor(actor)
-        member, members = self.deactivate_member(user_id, actor=resolved_actor)
+        member, members = self.deactivate_member(
+            user_id,
+            actor=resolved_actor,
+            tenant=tenant,
+        )
         return self.mutation_response_payload(
             actor=resolved_actor,
             member=member,
@@ -387,12 +407,29 @@ class PlatformMemberService:
         payload: dict[str, Any],
         *,
         actor: str,
+        tenant: str,
     ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         members = self._normalized_members()
-        member = self.normalize_member(payload, updated_by=actor)
+        requested_tenant = str(payload.get("tenant") or tenant).strip()
+        user_id = str(payload.get("user_id") or "").strip()
+        hinted_tenant = self._tenant_hint_from_user_id(user_id)
+        if requested_tenant != tenant or (hinted_tenant and hinted_tenant != tenant):
+            raise PlatformMemberServiceError(
+                403,
+                "Member must belong to the request tenant.",
+            )
+        member = self.normalize_member(
+            {**payload, "tenant": tenant},
+            updated_by=actor,
+        )
         replaced = False
         for index, existing in enumerate(members):
             if existing["user_id"] == member["user_id"]:
+                if existing["tenant"] != tenant:
+                    raise PlatformMemberServiceError(
+                        403,
+                        "Member belongs to another tenant.",
+                    )
                 member["created_at"] = existing.get("created_at") or member["created_at"]
                 members[index] = member
                 replaced = True
@@ -406,7 +443,7 @@ class PlatformMemberService:
             actor=actor,
             event_type="platform_member.upserted",
         )
-        return member, self.list_members(include_inactive=True)
+        return member, self.list_members(include_inactive=True, tenant=tenant)
 
     def patch_member(
         self,
@@ -414,15 +451,23 @@ class PlatformMemberService:
         payload: dict[str, Any],
         *,
         actor: str,
+        tenant: str,
     ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         members = self._normalized_members()
+        requested_tenant = str(payload.get("tenant") or tenant).strip()
+        if requested_tenant != tenant:
+            raise PlatformMemberServiceError(
+                403,
+                "Member must belong to the request tenant.",
+            )
         for index, existing in enumerate(members):
-            if existing["user_id"] == user_id:
+            if existing["user_id"] == user_id and existing["tenant"] == tenant:
                 member = self.normalize_member(
                     {
                         **existing,
                         **payload,
                         "user_id": user_id,
+                        "tenant": tenant,
                     },
                     fallback_user_id=user_id,
                     updated_by=actor,
@@ -431,12 +476,10 @@ class PlatformMemberService:
                 members[index] = member
                 break
         else:
-            member = self.normalize_member(
-                {**payload, "user_id": user_id},
-                fallback_user_id=user_id,
-                updated_by=actor,
+            raise PlatformMemberServiceError(
+                404,
+                "Member was not found for this tenant.",
             )
-            members.append(member)
 
         self.save_config({"members": members})
         self._append_member_audit_event(
@@ -444,27 +487,29 @@ class PlatformMemberService:
             actor=actor,
             event_type="platform_member.updated",
         )
-        return member, self.list_members(include_inactive=True)
+        return member, self.list_members(include_inactive=True, tenant=tenant)
 
     def deactivate_member(
         self,
         user_id: str,
         *,
         actor: str,
+        tenant: str,
     ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         members = self._normalized_members()
-        existing = next((member for member in members if member["user_id"] == user_id), None)
+        existing = next(
+            (
+                member
+                for member in members
+                if member["user_id"] == user_id and member["tenant"] == tenant
+            ),
+            None,
+        )
         if existing is None:
-            existing = self.normalize_member(
-                {
-                    "user_id": user_id,
-                    "tenant": self._tenant_hint_from_user_id(user_id) or "acme",
-                    "display_name": user_id,
-                    "role": "Enterprise user",
-                },
-                updated_by=actor,
+            raise PlatformMemberServiceError(
+                404,
+                "Member was not found for this tenant.",
             )
-            members.append(existing)
 
         existing["status"] = "inactive"
         existing["updated_at"] = self._now()
@@ -475,7 +520,7 @@ class PlatformMemberService:
             actor=actor,
             event_type="platform_member.deactivated",
         )
-        return existing, self.list_members(include_inactive=True)
+        return existing, self.list_members(include_inactive=True, tenant=tenant)
 
     def _normalized_members(self) -> list[dict[str, Any]]:
         members: list[dict[str, Any]] = []
