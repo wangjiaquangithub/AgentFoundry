@@ -29,23 +29,25 @@ def _resolve_tenant(
     *,
     tenant: str | None,
     user_id: str | None,
+    identity_tenant_id: str | None,
     tenant_hint_from_user_id: Callable[[str], str | None],
 ) -> str:
-    explicit_tenant = (tenant or "").strip()
+    identity_tenant = (identity_tenant_id or "").strip()
     hinted_tenant = tenant_hint_from_user_id(user_id or "")
-    if explicit_tenant and hinted_tenant and explicit_tenant != hinted_tenant:
-        raise HTTPException(
-            status_code=403,
-            detail="tenant does not match X-User-ID tenant boundary.",
-        )
-
-    tenant_id = explicit_tenant or hinted_tenant
-    if not tenant_id:
+    request_tenant = identity_tenant or hinted_tenant
+    if not request_tenant:
         raise HTTPException(
             status_code=400,
-            detail="tenant is required when X-User-ID does not imply a tenant.",
+            detail="request identity does not resolve to a tenant.",
         )
-    return tenant_id
+
+    explicit_tenant = (tenant or "").strip()
+    if explicit_tenant and explicit_tenant != request_tenant:
+        raise HTTPException(
+            status_code=403,
+            detail="tenant does not match request identity tenant boundary.",
+        )
+    return request_tenant
 
 
 def create_model_config_router(
@@ -70,6 +72,7 @@ def create_model_config_router(
         tenant_id = _resolve_tenant(
             tenant=payload.tenant,
             user_id=identity.user_id,
+            identity_tenant_id=identity.tenant_id,
             tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
         )
         try:
@@ -106,6 +109,7 @@ def create_model_config_router(
         tenant_id = _resolve_tenant(
             tenant=payload.tenant,
             user_id=identity.user_id,
+            identity_tenant_id=identity.tenant_id,
             tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
         )
         try:
@@ -144,6 +148,7 @@ def create_model_config_router(
         tenant_id = _resolve_tenant(
             tenant=payload.tenant,
             user_id=identity.user_id,
+            identity_tenant_id=identity.tenant_id,
             tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
         )
         actor_user_id = identity.user_id or "system"
