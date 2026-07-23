@@ -73,6 +73,13 @@ CHECKS = (
         ],
     ),
     (
+        "model config upsert authenticated actor audit",
+        [
+            sys.executable,
+            "scripts/check_phase6_model_config_actor_audit.py",
+        ],
+    ),
+    (
         "knowledge request tenant",
         [
             sys.executable,
