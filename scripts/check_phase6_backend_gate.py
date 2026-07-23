@@ -185,6 +185,13 @@ CHECKS = (
         ],
     ),
     (
+        "memory-item write tenant conflict fail closed",
+        [
+            sys.executable,
+            "scripts/check_phase6_memory_item_write_tenant_conflict_fail_closed.py",
+        ],
+    ),
+    (
         "memory-item read created time fail closed",
         [
             sys.executable,
