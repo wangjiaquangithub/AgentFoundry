@@ -42,6 +42,14 @@ class PlatformEnterpriseRouterService:
                 "description": "Summarize tenant department metrics.",
                 "inputs": {"department": "engineering | support | sales"},
             },
+            "enterprise_get_weather_forecast": {
+                "description": "Query real daily weather for a city.",
+                "inputs": {
+                    "city": "北京 | 上海",
+                    "days": "integer from 1 to 7",
+                    "start_day": "0 for today, 1 for tomorrow",
+                },
+            },
         }
         system_prompt = (
             "You route one enterprise business question to one allowed read-only "
@@ -325,10 +333,14 @@ class PlatformEnterpriseRouterService:
                 f"Router omitted required input: {input_field}",
             )
 
+        normalized_inputs: dict[str, Any] = {input_field: input_value}
+        if tool_name == "enterprise_get_weather_forecast":
+            normalized_inputs.update(self.normalize_weather_options(raw_inputs))
+
         return {
             "routed": True,
             "tool_name": tool_name,
-            "inputs": {input_field: input_value},
+            "inputs": normalized_inputs,
             "reason": reason,
             "source": self._model_source,
         }
@@ -362,11 +374,15 @@ class PlatformEnterpriseRouterService:
                 continue
 
             seen.add(dedupe_key)
+            normalized_inputs: dict[str, Any] = {input_field: input_value}
+            if tool_name == "enterprise_get_weather_forecast":
+                normalized_inputs.update(self.normalize_weather_options(raw_inputs))
+
             deduped.append(
                 {
                     "routed": True,
                     "tool_name": tool_name,
-                    "inputs": {input_field: input_value},
+                    "inputs": normalized_inputs,
                     "reason": str(
                         route.get("reason") or "Matched enterprise tool route.",
                     ),
@@ -375,6 +391,18 @@ class PlatformEnterpriseRouterService:
             )
 
         return deduped
+
+    @staticmethod
+    def normalize_weather_options(inputs: dict[str, Any]) -> dict[str, int]:
+        try:
+            days = max(1, min(int(inputs.get("days", 1)), 7))
+        except (TypeError, ValueError):
+            days = 1
+        try:
+            start_day = max(0, min(int(inputs.get("start_day", 0)), 6))
+        except (TypeError, ValueError):
+            start_day = 0
+        return {"days": days, "start_day": start_day}
 
     def routing_mode_for(self, routes: list[dict[str, Any]]) -> str:
         sources: list[str] = []
@@ -440,6 +468,49 @@ class PlatformEnterpriseRouterService:
                 "source": self._default_source,
             }
             for ticket_id in re.findall(r"\b[A-Z]{2,5}-\d+\b", question.upper())
+        ]
+
+    def weather_routes_for_question(self, question: str) -> list[dict[str, Any]]:
+        normalized = question.strip()
+        if "天气" not in normalized and "weather" not in normalized.lower():
+            return []
+
+        days = 1
+        start_day = 0
+        if "明天" in normalized or "tomorrow" in normalized.lower():
+            start_day = 1
+        future_days = re.search(r"未来\s*([一二三四五六七1-7])\s*天", normalized)
+        if future_days:
+            chinese_numbers = {
+                "一": 1,
+                "二": 2,
+                "三": 3,
+                "四": 4,
+                "五": 5,
+                "六": 6,
+                "七": 7,
+            }
+            marker = future_days.group(1)
+            days = chinese_numbers.get(marker, int(marker) if marker.isdigit() else 1)
+
+        city = re.sub(
+            r"(?:请|帮我|查询|查一下|看看|告诉我|的|天气预报|天气|"
+            r"明天|今天|未来\s*[一二三四五六七1-7]\s*天|tomorrow|weather)",
+            "",
+            normalized,
+            flags=re.IGNORECASE,
+        )
+        city = re.sub(r"[，。！？,.!?\s]+", "", city).strip()
+        if not city:
+            return []
+        return [
+            {
+                "routed": True,
+                "tool_name": "enterprise_get_weather_forecast",
+                "inputs": {"city": city, "days": days, "start_day": start_day},
+                "reason": "Detected a city weather forecast request.",
+                "source": self._default_source,
+            },
         ]
 
     def policy_routes_for_question(self, question: str) -> list[dict[str, Any]]:
@@ -526,6 +597,7 @@ class PlatformEnterpriseRouterService:
 
     def rule_routes_for_question(self, question: str) -> list[dict[str, Any]]:
         routes: list[dict[str, Any]] = []
+        routes.extend(self.weather_routes_for_question(question))
         routes.extend(self.ticket_routes_for_question(question))
         routes.extend(self.policy_routes_for_question(question))
         routes.extend(self.department_routes_for_question(question))

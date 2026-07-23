@@ -54,6 +54,13 @@ TeamSay.""",
 
 ENTERPRISE_AGENT_TEMPLATES = [
     {
+        "id": "weather_forecast_assistant",
+        "name": "天气预报助手",
+        "description": "调用真实天气服务查询城市天气并生成中文出行建议。",
+        "tools": ["enterprise_get_weather_forecast"],
+        "capabilities": ["weather_forecast"],
+    },
+    {
         "id": "enterprise_knowledge_assistant",
         "name": "企业知识助手",
         "description": "面向员工问答、制度查询、工单状态和部门指标的业务助手。",

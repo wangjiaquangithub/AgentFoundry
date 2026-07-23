@@ -23,6 +23,7 @@ ENTERPRISE_TOOL_INPUT_FIELDS = {
     "enterprise_lookup_policy": "keyword",
     "enterprise_get_ticket_status": "ticket_id",
     "enterprise_summarize_department_metrics": "department",
+    "enterprise_get_weather_forecast": "city",
 }
 ENTERPRISE_TOOL_CATALOG = {
     "enterprise_lookup_policy": {
@@ -39,6 +40,11 @@ ENTERPRISE_TOOL_CATALOG = {
         "description": "Read a tenant-scoped department operations metrics summary.",
         "input_key": "department",
         "default_input": "engineering",
+    },
+    "enterprise_get_weather_forecast": {
+        "description": "Query a real city weather forecast from Open-Meteo.",
+        "input_key": "city",
+        "default_input": "北京",
     },
 }
 
@@ -186,6 +192,35 @@ class EnterpriseToolRuntimeFactory:
                 ),
             )
 
+        def get_weather_forecast(
+            city: str,
+            days: int = 1,
+            start_day: int = 0,
+        ) -> dict[str, Any]:
+            """Return a real Open-Meteo daily forecast for a city.
+
+            Args:
+                city: City name, for example 北京 or Shanghai.
+                days: Number of forecast days, from 1 to 7.
+                start_day: Day offset where 0 is today and 1 is tomorrow.
+            """
+            clean_inputs, call = self.tool_policy_service().build_connector_call(
+                tenant=tenant,
+                tool_name="enterprise_get_weather_forecast",
+                inputs={"city": city, "days": days, "start_day": start_day},
+                runtime_connector=runtime_connector,
+            )
+            return self.audit_logger.capture(
+                user_id=user_id,
+                tenant=tenant,
+                agent_id=agent_id,
+                session_id=session_id,
+                tool_name="enterprise_get_weather_forecast",
+                connector="Open-Meteo",
+                inputs=clean_inputs,
+                call=call,
+            )
+
         authorization_policy = self.authorization_policy()
         return [
             ReadOnlyEnterpriseTool(
@@ -219,6 +254,15 @@ class EnterpriseToolRuntimeFactory:
                 user_id=user_id,
                 authorization_policy=authorization_policy,
             ),
+            ReadOnlyEnterpriseTool(
+                get_weather_forecast,
+                name="enterprise_get_weather_forecast",
+                description="Query a real city weather forecast from Open-Meteo.",
+                is_read_only=True,
+                tenant=tenant,
+                user_id=user_id,
+                authorization_policy=authorization_policy,
+            ),
         ]
 
     def run_authorized_tool(
@@ -243,6 +287,9 @@ class EnterpriseToolRuntimeFactory:
         runtime_connector = runtime_selection["connector"]
         connector_label = runtime_selection["connector_label"]
         connector_source = runtime_selection["connector_source"]
+        if tool_name == "enterprise_get_weather_forecast":
+            connector_label = "Open-Meteo"
+            connector_source = "public_read_only_api"
 
         if tool_name not in self.tool_names:
             raise EnterpriseToolRuntimeError(

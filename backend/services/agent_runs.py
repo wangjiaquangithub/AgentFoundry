@@ -1175,11 +1175,14 @@ class PlatformAgentRunService:
         format_knowledge_answer: Callable[[list[dict[str, Any]]], str],
         format_memory_answer: Callable[[list[dict[str, Any]]], str],
     ) -> str:
-        answer_parts = [
-            f"工具 {call['tool_name']}: {call['answer']}"
-            for call in tool_calls
-            if call.get("answer")
-        ]
+        answered_tool_calls = [call for call in tool_calls if call.get("answer")]
+        if len(answered_tool_calls) == 1:
+            answer_parts = [str(answered_tool_calls[0]["answer"])]
+        else:
+            answer_parts = [
+                f"工具 {call['tool_name']}: {call['answer']}"
+                for call in answered_tool_calls
+            ]
         if knowledge_hits:
             answer_parts.append(
                 f"知识库: {format_knowledge_answer(knowledge_hits)}",

@@ -594,6 +594,23 @@ class PlatformToolPolicyService:
         inputs: dict[str, Any],
         runtime_connector: Any,
     ) -> tuple[dict[str, Any], Callable[[], Any]]:
+        if tool_name == "enterprise_get_weather_forecast":
+            from weather import get_weather_forecast
+
+            city = str(inputs.get("city", "")).strip()
+            try:
+                days = max(1, min(int(inputs.get("days", 1)), 7))
+            except (TypeError, ValueError):
+                days = 1
+            try:
+                start_day = max(0, min(int(inputs.get("start_day", 0)), 6))
+            except (TypeError, ValueError):
+                start_day = 0
+            return (
+                {"city": city, "days": days, "start_day": start_day},
+                lambda: get_weather_forecast(city, days, start_day),
+            )
+
         if tool_name == "enterprise_lookup_policy":
             keyword = str(inputs.get("keyword", "")).strip()
             return (
@@ -626,6 +643,36 @@ class PlatformToolPolicyService:
     ) -> str:
         if not result:
             return "已匹配到企业工具，但当前用户没有权限调用。"
+
+        if tool_name == "enterprise_get_weather_forecast":
+            if result.get("ok") is not True:
+                return str(
+                    result.get("error")
+                    or "天气服务暂时不可用，请稍后重试。",
+                )
+
+            city = str(result.get("city") or "所查城市")
+            country = str(result.get("country") or "")
+            location = f"{country}{city}" if country and country not in city else city
+            forecasts = result.get("forecasts")
+            if not isinstance(forecasts, list) or not forecasts:
+                return "天气服务暂时没有返回可用的预报数据。"
+            lines = [f"{location}天气预报（数据来源：Open-Meteo）："]
+            for forecast in forecasts:
+                if not isinstance(forecast, dict):
+                    continue
+                lines.append(
+                    f"{forecast.get('date', '-')}："
+                    f"{forecast.get('condition', '-')}，"
+                    f"最高 {forecast.get('temperature_max_c', '-')}°C，"
+                    f"最低 {forecast.get('temperature_min_c', '-')}°C，"
+                    "降雨概率 "
+                    f"{forecast.get('precipitation_probability_percent', '-')}%，"
+                    "最大风速 "
+                    f"{forecast.get('wind_speed_max_kmh', '-')} km/h。"
+                    f"建议：{forecast.get('advice', '-')}"
+                )
+            return "\n".join(lines)
 
         if tool_name == "enterprise_get_ticket_status":
             ticket_id = result.get("ticket_id", "")
