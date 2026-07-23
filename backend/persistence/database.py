@@ -48,6 +48,16 @@ class DatabaseConfigurationStatus:
     message: str
 
 
+@dataclass(frozen=True)
+class DatabaseReadinessStatus:
+    """Result of a live database readiness probe without connection details."""
+
+    configuration: DatabaseConfigurationStatus
+    connected: bool
+    ready: bool
+    message: str
+
+
 def is_postgres_driver_available() -> bool:
     return find_spec("psycopg") is not None
 
@@ -183,7 +193,7 @@ class PostgresDatabase:
 
     database_url: str
 
-    def connect(self) -> Any:
+    def connect(self, *, connect_timeout_seconds: int | None = None) -> Any:
         try:
             import psycopg
             from psycopg.rows import dict_row
@@ -194,7 +204,10 @@ class PostgresDatabase:
                 "postgres:// persistence URLs."
             ) from exc
 
-        return psycopg.connect(self.database_url, row_factory=dict_row)
+        connection_options: dict[str, Any] = {"row_factory": dict_row}
+        if connect_timeout_seconds is not None:
+            connection_options["connect_timeout"] = connect_timeout_seconds
+        return psycopg.connect(self.database_url, **connection_options)
 
     @contextmanager
     def transaction(self) -> Iterator[Any]:
@@ -223,6 +236,53 @@ def create_configured_postgres_database(
     if not is_postgres_database_url(database_url):
         return None
     return create_postgres_database(database_url)
+
+
+def inspect_configured_database_readiness(
+    environ: Mapping[str, str] | None = None,
+    *,
+    connect_timeout_seconds: int = 3,
+) -> DatabaseReadinessStatus:
+    """Check that the configured production database accepts a simple query."""
+
+    source = os.environ if environ is None else environ
+    configuration = inspect_configured_database_status(source)
+    if not configuration.runtime_ready:
+        return DatabaseReadinessStatus(
+            configuration=configuration,
+            connected=False,
+            ready=False,
+            message=configuration.message,
+        )
+
+    database_url = source.get(DATABASE_URL_ENV_VAR, "").strip()
+    try:
+        database = create_postgres_database(database_url)
+        connection = database.connect(
+            connect_timeout_seconds=connect_timeout_seconds,
+        )
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+                row = cursor.fetchone()
+            if row is None:
+                raise RuntimeError("Database readiness query returned no row.")
+        finally:
+            connection.close()
+    except Exception:
+        return DatabaseReadinessStatus(
+            configuration=configuration,
+            connected=False,
+            ready=False,
+            message="PostgreSQL connection check failed.",
+        )
+
+    return DatabaseReadinessStatus(
+        configuration=configuration,
+        connected=True,
+        ready=True,
+        message="PostgreSQL connection check passed.",
+    )
 
 
 def require_postgres_database_for_production(

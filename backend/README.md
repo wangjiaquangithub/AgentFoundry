@@ -416,9 +416,11 @@ v1
 ### 健康探针
 
 - `GET /health` 是进程存活探针；只要 API 进程可以响应就返回 HTTP 200。
-- `GET /ready` 是流量就绪探针；数据库运行时可用时返回 HTTP 200 和
-  `status=ready`，未配置或运行时不可用时返回 HTTP 503 和
-  `status=not_ready`。负载均衡器和编排平台应只在该接口返回 200 时导入流量。
+- `GET /ready` 是流量就绪探针；它会在 3 秒连接超时内连接 PostgreSQL 并执行
+  `SELECT 1`。连接和查询成功时返回 HTTP 200、`status=ready` 以及
+  `database.connected=true`；未配置、驱动不可用、连接失败或查询失败时返回
+  HTTP 503 和 `status=not_ready`。负载均衡器和编排平台应只在该接口返回
+  200 时导入流量。
 
 ## 从 MVP 到生产
 
