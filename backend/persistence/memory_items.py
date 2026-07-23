@@ -141,7 +141,7 @@ def _validate_memory_item_not_expired(
         return
     try:
         expires_at = datetime.fromisoformat(record.expires_at)
-    except ValueError as exc:
+    except (TypeError, ValueError) as exc:
         raise ValueError(
             f"Memory item {record.id} has an invalid expiry time."
         ) from exc

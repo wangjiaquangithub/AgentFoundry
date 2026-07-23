@@ -157,6 +157,13 @@ CHECKS = (
         ],
     ),
     (
+        "memory-item read expiry type fail closed",
+        [
+            sys.executable,
+            "scripts/check_phase6_memory_item_read_expiry_type_fail_closed.py",
+        ],
+    ),
+    (
         "memory-item write expiry fail closed",
         [
             sys.executable,
