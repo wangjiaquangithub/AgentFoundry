@@ -123,6 +123,11 @@ def create_agent_runtime_router(
             runtime_context_error_type=PlatformConnectorConfigServiceError,
             raise_runtime_context_error=_raise_service_error,
         )
+        _request_tenant(
+            request=request,
+            tenant=agent_run_service.runtime_tenant(runtime),
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         agent_context = agent_run_service.resolve_run_agent_context(
             run_request=run_request,
             load_published_agent=deps.published_agent_tool_scope_for_user,

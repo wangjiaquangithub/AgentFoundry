@@ -52,6 +52,13 @@ CHECKS = (
         ],
     ),
     (
+        "agent execution request tenant",
+        [
+            sys.executable,
+            "scripts/check_phase6_agent_execution_request_tenant.py",
+        ],
+    ),
+    (
         "audit event immutability",
         [sys.executable, "scripts/check_phase6_audit_event_immutability.py"],
     ),
