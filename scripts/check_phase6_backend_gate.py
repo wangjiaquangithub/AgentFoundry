@@ -45,6 +45,10 @@ CHECKS = (
         [sys.executable, "scripts/check_phase6_server_config.py"],
     ),
     (
+        "health probe HTTP semantics",
+        [sys.executable, "scripts/check_phase6_health_probes.py"],
+    ),
+    (
         "README bootstrap",
         [sys.executable, "scripts/check_phase6_readme_bootstrap.py"],
     ),

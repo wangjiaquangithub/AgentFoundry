@@ -391,6 +391,13 @@ UVICORN_RELOAD=0
 CORS_ALLOW_ORIGINS=https://console.example.com,https://admin.example.com
 ```
 
+### 健康探针
+
+- `GET /health` 是进程存活探针；只要 API 进程可以响应就返回 HTTP 200。
+- `GET /ready` 是流量就绪探针；数据库运行时可用时返回 HTTP 200 和
+  `status=ready`，未配置或运行时不可用时返回 HTTP 503 和
+  `status=not_ready`。负载均衡器和编排平台应只在该接口返回 200 时导入流量。
+
 ## 从 MVP 到生产
 
 - 认证：把 `X-User-ID` 换成真实登录态，并把租户、部门、角色、数据权限写进 claims 或后端权限服务。

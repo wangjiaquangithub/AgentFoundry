@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response, status
 
 from backend.persistence.database import inspect_configured_database_status
 
@@ -20,9 +20,11 @@ def create_health_router() -> APIRouter:
         return {"status": "ok"}
 
     @router.get("/ready")
-    async def readiness_check() -> dict[str, Any]:
+    async def readiness_check(response: Response) -> dict[str, Any]:
         """Readiness probe: checks database configuration status."""
         db_status = inspect_configured_database_status()
+        if not db_status.runtime_ready:
+            response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         return {
             "status": "ready" if db_status.runtime_ready else "not_ready",
             "database": {
