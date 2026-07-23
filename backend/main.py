@@ -159,7 +159,7 @@ from services.composition import (
     build_audit_event_write_repository,
     build_database_config_status_inspector,
     build_knowledge_base_read_repository,
-    build_knowledge_base_write_repository,
+    build_knowledge_base_service,
     build_knowledge_document_chunk_read_repository,
     build_knowledge_document_chunk_write_repository,
     build_knowledge_document_readiness_service,
@@ -726,9 +726,8 @@ app.include_router(
     create_knowledge_bases_router(
         KnowledgeBasesRouteDependencies(
             knowledge_base_read_repository=build_knowledge_base_read_repository,
-            knowledge_base_write_repository=build_knowledge_base_write_repository,
+            knowledge_base_service=lambda: build_knowledge_base_service(now=now_iso),
             tenant_hint_from_user_id=tenant_hint_from_user_id,
-            now=now_iso,
         )
     )
 )

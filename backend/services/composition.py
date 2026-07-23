@@ -76,6 +76,7 @@ from backend.services.knowledge import (
     PlatformKnowledgeResponseService,
     PlatformKnowledgeRetrievalService,
 )
+from backend.services.knowledge_bases import PlatformKnowledgeBaseService
 from backend.services.knowledge_ingestion import PlatformKnowledgeIngestionService
 from backend.services.model_configs import PlatformModelConfigService
 
@@ -569,6 +570,33 @@ def build_configured_postgres_knowledge_base_write_repository() -> (
     return PostgresKnowledgeBaseWriteRepository(database)
 
 
+def build_postgres_knowledge_base_service(
+    database: PostgresDatabase,
+    *,
+    now: Callable[[], str] | None = None,
+) -> PlatformKnowledgeBaseService:
+    """Build the PostgreSQL-backed knowledge base mutation service."""
+
+    return PlatformKnowledgeBaseService(
+        knowledge_base_writer=PostgresKnowledgeBaseWriteRepository(database),
+        audit_event_writer=PostgresAuditEventWriteRepository(database),
+        now=now,
+    )
+
+
+def build_configured_postgres_knowledge_base_service(
+    *,
+    now: Callable[[], str] | None = None,
+) -> PlatformKnowledgeBaseService | None:
+    """Build the knowledge base mutation service when PostgreSQL is configured."""
+
+    database = create_configured_postgres_database()
+    if database is None:
+        return None
+
+    return build_postgres_knowledge_base_service(database, now=now)
+
+
 def build_configured_postgres_knowledge_document_read_repository() -> (
     PostgresDocumentReadRepository | None
 ):
@@ -655,6 +683,15 @@ def build_knowledge_base_write_repository() -> (
     """Select the configured production knowledge base write repository."""
 
     return build_configured_postgres_knowledge_base_write_repository()
+
+
+def build_knowledge_base_service(
+    *,
+    now: Callable[[], str] | None = None,
+) -> PlatformKnowledgeBaseService | None:
+    """Select the configured production knowledge base mutation service."""
+
+    return build_configured_postgres_knowledge_base_service(now=now)
 
 
 def build_knowledge_document_read_repository() -> (

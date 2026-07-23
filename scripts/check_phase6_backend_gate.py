@@ -87,6 +87,13 @@ CHECKS = (
         ],
     ),
     (
+        "knowledge base upsert authenticated actor audit",
+        [
+            sys.executable,
+            "scripts/check_phase6_knowledge_base_actor_audit.py",
+        ],
+    ),
+    (
         "tool request tenant",
         [
             sys.executable,

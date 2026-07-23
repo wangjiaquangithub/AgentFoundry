@@ -26,10 +26,14 @@ from api.schemas import (
 from backend.persistence.document_chunks import DocumentChunkRecord
 from backend.persistence.documents import DocumentRecord
 from backend.persistence.embedding_records import EmbeddingRecord
-from backend.persistence.knowledge_bases import KnowledgeBaseRecord
 from services.knowledge import (
     PlatformKnowledgeDocumentReadinessService,
     PlatformKnowledgeRetrievalService,
+)
+from services.knowledge_bases import (
+    KnowledgeBaseApiCommandInput,
+    PlatformKnowledgeBaseService,
+    PlatformKnowledgeBaseServiceError,
 )
 from services.knowledge_ingestion import (
     KnowledgeIngestionRequest,
@@ -56,9 +60,8 @@ class KnowledgeReadinessRouteDependencies:
 @dataclass(frozen=True)
 class KnowledgeBasesRouteDependencies:
     knowledge_base_read_repository: Callable[[], Any | None]
-    knowledge_base_write_repository: Callable[[], Any | None]
+    knowledge_base_service: Callable[[], PlatformKnowledgeBaseService | None]
     tenant_hint_from_user_id: Callable[[str], str | None]
-    now: Callable[[], str]
 
 
 @dataclass(frozen=True)
@@ -368,8 +371,8 @@ def create_knowledge_bases_router(
         request: Request,
     ) -> dict[str, Any]:
         """Persist one tenant knowledge base record to PostgreSQL."""
-        repository = deps.knowledge_base_write_repository()
-        if repository is None:
+        service = deps.knowledge_base_service()
+        if service is None:
             raise HTTPException(
                 status_code=503,
                 detail=(
@@ -384,19 +387,22 @@ def create_knowledge_bases_router(
             request=request,
             tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
         )
-        now = deps.now()
-        knowledge_base = KnowledgeBaseRecord(
-            id=payload.knowledge_base_id or f"kb-{uuid4()}",
-            tenant_id=tenant_id,
-            name=payload.name,
-            description=payload.description,
-            status=payload.status,
-            embedding_model_config_id=payload.embedding_model_config_id,
-            created_at=now,
-            updated_at=now,
-        )
+        identity = get_request_identity(request)
+        actor_user_id = identity.user_id or "system"
         try:
-            persisted_knowledge_base = repository.upsert_knowledge_base(knowledge_base)
+            persisted_knowledge_base = service.upsert_knowledge_base_from_api(
+                KnowledgeBaseApiCommandInput(
+                    id=payload.knowledge_base_id or f"kb-{uuid4()}",
+                    tenant_id=tenant_id,
+                    name=payload.name,
+                    description=payload.description,
+                    status=payload.status,
+                    embedding_model_config_id=payload.embedding_model_config_id,
+                    actor_user_id=actor_user_id,
+                )
+            )
+        except PlatformKnowledgeBaseServiceError as exc:
+            raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
         except ValueError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
 
