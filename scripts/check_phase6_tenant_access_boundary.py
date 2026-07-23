@@ -22,6 +22,7 @@ from repositories.agents import (  # noqa: E402
 )
 from services.agents import PlatformAgentService, PlatformAgentServiceError  # noqa: E402
 from services.members import PlatformMemberService, PlatformMemberServiceError  # noqa: E402
+from services.platform_status import PlatformStatusService  # noqa: E402
 
 
 IDENTITIES = [
@@ -1075,6 +1076,175 @@ def assert_platform_member_operations_use_request_tenant() -> None:
         )
 
 
+def assert_platform_read_models_use_request_tenant() -> None:
+    api_source = (BACKEND_DIR / "api" / "platform_admin.py").read_text(
+        encoding="utf-8",
+    )
+    route_bounds = (
+        (
+            '@router.get("/enterprise/platform/status")',
+            '@router.get("/enterprise/platform/connectors")',
+            "status_request_context(\n                user_id=identity.user_id,\n                tenant=tenant_id,",
+        ),
+        (
+            '@router.get("/enterprise/platform/connectors")',
+            '@router.get("/enterprise/platform/governance")',
+            "platform_connectors_response(\n                user_id=identity.user_id,\n                tenant=tenant_id,",
+        ),
+        (
+            '@router.get("/enterprise/platform/governance")',
+            '@router.get("/enterprise/platform/members")',
+            "governance_request_payload(\n                user_id=identity.user_id,\n                tenant=tenant_id,",
+        ),
+    )
+    for start, end, service_call in route_bounds:
+        route = api_source[api_source.index(start):api_source.index(end)]
+        required_fragments = (
+            "identity = get_request_identity(request)",
+            "tenant_id = _request_tenant(",
+            "identity_user_id=identity.user_id",
+            "identity_tenant_id=identity.tenant_id",
+            "tenant=None",
+            "tenant_hint_from_user_id=deps.tenant_hint_from_user_id",
+            service_call,
+        )
+        missing_fragments = [
+            fragment for fragment in required_fragments if fragment not in route
+        ]
+        if missing_fragments or route.count("_request_tenant(") != 1:
+            raise AssertionError(
+                f"Platform read route tenant boundary is incomplete for {start}: "
+                + ", ".join(missing_fragments),
+            )
+
+    connector_source = (BACKEND_DIR / "services" / "connectors.py").read_text(
+        encoding="utf-8",
+    )
+    required_connector_fragments = (
+        "def platform_connectors_response(\n        self,\n        *,\n        user_id: str | None,\n        tenant: str,",
+        "self.enterprise_runtime_context(\n            resolved_user_id,\n            tenant=tenant,",
+        '"saved_configs": self.redacted_configs(tenant=tenant)',
+        "runtime_tenant = tenant or self.runtime_tenant_for_user(user_id)",
+    )
+    missing_connector_fragments = [
+        fragment
+        for fragment in required_connector_fragments
+        if fragment not in connector_source
+    ]
+    if missing_connector_fragments:
+        raise AssertionError(
+            "Platform connector read scope is incomplete: "
+            + ", ".join(missing_connector_fragments),
+        )
+
+
+def assert_platform_status_and_governance_are_tenant_scoped() -> None:
+    runtime_calls: list[dict[str, Any]] = []
+    approval_calls: list[dict[str, Any]] = []
+    audit_queries: list[dict[str, Any]] = []
+    approvals = [
+        {"approval_id": "approval_acme", "tenant": "acme", "user_id": "acme:alice"},
+        {
+            "approval_id": "approval_globex",
+            "tenant": "globex",
+            "user_id": "globex:bob",
+        },
+    ]
+    audit_events = [
+        {
+            "event_id": "event_acme",
+            "tenant": "acme",
+            "user_id": "acme:alice",
+            "timestamp": "2026-07-23T00:00:00+00:00",
+        },
+        {
+            "event_id": "event_globex",
+            "tenant": "globex",
+            "user_id": "globex:bob",
+            "timestamp": "2026-07-23T00:01:00+00:00",
+        },
+    ]
+
+    def runtime_context(user_id: str, *, tenant: str | None = None) -> dict[str, Any]:
+        runtime_calls.append({"user_id": user_id, "tenant": tenant})
+        return {
+            "tenant": tenant or tenant_for_user(user_id),
+            "connector_label": "test",
+            "connector_source": "global",
+            "saved_config_enabled": False,
+        }
+
+    def list_approval_records(**kwargs: Any) -> list[dict[str, Any]]:
+        approval_calls.append(dict(kwargs))
+        tenant = kwargs.get("tenant")
+        return [record for record in approvals if record["tenant"] == tenant]
+
+    def query_audit_events(**kwargs: Any) -> list[dict[str, Any]]:
+        audit_queries.append(dict(kwargs))
+        tenant = kwargs.get("tenant")
+        return [event for event in audit_events if event["tenant"] == tenant]
+
+    service = PlatformStatusService(
+        list_approval_records=list_approval_records,
+        load_workflow_runs=lambda **_kwargs: [],
+        load_workflow_templates=lambda: [],
+        load_agents=lambda: [],
+        load_memories=lambda **_kwargs: [],
+        runtime_context=runtime_context,
+        identity_metadata=lambda _user_id, tenant: [
+            identity for identity in IDENTITIES if identity["tenant"] == tenant
+        ],
+        tenant_workspaces=lambda **kwargs: {
+            kwargs["current_tenant"]: {"tenant": kwargs["current_tenant"]},
+        },
+        agent_run_repository=SimpleNamespace(),
+        audit_logger=SimpleNamespace(
+            query=query_audit_events,
+            recent=lambda **_kwargs: list(audit_events),
+        ),
+        audit_event_reader=None,
+        retrieval_event_reader=None,
+        tool_policy=SimpleNamespace(),
+        connector_health=lambda: {},
+        runtime_provider_health=lambda: {},
+        agent_readiness=lambda _agent: {},
+        enterprise_tool_names=[],
+        enterprise_tool_catalog={},
+        approval_required_tools=set(),
+        approval_required_workflows=set(),
+    )
+
+    context = service.status_request_context(
+        user_id="acme:alice",
+        tenant="globex",
+    )
+    if runtime_calls != [{"user_id": "acme:alice", "tenant": "globex"}]:
+        raise AssertionError("Status runtime did not receive the request tenant.")
+    if context["tenant"] != "globex" or {
+        identity["tenant"] for identity in context["identities"]
+    } != {"globex"}:
+        raise AssertionError("Status context crossed the request tenant boundary.")
+
+    payload = service.governance_request_payload(
+        user_id="acme:alice",
+        tenant="globex",
+    )
+    if [item["approval_id"] for item in payload["pending_approvals"]] != [
+        "approval_globex"
+    ]:
+        raise AssertionError("Governance approvals crossed the request tenant boundary.")
+    if [item["event_id"] for item in payload["recent_audit_events"]] != [
+        "event_globex"
+    ]:
+        raise AssertionError("Governance audit events crossed the request tenant boundary.")
+    if not approval_calls or approval_calls[-1].get("tenant") != "globex":
+        raise AssertionError("Governance approval query omitted the request tenant.")
+    if not audit_queries or {call.get("tenant") for call in audit_queries} != {
+        "globex"
+    }:
+        raise AssertionError("Governance audit fallback omitted the request tenant.")
+
+
 def main() -> None:
     assert_agent_list_is_tenant_scoped()
     assert_cross_tenant_runtime_access_is_denied()
@@ -1093,6 +1263,8 @@ def main() -> None:
     assert_platform_config_export_uses_request_tenant()
     assert_platform_config_import_uses_request_tenant()
     assert_platform_member_operations_use_request_tenant()
+    assert_platform_read_models_use_request_tenant()
+    assert_platform_status_and_governance_are_tenant_scoped()
     print("Phase 6 tenant access boundary contract passed.")
 
 

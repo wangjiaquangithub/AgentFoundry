@@ -365,8 +365,11 @@ def _platform_status_service() -> PlatformStatusService:
             limit=PLATFORM_MEMORY_MAX_RECORDS,
             **kwargs,
         ),
-        runtime_context=lambda user_id: (
-            _platform_connector_config_service().enterprise_runtime_context(user_id)
+        runtime_context=lambda user_id, *, tenant=None: (
+            _platform_connector_config_service().enterprise_runtime_context(
+                user_id,
+                tenant=tenant,
+            )
         ),
         identity_metadata=_platform_access_helpers.identity_metadata,
         tenant_workspaces=lambda **kwargs: (

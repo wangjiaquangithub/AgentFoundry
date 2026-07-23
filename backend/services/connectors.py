@@ -373,6 +373,7 @@ class PlatformConnectorConfigService:
         self,
         *,
         runtime: dict[str, Any],
+        tenant: str,
         connector_name: str,
         env: Mapping[str, str],
     ) -> dict[str, Any]:
@@ -407,7 +408,7 @@ class PlatformConnectorConfigService:
                     "/tenants/{tenant}/departments/{department}/metrics",
                 ),
             },
-            "saved_configs": self.redacted_configs(),
+            "saved_configs": self.redacted_configs(tenant=tenant),
         }
 
     @staticmethod
@@ -422,16 +423,20 @@ class PlatformConnectorConfigService:
         self,
         *,
         user_id: str | None,
+        tenant: str,
         connector_name: str,
         env: Mapping[str, str],
         identity_metadata: Callable[[str, str], list[dict[str, Any]]],
     ) -> dict[str, Any]:
         """Build connector readiness, identity, and tenant workspace metadata."""
         resolved_user_id = self.resolve_request_user_id(user_id)
-        runtime = self.enterprise_runtime_context(resolved_user_id)
-        tenant = str(runtime["tenant"])
+        runtime = self.enterprise_runtime_context(
+            resolved_user_id,
+            tenant=tenant,
+        )
         response = self.metadata_response(
             runtime=runtime,
+            tenant=tenant,
             connector_name=connector_name,
             env=env,
         )
@@ -514,16 +519,23 @@ class PlatformConnectorConfigService:
             return self.connector_from_saved_config(config), "saved_config"
         return self._global_connector, "global"
 
-    def enterprise_runtime_context(self, user_id: str) -> dict[str, Any]:
-        tenant = self.runtime_tenant_for_user(user_id)
-        connector, source = self.runtime_enterprise_connector_for_tenant(tenant)
+    def enterprise_runtime_context(
+        self,
+        user_id: str,
+        *,
+        tenant: str | None = None,
+    ) -> dict[str, Any]:
+        runtime_tenant = tenant or self.runtime_tenant_for_user(user_id)
+        connector, source = self.runtime_enterprise_connector_for_tenant(
+            runtime_tenant,
+        )
         connector_label = (
             f"{connector.name}:saved_config"
             if source == "saved_config"
             else connector.name
         )
         return {
-            "tenant": tenant,
+            "tenant": runtime_tenant,
             "connector": connector,
             "connector_source": source,
             "connector_label": connector_label,

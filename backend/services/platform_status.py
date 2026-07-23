@@ -68,7 +68,7 @@ class PlatformStatusService:
         load_workflow_templates: Callable[[], list[dict[str, Any]]],
         load_agents: Callable[[], list[dict[str, Any]]],
         load_memories: Callable[..., list[dict[str, Any]]],
-        runtime_context: Callable[[str], dict[str, Any]],
+        runtime_context: Callable[..., dict[str, Any]],
         identity_metadata: Callable[[str, str], list[dict[str, Any]]],
         tenant_workspaces: Callable[..., dict[str, Any]],
         agent_run_repository: Any,
@@ -143,21 +143,30 @@ class PlatformStatusService:
         """Return the user id for platform status requests."""
         return user_id or "acme:alice"
 
-    def status_request_context(self, *, user_id: str | None) -> dict[str, Any]:
+    def status_request_context(
+        self,
+        *,
+        user_id: str | None,
+        tenant: str | None = None,
+    ) -> dict[str, Any]:
         """Build runtime, tenant, identity, and workspace context for status."""
         resolved_user_id = self.resolve_request_user_id(user_id)
-        runtime = self._runtime_context(resolved_user_id)
+        runtime = (
+            self._runtime_context(resolved_user_id, tenant=tenant)
+            if tenant is not None
+            else self._runtime_context(resolved_user_id)
+        )
         runtime_selection = self.runtime_selection(runtime)
-        tenant = runtime_selection["tenant"]
-        identities = self._identity_metadata(resolved_user_id, tenant)
+        request_tenant = tenant or runtime_selection["tenant"]
+        identities = self._identity_metadata(resolved_user_id, request_tenant)
         tenant_workspaces = self._tenant_workspaces(
             identities=identities,
-            current_tenant=tenant,
+            current_tenant=request_tenant,
         )
         return {
             "runtime": runtime,
             "runtime_selection": runtime_selection,
-            "tenant": tenant,
+            "tenant": request_tenant,
             "user_id": resolved_user_id,
             "identities": identities,
             "tenant_workspaces": tenant_workspaces,
@@ -550,10 +559,16 @@ class PlatformStatusService:
             return sorted(str(value) for value in capabilities)
         return []
 
-    def governance_request_payload(self, *, user_id: str | None) -> dict[str, Any]:
+    def governance_request_payload(
+        self,
+        *,
+        user_id: str | None,
+        tenant: str | None = None,
+    ) -> dict[str, Any]:
         """Build the governance response for one platform request user."""
-        context = self.status_request_context(user_id=user_id)
+        context = self.status_request_context(user_id=user_id, tenant=tenant)
         return self.governance_snapshot(
+            tenant=context["tenant"],
             identities=context["identities"],
             tenant_workspaces=context["tenant_workspaces"],
         )
@@ -561,6 +576,7 @@ class PlatformStatusService:
     def governance_snapshot(
         self,
         *,
+        tenant: str,
         identities: list[dict[str, Any]],
         tenant_workspaces: dict[str, Any],
     ) -> dict[str, Any]:
@@ -568,6 +584,7 @@ class PlatformStatusService:
         pending_approvals = self._list_approval_records(
             status="pending",
             limit=100,
+            tenant=tenant,
         )
         recent_audit_events = self._recent_audit_events(
             tenants=list(tenant_workspaces),
@@ -1364,7 +1381,25 @@ class PlatformStatusService:
                 "PostgreSQL platform audit event reader is required in production mode."
             )
 
-        return self._audit_logger.recent(limit=limit)
+        if not tenants:
+            return []
+
+        events = []
+        for tenant in tenants:
+            events.extend(
+                self._audit_logger.query(
+                    tenant=tenant,
+                    limit=limit,
+                ),
+            )
+        return sorted(
+            events,
+            key=lambda event: (
+                str(event.get("timestamp") or ""),
+                str(event.get("event_id") or ""),
+            ),
+            reverse=True,
+        )[:limit]
 
     def _is_production_database_mode(self) -> bool:
         """Return whether this service is running under production data-layer mode."""

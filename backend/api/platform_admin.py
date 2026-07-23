@@ -177,9 +177,16 @@ def create_platform_admin_router(
         """Return enterprise platform state for the frontend console."""
         status_service = deps.status_service()
         identity = get_request_identity(request)
+        tenant_id = _request_tenant(
+            identity_user_id=identity.user_id,
+            identity_tenant_id=identity.tenant_id,
+            tenant=None,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         try:
             context = status_service.status_request_context(
                 user_id=identity.user_id,
+                tenant=tenant_id,
             )
         except PlatformConnectorConfigServiceError as exc:
             _raise_service_error(exc)
@@ -199,10 +206,17 @@ def create_platform_admin_router(
     async def enterprise_platform_connectors(request: Request) -> dict[str, Any]:
         """Return enterprise data source connector readiness and tenant scope."""
         identity = get_request_identity(request)
+        tenant_id = _request_tenant(
+            identity_user_id=identity.user_id,
+            identity_tenant_id=identity.tenant_id,
+            tenant=None,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         try:
             connector_config_service = deps.connector_config_service()
             return connector_config_service.platform_connectors_response(
                 user_id=identity.user_id,
+                tenant=tenant_id,
                 connector_name=deps.connector_name,
                 env=deps.env,
                 identity_metadata=deps.identity_metadata,
@@ -215,9 +229,16 @@ def create_platform_admin_router(
         """Return tenant, identity, approval, and audit governance state."""
         status_service = deps.status_service()
         identity = get_request_identity(request)
+        tenant_id = _request_tenant(
+            identity_user_id=identity.user_id,
+            identity_tenant_id=identity.tenant_id,
+            tenant=None,
+            tenant_hint_from_user_id=deps.tenant_hint_from_user_id,
+        )
         try:
             return status_service.governance_request_payload(
                 user_id=identity.user_id,
+                tenant=tenant_id,
             )
         except PlatformConnectorConfigServiceError as exc:
             _raise_service_error(exc)
@@ -238,6 +259,7 @@ def create_platform_admin_router(
                 tenant=tenant_id,
                 request_context=lambda user_id: deps.status_service().status_request_context(
                     user_id=user_id,
+                    tenant=tenant_id,
                 ),
                 registry_path=deps.members_path,
             )
