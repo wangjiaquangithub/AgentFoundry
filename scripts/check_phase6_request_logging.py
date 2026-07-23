@@ -37,12 +37,19 @@ sys.modules.setdefault("starlette.responses", starlette_responses_module)
 from api.request_logging import StructuredRequestLoggingMiddleware  # noqa: E402
 
 
-def _request(*, tenant: str | None = None, user: str | None = None) -> Any:
+def _request(
+    *,
+    tenant: str | None = None,
+    user: str | None = None,
+    request_id: str | None = None,
+) -> Any:
     headers = {}
     if tenant is not None:
         headers["X-Tenant-ID"] = tenant
     if user is not None:
         headers["X-User-ID"] = user
+    if request_id is not None:
+        headers["X-Request-ID"] = request_id
     return SimpleNamespace(
         method="POST",
         url=SimpleNamespace(path="/platform/agents/run"),
@@ -52,12 +59,18 @@ def _request(*, tenant: str | None = None, user: str | None = None) -> Any:
 
 def check_success_record() -> list[str]:
     record = StructuredRequestLoggingMiddleware._build_record(
-        _request(tenant="acme", user="acme:alice"),
+        _request(
+            tenant="acme",
+            user="acme:alice",
+            request_id="req-agent-run-123",
+        ),
         SimpleNamespace(status_code=201),
         12.34,
         None,
+        request_id="req-agent-run-123",
     )
     expected = {
+        "request_id": "req-agent-run-123",
         "method": "POST",
         "path": "/platform/agents/run",
         "status": 201,
@@ -83,19 +96,55 @@ def check_optional_context() -> list[str]:
     return []
 
 
+def check_request_id_resolution() -> list[str]:
+    errors: list[str] = []
+    accepted = StructuredRequestLoggingMiddleware._resolve_request_id(
+        _request(request_id="trace.acme:run-42"),
+    )
+    if accepted != "trace.acme:run-42":
+        errors.append(f"valid caller request id was not preserved: {accepted!r}")
+
+    generated = StructuredRequestLoggingMiddleware._resolve_request_id(_request())
+    if len(generated) != 32 or any(character not in "0123456789abcdef" for character in generated):
+        errors.append(f"missing request id must produce a UUID hex value: {generated!r}")
+
+    rejected = StructuredRequestLoggingMiddleware._resolve_request_id(
+        _request(request_id="invalid request id\nforged"),
+    )
+    if rejected == "invalid request id\nforged" or len(rejected) != 32:
+        errors.append(f"unsafe caller request id must be replaced: {rejected!r}")
+    return errors
+
+
 def check_error_record() -> list[str]:
     record = StructuredRequestLoggingMiddleware._build_record(
         _request(),
         None,
         3.21,
         "runtime unavailable",
+        request_id="req-failed-456",
     )
     errors: list[str] = []
     if record.get("status") != 500:
         errors.append(f"failed request status must be 500: {record!r}")
     if record.get("error") != "runtime unavailable":
         errors.append(f"failed request must include the error detail: {record!r}")
+    if record.get("request_id") != "req-failed-456":
+        errors.append(f"failed request must retain the request id: {record!r}")
     return errors
+
+
+def check_dispatch_propagates_request_id() -> list[str]:
+    source = (BACKEND_DIR / "api" / "request_logging.py").read_text(encoding="utf-8")
+    required_fragments = (
+        "request.state.request_id = request_id",
+        "response.headers[REQUEST_ID_HEADER] = request_id",
+        "request_id=request_id",
+    )
+    missing = [fragment for fragment in required_fragments if fragment not in source]
+    if missing:
+        return [f"request logging dispatch is missing request id propagation: {missing}"]
+    return []
 
 
 def check_main_registers_middleware() -> list[str]:
@@ -135,7 +184,9 @@ def main() -> int:
     errors: list[str] = []
     errors.extend(check_success_record())
     errors.extend(check_optional_context())
+    errors.extend(check_request_id_resolution())
     errors.extend(check_error_record())
+    errors.extend(check_dispatch_propagates_request_id())
     errors.extend(check_main_registers_middleware())
     errors.extend(check_phase6_gate_wires_check())
 
