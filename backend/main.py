@@ -28,6 +28,10 @@ from api.agent_runtime import (
 )
 from api.agents import AgentCatalogRouteDependencies, create_agent_catalog_router
 from api.error_handling import register_error_handlers
+from api.enterprise_identity import (
+    EnterpriseIdentityRouteDependencies,
+    create_enterprise_identity_router,
+)
 from api.knowledge import (
     KnowledgeBasesRouteDependencies,
     KnowledgeDocumentsRouteDependencies,
@@ -154,6 +158,7 @@ from services.connectors import (
 )
 from services.dev_knowledge import PlatformDevKnowledgeService
 from services.enterprise_router import PlatformEnterpriseRouterService
+from services.enterprise_identity import build_enterprise_identity_service
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
 from services.composition import (
@@ -740,6 +745,12 @@ app.include_router(
             build_tool_authorization_policy=_build_tool_authorization_policy,
             tenant_hint_from_user_id=tenant_hint_from_user_id,
         )
+    )
+)
+
+app.include_router(
+    create_enterprise_identity_router(
+        EnterpriseIdentityRouteDependencies(service=build_enterprise_identity_service)
     )
 )
 
