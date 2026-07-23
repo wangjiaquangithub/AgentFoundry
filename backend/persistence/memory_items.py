@@ -162,6 +162,12 @@ def _validate_memory_item_read_count(
         raise ValueError("Memory item read returned more items than requested.")
 
 
+def _clamp_memory_item_read_request_limit(limit: Any) -> int:
+    if isinstance(limit, bool) or not isinstance(limit, int):
+        raise ValueError("Memory item read requires an integer request limit.")
+    return min(max(limit, 1), 100)
+
+
 def _validate_memory_item_read_order(records: list[MemoryItemRecord]) -> None:
     previous_key: tuple[datetime, str] | None = None
     for record in records:
@@ -313,7 +319,7 @@ class SQLiteMemoryItemReadRepository:
         ):
             _validate_memory_item_read_optional_request_identity(field_name, value)
         as_of = datetime.now(timezone.utc)
-        result_limit = self._clamp_limit(limit)
+        result_limit = _clamp_memory_item_read_request_limit(limit)
         query = """
             SELECT id, tenant_id, user_id, agent_id, session_id, content,
               source_run_id, metadata, expires_at, created_at
@@ -394,10 +400,6 @@ class SQLiteMemoryItemReadRepository:
         )
         return record
 
-    def _clamp_limit(self, limit: int) -> int:
-        return min(max(limit, 1), 100)
-
-
 class PostgresMemoryItemReadRepository:
     """Read tenant-scoped memory items from PostgreSQL."""
 
@@ -423,7 +425,7 @@ class PostgresMemoryItemReadRepository:
         ):
             _validate_memory_item_read_optional_request_identity(field_name, value)
         as_of = datetime.now(timezone.utc)
-        result_limit = self._clamp_limit(limit)
+        result_limit = _clamp_memory_item_read_request_limit(limit)
         query = """
             SELECT id, tenant_id, user_id, agent_id, session_id, content,
               source_run_id, metadata, expires_at, created_at
@@ -506,10 +508,6 @@ class PostgresMemoryItemReadRepository:
             as_of=as_of,
         )
         return record
-
-    def _clamp_limit(self, limit: int) -> int:
-        return min(max(limit, 1), 100)
-
 
 class PostgresMemoryItemWriteRepository:
     """Write tenant-scoped memory items to PostgreSQL."""

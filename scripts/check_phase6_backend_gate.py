@@ -374,6 +374,13 @@ CHECKS = (
         ],
     ),
     (
+        "memory-item read request limit type fail closed",
+        [
+            sys.executable,
+            "scripts/check_phase6_memory_item_read_request_limit_type_fail_closed.py",
+        ],
+    ),
+    (
         "memory-item read order fail closed",
         [
             sys.executable,
