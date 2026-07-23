@@ -91,6 +91,17 @@ class PlatformToolPolicyService:
         except ValueError as exc:
             raise PlatformToolPolicyServiceError(500, str(exc)) from exc
 
+    def export_policy_payload(self, *, tenant: str) -> dict[str, Any]:
+        policy = self.load_policy()
+        tenants = policy.get("tenants")
+        tenant_policy = tenants.get(tenant) if isinstance(tenants, dict) else None
+        policy["tenants"] = (
+            {tenant: json.loads(json.dumps(tenant_policy))}
+            if isinstance(tenant_policy, dict)
+            else {}
+        )
+        return policy
+
     def save_policy(self, policy: dict[str, Any]) -> None:
         try:
             self._repository().save(policy)
@@ -104,19 +115,63 @@ class PlatformToolPolicyService:
     ) -> dict[str, Any]:
         return _deep_merge_dict(current_policy, imported_policy)
 
-    def import_policy_payload(self, value: Any, *, mode: str) -> None:
+    def import_policy_payload(
+        self,
+        value: Any,
+        *,
+        mode: str,
+        tenant: str,
+    ) -> None:
         if not isinstance(value, dict):
             raise PlatformToolPolicyServiceError(
                 400,
                 "tool_policy must be a JSON object.",
             )
 
-        policy = value
-        if mode != "replace":
-            policy = self.merge_import_policy(
-                self.load_policy(),
-                value,
+        imported_tenants = value.get("tenants", {})
+        if not isinstance(imported_tenants, dict):
+            raise PlatformToolPolicyServiceError(
+                400,
+                "tool_policy.tenants must be a JSON object.",
             )
+        if any(
+            str(imported_tenant) != tenant
+            for imported_tenant in imported_tenants
+        ):
+            raise PlatformToolPolicyServiceError(
+                403,
+                "Imported tool policies must belong to the request tenant.",
+            )
+
+        policy = self.load_policy()
+        current_tenants = policy.get("tenants")
+        if not isinstance(current_tenants, dict):
+            current_tenants = {}
+        imported_tenant_policy = imported_tenants.get(tenant)
+        if imported_tenant_policy is not None and not isinstance(
+            imported_tenant_policy,
+            dict,
+        ):
+            raise PlatformToolPolicyServiceError(
+                400,
+                "Imported tenant tool policy must be a JSON object.",
+            )
+
+        next_tenants = json.loads(json.dumps(current_tenants))
+        if imported_tenant_policy is None:
+            if mode == "replace":
+                next_tenants.pop(tenant, None)
+        elif mode == "replace":
+            next_tenants[tenant] = json.loads(json.dumps(imported_tenant_policy))
+        else:
+            current_tenant_policy = next_tenants.get(tenant, {})
+            if not isinstance(current_tenant_policy, dict):
+                current_tenant_policy = {}
+            next_tenants[tenant] = self.merge_import_policy(
+                current_tenant_policy,
+                imported_tenant_policy,
+            )
+        policy["tenants"] = next_tenants
         self.save_policy(policy)
 
     def build_authorization_policy(self) -> ToolAuthorizationPolicy:

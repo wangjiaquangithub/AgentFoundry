@@ -674,9 +674,10 @@ def assert_platform_config_export_uses_request_tenant() -> None:
         api_source.index("def export_platform_config("),
     )]
     required_helper_fragments = (
-        "tenant: str | None = None",
+        "tenant: str",
         "export_configs_payload(\n                tenant=tenant,",
         "list_members(\n                include_inactive=True,\n                tenant=tenant,",
+        "export_policy_payload(\n                tenant=tenant,",
     )
     missing_helper_fragments = [
         fragment for fragment in required_helper_fragments if fragment not in export_helper
@@ -715,6 +716,31 @@ def assert_platform_config_export_uses_request_tenant() -> None:
             "Member export scope must support canonical tenant filtering.",
         )
 
+    tool_policy_source = (BACKEND_DIR / "services" / "tools.py").read_text(
+        encoding="utf-8",
+    )
+    export_policy = tool_policy_source[tool_policy_source.index(
+        "def export_policy_payload("
+    ):tool_policy_source.index(
+        "def save_policy(",
+        tool_policy_source.index("def export_policy_payload("),
+    )]
+    required_policy_fragments = (
+        "tenant: str",
+        'tenants.get(tenant) if isinstance(tenants, dict) else None',
+        'policy["tenants"] =',
+        "{tenant: json.loads(json.dumps(tenant_policy))}",
+    )
+    missing_policy_fragments = [
+        fragment for fragment in required_policy_fragments
+        if fragment not in export_policy
+    ]
+    if missing_policy_fragments:
+        raise AssertionError(
+            "Tool policy export tenant scope is incomplete: "
+            + ", ".join(missing_policy_fragments),
+        )
+
 
 def assert_platform_config_import_uses_request_tenant() -> None:
     api_source = (BACKEND_DIR / "api" / "platform_admin.py").read_text(
@@ -749,9 +775,38 @@ def assert_platform_config_import_uses_request_tenant() -> None:
         raise AssertionError(
             "Platform config import must resolve the canonical request tenant.",
         )
-    if import_route.count("tenant=tenant_id") != 3:
+    if import_route.count("tenant=tenant_id") != 4:
         raise AssertionError(
             "Platform config import must scope tenant-owned writes and response export.",
+        )
+
+    tool_policy_source = (BACKEND_DIR / "services" / "tools.py").read_text(
+        encoding="utf-8",
+    )
+    policy_import = tool_policy_source[tool_policy_source.index(
+        "def import_policy_payload("
+    ):tool_policy_source.index(
+        "def build_authorization_policy(",
+        tool_policy_source.index("def import_policy_payload("),
+    )]
+    required_policy_fragments = (
+        "tenant: str",
+        'value.get("tenants", {})',
+        "str(imported_tenant) != tenant",
+        "Imported tool policies must belong to the request tenant.",
+        "next_tenants = json.loads(json.dumps(current_tenants))",
+        "next_tenants.pop(tenant, None)",
+        "next_tenants[tenant] = self.merge_import_policy(",
+        'policy["tenants"] = next_tenants',
+    )
+    missing_policy_fragments = [
+        fragment for fragment in required_policy_fragments
+        if fragment not in policy_import
+    ]
+    if missing_policy_fragments:
+        raise AssertionError(
+            "Tool policy import tenant scope is incomplete: "
+            + ", ".join(missing_policy_fragments),
         )
 
     member_source = (BACKEND_DIR / "services" / "members.py").read_text(

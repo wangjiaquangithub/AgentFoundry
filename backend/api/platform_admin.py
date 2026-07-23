@@ -120,7 +120,7 @@ def create_platform_admin_router(
     def export_platform_config(
         *,
         actor_user_id: str | None = None,
-        tenant: str | None = None,
+        tenant: str,
     ) -> dict[str, Any]:
         try:
             connector_config_service = deps.connector_config_service()
@@ -139,7 +139,9 @@ def create_platform_admin_router(
             _raise_service_error(exc)
 
         try:
-            tool_policy = deps.tool_policy_service().load_policy()
+            tool_policy = deps.tool_policy_service().export_policy_payload(
+                tenant=tenant,
+            )
         except PlatformToolPolicyServiceError as exc:
             _raise_service_error(exc)
         try:
@@ -497,6 +499,7 @@ def create_platform_admin_router(
                 deps.tool_policy_service().import_policy_payload(
                     incoming.get("tool_policy"),
                     mode=mode,
+                    tenant=tenant_id,
                 )
             except PlatformToolPolicyServiceError as exc:
                 _raise_service_error(exc)
