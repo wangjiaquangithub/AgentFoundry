@@ -277,6 +277,25 @@ def _serialize_memory_item_metadata(record: MemoryItemRecord) -> str:
         raise ValueError(
             f"Memory item {record.id} write requires metadata to be a JSON object."
         )
+    pending_values: list[Any] = [record.metadata]
+    visited_containers: set[int] = set()
+    while pending_values:
+        value = pending_values.pop()
+        if not isinstance(value, (dict, list, tuple)):
+            continue
+        container_id = id(value)
+        if container_id in visited_containers:
+            continue
+        visited_containers.add(container_id)
+        if isinstance(value, dict):
+            if any(not isinstance(key, str) for key in value):
+                raise ValueError(
+                    f"Memory item {record.id} write requires metadata object keys "
+                    "to be strings."
+                )
+            pending_values.extend(value.values())
+        else:
+            pending_values.extend(value)
     try:
         return json.dumps(record.metadata, ensure_ascii=False, allow_nan=False)
     except (TypeError, ValueError) as exc:
