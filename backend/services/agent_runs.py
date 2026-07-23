@@ -5,7 +5,11 @@ from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable, Protocol
 from uuid import uuid4
 
-from backend.persistence import RuntimeInvocationRecord, ToolCallRecord
+from backend.persistence import (
+    AuditEventRecord,
+    RuntimeInvocationRecord,
+    ToolCallRecord,
+)
 from repositories.agent_runs import AgentRunRepositoryProtocol
 from services.approvals import PlatformApprovalServiceError
 
@@ -30,6 +34,13 @@ class RuntimeInvocationWriteRepositoryProtocol(Protocol):
         """Persist one tenant-scoped runtime invocation record."""
 
 
+class AuditEventWriteRepositoryProtocol(Protocol):
+    """Persistence boundary for immutable production audit events."""
+
+    def append_audit_event(self, record: AuditEventRecord) -> AuditEventRecord:
+        """Persist one tenant-scoped audit event."""
+
+
 class PlatformAgentRunServiceError(ValueError):
     """Raised when an agent run history operation cannot be completed."""
 
@@ -50,10 +61,12 @@ class PlatformAgentRunService:
         runtime_invocation_writer: (
             RuntimeInvocationWriteRepositoryProtocol | None
         ) = None,
+        audit_event_writer: AuditEventWriteRepositoryProtocol | None = None,
     ) -> None:
         self._repository = repository
         self._tool_call_writer = tool_call_writer
         self._runtime_invocation_writer = runtime_invocation_writer
+        self._audit_event_writer = audit_event_writer
 
     def list_runs(
         self,
@@ -2364,7 +2377,59 @@ class PlatformAgentRunService:
             context=context,
             runtime_invocation_result=runtime_invocation_result,
         )
+        self.append_completed_audit_event(record)
         return record
+
+    def append_completed_audit_event(self, record: dict[str, Any]) -> None:
+        """Append non-sensitive audit evidence for one completed agent run."""
+        if self._audit_event_writer is None:
+            return
+
+        evidence = record.get("evidence")
+        if not isinstance(evidence, dict):
+            evidence = {}
+        runtime_invocation_id = _optional_string(
+            record.get("runtime_invocation_id"),
+        )
+        payload = {
+            "schema_version": 1,
+            "turn_id": str(record.get("turn_id") or ""),
+            "tenant": str(record.get("tenant") or ""),
+            "user_id": str(record.get("user_id") or ""),
+            "agent_id": str(record.get("agent_id") or ""),
+            "session_id": str(record.get("session_id") or ""),
+            "runtime_invocation_id": runtime_invocation_id,
+            "tool_call_count": _optional_int(evidence.get("tool_call_count")) or 0,
+            "knowledge_hit_count": (
+                _optional_int(evidence.get("knowledge_hit_count")) or 0
+            ),
+            "memory_hit_count": (
+                _optional_int(evidence.get("memory_hit_count")) or 0
+            ),
+            "memory_saved": bool(evidence.get("memory_saved", False)),
+        }
+        try:
+            persisted_audit_event = self._audit_event_writer.append_audit_event(
+                AuditEventRecord(
+                    id=str(uuid4()),
+                    tenant_id=payload["tenant"],
+                    actor_user_id=payload["user_id"],
+                    event_type="agent_run.completed",
+                    target_type="agent_run",
+                    target_id=payload["turn_id"],
+                    payload=payload,
+                    created_at=str(record.get("created_at") or ""),
+                ),
+            )
+            if not persisted_audit_event.id:
+                raise PlatformAgentRunServiceError(
+                    500,
+                    "PostgreSQL audit event write did not return a persisted id.",
+                )
+        except PlatformAgentRunServiceError:
+            raise
+        except Exception as exc:
+            raise PlatformAgentRunServiceError(500, str(exc)) from exc
 
     def append_runtime_invocation_record_from_context(
         self,

@@ -486,6 +486,7 @@ def _platform_agent_run_service() -> PlatformAgentRunService:
         repository=agent_run_repository,
         tool_call_writer=build_tool_call_write_repository(),
         runtime_invocation_writer=build_runtime_write_repository(),
+        audit_event_writer=build_audit_event_write_repository(),
     )
 
 

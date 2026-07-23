@@ -49,6 +49,10 @@ CHECKS = (
         [sys.executable, "scripts/check_phase6_health_probes.py"],
     ),
     (
+        "completed agent run audit contract",
+        [sys.executable, "scripts/check_phase6_agent_run_audit.py"],
+    ),
+    (
         "README bootstrap",
         [sys.executable, "scripts/check_phase6_readme_bootstrap.py"],
     ),
