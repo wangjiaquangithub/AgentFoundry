@@ -167,6 +167,13 @@ CHECKS = (
         ],
     ),
     (
+        "tool policy update authenticated actor audit",
+        [
+            sys.executable,
+            "scripts/check_phase6_tool_policy_update_actor_audit.py",
+        ],
+    ),
+    (
         "backend logging configuration",
         [sys.executable, "scripts/check_phase6_logging_config.py"],
     ),

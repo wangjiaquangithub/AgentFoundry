@@ -855,8 +855,8 @@ class PlatformToolPolicyService:
         normalized_tenant = tenant.strip()
         normalized_user_id = user_id.strip()
         normalized_actor = str(actor_user_id or "platform-admin").strip()
-        normalized_allow = self.normalize_tool_list(allow, field_name="allow")
-        normalized_deny = self.normalize_tool_list(deny, field_name="deny")
+        normalized_allow = self.normalize_policy_tools(allow)
+        normalized_deny = self.normalize_policy_tools(deny)
         try:
             persisted_audit_event = self._audit_event_writer.append_audit_event(
                 AuditEventRecord(
