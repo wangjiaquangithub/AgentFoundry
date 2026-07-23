@@ -423,7 +423,6 @@ class PostgresMemoryItemWriteRepository:
                     )
                     ON CONFLICT (id) DO UPDATE SET
                       content = EXCLUDED.content,
-                      source_run_id = EXCLUDED.source_run_id,
                       metadata = EXCLUDED.metadata,
                       expires_at = EXCLUDED.expires_at,
                       created_at = EXCLUDED.created_at
@@ -431,6 +430,7 @@ class PostgresMemoryItemWriteRepository:
                       AND memory_items.user_id = EXCLUDED.user_id
                       AND memory_items.agent_id IS NOT DISTINCT FROM EXCLUDED.agent_id
                       AND memory_items.session_id IS NOT DISTINCT FROM EXCLUDED.session_id
+                      AND memory_items.source_run_id IS NOT DISTINCT FROM EXCLUDED.source_run_id
                     RETURNING id, tenant_id, user_id, agent_id, session_id,
                       content, source_run_id, metadata, expires_at, created_at
                     """,
