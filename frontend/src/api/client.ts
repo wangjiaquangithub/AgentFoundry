@@ -29,12 +29,13 @@ interface RequestOptions {
 	params?: Record<string, string>;
 	/** When true, suppresses the automatic error toast. Useful when the caller shows its own inline error UI. */
 	silent?: boolean;
+	headers?: Record<string, string>;
 }
 
-function buildHeaders(hasBody: boolean): Record<string, string> {
+function buildHeaders(hasBody: boolean, extra?: Record<string, string>): Record<string, string> {
 	const headers: Record<string, string> = { 'X-User-ID': getUserId() };
 	if (hasBody) headers['Content-Type'] = 'application/json';
-	return headers;
+	return { ...headers, ...extra };
 }
 
 /** Parse the response body and extract the `detail` field if the backend returned JSON. */
@@ -66,7 +67,7 @@ async function extractErrorDetail(res: Response): Promise<{
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-	const { method = 'GET', body, params, silent = false } = options;
+	const { method = 'GET', body, params, silent = false, headers } = options;
 	const url = new URL(path, getBaseUrl());
 	if (params) {
 		Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
@@ -74,7 +75,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
 	const res = await fetch(url.toString(), {
 		method,
-		headers: buildHeaders(body !== undefined),
+		headers: buildHeaders(body !== undefined, headers),
 		body: body ? JSON.stringify(body) : undefined,
 	});
 
@@ -93,7 +94,7 @@ async function streamRequest(
 	path: string,
 	options: RequestOptions & { signal?: AbortSignal } = {},
 ): Promise<Response> {
-	const { method = 'GET', body, params, signal, silent = false } = options;
+	const { method = 'GET', body, params, signal, silent = false, headers } = options;
 	const url = new URL(path, getBaseUrl());
 	if (params) {
 		Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
@@ -101,7 +102,7 @@ async function streamRequest(
 
 	const res = await fetch(url.toString(), {
 		method,
-		headers: buildHeaders(body !== undefined),
+		headers: buildHeaders(body !== undefined, headers),
 		body: body ? JSON.stringify(body) : undefined,
 		signal,
 	});
@@ -123,8 +124,14 @@ export const client = {
 		path: string,
 		body?: unknown,
 		params?: Record<string, string>,
-		options?: { silent?: boolean },
-	) => request<T>(path, { method: 'POST', body, params, silent: options?.silent }),
+		options?: { silent?: boolean; headers?: Record<string, string> },
+	) => request<T>(path, { method: 'POST', body, params, ...options }),
+	put: <T>(
+		path: string,
+		body?: unknown,
+		params?: Record<string, string>,
+		options?: { silent?: boolean; headers?: Record<string, string> },
+	) => request<T>(path, { method: 'PUT', body, params, ...options }),
 	patch: <T>(
 		path: string,
 		body?: unknown,

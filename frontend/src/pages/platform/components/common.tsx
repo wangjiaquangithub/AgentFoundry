@@ -3,6 +3,7 @@ import {
 	Bot,
 	Boxes,
 	Brain,
+	Building2,
 	GitBranch,
 	LayoutDashboard,
 	PlayCircle,
@@ -45,6 +46,7 @@ const platformSections: Array<{
 	{ group: 'Operate', label: 'Runs', path: '/platform/runs', icon: PlayCircle },
 	{ group: 'Operate', label: 'Approvals', path: '/platform/approvals', icon: ShieldCheck },
 	{ group: 'Operate', label: 'Runtime Providers', path: '/platform/connectors', icon: PlugZap },
+	{ group: 'Govern', label: '企业治理', path: '/platform/enterprise', icon: Building2 },
 	{ group: 'Govern', label: 'Members / Tenants', path: '/platform/tenants', icon: UsersRound },
 	{ group: 'Configure', label: 'Models / Settings', path: '/platform/settings', icon: Boxes },
 ];

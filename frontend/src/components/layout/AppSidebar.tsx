@@ -3,6 +3,7 @@ import {
 	Bot,
 	Boxes,
 	Brain,
+	Building2,
 	Calendars,
 	Compass,
 	GitBranch,
@@ -67,6 +68,7 @@ const platformGroups: Array<{ label: string; items: SidebarItem[] }> = [
 	{
 		label: 'Govern',
 		items: [
+			{ key: 'platform-enterprise', label: '企业治理', path: '/platform/enterprise', icon: Building2 },
 			{ key: 'platform-tenants', label: 'Members / Tenants', path: '/platform/tenants', icon: UsersRound },
 		],
 	},

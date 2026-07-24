@@ -8,3 +8,5 @@ export { scheduleApi } from './schedule';
 export { modelApi, ttsModelApi } from './model';
 export { knowledgeBaseApi } from './knowledgeBase';
 export { platformApi } from './platform';
+export { enterpriseApi } from './enterprise';
+export type { EnterpriseRecord } from './enterprise';

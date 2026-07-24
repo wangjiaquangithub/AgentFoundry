@@ -14,6 +14,7 @@ import { ChatPage } from '@/pages/chat';
 import { CredentialPage } from '@/pages/credential';
 import { KnowledgePage } from '@/pages/knowledge';
 import { PlatformPage } from '@/pages/platform';
+import { EnterpriseGovernancePage } from '@/pages/platform/EnterpriseGovernancePage';
 import { SchedulePage } from '@/pages/schedule';
 import { SetupPage } from '@/pages/setup';
 
@@ -50,6 +51,7 @@ const router = createBrowserRouter([
 					{ path: '/platform/approvals', element: <PlatformPage view="approvals" /> },
 					{ path: '/platform/runs', element: <PlatformPage view="runs" /> },
 					{ path: '/platform/tenants', element: <PlatformPage view="tenants" /> },
+					{ path: '/platform/enterprise', element: <EnterpriseGovernancePage /> },
 					{ path: '/platform/memory', element: <PlatformPage view="memory" /> },
 					{ path: '/platform/settings', element: <PlatformPage view="settings" /> },
 					{
