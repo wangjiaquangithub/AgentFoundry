@@ -56,6 +56,26 @@ class RuntimeLifecycleStore:
             result["metadata"] = {}
         return result
 
+    @staticmethod
+    def _decode_execution(row: Any) -> dict[str, Any]:
+        result = dict(row)
+        try:
+            result["execution_context"] = json.loads(
+                result.get("execution_context") or "{}"
+            )
+        except (TypeError, ValueError):
+            result["execution_context"] = {}
+        return result
+
+    @staticmethod
+    def _decode_event(row: Any) -> dict[str, Any]:
+        result = dict(row)
+        try:
+            result["payload"] = json.loads(result.get("payload") or "{}")
+        except (TypeError, ValueError):
+            result["payload"] = {}
+        return result
+
     def create_session(
         self,
         *,
@@ -182,6 +202,46 @@ class RuntimeLifecycleStore:
                 (state, error_code, _now(), execution_id, tenant_id),
             )
 
+    def get_execution(self, tenant_id: str, execution_id: str) -> dict[str, Any]:
+        with self.database.connect() as connection:
+            row = connection.execute(
+                self._sql(
+                    "SELECT * FROM runtime_executions WHERE id=? AND tenant_id=?"
+                ),
+                (execution_id, tenant_id),
+            ).fetchone()
+        if row is None:
+            raise KeyError("runtime execution not found")
+        return self._decode_execution(row)
+
+    def list_executions(
+        self,
+        tenant_id: str,
+        *,
+        business_run_id: str | None = None,
+        session_id: str | None = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        clauses = ["tenant_id=?"]
+        values: list[Any] = [tenant_id]
+        if business_run_id:
+            clauses.append("business_run_id=?")
+            values.append(business_run_id)
+        if session_id:
+            clauses.append("session_id=?")
+            values.append(session_id)
+        values.append(max(1, min(int(limit), 500)))
+        with self.database.connect() as connection:
+            rows = connection.execute(
+                self._sql(
+                    f"""SELECT * FROM runtime_executions
+                        WHERE {' AND '.join(clauses)}
+                        ORDER BY created_at DESC LIMIT ?"""
+                ),
+                tuple(values),
+            ).fetchall()
+        return [self._decode_execution(row) for row in rows]
+
     def create_continuation(
         self,
         *,
@@ -213,13 +273,13 @@ class RuntimeLifecycleStore:
             )
         return {"id": continuation_id, "payload_digest": digest}
 
-    def consume_continuation(
+    def get_continuation(
         self,
         *,
         tenant_id: str,
         continuation_id: str,
     ) -> dict[str, Any]:
-        with self.database.transaction() as connection:
+        with self.database.connect() as connection:
             row = connection.execute(
                 self._sql(
                     """SELECT * FROM run_continuations
@@ -236,14 +296,54 @@ class RuntimeLifecycleStore:
                 raise ValueError("continuation payload integrity check failed")
             if record["status"] != "pending":
                 raise ValueError("continuation was already consumed")
+        return {
+            **record,
+            "payload": payload,
+        }
+
+    def mark_continuation_consumed(
+        self,
+        *,
+        tenant_id: str,
+        continuation_id: str,
+    ) -> None:
+        with self.database.transaction() as connection:
+            row = connection.execute(
+                self._sql(
+                    """SELECT status FROM run_continuations
+                       WHERE id=? AND tenant_id=?"""
+                ),
+                (continuation_id, tenant_id),
+            ).fetchone()
+            if row is None:
+                raise KeyError("continuation not found")
+            if dict(row)["status"] != "pending":
+                raise ValueError("continuation was already consumed")
             connection.execute(
                 self._sql(
                     """UPDATE run_continuations
-                       SET status='consumed', consumed_at=? WHERE id=?"""
+                       SET status='consumed', consumed_at=?
+                       WHERE id=? AND tenant_id=? AND status='pending'"""
                 ),
-                (_now(), continuation_id),
+                (_now(), continuation_id, tenant_id),
             )
-        return payload
+
+    def consume_continuation(
+        self,
+        *,
+        tenant_id: str,
+        continuation_id: str,
+    ) -> dict[str, Any]:
+        """Compatibility helper; new callers should consume only after success."""
+        record = self.get_continuation(
+            tenant_id=tenant_id,
+            continuation_id=continuation_id,
+        )
+        self.mark_continuation_consumed(
+            tenant_id=tenant_id,
+            continuation_id=continuation_id,
+        )
+        return record["payload"]
 
     def append_event(
         self,
@@ -283,3 +383,34 @@ class RuntimeLifecycleStore:
             if not self._sqlite and getattr(exc, "sqlstate", None) == "23505":
                 return False
             raise
+
+    def list_events(
+        self,
+        tenant_id: str,
+        *,
+        business_run_id: str | None = None,
+        execution_id: str | None = None,
+        limit: int = 500,
+    ) -> list[dict[str, Any]]:
+        clauses = ["events.tenant_id=?"]
+        values: list[Any] = [tenant_id]
+        if business_run_id:
+            clauses.append("executions.business_run_id=?")
+            values.append(business_run_id)
+        if execution_id:
+            clauses.append("events.execution_id=?")
+            values.append(execution_id)
+        values.append(max(1, min(int(limit), 1000)))
+        with self.database.connect() as connection:
+            rows = connection.execute(
+                self._sql(
+                    f"""SELECT events.* FROM runtime_events AS events
+                        JOIN runtime_executions AS executions
+                          ON executions.id=events.execution_id
+                         AND executions.tenant_id=events.tenant_id
+                        WHERE {' AND '.join(clauses)}
+                        ORDER BY events.occurred_at ASC LIMIT ?"""
+                ),
+                tuple(values),
+            ).fetchall()
+        return [self._decode_event(row) for row in rows]

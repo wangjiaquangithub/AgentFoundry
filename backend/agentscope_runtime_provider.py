@@ -264,6 +264,19 @@ class AgentScopeNativeInvocationClient:
         metadata = request.get("metadata")
         metadata = metadata if isinstance(metadata, Mapping) else {}
         approval_id = str(metadata.get("approval_id") or "").strip() or None
+        trusted_context = {
+            key: str(metadata.get(key) or "").strip() or None
+            for key in (
+                "request_id",
+                "business_run_id",
+                "session_id",
+                "runtime_execution_id",
+                "authorization_decision_id",
+                "continuation_id",
+                "immutable_digest",
+                "idempotency_key",
+            )
+        }
 
         try:
             application_session = await self._application_session(
@@ -277,6 +290,7 @@ class AgentScopeNativeInvocationClient:
                     approval_id=approval_id,
                     agent_id=agent_id,
                     tool_call_records=tool_calls,
+                    **trusted_context,
                 )
                 try:
                     reply = await application_session.agent.reply(
@@ -285,6 +299,7 @@ class AgentScopeNativeInvocationClient:
                             content=_runtime_user_message(
                                 question,
                                 approval_id=approval_id,
+                                business_run_id=trusted_context["business_run_id"],
                             ),
                         ),
                     )
@@ -342,8 +357,21 @@ def _published_agent_system_prompt(instructions: str) -> str:
     return safety
 
 
-def _runtime_user_message(question: str, *, approval_id: str | None) -> str:
+def _runtime_user_message(
+    question: str,
+    *,
+    approval_id: str | None,
+    business_run_id: str | None = None,
+) -> str:
     """Add trusted, invocation-only guidance without changing published prompts."""
+    if business_run_id:
+        return (
+            f"{question}\n\n"
+            "平台可信执行上下文：这是批准后的请假恢复执行。你必须恰好调用一次"
+            " enterprise_submit_leave_request 工具，business_run_id 参数只能使用："
+            f"{business_run_id}。必须依据本次真实工具结果回答；不得依据历史会话"
+            "声称已经提交成功。工具被拒绝或失败时必须明确告知失败。"
+        )
     if not approval_id:
         return question
     return (

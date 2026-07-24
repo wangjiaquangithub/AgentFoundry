@@ -25,6 +25,7 @@ ENTERPRISE_TOOL_INPUT_FIELDS = {
     "enterprise_get_ticket_status": "ticket_id",
     "enterprise_summarize_department_metrics": "department",
     "enterprise_get_weather_forecast": "city",
+    "enterprise_submit_leave_request": "business_run_id",
 }
 ENTERPRISE_TOOL_CATALOG = {
     "enterprise_lookup_policy": {
@@ -47,6 +48,11 @@ ENTERPRISE_TOOL_CATALOG = {
         "input_key": "city",
         "default_input": "北京",
     },
+    "enterprise_submit_leave_request": {
+        "description": "Submit an approved leave request to the governed HR service.",
+        "input_key": "business_run_id",
+        "default_input": "",
+    },
 }
 
 
@@ -57,6 +63,14 @@ class EnterpriseToolInvocationContext:
     approval_id: str | None
     agent_id: str
     tool_call_records: list[dict[str, Any]]
+    request_id: str | None = None
+    business_run_id: str | None = None
+    session_id: str | None = None
+    runtime_execution_id: str | None = None
+    authorization_decision_id: str | None = None
+    continuation_id: str | None = None
+    immutable_digest: str | None = None
+    idempotency_key: str | None = None
 
 
 _ENTERPRISE_TOOL_INVOCATION: ContextVar[
@@ -69,6 +83,14 @@ def start_enterprise_tool_invocation(
     approval_id: str | None,
     agent_id: str,
     tool_call_records: list[dict[str, Any]],
+    request_id: str | None = None,
+    business_run_id: str | None = None,
+    session_id: str | None = None,
+    runtime_execution_id: str | None = None,
+    authorization_decision_id: str | None = None,
+    continuation_id: str | None = None,
+    immutable_digest: str | None = None,
+    idempotency_key: str | None = None,
 ) -> Any:
     """Bind approval and evidence state for one AgentScope invocation."""
     return _ENTERPRISE_TOOL_INVOCATION.set(
@@ -76,6 +98,14 @@ def start_enterprise_tool_invocation(
             approval_id=approval_id,
             agent_id=agent_id,
             tool_call_records=tool_call_records,
+            request_id=request_id,
+            business_run_id=business_run_id,
+            session_id=session_id,
+            runtime_execution_id=runtime_execution_id,
+            authorization_decision_id=authorization_decision_id,
+            continuation_id=continuation_id,
+            immutable_digest=immutable_digest,
+            idempotency_key=idempotency_key,
         ),
     )
 
@@ -227,6 +257,72 @@ class ReadOnlyEnterpriseTool(FunctionTool):
         )
 
 
+class GovernedLeaveTool(FunctionTool):
+    """State-changing HR tool enforced at AgentScope's permission point."""
+
+    def __init__(
+        self,
+        *args: Any,
+        tenant: str,
+        user_id: str,
+        authorization_policy: ToolAuthorizationPolicy,
+        leave_permission_validator: Callable[..., Any],
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self._tenant = tenant
+        self._user_id = user_id
+        self._authorization_policy = authorization_policy
+        self._leave_permission_validator = leave_permission_validator
+
+    async def check_permissions(
+        self,
+        tool_input: dict[str, Any],
+        _context: PermissionContext,
+    ) -> PermissionDecision:
+        policy = self._authorization_policy.authorize(
+            self._tenant, self._user_id, self.name,
+        )
+        if not policy.allowed:
+            return PermissionDecision(
+                behavior=PermissionBehavior.DENY,
+                message="当前账号没有提交请假申请的工具权限。",
+                decision_reason=policy.reason,
+            )
+        invocation = current_enterprise_tool_invocation()
+        try:
+            if invocation is None:
+                raise ValueError("missing trusted invocation context")
+            self._leave_permission_validator(
+                tenant_id=self._tenant,
+                actor_id=self._user_id,
+                tool_input=dict(tool_input),
+                invocation=invocation,
+            )
+        except Exception as exc:
+            if invocation is not None:
+                invocation.tool_call_records.append({
+                    "tool_name": self.name,
+                    "inputs": dict(tool_input),
+                    "allowed": False,
+                    "connector": "HR Demo Service",
+                    "connector_source": "governed_http_service",
+                    "routing_source": "agentscope",
+                    "routing_reason": "AgentScope denied the HR write at the permission enforcement point.",
+                    "decision": {"allowed": False, "reason": str(exc)},
+                })
+            return PermissionDecision(
+                behavior=PermissionBehavior.DENY,
+                message="请假审批或恢复凭据无效，已阻止提交。",
+                decision_reason="leave_continuation_invalid",
+            )
+        return PermissionDecision(
+            behavior=PermissionBehavior.ALLOW,
+            message="已验证审批、申请摘要和恢复凭据。",
+            decision_reason="approved_leave_continuation",
+        )
+
+
 @dataclass(frozen=True)
 class EnterpriseToolRuntimeFactory:
     """Build and execute tenant-aware enterprise tools."""
@@ -238,6 +334,8 @@ class EnterpriseToolRuntimeFactory:
     tool_names: list[str]
     approval_required_tools: set[str]
     approval_validator: Callable[..., str]
+    leave_permission_validator: Callable[..., Any] | None = None
+    leave_tool_executor: Callable[..., dict[str, Any]] | None = None
 
     async def build_tools(
         self,
@@ -336,6 +434,24 @@ class EnterpriseToolRuntimeFactory:
                 call=call,
             )
 
+        def submit_leave_request(business_run_id: str) -> dict[str, Any]:
+            """Submit one approved leave request through the HR connector.
+
+            Args:
+                business_run_id: Trusted business run identifier supplied by AgentFoundry.
+            """
+            if self.leave_tool_executor is None:
+                raise EnterpriseToolRuntimeError(503, "Leave connector is unavailable.")
+            invocation = current_enterprise_tool_invocation()
+            if invocation is None:
+                raise EnterpriseToolRuntimeError(403, "Trusted leave context is missing.")
+            return self.leave_tool_executor(
+                tenant_id=tenant,
+                actor_id=user_id,
+                business_run_id=business_run_id,
+                invocation=invocation,
+            )
+
         authorization_policy = self.authorization_policy()
         tools = [
             ReadOnlyEnterpriseTool(
@@ -387,8 +503,24 @@ class EnterpriseToolRuntimeFactory:
                 approval_validator=self.approval_validator,
             ),
         ]
+        if self.leave_permission_validator is not None and self.leave_tool_executor is not None:
+            tools.append(
+                GovernedLeaveTool(
+                    submit_leave_request,
+                    name="enterprise_submit_leave_request",
+                    description="Submit the already approved leave request exactly once.",
+                    is_read_only=False,
+                    tenant=tenant,
+                    user_id=user_id,
+                    authorization_policy=authorization_policy,
+                    leave_permission_validator=self.leave_permission_validator,
+                ),
+            )
         for tool in tools:
-            if tool.name == "enterprise_get_weather_forecast":
+            if tool.name == "enterprise_submit_leave_request":
+                tool._agentfoundry_connector = "HR Demo Service"
+                tool._agentfoundry_connector_source = "governed_http_service"
+            elif tool.name == "enterprise_get_weather_forecast":
                 tool._agentfoundry_connector = "Open-Meteo"
                 tool._agentfoundry_connector_source = "public_read_only_api"
             else:

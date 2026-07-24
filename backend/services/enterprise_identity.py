@@ -280,6 +280,56 @@ class EnterpriseIdentityService:
                         resource_id=membership_id, source=source, before=before, after=after)
         return after
 
+    def resolve_leave_approver(
+        self,
+        *,
+        tenant_id: str,
+        requester_id: str,
+    ) -> dict[str, Any]:
+        """Resolve an active same-tenant manager or an HR approval fallback."""
+        with self.database.connect() as connection:
+            requester = self._membership(connection, tenant_id, requester_id)
+            relation = self._one(
+                connection,
+                """SELECT manager.user_id AS approver_id
+                     FROM member_manager_relations AS relation
+                     JOIN memberships AS manager
+                       ON manager.id=relation.manager_membership_id
+                      AND manager.tenant_id=relation.tenant_id
+                     JOIN users ON users.id=manager.user_id
+                    WHERE relation.tenant_id=? AND relation.membership_id=?
+                      AND relation.status='active' AND manager.status='active'
+                      AND users.status='active'""",
+                (tenant_id, requester["id"]),
+            )
+            if relation:
+                return {
+                    "approver_id": relation["approver_id"],
+                    "source": "direct_manager",
+                    "fallback_reason": None,
+                }
+            fallback = self._one(
+                connection,
+                """SELECT memberships.user_id AS approver_id
+                     FROM memberships
+                     JOIN users ON users.id=memberships.user_id
+                    WHERE memberships.tenant_id=? AND memberships.status='active'
+                      AND users.status='active'
+                      AND memberships.role IN ('org_admin', 'tenant_admin')
+                      AND memberships.user_id<>?
+                    ORDER BY CASE memberships.role WHEN 'org_admin' THEN 0 ELSE 1 END,
+                             memberships.created_at
+                    LIMIT 1""",
+                (tenant_id, requester_id),
+            )
+        if fallback:
+            return {
+                "approver_id": fallback["approver_id"],
+                "source": "hr_approval_group",
+                "fallback_reason": "requester_has_no_active_direct_manager",
+            }
+        raise EnterpriseIdentityError(422, "no eligible leave approver is configured")
+
     def organization_snapshot(self, tenant_id: str) -> dict[str, Any]:
         with self.database.connect() as connection:
             organizations = self._all(connection, "SELECT * FROM organizations WHERE tenant_id=? ORDER BY name", (tenant_id,))

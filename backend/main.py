@@ -33,6 +33,10 @@ from api.enterprise_identity import (
     create_enterprise_identity_router,
 )
 from api.authorization import AuthorizationRouteDependencies, create_authorization_router
+from api.leave_requests import (
+    LeaveRequestRouteDependencies,
+    create_leave_request_router,
+)
 from api.knowledge import (
     KnowledgeBasesRouteDependencies,
     KnowledgeDocumentsRouteDependencies,
@@ -144,6 +148,7 @@ from runtime import (
     invoke_runtime_adapter_from_payload,
 )
 from agentscope_runtime_provider import AgentScopeNativeInvocationClient
+from hr_client import HRClient
 from persistence.database import create_database
 from persistence.runtime_lifecycle import RuntimeLifecycleStore
 from services.approvals import (
@@ -164,6 +169,7 @@ from services.enterprise_router import PlatformEnterpriseRouterService
 from services.enterprise_identity import build_enterprise_identity_service
 from services.authorization import build_authorization_service
 from services.execution_context import build_execution_context_service
+from services.leave_requests import LeaveRequestService
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
 from services.composition import (
@@ -372,6 +378,12 @@ enterprise_tool_runtime = EnterpriseToolRuntimeFactory(
     approval_validator=lambda **kwargs: (
         _platform_approval_service().require_approval(**kwargs)
     ),
+    leave_permission_validator=lambda **kwargs: (
+        _require_leave_request_service().validate_submit_tool(**kwargs)
+    ),
+    leave_tool_executor=lambda **kwargs: (
+        _require_leave_request_service().execute_submit_tool(**kwargs)
+    ),
 )
 
 agentscope_native_client = AgentScopeNativeInvocationClient(
@@ -404,6 +416,88 @@ async def _invoke_agentscope_native_runtime_from_payload(
         agent_metadata=agent_metadata,
         runtime_adapter=runtime_gateway.adapter_for(agent_metadata),
     )
+
+
+_leave_request_service_instance: LeaveRequestService | None = None
+_leave_request_service_key: tuple[str, str] | None = None
+
+
+async def _resume_leave_request_with_agentscope(
+    context: dict[str, Any],
+) -> dict[str, Any]:
+    metadata = {
+        "request_id": context["request_id"],
+        "business_run_id": context["business_run_id"],
+        "session_id": context["session_id"],
+        "runtime_execution_id": context["runtime_execution_id"],
+        "authorization_decision_id": context["authorization_decision_id"],
+        "continuation_id": context["continuation_id"],
+        "immutable_digest": context["immutable_digest"],
+        "idempotency_key": context["idempotency_key"],
+        "approval_id": context["approval_id"],
+    }
+    payload = build_runtime_invocation_request_payload(
+        tenant=context["tenant_id"],
+        user_id=context["actor_id"],
+        session_id=context["session_id"],
+        agent_id="leave-assistant",
+        agent_name="请假助手",
+        instructions=(
+            "该申请已经由 AgentFoundry 完成业务校验和审批。"
+            "只调用 enterprise_submit_leave_request 一次，"
+            "business_run_id 必须使用可信上下文中的值；不要编造提交结果。"
+        ),
+        question="请提交这条已经批准的请假申请。",
+        tools=("enterprise_submit_leave_request",),
+        metadata=metadata,
+    )
+    return await _invoke_agentscope_native_runtime_from_payload(
+        payload,
+        agent_metadata={
+            "execution_mode": "agentscope_native",
+            "runtime_provider": "agentscope",
+        },
+    )
+
+
+def _leave_request_service() -> LeaveRequestService | None:
+    global _leave_request_service_instance, _leave_request_service_key
+    database_url = os.environ.get("AGENTFOUNDRY_DATABASE_URL", "").strip()
+    hr_base_url = os.environ.get("AGENTFOUNDRY_HR_BASE_URL", "").strip()
+    if not database_url or not hr_base_url:
+        return None
+    key = (database_url, hr_base_url)
+    if _leave_request_service_instance is None or _leave_request_service_key != key:
+        database = create_database(database_url)
+        identity = build_enterprise_identity_service()
+        authorization = build_authorization_service()
+        if identity is None or authorization is None:
+            return None
+        _leave_request_service_instance = LeaveRequestService(
+            database=database,
+            identity=identity,
+            authorization=authorization,
+            runtime=RuntimeLifecycleStore(database),
+            hr=HRClient(
+                hr_base_url,
+                timeout_seconds=float(
+                    os.environ.get("AGENTFOUNDRY_HR_TIMEOUT_SECONDS", "5")
+                ),
+            ),
+            runtime_resume=_resume_leave_request_with_agentscope,
+        )
+        _leave_request_service_key = key
+    return _leave_request_service_instance
+
+
+def _require_leave_request_service() -> LeaveRequestService:
+    service = _leave_request_service()
+    if service is None:
+        raise EnterpriseToolRuntimeError(
+            503,
+            "Leave persistence or HR service is unavailable.",
+        )
+    return service
 
 def _platform_status_service() -> PlatformStatusService:
     """Build the service object that composes platform console status payloads."""
@@ -762,6 +856,12 @@ app.include_router(
 app.include_router(
     create_authorization_router(
         AuthorizationRouteDependencies(service=build_authorization_service)
+    )
+)
+
+app.include_router(
+    create_leave_request_router(
+        LeaveRequestRouteDependencies(service=_leave_request_service)
     )
 )
 
