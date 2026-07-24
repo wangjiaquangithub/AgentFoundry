@@ -32,6 +32,8 @@ The current native Foundry adapter connects explicit runtime selection, Agent ex
 
 The runtime adapter preserves version, type, and deployment boundaries between the two projects. It supports either an embedded AgentScope runtime or a separately deployed AgentScope Application Service, but it must not recreate AgentScope capabilities behind a provider-neutral facade. See [`docs/agentscope-agentfoundry-boundary.md`](docs/agentscope-agentfoundry-boundary.md) for the detailed responsibility and data-ownership model.
 
+Enterprise identity, authorization, leave approval, governed reporting, deployment, and acceptance procedures are documented in [`docs/enterprise-operations.md`](docs/enterprise-operations.md).
+
 ## Repository Layout
 
 ```text
@@ -116,6 +118,7 @@ Platform routes:
 /platform/tenants    Tenant workspace, connectors, and members
 /platform/memory     Long-term memory operations
 /platform/settings   Runtime, audit, config, and capability views
+/platform/enterprise Identity, organization, roles, approvals, and governed reports
 ```
 
 Demo prompt:
@@ -138,19 +141,27 @@ Current knowledge status:
 
 ## Development vs Production
 
-This repository is safe to use as a local development prototype and product foundation. Do not treat the current local data path as production storage.
+This repository is a runnable enterprise product foundation. It includes PostgreSQL migrations, enterprise identity and organization models, RBAC + ABAC decisions, signed execution context, approval continuation, governed reports, and enterprise audit projections. It has not completed production security, reliability, scalability, and compliance certification.
 
 Development behavior:
 
-- Local JSON/JSONL files are used for development storage and smoke-test data.
+- Local JSON/JSONL and temporary SQLite files remain in development and acceptance paths; production-backed platform APIs use the configured PostgreSQL data path.
 - The enterprise knowledge assistant can answer from the local fallback knowledge base.
 - Existing Agents can use the explicitly labelled `foundry_compatibility` path during migration; native AgentScope requests never silently fall back to it.
 
+Implemented enterprise foundations:
+
+- PostgreSQL migrations through enterprise identity, authorization, runtime execution context, leave approval, and governed reporting.
+- Tenant-scoped organization and member models, role bindings, RBAC + ABAC authorization decisions, and trusted signed execution context.
+- AgentScope Session/Permission/Event integration for native business runs, including approval continuation and explicit provider failure.
+- Governed HR HTTP and report-query boundaries with idempotency, data scopes, masking, approval, and auditable projections.
+
 Production work still needs:
 
-- Database-backed persistence, migrations, transactions, and tenant-scoped constraints.
+- Production IAM/OIDC deployment, managed secret storage, immutable audit retention, high availability, disaster recovery, and security certification.
+- PostgreSQL-backed production load, isolation, migration rollback, query timeout, and failure-recovery qualification.
 - Real document ingestion, chunking, embedding, retrieval, and retrieval logs.
-- Authentication, authorization, secret management, immutable audit, deployment, and observability.
+- Complete native Adapter integration for AgentScope Knowledge/RAG, Workspace/Sandbox, Schedule, Team/SubAgent, and remaining runtime services where business demand requires them.
 
 Do not connect real enterprise-sensitive data until the production data layer, access control, secret handling, and audit guarantees are in place.
 
@@ -196,6 +207,12 @@ Run the platform smoke test when validating the end-to-end local loop:
 ./scripts/smoke_agentfoundry.sh
 ```
 
+Run the repeatable enterprise leave-and-report acceptance suite:
+
+```bash
+./scripts/smoke_enterprise_e2e.sh
+```
+
 For AgentScope framework development, select a source checkout explicitly (a sibling `../agentscope` checkout is also detected automatically):
 
 ```bash
@@ -216,17 +233,19 @@ Already in place:
 
 - Route-level platform console under `/platform/*`.
 - Python backend API with tenant, agent, tool, workflow, approval, memory, run, and settings capabilities.
-- Development local storage using JSON/JSONL files.
+- PostgreSQL migrations for core platform, enterprise identity and organization, authorization, runtime context, leave approval, and governed reporting.
+- Enterprise identity, RBAC + ABAC decisions, signed ExecutionContext, approval continuation, report data scopes, and audit projections.
+- Development local storage and temporary acceptance fixtures where explicitly documented.
 - Enterprise knowledge assistant flow with a development knowledge fallback.
 - Initial service, repository, and runtime adapter direction.
 
 Still required for production:
 
 - Complete backend API/service/repository separation.
-- Production database, migrations, transactions, and tenant-scoped constraints.
+- Production database operations qualification, backup/restore, high availability, capacity testing, and tenant-isolation verification.
 - Real knowledge ingestion, chunking, embedding, retrieval, and retrieval logs.
 - Complete AgentScope Framework/Application Service integration through a stable adapter, reusing AgentScope Session, Chat, Credential, Knowledge Base, Schedule, Workspace, Permission, and event capabilities where applicable.
-- Authentication, authorization, immutable audit, secret handling, deployment, and observability.
+- Real OIDC/enterprise IAM integration, immutable audit storage, managed secrets, production observability, and security/compliance certification.
 - Continued `/platform/*` page work so each route behaves like an enterprise SaaS workspace.
 
 ## Production Plan
@@ -244,6 +263,7 @@ Stage 1.1: Extract backend request schemas from backend/main.py into a schemas m
 Related docs:
 
 - `docs/agentscope-agentfoundry-boundary.md`
+- `docs/enterprise-operations.md`
 - `docs/agentscope-integration-correction-plan.md`
 - `docs/production-plan.md`
 - `docs/product-roadmap.md`
