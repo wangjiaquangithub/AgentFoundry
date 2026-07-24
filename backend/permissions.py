@@ -17,6 +17,10 @@ ENTERPRISE_TOOL_NAMES = [
     "enterprise_summarize_department_metrics",
     "enterprise_get_weather_forecast",
     "enterprise_submit_leave_request",
+    "enterprise_list_available_reports",
+    "enterprise_describe_report",
+    "enterprise_query_report",
+    "enterprise_export_report",
 ]
 
 DEFAULT_TOOL_POLICY: dict[str, Any] = {

@@ -37,6 +37,7 @@ from api.leave_requests import (
     LeaveRequestRouteDependencies,
     create_leave_request_router,
 )
+from api.reports import ReportRouteDependencies, create_report_router
 from api.knowledge import (
     KnowledgeBasesRouteDependencies,
     KnowledgeDocumentsRouteDependencies,
@@ -170,6 +171,7 @@ from services.enterprise_identity import build_enterprise_identity_service
 from services.authorization import build_authorization_service
 from services.execution_context import build_execution_context_service
 from services.leave_requests import LeaveRequestService
+from services.reports import ReportError, ReportService
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
 from services.composition import (
@@ -384,6 +386,7 @@ enterprise_tool_runtime = EnterpriseToolRuntimeFactory(
     leave_tool_executor=lambda **kwargs: (
         _require_leave_request_service().execute_submit_tool(**kwargs)
     ),
+    report_tool_executor=lambda **kwargs: _execute_report_tool(**kwargs),
 )
 
 agentscope_native_client = AgentScopeNativeInvocationClient(
@@ -420,6 +423,8 @@ async def _invoke_agentscope_native_runtime_from_payload(
 
 _leave_request_service_instance: LeaveRequestService | None = None
 _leave_request_service_key: tuple[str, str] | None = None
+_report_service_instance: ReportService | None = None
+_report_service_key: tuple[str, str] | None = None
 
 
 async def _resume_leave_request_with_agentscope(
@@ -498,6 +503,81 @@ def _require_leave_request_service() -> LeaveRequestService:
             "Leave persistence or HR service is unavailable.",
         )
     return service
+
+
+def _report_service() -> ReportService | None:
+    global _report_service_instance, _report_service_key
+    database_url = os.environ.get("AGENTFOUNDRY_DATABASE_URL", "").strip()
+    report_url = os.environ.get("AGENTFOUNDRY_REPORT_DATABASE_URL", "").strip()
+    if not database_url or not report_url:
+        return None
+    if (
+        os.environ.get("AGENTFOUNDRY_ENV", "").lower() in {"prod", "production"}
+        and not report_url.startswith(("postgresql://", "postgres://"))
+    ):
+        return None
+    key = (database_url, report_url)
+    if _report_service_instance is None or _report_service_key != key:
+        authorization = build_authorization_service()
+        if authorization is None:
+            return None
+        _report_service_instance = ReportService(
+            database=create_database(database_url),
+            report_database=create_database(report_url),
+            authorization=authorization,
+        )
+        _report_service_key = key
+    return _report_service_instance
+
+
+def _execute_report_tool(**kwargs: Any) -> Any:
+    service = _report_service()
+    if service is None:
+        raise EnterpriseToolRuntimeError(
+            503,
+            "Governed report gateway is unavailable.",
+        )
+    operation = str(kwargs.get("operation") or "")
+    tenant_id = str(kwargs.get("tenant_id") or "")
+    actor_id = str(kwargs.get("actor_id") or "")
+    request_id = str(kwargs.get("request_id") or "")
+    report_code = str(kwargs.get("report_code") or "")
+    parameters = kwargs.get("parameters") or {}
+    try:
+        if operation == "list":
+            return service.list_reports(tenant_id, actor_id, request_id)
+        if operation == "describe":
+            return service.describe(tenant_id, actor_id, report_code, request_id)
+        if operation == "query":
+            return service.query(
+                tenant_id=tenant_id,
+                actor_id=actor_id,
+                report_code=report_code,
+                parameters=parameters,
+                request_id=request_id,
+            )
+        if operation == "export":
+            idempotency_key = str(kwargs.get("idempotency_key") or "")
+            if not idempotency_key:
+                raise ReportError(
+                    400,
+                    "IDEMPOTENCY_KEY_REQUIRED",
+                    "导出必须提供幂等键。",
+                )
+            return service.request_export(
+                tenant_id=tenant_id,
+                actor_id=actor_id,
+                report_code=report_code,
+                parameters=parameters,
+                idempotency_key=idempotency_key,
+                request_id=request_id,
+            )
+        raise ReportError(400, "UNKNOWN_REPORT_OPERATION", "未知报表操作。")
+    except ReportError as exc:
+        raise EnterpriseToolRuntimeError(
+            exc.status_code,
+            {"code": exc.code, "message": exc.detail},
+        ) from exc
 
 def _platform_status_service() -> PlatformStatusService:
     """Build the service object that composes platform console status payloads."""
@@ -863,6 +943,10 @@ app.include_router(
     create_leave_request_router(
         LeaveRequestRouteDependencies(service=_leave_request_service)
     )
+)
+
+app.include_router(
+    create_report_router(ReportRouteDependencies(service=_report_service))
 )
 
 app.include_router(

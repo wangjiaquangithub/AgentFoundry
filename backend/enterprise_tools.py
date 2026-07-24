@@ -26,6 +26,10 @@ ENTERPRISE_TOOL_INPUT_FIELDS = {
     "enterprise_summarize_department_metrics": "department",
     "enterprise_get_weather_forecast": "city",
     "enterprise_submit_leave_request": "business_run_id",
+    "enterprise_list_available_reports": "",
+    "enterprise_describe_report": "report_code",
+    "enterprise_query_report": "report_code",
+    "enterprise_export_report": "report_code",
 }
 ENTERPRISE_TOOL_CATALOG = {
     "enterprise_lookup_policy": {
@@ -52,6 +56,26 @@ ENTERPRISE_TOOL_CATALOG = {
         "description": "Submit an approved leave request to the governed HR service.",
         "input_key": "business_run_id",
         "default_input": "",
+    },
+    "enterprise_list_available_reports": {
+        "description": "List reports available to the current enterprise user.",
+        "input_key": "",
+        "default_input": "",
+    },
+    "enterprise_describe_report": {
+        "description": "Describe a governed fixed report and its allowed parameters.",
+        "input_key": "report_code",
+        "default_input": "attendance",
+    },
+    "enterprise_query_report": {
+        "description": "Query a governed fixed report with server-enforced data scope.",
+        "input_key": "report_code",
+        "default_input": "attendance",
+    },
+    "enterprise_export_report": {
+        "description": "Request an approved export of a governed fixed report.",
+        "input_key": "report_code",
+        "default_input": "attendance",
     },
 }
 
@@ -323,6 +347,26 @@ class GovernedLeaveTool(FunctionTool):
         )
 
 
+class GovernedReportExportTool(FunctionTool):
+    """Report export tool enforced by AgentScope before the gateway call."""
+
+    def __init__(self, *args: Any, tenant: str, user_id: str,
+                 authorization_policy: ToolAuthorizationPolicy, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._tenant = tenant
+        self._user_id = user_id
+        self._authorization_policy = authorization_policy
+
+    async def check_permissions(self, _tool_input: dict[str, Any],
+                                _context: PermissionContext) -> PermissionDecision:
+        decision = self._authorization_policy.authorize(self._tenant, self._user_id, self.name)
+        return PermissionDecision(
+            behavior=PermissionBehavior.ALLOW if decision.allowed else PermissionBehavior.DENY,
+            message="允许请求受治理报表导出。" if decision.allowed else "当前账号没有报表导出工具权限。",
+            decision_reason=decision.reason,
+        )
+
+
 @dataclass(frozen=True)
 class EnterpriseToolRuntimeFactory:
     """Build and execute tenant-aware enterprise tools."""
@@ -336,6 +380,7 @@ class EnterpriseToolRuntimeFactory:
     approval_validator: Callable[..., str]
     leave_permission_validator: Callable[..., Any] | None = None
     leave_tool_executor: Callable[..., dict[str, Any]] | None = None
+    report_tool_executor: Callable[..., Any] | None = None
 
     async def build_tools(
         self,
@@ -452,6 +497,39 @@ class EnterpriseToolRuntimeFactory:
                 invocation=invocation,
             )
 
+        def run_report(operation: str, report_code: str = "", parameters: dict[str, Any] | None = None,
+                       idempotency_key: str = "") -> Any:
+            if self.report_tool_executor is None:
+                raise EnterpriseToolRuntimeError(503, "Governed report gateway is unavailable.")
+            invocation = current_enterprise_tool_invocation()
+            trusted_idempotency_key = (
+                invocation.idempotency_key
+                if invocation is not None and invocation.idempotency_key
+                else idempotency_key
+            )
+            return self.report_tool_executor(
+                operation=operation, tenant_id=tenant, actor_id=user_id,
+                request_id=invocation.request_id if invocation else "", report_code=report_code,
+                parameters=parameters or {}, idempotency_key=trusted_idempotency_key,
+            )
+
+        def list_available_reports() -> list[dict[str, Any]]:
+            """List the fixed reports the current user is allowed to read."""
+            return run_report("list")
+
+        def describe_report(report_code: str) -> dict[str, Any]:
+            """Describe one governed report, including parameters and visible fields."""
+            return run_report("describe", report_code)
+
+        def query_report(report_code: str, parameters: dict[str, Any] | None = None) -> dict[str, Any]:
+            """Query a fixed report; never accepts SQL, table names, or credentials."""
+            return run_report("query", report_code, parameters)
+
+        def export_report(report_code: str, parameters: dict[str, Any] | None = None,
+                          idempotency_key: str = "") -> dict[str, Any]:
+            """Request approval for a governed report export using an idempotency key."""
+            return run_report("export", report_code, parameters, idempotency_key)
+
         authorization_policy = self.authorization_policy()
         tools = [
             ReadOnlyEnterpriseTool(
@@ -516,6 +594,25 @@ class EnterpriseToolRuntimeFactory:
                     leave_permission_validator=self.leave_permission_validator,
                 ),
             )
+        if self.report_tool_executor is not None:
+            report_read_tools = (
+                (list_available_reports, "enterprise_list_available_reports", "List governed reports available to the current user."),
+                (describe_report, "enterprise_describe_report", "Describe one governed fixed report."),
+                (query_report, "enterprise_query_report", "Query a governed fixed report with enforced tenant and data scope."),
+            )
+            for function, name, description in report_read_tools:
+                tools.append(ReadOnlyEnterpriseTool(
+                    function, name=name, description=description, is_read_only=True,
+                    tenant=tenant, user_id=user_id, authorization_policy=authorization_policy,
+                    approval_required_tools=self.approval_required_tools,
+                    approval_validator=self.approval_validator,
+                ))
+            tools.append(GovernedReportExportTool(
+                export_report, name="enterprise_export_report",
+                description="Request an approval-governed export of a fixed report.",
+                is_read_only=False, tenant=tenant, user_id=user_id,
+                authorization_policy=authorization_policy,
+            ))
         for tool in tools:
             if tool.name == "enterprise_submit_leave_request":
                 tool._agentfoundry_connector = "HR Demo Service"
@@ -523,6 +620,9 @@ class EnterpriseToolRuntimeFactory:
             elif tool.name == "enterprise_get_weather_forecast":
                 tool._agentfoundry_connector = "Open-Meteo"
                 tool._agentfoundry_connector_source = "public_read_only_api"
+            elif tool.name.startswith("enterprise_") and "report" in tool.name:
+                tool._agentfoundry_connector = "Governed Report Gateway"
+                tool._agentfoundry_connector_source = "parameterized_report_gateway"
             else:
                 tool._agentfoundry_connector = connector_label
                 tool._agentfoundry_connector_source = runtime_selection[
@@ -555,6 +655,9 @@ class EnterpriseToolRuntimeFactory:
         if tool_name == "enterprise_get_weather_forecast":
             connector_label = "Open-Meteo"
             connector_source = "public_read_only_api"
+        elif tool_name.startswith("enterprise_") and "report" in tool_name:
+            connector_label = "Governed Report Gateway"
+            connector_source = "parameterized_report_gateway"
 
         if tool_name not in self.tool_names:
             raise EnterpriseToolRuntimeError(
@@ -584,12 +687,44 @@ class EnterpriseToolRuntimeFactory:
                 "decision": decision_payload,
             }
 
-        clean_inputs, call = tool_policy_service.build_connector_call(
-            tenant=tenant,
-            tool_name=tool_name,
-            inputs=inputs,
-            runtime_connector=runtime_connector,
-        )
+        report_operations = {
+            "enterprise_list_available_reports": "list",
+            "enterprise_describe_report": "describe",
+            "enterprise_query_report": "query",
+            "enterprise_export_report": "export",
+        }
+        if tool_name in report_operations:
+            if self.report_tool_executor is None:
+                raise EnterpriseToolRuntimeError(
+                    503,
+                    "Governed report gateway is unavailable.",
+                )
+            clean_inputs = {
+                "report_code": str(inputs.get("report_code") or ""),
+                "parameters": inputs.get("parameters") or {},
+            }
+            if tool_name == "enterprise_export_report":
+                clean_inputs["idempotency_key"] = str(
+                    inputs.get("idempotency_key") or ""
+                )
+
+            def call() -> Any:
+                return self.report_tool_executor(
+                    operation=report_operations[tool_name],
+                    tenant_id=tenant,
+                    actor_id=user_id,
+                    request_id="",
+                    report_code=clean_inputs["report_code"],
+                    parameters=clean_inputs["parameters"],
+                    idempotency_key=clean_inputs.get("idempotency_key", ""),
+                )
+        else:
+            clean_inputs, call = tool_policy_service.build_connector_call(
+                tenant=tenant,
+                tool_name=tool_name,
+                inputs=inputs,
+                runtime_connector=runtime_connector,
+            )
 
         result = self.audit_logger.capture(
             user_id=user_id,
