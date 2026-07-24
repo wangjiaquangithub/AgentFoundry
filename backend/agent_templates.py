@@ -96,4 +96,36 @@ ENTERPRISE_AGENT_TEMPLATES = [
             "analysis_report",
         ],
     },
+    {
+        "id": "uat-leave-assistant",
+        "name": "请假助手",
+        "description": "帮助员工查询假期余额、检查日期冲突、发起请假申请并跟踪审批状态。",
+        "tools": [
+            "enterprise_get_leave_balance",
+            "enterprise_check_leave_conflict",
+            "enterprise_prepare_leave_request",
+            "enterprise_submit_leave_request",
+        ],
+        "capabilities": [
+            "leave_balance",
+            "leave_conflict",
+            "leave_request",
+        ],
+    },
+    {
+        "id": "uat-report-assistant",
+        "name": "报表助手",
+        "description": "帮助员工查询受治理报表，理解数据范围并申请导出。",
+        "tools": [
+            "enterprise_list_available_reports",
+            "enterprise_describe_report",
+            "enterprise_query_report",
+            "enterprise_export_report",
+        ],
+        "capabilities": [
+            "report_list",
+            "report_query",
+            "report_export",
+        ],
+    },
 ]

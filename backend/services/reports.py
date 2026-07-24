@@ -25,6 +25,7 @@ REPORTS: dict[str, dict[str, Any]] = {
         "scopes": ["self", "direct_reports", "department", "department_tree", "explicit_departments", "tenant"],
         "max_days": 31,
         "max_rows": 200,
+        "export_approval": "line_manager",
     },
     "sales_summary": {
         "name": "销售汇总",
@@ -35,6 +36,7 @@ REPORTS: dict[str, dict[str, Any]] = {
         "scopes": ["department", "department_tree", "explicit_departments", "tenant"],
         "max_days": 92,
         "max_rows": 100,
+        "export_approval": "none",
     },
     "department_budget": {
         "name": "部门预算",
@@ -45,6 +47,7 @@ REPORTS: dict[str, dict[str, Any]] = {
         "scopes": ["department", "department_tree", "explicit_departments", "tenant"],
         "max_days": 366,
         "max_rows": 100,
+        "export_approval": "report_role",
     },
 }
 
@@ -57,6 +60,10 @@ class ReportError(ValueError):
 
 def _now() -> str:
     return datetime.now(UTC).isoformat()
+
+
+def _now_dt() -> datetime:
+    return datetime.now(UTC)
 
 
 def _id(prefix: str) -> str:
@@ -326,6 +333,34 @@ class ReportService:
                request_id, _digest(params), _json(params), scope, _json(scope_details), status,
                rows, 1 if truncated else 0, duration, error, _now(), _now()))
 
+    def _resolve_export_approver(self, *, tenant_id: str, actor_id: str,
+                                  policy: str) -> tuple[str | None, str]:
+        """Resolve the export approver based on the report definition policy."""
+        if policy == "none":
+            return None, "none"
+        with self.database.connect() as connection:
+            if policy == "line_manager":
+                membership = self._one(connection, "SELECT id FROM memberships WHERE tenant_id=? AND user_id=?", (tenant_id, actor_id))
+                if not membership:
+                    return None, "line_manager"
+                manager = self._one(connection, """SELECT memberships.user_id FROM member_manager_relations
+                  JOIN memberships ON memberships.id=member_manager_relations.manager_membership_id
+                  WHERE member_manager_relations.tenant_id=? AND member_manager_relations.membership_id=? AND member_manager_relations.status='active'""",
+                  (tenant_id, membership["id"]))
+                if manager and manager["user_id"] != actor_id:
+                    return manager["user_id"], "line_manager"
+                return None, "line_manager"
+            if policy in {"report_role", "configured_group"}:
+                members = self._all(connection, """SELECT rb.subject_id FROM role_bindings AS rb
+                  JOIN roles AS r ON r.id=rb.role_id
+                  WHERE rb.tenant_id=? AND r.name='report_manager' AND rb.subject_type='user'""",
+                  (tenant_id,))
+                for member in members:
+                    if member["subject_id"] != actor_id:
+                        return member["subject_id"], policy
+                return None, policy
+        return None, policy
+
     def request_export(self, *, tenant_id: str, actor_id: str, report_code: str,
                        parameters: dict[str, Any], idempotency_key: str, request_id: str = "") -> dict[str, Any]:
         definition = self._definition(tenant_id, report_code)
@@ -336,20 +371,35 @@ class ReportService:
             self._audit(tenant_id=tenant_id, actor_id=actor_id, action="report.export", resource_id=report_code,
                 request_id=request_id, outcome="denied", decision_id=decision["decision_id"], metadata={"parameter_digest": _digest(normalized)})
             raise ReportError(403, "REPORT_EXPORT_DENIED", "无权导出该报表。")
+        export_policy = definition.get("export_policy", "line_manager")
         with self.database.connect() as connection:
             existing = self._one(connection, "SELECT * FROM report_exports WHERE tenant_id=? AND idempotency_key=?", (tenant_id, idempotency_key))
             if existing:
                 return self._export_response(connection, existing, report_code)
-            membership = self._one(connection, "SELECT id FROM memberships WHERE tenant_id=? AND user_id=?", (tenant_id, actor_id))
-            manager = self._one(connection, """SELECT memberships.user_id FROM member_manager_relations
-              JOIN memberships ON memberships.id=member_manager_relations.manager_membership_id
-              WHERE member_manager_relations.tenant_id=? AND member_manager_relations.membership_id=? AND member_manager_relations.status='active'""",
-              (tenant_id, membership["id"] if membership else ""))
-        if not manager or manager["user_id"] == actor_id:
+        if export_policy == "none":
+            export_id, timestamp = _id("rexport"), _now()
+            digest = _digest({"report": report_code, "parameters": normalized, "requester": actor_id})
+            with self.database.transaction() as connection:
+                connection.execute(self._sql("""INSERT INTO report_exports
+                  (id, tenant_id, report_id, requester_id, query_id, approval_case_id,
+                   authorization_decision_id, idempotency_key, parameter_digest, status,
+                   download_reference, expires_at, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, NULL, NULL, ?, ?, ?, 'completed', ?, ?, ?, ?)"""),
+                  (export_id, tenant_id, definition["id"], actor_id,
+                   decision["decision_id"], idempotency_key, digest,
+                   f"export-{export_id}", (_now_dt() + timedelta(hours=24)).isoformat(), timestamp, timestamp))
+            self._audit(tenant_id=tenant_id, actor_id=actor_id, action="report.export", resource_id=report_code,
+                request_id=request_id, outcome="completed", decision_id=decision["decision_id"],
+                metadata={"export_id": export_id, "policy": "none", "parameter_digest": digest})
+            return {"id": export_id, "report": report_code, "status": "completed",
+                    "approval_case_id": None, "authorization_decision_id": decision["decision_id"]}
+        approver_id, approver_source = self._resolve_export_approver(
+            tenant_id=tenant_id, actor_id=actor_id, policy=export_policy)
+        if not approver_id:
             self._audit(tenant_id=tenant_id, actor_id=actor_id, action="report.export",
                 resource_id=report_code, request_id=request_id, outcome="failed",
                 decision_id=decision["decision_id"],
-                metadata={"error_code": "EXPORT_APPROVER_UNAVAILABLE", "parameter_digest": _digest(normalized)})
+                metadata={"error_code": "EXPORT_APPROVER_UNAVAILABLE", "parameter_digest": _digest(normalized), "policy": export_policy})
             raise ReportError(409, "EXPORT_APPROVER_UNAVAILABLE", "未配置可用的导出审批人。")
         with self.database.transaction() as connection:
             existing = self._one(connection, "SELECT * FROM report_exports WHERE tenant_id=? AND idempotency_key=?", (tenant_id, idempotency_key))
@@ -361,13 +411,13 @@ class ReportService:
               (id, tenant_id, resource_type, resource_id, requester_id, assignee_id,
                immutable_digest, status, fallback_reason, version, created_at, updated_at)
               VALUES (?, ?, 'report_export', ?, ?, ?, ?, 'pending_approval', NULL, 1, ?, ?)"""),
-              (case_id, tenant_id, export_id, actor_id, manager["user_id"], digest, timestamp, timestamp))
+              (case_id, tenant_id, export_id, actor_id, approver_id, digest, timestamp, timestamp))
             connection.execute(self._sql("""INSERT INTO approval_steps
               (id, tenant_id, approval_case_id, step_number, status, created_at, updated_at)
               VALUES (?, ?, ?, 1, 'pending', ?, ?)"""), (_id("astep"), tenant_id, case_id, timestamp, timestamp))
             connection.execute(self._sql("""INSERT INTO approval_assignees
               (id, tenant_id, approval_case_id, assignee_id, source, created_at)
-              VALUES (?, ?, ?, ?, 'direct_manager', ?)"""), (_id("aasg"), tenant_id, case_id, manager["user_id"], timestamp))
+              VALUES (?, ?, ?, ?, ?, ?)"""), (_id("aasg"), tenant_id, case_id, approver_id, approver_source, timestamp))
             connection.execute(self._sql("""INSERT INTO report_exports
               (id, tenant_id, report_id, requester_id, query_id, approval_case_id,
                authorization_decision_id, idempotency_key, parameter_digest, status,
@@ -377,7 +427,7 @@ class ReportService:
                idempotency_key, digest, timestamp, timestamp))
         self._audit(tenant_id=tenant_id, actor_id=actor_id, action="report.export", resource_id=report_code,
             request_id=request_id, outcome="waiting_approval", decision_id=decision["decision_id"],
-            metadata={"export_id": export_id, "approval_case_id": case_id, "parameter_digest": digest})
+            metadata={"export_id": export_id, "approval_case_id": case_id, "parameter_digest": digest, "policy": export_policy})
         return {"id": export_id, "report": report_code, "status": "pending_approval",
                 "approval_case_id": case_id, "authorization_decision_id": decision["decision_id"]}
 

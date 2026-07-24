@@ -25,6 +25,9 @@ ENTERPRISE_TOOL_INPUT_FIELDS = {
     "enterprise_get_ticket_status": "ticket_id",
     "enterprise_summarize_department_metrics": "department",
     "enterprise_get_weather_forecast": "city",
+    "enterprise_get_leave_balance": "",
+    "enterprise_check_leave_conflict": "start_date",
+    "enterprise_prepare_leave_request": "leave_type",
     "enterprise_submit_leave_request": "business_run_id",
     "enterprise_list_available_reports": "",
     "enterprise_describe_report": "report_code",
@@ -51,6 +54,21 @@ ENTERPRISE_TOOL_CATALOG = {
         "description": "Query a real city weather forecast from Open-Meteo.",
         "input_key": "city",
         "default_input": "北京",
+    },
+    "enterprise_get_leave_balance": {
+        "description": "Query the current employee's leave balance from the HR service.",
+        "input_key": "",
+        "default_input": "",
+    },
+    "enterprise_check_leave_conflict": {
+        "description": "Check whether requested leave dates conflict with existing requests.",
+        "input_key": "start_date",
+        "default_input": "",
+    },
+    "enterprise_prepare_leave_request": {
+        "description": "Validate and prepare a leave request, creating an approval case.",
+        "input_key": "leave_type",
+        "default_input": "",
     },
     "enterprise_submit_leave_request": {
         "description": "Submit an approved leave request to the governed HR service.",
@@ -479,23 +497,50 @@ class EnterpriseToolRuntimeFactory:
                 call=call,
             )
 
-        def submit_leave_request(business_run_id: str) -> dict[str, Any]:
-            """Submit one approved leave request through the HR connector.
-
-            Args:
-                business_run_id: Trusted business run identifier supplied by AgentFoundry.
-            """
+        def run_leave_tool(operation: str, **kwargs: Any) -> Any:
             if self.leave_tool_executor is None:
                 raise EnterpriseToolRuntimeError(503, "Leave connector is unavailable.")
             invocation = current_enterprise_tool_invocation()
             if invocation is None:
                 raise EnterpriseToolRuntimeError(403, "Trusted leave context is missing.")
             return self.leave_tool_executor(
-                tenant_id=tenant,
-                actor_id=user_id,
-                business_run_id=business_run_id,
-                invocation=invocation,
+                operation=operation, tenant_id=tenant, actor_id=user_id,
+                invocation=invocation, **kwargs,
             )
+
+        def get_leave_balance() -> dict[str, Any]:
+            """Query the current employee's leave balance from the HR service."""
+            return run_leave_tool("balance")
+
+        def check_leave_conflict(start_date: str, end_date: str) -> dict[str, Any]:
+            """Check whether requested leave dates conflict with existing requests.
+
+            Args:
+                start_date: Start date in YYYY-MM-DD format.
+                end_date: End date in YYYY-MM-DD format.
+            """
+            return run_leave_tool("conflict", start_date=start_date, end_date=end_date)
+
+        def prepare_leave_request(leave_type: str, start_date: str,
+                                  end_date: str, reason: str) -> dict[str, Any]:
+            """Validate and prepare a leave request, creating an approval case.
+
+            Args:
+                leave_type: Leave type: annual, sick, or personal.
+                start_date: Start date in YYYY-MM-DD format.
+                end_date: End date in YYYY-MM-DD format.
+                reason: Reason for the leave request.
+            """
+            return run_leave_tool("prepare", leave_type=leave_type,
+                                  start_date=start_date, end_date=end_date, reason=reason)
+
+        def submit_leave_request(business_run_id: str) -> dict[str, Any]:
+            """Submit one approved leave request through the HR connector.
+
+            Args:
+                business_run_id: Trusted business run identifier supplied by AgentFoundry.
+            """
+            return run_leave_tool("submit", business_run_id=business_run_id)
 
         def run_report(operation: str, report_code: str = "", parameters: dict[str, Any] | None = None,
                        idempotency_key: str = "") -> Any:
@@ -582,6 +627,18 @@ class EnterpriseToolRuntimeFactory:
             ),
         ]
         if self.leave_permission_validator is not None and self.leave_tool_executor is not None:
+            leave_read_tools = (
+                (get_leave_balance, "enterprise_get_leave_balance", "Query the current employee's leave balance from the HR service."),
+                (check_leave_conflict, "enterprise_check_leave_conflict", "Check whether requested leave dates conflict with existing requests."),
+                (prepare_leave_request, "enterprise_prepare_leave_request", "Validate and prepare a leave request, creating an immutable approval case."),
+            )
+            for function, name, description in leave_read_tools:
+                tools.append(ReadOnlyEnterpriseTool(
+                    function, name=name, description=description, is_read_only=True,
+                    tenant=tenant, user_id=user_id, authorization_policy=authorization_policy,
+                    approval_required_tools=self.approval_required_tools,
+                    approval_validator=self.approval_validator,
+                ))
             tools.append(
                 GovernedLeaveTool(
                     submit_leave_request,
@@ -614,7 +671,7 @@ class EnterpriseToolRuntimeFactory:
                 authorization_policy=authorization_policy,
             ))
         for tool in tools:
-            if tool.name == "enterprise_submit_leave_request":
+            if tool.name.startswith("enterprise_") and "leave" in tool.name:
                 tool._agentfoundry_connector = "HR Demo Service"
                 tool._agentfoundry_connector_source = "governed_http_service"
             elif tool.name == "enterprise_get_weather_forecast":
@@ -687,13 +744,35 @@ class EnterpriseToolRuntimeFactory:
                 "decision": decision_payload,
             }
 
+        leave_operations = {
+            "enterprise_get_leave_balance": "balance",
+            "enterprise_check_leave_conflict": "conflict",
+            "enterprise_prepare_leave_request": "prepare",
+            "enterprise_submit_leave_request": "submit",
+        }
         report_operations = {
             "enterprise_list_available_reports": "list",
             "enterprise_describe_report": "describe",
             "enterprise_query_report": "query",
             "enterprise_export_report": "export",
         }
-        if tool_name in report_operations:
+        if tool_name in leave_operations:
+            if self.leave_tool_executor is None:
+                raise EnterpriseToolRuntimeError(
+                    503,
+                    "Leave connector is unavailable.",
+                )
+            clean_inputs = {k: v for k, v in inputs.items() if v is not None}
+
+            def call() -> Any:
+                return self.leave_tool_executor(
+                    operation=leave_operations[tool_name],
+                    tenant_id=tenant,
+                    actor_id=user_id,
+                    invocation=None,
+                    **clean_inputs,
+                )
+        elif tool_name in report_operations:
             if self.report_tool_executor is None:
                 raise EnterpriseToolRuntimeError(
                     503,

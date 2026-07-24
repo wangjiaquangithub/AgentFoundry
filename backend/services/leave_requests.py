@@ -98,6 +98,145 @@ class LeaveRequestService:
             raise LeaveRequestError(403, "当前账号没有执行此操作的权限", "AUTHORIZATION_DENIED")
         return decision
 
+    def get_balance(self, *, tenant_id: str, actor_id: str) -> dict[str, Any]:
+        """Query leave balance from the real HR service."""
+        try:
+            self.identity.require_active_subject(tenant_id, actor_id)
+        except EnterpriseIdentityError as exc:
+            raise LeaveRequestError(exc.status_code, exc.detail, "IDENTITY_INVALID") from exc
+        try:
+            return self.hr.get_balance(actor_id)
+        except HRServiceError as exc:
+            raise LeaveRequestError(503, str(exc), exc.code) from exc
+
+    def check_conflict(self, *, tenant_id: str, actor_id: str,
+                       start_date: str, end_date: str) -> dict[str, Any]:
+        """Check date conflicts against the real HR service."""
+        try:
+            self.identity.require_active_subject(tenant_id, actor_id)
+        except EnterpriseIdentityError as exc:
+            raise LeaveRequestError(exc.status_code, exc.detail, "IDENTITY_INVALID") from exc
+        try:
+            date.fromisoformat(start_date)
+            date.fromisoformat(end_date)
+        except ValueError as exc:
+            raise LeaveRequestError(422, "请使用 YYYY-MM-DD 格式填写请假日期") from exc
+        try:
+            return self.hr.check_conflict(actor_id, start_date, end_date)
+        except HRServiceError as exc:
+            raise LeaveRequestError(503, str(exc), exc.code) from exc
+
+    def prepare_leave(self, *, tenant_id: str, actor_id: str,
+                      leave_type: str, start_date: str, end_date: str,
+                      reason: str, invocation: Any) -> dict[str, Any]:
+        """Validate and create a leave draft + approval using the Chat session context."""
+        try:
+            self.identity.require_active_subject(tenant_id, actor_id)
+        except EnterpriseIdentityError as exc:
+            raise LeaveRequestError(exc.status_code, exc.detail, "IDENTITY_INVALID") from exc
+        if invocation is None or not invocation.session_id or not invocation.business_run_id:
+            raise LeaveRequestError(403, "缺少可信会话上下文，无法创建请假申请")
+        decision = self._authorize(tenant_id, actor_id, "agent.invoke", "agent",
+                                   "leave-assistant", invocation.request_id or "")
+        try:
+            start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
+        except ValueError as exc:
+            raise LeaveRequestError(422, "请使用 YYYY-MM-DD 格式填写请假日期") from exc
+        normalized_type, normalized_reason = leave_type.strip().lower(), reason.strip()
+        if normalized_type not in {"annual", "sick", "personal"}:
+            raise LeaveRequestError(422, "请假类型必须是 annual、sick 或 personal")
+        if end < start or not normalized_reason:
+            raise LeaveRequestError(422, "结束日期不能早于开始日期，且请假原因不能为空")
+        days = (end - start).days + 1
+        try:
+            balance = self.hr.get_balance(actor_id)
+            conflict = self.hr.check_conflict(actor_id, start_date, end_date)
+        except HRServiceError as exc:
+            raise LeaveRequestError(503, str(exc), exc.code) from exc
+        if conflict.get("conflict"):
+            raise LeaveRequestError(409, "所选日期与已有请假申请冲突", "LEAVE_DATE_CONFLICT")
+        if normalized_type in {"annual", "sick"} and float(balance.get(normalized_type, 0)) < days:
+            raise LeaveRequestError(409, "可用假期余额不足", "LEAVE_BALANCE_INSUFFICIENT")
+        try:
+            approver = self.identity.resolve_leave_approver(
+                tenant_id=tenant_id, requester_id=actor_id)
+        except EnterpriseIdentityError as exc:
+            raise LeaveRequestError(exc.status_code, exc.detail, "APPROVER_UNAVAILABLE") from exc
+        immutable = {"requester_id": actor_id, "leave_type": normalized_type,
+                     "start_date": start_date, "end_date": end_date, "reason": normalized_reason}
+        digest = _digest(immutable)
+        draft_id, case_id = _id("leave"), _id("approval")
+        session_id = invocation.session_id
+        business_run_id = invocation.business_run_id
+        idempotency_key = f"leave:{tenant_id}:{digest}"
+        timestamp = _now()
+        with self.database.transaction() as connection:
+            connection.execute(self._sql("""INSERT INTO leave_request_drafts
+              (id, tenant_id, requester_id, leave_type, start_date, end_date, reason,
+               draft_digest, version, status, created_at, updated_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'pending_approval', ?, ?)"""),
+              (draft_id, tenant_id, actor_id, normalized_type, start_date, end_date,
+               normalized_reason, digest, timestamp, timestamp))
+            connection.execute(self._sql("""INSERT INTO approval_cases
+              (id, tenant_id, resource_type, resource_id, requester_id, assignee_id,
+               immutable_digest, status, fallback_reason, version, created_at, updated_at)
+              VALUES (?, ?, 'leave_request', ?, ?, ?, ?, 'pending', ?, 1, ?, ?)"""),
+              (case_id, tenant_id, draft_id, actor_id, approver["approver_id"], digest,
+               approver["fallback_reason"], timestamp, timestamp))
+            connection.execute(self._sql("INSERT INTO approval_steps VALUES (?, ?, ?, 1, 'pending', ?, ?)"),
+                               (_id("step"), tenant_id, case_id, timestamp, timestamp))
+            connection.execute(self._sql("INSERT INTO approval_assignees VALUES (?, ?, ?, ?, ?, ?)"),
+                               (_id("assignee"), tenant_id, case_id, approver["approver_id"],
+                                approver["source"], timestamp))
+            connection.execute(self._sql("""INSERT INTO business_run_links
+              (id, tenant_id, business_run_id, session_id, agent_id, approval_case_id,
+               continuation_id, hr_request_id, status, immutable_digest, idempotency_key,
+               created_at, updated_at)
+              VALUES (?, ?, ?, ?, 'leave-assistant', ?, NULL, NULL, 'waiting_approval',
+               ?, ?, ?, ?)"""),
+              (_id("brun"), tenant_id, business_run_id, session_id, case_id, digest,
+               idempotency_key, timestamp, timestamp))
+            self._audit(connection, tenant_id=tenant_id, actor_id=actor_id,
+                        action="leave.prepared", resource_type="leave_request",
+                        resource_id=draft_id, outcome="waiting_approval",
+                        request_id=invocation.request_id or "",
+                        business_run_id=business_run_id, session_id=session_id,
+                        execution_id=invocation.runtime_execution_id,
+                        decision_id=decision["decision_id"],
+                        metadata={"approval_case_id": case_id, "days": days,
+                                  "approver_source": approver["source"]})
+        self.runtime.append_event(tenant_id=tenant_id,
+                                  execution_id=invocation.runtime_execution_id or "",
+                                  provider_event_id=f"{invocation.runtime_execution_id or business_run_id}:waiting",
+                                  event_type="waiting_approval",
+                                  payload={"approval_case_id": case_id})
+        return {"business_run_id": business_run_id, "session_id": session_id,
+                "approval_case_id": case_id, "status": "waiting_approval",
+                "leave_type": normalized_type, "start_date": start_date,
+                "end_date": end_date, "approver_id": approver["approver_id"],
+                "approver_source": approver["source"]}
+
+    def execute_tool(self, *, operation: str, tenant_id: str, actor_id: str,
+                     invocation: Any | None = None, **kwargs: Any) -> dict[str, Any]:
+        """Dispatch leave tool operations from AgentScope."""
+        if operation == "balance":
+            return self.get_balance(tenant_id=tenant_id, actor_id=actor_id)
+        if operation == "conflict":
+            return self.check_conflict(tenant_id=tenant_id, actor_id=actor_id,
+                                       start_date=kwargs["start_date"],
+                                       end_date=kwargs["end_date"])
+        if operation == "prepare":
+            return self.prepare_leave(tenant_id=tenant_id, actor_id=actor_id,
+                                      leave_type=kwargs["leave_type"],
+                                      start_date=kwargs["start_date"],
+                                      end_date=kwargs["end_date"],
+                                      reason=kwargs["reason"], invocation=invocation)
+        if operation == "submit":
+            return self.execute_submit_tool(tenant_id=tenant_id, actor_id=actor_id,
+                                            business_run_id=kwargs["business_run_id"],
+                                            invocation=invocation)
+        raise LeaveRequestError(400, f"未知请假工具操作: {operation}")
+
     def create(self, *, tenant_id: str, actor_id: str, request_id: str,
                leave_type: str, start_date: str, end_date: str, reason: str,
                agent_id: str = "leave-assistant") -> dict[str, Any]:

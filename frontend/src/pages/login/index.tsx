@@ -39,11 +39,11 @@ export function LoginPage() {
 				</CardHeader>
 				<CardContent>
 					<form className="grid gap-4" onSubmit={submit}>
-						<div className="grid gap-1.5"><Label htmlFor="tenant_id">租户 ID</Label><Input id="tenant_id" name="tenant_id" autoComplete="organization" required /></div>
-						<div className="grid gap-1.5"><Label htmlFor="identifier">邮箱或账号 ID</Label><Input id="identifier" name="identifier" autoComplete="username" required /></div>
-						<div className="grid gap-1.5"><Label htmlFor="password">密码</Label><Input id="password" name="password" type="password" autoComplete="current-password" minLength={8} required /></div>
-						{error ? <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</div> : null}
-						<Button type="submit" disabled={busy}>{busy ? '正在登录…' : '登录'}</Button>
+						<div className="grid gap-1.5"><Label htmlFor="tenant_id">租户 ID</Label><Input id="tenant_id" name="tenant_id" autoComplete="organization" required data-testid="login-tenant" /></div>
+						<div className="grid gap-1.5"><Label htmlFor="identifier">邮箱或账号 ID</Label><Input id="identifier" name="identifier" autoComplete="username" required data-testid="login-username" /></div>
+						<div className="grid gap-1.5"><Label htmlFor="password">密码</Label><Input id="password" name="password" type="password" autoComplete="current-password" minLength={8} required data-testid="login-password" /></div>
+						{error ? <div data-testid="login-error" className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</div> : null}
+						<Button type="submit" disabled={busy} data-testid="login-submit">{busy ? '正在登录…' : '登录'}</Button>
 					</form>
 					<div className="mt-5 border-t pt-4 text-xs text-muted-foreground">服务：{getBaseUrl()}</div>
 				</CardContent>

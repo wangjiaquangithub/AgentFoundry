@@ -67,26 +67,32 @@ def create_leave_request_router(deps: LeaveRequestRouteDependencies) -> APIRoute
         service, tenant, actor, _ = context(request)
         return {"items": service.list_approvals(tenant, actor)}
 
-    def decide(case_id: str, value: str, payload: ApprovalDecisionRequest,
+    async def decide(case_id: str, value: str, payload: ApprovalDecisionRequest,
                request: Request, idempotency_key: str | None) -> dict[str, object]:
         if not idempotency_key:
             raise HTTPException(status_code=400, detail="Idempotency-Key is required")
         service, tenant, actor, request_id = context(request)
         try:
-            return service.decide(tenant_id=tenant, actor_id=actor, request_id=request_id,
-                                  case_id=case_id, decision_value=value, comment=payload.comment)
+            result = service.decide(tenant_id=tenant, actor_id=actor, request_id=request_id,
+                                    case_id=case_id, decision_value=value, comment=payload.comment)
         except LeaveRequestError as exc:
             _raise(exc)
+        if value == "approved" and result.get("status") == "approved":
+            business_run_id = result.get("business_run_id", "")
+            if business_run_id:
+                import asyncio
+                asyncio.create_task(_auto_resume_leave(service, tenant, actor, request_id, business_run_id))
+        return result
 
     @router.post("/approval-cases/{case_id}/approve")
-    def approve(case_id: str, payload: ApprovalDecisionRequest, request: Request,
+    async def approve(case_id: str, payload: ApprovalDecisionRequest, request: Request,
                 idempotency_key: str | None = Header(default=None, alias="Idempotency-Key")) -> dict[str, object]:
-        return decide(case_id, "approved", payload, request, idempotency_key)
+        return await decide(case_id, "approved", payload, request, idempotency_key)
 
     @router.post("/approval-cases/{case_id}/reject")
-    def reject(case_id: str, payload: ApprovalDecisionRequest, request: Request,
+    async def reject(case_id: str, payload: ApprovalDecisionRequest, request: Request,
                idempotency_key: str | None = Header(default=None, alias="Idempotency-Key")) -> dict[str, object]:
-        return decide(case_id, "rejected", payload, request, idempotency_key)
+        return await decide(case_id, "rejected", payload, request, idempotency_key)
 
     @router.post("/runs/{business_run_id}/resume")
     async def resume(business_run_id: str, request: Request,
@@ -122,3 +128,13 @@ def create_leave_request_router(deps: LeaveRequestRouteDependencies) -> APIRoute
             _raise(exc)
 
     return router
+
+
+async def _auto_resume_leave(service: LeaveRequestService, tenant: str, actor: str,
+                             request_id: str, business_run_id: str) -> None:
+    """Background continuation after approval; failures surface as submit_failed."""
+    try:
+        await service.resume(tenant_id=tenant, actor_id=actor,
+                              request_id=request_id, business_run_id=business_run_id)
+    except Exception:
+        pass

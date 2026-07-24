@@ -174,7 +174,7 @@ from services.enterprise_router import PlatformEnterpriseRouterService
 from services.enterprise_identity import build_enterprise_identity_service
 from services.authorization import build_authorization_service
 from services.execution_context import build_execution_context_service
-from services.leave_requests import LeaveRequestService
+from services.leave_requests import LeaveRequestError, LeaveRequestService
 from services.local_authentication import build_local_authentication_service
 from services.reports import ReportError, ReportService
 from services.members import PlatformMemberService, PlatformMemberServiceError
@@ -388,9 +388,7 @@ enterprise_tool_runtime = EnterpriseToolRuntimeFactory(
     leave_permission_validator=lambda **kwargs: (
         _require_leave_request_service().validate_submit_tool(**kwargs)
     ),
-    leave_tool_executor=lambda **kwargs: (
-        _require_leave_request_service().execute_submit_tool(**kwargs)
-    ),
+    leave_tool_executor=lambda **kwargs: _execute_leave_tool(**kwargs),
     report_tool_executor=lambda **kwargs: _execute_report_tool(**kwargs),
 )
 
@@ -583,6 +581,24 @@ def _execute_report_tool(**kwargs: Any) -> Any:
             exc.status_code,
             {"code": exc.code, "message": exc.detail},
         ) from exc
+
+def _execute_leave_tool(**kwargs: Any) -> Any:
+    service = _require_leave_request_service()
+    operation = str(kwargs.pop("operation", ""))
+    invocation = kwargs.pop("invocation", None)
+    tenant_id = str(kwargs.pop("tenant_id", ""))
+    actor_id = str(kwargs.pop("actor_id", ""))
+    try:
+        return service.execute_tool(
+            operation=operation, tenant_id=tenant_id, actor_id=actor_id,
+            invocation=invocation, **kwargs,
+        )
+    except LeaveRequestError as exc:
+        raise EnterpriseToolRuntimeError(
+            exc.status_code,
+            {"code": exc.code, "message": exc.detail},
+        ) from exc
+
 
 def _platform_status_service() -> PlatformStatusService:
     """Build the service object that composes platform console status payloads."""
