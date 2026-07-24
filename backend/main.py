@@ -26,6 +26,10 @@ from api.agent_runtime import (
     AgentRuntimeRouteDependencies,
     create_agent_runtime_router,
 )
+from api.authentication import (
+    AuthenticationRouteDependencies,
+    create_authentication_router,
+)
 from api.agents import AgentCatalogRouteDependencies, create_agent_catalog_router
 from api.error_handling import register_error_handlers
 from api.enterprise_identity import (
@@ -171,6 +175,7 @@ from services.enterprise_identity import build_enterprise_identity_service
 from services.authorization import build_authorization_service
 from services.execution_context import build_execution_context_service
 from services.leave_requests import LeaveRequestService
+from services.local_authentication import build_local_authentication_service
 from services.reports import ReportError, ReportService
 from services.members import PlatformMemberService, PlatformMemberServiceError
 from services.memories import PlatformMemoryService
@@ -834,16 +839,27 @@ app = create_app(
             allow_origins=list(server_config.cors_allow_origins),
             allow_methods=["*"],
             allow_headers=["*"],
+            allow_credentials=True,
         ),
         Middleware(
             RequestIdentityAuthenticationMiddleware,
             production_mode=server_config.production_mode,
             shared_secret=server_config.identity_proxy_secret,
+            local_authentication_service=build_local_authentication_service,
         ),
     ],
     title="AgentScope Enterprise Knowledge Assistant",
 )
 register_error_handlers(app)
+
+app.include_router(
+    create_authentication_router(
+        AuthenticationRouteDependencies(
+            service=build_local_authentication_service,
+            production_mode=server_config.production_mode,
+        )
+    )
+)
 
 
 def _platform_workflow_template_service() -> PlatformWorkflowTemplateService:
@@ -929,7 +945,11 @@ app.include_router(
 
 app.include_router(
     create_enterprise_identity_router(
-        EnterpriseIdentityRouteDependencies(service=build_enterprise_identity_service)
+        EnterpriseIdentityRouteDependencies(
+            service=build_enterprise_identity_service,
+            authorization_service=build_authorization_service,
+            authentication_service=build_local_authentication_service,
+        )
     )
 )
 

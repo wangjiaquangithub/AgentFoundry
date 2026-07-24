@@ -9,6 +9,7 @@ const idempotency = () => ({ 'Idempotency-Key': crypto.randomUUID() });
 export const enterpriseApi = {
 	users: () => client.get<Items>('/api/platform/users'),
 	createUser: (body: EnterpriseRecord) => client.post<EnterpriseRecord>('/api/platform/users', body),
+	setUserPassword: (id: string, password: string) => client.put<void>(`/api/platform/users/${encodeURIComponent(id)}/password`, { password }),
 	deactivateUser: (id: string) => client.post<EnterpriseRecord>(`/api/platform/users/${encodeURIComponent(id)}/deactivate`),
 	organizations: () => client.get<EnterpriseRecord>('/api/platform/organizations'),
 	createOrganization: (name: string) => client.post<EnterpriseRecord>('/api/platform/organizations', { name }),

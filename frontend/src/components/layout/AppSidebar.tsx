@@ -15,6 +15,7 @@ import {
 	PlugZap,
 	Settings,
 	ShieldCheck,
+	LogOut,
 	UsersRound,
 	Wrench,
 } from 'lucide-react';
@@ -37,6 +38,7 @@ import {
 } from '@/components/ui/sidebar';
 import i18n from '@/i18n';
 import { useTranslation } from '@/i18n/useI18n';
+import { useAuth } from '@/context/AuthContext';
 
 type SidebarItem = {
 	key: string;
@@ -85,6 +87,7 @@ export function AppSidebar() {
 	const location = useLocation();
 	const { t } = useTranslation();
 	const { startOnborda } = useOnborda();
+	const { account, logout } = useAuth();
 
 	const handleStartTour = () => {
 		if (!location.pathname.startsWith('/chat')) {
@@ -203,6 +206,17 @@ export function AppSidebar() {
 			</SidebarContent>
 			<SidebarFooter>
 				<SidebarMenu>
+					<SidebarMenuItem>
+						<div className="px-2 py-2 text-xs">
+							<div className="truncate font-medium">{account?.display_name}</div>
+							<div className="truncate text-sidebar-foreground/60">{account?.email} · {account?.tenant_id}</div>
+						</div>
+					</SidebarMenuItem>
+					<SidebarMenuItem>
+						<SidebarMenuButton tooltip="退出登录" onClick={() => void logout()}>
+							<LogOut /><span>退出登录</span>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
 					<SidebarMenuItem>
 						<SidebarMenuButton
 							tooltip={

@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 
 import { PlatformPageHeader, PlatformPageShell } from './components/common';
 import { enterpriseApi, type EnterpriseRecord } from '@/api';
-import { getBaseUrl, getUserId } from '@/api/client';
+import { getBaseUrl } from '@/api/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '@/context/AuthContext';
 
 type Dataset = Record<string, EnterpriseRecord[]>;
 
@@ -49,6 +50,7 @@ function FormCard({ title, description, children, onSubmit, submit = '保存' }:
 }
 
 export function EnterpriseGovernancePage() {
+	const { account } = useAuth();
 	const [data, setData] = useState<Dataset>({});
 	const [errors, setErrors] = useState<string[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -79,19 +81,20 @@ export function EnterpriseGovernancePage() {
 
 	return (
 		<PlatformPageShell>
-			<PlatformPageHeader icon={Building2} eyebrow="Govern / Enterprise" title="企业治理与业务协同" description="统一管理账号组织、RBAC + ABAC、请假审批恢复、受治理报表和审计证据。所有操作均由后端权限再次强制校验。" actions={<Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw className={loading ? 'animate-spin' : ''} />刷新</Button>} aside={<div className="text-xs text-muted-foreground"><div>服务：{getBaseUrl()}</div><div>当前账号：{getUserId()}</div></div>} />
+			<PlatformPageHeader icon={Building2} eyebrow="Govern / Enterprise" title="企业治理与业务协同" description="统一管理账号组织、RBAC + ABAC、请假审批恢复、受治理报表和审计证据。所有操作均由后端权限再次强制校验。" actions={<Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw className={loading ? 'animate-spin' : ''} />刷新</Button>} aside={<div className="text-xs text-muted-foreground"><div>服务：{getBaseUrl()}</div><div>当前账号：{account?.display_name}（{account?.email}）</div></div>} />
 			{errors.length ? <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">部分模块因当前账号权限或服务状态不可用：{errors.join('；')}</div> : null}
 			<Tabs defaultValue="identity">
 				<TabsList className="flex h-auto w-full flex-wrap justify-start"><TabsTrigger value="identity"><UsersRound />身份组织</TabsTrigger><TabsTrigger value="authorization"><ShieldCheck />角色权限</TabsTrigger><TabsTrigger value="leave"><FileCheck2 />请假审批</TabsTrigger><TabsTrigger value="reports">报表治理</TabsTrigger><TabsTrigger value="audit">审计证据</TabsTrigger></TabsList>
 
 				<TabsContent value="identity" className="grid gap-4">
 					<div className="grid gap-4 xl:grid-cols-3">
-						<FormCard title="新增账号" onSubmit={async (form) => refreshAfter(() => enterpriseApi.createUser({ display_name: form.get('display_name'), email: form.get('email'), role: form.get('role') }))}><Field label="姓名" name="display_name" /><Field label="邮箱" name="email" type="email" /><Field label="初始角色" name="role" defaultValue="employee" /></FormCard>
+						<FormCard title="新增账号" onSubmit={async (form) => refreshAfter(() => enterpriseApi.createUser({ display_name: form.get('display_name'), email: form.get('email'), role: form.get('role'), initial_password: form.get('initial_password') }))}><Field label="姓名" name="display_name" /><Field label="邮箱" name="email" type="email" /><Field label="初始角色" name="role" defaultValue="employee" /><Field label="初始密码" name="initial_password" type="password" /></FormCard>
 						<FormCard title="新建组织" onSubmit={async (form) => refreshAfter(() => enterpriseApi.createOrganization(String(form.get('name'))))}><Field label="组织名称" name="name" /></FormCard>
 						<FormCard title="新建部门" onSubmit={async (form) => refreshAfter(() => enterpriseApi.createUnit({ organization_id: form.get('organization_id'), name: form.get('name'), unit_type: 'department' }))}><Field label="组织 ID" name="organization_id" placeholder={value(data.organizations?.[0] ?? {}, 'id')} /><Field label="部门名称" name="name" /></FormCard>
 					</div>
 					<Card><CardHeader><CardTitle>账号与成员</CardTitle><CardDescription>账号停用后不能启动新运行或审批，历史审计保留。</CardDescription></CardHeader><CardContent><DataTable rows={data.users ?? []} columns={[["display_name","姓名"],["email","邮箱"],["role","角色"],["status","账号状态"],["membership_id","成员 ID"]]} actions={(row) => row.status === 'active' ? <Button size="sm" variant="outline" onClick={() => void refreshAfter(() => enterpriseApi.deactivateUser(value(row, 'id')))}>停用</Button> : <Badge variant="secondary">已停用</Badge>} /></CardContent></Card>
 					<div className="grid gap-4 xl:grid-cols-2"><FormCard title="设置主部门" onSubmit={async (form) => refreshAfter(() => enterpriseApi.assignUnit(String(form.get('membership_id')), { organization_unit_id: form.get('unit_id'), assignment_type: 'primary' }))}><Field label="成员 ID" name="membership_id" /><Field label="部门 ID" name="unit_id" /></FormCard><FormCard title="设置直属领导" onSubmit={async (form) => refreshAfter(() => enterpriseApi.setManager(String(form.get('membership_id')), String(form.get('manager_id'))))}><Field label="员工成员 ID" name="membership_id" /><Field label="领导成员 ID" name="manager_id" /></FormCard></div>
+					<FormCard title="重置账号密码" description="重置后该账号已有浏览器会话会立即失效。" onSubmit={async (form) => refreshAfter(() => enterpriseApi.setUserPassword(String(form.get('user_id')), String(form.get('password'))))}><Field label="账号 ID" name="user_id" /><Field label="新密码" name="password" type="password" /></FormCard>
 					<DataTable rows={data.units ?? []} columns={[["name","组织单元"],["unit_type","类型"],["id","ID"],["parent_id","上级"]]} />
 				</TabsContent>
 

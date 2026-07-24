@@ -1,5 +1,5 @@
 import { Onborda, OnbordaProvider } from 'onborda';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { createBrowserRouter, Navigate, RouterProvider, useNavigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 
@@ -7,16 +7,20 @@ import { RouteError } from '@/components/error/RouteError';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { buildChatTour } from '@/components/tour/chatTourSteps';
 import { TourCard } from '@/components/tour/TourCard';
-import { LOCAL_SERVER_URL, LOCAL_USERNAME } from '@/config/localDefaults';
+import { LOCAL_SERVER_URL } from '@/config/localDefaults';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { UploadProvider } from '@/context/UploadContext';
 import { useTranslation } from '@/i18n/useI18n';
 import { ChatPage } from '@/pages/chat';
 import { CredentialPage } from '@/pages/credential';
 import { KnowledgePage } from '@/pages/knowledge';
+import { LoginPage } from '@/pages/login';
 import { PlatformPage } from '@/pages/platform';
 import { EnterpriseGovernancePage } from '@/pages/platform/EnterpriseGovernancePage';
 import { SchedulePage } from '@/pages/schedule';
 import { SetupPage } from '@/pages/setup';
+
+if (!localStorage.getItem('server_url')) localStorage.setItem('server_url', LOCAL_SERVER_URL);
 
 function SetupPageRoute() {
 	const navigate = useNavigate();
@@ -71,16 +75,10 @@ const router = createBrowserRouter([
 
 function App() {
 	const { t } = useTranslation();
-	const [setupComplete, setSetupComplete] = useState(() => {
-		if (!localStorage.getItem('server_url')) localStorage.setItem('server_url', LOCAL_SERVER_URL);
-		if (!localStorage.getItem('username')) localStorage.setItem('username', LOCAL_USERNAME);
-		return true;
-	});
 	const tours = useMemo(() => [buildChatTour(t)], [t]);
-
-	if (!setupComplete) {
-		return <SetupPage onComplete={() => setSetupComplete(true)} />;
-	}
+	const { account, loading } = useAuth();
+	if (loading) return <div className="grid min-h-screen place-items-center bg-slate-50 text-sm text-muted-foreground">正在恢复登录状态…</div>;
+	if (!account) return <><LoginPage /><Toaster richColors position="top-right" /></>;
 
 	return (
 		<OnbordaProvider>
@@ -99,4 +97,6 @@ function App() {
 	);
 }
 
-export default App;
+export default function AppRoot() {
+	return <AuthProvider><App /></AuthProvider>;
+}

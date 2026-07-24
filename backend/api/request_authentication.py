@@ -7,7 +7,7 @@ import hmac
 import re
 import time
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
@@ -21,6 +21,8 @@ IDENTITY_SIGNATURE_HEADER = "X-AgentFoundry-Identity-Signature"
 IDENTITY_SIGNATURE_VERSION = "v1"
 MAX_IDENTITY_AGE_SECONDS = 300
 AUTHENTICATION_EXEMPT_PATHS = frozenset({"/health", "/ready"})
+ANONYMOUS_AUTHENTICATION_PATHS = frozenset({"/api/auth/login"})
+DEFAULT_SESSION_COOKIE_NAME = "agentfoundry_session"
 VALID_USER_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:@/-]{0,127}$")
 VALID_TENANT_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 VALID_SIGNATURE = re.compile(r"^[0-9a-f]{64}$")
@@ -114,10 +116,14 @@ class RequestIdentityAuthenticationMiddleware(BaseHTTPMiddleware):
         *,
         production_mode: bool,
         shared_secret: str | None,
+        local_authentication_service: Callable[[], Any | None] | None = None,
+        session_cookie_name: str = DEFAULT_SESSION_COOKIE_NAME,
     ) -> None:
         super().__init__(app)
         self.production_mode = production_mode
         self.shared_secret = shared_secret or ""
+        self.local_authentication_service = local_authentication_service
+        self.session_cookie_name = session_cookie_name
 
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
@@ -127,11 +133,32 @@ class RequestIdentityAuthenticationMiddleware(BaseHTTPMiddleware):
             self._set_request_identity_state(request, source="probe_exempt")
             return await call_next(request)
 
+        token = request.cookies.get(self.session_cookie_name, "")
+        if token and self.local_authentication_service is not None:
+            service = self.local_authentication_service()
+            identity = service.resolve_session(token) if service is not None else None
+            if identity is not None:
+                self._set_request_identity_state(
+                    request,
+                    user_id=identity["user_id"],
+                    tenant_id=identity["tenant_id"],
+                    authenticated=True,
+                    source="local_cookie_session",
+                )
+                request.state.login_session = identity
+                return await call_next(request)
+
+        if normalized_path in ANONYMOUS_AUTHENTICATION_PATHS:
+            self._set_request_identity_state(request, source="anonymous_authentication")
+            return await call_next(request)
+
         if not self.production_mode:
+            user_id = request.headers.get(USER_ID_HEADER)
             self._set_request_identity_state(
                 request,
-                user_id=request.headers.get(USER_ID_HEADER),
+                user_id=user_id,
                 tenant_id=request.headers.get(TENANT_ID_HEADER),
+                authenticated=bool(user_id),
                 source="development_headers",
             )
             return await call_next(request)

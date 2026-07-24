@@ -33,7 +33,7 @@ interface RequestOptions {
 }
 
 function buildHeaders(hasBody: boolean, extra?: Record<string, string>): Record<string, string> {
-	const headers: Record<string, string> = { 'X-User-ID': getUserId() };
+	const headers: Record<string, string> = {};
 	if (hasBody) headers['Content-Type'] = 'application/json';
 	return { ...headers, ...extra };
 }
@@ -75,6 +75,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
 	const res = await fetch(url.toString(), {
 		method,
+		credentials: 'include',
 		headers: buildHeaders(body !== undefined, headers),
 		body: body ? JSON.stringify(body) : undefined,
 	});
@@ -102,6 +103,7 @@ async function streamRequest(
 
 	const res = await fetch(url.toString(), {
 		method,
+		credentials: 'include',
 		headers: buildHeaders(body !== undefined, headers),
 		body: body ? JSON.stringify(body) : undefined,
 		signal,
